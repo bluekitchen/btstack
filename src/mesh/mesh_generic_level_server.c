@@ -140,6 +140,7 @@ static void mesh_server_transition_step(mesh_transition_t * base_transition, tra
             time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
             if (transition->base_transition.remaining_delay_time_ms >= time_step_ms){
                 transition->base_transition.remaining_delay_time_ms -= time_step_ms;
+                transition->base_transition.phase_start_ms = current_timestamp;
             } else {
                 transition->base_transition.remaining_delay_time_ms = 0;
                 mesh_server_transition_state_update(transition, current_timestamp);
@@ -151,6 +152,7 @@ static void mesh_server_transition_step(mesh_transition_t * base_transition, tra
             if (transition->base_transition.remaining_transition_time_ms >= time_step_ms){
                 transition->base_transition.remaining_transition_time_ms -= time_step_ms;
                 mesh_server_transition_state_update_stepwise_value(transition);
+                transition->base_transition.phase_start_ms = current_timestamp;
             } else {
                 transition->base_transition.remaining_transition_time_ms = 0;
                 mesh_server_transition_state_update(transition, current_timestamp);
@@ -188,14 +190,8 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update_int1
 // Generic Level State
 
 void mesh_generic_level_server_register_packet_handler(mesh_model_t *generic_level_server_model, btstack_packet_handler_t transition_events_packet_handler){
-    if (transition_events_packet_handler == NULL){
-        log_error("mesh_generic_level_server_register_packet_handler called with NULL callback");
-        return;
-    }
-    if (generic_level_server_model == NULL){
-        log_error("mesh_generic_level_server_register_packet_handler called with NULL generic_level_server_model");
-        return;
-    }
+    btstack_assert(generic_level_server_model != NULL);
+    btstack_assert(transition_events_packet_handler != NULL);
     generic_level_server_model->model_packet_handler = transition_events_packet_handler;
 }
 
@@ -208,14 +204,8 @@ const mesh_access_message_t mesh_generic_level_status_instantaneous = {
 };
 
 static mesh_pdu_t * mesh_generic_level_status_message(mesh_model_t *generic_level_server_model){
-    if (generic_level_server_model->element == NULL){
-        log_error("generic_level_server_model->element == NULL"); 
-    }
-
     mesh_generic_level_state_t * state = (mesh_generic_level_state_t *) generic_level_server_model->model_data;
-    if (state == NULL){
-        log_error("generic_level_status ==  NULL");
-    }
+    btstack_assert(state != NULL);
 
     // setup message
     mesh_transport_pdu_t * transport_pdu = NULL; 
@@ -229,14 +219,8 @@ static mesh_pdu_t * mesh_generic_level_status_message(mesh_model_t *generic_leve
 }
 
 static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    if (mesh_model == NULL){
-        log_error("mesh_model == NULL");
-    }
     mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)mesh_model->model_data;
-    
-    if (generic_level_server_state == NULL){
-        log_error("generic_level_server_state == NULL");
-    }
+    btstack_assert(generic_level_server_state != NULL);
     
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
@@ -279,15 +263,9 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
 }
 
 static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    if (mesh_model == NULL){
-        log_error("mesh_model == NULL");
-    }
     mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)mesh_model->model_data;
-    
-    if (generic_level_server_state == NULL){
-        log_error("generic_level_server_state == NULL");
-    }
-    
+    btstack_assert(generic_level_server_state != NULL);
+
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     int16_t increment_value = (int16_t)mesh_access_parser_get_u16(&parser);
@@ -328,15 +306,9 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
 }
 
 static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    if (mesh_model == NULL){
-        log_error("mesh_model == NULL");
-    }
     mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)mesh_model->model_data;
-    
-    if (generic_level_server_state == NULL){
-        log_error("generic_level_server_state == NULL");
-    }
-    
+    btstack_assert(generic_level_server_state != NULL);
+
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     int16_t delta_value = (int16_t) mesh_access_parser_get_u16(&parser);
@@ -380,11 +352,11 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
     }
 }
 
-
 static void generic_level_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
-    if (!transport_pdu) return;
-    generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    if (transport_pdu != NULL) {
+        generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    }
     mesh_access_message_processed(pdu);
 }
 
@@ -392,39 +364,45 @@ static void generic_level_set_handler(mesh_model_t *generic_level_server_model, 
     generic_level_handle_set_target_level_message(generic_level_server_model, pdu);
 
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
-    if (!transport_pdu) return;
-    generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    if (transport_pdu != NULL) {
+        generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    }
     mesh_access_message_processed(pdu);
 }
 
 static void generic_level_set_unacknowledged_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_target_level_message(generic_level_server_model, pdu);
+    mesh_access_message_processed(pdu);
 }
 
 static void generic_delta_set_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_delta_message(generic_level_server_model, pdu);
 
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
-    if (!transport_pdu) return;
-    generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    if (transport_pdu != NULL) {
+        generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    }
     mesh_access_message_processed(pdu);
 }
 
 static void generic_delta_set_unacknowledged_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_delta_message(generic_level_server_model, pdu);
+    mesh_access_message_processed(pdu);
 }
 
 static void generic_move_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_move_message(generic_level_server_model, pdu);
 
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
-    if (!transport_pdu) return;
-    generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    if (transport_pdu != NULL) {
+        generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
+    }
     mesh_access_message_processed(pdu);
 }
 
 static void generic_move_set_unacknowledged_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_move_message(generic_level_server_model, pdu);
+    mesh_access_message_processed(pdu);
 }
 
 // Generic On Off Message

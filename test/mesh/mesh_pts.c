@@ -59,6 +59,11 @@ static mesh_model_t                 mesh_vendor_model;
 
 static mesh_model_t                 mesh_generic_on_off_server_model;
 static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
+static mesh_publication_model_t     generic_on_off_server_publication;
+
+static mesh_model_t                 mesh_generic_level_server_model;
+static mesh_generic_level_state_t   mesh_generic_level_state;
+static mesh_publication_model_t     generic_level_server_publication;
 
 static char gap_name_buffer[30];
 static char gap_name_prefix[] = "Mesh ";
@@ -87,7 +92,6 @@ static int ui_chars_for_pin;
 static uint8_t ui_pin[17];
 static int ui_pin_offset;
 
-static mesh_publication_model_t generic_on_off_server_publication;
 
 static mesh_health_fault_t health_fault;
 
@@ -634,6 +638,14 @@ int btstack_main(void)
     mesh_generic_on_off_server_register_packet_handler(&mesh_generic_on_off_server_model, &mesh_state_update_message_handler);
     mesh_generic_on_off_server_set_publication_model(&mesh_generic_on_off_server_model, &generic_on_off_server_publication);
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_generic_on_off_server_model);
+    
+    // Setup Generic On/Off model
+    mesh_generic_level_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_LEVEL_SERVER);
+    mesh_generic_level_server_model.operations = mesh_generic_level_server_get_operations();
+    mesh_generic_level_server_model.model_data = (void *) &mesh_generic_level_state;
+    mesh_generic_level_server_register_packet_handler(&mesh_generic_level_server_model, &mesh_state_update_message_handler);
+    mesh_generic_level_server_set_publication_model(&mesh_generic_level_server_model, &generic_level_server_publication);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_generic_level_server_model);
 
     // Setup our custom model
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
