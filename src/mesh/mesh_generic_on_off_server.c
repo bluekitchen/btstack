@@ -221,7 +221,8 @@ static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model
     mesh_access_message_processed(pdu);
 }
 
-static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+// returns if set message was valid
+static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     btstack_assert(mesh_model != NULL);
     btstack_assert(mesh_model->model_data != NULL);
 
@@ -229,6 +230,9 @@ static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
 
+    // check for valid value
+    if (on_off_value > 1) return false;
+    
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
@@ -254,14 +258,17 @@ static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
             mesh_access_state_changed(mesh_model);
             break;
     }
+    return true;
 }
 
 static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
-    generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
-
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
-    if (!transport_pdu) return;
-    generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
+    bool send_status = generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
+    if (send_status){
+        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
+        if (transport_pdu) {
+            generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
+        }
+    }
     mesh_access_message_processed(pdu);
 }
 
