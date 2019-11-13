@@ -62,7 +62,7 @@ static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t ne
 }
 
 // Transition 
-static int16_t add_and_clip_int16(int16_t current_value, int16_t increment){
+static int16_t add_and_clip_int16(int16_t current_value, int32_t increment){
     int32_t value = current_value + increment;
     if (value < -32768){
         value = -32768;
@@ -274,7 +274,7 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int16_t increment_value = (int16_t)mesh_access_parser_get_u16(&parser);
+    int32_t increment_value = mesh_access_parser_get_u16(&parser);
     
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
@@ -282,6 +282,12 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
     
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
+    if (mesh_access_parser_available(&parser) == 2){
+        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
+        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+    }
+       
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
     
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
@@ -296,17 +302,13 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
             generic_level_server_state->transition_data.stepwise_value_increment = increment_value;
             generic_level_server_state->transition_data.delta_from_initial_value = 0;
 
-            if (mesh_access_parser_available(&parser) == 2){
-                //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
-                transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-                delay_time_gdtt = mesh_access_parser_get_u8(&parser);
-                int num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
-                if (num_steps > 0){
-                    // TODO: remove division
-                    generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, increment_value * num_steps);
-                }
-            } 
-            mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);        
+            int num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
+            if (num_steps > 0){
+                // TODO: remove division
+                generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, increment_value * num_steps);
+            }
+
+            mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
             break;
     }
 }
@@ -317,13 +319,19 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int16_t delta_value = (int16_t) mesh_access_parser_get_u16(&parser);
-    
+    int32_t delta_value = mesh_access_parser_get_u32(&parser);
+
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
     uint8_t tid = mesh_access_parser_get_u8(&parser); 
+
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
+    if (mesh_access_parser_available(&parser) == 2){
+        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
+        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+    }
             
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
     
@@ -335,22 +343,22 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, 0, 0, MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT);       
             break;
         case MESH_TRANSACTION_STATUS_RETRANSMISSION:
-            // ignore
-            break;
-        case MESH_TRANSACTION_STATUS_NEW:
+            // replace last delta message
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
-
-            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
-            generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, delta_value);
+            generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.initial_value, delta_value);
             generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
-            
-            if (mesh_access_parser_available(&parser) == 2){
-                //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
-                transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-                delay_time_gdtt = mesh_access_parser_get_u8(&parser);
-            } 
-            mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);       
+            mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+            mesh_access_state_changed(mesh_model);
+            break;
+        case MESH_TRANSACTION_STATUS_NEW:
+            // start transaction with current value
+            mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
+            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
+            generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.initial_value, delta_value);
+            generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
+            generic_level_server_state->transition_data.stepwise_value_increment = 0;
+            mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
             mesh_access_state_changed(mesh_model);
             break;
         default:
