@@ -107,6 +107,7 @@ static void mesh_server_transition_state_delayed(mesh_transition_int16_t * trans
 
 static void mesh_server_transition_state_started(mesh_transition_int16_t * transition, uint32_t current_timestamp_ms){
     transition->base_transition.state = MESH_TRANSITION_STATE_ACTIVE;
+    transition->base_transition.remaining_delay_time_ms = 0;
     transition->base_transition.phase_start_ms = current_timestamp_ms;
 
     // notify transition completed
