@@ -356,19 +356,19 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
             generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.initial_value;
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, 0, 0, MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT);       
             break;
-        case MESH_TRANSACTION_STATUS_RETRANSMISSION:
-            // replace last delta message
+        case MESH_TRANSACTION_STATUS_NEW:
+            // start transaction with current value
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
+            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.initial_value, delta_value);
             generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
             mesh_access_state_changed(mesh_model);
             break;
-        case MESH_TRANSACTION_STATUS_NEW:
-            // start transaction with current value
+        case MESH_TRANSACTION_STATUS_RETRANSMISSION:
+            // replace last delta message
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
-            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.initial_value, delta_value);
             generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
