@@ -183,7 +183,6 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update_int1
         // instantaneous update
         generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.target_value;
         generic_level_server_state->transition_data.stepwise_value_increment = 0;
-        generic_level_server_state->transition_data.transition_speed = 0;
         mesh_access_transitions_setup(transition, mesh_model, 0, 0, NULL);
 
         mesh_transition_int16_t * transition_int16 = (mesh_transition_int16_t*)  &generic_level_server_state->transition_data.base_transition;
@@ -241,6 +240,12 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
     
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
+    if (mesh_access_parser_available(&parser) == 2){
+        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
+        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+    }
+
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
 
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
@@ -254,16 +259,10 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
             generic_level_server_state->transition_data.target_value = level_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
 
-            if (mesh_access_parser_available(&parser) == 2){
-                // Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-                transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-                delay_time_gdtt = mesh_access_parser_get_u8(&parser);
-                int num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
-                if (num_steps > 0){
-                    // TODO: remove division
-                    generic_level_server_state->transition_data.stepwise_value_increment = (level_value - generic_level_server_state->transition_data.current_value)/num_steps;
-                }
-            } 
+            int num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
+            if (num_steps > 0){
+                generic_level_server_state->transition_data.stepwise_value_increment = (level_value - generic_level_server_state->transition_data.current_value)/num_steps;
+            }
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
             mesh_access_state_changed(mesh_model);
             break;

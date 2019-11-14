@@ -74,7 +74,6 @@ typedef struct {
     int16_t initial_value;
     int16_t target_value;
     int16_t stepwise_value_increment;
-    int16_t transition_speed;
 } mesh_transition_int16_t;
 
 typedef struct {
