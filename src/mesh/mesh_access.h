@@ -90,6 +90,8 @@ typedef enum {
 
 #define MESH_MAX_NUM_FAULTS 5
 
+#define MESH_TRANSITION_NUM_STEPS_INFINITE 0x3f
+
 typedef struct {
     // linked list item
     btstack_linked_item_t item;

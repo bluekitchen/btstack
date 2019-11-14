@@ -368,7 +368,7 @@ void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t 
 
     //  Only values of 0x00 through 0x3E shall be used to specify the value of the Transition Number of Steps field
     uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
-    if (num_steps > 0x3E) return;
+    if (num_steps >= MESH_TRANSITION_NUM_STEPS_INFINITE) return;
 
     transition->state = MESH_TRANSITION_STATE_IDLE;
     transition->phase_start_ms = 0;
