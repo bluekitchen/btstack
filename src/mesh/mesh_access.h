@@ -134,6 +134,8 @@ typedef struct mesh_transition {
     uint16_t src_address;
     uint16_t dst_address; 
 
+    uint8_t num_steps;
+
     uint32_t step_duration_ms;
     uint32_t phase_start_ms;
     uint32_t remaining_delay_time_ms;

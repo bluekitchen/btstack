@@ -378,6 +378,7 @@ void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t 
     transition->step_duration_ms = mesh_access_transitions_step_ms_from_gdtt(transition_time_gdtt);
     transition->remaining_delay_time_ms = delay_gdtt * 5;
     transition->remaining_transition_time_ms = num_steps * transition->step_duration_ms;
+    transition->num_steps = num_steps;
 }
 
 void mesh_access_transitions_add(mesh_transition_t * transition){
