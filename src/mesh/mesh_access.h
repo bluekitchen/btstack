@@ -128,6 +128,7 @@ typedef enum {
 
 typedef struct mesh_transition {
     btstack_linked_item_t item;
+    btstack_timer_source_t timer;
 
     mesh_transition_state_t state;
 
