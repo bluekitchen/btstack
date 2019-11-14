@@ -87,11 +87,8 @@ static void mesh_server_transition_state_emit_change(mesh_transition_int16_t * t
 }
 
 static void mesh_server_transition_state_update_stepwise_value(mesh_transition_int16_t * transition){
-    if (transition->stepwise_value_increment){
-        transition->current_value = add_and_clip_int16(transition->current_value, transition->stepwise_value_increment);
-    } else if (transition->delta_from_initial_value){
-        transition->current_value = add_and_clip_int16(transition->initial_value, transition->delta_from_initial_value);
-    }
+    transition->current_value = add_and_clip_int16(transition->current_value, transition->stepwise_value_increment);
+
     // publish new value
     mesh_access_state_changed(transition->base_transition.mesh_model);
 
@@ -186,7 +183,6 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update_int1
         // instantaneous update
         generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.target_value;
         generic_level_server_state->transition_data.stepwise_value_increment = 0;
-        generic_level_server_state->transition_data.delta_from_initial_value = 0;
         generic_level_server_state->transition_data.transition_speed = 0;
         mesh_access_transitions_setup(transition, mesh_model, 0, 0, NULL);
 
@@ -257,7 +253,6 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
             generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = level_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
-            generic_level_server_state->transition_data.delta_from_initial_value = 0;
 
             if (mesh_access_parser_available(&parser) == 2){
                 // Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
@@ -313,7 +308,6 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
             generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, delta_value);
             generic_level_server_state->transition_data.stepwise_value_increment = delta_value / num_steps;
-            generic_level_server_state->transition_data.delta_from_initial_value = 0;
 
             if (delta_value > 0){
                 generic_level_server_state->transition_data.target_value = 32767;
@@ -352,6 +346,7 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
         case MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC:
             // abort transaction
+            printf("Transaction abort\n");
             mesh_access_transitions_abort_transaction(base_transition);
             generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.initial_value;
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, 0, 0, MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT);       
@@ -361,8 +356,8 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
             generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.initial_value, delta_value);
-            generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
+            printf("Transaction %u, new, init %x, target %x\n", tid, generic_level_server_state->transition_data.initial_value, generic_level_server_state->transition_data.target_value);
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
             mesh_access_state_changed(mesh_model);
             break;
@@ -370,8 +365,8 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
             // replace last delta message
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.initial_value, delta_value);
-            generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
+            printf("Transaction %u, retransmission, init %x, target %x\n", tid, generic_level_server_state->transition_data.initial_value, generic_level_server_state->transition_data.target_value);
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
             mesh_access_state_changed(mesh_model);
             break;
