@@ -169,10 +169,10 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
         }
     }
     
-    if (!avdtp_cid) {
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    if (avdtp_cid != NULL) {
+        *avdtp_cid = connection->avdtp_cid;
     }
-    *avdtp_cid = connection->avdtp_cid;
+
     avdtp_context->avdtp_cid = connection->avdtp_cid;
             
     uint8_t err;
@@ -785,7 +785,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
 uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, context);
-    if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
     if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE){
         avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
         return ERROR_CODE_SUCCESS;
