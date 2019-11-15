@@ -356,7 +356,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
        
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
             cid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
-            a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, cid, 0);
+            local_seid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
+            log_info("AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW cid 0x%02x, local_seid %d", cid, local_seid);
+            a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, cid, local_seid);
             break;
         
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
@@ -610,13 +612,13 @@ static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int
 }
 
 void a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid){
+    if (a2dp_source_context.avdtp_cid != a2dp_cid){
+        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
+        return;
+    }
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
-        return;
-    }
-    if (a2dp_source_context.avdtp_cid != a2dp_cid){
-        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
         return;
     }
     stream_endpoint->send_stream = 1;
@@ -624,16 +626,16 @@ void a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t
 }
 
 int a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid){
+    if (a2dp_source_context.avdtp_cid != a2dp_cid){
+        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
+        return 0;
+    }
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
         return 0;
     }
-    if (a2dp_source_context.avdtp_cid != a2dp_cid){
-        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
-        return 0;
-    }
-
+    
     if (stream_endpoint->l2cap_media_cid == 0){
         log_error("A2DP source: no media connection for seid %d", local_seid);
         return 0;
@@ -655,16 +657,16 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
 }
 
 int a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
+    if (a2dp_source_context.avdtp_cid != a2dp_cid){
+        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
+        return 0;
+    }
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
     if (!stream_endpoint) {
         log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
         return 0;
     }
-    if (a2dp_source_context.avdtp_cid != a2dp_cid){
-        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
-        return 0;
-    }
-
+    
     if (stream_endpoint->l2cap_media_cid == 0){
         log_error("A2DP source: no media connection for seid %d", local_seid);
         return 0;
