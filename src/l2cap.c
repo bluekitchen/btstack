@@ -1983,7 +1983,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
     l2cap_run();
 
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 void l2cap_disconnect(uint16_t local_cid, uint8_t reason){
@@ -3680,7 +3680,7 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     // enable page scan
     gap_connectable_control(1);
 
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t l2cap_unregister_service(uint16_t psm){
@@ -3696,7 +3696,7 @@ uint8_t l2cap_unregister_service(uint16_t psm){
     if (btstack_linked_list_empty(&l2cap_services)) {
         gap_connectable_control(0);
     }
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 #endif
 
@@ -3836,7 +3836,7 @@ uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint1
     btstack_linked_list_add(&l2cap_le_services, (btstack_linked_item_t *) service);
     
     // done
-    return 0;
+    return ERROR_CODE_SUCCESS0;
 }
 
 uint8_t l2cap_le_unregister_service(uint16_t psm) {
@@ -3846,7 +3846,7 @@ uint8_t l2cap_le_unregister_service(uint16_t psm) {
 
     btstack_linked_list_remove(&l2cap_le_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
@@ -3871,7 +3871,7 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
 
     // go
     l2cap_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /** 
@@ -3893,7 +3893,7 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid){
     channel->state  = L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE;
     channel->reason = 0x04; // no resources available
     l2cap_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, 
@@ -3932,7 +3932,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
 
     // go
     l2cap_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
@@ -3967,7 +3967,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
 
     // go
     l2cap_run();
-    return 0;
+    return ERROR_CODE_SUCCESS0;
 }
 
 /**
@@ -4001,11 +4001,11 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_le_request_can_send_now_event no channel for cid 0x%02x", local_cid);
-        return 0;
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
     channel->waiting_for_can_send_now = 1;
     l2cap_le_notify_channel_can_send(channel);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
@@ -4038,7 +4038,7 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
     channel->send_sdu_pos    = 0;
 
     l2cap_notify_channel_can_send();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
@@ -4055,7 +4055,7 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid)
 
     channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
     l2cap_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 #endif
