@@ -125,6 +125,20 @@ static void mesh_server_transition_state_done(mesh_transition_int16_t * transiti
     mesh_access_transitions_remove((mesh_transition_t *)transition);
 }
 
+static void mesh_server_transition_state_set(mesh_transition_int16_t * transition, uint32_t current_timestamp_ms){
+    UNUSED(current_timestamp_ms);
+
+    transition->base_transition.state = MESH_TRANSITION_STATE_IDLE;
+    transition->base_transition.remaining_transition_time_ms = 0;
+    transition->current_value = transition->target_value;
+
+    // publish new value
+    mesh_access_state_changed(transition->base_transition.mesh_model);
+
+    // instantaneous update
+    mesh_server_transition_state_emit_change(transition, MODEL_STATE_UPDATE_REASON_SET);
+}
+
 static void mesh_server_transition_step(mesh_transition_t * base_transition, transition_event_t event, uint32_t current_timestamp_ms){
     uint32_t time_step_ms;
 
@@ -185,14 +199,12 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update_int1
     }
 
     if (transition_time_gdtt != 0 || delay_time_gdtt != 0) {
+        // transition
         mesh_access_transitions_setup(transition, mesh_model, transition_time_gdtt, delay_time_gdtt, &mesh_server_transition_step);
         mesh_access_transitions_add(transition);
     } else {
         // instantaneous update
-        generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.target_value;
-        mesh_access_transitions_setup(transition, mesh_model, 0, 0, NULL);
-        mesh_transition_int16_t * transition_int16 = (mesh_transition_int16_t*)  &generic_level_server_state->transition_data.base_transition;
-        mesh_server_transition_state_emit_change(transition_int16, reason);
+        mesh_server_transition_state_set(&generic_level_server_state->transition_data, btstack_run_loop_get_time_ms());
     }
 }
 // Generic Level State
