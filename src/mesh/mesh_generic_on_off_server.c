@@ -79,11 +79,6 @@ static void mesh_server_transition_state_emit_change(mesh_transition_bool_t * tr
         transition->current_value);
 }
 
-static void mesh_server_transition_state_delayed(mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
-    transition->base_transition.state = MESH_TRANSITION_STATE_DELAYED;
-    transition->base_transition.phase_start_ms = current_timestamp_ms;
-}
-
 static void mesh_server_transition_state_started(mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
     transition->base_transition.state = MESH_TRANSITION_STATE_ACTIVE;
     transition->base_transition.remaining_delay_time_ms = 0;
@@ -130,6 +125,25 @@ static void mesh_server_transition_state_set(mesh_transition_bool_t * transition
     mesh_server_transition_state_emit_change(transition, current_timestamp_ms, MODEL_STATE_UPDATE_REASON_SET);
 }
 
+static void mesh_server_transition_handler(mesh_transition_t * base_transition, model_state_update_reason_t event){
+    mesh_transition_bool_t * transition = (mesh_transition_bool_t*) base_transition;
+    uint32_t current_timestamp_ms = btstack_run_loop_get_time_ms();
+    switch (event){
+        case MODEL_STATE_UPDATE_REASON_SET:
+            mesh_server_transition_state_set(transition, current_timestamp_ms);
+            break;
+        case MODEL_STATE_UPDATE_REASON_TRANSITION_START:
+            mesh_server_transition_state_started(transition, current_timestamp_ms);
+            break;
+        case MODEL_STATE_UPDATE_REASON_TRANSITION_END:
+            mesh_server_transition_state_done(transition, current_timestamp_ms);
+            break;
+        case MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT:
+            break;
+        default:
+            break;
+    }
+}
 static void mesh_server_transition_step_bool(mesh_transition_t * base_transition, transition_event_t event, uint32_t current_timestamp_ms){
     uint32_t time_step_ms;
     mesh_transition_bool_t * transition = (mesh_transition_bool_t*) base_transition;
@@ -138,11 +152,12 @@ static void mesh_server_transition_step_bool(mesh_transition_t * base_transition
     switch (transition->base_transition.state){
         case MESH_TRANSITION_STATE_IDLE:
             if (event != TRANSITION_START) break;
-            mesh_server_transition_state_delayed(transition, current_timestamp_ms);
+            transition->base_transition.state = MESH_TRANSITION_STATE_DELAYED;
+            transition->base_transition.phase_start_ms = current_timestamp_ms;
             if (transition->base_transition.remaining_delay_time_ms != 0) break;
-            mesh_server_transition_state_started(transition, current_timestamp_ms);
+            mesh_server_transition_handler(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_START);
             if (transition->base_transition.remaining_transition_time_ms != 0) break;
-            mesh_server_transition_state_done(transition, current_timestamp_ms);
+            mesh_server_transition_handler(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_END);
             break;
         case MESH_TRANSITION_STATE_DELAYED:
             if (event != TRANSITION_UPDATE) break;
@@ -152,9 +167,9 @@ static void mesh_server_transition_step_bool(mesh_transition_t * base_transition
                 transition->base_transition.phase_start_ms += time_step_ms;
                 break;
             }
-            mesh_server_transition_state_started(transition, current_timestamp_ms);
+            mesh_server_transition_handler(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_START);
             if (transition->base_transition.remaining_transition_time_ms != 0) break;
-            mesh_server_transition_state_done(transition, current_timestamp_ms);
+            mesh_server_transition_handler(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_END);
             break;
         case MESH_TRANSITION_STATE_ACTIVE:
             if (event != TRANSITION_UPDATE) break;
@@ -164,7 +179,7 @@ static void mesh_server_transition_step_bool(mesh_transition_t * base_transition
                 transition->base_transition.phase_start_ms += time_step_ms;
                 break;
             }
-            mesh_server_transition_state_done(transition, current_timestamp_ms);
+            mesh_server_transition_handler(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_END);
             break;
         default:
             break;
@@ -177,7 +192,7 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh
 
     if ((transition_time_gdtt == 0) && (delay_time_gdtt == 0)){
         // instanteneous update
-        mesh_server_transition_state_set(&generic_on_off_server_state->transition_data, btstack_run_loop_get_time_ms());
+        mesh_server_transition_handler(transition, MODEL_STATE_UPDATE_REASON_SET);
     } else {
         // transaction
         mesh_access_transitions_setup(transition, (mesh_model_t *) mesh_model, transition_time_gdtt, delay_time_gdtt, &mesh_server_transition_step_bool);
