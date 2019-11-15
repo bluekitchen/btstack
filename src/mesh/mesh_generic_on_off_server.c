@@ -186,7 +186,7 @@ static void mesh_server_transition_step_bool(mesh_transition_t * base_transition
     }
 }
 
-static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model_t *mesh_model, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, model_state_update_reason_t reason){
+static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model_t *mesh_model, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
     mesh_transition_t * transition = &generic_on_off_server_state->transition_data.base_transition;
 
@@ -275,7 +275,7 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
                 transition_time_gdtt = mesh_access_parser_get_u8(&parser);
                 delay_time_gdtt = mesh_access_parser_get_u8(&parser);
             } 
-            mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+            mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt);
             mesh_access_state_changed(mesh_model);
             break;
     }
@@ -314,7 +314,7 @@ void mesh_generic_on_off_server_set(mesh_model_t * mesh_model, uint8_t on_off_va
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
     generic_on_off_server_state->transition_data.target_value = on_off_value;
     
-    mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE);
+    mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt);
     mesh_access_state_changed(mesh_model);
 }
 
