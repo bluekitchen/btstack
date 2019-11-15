@@ -185,9 +185,10 @@ void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu);
  */
 void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode);
 
-uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt);
+uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt);
+uint8_t  mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt);
 uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt);
-uint8_t mesh_access_time_as_gdtt(uint32_t step_resolution_ms, uint32_t time_ms);
+uint8_t  mesh_access_time_as_gdtt(uint32_t step_resolution_ms, uint32_t time_ms);
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);

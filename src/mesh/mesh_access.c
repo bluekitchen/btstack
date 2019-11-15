@@ -278,7 +278,7 @@ uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt){
     return time_gdtt & 0x3fu;
 }
 
-static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt){
+uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt){
     mesh_default_transition_step_resolution_t step_resolution = (mesh_default_transition_step_resolution_t) (time_gdtt >> 6);
     switch (step_resolution){
         case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms:
