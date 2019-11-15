@@ -2556,8 +2556,14 @@ static void sm_run(void){
                 // already busy?
                 if (sm_aes128_state == SM_AES128_ACTIVE) break;
                 log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_local_ediv);
+
+                // dm helper (was sm_dm_r_prime)
+                // r' = padding || r
+                // r - 64 bit value
+                memset(&sm_aes128_plaintext[0], 0, 8);
+                memcpy(&sm_aes128_plaintext[8], setup->sm_local_rand, 8);
+
                 // Y = dm(DHK, Rand)
-                sm_dm_r_prime(setup->sm_local_rand, sm_aes128_plaintext);
                 connection->sm_engine_state = SM_RESPONDER_PH4_Y_W4_ENC;
                 sm_aes128_state = SM_AES128_ACTIVE;
                 btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_dhk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_ph4_y, (void *)(uintptr_t) connection->sm_handle);
