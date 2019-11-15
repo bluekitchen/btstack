@@ -524,8 +524,6 @@ static void btstack_crypto_ccm_calc_x1(btstack_crypto_ccm_t * btstack_crypto_ccm
 }
 
 static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm, const uint8_t * plaintext){
-    int i;
-    int bytes_to_decrypt;
     uint8_t btstack_crypto_ccm_buffer[16];
     btstack_crypto_ccm->state = CCM_W4_XN;
 
@@ -533,11 +531,14 @@ static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm
     printf("%16s: ", "bn");
     printf_hexdump(plaintext, 16);
 #endif
-    bytes_to_decrypt = btstack_min(btstack_crypto_ccm->block_len, 16);
-    i = 0;
-    while (i < bytes_to_decrypt){
+    uint8_t i;
+    uint8_t bytes_to_decrypt = btstack_crypto_ccm->block_len;
+    // use explicit min implementation as c-stat worried about out-of-bounds-reads
+    if (bytes_to_decrypt > 16) {
+        bytes_to_decrypt = 16;
+    }
+    for (i = 0; i < bytes_to_decrypt ; i++){
         btstack_crypto_ccm_buffer[i] =  btstack_crypto_ccm->x_i[i] ^ plaintext[i];
-        i++;
     }
     memcpy(&btstack_crypto_ccm_buffer[i], &btstack_crypto_ccm->x_i[i], 16 - bytes_to_decrypt);
 #ifdef DEBUG_CCM
