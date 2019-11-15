@@ -2155,7 +2155,14 @@ static void event_handler(uint8_t *packet, int size){
                 if (!packet[2]){
                     conn->state = OPEN;
                     conn->con_handle = little_endian_read_16(packet, 3);
+
+                    // queue get remote feature
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES;
+
+                    // queue set supervision timeout
+                    if (hci_stack->link_supervision_timeout != 0){
+                        connectionSetAuthenticationFlags(conn, WRITE_SUPERVISION_TIMEOUT);
+                    }
 
                     // restart timer
                     btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
@@ -3598,6 +3605,12 @@ static void hci_run(void){
         if (connection->authentication_flags & READ_RSSI){
             connectionClearAuthenticationFlags(connection, READ_RSSI);
             hci_send_cmd(&hci_read_rssi, connection->con_handle);
+            return;
+        }
+
+        if (connection->authentication_flags & WRITE_SUPERVISION_TIMEOUT){
+            connectionClearAuthenticationFlags(connection, WRITE_SUPERVISION_TIMEOUT);
+            hci_send_cmd(&hci_write_link_supervision_timeout, connection->con_handle, hci_stack->link_supervision_timeout);
             return;
         }
 

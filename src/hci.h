@@ -209,6 +209,8 @@ typedef enum {
 
     // errands
     READ_RSSI                      = 0x10000,
+    WRITE_SUPERVISION_TIMEOUT      = 0x20000,
+
 } hci_authentication_flags_t;
 
 /**
