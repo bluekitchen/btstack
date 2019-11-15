@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter
 - GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits GAP_EVENT_RSSI_MEASUREMENT
+- GAP: support setting Link Supervision Timetout for outgoing Classic connections using gap_set_link_supervision_timeout
 
 ## Changed
 - Bluetooth and BTstack Error Codes and Events: collect status codes in bluetooth.h and events in btstack_defines.h
