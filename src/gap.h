@@ -165,7 +165,7 @@ void gap_set_class_of_device(uint32_t class_of_device);
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
 
 /**
- * @brief Set  link supervision timeout for new classic ACL links
+ * @brief Set  link supervision timeout for outgoing classic ACL links
  * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds
  */
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);

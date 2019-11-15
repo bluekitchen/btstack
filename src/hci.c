@@ -2159,8 +2159,8 @@ static void event_handler(uint8_t *packet, int size){
                     // queue get remote feature
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES;
 
-                    // queue set supervision timeout
-                    if (hci_stack->link_supervision_timeout != 0){
+                    // queue set supervision timeout if we're master
+                    if ((hci_stack->link_supervision_timeout != 0) && conn->role == HCI_ROLE_MASTER){
                         connectionSetAuthenticationFlags(conn, WRITE_SUPERVISION_TIMEOUT);
                     }
 
