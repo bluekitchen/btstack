@@ -369,7 +369,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
         stream_endpoint->send_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
-            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, stream_endpoint->l2cap_media_cid, stream_endpoint->sep.seid, stream_endpoint->sequence_number);
+            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), stream_endpoint->sequence_number);
             return;
         }
     }
