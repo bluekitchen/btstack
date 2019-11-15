@@ -624,14 +624,6 @@ static void sm_d1_d_prime(uint16_t d, uint16_t r, uint8_t * d1_prime){
     big_endian_store_16(d1_prime, 14, d);
 }
 
-// dm helper
-// r’ = padding || r
-// r - 64 bit value
-static void sm_dm_r_prime(uint8_t r[8], uint8_t * r_prime){
-    memset(r_prime, 0, 16);
-    memcpy(&r_prime[8], r, 8);
-}
-
 // calculate arguments for first AES128 operation in C1 function
 static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, uint8_t * t1){
 
@@ -2518,8 +2510,14 @@ static void sm_run(void){
                 // already busy?
                 if (sm_aes128_state == SM_AES128_ACTIVE) break;
                 // PH3B2 - calculate Y from      - enc
+
+                // dm helper (was sm_dm_r_prime)
+                // r' = padding || r
+                // r - 64 bit value
+                memset(&sm_aes128_plaintext[0], 0, 8);
+                memcpy(&sm_aes128_plaintext[8], setup->sm_local_rand, 8);
+
                 // Y = dm(DHK, Rand)
-                sm_dm_r_prime(setup->sm_local_rand, sm_aes128_plaintext);
                 connection->sm_engine_state = SM_PH3_Y_W4_ENC;
                 sm_aes128_state = SM_AES128_ACTIVE;
                 btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_dhk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_ph3_y, (void *)(uintptr_t) connection->sm_handle);
