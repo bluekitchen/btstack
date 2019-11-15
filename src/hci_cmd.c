@@ -53,7 +53,7 @@
 #include <string.h>
 
 // calculate combined ogf/ocf value
-#define OPCODE(ogf, ocf) (ocf | ogf << 10)
+#define OPCODE(ogf, ocf) ((ocf) | (ogf) << 10)
 
 /**
  * construct HCI Command based on template

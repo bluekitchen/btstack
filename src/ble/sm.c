@@ -82,7 +82,7 @@
 #define USE_CMAC_ENGINE
 #endif
 
-#define BTSTACK_TAG32(A,B,C,D) ((A << 24) | (B << 16) | (C << 8) | D)
+#define BTSTACK_TAG32(A,B,C,D) (((A) << 24) | ((B) << 16) | ((C) << 8) | (D))
 
 //
 // SM internal types and globals
