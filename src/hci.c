@@ -3608,13 +3608,14 @@ static void hci_run(void){
             return;
         }
 
+#ifdef ENABLE_CLASSIC
+
         if (connection->authentication_flags & WRITE_SUPERVISION_TIMEOUT){
             connectionClearAuthenticationFlags(connection, WRITE_SUPERVISION_TIMEOUT);
             hci_send_cmd(&hci_write_link_supervision_timeout, connection->con_handle, hci_stack->link_supervision_timeout);
             return;
         }
 
-#ifdef ENABLE_CLASSIC
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request");
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
