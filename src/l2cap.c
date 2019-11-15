@@ -3836,7 +3836,7 @@ uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint1
     btstack_linked_list_add(&l2cap_le_services, (btstack_linked_item_t *) service);
     
     // done
-    return ERROR_CODE_SUCCESS0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t l2cap_le_unregister_service(uint16_t psm) {
@@ -3967,7 +3967,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
 
     // go
     l2cap_run();
-    return ERROR_CODE_SUCCESS0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
