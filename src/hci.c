@@ -2926,6 +2926,10 @@ void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings)
     hci_stack->default_link_policy_settings = default_link_policy_settings;
 }
 
+void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout){
+    hci_stack->link_supervision_timeout = link_supervision_timeout;
+}
+
 void hci_disable_l2cap_timeout_check(void){
     disable_l2cap_timeouts = 1;
 }
