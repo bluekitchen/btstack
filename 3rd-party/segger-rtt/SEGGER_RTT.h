@@ -219,6 +219,11 @@ void         SEGGER_RTT_WriteWithOverwriteNoLock(unsigned BufferIndex, const voi
 unsigned     SEGGER_RTT_PutChar                 (unsigned BufferIndex, char c);
 unsigned     SEGGER_RTT_PutCharSkip             (unsigned BufferIndex, char c);
 unsigned     SEGGER_RTT_PutCharSkipNoLock       (unsigned BufferIndex, char c);
+
+// BK addition
+unsigned     SEGGER_RTT_GetAvailWriteSpace      (unsigned BufferIndex);
+
+
 //
 // Function macro for performance optimization
 //

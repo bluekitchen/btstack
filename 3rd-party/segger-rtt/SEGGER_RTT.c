@@ -1696,5 +1696,22 @@ int SEGGER_RTT_TerminalOut (unsigned char TerminalId, const char* s) {
   return Status;
 }
 
+/*********************************************************************
+*
+*       SEGGER_RTT_GetAvailWriteSpace
+*    Returns the number of bytes that can be written to the ring
+*    buffer without blocking.
+*
+*  Parameters
+*    BufferIndex  Index of the buffer.
+*
+*  Return value
+*    Number of bytes that are free in the buffer.
+*/
+
+unsigned SEGGER_RTT_GetAvailWriteSpace (unsigned BufferIndex){
+  return _GetAvailWriteSpace(&_SEGGER_RTT.aUp[BufferIndex]);
+}
+
 
 /*************************** End of file ****************************/
