@@ -223,7 +223,6 @@ uint8_t avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid);
  */
 uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 
-
 /**
  * @brief Create stream endpoint
  * @param sep_type          AVDTP_SOURCE or AVDTP_SINK, see avdtp.h
@@ -231,7 +230,6 @@ uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
  * @return pointer to newly created stream endpoint, or NULL if allocation failed
  */
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
-
 
 /**
  * @brief Send media payload.
@@ -245,13 +243,19 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
  */
 int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
-
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
  * @param avdtp_cid         AVDTP channel identifyer.
  * @param local_seid        ID of a local stream endpoint.
  */
 void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avddp_cid, uint8_t local_seid);
+
+/**
+ * @brief Return maximal media payload size, does not include media header.
+ * @param avdtp_cid         AVDTP channel identifyer.
+ * @param local_seid        ID of a local stream endpoint.
+ */
+int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid);
 
 /* API_END */
 
