@@ -1870,7 +1870,6 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     if (value_length > peripheral_mtu(peripheral) - 3) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP ERTM: reject incoming connection if ERTM is configured as mandatory but not supported by remote
 - L2CAP ERTM: send ERTM I-frames round robin with other data
 - L2CAP: send le data channel sdus round robin with other data
+- GATT Client: allow Write Without Response independent of other requests
 
 ### Added
 - GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter
