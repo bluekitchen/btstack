@@ -297,6 +297,20 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     tv_sec  = 946728000UL + (time_ms / 1000);
 #endif
 
+#ifdef ENABLE_SEGGER_RTT
+#if (SEGGER_RTT_MODE_DEFAULT == SEGGER_RTT_MODE_NO_BLOCK_SKIP)
+    static const char rtt_warning[] = "RTT buffer full - packet(s) skipped";
+    static bool rtt_packet_skipped = false;
+    if (rtt_packet_skipped){
+        // try to write warning log message
+        rtt_packet_skipped = false;
+        packet_type = LOG_MESSAGE_PACKET;
+        packet      = (uint8_t *) &rtt_warning[0];
+        len         = sizeof(rtt_warning)-1;
+    }
+#endif
+#endif
+
     uint16_t header_len = 0;
     switch (dump_format){
         case HCI_DUMP_BLUEZ:
@@ -318,7 +332,18 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     res = write (dump_file, packet, len );
     UNUSED(res);
 #endif
+
 #ifdef ENABLE_SEGGER_RTT
+
+#if (SEGGER_RTT_MODE_DEFAULT == SEGGER_RTT_MODE_NO_BLOCK_SKIP)
+    // check available space in buffer to avoid writing header but not packet
+    unsigned space_free = SEGGER_RTT_GetAvailWriteSpace(1);
+    if ((header_len + len) > space_free) {
+        rtt_packet_skipped = true;
+        return;
+    }
+#endif
+
     SEGGER_RTT_Write(1, &header, header_len);
     SEGGER_RTT_Write(1, packet, len);
 #endif
