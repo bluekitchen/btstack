@@ -251,3 +251,35 @@ int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_sei
     l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
     return size;
 }
+
+void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
+    if (avdtp_source_context->avdtp_cid != avdtp_cid){
+        log_error("AVDTP source: avdtp cid 0x%02x not known, expected 0x%02x", avdtp_cid, avdtp_source_context->avdtp_cid);
+        return;
+    }
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    if (!stream_endpoint) {
+        log_error("AVDTP source: no stream_endpoint with seid %d", local_seid);
+        return;
+    }
+    stream_endpoint->send_stream = 1;
+    avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+}
+
+int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid){
+    if (avdtp_source_context->avdtp_cid != avdtp_cid){
+        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", avdtp_cid, avdtp_source_context->avdtp_cid);
+        return 0;
+    }
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    if (!stream_endpoint) {
+        log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
+        return 0;
+    }
+    
+    if (stream_endpoint->l2cap_media_cid == 0){
+        log_error("A2DP source: no media connection for seid %d", local_seid);
+        return 0;
+    }  
+    return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - AVDTP_MEDIA_PAYLOAD_HEADER_SIZE;
+}
