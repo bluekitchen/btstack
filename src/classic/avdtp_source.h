@@ -232,7 +232,7 @@ uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
  */
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
-#if 0
+
 /**
  * @brief Send media payload.
  * @param avdtp_cid         AVDTP channel identifyer.
@@ -243,8 +243,9 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
  * @param marker
  * @return max_media_payload_size_without_media_header
  */
-int     avdtp_source_stream_send_media_payload(uint16_t avddp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
+int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
+#if 0
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
  * @param avdtp_cid         AVDTP channel identifyer.
