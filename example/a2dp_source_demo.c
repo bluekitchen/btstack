@@ -537,7 +537,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 break;
             }
             media_tracker.a2dp_cid = cid;
-            printf("A2DP Source: Connected to address %s, a2dp cid 0x%02x.\n", bd_addr_to_str(address), media_tracker.a2dp_cid);
+            printf("A2DP Source: Connected to address %s, a2dp cid 0x%02x, local seid %d.\n", bd_addr_to_str(address), media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
          case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
@@ -554,7 +554,10 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
-            printf("A2DP Source: Received SBC codec configuration, sampling frequency %u.\n", sbc_configuration.sampling_frequency);
+            printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, initiator seid %d, acceptor seid %d .\n", 
+                sbc_configuration.sampling_frequency, cid,
+                a2dp_subevent_signaling_media_codec_sbc_configuration_get_int_seid(packet),
+                a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet));
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method -= 1;
@@ -604,7 +607,11 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 printf("A2DP Source: Stream failed, status 0x%02x.\n", status);
                 break;
             }
+            
             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+            cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+            printf("A2DP_SUBEVENT_STREAM_ESTABLISHED:  a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
+            
             if (local_seid != media_tracker.local_seid){
                 printf("A2DP Source: Stream failed, wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
                 break;    
@@ -618,35 +625,53 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
         case A2DP_SUBEVENT_STREAM_RECONFIGURED:
             status = a2dp_subevent_stream_reconfigured_get_status(packet);
-            printf("A2DP Source: Reconfigured, status 0x%02x\n", status);
+            local_seid = a2dp_subevent_stream_reconfigured_get_local_seid(packet);
+            cid = a2dp_subevent_stream_reconfigured_get_a2dp_cid(packet);
+
+            printf("A2DP Source: Reconfigured: a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
+            printf("Status 0x%02x\n", status);
             break;
 
         case A2DP_SUBEVENT_STREAM_STARTED:
+            local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
+            cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
+            
             play_info.status = AVRCP_PLAYBACK_STATUS_PLAYING;
             if (media_tracker.avrcp_cid){
                 avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
                 avrcp_target_set_playback_status(media_tracker.avrcp_cid, AVRCP_PLAYBACK_STATUS_PLAYING);
             }
             a2dp_demo_timer_start(&media_tracker);
-            printf("A2DP Source: Stream started.\n");
+            printf("A2DP Source: Stream started: a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
             break;
 
         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
+            local_seid = a2dp_subevent_streaming_can_send_media_packet_now_get_local_seid(packet);
+            cid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_a2dp_cid(packet);
+            // printf("A2DP Source: can send media packet: a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
             a2dp_demo_send_media_packet();
             break;        
 
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
+            local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
+            cid = a2dp_subevent_stream_suspended_get_a2dp_cid(packet);
+            
             play_info.status = AVRCP_PLAYBACK_STATUS_PAUSED;
             if (media_tracker.avrcp_cid){
                 avrcp_target_set_playback_status(media_tracker.avrcp_cid, AVRCP_PLAYBACK_STATUS_PAUSED);
             }
-            printf("A2DP Source: Stream paused.\n");
+            printf("A2DP Source: Stream paused: a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
+            
             a2dp_demo_timer_stop(&media_tracker);
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
             play_info.status = AVRCP_PLAYBACK_STATUS_STOPPED;
             cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
+            local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
+            
+            printf("A2DP Source: Stream released: a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
+
             if (cid == media_tracker.a2dp_cid) {
                 media_tracker.stream_opened = 0;
                 printf("A2DP Source: Stream released.\n");
@@ -655,6 +680,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
                 avrcp_target_set_playback_status(media_tracker.avrcp_cid, AVRCP_PLAYBACK_STATUS_STOPPED);
             }
+
             a2dp_demo_timer_stop(&media_tracker);
             break;
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
