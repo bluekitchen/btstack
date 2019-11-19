@@ -121,12 +121,12 @@ static OI_STATUS DecodeBody(OI_CODEC_SBC_DECODER_CONTEXT *context,
     /*
      * Based on the header data, make sure that there is enough room to write the output samples.
      */
-    if (*pcmBytes < (sizeof(OI_INT16) * frameSamples * context->common.pcmStride) && !allowPartial) {
+    if ((*pcmBytes < (sizeof(OI_INT16) * frameSamples * context->common.pcmStride)) && !allowPartial) {
         /* If we're not allowing partial decodes, we need room for the entire
          * codec frame */
         TRACE(("-OI_CODEC_SBC_Decode: OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA"));
         return OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA;
-    } else if (*pcmBytes < sizeof (OI_INT16) * context->common.frameInfo.nrof_subbands * context->common.pcmStride) {
+    } else if (*pcmBytes < (sizeof (OI_INT16) * context->common.frameInfo.nrof_subbands * context->common.pcmStride)) {
         /* Even if we're allowing partials, we can still only decode on a frame
          * boundary */
         return OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA;

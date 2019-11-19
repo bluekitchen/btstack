@@ -2525,7 +2525,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
         // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
-        if (option_type == L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT && (length == 2)){
+        if ((option_type == L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT) && (length == 2)){
             channel->flush_timeout = little_endian_read_16(command, pos);
             log_info("Flush timeout: %u ms", channel->flush_timeout);
         }
