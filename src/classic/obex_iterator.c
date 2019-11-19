@@ -75,7 +75,7 @@ void obex_iterator_init_with_request_packet(obex_iterator_t *context, const uint
 }
 
 void obex_iterator_init_with_response_packet(obex_iterator_t *context, uint8_t request_opcode, const uint8_t * packet_data, uint16_t packet_len){
-    int header_offset = request_opcode == OBEX_OPCODE_CONNECT ? 7 : 3;
+    int header_offset = (request_opcode == OBEX_OPCODE_CONNECT) ? 7 : 3;
     obex_iterator_init(context, header_offset, packet_data, packet_len);
 }
 
@@ -158,7 +158,7 @@ const uint8_t * obex_iterator_get_data(const obex_iterator_t * context){
 void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
     obex_iterator_t it;
     printf("OBEX Opcode: 0x%02x\n", request_opcode);
-    int header_offset = request_opcode == OBEX_OPCODE_CONNECT ? 7 : 3;
+    int header_offset = (request_opcode == OBEX_OPCODE_CONNECT) ? 7 : 3;
     printf("OBEX Header: ");
     printf_hexdump(packet, header_offset);    
     for (obex_iterator_init_with_response_packet(&it, request_opcode, packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){

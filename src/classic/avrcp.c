@@ -108,7 +108,7 @@ static const char * avrcp_media_attribute_id_name[] = {
     "NONE", "TITLE", "ARTIST", "ALBUM", "TRACK", "TOTAL TRACKS", "GENRE", "SONG LENGTH"
 };
 const char * avrcp_attribute2str(uint8_t index){
-    if (index >= 1 && index <= 7) return avrcp_media_attribute_id_name[index];
+    if ((index >= 1) && (index <= 7)) return avrcp_media_attribute_id_name[index];
     return avrcp_media_attribute_id_name[0];
 }
 
@@ -117,7 +117,7 @@ static const char * avrcp_play_status_name[] = {
     "ERROR" // 0xFF
 };
 const char * avrcp_play_status2str(uint8_t index){
-    if (index >= 1 && index <= 4) return avrcp_play_status_name[index];
+    if ((index >= 1) && (index <= 4)) return avrcp_play_status_name[index];
     return avrcp_play_status_name[5];
 }
 
@@ -153,7 +153,7 @@ static const char * avrcp_shuffle_mode_name[] = {
 };
 
 const char * avrcp_shuffle2str(uint8_t index){
-    if (index >= 1 && index <= 3) return avrcp_shuffle_mode_name[index-1];
+    if ((index >= 1) && (index <= 3)) return avrcp_shuffle_mode_name[index-1];
     return "NONE";
 }
 
@@ -165,7 +165,7 @@ static const char * avrcp_repeat_mode_name[] = {
 };
 
 const char * avrcp_repeat2str(uint8_t index){
-    if (index >= 1 && index <= 4) return avrcp_repeat_mode_name[index-1];
+    if ((index >= 1) && (index <= 4)) return avrcp_repeat_mode_name[index-1];
     return "NONE";
 }
 
@@ -348,7 +348,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t ro
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->role != role) continue;
-        if (connection->browsing_connection &&  connection->browsing_connection->l2cap_browsing_cid != browsing_l2cap_cid) continue;
+        if (connection->browsing_connection &&  (connection->browsing_connection->l2cap_browsing_cid != browsing_l2cap_cid)) continue;
         return connection;
     }
     return NULL;
@@ -360,7 +360,7 @@ avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->role != role) continue;
-        if (connection->browsing_connection && connection->browsing_connection->l2cap_browsing_cid != l2cap_cid) continue;
+        if (connection->browsing_connection && (connection->browsing_connection->l2cap_browsing_cid != l2cap_cid)) continue;
         return connection->browsing_connection;
     }
     return NULL;

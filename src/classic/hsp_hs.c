@@ -483,7 +483,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type == RFCOMM_DATA_PACKET){
         // printf("packet_handler type RFCOMM_DATA_PACKET %u, packet[0] %x\n", packet_type, packet[0]);
         // skip over leading newline
-        while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+        while ((size > 0) && ((packet[0] == '\n') || (packet[0] == '\r'))){
             size--;
             packet++;
         }
@@ -501,7 +501,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         } else {
             if (!hsp_hs_callback) return;
             // strip trailing newline
-            while (size > 0 && (packet[size-1] == '\n' || packet[size-1] == '\r')){
+            while ((size > 0) && ((packet[size-1] == '\n') || (packet[size-1] == '\r'))){
                 size--;
             }
             // add trailing \0

@@ -69,11 +69,11 @@ INLINE OI_INT32 default_mul_32s_32s_hi(OI_INT32 u, OI_INT32 v)
     u0 = u & 0xFFFF; u1 = u >> 16;
     v0 = v & 0xFFFF; v1 = v >> 16;
     t = u0*v0;
-    t = u1*v0 + ((OI_UINT32)t >> 16);
+    t = (u1*v0) + ((OI_UINT32)t >> 16);
     w1 = t & 0xFFFF;
     w2 = t >> 16;
-    w1 = u0*v1 + w1;
-    return u1*v1 + w2 + (w1 >> 16);
+    w1 = (u0*v1) + w1;
+    return (u1*v1) + w2 + (w1 >> 16);
 }
 
 #define MUL_32S_32S_HI(_x, _y) default_mul_32s_32s_hi(_x, _y)

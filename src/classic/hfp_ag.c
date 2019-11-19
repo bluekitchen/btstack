@@ -297,7 +297,7 @@ static void hfp_ag_indicators_string_store(hfp_connection_t * hfp_connection, in
 static int hfp_ag_indicators_cmd_generator_num_segments(hfp_connection_t * hfp_connection){
     int num_indicators = hfp_ag_get_ag_indicators_nr(hfp_connection);
     if (!num_indicators) return 2;
-    return 3 + (num_indicators-1) * 2;
+    return 3 + ((num_indicators-1) * 2);
 }
 
 // get size of individual segment for hfp_ag_retrieve_indicators_cmd
@@ -311,7 +311,7 @@ static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * hf
     if ((index & 1) == 0){
         return hfp_ag_indicators_string_size(hfp_connection, indicator_index);
     }
-    if (indicator_index == num_indicators - 1){
+    if (indicator_index == (num_indicators - 1)){
         return 8; // "\r\n\r\nOK\r\n"
     }
     return 1; // comma
@@ -334,7 +334,7 @@ static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
         hfp_ag_indicators_string_store(hfp_connection, indicator_index, buffer);
         return;
     }
-    if (indicator_index == num_indicators-1){
+    if (indicator_index == (num_indicators-1)){
         memcpy(buffer, "\r\n\r\nOK\r\n", 8);
         return;
     }
@@ -342,10 +342,10 @@ static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
 }
 
 static int hfp_hf_indicators_join(char * buffer, int buffer_size){
-    if (buffer_size < hfp_ag_indicators_nr * 3) return 0;
+    if (buffer_size < (hfp_ag_indicators_nr * 3)) return 0;
     int i;
     int offset = 0;
-    for (i = 0; i < hfp_generic_status_indicators_nr-1; i++) {
+    for (i = 0; i < (hfp_generic_status_indicators_nr-1); i++) {
         offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_generic_status_indicators[i].uuid);
     }
     if (i < hfp_generic_status_indicators_nr){
@@ -355,7 +355,7 @@ static int hfp_hf_indicators_join(char * buffer, int buffer_size){
 }
 
 static int hfp_hf_indicators_initial_status_join(char * buffer, int buffer_size){
-    if (buffer_size < hfp_generic_status_indicators_nr * 3) return 0;
+    if (buffer_size < (hfp_generic_status_indicators_nr * 3)) return 0;
     int i;
     int offset = 0;
     for (i = 0; i < hfp_generic_status_indicators_nr; i++) {
@@ -365,10 +365,10 @@ static int hfp_hf_indicators_initial_status_join(char * buffer, int buffer_size)
 }
 
 static int hfp_ag_indicators_status_join(char * buffer, int buffer_size){
-    if (buffer_size < hfp_ag_indicators_nr * 3) return 0;
+    if (buffer_size < (hfp_ag_indicators_nr * 3)) return 0;
     int i;
     int offset = 0;
-    for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
+    for (i = 0; i < (hfp_ag_indicators_nr-1); i++) {
         offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_ag_indicators[i].status); 
     }
     if (i<hfp_ag_indicators_nr){
@@ -378,10 +378,10 @@ static int hfp_ag_indicators_status_join(char * buffer, int buffer_size){
 }
 
 static int hfp_ag_call_services_join(char * buffer, int buffer_size){
-    if (buffer_size < hfp_ag_call_hold_services_nr * 3) return 0;
+    if (buffer_size < (hfp_ag_call_hold_services_nr * 3)) return 0;
     int i;
     int offset = snprintf(buffer, buffer_size, "("); 
-    for (i = 0; i < hfp_ag_call_hold_services_nr-1; i++) {
+    for (i = 0; i < (hfp_ag_call_hold_services_nr-1); i++) {
         offset += snprintf(buffer+offset, buffer_size-offset, "%s,", hfp_ag_call_hold_services[i]); 
     }
     if (i<hfp_ag_call_hold_services_nr){
@@ -405,7 +405,7 @@ static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_co
     int segment = start_segment;
     while (segment < num_segments){
         int segment_len = get_segment_len(hfp_connection, segment);
-        if (offset + segment_len > mtu) break;
+        if ((offset + segment_len) > mtu) break;
         // append segement
         store_segment(hfp_connection, segment, data+offset);
         offset += segment_len;
@@ -580,7 +580,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             } 
             hfp_connection->negotiated_codec = hfp_connection->codec_confirmed;
             hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
-            log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
+            log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);           
             // now, pick link settings
 
@@ -601,7 +601,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
     }
     // if AG is ringing, also start ringing on the HF
-    if (hfp_gsm_call_status() == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS &&
+    if ((hfp_gsm_call_status() == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS) &&
         hfp_gsm_callsetup_status() == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_ag_hf_start_ringing(hfp_connection);
     }
@@ -1775,7 +1775,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
     }
 
-    if (hfp_connection->trigger_codec_exchange && hfp_connection->command == HFP_CMD_NONE){
+    if (hfp_connection->trigger_codec_exchange && (hfp_connection->command == HFP_CMD_NONE)){
         switch (hfp_connection->codecs_state){
             case HFP_CODECS_IDLE:
             case HFP_CODECS_RECEIVED_LIST:
@@ -1805,7 +1805,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
     }
 
-    if (hfp_connection->command == HFP_CMD_NONE && !cmd_sent){
+    if ((hfp_connection->command == HFP_CMD_NONE) && !cmd_sent){
         // log_info("hfp_connection->command == HFP_CMD_NONE");
         switch(hfp_connection->state){
             case HFP_W2_DISCONNECT_RFCOMM:
@@ -1835,7 +1835,7 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
 }
 
 static int hfp_parser_is_end_of_line(uint8_t byte){
-    return byte == '\n' || byte == '\r';
+    return (byte == '\n') || (byte == '\r');
 }
 
 static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

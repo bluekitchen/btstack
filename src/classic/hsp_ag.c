@@ -542,7 +542,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);    // ok: no channel for HCI_EVENT_PACKET and only single active RFCOMM channel
 
     if (packet_type == RFCOMM_DATA_PACKET){
-        while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+        while ((size > 0) && ((packet[0] == '\n') || (packet[0] == '\r'))){
             size--;
             packet++;
         }

@@ -57,7 +57,7 @@ static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transactio
 static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_packet, uint8_t * packet, uint16_t size){
     memcpy(signaling_packet->command + signaling_packet->size, packet, size);
     signaling_packet->size += size;
-    return signaling_packet->packet_type == AVDTP_SINGLE_PACKET || signaling_packet->packet_type == AVDTP_END_PACKET;
+    return (signaling_packet->packet_type == AVDTP_SINGLE_PACKET) || signaling_packet->packet_type == AVDTP_END_PACKET;
 }
 
 static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_identifier, uint16_t msg_size){
@@ -498,7 +498,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             l2cap_reserve_packet_buffer();
             out_buffer = l2cap_get_outgoing_buffer();
             pos = avdtp_signaling_create_fragment(cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
                 stream_endpoint->acceptor_config_state = acceptor_config_state;
                 log_info("ACP: fragmented");
             } else {
@@ -515,7 +515,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             l2cap_reserve_packet_buffer();
             out_buffer = l2cap_get_outgoing_buffer();
             pos = avdtp_signaling_create_fragment(cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
                 stream_endpoint->acceptor_config_state = acceptor_config_state;
                 log_info("ACP: fragmented");
             } else {
@@ -542,7 +542,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             l2cap_reserve_packet_buffer();
             out_buffer = l2cap_get_outgoing_buffer();
             pos = avdtp_signaling_create_fragment(cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
                 stream_endpoint->acceptor_config_state = acceptor_config_state;
                 log_info("ACP: fragmented");
             } else {
@@ -597,7 +597,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
     } 
     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
     // check fragmentation
-    if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+    if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
         avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
     }
 }

@@ -159,11 +159,11 @@ void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest){
 }
 
 uint32_t btstack_min(uint32_t a, uint32_t b){
-    return a < b ? a : b;
+    return (a < b) ? a : b;
 }
 
 uint32_t btstack_max(uint32_t a, uint32_t b){
-    return a > b ? a : b;
+    return (a > b) ? a : b;
 }
 
 /**
@@ -194,9 +194,9 @@ static inline char char_for_low_nibble(int value){
 
 
 int nibble_for_char(char c){
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if ((c >= '0') && (c <= '9')) return c - '0';
+    if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+    if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
     return -1;
 }
 
@@ -226,7 +226,7 @@ static void log_hexdump(int level, const void * data, int size){
     for (i=0; i<size;i++){
 
         // help static analyzer proof that j stays within bounds
-        if (j > BYTES_PER_BYTE * (ITEMS_PER_LINE-1)){
+        if (j > (BYTES_PER_BYTE * (ITEMS_PER_LINE-1))){
             j = 0;
         }
 
@@ -238,7 +238,7 @@ static void log_hexdump(int level, const void * data, int size){
         buffer[j++] = ',';
         buffer[j++] = ' ';     
 
-        if (j >= BYTES_PER_BYTE * ITEMS_PER_LINE ){
+        if (j >= (BYTES_PER_BYTE * ITEMS_PER_LINE) ){
             buffer[j] = 0;
             HCI_DUMP_LOG(level, "%s", buffer);
             j = 0;
@@ -354,13 +354,13 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
         addr_string += 2;
         buffer[i] = (uint8_t)single_byte;
         // don't check seperator after last byte
-        if (i == BD_ADDR_LEN - 1) {
+        if (i == (BD_ADDR_LEN - 1)) {
             result = 1;
             break;
         }
         // skip supported separators
         char next_char = *addr_string;
-        if (next_char == ':' || next_char == '-' || next_char == ' ') {
+        if ((next_char == ':') || (next_char == '-') || next_char == ' ') {
             addr_string++;
         }
     }
@@ -375,7 +375,7 @@ uint32_t btstack_atoi(const char *str){
     uint32_t val = 0;
     while (1){
         char chr = *str;
-        if (!chr || chr < '0' || chr > '9')
+        if (!chr || (chr < '0') || (chr > '9'))
             return val;
         val = (val * 10) + (uint8_t)(chr - '0');
         str++;

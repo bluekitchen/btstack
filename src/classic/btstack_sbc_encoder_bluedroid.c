@@ -75,7 +75,7 @@ static bludroid_encoder_state_t bd_encoder_state;
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
                         int blocks, int subbands, int allmethod, int sample_rate, int bitpool, int channel_mode){
 
-    if (sbc_encoder_state_singleton && sbc_encoder_state_singleton != state ){
+    if (sbc_encoder_state_singleton && (sbc_encoder_state_singleton != state) ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
     } 
     

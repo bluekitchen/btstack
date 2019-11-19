@@ -226,7 +226,7 @@ static void hfp_gsm_set_clip(int index_in_table, uint8_t type, const char * numb
     
     gsm_calls[index_in_table].clip_type = type;
 
-    int clip_number_size = strlen(number) < HFP_GSM_MAX_CALL_NUMBER_SIZE ? (int) strlen(number) : HFP_GSM_MAX_CALL_NUMBER_SIZE-1;
+    int clip_number_size = (strlen(number) < HFP_GSM_MAX_CALL_NUMBER_SIZE) ? (int) strlen(number) : (HFP_GSM_MAX_CALL_NUMBER_SIZE-1);
     strncpy(gsm_calls[index_in_table].clip_number, number, clip_number_size);
     gsm_calls[index_in_table].clip_number[clip_number_size] = '\0';
     strncpy(last_dialed_number, number, clip_number_size);
@@ -521,7 +521,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
             break;
         
         case HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
-            if (index != 0 && index <= HFP_GSM_MAX_NR_CALLS ){
+            if ((index != 0) && (index <= HFP_GSM_MAX_NR_CALLS) ){
                 for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
                     if (gsm_calls[i].index == index){
                         delete_call(i);
@@ -547,7 +547,7 @@ static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t ty
         
         case HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL:
             for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-                if (is_enhanced_call_status_active(i) && gsm_calls[i].index != index){
+                if (is_enhanced_call_status_active(i) && (gsm_calls[i].index != index)){
                     set_enhanced_call_status_held(i);
                 }
             }

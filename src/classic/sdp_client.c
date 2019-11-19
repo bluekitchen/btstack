@@ -243,7 +243,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             record_offset = 0;
             // log_debug("parser: List offset %u, list size %u", list_offset, list_size);
             
-            if (list_size > 0 && list_offset != list_size){
+            if ((list_size > 0) && (list_offset != list_size)){
                 record_counter++;
                 state = GET_RECORD_LENGTH;
                 log_debug("parser: END_OF_RECORD");
@@ -359,10 +359,10 @@ static void sdp_client_send_request(uint16_t channel){
 static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, uint16_t size){
 
     uint16_t offset = 3;
-    if (offset + 2 + 2 > size) return;  // parameterLength + attributeListByteCount
+    if ((offset + 2 + 2) > size) return;  // parameterLength + attributeListByteCount
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
-    if (offset + parameterLength > size) return;
+    if ((offset + parameterLength) > size) return;
 
     // AttributeListByteCount <= mtu
     uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
@@ -373,12 +373,12 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
     }
 
     // AttributeLists
-    if (offset + attributeListByteCount > size) return;
+    if ((offset + attributeListByteCount) > size) return;
     sdp_client_parse_attribute_lists(packet+offset, attributeListByteCount);
     offset+=attributeListByteCount;
 
     // continuation state len
-    if (offset + 1 > size) return;
+    if ((offset + 1) > size) return;
     continuationStateLen = packet[offset];
     offset++;
     if (continuationStateLen > 16){
@@ -388,7 +388,7 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
     }
 
     // continuation state
-    if (offset + continuationStateLen > size) return;
+    if ((offset + continuationStateLen) > size) return;
     memcpy(continuationState, packet+offset, continuationStateLen);
     // offset+=continuationStateLen;
 }

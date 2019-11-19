@@ -61,7 +61,7 @@ uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * in
         for (i=0;i<context->num_channels;i++){
             int s1 = context->last_sample[i];
             int s2 = input_buffer[i];
-            int os = (s1*(0x10000 - t) + s2*t) >> 16;
+            int os = ((s1*(0x10000 - t)) + (s2*t)) >> 16;
             output_buffer[dest_samples++] = os;
         }
         dest_frames++;
@@ -85,7 +85,7 @@ uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * in
         for (i=0;i<context->num_channels;i++){
             int s1 = input_buffer[index];
             int s2 = input_buffer[index+context->num_channels];
-            int os = (s1*(0x10000 - t) + s2*t) >> 16;
+            int os = ((s1*(0x10000 - t)) + (s2*t)) >> 16;
             output_buffer[dest_samples++] = os;
             index++;
         }

@@ -248,7 +248,7 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
             attributes_to_copy = attribute_count;
             break;
     }
-    big_endian_store_16(command, pos, 9 + 1 + attribute_count*4);
+    big_endian_store_16(command, pos, 9 + 1 + (attribute_count*4));
     pos += 2;
     
     command[pos++] = connection->scope;
@@ -296,7 +296,7 @@ static int avrcp_browsing_controller_send_get_item_attributes_cmd(uint16_t cid, 
             break;
     }
     
-    big_endian_store_16(command, pos, 12 + attribute_count*4);
+    big_endian_store_16(command, pos, 12 + (attribute_count*4));
     pos += 2;
 
     command[pos++] = connection->scope;
@@ -490,7 +490,7 @@ static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_conn
         }
         case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
             connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = byte;
-            if (connection->parsed_attribute_value_offset < connection->parsed_attribute_value_len + prepended_header_size){
+            if (connection->parsed_attribute_value_offset < (connection->parsed_attribute_value_len + prepended_header_size)){
                 break;
             }
             if (connection->parsed_attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 1)){
@@ -567,7 +567,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     if (avctp_packet_type == AVRCP_START_PACKET){
                         browsing_connection->num_packets = packet[pos++];
                     } 
-                    if (pos + 4 > size){
+                    if ((pos + 4) > size){
                         browsing_connection->state = AVCTP_CONNECTION_OPENED;
                         avrcp_browsing_controller_emit_failed(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
                         return;  
@@ -910,7 +910,7 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
         log_error("avrcp_browsing_controller_change_path: no browsed player set.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    if (!search_str || search_str_len == 0){
+    if (!search_str || (search_str_len == 0)){
         return AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND;
     }
 

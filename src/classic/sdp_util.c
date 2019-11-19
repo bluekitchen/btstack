@@ -397,7 +397,7 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
         // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
         uint16_t data_size = big_endian_read_16(context->buffer, 1);
         int attribute_len = de_get_len(attributeValue);
-        if (3 + data_size + (3 + attribute_len) <= context->maxBytes) {
+        if ((3 + data_size + (3 + attribute_len)) <= context->maxBytes) {
             // copy Attribute
             de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
             data_size += 3; // 3 bytes

@@ -72,7 +72,7 @@ void hfp_msbc_init(void){
 }
 
 int hfp_msbc_can_encode_audio_frame_now(void){
-    return sizeof(msbc_buffer) - msbc_buffer_offset >= MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE; 
+    return (sizeof(msbc_buffer) - msbc_buffer_offset) >= MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE; 
 }
 
 void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){

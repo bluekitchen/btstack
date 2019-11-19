@@ -126,7 +126,7 @@ static uint16_t avrcp_target_pack_single_element_attribute_string(uint8_t * pack
     }
     memcpy(packet+pos, attr_value, attr_value_to_copy);
     pos += attr_value_size;
-    return header * 8 + attr_value_size;
+    return (header * 8) + attr_value_size;
 }
 
 static int avrcp_target_abort_continue_response(uint16_t cid, avrcp_connection_t * connection){
@@ -207,7 +207,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
     int num_free_bytes = size - pos - 2;
     uint8_t MAX_NUMBER_ATTR_LEN = 10;
 
-    while (!fragmented && num_free_bytes > 0 && connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
+    while (!fragmented && (num_free_bytes > 0) && connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
         avrcp_media_attribute_id_t attr_id = connection->next_attr_id;
         int attr_index = attr_id - 1;
 
@@ -250,7 +250,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
                     uint8_t * attr_value =     (uint8_t *) (connection->now_playing_info[attr_index].value + connection->attribute_value_offset);
                     uint16_t  attr_value_len = connection->now_playing_info[attr_index].len - connection->attribute_value_offset;
                     
-                    num_bytes_to_write = attr_value_len + header * AVRCP_ATTR_HEADER_LEN;
+                    num_bytes_to_write = attr_value_len + (header * AVRCP_ATTR_HEADER_LEN);
                     if (num_bytes_to_write <= num_free_bytes){
                         connection->attribute_value_offset = 0;
                         num_written_bytes = num_bytes_to_write;
@@ -259,7 +259,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
                     } 
                     fragmented = 1;
                     num_written_bytes = num_free_bytes;
-                    attr_value_len = num_free_bytes - header * AVRCP_ATTR_HEADER_LEN;
+                    attr_value_len = num_free_bytes - (header * AVRCP_ATTR_HEADER_LEN);
                     avrcp_target_pack_single_element_attribute_string(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value, attr_value_len, connection->now_playing_info[attr_index].len, header);
                     connection->attribute_value_offset += attr_value_len;
                     break;
@@ -411,7 +411,7 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
     big_endian_store_16(connection->cmd_operands, pos, 1 + value_len);
     pos += 2;
     connection->cmd_operands[pos++] = event_id;
-    if (value && value_len > 0){
+    if (value && (value_len > 0)){
         memcpy(connection->cmd_operands + pos, value, value_len);
         pos += value_len;
     }
@@ -548,7 +548,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
 
 static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_t offset){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    if (offset - 4 > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
+    if ((offset - 4) > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
 
     connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
     connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;

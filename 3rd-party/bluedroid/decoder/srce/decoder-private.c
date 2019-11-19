@@ -177,7 +177,7 @@ PRIVATE void OI_SBC_ReadScalefactors(OI_CODEC_SBC_COMMON_CONTEXT *common,
     OI_INT8 *scale_factor = common->scale_factor;
     OI_UINT f;
 
-    if (common->frameInfo.nrof_subbands == 8 || common->frameInfo.mode != SBC_JOINT_STEREO) {
+    if ((common->frameInfo.nrof_subbands == 8) || (common->frameInfo.mode != SBC_JOINT_STEREO)) {
         if (common->frameInfo.mode == SBC_JOINT_STEREO) {
             common->frameInfo.join = *b++;
         } else {

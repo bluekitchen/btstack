@@ -516,7 +516,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
     uint16_t  att_response_size   = att_handle_request(&att_server->connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
-    if (att_response_size == ATT_READ_RESPONSE_PENDING || att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING){
+    if ((att_response_size == ATT_READ_RESPONSE_PENDING) || (att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING)){
         // update state
         att_server->state = ATT_SERVER_RESPONSE_PENDING;
 
@@ -659,7 +659,7 @@ static int att_server_data_ready_for_phase(att_server_t * att_server,  att_serve
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
             return att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
         case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
-             return (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0);
+             return (!btstack_linked_list_empty(&att_server->indication_requests) && (att_server->value_indication_handle == 0));
         case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
             return (!btstack_linked_list_empty(&att_server->notification_requests));
     }
@@ -759,7 +759,7 @@ static void att_server_handle_can_send_now(void){
 static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size){
 
     // handle value indication confirms
-    if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_server->value_indication_handle){
+    if ((packet[0] == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
         uint16_t att_handle = att_server->value_indication_handle;
         att_server->value_indication_handle = 0;    
@@ -840,7 +840,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 // ---------------------
 // persistent CCC writes
 static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
-    return 'B' << 24 | 'T' << 16 | 'C' << 8 | index;
+    return ('B' << 24) | ('T' << 16) | ('C' << 8) | index;
 }
 
 static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t value){
@@ -1065,7 +1065,7 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     }
 
     // track CCC writes
-    if (att_is_persistent_ccc(attribute_handle) && offset == 0 && buffer_size == 2){
+    if (att_is_persistent_ccc(attribute_handle) && (offset == 0) && (buffer_size == 2)){
         att_server_persistent_ccc_write(con_handle, attribute_handle, little_endian_read_16(buffer, 0));
     }
 

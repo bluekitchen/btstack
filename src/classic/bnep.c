@@ -826,7 +826,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     bnep_service_t * service;
 
     /* Sanity check packet size */
-    if (size < 1 + 1 + 2 * uuid_size) {
+    if (size < 1 + 1 + (2 * uuid_size)) {
         return 0;
     }
 
@@ -890,7 +890,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     l2cap_request_can_send_now_event(channel->l2cap_cid);
         
     /* Return the number of processed package bytes = BNEP Type, BNEP Control Type, UUID-Size + 2 * UUID */
-    return 1 + 1 + 2 * uuid_size;
+    return 1 + 1 + (2 * uuid_size);
 }
 
 static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
@@ -898,7 +898,7 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
     uint16_t response_code;
 
     /* Sanity check packet size */
-    if (size < 1 + 2) {
+    if (size < (1 + 2)) {
         return 0;
     }
 
@@ -946,7 +946,7 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
     
     list_length = big_endian_read_16(packet, 1);
     /* Sanity check packet size again with known package size */
-    if (size < 3 + list_length) {
+    if (size < (3 + list_length)) {
         return 0;
     }
 
@@ -964,9 +964,9 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
         channel->net_filter_count = 0;
         /* There is still enough space, copy the filters to our filter list */
         /* There is still enough space, copy the filters to our filter list */
-        for (i = 0; i < list_length / (2 * 2); i ++) {
-            channel->net_filter[channel->net_filter_count].range_start = big_endian_read_16(packet, 1 + 2 + i * 4);
-            channel->net_filter[channel->net_filter_count].range_end = big_endian_read_16(packet, 1 + 2 + i * 4 + 2);
+        for (i = 0; i < (list_length / (2 * 2)); i ++) {
+            channel->net_filter[channel->net_filter_count].range_start = big_endian_read_16(packet, 1 + 2 + (i * 4));
+            channel->net_filter[channel->net_filter_count].range_end = big_endian_read_16(packet, 1 + 2 + (i * 4) + 2);
             if (channel->net_filter[channel->net_filter_count].range_start > channel->net_filter[channel->net_filter_count].range_end) {
                 /* Invalid filter range, ignore this filter rule */
                 log_error("BNEP_FILTER_NET_TYPE_SET: Invalid filter: start: %d, end: %d", 
@@ -998,7 +998,7 @@ static int bnep_handle_filter_net_type_response(bnep_channel_t *channel, uint8_t
     // TODO: Currently we do not support setting a network filter.
     
     /* Sanity check packet size */
-    if (size < 1 + 2) {
+    if (size < (1 + 2)) {
         return 0;
     }
 
@@ -1030,7 +1030,7 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
     
     list_length = big_endian_read_16(packet, 1);
     /* Sanity check packet size again with known package size */
-    if (size < 3 + list_length) {
+    if (size < (3 + list_length)) {
         return 0;
     }
 
@@ -1047,9 +1047,9 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
         unsigned int i;
         channel->multicast_filter_count = 0;
         /* There is enough space, copy the filters to our filter list */
-        for (i = 0; i < list_length / (2 * ETHER_ADDR_LEN); i ++) {
-            bd_addr_copy(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 1 + 2 + i * ETHER_ADDR_LEN * 2);
-            bd_addr_copy(channel->multicast_filter[channel->multicast_filter_count].addr_end, packet + 1 + 2 + i * ETHER_ADDR_LEN * 2 + ETHER_ADDR_LEN);
+        for (i = 0; i < (list_length / (2 * ETHER_ADDR_LEN)); i ++) {
+            bd_addr_copy(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 1 + 2 + (i * ETHER_ADDR_LEN * 2));
+            bd_addr_copy(channel->multicast_filter[channel->multicast_filter_count].addr_end, packet + 1 + 2 + (i * ETHER_ADDR_LEN * 2) + ETHER_ADDR_LEN);
 
             if (memcmp(channel->multicast_filter[channel->multicast_filter_count].addr_start, 
                        channel->multicast_filter[channel->multicast_filter_count].addr_end, ETHER_ADDR_LEN) > 0) {
@@ -1084,7 +1084,7 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
     // TODO: Currently we do not support setting multicast address filter.
     
     /* Sanity check packet size */
-    if (size < 1 + 2) {
+    if (size < (1 + 2)) {
         return 0;
     }
 
@@ -1418,7 +1418,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             ext_len = packet[pos];
             pos ++;
 
-            if (size - pos < ext_len) {
+            if ((size - pos) < ext_len) {
                 log_error("BNEP pkt handler: Invalid extension length! Packet ignored");
                 /* Invalid packet size! */
                 return 0;
@@ -1447,7 +1447,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
         } while (bnep_header_has_ext);
     }
 
-    if (bnep_type != BNEP_PKT_TYPE_CONTROL && network_protocol_type != 0xffff) {
+    if ((bnep_type != BNEP_PKT_TYPE_CONTROL) && (network_protocol_type != 0xffff)) {
         if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) {
             rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, packet + pos, size - pos);
         } else {

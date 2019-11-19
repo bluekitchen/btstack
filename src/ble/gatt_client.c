@@ -868,7 +868,7 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
     switch (peripheral->gatt_client_state){
         case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
         case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
-            if (peripheral->attribute_length <= peripheral_mtu(peripheral) - 3) break;
+            if (peripheral->attribute_length <= (peripheral_mtu(peripheral) - 3)) break;
             log_error("gatt_client_run: value len %u > MTU %u - 3\n", peripheral->attribute_length, peripheral_mtu(peripheral));
             gatt_client_handle_transaction_complete(peripheral);
             emit_gatt_complete_event(peripheral, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
@@ -1196,7 +1196,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         {
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
-            peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
+            peripheral->mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
             peripheral->mtu_state = MTU_EXCHANGED;
             emit_gatt_mtu_exchanged_result_event(peripheral, peripheral->mtu);
             break;

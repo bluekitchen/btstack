@@ -316,7 +316,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             break;
         case TC_SUBSCRIBED:
-            if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION && hci_event_packet_get_type(packet) != GATT_EVENT_INDICATION ) break;
+            if ((hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) && (hci_event_packet_get_type(packet) != GATT_EVENT_INDICATION) ) break;
 
             value_handle = little_endian_read_16(packet, 4);
             value_length = little_endian_read_16(packet, 6);

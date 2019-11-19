@@ -66,7 +66,7 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_DELAY_REPORT" 
 };
 const char * avdtp_si2str(uint16_t index){
-    if (index <= 0 || index > sizeof(avdtp_si_name)) return avdtp_si_name[0];
+    if ((index <= 0) || (index > sizeof(avdtp_si_name))) return avdtp_si_name[0];
     return avdtp_si_name[index];
 }
 
@@ -506,7 +506,7 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
     uint16_t pos = 1;
     
     if (offset == 0){
-        if (signaling_packet->size <= mtu - 2){
+        if (signaling_packet->size <= (mtu - 2)){
             signaling_packet->packet_type = AVDTP_SINGLE_PACKET;
             out_buffer[pos++] = signaling_packet->signal_identifier;
             data_len = signaling_packet->size;
@@ -519,7 +519,7 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
         }
     } else {
         int remaining_bytes = signaling_packet->size - offset;
-        if (remaining_bytes <= mtu - 1){
+        if (remaining_bytes <= (mtu - 1)){
             signaling_packet->packet_type = AVDTP_END_PACKET;
             data_len = remaining_bytes;
             signaling_packet->offset = 0;

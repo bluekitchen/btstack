@@ -117,7 +117,7 @@ static void hfp_hf_emit_subscriber_information(btstack_packet_handler_t callback
     event[2] = event_subtype;
     event[3] = status;
     event[4] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 6) ? (int) strlen(bnip_number) : (int) sizeof(event) - 6;
+    int size = (strlen(bnip_number) < (sizeof(event) - 6)) ? (int) strlen(bnip_number) : ((int) sizeof(event) - 6);
     strncpy((char*)&event[5], bnip_number, size);
     event[5 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -130,7 +130,7 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 5) ? (int) strlen(bnip_number) : (int) sizeof(event) - 5;
+    int size = (strlen(bnip_number) < (sizeof(event) - 5)) ? (int) strlen(bnip_number) : ((int) sizeof(event) - 5);
     strncpy((char*)&event[4], bnip_number, size);
     event[4 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -151,7 +151,7 @@ static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, 
     event[pos++] = clcc_mode;
     event[pos++] = clcc_mpty;
     event[pos++] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - pos) ? (int) strlen(bnip_number) : (int) sizeof(event) - pos;
+    int size = (strlen(bnip_number) < (sizeof(event) - pos)) ? (int) strlen(bnip_number) : ((int) sizeof(event) - pos);
     strncpy((char*)&event[pos], bnip_number, size);
     pos += size;
     event[pos++] = 0;
@@ -526,7 +526,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
                 hfp_connection->ok_pending = 1;
                 hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
                 hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
-                log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
+                log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
                 hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
             } else {
                 hfp_connection->codec_confirmed = 0;
@@ -994,7 +994,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 }
 
 static int hfp_parser_is_end_of_line(uint8_t byte){
-    return byte == '\n' || byte == '\r';
+    return (byte == '\n') || (byte == '\r');
 }
 
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1592,7 +1592,7 @@ void hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
     }
     
     if (hfp_connection->microphone_gain == gain) return;
-    if (gain < 0 || gain > 15){
+    if ((gain < 0) || (gain > 15)){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
         return;
     }
@@ -1609,7 +1609,7 @@ void hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
     }
     
     if (hfp_connection->speaker_gain == gain) return;
-    if (gain < 0 || gain > 15){
+    if ((gain < 0) || (gain > 15)){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
         return;
     }

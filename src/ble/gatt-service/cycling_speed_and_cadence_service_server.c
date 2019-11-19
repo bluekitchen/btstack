@@ -103,21 +103,21 @@ static uint16_t cycling_speed_and_cadence_service_read_callback(hci_con_handle_t
 	cycling_speed_and_cadence_t * instance = &cycling_speed_and_cadence;
 
 	if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-		if (buffer && buffer_size >= 2){
+		if (buffer && (buffer_size >= 2)){
 			little_endian_store_16(buffer, 0, instance->measurement_client_configuration_descriptor_notify);
 		} 
 		return 2;
 	}
 
 	if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-		if (buffer && buffer_size >= 2){
+		if (buffer && (buffer_size >= 2)){
 			little_endian_store_16(buffer, 0, instance->control_point_client_configuration_descriptor_indicate);
 		} 
 		return 2;
 	}
 
 	if (attribute_handle == instance->feature_handle){
-		if (buffer && buffer_size >= 2){
+		if (buffer && (buffer_size >= 2)){
 			uint16_t feature = (instance->wheel_revolution_data_supported << CSC_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED);
 			feature |= (instance->crank_revolution_data_supported << CSC_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED);
 			feature |= (instance->multiple_sensor_locations_supported << CSC_FLAG_MULTIPLE_SENSOR_LOCATIONS_SUPPORTED);
@@ -127,7 +127,7 @@ static uint16_t cycling_speed_and_cadence_service_read_callback(hci_con_handle_t
 	}	
 	
 	if (attribute_handle == instance->sensor_location_value_handle){
-		if (buffer && buffer_size >= 1){
+		if (buffer && (buffer_size >= 1)){
 			buffer[0] = instance->sensor_location;
 		} 
 		return 1;
@@ -181,7 +181,7 @@ static void cycling_speed_and_cadence_service_response_can_send_now(void * conte
 	switch (instance->request_opcode){
 		case CSC_OPCODE_REQUEST_SUPPORTED_SENSOR_LOCATIONS:{
 			int loc;
-			for (loc = CSC_SERVICE_SENSOR_LOCATION_OTHER; loc < CSC_SERVICE_SENSOR_LOCATION_RESERVED-1; loc++){
+			for (loc = CSC_SERVICE_SENSOR_LOCATION_OTHER; loc < (CSC_SERVICE_SENSOR_LOCATION_RESERVED-1); loc++){
 				if (instance->supported_sensor_locations & (1 << loc)){
 					value[pos++] = loc;
 				}
@@ -360,7 +360,7 @@ static void cycling_speed_and_cadence_service_calculate_cumulative_wheel_revolut
 static void cycling_speed_and_cadence_service_calculate_cumulative_crank_revolutions(uint16_t revolutions_change){
 	cycling_speed_and_cadence_t * instance = &cycling_speed_and_cadence;
 	
-	if (instance->cumulative_crank_revolutions <= 0xffff - revolutions_change){
+	if (instance->cumulative_crank_revolutions <= (0xffff - revolutions_change)){
 		instance->cumulative_crank_revolutions += revolutions_change;
 	} else {
 		instance->cumulative_crank_revolutions = 0xffff;

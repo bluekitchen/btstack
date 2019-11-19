@@ -340,7 +340,7 @@ static void hci_connection_timeout_handler(btstack_timer_source_t *timer){
         hci_emit_l2cap_check_timeout(connection);
     }
 #else 
-    if (btstack_run_loop_get_time_ms() > connection->timestamp + HCI_CONNECTION_TIMEOUT_MS){
+    if (btstack_run_loop_get_time_ms() > (connection->timestamp + HCI_CONNECTION_TIMEOUT_MS)){
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
     }

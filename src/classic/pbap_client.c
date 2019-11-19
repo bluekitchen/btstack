@@ -220,8 +220,8 @@ static void pbap_client_emit_phonebook_size_event(pbap_client_t * context, uint8
 
 static void pbap_client_emit_authentication_event(pbap_client_t * context, uint8_t options){
     // split options
-    uint8_t user_id_required = options & 1 ? 1 : 0;
-    uint8_t full_access      = options & 2 ? 1 : 0;
+    uint8_t user_id_required = (options & 1) ? 1 : 0;
+    uint8_t full_access      = (options & 2) ? 1 : 0;
 
     uint8_t event[7];
     int pos = 0;
@@ -448,8 +448,8 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_SET_PATH_ELEMENT:
             // find '/' or '\0'
             path_element_start = pbap_client->set_path_offset;
-            while (pbap_client->current_folder[pbap_client->set_path_offset] != '\0' &&
-                pbap_client->current_folder[pbap_client->set_path_offset] != '/'){
+            while ((pbap_client->current_folder[pbap_client->set_path_offset] != '\0') &&
+                (pbap_client->current_folder[pbap_client->set_path_offset] != '/')){
                 pbap_client->set_path_offset++;              
             }
             path_element_len = pbap_client->set_path_offset-path_element_start;
@@ -576,8 +576,8 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
     obex_iterator_t it;
     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
         uint8_t hi = obex_iterator_get_hi(&it);
-        if (hi == OBEX_HEADER_END_OF_BODY ||
-            hi == OBEX_HEADER_BODY){
+        if ((hi == OBEX_HEADER_END_OF_BODY) ||
+            (hi == OBEX_HEADER_BODY)){
             uint16_t     data_len = obex_iterator_get_data_len(&it);
             const uint8_t  * data =  obex_iterator_get_data(&it);
             // now try parsing it
@@ -615,13 +615,13 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
                     case YXML_ATTRVAL:
                         if (name_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                            if (strlen(name) + 4 + 1 >= sizeof(name)) break;
+                            if ((strlen(name) + 4 + 1) >= sizeof(name)) break;
                             strcat(name, pbap_client->xml_parser.data);
                             break;
                         }
                         if (handle_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                            if (strlen(handle) + 4 + 1 >= sizeof(handle)) break;
+                            if ((strlen(handle) + 4 + 1) >= sizeof(handle)) break;
                             strcat(handle, pbap_client->xml_parser.data);
                             break;
                         }
@@ -795,7 +795,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                 while (i<data_len){
                                     uint8_t tag = data[i++];
                                     uint8_t len = data[i++];
-                                    if (tag == PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE && len == 2){
+                                    if ((tag == PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE) && (len == 2)){
                                         have_size = 1;
                                         phonebook_size = big_endian_read_16(data, i);
                                     }
@@ -854,8 +854,8 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         case OBEX_RESP_SUCCESS:
                             for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
                                 uint8_t hi = obex_iterator_get_hi(&it);
-                                if (hi == OBEX_HEADER_END_OF_BODY ||
-                                    hi == OBEX_HEADER_BODY){
+                                if ((hi == OBEX_HEADER_END_OF_BODY) ||
+                                    (hi == OBEX_HEADER_BODY)){
                                     // uint16_t     data_len = obex_iterator_get_data_len(&it);
                                     // const uint8_t  * data =  obex_iterator_get_data(&it);
                                     // now try parsing it

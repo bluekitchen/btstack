@@ -197,7 +197,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
     }
     
     if (att_handle == instance->hid_control_point_value_handle){
-        if (buffer && buffer_size >= 1){
+        if (buffer && (buffer_size >= 1)){
             buffer[0] = instance->hid_control_point_suspend;
         } 
         return 1;

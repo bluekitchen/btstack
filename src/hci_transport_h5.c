@@ -636,10 +636,10 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             }
 
             // Process ACKs in reliable packet and explicit ack packets
-            if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
+            if (reliable_packet || (link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE)){
                 // our packet is good if the remote expects our seq nr + 1
                 int next_seq_nr = hci_transport_link_inc_seq_nr(link_seq_nr);
-                if (hci_transport_link_have_outgoing_packet() && next_seq_nr == ack_nr){
+                if (hci_transport_link_have_outgoing_packet() && (next_seq_nr == ack_nr)){
                     log_debug("outoing packet with seq %u ack'ed", link_seq_nr);
                     link_seq_nr = next_seq_nr;
                     hci_transport_link_clear_queue();
@@ -742,7 +742,7 @@ static void hci_transport_h5_block_received(){
     if (hci_transport_h5_active == 0) return;
 
     // track start time when receiving first byte // a bit hackish
-    if (hci_transport_h5_receive_start == 0 && hci_transport_link_read_byte != BTSTACK_SLIP_SOF){
+    if ((hci_transport_h5_receive_start == 0) && (hci_transport_link_read_byte != BTSTACK_SLIP_SOF)){
         hci_transport_h5_receive_start = btstack_run_loop_get_time_ms();
     }
     btstack_slip_decoder_process(hci_transport_link_read_byte);

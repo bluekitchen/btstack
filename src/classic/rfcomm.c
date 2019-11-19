@@ -527,7 +527,7 @@ static rfcomm_channel_t * rfcomm_channel_for_multiplexer_and_dlci(rfcomm_multipl
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
-        if (channel->dlci == dlci && channel->multiplexer == multiplexer) {
+        if ((channel->dlci == dlci) && (channel->multiplexer == multiplexer)) {
             return channel;
         };
     }
@@ -1444,7 +1444,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
     
     // contains payload?
-    if (size - 1 > payload_offset){
+    if ((size - 1) > payload_offset){
 
         // log_info( "RFCOMM data UIH_PF, size %u, channel %p", size-payload_offset-1, rfChannel->connection);
 
@@ -1459,7 +1459,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
     
     // automatically provide new credits to remote device, if no incoming flow control
-    if (!channel->incoming_flow_control && channel->credits_incoming < 5){
+    if (!channel->incoming_flow_control && (channel->credits_incoming < 5)){
         channel->new_credits_incoming = RFCOMM_CREDITS;
         request_can_send_now = 1;
     }    
@@ -1737,7 +1737,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
     const uint8_t frame_dlci = packet[0] >> 2;
 	
-    if (frame_dlci && (packet[1] == BT_RFCOMM_UIH || packet[1] == BT_RFCOMM_UIH_PF)) {
+    if (frame_dlci && ((packet[1] == BT_RFCOMM_UIH) || (packet[1] == BT_RFCOMM_UIH_PF))) {
         rfcomm_channel_packet_handler_uih(multiplexer, packet, size);
         return;
     }

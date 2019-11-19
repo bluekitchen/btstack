@@ -207,7 +207,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
             le_device_db_entry_t entry;
             le_device_db_tlv_fetch(i, &entry);
             // found addr?
-            if ((memcmp(addr, entry.addr, 6) == 0) && addr_type == entry.addr_type){
+            if ((memcmp(addr, entry.addr, 6) == 0) && (addr_type == entry.addr_type)){
                 index_for_addr = i;
             }
             // update highest seq nr

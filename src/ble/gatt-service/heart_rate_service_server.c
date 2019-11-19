@@ -95,14 +95,14 @@ static uint16_t heart_rate_service_read_callback(hci_con_handle_t con_handle, ui
     UNUSED(buffer_size);
     
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
-        if (buffer && buffer_size >= 2){
+        if (buffer && (buffer_size >= 2)){
             little_endian_store_16(buffer, 0, heart_rate.measurement_client_configuration_descriptor_notify);
         } 
         return 2;
     }
     
     if (attribute_handle == heart_rate.sensor_location_value_handle){
-        if (buffer && buffer_size >= 1){
+        if (buffer && (buffer_size >= 1)){
             buffer[0] = heart_rate.sensor_location;
         }
         return 1;
@@ -208,7 +208,7 @@ static void heart_rate_service_can_send_now(void * context){
     // TODO: get actual MTU from ATT server
     uint16_t bytes_left = btstack_min(sizeof(value), l2cap_max_mtu() - 3 - pos);
 
-    while (bytes_left > 2 && instance->rr_interval_count){
+    while ((bytes_left > 2) && instance->rr_interval_count){
         little_endian_store_16(value, pos, instance->rr_intervals[0]);
         pos +=2;
         bytes_left -= 2;
@@ -229,7 +229,7 @@ static void heart_rate_service_can_send_now(void * context){
 void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ){
     heart_rate_t * instance = &heart_rate;
     // limit energy expended to 0xffff
-    if (instance->energy_expended_kJ <= 0xffff - energy_expended_kJ){
+    if (instance->energy_expended_kJ <= (0xffff - energy_expended_kJ)){
         instance->energy_expended_kJ += energy_expended_kJ;
     } else {
         instance->energy_expended_kJ = 0xffff;

@@ -82,7 +82,7 @@ static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_f
 static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     
     const char *format = NULL;
-    if (cmd > 0 && cmd <= num_l2cap_commands) {
+    if ((cmd > 0) && (cmd <= num_l2cap_commands)) {
         format = l2cap_signaling_commands_format[cmd-1];
     }
     if (!format){

@@ -954,7 +954,7 @@ uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * co
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED ||
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -971,7 +971,7 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_co
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -989,7 +989,7 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdt
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -1006,7 +1006,7 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_c
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
 
@@ -1023,7 +1023,7 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         log_error("connection in wrong state, %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
@@ -1065,7 +1065,7 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     }
     //TODO: if opened only app capabilities, enable reconfigure for not opened
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
    

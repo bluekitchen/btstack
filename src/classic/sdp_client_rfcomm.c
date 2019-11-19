@@ -239,7 +239,7 @@ static void sdp_client_query_rfcomm_handle_service_name_data(uint32_t attribute_
     }
 
     // notify on last char
-    if (data_offset == attribute_value_length - 1 && sdp_rfcomm_channel_nr!=0){
+    if (data_offset == (attribute_value_length - 1) && (sdp_rfcomm_channel_nr!=0)){
         sdp_rfcomm_query_emit_service();
     }
 }

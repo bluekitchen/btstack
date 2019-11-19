@@ -190,7 +190,7 @@ static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t p
         max_bytes -= 3;
     }
 
-    if (packet_type == AVRCP_SINGLE_PACKET || packet_type == AVRCP_START_PACKET){
+    if ((packet_type == AVRCP_SINGLE_PACKET) || packet_type == AVRCP_START_PACKET){
         // Profile IDentifier (PID)
         command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
         command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -504,13 +504,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             memcpy(operands, packet+pos, 5);
             uint8_t unit_type = operands[1] >> 3;
             uint8_t unit = operands[1] & 0x07;
-            uint32_t company_id = operands[2] << 16 | operands[3] << 8 | operands[4];
+            uint32_t company_id = (operands[2] << 16) | (operands[3] << 8) | operands[4];
             log_info("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
                 ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id);
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
-            if (size - pos < 7) {
+            if ((size - pos) < 7) {
                 log_error("avrcp: wrong packet size");
                 return;
             };
@@ -890,7 +890,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
                  avrcp_send_cmd(connection, AVRCP_START_PACKET);
                  avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
             } else {
-                if (connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos > avrcp_get_max_payload_size_for_packet_type(AVRCP_CONTINUE_PACKET)){
+                if ((connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos) > avrcp_get_max_payload_size_for_packet_type(AVRCP_CONTINUE_PACKET)){
                      avrcp_send_cmd(connection, AVRCP_CONTINUE_PACKET);
                      avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                  } else {

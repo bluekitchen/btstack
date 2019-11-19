@@ -1133,7 +1133,7 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     sm_setup_key_distribution(remote_key_request);
 
     // JUST WORKS doens't provide authentication
-    sm_conn->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+    sm_conn->sm_connection_authenticated = (setup->sm_stk_generation_method == JUST_WORKS) ? 0 : 1;
 
     return 0;
 }
@@ -1271,7 +1271,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 
         // if not found, lookup via public address if possible
         log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
-        if (le_db_index < 0 && setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+        if ((le_db_index < 0) && (setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC)){
             int i;
             for (i=0; i < le_device_db_max_count(); i++){
                 bd_addr_t address;
@@ -1280,7 +1280,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                 // skip unused entries
                 if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
                 log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
-                if (address_type == BD_ADDR_TYPE_LE_PUBLIC && memcmp(address, setup->sm_peer_address, 6) == 0){
+                if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && memcmp(address, setup->sm_peer_address, 6) == 0){
                     log_info("sm: device found for public address, updating");
                     le_db_index = i;
                     break;
@@ -1927,7 +1927,7 @@ static void sm_run(void){
                 continue;
             }
 
-            if (sm_address_resolution_addr_type == addr_type && memcmp(addr, sm_address_resolution_address, 6) == 0){
+            if ((sm_address_resolution_addr_type == addr_type) && memcmp(addr, sm_address_resolution_address, 6) == 0){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
                 sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCEEDED);
                 break;
@@ -2085,7 +2085,7 @@ static void sm_run(void){
                             // start using context by loading security info
                             sm_reset_setup();
                             sm_load_security_info(sm_connection);
-                            if (setup->sm_peer_ediv == 0 && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
+                            if ((setup->sm_peer_ediv == 0) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
                                 memcpy(setup->sm_ltk, setup->sm_peer_ltk, 16);
                                 sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
                                 break;
@@ -2376,7 +2376,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
                 log_info("stk method %u, num bits %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
-                if (sm_passkey_entry(setup->sm_stk_generation_method) && setup->sm_passkey_bit < 20){
+                if (sm_passkey_entry(setup->sm_stk_generation_method) && (setup->sm_passkey_bit < 20)){
                     log_info("SM_SC_SEND_PAIRING_RANDOM A");
                     if (IS_RESPONDER(connection->sm_role)){
                         // responder
@@ -2452,7 +2452,7 @@ static void sm_run(void){
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged
-                if (!setup->sm_use_secure_connections || setup->sm_stk_generation_method == JUST_WORKS){
+                if (!setup->sm_use_secure_connections || (setup->sm_stk_generation_method == JUST_WORKS)){
                     sm_trigger_user_response(connection);
                 }
                 return;
@@ -3185,7 +3185,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
                             // potentially stored LTK is from the master
-                            if (sm_conn->sm_local_ediv != 0 || !sm_is_null_random(sm_conn->sm_local_rand)){
+                            if ((sm_conn->sm_local_ediv != 0) || !sm_is_null_random(sm_conn->sm_local_rand)){
                                 if (sm_reconstruct_ltk_without_le_device_db_entry){
                                     sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
                                     break;
@@ -3314,9 +3314,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     if (!sm_conn) break;
 
                     // delete stored bonding on disconnect with authentication failure in ph0
-                    if (sm_conn->sm_role == 0
+                    if ((sm_conn->sm_role == 0)
                         && sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED
-                        && packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE){
+                        && (packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE)){
                         le_device_db_remove(sm_conn->sm_le_db_index);
                     }
 
@@ -3437,7 +3437,7 @@ static const uint8_t sm_pdu_size[] = {
 
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
 
-    if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CAN_SEND_NOW){
+    if ((packet_type == HCI_EVENT_PACKET) && (packet[0] == L2CAP_EVENT_CAN_SEND_NOW)){
         sm_run();
     }
 

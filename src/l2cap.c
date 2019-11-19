@@ -1038,7 +1038,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     little_endian_store_16(event, 17, channel->local_mtu);
     little_endian_store_16(event, 19, channel->remote_mtu); 
     little_endian_store_16(event, 21, channel->flush_timeout); 
-    event[23] = channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING ? 1 : 0;
+    event[23] = (channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) ? 1 : 0;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     log_info("ERTM mode %u, fcs enabled %u", channel->mode, channel->fcs_option);
     event[24] = channel->mode;
@@ -1820,7 +1820,7 @@ static void l2cap_run(void){
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-        if (connection->address_type != BD_ADDR_TYPE_LE_PUBLIC && connection->address_type != BD_ADDR_TYPE_LE_RANDOM) continue;
+        if ((connection->address_type != BD_ADDR_TYPE_LE_PUBLIC) && (connection->address_type != BD_ADDR_TYPE_LE_RANDOM)) continue;
         if (!hci_can_send_acl_packet_now(connection->con_handle)) continue;
         switch (connection->le_con_parameter_update_state){
             case CON_PARAMETER_UPDATE_SEND_REQUEST:
@@ -2515,7 +2515,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         pos++;
         uint8_t length = command[pos++];
         // MTU { type(8): 1, len(8):2, MTU(16) }
-        if (option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT && length == 2){
+        if ((option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) && (length == 2)){
             channel->remote_mtu = little_endian_read_16(command, pos);
             log_info("Remote MTU %u", channel->remote_mtu);
             if (channel->remote_mtu > l2cap_max_mtu()){
@@ -2525,7 +2525,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
         // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
-        if (option_type == L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT && length == 2){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT && (length == 2)){
             channel->flush_timeout = little_endian_read_16(command, pos);
             log_info("Flush timeout: %u ms", channel->flush_timeout);
         }
@@ -2580,7 +2580,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         }        
 #endif        
         // check for unknown options
-        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
+        if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
             log_info("l2cap cid %u, unknown options", channel->local_cid);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
@@ -2720,7 +2720,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
                             
                             // drop link key if security block
-                            if (L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
+                            if ((L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result) == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
                                 gap_drop_link_key_for_bd_addr(channel->address);
                             }
                             
@@ -2839,7 +2839,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
     uint16_t cmd_len = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
 
     // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_RESPONSE 
-    if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_RESPONSE){
+    if ((code < 1) || code == ECHO_RESPONSE || code > INFORMATION_RESPONSE){
         l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
         return;
     }
@@ -3555,7 +3555,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
                 l2cap_channel->credits_incoming--;
 
                 // automatic credits
-                if (l2cap_channel->credits_incoming < L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_WATERMARK && l2cap_channel->automatic_credits){
+                if ((l2cap_channel->credits_incoming < L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_WATERMARK) && l2cap_channel->automatic_credits){
                     l2cap_channel->new_credits_incoming = L2CAP_LE_DATA_CHANNELS_AUTOMATIC_CREDITS_INCREMENT;
                 }
 
@@ -3740,7 +3740,7 @@ static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t statu
     event[3] = channel->address_type;
     reverse_bd_addr(channel->address, &event[4]);
     little_endian_store_16(event, 10, channel->con_handle);
-    event[12] = channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING ? 1 : 0;
+    event[12] = (channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) ? 1 : 0;
     little_endian_store_16(event, 13, channel->psm);
     little_endian_store_16(event, 15, channel->local_cid);
     little_endian_store_16(event, 17, channel->remote_cid);
@@ -3787,7 +3787,7 @@ static void l2cap_le_send_pdu(l2cap_channel_t *channel){
 
     hci_send_acl_packet_buffer(8 + pos);
 
-    if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
+    if (channel->send_sdu_pos >= (channel->send_sdu_len + 2)){
         channel->send_sdu_buffer = NULL;
         // send done event
         l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_PACKET_SENT);

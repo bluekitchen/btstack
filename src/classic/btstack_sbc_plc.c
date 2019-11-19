@@ -78,8 +78,8 @@ static float sqrt3(const float x){
     // Two Babylonian Steps (simplified from:)
     // u.x = 0.5f * (u.x + x/u.x);
     // u.x = 0.5f * (u.x + x/u.x);
-    u.x =       u.x + x/u.x;
-    u.x = 0.25f*u.x + x/u.x;
+    u.x =       u.x + (x/u.x);
+    u.x = (0.25f*u.x) + (x/u.x);
 
     return u.x;
 }
@@ -337,7 +337,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
         for (i=0;i<SBC_OLAL;i++){
             float left  = ZIRbuf[i];
             float right = sf*plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i] + right*rcos[SBC_OLAL-1-i];
+            val = (left*rcos[i]) + (right*rcos[SBC_OLAL-1-i]);
             // val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
@@ -347,19 +347,19 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
             plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
         
-        for (;i<SBC_FS+SBC_OLAL;i++){
+        for (;i<(SBC_FS+SBC_OLAL);i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-SBC_FS]+right*rcos[SBC_OLAL-1-i+SBC_FS];
+            val = (left*rcos[i-SBC_FS])+(right*rcos[SBC_OLAL-1-i+SBC_FS]);
             plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
 
-        for (;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
+        for (;i<(SBC_FS+SBC_RT+SBC_OLAL);i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
         // printf("succesive bad frame nr %d\n", plc_state->nbf);
-        for (;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
+        for (;i<(SBC_FS+SBC_RT+SBC_OLAL);i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
@@ -401,10 +401,10 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMA
             out[i] = plc_state->hist[SBC_LHIST+i];
         }
             
-        for (i = SBC_RT;i<SBC_RT+SBC_OLAL;i++){
+        for (i = SBC_RT;i<(SBC_RT+SBC_OLAL);i++){
             float left  = plc_state->hist[SBC_LHIST+i];
             float right = in[i];  
-            val = left*rcos[i-SBC_RT] + right*rcos[SBC_OLAL+SBC_RT-1-i];
+            val = (left*rcos[i-SBC_RT]) + (right*rcos[SBC_OLAL+SBC_RT-1-i]);
             out[i] = crop_sample(val);
         }
     }

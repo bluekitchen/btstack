@@ -35,11 +35,11 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
     size_t subdataSize;
     OI_BYTE *codecData = (OI_BYTE*)codecDataAligned;
 
-    if (maxChannels < 1 || maxChannels > 2) {
+    if ((maxChannels < 1) || (maxChannels > 2)) {
         return OI_STATUS_INVALID_PARAMETERS;
     }
 
-    if (pcmStride < 1 || pcmStride > maxChannels) {
+    if ((pcmStride < 1) || (pcmStride > maxChannels)) {
         return OI_STATUS_INVALID_PARAMETERS;
     }
 

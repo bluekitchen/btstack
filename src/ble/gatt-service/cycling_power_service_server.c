@@ -226,42 +226,42 @@ static uint16_t cycling_power_service_read_callback(hci_con_handle_t con_handle,
     cycling_power_t * instance = &cycling_power;
 
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
-        if (buffer && buffer_size >= 2){
+        if (buffer && (buffer_size >= 2)){
             little_endian_store_16(buffer, 0, instance->measurement_client_configuration_descriptor_notify);
         } 
         return 2;
     }
 
     if (attribute_handle == instance->measurement_server_configuration_descriptor_handle){
-        if (buffer && buffer_size >= 2){
+        if (buffer && (buffer_size >= 2)){
             little_endian_store_16(buffer, 0, instance->measurement_server_configuration_descriptor_broadcast);
         } 
         return 2;
     }
 
     if (attribute_handle == instance->vector_client_configuration_descriptor_handle){
-        if (buffer && buffer_size >= 2){
+        if (buffer && (buffer_size >= 2)){
             little_endian_store_16(buffer, 0, instance->vector_client_configuration_descriptor_notify);
         } 
         return 2;
     }
 
     if (attribute_handle == instance->control_point_client_configuration_descriptor_handle){
-        if (buffer && buffer_size >= 2){
+        if (buffer && (buffer_size >= 2)){
             little_endian_store_16(buffer, 0, instance->control_point_client_configuration_descriptor_indicate);
         } 
         return 2;
     }
 
     if (attribute_handle == instance->feature_value_handle){
-        if (buffer && buffer_size >= 4){
+        if (buffer && (buffer_size >= 4)){
             little_endian_store_32(buffer, 0, instance->feature_flags);
         } 
         return 4;
     }   
     
     if (attribute_handle == instance->sensor_location_value_handle){
-        if (buffer && buffer_size >= 1){
+        if (buffer && (buffer_size >= 1)){
             buffer[0] = instance->sensor_location;
         } 
         return 1;
@@ -364,10 +364,10 @@ static void cycling_power_service_vector_can_send_now(void * context){
             case CP_VECTOR_FLAG_INSTANTANEOUS_FORCE_MAGNITUDE_ARRAY_PRESENT:{
                 uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
                 uint16_t bytes_left = 0;
-                if (att_mtu > pos + 3){
+                if (att_mtu > (pos + 3)){
                     bytes_left = btstack_min(sizeof(value), att_mtu - 3 - pos);
                 }
-                while (bytes_left > 2 && instance->force_magnitude_count){
+                while ((bytes_left > 2) && instance->force_magnitude_count){
                     little_endian_store_16(value, pos, instance->vector_instantaneous_force_magnitude_newton_array[0]);
                     pos += 2;
                     bytes_left -= 2;
@@ -379,11 +379,11 @@ static void cycling_power_service_vector_can_send_now(void * context){
             case CP_VECTOR_FLAG_INSTANTANEOUS_TORQUE_MAGNITUDE_ARRAY_PRESENT:{
                 uint16_t att_mtu = att_server_get_mtu(instance->con_handle);
                 uint16_t bytes_left = 0;
-                if (att_mtu > pos + 3){
+                if (att_mtu > (pos + 3)){
                     bytes_left = btstack_min(sizeof(value), att_mtu - 3 - pos);
                 }
 
-                while (bytes_left > 2 && instance->torque_magnitude_count){
+                while ((bytes_left > 2) && instance->torque_magnitude_count){
                     little_endian_store_16(value, pos, instance->vector_instantaneous_torque_magnitude_newton_per_m_array[0]);
                     pos += 2;
                     bytes_left -= 2;
@@ -652,7 +652,7 @@ static void cycling_power_service_response_can_send_now(void * context){
                 if (instance->request_opcode == CP_OPCODE_START_OFFSET_COMPENSATION) break;
                 little_endian_store_16(value, pos, instance->manufacturer_company_id);
                 pos += 2;
-                int data_len = instance->num_manufacturer_specific_data < CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE ? instance->num_manufacturer_specific_data : (CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE - 1);
+                int data_len = (instance->num_manufacturer_specific_data < CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE) ? instance->num_manufacturer_specific_data : (CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE - 1);
                 value[pos++] = data_len;
                 memcpy(&value[pos], instance->manufacturer_specific_data, data_len);
                 pos += data_len;
@@ -733,7 +733,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
         
             case CP_CONNECTION_INTERVAL_STATUS_ACCEPTED:
             case CP_CONNECTION_INTERVAL_STATUS_RECEIVED:
-                if (instance->con_interval > instance->con_interval_max || instance->con_interval < instance->con_interval_min){
+                if ((instance->con_interval > instance->con_interval_max) || (instance->con_interval < instance->con_interval_min)){
                     instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_W4_L2CAP_RESPONSE;
                     gap_request_connection_parameter_update(instance->con_handle, instance->con_interval_min, instance->con_interval_max, 4, 100);    // 15 ms, 4, 1s
                     return ATT_ERROR_WRITE_RESPONSE_PENDING;
@@ -884,7 +884,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                 uint16_t index = 0;
                 
                 for (i = 0; i < CP_MASK_BIT_RESERVED; i++){
-                    uint8_t clear_bit = mask_bitmap & (1 << i) ? 1 : 0;
+                    uint8_t clear_bit = (mask_bitmap & (1 << i)) ? 1 : 0;
                     
                     masked_measurement_flags &= ~(clear_bit << index);
                     index++;
@@ -940,7 +940,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                     if (instance->con_interval_status != CP_CONNECTION_INTERVAL_STATUS_W4_UPDATE) return;
                     
-                    if (instance->con_interval > instance->con_interval_max || instance->con_interval < instance->con_interval_min){
+                    if ((instance->con_interval > instance->con_interval_max) || (instance->con_interval < instance->con_interval_min)){
                         instance->con_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
                         // printf("Updated Connection Interval: %u, %u.%02u ms\n", instance->con_interval, instance->con_interval * 125 / 100, 25 * (instance->con_interval & 3));
                         // printf("Updated Connection Latency: %u\n", hci_subevent_le_connection_update_complete_get_conn_latency(packet));  
@@ -1104,7 +1104,7 @@ void cycling_power_service_server_add_crank_revolution(uint16_t crank_revolution
 
 void cycling_power_service_add_energy(uint16_t energy_kJ){
     cycling_power_t * instance = &cycling_power;
-    if (instance->accumulated_energy_kJ <= 0xffff - energy_kJ){
+    if (instance->accumulated_energy_kJ <= (0xffff - energy_kJ)){
         instance->accumulated_energy_kJ += energy_kJ;
     } else {
         instance->accumulated_energy_kJ = 0xffff;
@@ -1173,9 +1173,9 @@ void cycling_power_service_server_set_bottom_dead_spot_angle(uint16_t bottom_dea
 } 
 
 static int gatt_date_is_valid(gatt_date_time_t date){
-    if (date.year != 0 && (date.year < 1582 || date.year > 9999)) return 0;
-    if (date.month != 0 && date.month > 12) return 0;
-    if (date.day != 0 && date.day > 31) return 0;
+    if ((date.year != 0) && ((date.year < 1582) || (date.year > 9999))) return 0;
+    if ((date.month != 0) && (date.month > 12)) return 0;
+    if ((date.day != 0) && (date.day > 31)) return 0;
 
     if (date.hours > 23) return 0;
     if (date.minutes > 59) return 0;

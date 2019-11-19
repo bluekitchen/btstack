@@ -72,7 +72,7 @@ int  ad_iterator_has_more(const ad_context_t * context){
     if (chunk_len == 0)                                    return 0;
 
     // assert complete chunk fits into buffer
-    if (context->offset + 1 + chunk_len > context->length) return 0;
+    if ((context->offset + 1 + chunk_len) > context->length) return 0;
 
     return 1;
 }

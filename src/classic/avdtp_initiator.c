@@ -399,7 +399,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
                 stream_endpoint->initiator_config_state = AVDTP_INITIATOR_FRAGMENTATED_COMMAND;
                 log_info("INT: fragmented");
             }
@@ -410,7 +410,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
                 stream_endpoint->initiator_config_state = AVDTP_INITIATOR_FRAGMENTATED_COMMAND;
                 log_info("INT: fragmented");
             }
@@ -434,7 +434,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     }
 
     // check fragmentation
-    if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+    if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
         avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     }
 }
