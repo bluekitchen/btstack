@@ -70,7 +70,20 @@
 
 #ifdef ENABLE_SEGGER_RTT
 #include "SEGGER_RTT.h"
-static char channel1_out[1024];
+
+// allow to configure mode, channel, up buffer size in btstack_config.h for binary HCI formats (PacketLogger/BlueZ)
+
+#ifndef SEGGER_RTT_PACKETLOG_MODE
+#define SEGGER_RTT_PACKETLOG_MODE SEGGER_RTT_MODE_DEFAULT
+#endif
+#ifndef SEGGER_RTT_PACKETLOG_BUFFER_SIZE
+#define SEGGER_RTT_PACKETLOG_BUFFER_SIZE 1024
+#endif
+#ifndef SEGGER_RTT_PACKETLOG_CHANNEL
+#define SEGGER_RTT_PACKETLOG_CHANNEL 1
+#endif
+
+static char segger_rtt_packetlog_buffer[SEGGER_RTT_PACKETLOG_BUFFER_SIZE];
 #endif
 
 // BLUEZ hcidump - struct not used directly, but left here as documentation
@@ -140,12 +153,7 @@ void hci_dump_open(const char *filename, hci_dump_format_t format){
     switch (dump_format){
         case HCI_DUMP_PACKETLOGGER:
         case HCI_DUMP_BLUEZ:
-            // Configure up channel 1, options:
-            // - SEGGER_RTT_MODE_NO_BLOCK_SKIP
-            // - SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL
-            // Note: with SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL, firwmware will hang if RTT not supported/debug probe not connected
-            // Note: with SEGGER_RTT_MODE_NO_BLOCK_SKIP, there's a chance for log file corruption if second write (packet) is skipped
-            SEGGER_RTT_ConfigUpBuffer(1, "hci_dump", &channel1_out[0], sizeof(channel1_out), SEGGER_RTT_MODE_NO_BLOCK_SKIP) ;;
+            SEGGER_RTT_ConfigUpBuffer(SEGGER_RTT_PACKETLOG_CHANNEL, "hci_dump", &segger_rtt_packetlog_buffer[0], SEGGER_RTT_PACKETLOG_BUFFER_SIZE, SEGGER_RTT_PACKETLOG_MODE);
             break;
         default:
             break;
@@ -298,7 +306,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 #endif
 
 #ifdef ENABLE_SEGGER_RTT
-#if (SEGGER_RTT_MODE_DEFAULT == SEGGER_RTT_MODE_NO_BLOCK_SKIP)
+#if (SEGGER_RTT_PACKETLOG_MODE == SEGGER_RTT_MODE_NO_BLOCK_SKIP)
     static const char rtt_warning[] = "RTT buffer full - packet(s) skipped";
     static bool rtt_packet_skipped = false;
     if (rtt_packet_skipped){
@@ -335,17 +343,17 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 
 #ifdef ENABLE_SEGGER_RTT
 
-#if (SEGGER_RTT_MODE_DEFAULT == SEGGER_RTT_MODE_NO_BLOCK_SKIP)
+#if (SEGGER_RTT_PACKETLOG_MODE == SEGGER_RTT_MODE_NO_BLOCK_SKIP)
     // check available space in buffer to avoid writing header but not packet
-    unsigned space_free = SEGGER_RTT_GetAvailWriteSpace(1);
+    unsigned space_free = SEGGER_RTT_GetAvailWriteSpace(SEGGER_RTT_PACKETLOG_CHANNEL);
     if ((header_len + len) > space_free) {
         rtt_packet_skipped = true;
         return;
     }
 #endif
 
-    SEGGER_RTT_Write(1, &header, header_len);
-    SEGGER_RTT_Write(1, packet, len);
+    SEGGER_RTT_Write(SEGGER_RTT_PACKETLOG_CHANNEL, &header, header_len);
+    SEGGER_RTT_Write(SEGGER_RTT_PACKETLOG_CHANNEL, packet, len);
 #endif
     UNUSED(header_len);
 }
