@@ -284,7 +284,7 @@ static inline yxml_ret_t yxml_refstart(yxml_t *x, unsigned ch) {
 
 
 static yxml_ret_t yxml_ref(yxml_t *x, unsigned ch) {
-	if(x->reflen >= sizeof(x->data)-1)
+	if(x->reflen >= (sizeof(x->data)-1))
 		return YXML_EREF;
 	yxml_setchar(x->data+x->reflen, ch);
 	x->reflen++;
@@ -306,16 +306,23 @@ static yxml_ret_t yxml_refend(yxml_t *x, yxml_ret_t ret) {
 			ch = 0;
 	} else {
 		uint64_t i = INTFROM5CHARS(r[0], r[1], r[2], r[3], r[4]);
-		ch =
-			i == INTFROM5CHARS('l','t', 0,  0, 0) ? '<' :
-			i == INTFROM5CHARS('g','t', 0,  0, 0) ? '>' :
-			i == INTFROM5CHARS('a','m','p', 0, 0) ? '&' :
-			i == INTFROM5CHARS('a','p','o','s',0) ? '\'':
-			i == INTFROM5CHARS('q','u','o','t',0) ? '"' : 0;
+		if        (i == INTFROM5CHARS('l','t', 0,  0, 0)){
+			ch = '<';
+		} else if (i == INTFROM5CHARS('g','t', 0,  0, 0)){
+			ch = '>';
+		} else if (i == INTFROM5CHARS('a','m','p', 0, 0)){
+			ch =  '&';
+		} else if (i == INTFROM5CHARS('a','p','o','s',0)){
+			ch =  '\'';
+		} else if (i == INTFROM5CHARS('q','u','o','t',0)){
+			ch =  '"';
+		} else {
+			ch = 0;
+		} 
 	}
 
 	/* Codepoints not allowed in the XML 1.1 definition of a Char */
-	if(!ch || ch > 0x10FFFF || ch == 0xFFFE || ch == 0xFFFF || (ch-0xDFFF) < 0x7FF)
+	if(!ch || (ch > 0x10FFFF) || (ch == 0xFFFE) || (ch == 0xFFFF) || ((ch-0xDFFF) < 0x7FF))
 		return YXML_EREF;
 	yxml_setutf8(x->data, ch);
 	return ret;
@@ -393,7 +400,7 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 	case YXMLS_attr2:
 		if(yxml_isSP(ch))
 			return YXML_OK;
-		if(ch == (unsigned char)'\'' || ch == (unsigned char)'"') {
+		if((ch == (unsigned char)'\'') || (ch == (unsigned char)'"')) {
 			x->state = YXMLS_attr3;
 			x->quote = ch;
 			return YXML_OK;
@@ -490,7 +497,7 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 			x->state = YXMLS_misc1;
 			return YXML_OK;
 		}
-		if(ch == (unsigned char)'\'' || ch == (unsigned char)'"') {
+		if((ch == (unsigned char)'\'') || (ch == (unsigned char)'"')) {
 			x->state = YXMLS_dt1;
 			x->quote = ch;
 			x->nextstate = YXMLS_dt0;
@@ -534,7 +541,7 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 		}
 		break;
 	case YXMLS_dt4:
-		if(ch == (unsigned char)'\'' || ch == (unsigned char)'"') {
+		if((ch == (unsigned char)'\'') || (ch == (unsigned char)'"')) {
 			x->state = YXMLS_dt1;
 			x->quote = ch;
 			x->nextstate = YXMLS_dt4;
@@ -610,7 +617,7 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 	case YXMLS_enc1:
 		if(yxml_isSP(ch))
 			return YXML_OK;
-		if(ch == (unsigned char)'\'' || ch == (unsigned char)'"') {
+		if((ch == (unsigned char)'\'') || (ch == (unsigned char)'"')) {
 			x->state = YXMLS_enc2;
 			x->quote = ch;
 			return YXML_OK;
@@ -867,7 +874,7 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 	case YXMLS_std1:
 		if(yxml_isSP(ch))
 			return YXML_OK;
-		if(ch == (unsigned char)'\'' || ch == (unsigned char)'"') {
+		if((ch == (unsigned char)'\'') || (ch == (unsigned char)'"')) {
 			x->state = YXMLS_std2;
 			x->quote = ch;
 			return YXML_OK;
@@ -904,7 +911,7 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 	case YXMLS_ver1:
 		if(yxml_isSP(ch))
 			return YXML_OK;
-		if(ch == (unsigned char)'\'' || ch == (unsigned char)'"') {
+		if((ch == (unsigned char)'\'') || (ch == (unsigned char)'"')) {
 			x->state = YXMLS_string;
 			x->quote = ch;
 			x->nextstate = YXMLS_ver2;
