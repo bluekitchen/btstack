@@ -15,6 +15,9 @@ cstat_file = 'cstat.txt'
 # project prefix
 project_prefix = 'c:\\projects\\iar\\btstack\\btstack\\'
 
+def remove_whitespace(line):
+    return line.replace(' ','')
+
 def add_parantheses(line, expression):
     stripped_line = ''
     positions = []
@@ -50,6 +53,7 @@ with open(cstat_file, 'rt') as fin:
         parts = re.match(".*Suggest parentheses.*`(.*)'", msg)
         total += 1
         expression = parts.groups()[0]
+        expression = remove_whitespace(expression)
         # skip some expressions
         if expression.endswith('=='): continue
         if expression.endswith('!='): continue

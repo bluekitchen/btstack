@@ -621,7 +621,7 @@ static void characteristic_start_found(gatt_client_t * peripheral, uint16_t star
         reverse_128(uuid, uuid128);
     }
     
-    if (peripheral->filter_with_uuid && memcmp(peripheral->uuid128, uuid128, 16) != 0) return;
+    if (peripheral->filter_with_uuid && (memcmp(peripheral->uuid128, uuid128, 16) != 0)) return;
     
     peripheral->characteristic_properties = properties;
     peripheral->characteristic_start_handle = start_handle;

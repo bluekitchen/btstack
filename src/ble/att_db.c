@@ -502,7 +502,7 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
         prev_handle = it.handle;
         
         // does current attribute match
-        if (it.handle && att_iterator_match_uuid16(&it, attribute_type) && (attribute_len == it.value_len) && memcmp(attribute_value, it.value, it.value_len) == 0){
+        if (it.handle && att_iterator_match_uuid16(&it, attribute_type) && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             log_info("Begin of group, handle 0x%04x", it.handle);
             little_endian_store_16(response_buffer, offset, it.handle);
             offset += 2;
@@ -1224,7 +1224,7 @@ int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, ui
         prev_handle = it.handle;
         
         // check if found
-        if (it.handle && new_service_started && (attribute_len == it.value_len) && memcmp(attribute_value, it.value, it.value_len) == 0){
+        if (it.handle && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             *start_handle = it.handle;
             in_group = 1;
         }
@@ -1308,7 +1308,7 @@ int gatt_server_get_get_handle_range_for_service_with_uuid128(const uint8_t * uu
         prev_handle = it.handle;
         
         // check if found
-        if (it.handle && new_service_started && (attribute_len == it.value_len) && memcmp(attribute_value, it.value, it.value_len) == 0){
+        if (it.handle && new_service_started && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             *start_handle = it.handle;
             in_group = 1;
         }

@@ -511,7 +511,7 @@ static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_conn
         }
         case AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE:
             connection->parsed_attribute_value_offset++;
-            if (connection->parsed_attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 1) + prepended_header_size){
+            if (connection->parsed_attribute_value_offset < (big_endian_read_16(connection->parser_attribute_header, 1) + prepended_header_size)){
                 break;
             }
             connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;

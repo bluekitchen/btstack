@@ -188,7 +188,7 @@ static inline yxml_ret_t yxml_datacd2(yxml_t *x, unsigned ch) {
 
 static inline yxml_ret_t yxml_dataattr(yxml_t *x, unsigned ch) {
 	/* Normalize attribute values according to the XML spec section 3.3.3. */
-	yxml_setchar(x->data, (ch == 0x9) || (ch == 0xa) ? 0x20 : ch);
+	yxml_setchar(x->data, ((ch == 0x9) || (ch == 0xa)) ? 0x20 : ch);
 	x->data[1] = 0;
 	return YXML_ATTRVAL;
 }
@@ -270,7 +270,7 @@ static inline yxml_ret_t yxml_pistart  (yxml_t *x, unsigned ch) { return yxml_pu
 static inline yxml_ret_t yxml_piname   (yxml_t *x, unsigned ch) { return yxml_pushstackc(x, ch); }
 static inline yxml_ret_t yxml_piabort  (yxml_t *x, unsigned ch) { (void) x; (void) ch; yxml_popstack(x); return YXML_OK; }
 static inline yxml_ret_t yxml_pinameend(yxml_t *x, unsigned ch) { (void) ch;
-	return ((x->pi[0]|32) == 'x') && ((x->pi[1]|32) == 'm') && ((x->pi[2]|32) == 'l') && !x->pi[3] ? YXML_ESYN : YXML_PISTART;
+	return (((x->pi[0]|32) == 'x') && ((x->pi[1]|32) == 'm') && ((x->pi[2]|32) == 'l') && !x->pi[3]) ? YXML_ESYN : YXML_PISTART;
 }
 static inline yxml_ret_t yxml_pivalend (yxml_t *x, unsigned ch) { (void) ch; yxml_popstack(x); x->pi = (char *)x->stack; return YXML_PIEND; }
 

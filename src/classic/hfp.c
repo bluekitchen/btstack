@@ -343,7 +343,7 @@ hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0 && (hfp_connection->local_role == hfp_role)) {
+        if ((memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0) && (hfp_connection->local_role == hfp_role)) {
             return hfp_connection;
         }
     }
@@ -1110,7 +1110,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
 
     // TODO: handle space inside word        
-    if (byte == ' ' && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
+    if ((byte == ' ') && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
     
     if ((byte == ',') && hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE){
         if (hfp_connection->line_size == 0){

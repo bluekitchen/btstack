@@ -1280,7 +1280,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                 // skip unused entries
                 if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
                 log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
-                if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && memcmp(address, setup->sm_peer_address, 6) == 0){
+                if ((address_type == BD_ADDR_TYPE_LE_PUBLIC) && (memcmp(address, setup->sm_peer_address, 6) == 0)){
                     log_info("sm: device found for public address, updating");
                     le_db_index = i;
                     break;
@@ -1927,7 +1927,7 @@ static void sm_run(void){
                 continue;
             }
 
-            if ((sm_address_resolution_addr_type == addr_type) && memcmp(addr, sm_address_resolution_address, 6) == 0){
+            if ((sm_address_resolution_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
                 sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCEEDED);
                 break;

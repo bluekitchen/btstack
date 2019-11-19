@@ -359,8 +359,8 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
             }
             break;
         case DE_SIZE_32:
-            if (big_endian_read_16(element, 1) <= context->attributeID
-            &&  context->attributeID <= big_endian_read_16(element, 3)) {
+            if ((big_endian_read_16(element, 1) <= context->attributeID)
+            &&  (context->attributeID <= big_endian_read_16(element, 3))) {
                 context->result = 1;
                 return 1;
             }
@@ -610,7 +610,7 @@ static int sdp_traversal_contains_UUID128(uint8_t * element, de_type_t type, de_
     uint8_t normalizedUUID[16];
     if (type == DE_UUID){
         uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);
-        context->result = uuidOK && memcmp(context->uuid128, normalizedUUID, 16) == 0;
+        context->result = uuidOK && (memcmp(context->uuid128, normalizedUUID, 16) == 0);
     }
     if (type == DE_DES){
         context->result = sdp_record_contains_UUID128(element, context->uuid128);
