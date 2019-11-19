@@ -67,9 +67,10 @@ Declarations of codec functions, data types, and macros.
 
 
 #define SBC_HEADER_LEN 4
+
 #define SBC_MAX_FRAME_LEN (SBC_HEADER_LEN + \
                              ((SBC_MAX_BANDS * SBC_MAX_CHANNELS / 2) + \
-                              (SBC_MAX_BANDS + SBC_MAX_BLOCKS * SBC_MAX_BITPOOL + 7)/8))
+                             ((SBC_MAX_BANDS + (SBC_MAX_BLOCKS * SBC_MAX_BITPOOL) + 7)/8)))
 #define SBC_MAX_SAMPLES_PER_FRAME   (SBC_MAX_BANDS * SBC_MAX_BLOCKS)
 
 #define SBC_MAX_SCALEFACTOR_BYTES ((4*(SBC_MAX_CHANNELS * SBC_MAX_BANDS) + 7)/8)

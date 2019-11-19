@@ -97,19 +97,19 @@ typedef enum {
 
 #define yxml_isChar(c) 1
 /* 0xd should be part of SP, too, but yxml_parse() already normalizes that into 0xa */
-#define yxml_isSP(c) (c == 0x20 || c == 0x09 || c == 0x0a)
-#define yxml_isAlpha(c) ((c|32)-'a' < 26)
-#define yxml_isNum(c) (c-'0' < 10)
-#define yxml_isHex(c) (yxml_isNum(c) || (c|32)-'a' < 6)
-#define yxml_isEncName(c) (yxml_isAlpha(c) || yxml_isNum(c) || c == '.' || c == '_' || c == '-')
-#define yxml_isNameStart(c) (yxml_isAlpha(c) || c == ':' || c == '_' || c >= 128)
-#define yxml_isName(c) (yxml_isNameStart(c) || yxml_isNum(c) || c == '-' || c == '.')
+#define yxml_isSP(c) ((c == 0x20) || (c == 0x09) || (c == 0x0a))
+#define yxml_isAlpha(c) ( ((c|32)-'a') < 26)
+#define yxml_isNum(c) ((c-'0') < 10)
+#define yxml_isHex(c) (yxml_isNum(c) || ((c|32)-'a') < 6)
+#define yxml_isEncName(c) (yxml_isAlpha(c) || yxml_isNum(c) || (c == '.') || (c == '_') || (c == '-'))
+#define yxml_isNameStart(c) (yxml_isAlpha(c) || (c == ':') || (c == '_') || (c >= 128))
+#define yxml_isName(c) (yxml_isNameStart(c) || yxml_isNum(c) || (c == '-') || (c == '.'))
 /* XXX: The valid characters are dependent on the quote char, hence the access to x->quote */
-#define yxml_isAttValue(c) (yxml_isChar(c) && c != x->quote && c != '<' && c != '&')
+#define yxml_isAttValue(c) (yxml_isChar(c) && (c != x->quote) && (c != '<') && (c != '&'))
 /* Anything between '&' and ';', the yxml_ref* functions will do further
  * validation. Strictly speaking, this is "yxml_isName(c) || c == '#'", but
  * this parser doesn't understand entities with '.', ':', etc, anwyay.  */
-#define yxml_isRef(c) (yxml_isNum(c) || yxml_isAlpha(c) || c == '#')
+#define yxml_isRef(c) (yxml_isNum(c) || yxml_isAlpha(c) || (c == '#'))
 
 #define INTFROM5CHARS(a, b, c, d, e) ((((uint64_t)(a))<<32) | (((uint64_t)(b))<<24) | (((uint64_t)(c))<<16) | (((uint64_t)(d))<<8) | (uint64_t)(e))
 
