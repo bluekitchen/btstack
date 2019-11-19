@@ -77,7 +77,7 @@ static const char * avrcp_subunit_type_name[] = {
 
 const char * avrcp_subunit2str(uint16_t index){
     if (index <= 11) return avrcp_subunit_type_name[index];
-    if (index >= 0x1C && index <= 0x1F) return avrcp_subunit_type_name[index - 0x10];
+    if ((index >= 0x1C) && (index <= 0x1F)) return avrcp_subunit_type_name[index - 0x10];
     return avrcp_subunit_type_name[16];
 }
 
@@ -100,7 +100,7 @@ static const char * avrcp_operation_name[] = {
     "REWIND", "FAST_FORWARD", "NOT SUPPORTED", "FORWARD", "BACKWARD" // 0x4C
 };
 const char * avrcp_operation2str(uint8_t index){
-    if (index >= 0x3B && index <= 0x4C) return avrcp_operation_name[index - 0x3B];
+    if ((index >= 0x3B) && (index <= 0x4C)) return avrcp_operation_name[index - 0x3B];
     return avrcp_operation_name[0];
 }
 

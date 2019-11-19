@@ -709,7 +709,7 @@ static void att_server_handle_can_send_now(void){
 
                 // skip until last sender found (which is also skipped)
                 if (skip_connections_until != HCI_CON_HANDLE_INVALID){
-                    if (data_ready && request_att_server == NULL){
+                    if (data_ready && (request_att_server == NULL)){
                         request_att_server = att_server;
                     }
                     if (skip_connections_until == att_server->connection.con_handle){
@@ -724,7 +724,7 @@ static void att_server_handle_can_send_now(void){
                         last_send_con_handle = att_server->connection.con_handle;
                         can_send_now = att_server_can_send_packet(att_server);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
-                        if (data_ready && request_att_server == NULL){
+                        if (data_ready && (request_att_server == NULL)){
                             request_att_server = att_server;
                         }
                     } else {

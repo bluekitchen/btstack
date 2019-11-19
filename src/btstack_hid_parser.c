@@ -158,7 +158,7 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
     item->item_type = (item_header & 0x0c) >> 2;
     item->item_tag  = (item_header & 0xf0) >> 4;
     // long item
-    if ((item->data_size == 2) && item->item_tag == 0x0f && (item->item_type == 3)){
+    if ((item->data_size == 2) && (item->item_tag == 0x0f) && (item->item_type == 3)){
         if (hid_descriptor_len < 3) return;
         item->data_size = hid_descriptor[pos++];
         item->item_tag  = hid_descriptor[pos++];
@@ -170,7 +170,7 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
     if (hid_descriptor_len < item->item_size) return;
     if (item->data_size > 4) return;
     int i;
-    int sgnd = item->item_type == Global && (item->item_tag > 0) && (item->item_tag < 5);
+    int sgnd = (item->item_type == Global) && (item->item_tag > 0) && (item->item_tag < 5);
     int32_t value = 0;
     uint8_t latest_byte = 0;
     for (i=0;i<item->data_size;i++){
@@ -220,7 +220,7 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
         hid_descriptor_item_t usage_item;
         // parser->usage_pos < parser->descriptor_pos < parser->descriptor_len
         btstack_hid_parse_descriptor_item(&usage_item, &parser->descriptor[parser->usage_pos], parser->descriptor_len - parser->usage_pos);
-        if (usage_item.item_type == Global && (usage_item.item_tag == UsagePage)){
+        if ((usage_item.item_type == Global) && (usage_item.item_tag == UsagePage)){
             parser->usage_page = usage_item.item_value;
         }
         if (usage_item.item_type == Local){

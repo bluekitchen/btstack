@@ -202,7 +202,7 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED ||
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) ||
         (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         log_error("delay_report: connection in wrong state, state %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;

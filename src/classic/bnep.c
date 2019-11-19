@@ -1112,7 +1112,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     /* In-place modify the package and add the ethernet header in front of the payload.
      * WARNING: This modifies the data in front of the payload and may overwrite 14 bytes there!
      */
-    uint8_t *ethernet_packet = payload - 2 * sizeof(bd_addr_t) - sizeof(uint16_t);
+    uint8_t *ethernet_packet = payload - (2 * sizeof(bd_addr_t)) - sizeof(uint16_t);
     /* Restore the ethernet packet header */
     bd_addr_copy(ethernet_packet + pos, addr_dest);
     pos += sizeof(bd_addr_t);
@@ -1127,7 +1127,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     /* Notify application layer and deliver the ethernet packet */
     if (channel->packet_handler){
         (*channel->packet_handler)(BNEP_DATA_PACKET, channel->l2cap_cid, ethernet_packet,
-                                   size + sizeof(uint16_t) + 2 * sizeof(bd_addr_t));
+                                   size + sizeof(uint16_t) + (2 * sizeof(bd_addr_t)) );
     }
     
     return size;

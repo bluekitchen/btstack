@@ -348,7 +348,7 @@ static void cycling_speed_and_cadence_service_calculate_cumulative_wheel_revolut
 			instance->cumulative_wheel_revolutions = 0;
 		} 
 	} else {
-		if (instance->cumulative_wheel_revolutions < 0xffffffff - revolutions_change){
+		if (instance->cumulative_wheel_revolutions < (0xffffffff - revolutions_change)){
 			instance->cumulative_wheel_revolutions += revolutions_change;
 		} else {
 			instance->cumulative_wheel_revolutions = 0xffffffff;

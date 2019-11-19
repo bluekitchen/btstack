@@ -706,7 +706,7 @@ static void btstack_crypto_run(void){
                         btstack_crypto_ccm_calc_sn(btstack_crypto_ccm);
                         break;
                     case CCM_CALCULATE_XN:
-                        btstack_crypto_ccm_calc_xn(btstack_crypto_ccm, btstack_crypto->operation == BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK ? btstack_crypto_ccm->input : btstack_crypto_ccm->output);
+                        btstack_crypto_ccm_calc_xn(btstack_crypto_ccm, (btstack_crypto->operation == BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK) ? btstack_crypto_ccm->input : btstack_crypto_ccm->output);
                         break;
                     default:
                         break;

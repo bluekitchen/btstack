@@ -299,8 +299,8 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
 static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_service_category_t category, uint8_t cap_len){
     connection->error_code = 0;
     
-    if (category == AVDTP_SERVICE_CATEGORY_INVALID_0 || 
-        (category == AVDTP_SERVICE_CATEGORY_INVALID_FF && connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE)){
+    if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || 
+        ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE))){
         log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
         connection->error_code = BAD_SERV_CATEGORY;
@@ -308,7 +308,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
     }
 
     if (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
-        if (category != AVDTP_CONTENT_PROTECTION && category != AVDTP_MEDIA_CODEC){
+        if ( (category != AVDTP_CONTENT_PROTECTION) && (category != AVDTP_MEDIA_CODEC)){
             log_info("    ERROR: REJECT CATEGORY, INVALID_CAPABILITIES\n");
             connection->reject_service_category = category;
             connection->error_code = INVALID_CAPABILITIES;

@@ -199,7 +199,7 @@ uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
     if (context == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
 
-    if (context->mtu_state == MTU_EXCHANGED || context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED){
+    if ((context->mtu_state == MTU_EXCHANGED) || (context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED)){
         *mtu = context->mtu;
         return ERROR_CODE_SUCCESS;
     } 

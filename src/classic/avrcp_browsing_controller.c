@@ -864,7 +864,7 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
@@ -901,7 +901,7 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
@@ -932,7 +932,7 @@ uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_br
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 

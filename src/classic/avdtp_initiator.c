@@ -111,7 +111,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     for (i = offset; i < size; i += 2){
                         sep.seid = packet[i] >> 2;
                         offset++;
-                        if (sep.seid < 0x01 || sep.seid > 0x3E){
+                        if ((sep.seid < 0x01) || (sep.seid > 0x3E)){
                             log_info("    invalid sep id");
                             // status = BAD_ACP_SEID;
                             break;
@@ -377,7 +377,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     switch (stream_endpoint_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{
-            if (stream_endpoint_state == AVDTP_INITIATOR_W2_SET_CONFIGURATION && !connection->is_initiator){
+            if ((stream_endpoint_state == AVDTP_INITIATOR_W2_SET_CONFIGURATION) && !connection->is_initiator){
                 log_info("initiator SM stop sending SET_CONFIGURATION cmd: current role is acceptor");
                 connection->is_configuration_initiated_locally = 0;
                 break;
@@ -399,7 +399,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
-            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->signaling_packet.packet_type != AVDTP_END_PACKET)){
                 stream_endpoint->initiator_config_state = AVDTP_INITIATOR_FRAGMENTATED_COMMAND;
                 log_info("INT: fragmented");
             }
@@ -410,7 +410,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
-            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->signaling_packet.packet_type != AVDTP_END_PACKET)){
                 stream_endpoint->initiator_config_state = AVDTP_INITIATOR_FRAGMENTATED_COMMAND;
                 log_info("INT: fragmented");
             }
@@ -434,7 +434,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     }
 
     // check fragmentation
-    if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+    if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->signaling_packet.packet_type != AVDTP_END_PACKET)){
         avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     }
 }

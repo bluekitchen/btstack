@@ -207,7 +207,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
     int num_free_bytes = size - pos - 2;
     uint8_t MAX_NUMBER_ATTR_LEN = 10;
 
-    while (!fragmented && (num_free_bytes > 0) && connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
+    while (!fragmented && (num_free_bytes > 0) && (connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
         avrcp_media_attribute_id_t attr_id = connection->next_attr_id;
         int attr_index = attr_id - 1;
 

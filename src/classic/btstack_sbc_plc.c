@@ -368,7 +368,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
     }
         
    // shift the history buffer 
-    for (i=0;i<SBC_LHIST+SBC_RT+SBC_OLAL;i++){
+    for (i=0;i<(SBC_LHIST+SBC_RT+SBC_OLAL);i++){
         plc_state->hist[i] = plc_state->hist[i+SBC_FS];
     }
 

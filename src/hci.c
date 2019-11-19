@@ -862,7 +862,7 @@ static void acl_handler(uint8_t *packet, int size){
                 log_error( "ACL Cont Fragment but no first fragment for handle 0x%02x", con_handle);
                 return;
             }
-            if ((conn->acl_recombination_pos + acl_length) > 4 + HCI_ACL_BUFFER_SIZE){
+            if ((conn->acl_recombination_pos + acl_length) > (4 + HCI_ACL_BUFFER_SIZE)){
                 log_error( "ACL Cont Fragment to large: combined packet %u > buffer size %u for handle 0x%02x",
                     conn->acl_recombination_pos + acl_length, 4 + HCI_ACL_BUFFER_SIZE, con_handle);
                 conn->acl_recombination_pos = 0;
@@ -1562,13 +1562,13 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 
     // Vendor == CSR
-    if (hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
+    if ((hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT) && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
         // TODO: track actual command
         command_completed = 1;
     }
 
     // Vendor == Toshiba
-    if (hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
+    if ((hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE) && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
         // TODO: track actual command
         command_completed = 1;
         // Fix: no HCI Command Complete received, so num_cmd_packets not reset
@@ -1589,7 +1589,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
     if (!command_completed
             && (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE)
-            && hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION){
+            && (hci_stack->substate == HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION)){
 
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_reset.opcode){
@@ -1602,7 +1602,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     // Fix: Command Complete for HCI Reset in HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION trigger resend
     if (!command_completed
             && (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE)
-            && hci_stack->substate == HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS){
+            && (hci_stack->substate == HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS)){
 
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_reset.opcode){
@@ -1691,7 +1691,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 #endif
 
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
-            if (need_baud_change && hci_stack->chipset_result != BTSTACK_CHIPSET_NO_INIT_SCRIPT &&
+            if (need_baud_change && (hci_stack->chipset_result != BTSTACK_CHIPSET_NO_INIT_SCRIPT) &&
               ((hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) || 
                (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA))) {
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE_BCM;
@@ -2008,9 +2008,9 @@ static void event_handler(uint8_t *packet, int size){
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0x80) >> 7) |  // bit 0 = Octet 14, bit 7 / Read Buffer Size
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5) |  // bit 1 = Octet 24, bit 6 / Write Le Host Supported
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+10] & 0x10) >> 2) |  // bit 2 = Octet 10, bit 4 / Write Synchronous Flow Control Enable
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)      |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting 
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x01) << 4 |  // bit 4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x08) << 2 |  // bit 5 = Octet 35, bit 3 / LE Read Maximum Data Length
+                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)       |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting 
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x01) << 4) |  // bit 4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x08) << 2) |  // bit 5 = Octet 35, bit 3 / LE Read Maximum Data Length
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1);   // bit 6 = Octet 35, bit 5 / LE Set Default PHY
                     log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
             }
@@ -2573,8 +2573,8 @@ static void event_handler(uint8_t *packet, int size){
     }
     
     // help with BT sleep
-    if (hci_stack->state == HCI_STATE_FALLING_ASLEEP
-        && hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE
+    if ((hci_stack->state == HCI_STATE_FALLING_ASLEEP)
+        && (hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE)
         && HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
         hci_initializing_next_state();
     }
@@ -3339,7 +3339,7 @@ static void hci_run(void){
         return;
     }
     // send scan enable
-    if (hci_stack->state == HCI_STATE_WORKING && (hci_stack->new_scan_enable_value != 0xff) && hci_classic_supported()){
+    if ((hci_stack->state == HCI_STATE_WORKING) && (hci_stack->new_scan_enable_value != 0xff) && hci_classic_supported()){
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         hci_stack->new_scan_enable_value = 0xff;
         return;
@@ -4165,8 +4165,8 @@ static void gap_inquiry_explode(uint8_t * packet){
         event[0] = GAP_EVENT_INQUIRY_RESULT;
         uint8_t event_size = 18;    // if name is not set by EIR
 
-        memcpy(&event[2],  &packet[3 +                                             (i*6)], 6); // bd_addr
-        event[8] =          packet[3 + num_responses*(6)                         + (i*1)];     // page_scan_repetition_mode
+        memcpy(&event[2],  &packet[3 +                                               (i*6)], 6); // bd_addr
+        event[8] =          packet[3 + (num_responses*(6))                         + (i*1)];     // page_scan_repetition_mode
         memcpy(&event[9],  &packet[3 + (num_responses*(6+1+num_reserved_fields))   + (i*3)], 3); // class of device
         memcpy(&event[12], &packet[3 + (num_responses*(6+1+num_reserved_fields+3)) + (i*2)], 2); // clock offset
 
@@ -4337,7 +4337,7 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
     if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
     gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
     // LEVEL 4 always requires 128 bit encrytion key size
-    if (security_level == LEVEL_4 && (connection->encryption_key_size < 16)){
+    if ((security_level == LEVEL_4) && (connection->encryption_key_size < 16)){
         security_level = LEVEL_3;
     }
     return security_level;
@@ -4578,7 +4578,7 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
     
     if (!hci_is_le_connection(conn) ||
         (conn->state == SEND_CREATE_CONNECTION) ||
-        conn->state == SENT_CREATE_CONNECTION) {
+        (conn->state == SENT_CREATE_CONNECTION)) {
         hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
         log_error("gap_connect: classic connection or connect is already being created");
         return GATT_CLIENT_IN_WRONG_STATE;

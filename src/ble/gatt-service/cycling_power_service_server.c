@@ -1088,7 +1088,7 @@ void cycling_power_service_server_add_wheel_revolution(int32_t wheel_revolution,
             instance->cumulative_wheel_revolutions = 0;
         } 
     } else {
-        if (instance->cumulative_wheel_revolutions < 0xffffffff - wheel_revolution){
+        if (instance->cumulative_wheel_revolutions < (0xffffffff - wheel_revolution)){
             instance->cumulative_wheel_revolutions += wheel_revolution;
         } else {
             instance->cumulative_wheel_revolutions = 0xffffffff;

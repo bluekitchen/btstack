@@ -864,7 +864,7 @@ static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t pac
 }
 
 static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
-    int res = !hci_transport_link_have_outgoing_packet() && link_state == LINK_ACTIVE;
+    int res = !hci_transport_link_have_outgoing_packet() && (link_state == LINK_ACTIVE);
     // log_info("can_send_packet_now: %u", res);
     return res;
 }

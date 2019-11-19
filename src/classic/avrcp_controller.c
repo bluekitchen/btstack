@@ -190,7 +190,7 @@ static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t p
         max_bytes -= 3;
     }
 
-    if ((packet_type == AVRCP_SINGLE_PACKET) || packet_type == AVRCP_START_PACKET){
+    if ((packet_type == AVRCP_SINGLE_PACKET) || (packet_type == AVRCP_START_PACKET)){
         // Profile IDentifier (PID)
         command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
         command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -520,7 +520,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // uint32_t company_id = operands[0] << 16 | operands[1] << 8 | operands[2];
             pdu_id = operands[3];
 
-            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE && pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION){
+            if ((connection->state != AVCTP_W2_RECEIVE_RESPONSE) && (pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION)){
                 log_info("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d", connection->state);
                 return;
             } 
@@ -855,7 +855,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     }
 
     // trigger pending notification reqistrations
-    if (connection->state == AVCTP_CONNECTION_OPENED && connection->notifications_to_register){
+    if ((connection->state == AVCTP_CONNECTION_OPENED) && connection->notifications_to_register){
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
 }
@@ -1319,12 +1319,12 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
 }
 
 uint8_t avrcp_controller_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode_t mode){
-    if (mode < AVRCP_SHUFFLE_MODE_OFF || mode > AVRCP_SHUFFLE_MODE_GROUP) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    if ((mode < AVRCP_SHUFFLE_MODE_OFF) || (mode > AVRCP_SHUFFLE_MODE_GROUP)) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, 0x03, mode);
 }
 
 uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode){
-    if (mode < AVRCP_REPEAT_MODE_OFF || mode > AVRCP_REPEAT_MODE_GROUP) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    if ((mode < AVRCP_REPEAT_MODE_OFF) || (mode > AVRCP_REPEAT_MODE_GROUP)) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, 0x02, mode);
 }
 

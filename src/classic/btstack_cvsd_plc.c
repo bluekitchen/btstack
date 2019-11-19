@@ -355,7 +355,7 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     }
     
     // shift the history buffer 
-    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
+    for (i=0;i<(CVSD_LHIST+CVSD_RT+CVSD_OLAL);i++){
         plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
 
