@@ -480,7 +480,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     uint32_t resampling_factor;
 
     // nomimal factor (fixed-point 2^16) and compensation offset
-    uint32_t nomimal_factor = 0x0FF80;
+    uint32_t nomimal_factor = 0x10000;
     uint32_t compensation   = 0x00100;
 
     if (sbc_frames_in_buffer < OPTIMAL_FRAMES_MIN){
