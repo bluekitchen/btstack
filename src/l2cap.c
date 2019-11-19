@@ -1847,7 +1847,7 @@ static void l2cap_run(void){
 
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
-    if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
+    if ((channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE) || (channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION)) {
         log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
         // success, start l2cap handshake
         channel->con_handle = con_handle;
@@ -2580,7 +2580,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         }        
 #endif        
         // check for unknown options
-        if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
+        if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
             log_info("l2cap cid %u, unknown options", channel->local_cid);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
@@ -2839,7 +2839,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
     uint16_t cmd_len = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
 
     // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_RESPONSE 
-    if ((code < 1) || code == ECHO_RESPONSE || code > INFORMATION_RESPONSE){
+    if ((code < 1) || (code == ECHO_RESPONSE) || (code > INFORMATION_RESPONSE)){
         l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
         return;
     }
@@ -3519,7 +3519,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
         case L2CAP_CID_SIGNALING_LE: {
             uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
             uint16_t len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER + 2);
-            if (COMPLETE_L2CAP_HEADER + 4 + len > size) break;
+            if ((COMPLETE_L2CAP_HEADER + 4 + len) > size) break;
             int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
             if (!valid){
                 l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);

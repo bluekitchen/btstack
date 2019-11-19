@@ -1665,7 +1665,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
-    log_info("sm_sc_prepare_dhkey_check, DHKEY calculated %u", setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED ? 1 : 0);
+    log_info("sm_sc_prepare_dhkey_check, DHKEY calculated %u", (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED) ? 1 : 0);
 
     if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED){
         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
@@ -2021,8 +2021,8 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             // assert ec key is ready
-            if (sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED 
-            ||  sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST){
+            if ((sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED) 
+            ||  (sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST)){
                 if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
                     sm_ec_generate_new_key();
                 }
@@ -3315,7 +3315,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                     // delete stored bonding on disconnect with authentication failure in ph0
                     if ((sm_conn->sm_role == 0)
-                        && sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED
+                        && (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED)
                         && (packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE)){
                         le_device_db_remove(sm_conn->sm_le_db_index);
                     }

@@ -1731,7 +1731,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     
     // - channel over open mutliplexer
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
-    if (!multiplexer || multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) return;
+    if ( (multiplexer == NULL) || (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN)) return;
     
     // channel data ?
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]

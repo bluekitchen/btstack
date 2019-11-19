@@ -471,7 +471,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 break;
             }
             log_info("SDP Client disconnected.");
-            uint8_t status = sdp_client_state == QUERY_COMPLETE ? 0 : SDP_QUERY_INCOMPLETE;
+            uint8_t status = (sdp_client_state == QUERY_COMPLETE) ? 0 : SDP_QUERY_INCOMPLETE;
             sdp_client_state = INIT;
             sdp_parser_handle_done(status);
             break;

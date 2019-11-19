@@ -574,7 +574,7 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     }
     log_info("(e)SCO Connection failed status 0x%02x", status);
     // invalid params / unspecified error
-    if ((status != 0x11) && (status != 0x1f) && status != 0x0D) return 0;
+    if ((status != 0x11) && (status != 0x1f) && (status != 0x0D)) return 0;
                 
     switch (sco_establishment_active->link_setting){
         case HFP_LINK_SETTINGS_D0:
@@ -782,7 +782,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             status = rfcomm_event_channel_opened_get_status(packet);          
             
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-            if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
+            if (!hfp_connection || (hfp_connection->state != HFP_W4_RFCOMM_CONNECTED)) return;
 
             if (status) {
                 hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
@@ -894,7 +894,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_RING;
     }
 
-    if (isHandsFree && strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
+    if (isHandsFree && (strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0)){
         return HFP_CMD_OK;
     }
 
@@ -987,11 +987,11 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
     } 
 
-    if (isHandsFree && strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+    if (isHandsFree && (strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
         return HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
     }
 
-    if (!isHandsFree && strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+    if (!isHandsFree && (strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
         return HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
     }
 
@@ -1112,7 +1112,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     // TODO: handle space inside word        
     if ((byte == ' ') && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
     
-    if ((byte == ',') && hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE){
+    if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
         if (hfp_connection->line_size == 0){
             hfp_connection->line_buffer[0] = 0;
             hfp_connection->ignore_value = 1;
@@ -1240,7 +1240,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
     hfp_parser_next_state(hfp_connection, byte);
 
-    if (hfp_connection->resolve_byte && hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE){
+    if (hfp_connection->resolve_byte && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
         hfp_connection->resolve_byte = 0;
         hfp_connection->ignore_value = 1;
         parse_sequence(hfp_connection);

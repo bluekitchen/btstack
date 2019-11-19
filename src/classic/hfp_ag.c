@@ -602,7 +602,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     }
     // if AG is ringing, also start ringing on the HF
     if ((hfp_gsm_call_status() == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS) &&
-        hfp_gsm_callsetup_status() == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
+        (hfp_gsm_callsetup_status() == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS)){
         hfp_ag_hf_start_ringing(hfp_connection);
     }
 }
@@ -766,11 +766,11 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
 }
 
 static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
-    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
-        hfp_connection->state > HFP_W2_DISCONNECT_SCO) return 0;
+    if ((hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) ||
+        (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return 0;
 
 
-    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->release_audio_connection){
+    if ((hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) && hfp_connection->release_audio_connection){
         hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
         hfp_connection->release_audio_connection = 0;
         gap_disconnect(hfp_connection->sco_handle);
@@ -932,8 +932,8 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        if (hfp_connection->call_state != HFP_CALL_RINGING &&
-            hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
+        if ((hfp_connection->call_state != HFP_CALL_RINGING) &&
+            (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
 
         hfp_ag_hf_stop_ringing(hfp_connection);
         if (hfp_connection == source){
@@ -985,8 +985,8 @@ static void hfp_ag_trigger_reject_call(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->local_role != HFP_ROLE_AG) continue;
-        if (connection->call_state != HFP_CALL_RINGING &&
-            connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
+        if ((connection->call_state != HFP_CALL_RINGING) &&
+            (connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
         hfp_ag_hf_stop_ringing(connection);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
         connection->call_state = HFP_CALL_IDLE;
@@ -1056,8 +1056,8 @@ static void hfp_ag_stop_ringing(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        if (hfp_connection->call_state != HFP_CALL_RINGING &&
-            hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING) continue;
+        if ((hfp_connection->call_state != HFP_CALL_RINGING) &&
+            (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
         hfp_ag_hf_stop_ringing(hfp_connection);
     }    
 }

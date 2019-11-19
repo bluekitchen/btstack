@@ -329,7 +329,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
     while (pos < end_pos){
         de_type_t idType = de_get_element_type(element + pos);
         de_size_t idSize = de_get_size_type(element + pos);
-        if (idType != DE_UINT || idSize != DE_SIZE_16) break; // wrong type
+        if ( (idType != DE_UINT) || (idSize != DE_SIZE_16) ) break; // wrong type
         uint16_t attribute_id = big_endian_read_16(element, pos + 1);
         pos += 3;
         if (pos >= end_pos) break; // array out of bounds

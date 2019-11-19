@@ -683,7 +683,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 }
 
 void hsp_hs_send_button_press(void){
-    if (hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED || hsp_state >= HSP_W4_RFCOMM_DISCONNECTED) return;
+    if ((hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED) || (hsp_state >= HSP_W4_RFCOMM_DISCONNECTED)) return;
     hs_send_button_press = 1;
     hsp_run();
 }
