@@ -100,7 +100,7 @@ typedef enum {
 #define yxml_isSP(c) ((c == 0x20) || (c == 0x09) || (c == 0x0a))
 #define yxml_isAlpha(c) ( ((c|32)-'a') < 26)
 #define yxml_isNum(c) ((c-'0') < 10)
-#define yxml_isHex(c) (yxml_isNum(c) || ((c|32)-'a') < 6)
+#define yxml_isHex(c) (yxml_isNum(c) || (((c|32)-'a') < 6))
 #define yxml_isEncName(c) (yxml_isAlpha(c) || yxml_isNum(c) || (c == '.') || (c == '_') || (c == '-'))
 #define yxml_isNameStart(c) (yxml_isAlpha(c) || (c == ':') || (c == '_') || (c >= 128))
 #define yxml_isName(c) (yxml_isNameStart(c) || yxml_isNum(c) || (c == '-') || (c == '.'))
