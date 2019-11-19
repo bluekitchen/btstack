@@ -439,7 +439,9 @@ static int hci_is_le_connection(hci_connection_t * connection){
 static int nr_hci_connections(void){
     int count = 0;
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next, count++);
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+        count++;
+    }
     return count;
 }
 

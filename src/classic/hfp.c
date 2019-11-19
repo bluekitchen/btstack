@@ -1607,9 +1607,9 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LOG_INFO
     // encode \n\r
     char printable[HFP_HF_RX_DEBUG_PRINT_LINE+2];
-    int i;
+    int i = 0;
     int pos;
-    for (i=0,pos=0;(pos < size) && (i < (HFP_HF_RX_DEBUG_PRINT_LINE - 3)); pos++){
+    for (pos=0 ; (pos < size) && (i < (HFP_HF_RX_DEBUG_PRINT_LINE - 3)) ; pos++){
         switch (packet[pos]){
             case '\n':
                 printable[i++] = '\\';
