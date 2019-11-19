@@ -316,7 +316,7 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    int size = ( strlen(value) < (sizeof(event) - 4)) ? (int) strlen(value) : ((int) sizeof(event) - 4);
+    uint16_t size = btstack_min(strlen(value), sizeof(event) - 4);
     strncpy((char*)&event[3], value, size);
     event[3 + size] = 0;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
