@@ -826,7 +826,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     bnep_service_t * service;
 
     /* Sanity check packet size */
-    if (size < 1 + 1 + (2 * uuid_size)) {
+    if (size < (1 + 1 + (2 * uuid_size))) {
         return 0;
     }
 

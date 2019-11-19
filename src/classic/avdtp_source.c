@@ -211,7 +211,7 @@ static void avdtp_source_setup_media_header(uint8_t * media_packet, int size, in
 }
 
 static void avdtp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
-    if (size < num_bytes_to_copy + 1){
+    if (size < (num_bytes_to_copy + 1)){
         log_error("small outgoing buffer: buffer size %u, but need %u", size, num_bytes_to_copy + 1);
         return;
     }

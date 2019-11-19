@@ -504,7 +504,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device->expected_report_size = hid_get_report_size_for_id(device->cid, device->report_id, device->report_type, hid_descriptor_len, hid_descriptor); 
                     report_size =  device->expected_report_size + pos; // add 1 for header size and report id
                     
-                    if ((packet[0] & 0x08) && packet_size >= (pos + 1)){
+                    if ((packet[0] & 0x08) && (packet_size >= (pos + 1))){
                         device->report_size = btstack_min(btstack_min(little_endian_read_16(packet, pos), report_size), sizeof(report));
                     } else {
                         device->report_size = btstack_min(btstack_min(l2cap_max_mtu(), report_size), sizeof(report));

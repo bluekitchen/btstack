@@ -1871,7 +1871,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
     
-    if (value_length > peripheral_mtu(peripheral) - 3) return GATT_CLIENT_VALUE_TOO_LONG;
+    if (value_length > (peripheral_mtu(peripheral) - 3)) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;
 
     return att_write_request(ATT_WRITE_COMMAND, peripheral->con_handle, value_handle, value_length, value);
@@ -1931,11 +1931,11 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
-        (characteristic->properties & ATT_PROPERTY_NOTIFY) == 0) {
+        ((characteristic->properties & ATT_PROPERTY_NOTIFY) == 0)) {
         log_info("gatt_client_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED");
         return GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED;
     } else if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) &&
-               (characteristic->properties & ATT_PROPERTY_INDICATE) == 0){
+               ((characteristic->properties & ATT_PROPERTY_INDICATE) == 0)){
         log_info("gatt_client_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED");
         return GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED;
     }
