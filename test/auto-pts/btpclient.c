@@ -395,7 +395,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 while ((ad_pos + 2) < adv_data_len){
                     uint8_t ad_type = adv_data[ad_pos++];
                     uint8_t ad_len  = adv_data[ad_pos++];
-                    if ((ad_type != BLUETOOTH_DATA_TYPE_FLAGS) && ((ad_pos + ad_len) < adv_data_len) && (gap_adv_data_len + 2 + ad_len < 31)) {
+                    if ((ad_type != BLUETOOTH_DATA_TYPE_FLAGS) && ((ad_pos + ad_len) <= adv_data_len) && (gap_adv_data_len + 2 + ad_len < 31)) {
                         gap_adv_data[gap_adv_data_len++] = ad_len + 1;
                         gap_adv_data[gap_adv_data_len++] = ad_type;
                         memcpy(&gap_adv_data[gap_adv_data_len], &adv_data[ad_pos], ad_len);
@@ -556,6 +556,7 @@ static void usage(void){
             printf("p - Power On\n");
             printf("P - Power Off\n");
             printf("x - Back to main\n");
+            printf("a - start advertising\n");
             break;
         default:
             break;
@@ -565,6 +566,7 @@ static void stdin_process(char cmd){
     const uint8_t active_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_ACTIVE;
     const uint8_t value_on = 1;
     const uint8_t value_off = 0;
+    const uint8_t adv_data[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x01, };
     switch (console_state){
         case CONSOLE_STATE_MAIN:
             switch (cmd){
@@ -590,6 +592,9 @@ static void stdin_process(char cmd){
                     break;
                 case 'S':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_STOP_DISCOVERY, 0, 0, NULL);
+                    break;
+                case 'a':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(adv_data), adv_data);
                     break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;
