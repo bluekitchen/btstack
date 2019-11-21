@@ -174,7 +174,8 @@ typedef uint8_t sm_key256_t[32];
 // GLOBAL DATA
 //
 
-static uint8_t test_use_fixed_local_csrk;
+static bool test_use_fixed_local_csrk;
+static bool test_use_fixed_local_irk;
 
 #ifdef ENABLE_TESTING_SUPPORT
 static uint8_t test_pairing_failure;
@@ -3050,6 +3051,12 @@ static void sm_handle_random_result_ir(void *arg){
     }
     log_info_key("IR", sm_persistent_ir);
     dkg_state = DKG_CALC_IRK;
+
+    if (test_use_fixed_local_irk){
+        log_info_key("IRK", sm_persistent_irk);
+        dkg_state = DKG_CALC_DHK;
+    }
+
     sm_run();
 }
 
@@ -3109,6 +3116,11 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         } else {
                             sm_validate_er_ir();
                             dkg_state = DKG_CALC_IRK;
+
+                            if (test_use_fixed_local_irk){
+                                log_info_key("IRK", sm_persistent_irk);
+                                dkg_state = DKG_CALC_DHK;
+                            }
                         }
 
                         // restart random address updates after power cycle
@@ -3961,10 +3973,11 @@ void sm_set_ir(sm_key_t ir){
 void sm_test_set_irk(sm_key_t irk){
     memcpy(sm_persistent_irk, irk, 16);
     dkg_state = DKG_CALC_DHK;
+    test_use_fixed_local_irk = true;
 }
 
 void sm_test_use_fixed_local_csrk(void){
-    test_use_fixed_local_csrk = 1;
+    test_use_fixed_local_csrk = true;
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -4017,7 +4030,7 @@ void sm_init(void){
     gap_random_adress_update_period = 15 * 60 * 1000L;
     sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
-    test_use_fixed_local_csrk = 0;
+    test_use_fixed_local_csrk = false;
 
     // register for HCI Events from HCI
     hci_event_callback_registration.callback = &sm_event_packet_handler;
