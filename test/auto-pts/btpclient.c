@@ -383,7 +383,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 const uint8_t * adv_data = &data[2];
                 const uint8_t * scan_response = &data[2 + adv_data_len];
                 // uint32_t duration = little_endian_read_32(data, 2 + adv_data_len + scan_response_len);
-                bool use_own_id_address = (bool) &data[6 + adv_data_len + scan_response_len];
+                bool use_own_id_address = (bool) data[6 + adv_data_len + scan_response_len];
 
                 // prefix adv_data with flags and append rest
                 gap_adv_data_len = 0;
