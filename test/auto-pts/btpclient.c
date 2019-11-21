@@ -173,8 +173,8 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     uint8_t length = gap_event_advertising_report_get_data_length(packet);
                     const uint8_t * data = gap_event_advertising_report_get_data(packet);
 
-                    // filter during limited discovery
-                    if (gap_discovery_flags & BTP_GAP_DISCOVERY_FLAG_LIMITED){
+                    // filter during discovery (not doing observation)
+                    if ((gap_discovery_flags & BTP_GAP_DISCOVERY_FLAG_OBSERVATION) == 0){
                         bool discoverable = false;
                         ad_context_t context;
                         for (ad_iterator_init(&context, length, data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
@@ -184,8 +184,16 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             if (data_size < 1) continue;
                             const uint8_t * data = ad_iterator_get_data(&context);
                             uint8_t flags = data[0];
-                            if ((flags & BT_LE_AD_LIMITED) == BT_LE_AD_LIMITED){
-                                discoverable = true;
+                            if ((gap_discovery_flags & BTP_GAP_DISCOVERY_FLAG_LIMITED) != 0){
+                                // only report ad for devices in limited discovery mode
+                                if ((flags & BT_LE_AD_LIMITED) != 0){
+                                    discoverable = true;
+                                }
+                            } else {
+                                // report all devices in discovery mode
+                                if ((flags & (BT_LE_AD_GENERAL | BT_LE_AD_LIMITED)) != 0){
+                                    discoverable = true;
+                                }
                             }
                         }
                         if (discoverable == false) {
@@ -596,6 +604,7 @@ static void usage(void){
             printf("BTstack BTP Client for auto-pts framework: GAP console interface\n");
             printf("s - Start active scanning\n");
             printf("S - Stop discovery and scanning\n");
+            printf("l - Start general discovery\n");
             printf("l - Start limited discovery\n");
             printf("p - Power On\n");
             printf("P - Power Off\n");
@@ -609,6 +618,7 @@ static void usage(void){
 static void stdin_process(char cmd){
     const uint8_t active_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_ACTIVE;
     const uint8_t limited_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_LIMITED;
+    const uint8_t general_le_scan = BTP_GAP_DISCOVERY_FLAG_LE;
     const uint8_t value_on = 1;
     const uint8_t value_off = 0;
     const uint8_t adv_data[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x01, };
@@ -640,6 +650,9 @@ static void stdin_process(char cmd){
                     break;
                 case 'l':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &limited_le_scan);
+                    break;
+                case 'g':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &general_le_scan);
                     break;
                 case 'a':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(adv_data), adv_data);
