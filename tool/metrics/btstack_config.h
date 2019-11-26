@@ -31,6 +31,8 @@
 
 #define MAX_NR_LE_DEVICE_DB_ENTRIES    4
 
+#define MAX_ATT_DB_SIZE 1024
+
 #define NVM_NUM_DEVICE_DB_ENTRIES     10
 
 // Mesh Configuration
