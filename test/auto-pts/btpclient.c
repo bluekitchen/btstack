@@ -427,7 +427,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 const uint8_t * adv_data = &data[2];
                 const uint8_t * scan_response = &data[2 + adv_data_len];
                 // uint32_t duration = little_endian_read_32(data, 2 + adv_data_len + scan_response_len);
-                bool use_own_id_address = (bool) data[6 + adv_data_len + scan_response_len];
+                uint8_t own_addr_type = data[6 + adv_data_len + scan_response_len];
 
                 // prefix adv_data with flags and append rest
                 gap_adv_data_len = 0;
@@ -464,10 +464,18 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 }
 
                 // configure controller
-                if (use_own_id_address){
-                    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
-                } else {
-                    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+                switch (own_addr_type){
+                    case BTP_GAP_OWN_ADDR_TYPE_IDENTITY:
+                        gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
+                        break;
+                    case BTP_GAP_OWN_ADDR_TYPE_RPA:
+                        gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+                        break;
+                    case BTP_GAP_OWN_ADDR_TYPE_NON_RPA:
+                        gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
+                        break;
+                    default:
+                        break;
                 }
                 uint16_t adv_int_min = 0x0030;
                 uint16_t adv_int_max = 0x0030;
@@ -609,7 +617,9 @@ static void usage(void){
             printf("p - Power On\n");
             printf("P - Power Off\n");
             printf("x - Back to main\n");
-            printf("a - start advertising\n");
+            printf("a - start advertising with public address\n");
+            printf("r - start advertising with resolvable random address\n");
+            printf("n - start advertising with resolvable random address\n");
             break;
         default:
             break;
@@ -621,7 +631,9 @@ static void stdin_process(char cmd){
     const uint8_t general_le_scan = BTP_GAP_DISCOVERY_FLAG_LE;
     const uint8_t value_on = 1;
     const uint8_t value_off = 0;
-    const uint8_t adv_data[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x01, };
+    const uint8_t public_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
+    const uint8_t rpa_adv[]    = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
+    const uint8_t non_rpa_adv[]    = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
     switch (console_state){
         case CONSOLE_STATE_MAIN:
             switch (cmd){
@@ -655,7 +667,13 @@ static void stdin_process(char cmd){
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &general_le_scan);
                     break;
                 case 'a':
-                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(adv_data), adv_data);
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(public_adv), public_adv);
+                    break;
+                case 'r':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(rpa_adv), rpa_adv);
+                    break;
+                case 'n':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(non_rpa_adv), non_rpa_adv);
                     break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;

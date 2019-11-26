@@ -115,6 +115,11 @@ extern "C" {
 #define BTP_GAP_OP_SET_DISCOVERABLE             0x08
 #define BTP_GAP_OP_SET_BONDABLE                 0x09
 #define BTP_GAP_OP_START_ADVERTISING            0x0a
+
+#define BTP_GAP_OWN_ADDR_TYPE_IDENTITY          0x00
+#define BTP_GAP_OWN_ADDR_TYPE_RPA               0x01
+#define BTP_GAP_OWN_ADDR_TYPE_NON_RPA           0x02
+
 #define BTP_GAP_OP_STOP_ADVERTISING             0x0b
 #define BTP_GAP_DISCOVERY_FLAG_LE               0x01
 #define BTP_GAP_DISCOVERY_FLAG_BREDR            0x02
