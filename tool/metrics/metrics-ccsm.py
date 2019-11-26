@@ -139,7 +139,8 @@ def list_metrics_table():
             max = metrics[metric_name + '_MAX']
             print ( row % ( metric_name, target, deviations, max))
         else:
-            print ( row % ( metric_name, '', '', ''))
+            max = metrics[metric_name]
+            print ( row % ( metric_name, '', '', max))
 
 def list_deviations():
     global metrics
