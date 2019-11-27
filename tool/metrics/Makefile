@@ -1,5 +1,6 @@
-C_HEADERS=/Projects/c_headers/include/
-BTSTACK_ROOT=../..
+C_HEADERS    ?= /Projects/c_headers/include/
+BTSTACK_ROOT ?= ../..
+
 VPATH=${BTSTACK_ROOT}/src
 
 INCLUDES= \
