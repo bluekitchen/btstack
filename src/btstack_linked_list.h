@@ -61,19 +61,54 @@ typedef struct {
 } btstack_linked_list_iterator_t;
 
 
-// test if list is empty
-int                     btstack_linked_list_empty(btstack_linked_list_t * list);
-// add item to list as first element
-void                    btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item);       
-// add item to list as last element
-void                    btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item);
-// pop (get + remove) first element
+/**
+ * @brief Test if list is empty.
+ * @param list
+ * @returns true if list is empty
+ */
+int btstack_linked_list_empty(btstack_linked_list_t * list);
+
+/**
+ * @brief Add item to list as first element.
+ * @param list
+ * @param item
+ */
+void btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item);       
+
+/**
+ * @brief Add item to list as last element.
+ * @param list
+ * @param item
+ */
+void btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item);
+
+/**
+ * @brief Pop (get + remove) first element.
+ * @param list
+ * @returns first element or NULL if list is empty
+ */
 btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list);
-// remove item from list
-int                     btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item); 
-// get first element
+
+/**
+ * @brief Remove item from list
+ * @param list
+ * @param item
+ * @returns 0 if item was found in list, -1 if item was not in list
+ */
+int btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item); 
+
+/**
+ * @brief Get first element.
+ * @param list
+ * @returns first element or NULL if list is empty
+ */
 btstack_linked_item_t * btstack_linked_list_get_first_item(btstack_linked_list_t * list);
-// find the last item in the list
+
+/**
+ * @brief Get last element.
+ * @param list
+ * @returns first element or NULL if list is empty
+ */
 btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list);   
 
 /**
@@ -82,14 +117,35 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
  */
 int btstack_linked_list_count(btstack_linked_list_t * list);
 
-//
-// iterator for linked lists. allows to remove current element.
-// robust against removal of current element by btstack_linked_list_remove.
-//
-void            btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_linked_list_t * list);
-int             btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it);
+
+
+/**
+ * @brief Initialize Linked List Iterator
+ * @note robust against removal of current element by btstack_linked_list_remove
+ * @param it iterator context
+ * @param list
+ */
+void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_linked_list_t * list);
+
+/**
+ * @brief Has next element
+ * @param it iterator context
+ * @returns true if next element is available
+ */
+int btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it);
+
+/**
+ * @brief Get next list eleemnt
+ * @param it iterator context
+ * @returns list element
+ */
 btstack_linked_item_t * btstack_linked_list_iterator_next(btstack_linked_list_iterator_t * it);
-void            btstack_linked_list_iterator_remove(btstack_linked_list_iterator_t * it);
+
+/**
+ * @brief Remove current list element from list
+ * @param it iterator context
+ */
+void btstack_linked_list_iterator_remove(btstack_linked_list_iterator_t * it);
 
 /* API_END */
 
