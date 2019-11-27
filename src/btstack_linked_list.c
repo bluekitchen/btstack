@@ -73,29 +73,31 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
 /**
  * btstack_linked_list_add
  */
-void btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item){        // <-- add item to list
+bool btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item){        // <-- add item to list
     // check if already in list
     btstack_linked_item_t *it;
     for (it = *list; it ; it = it->next){
         if (it == item) {
-            return;
+            return false;
         }
     }
     // add first
     item->next = *list;
     *list = item;
+    return true;
 }
 
-void btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item){   // <-- add item to list as last element
+bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item){   // <-- add item to list as last element
     // check if already in list
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it->next ; it = it->next){
         if (it->next == item) {
-            return;
+            return false;
         }
     }
     item->next = (btstack_linked_item_t*) 0;
     it->next = item;
+    return true;
 }
 
 int  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list

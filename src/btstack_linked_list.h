@@ -74,15 +74,17 @@ bool btstack_linked_list_empty(btstack_linked_list_t * list);
  * @brief Add item to list as first element.
  * @param list
  * @param item
+ * @returns true if item was added, false if item already in list
  */
-void btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item);       
+bool btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item);
 
 /**
  * @brief Add item to list as last element.
  * @param list
  * @param item
+ * @returns true if item was added, false if item already in list
  */
-void btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item);
+bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item);
 
 /**
  * @brief Pop (get + remove) first element.
