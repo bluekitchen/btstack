@@ -1139,17 +1139,25 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
 int att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
+    bool added = btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
     att_server_request_can_send_now(att_server);
-    return ERROR_CODE_SUCCESS;
+    if (added){
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 }
 
 int att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
+    bool added = btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
     att_server_request_can_send_now(att_server);
-    return ERROR_CODE_SUCCESS;
+    if (added){
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 }
 
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
