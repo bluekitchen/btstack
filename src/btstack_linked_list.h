@@ -97,9 +97,9 @@ btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list);
  * @brief Remove item from list
  * @param list
  * @param item
- * @returns 0 if item was found in list, -1 if item was not in list
+ * @returns true if item was removed, false if it is no't in list
  */
-int btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item); 
+bool btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item);
 
 /**
  * @brief Get first element.

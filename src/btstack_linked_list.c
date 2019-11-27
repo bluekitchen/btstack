@@ -100,16 +100,16 @@ bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_i
     return true;
 }
 
-int  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
-    if (!item) return -1;
+bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
+    if (!item) return false;
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) list; it ; it = it->next){
         if (it->next == item){
             it->next =  item->next;
-            return 0;
+            return true;
         }
     }
-    return -1;
+    return false;
 }
 
 /**

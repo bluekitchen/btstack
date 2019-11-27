@@ -150,10 +150,10 @@ void mesh_network_key_add(mesh_network_key_t * network_key);
 /**
  * @brief Remove network key from list
  * @param network_key
- * @return 0 if removed
+ * @return true if removed
  * @note key is only removed from list, memory is not released
  */
-int mesh_network_key_remove(mesh_network_key_t * network_key);
+bool mesh_network_key_remove(mesh_network_key_t * network_key);
 
 /**
  * @brief Get network_key for netkey_index
@@ -239,7 +239,7 @@ void mesh_transport_key_add(mesh_transport_key_t * transport_key);
  * @return 0 if removed
  * @note key is only removed from list, memory is not released
  */
-int mesh_transport_key_remove(mesh_transport_key_t * transport_key);
+bool mesh_transport_key_remove(mesh_transport_key_t * transport_key);
 
 /**
  * Get transport key for appkey_index

@@ -101,7 +101,7 @@ static void btstack_run_loop_embedded_add_data_source(btstack_data_source_t *ds)
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -144,7 +144,7 @@ static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 #else

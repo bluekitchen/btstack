@@ -101,7 +101,7 @@ static void btstack_run_loop_wiced_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 

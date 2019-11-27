@@ -69,7 +69,7 @@ void mesh_network_key_add(mesh_network_key_t * network_key){
     btstack_linked_list_add_tail(&network_keys, (btstack_linked_item_t *) network_key);
 }
 
-int mesh_network_key_remove(mesh_network_key_t * network_key){
+bool mesh_network_key_remove(mesh_network_key_t * network_key){
     mesh_network_key_used[network_key->internal_index] = 0;
     return btstack_linked_list_remove(&network_keys, (btstack_linked_item_t *) network_key);
 }
@@ -161,7 +161,7 @@ void mesh_transport_key_add(mesh_transport_key_t * transport_key){
     btstack_linked_list_add_tail(&application_keys, (btstack_linked_item_t *) transport_key);
 }
 
-int mesh_transport_key_remove(mesh_transport_key_t * transport_key){
+bool mesh_transport_key_remove(mesh_transport_key_t * transport_key){
     mesh_transport_key_used[transport_key->internal_index] = 0;
     return btstack_linked_list_remove(&application_keys, (btstack_linked_item_t *) transport_key);
 }
