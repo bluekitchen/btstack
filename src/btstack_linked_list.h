@@ -42,6 +42,8 @@
 #ifndef BTSTACK_LINKED_LIST_H
 #define BTSTACK_LINKED_LIST_H
 
+#include "btstack_bool.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -66,7 +68,7 @@ typedef struct {
  * @param list
  * @returns true if list is empty
  */
-int btstack_linked_list_empty(btstack_linked_list_t * list);
+bool btstack_linked_list_empty(btstack_linked_list_t * list);
 
 /**
  * @brief Add item to list as first element.
@@ -132,7 +134,7 @@ void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btst
  * @param it iterator context
  * @returns true if next element is available
  */
-int btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it);
+bool btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it);
 
 /**
  * @brief Get next list eleemnt

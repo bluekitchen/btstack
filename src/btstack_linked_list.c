@@ -51,7 +51,7 @@
 /**
  * tests if list is empty
  */
-int  btstack_linked_list_empty(btstack_linked_list_t * list){
+bool  btstack_linked_list_empty(btstack_linked_list_t * list){
     return *list == (void *) 0;
 }
 
@@ -146,7 +146,7 @@ void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btst
     it->curr = * head;
 }
 
-int btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it){
+bool btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it){
     // log_info("btstack_linked_list_iterator_has_next: advance on next %u, it->prev %p, it->curr %p", it->advance_on_next, it->prev, it->curr);
     if (!it->advance_on_next){
         return it->curr != NULL;
