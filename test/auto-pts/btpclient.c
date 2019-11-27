@@ -72,7 +72,11 @@ static char gap_name[249];
 static char gap_short_name[11];
 static uint32_t gap_cod;
 static uint8_t gap_discovery_flags;
-static btstack_timer_source_t gap_limited_discoery_timer;
+static btstack_timer_source_t gap_limited_discovery_timer;
+
+static bd_addr_type_t   remote_addr_type;
+static bd_addr_t        remote_addr;
+static hci_con_handle_t remote_handle = HCI_CON_HANDLE_INVALID;
 
 // gap_adv_data_len/gap_scan_response is 16-bit to simplify bounds calculation
 static uint8_t  ad_flags;
@@ -217,6 +221,44 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_FOUND, 0, 11, &buffer[0]);
                     break;
                 }
+
+                case HCI_EVENT_DISCONNECTION_COMPLETE: {
+                    // assume remote device
+                    printf("Disconnected\n");
+                    uint8_t buffer[7];
+                    buffer[0] =  remote_addr_type;
+                    reverse_bd_addr(remote_addr, &buffer[1]);
+                    btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_DISCONNECTED, 0, sizeof(buffer), &buffer[0]);
+                    break;
+                }
+
+                case HCI_EVENT_LE_META:
+                    // wait for connection complete
+                    switch (hci_event_le_meta_get_subevent_code(packet)){
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // Assume success
+                            remote_handle          = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            remote_addr_type       = hci_subevent_le_connection_complete_get_peer_address_type(packet);
+                            hci_subevent_le_connection_complete_get_peer_address(packet, remote_addr);
+                            uint16_t conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            uint16_t conn_latency  = hci_subevent_le_connection_complete_get_conn_latency(packet);
+                            uint16_t supervision_timeout = hci_subevent_le_connection_complete_get_supervision_timeout(packet);
+
+                            printf("Connected to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
+
+                            uint8_t buffer[13];
+                            buffer[0] =  remote_addr_type;
+                            reverse_bd_addr(remote_addr, &buffer[1]);
+                            little_endian_store_16(buffer, 7, conn_interval);
+                            little_endian_store_16(buffer, 9, conn_latency);
+                            little_endian_store_16(buffer, 11, supervision_timeout);
+                            btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_CONNECTED, 0, sizeof(buffer), &buffer[0]);
+                            break;
+                        default:
+                            break;                    
+                    }
+                    break;
+
                 default:
                     break;
             }
@@ -521,9 +563,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     }
                     if (flags & BTP_GAP_DISCOVERY_FLAG_LIMITED){
                         // set timer
-                        btstack_run_loop_set_timer_handler(&gap_limited_discoery_timer, gap_limited_discovery_timeout_handler);
-                        btstack_run_loop_set_timer(&gap_limited_discoery_timer, LIM_DISC_SCAN_MIN_MS);
-                        btstack_run_loop_add_timer(&gap_limited_discoery_timer);
+                        btstack_run_loop_set_timer_handler(&gap_limited_discovery_timer, gap_limited_discovery_timeout_handler);
+                        btstack_run_loop_set_timer(&gap_limited_discovery_timer, LIM_DISC_SCAN_MIN_MS);
+                        btstack_run_loop_add_timer(&gap_limited_discovery_timer);
                     }
                     gap_discovery_flags = flags;
                     gap_set_scan_parameters(scan_type, 0x30, 0x30);
@@ -548,10 +590,24 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             }
             break;
         case BTP_GAP_OP_CONNECT:
-            MESSAGE("BTP_GAP_OP_CONNECT - not implemented");
+            MESSAGE("BTP_GAP_OP_CONNECT");
+            if (controller_index == 0){
+                remote_addr_type = data[0];
+                reverse_bd_addr(&data[1], remote_addr);
+                // uint8_t own_addr_type = data[7];
+                gap_auto_connection_start(remote_addr_type, remote_addr);
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
             break;
         case BTP_GAP_OP_DISCONNECT:
-            MESSAGE("BTP_GAP_OP_DISCONNECT - not implemented");
+            MESSAGE("BTP_GAP_OP_DISCONNECT");
+            if (controller_index == 0){
+                if (remote_handle != HCI_CON_HANDLE_INVALID){
+                    gap_disconnect(remote_handle);
+                    remote_handle = HCI_CON_HANDLE_INVALID;
+                }
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
             break;
         case BTP_GAP_OP_SET_IO_CAPA:
             MESSAGE("BTP_GAP_OP_SET_IO_CAPA - not implemented");
