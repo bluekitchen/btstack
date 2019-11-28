@@ -84,7 +84,7 @@ static uint8_t  gap_adv_data[31];
 static uint16_t gap_adv_data_len;
 static uint8_t  gap_scan_response[31];
 static uint16_t gap_scan_response_len;
-static uint8_t gap_discovery_active;
+static uint8_t gap_inquriy_scan_active;
 
 static uint32_t current_settings;
 
@@ -232,6 +232,24 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     break;
                 }
 
+                case GAP_EVENT_INQUIRY_RESULT: {
+                    bd_addr_t address;
+                    gap_event_inquiry_result_get_bd_addr(packet, address);
+                    // TODO: fetch EIR if needed
+                    // TODO: fetch RSSI if needed
+                    int8_t rssi = 0;
+
+                    // max 255 bytes EIR data
+                    uint8_t buffer[11 + 255];
+                    buffer[0] = BTP_GAP_ADDR_PUBLIC;
+                    reverse_bd_addr(address, &buffer[1]);
+                    buffer[7] = rssi;
+                    buffer[8] = 0;
+                    little_endian_store_16(buffer, 9, 0);
+                    btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_FOUND, 0, 11, &buffer[0]);
+                    break;
+                }
+
                 case HCI_EVENT_CONNECTION_COMPLETE: {
                     // assume remote device
                     remote_handle          = hci_event_connection_complete_get_connection_handle(packet);
@@ -258,6 +276,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_DISCONNECTED, 0, sizeof(buffer), &buffer[0]);
                     break;
                 }
+
 
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
@@ -600,8 +619,8 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     gap_start_scan();
                 }
                 if (flags & BTP_GAP_DISCOVERY_FLAG_BREDR){
-                    gap_discovery_active = 1;
-                    // TODO: start discovery
+                    gap_inquriy_scan_active = 1;
+                    gap_inquiry_start(15);
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
@@ -610,9 +629,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             MESSAGE("BTP_GAP_OP_STOP_DISCOVERY");
             if (controller_index == 0){
                 gap_stop_scan();
-                if (gap_discovery_active){
-                    gap_discovery_active = 0;
-                    // TODO: stop discovery
+                if (gap_inquriy_scan_active){
+                    gap_inquriy_scan_active = 0;
+                    gap_inquiry_stop();
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
@@ -680,6 +699,7 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
             break;
         case BTP_SERVICE_ID_GAP:
             btp_gap_handler(opcode, controller_index, length, data);
+            break;
         default:
             btp_send_error_unknown_command();
             break;
@@ -703,6 +723,7 @@ static void usage(void){
             printf("S - Stop discovery and scanning\n");
             printf("g - Start general discovery\n");
             printf("l - Start limited discovery\n");
+            printf("i - Start inquiry scan\n");
             printf("p - Power On\n");
             printf("P - Power Off\n");
             printf("x - Back to main\n");
@@ -717,6 +738,7 @@ static void usage(void){
     }
 }
 static void stdin_process(char cmd){
+    const uint8_t inquiry_scan = BTP_GAP_DISCOVERY_FLAG_BREDR;
     const uint8_t active_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_ACTIVE;
     const uint8_t limited_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_LIMITED;
     const uint8_t general_le_scan = BTP_GAP_DISCOVERY_FLAG_LE;
@@ -746,6 +768,9 @@ static void stdin_process(char cmd){
                     break;
                 case 'P':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_POWERED, 0, 1, &value_off);
+                    break;
+                case 'i':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &inquiry_scan);
                     break;
                 case 's':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &active_le_scan);
