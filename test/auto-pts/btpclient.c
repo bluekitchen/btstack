@@ -168,6 +168,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             break;
                     }
                     break;
+
                 case GAP_EVENT_ADVERTISING_REPORT:{
                     bd_addr_t address;
                     gap_event_advertising_report_get_address(packet, address);
@@ -222,6 +223,23 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     break;
                 }
 
+                case HCI_EVENT_CONNECTION_COMPLETE: {
+                    // assume remote device
+                    remote_handle          = hci_event_connection_complete_get_connection_handle(packet);
+                    remote_addr_type       = 0;
+                    hci_event_connection_complete_get_bd_addr(packet, remote_addr);
+                    printf("Connected Classic to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
+
+                    uint8_t buffer[13];
+                    buffer[0] =  remote_addr_type;
+                    reverse_bd_addr(remote_addr, &buffer[1]);
+                    little_endian_store_16(buffer, 7,  0);
+                    little_endian_store_16(buffer, 9,  0);
+                    little_endian_store_16(buffer, 11, 0);
+                    btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_CONNECTED, 0, sizeof(buffer), &buffer[0]);
+                    break;
+                }
+
                 case HCI_EVENT_DISCONNECTION_COMPLETE: {
                     // assume remote device
                     printf("Disconnected\n");
@@ -244,7 +262,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             uint16_t conn_latency  = hci_subevent_le_connection_complete_get_conn_latency(packet);
                             uint16_t supervision_timeout = hci_subevent_le_connection_complete_get_supervision_timeout(packet);
 
-                            printf("Connected to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
+                            printf("Connected LE to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
 
                             uint8_t buffer[13];
                             buffer[0] =  remote_addr_type;
