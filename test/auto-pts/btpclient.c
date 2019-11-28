@@ -117,6 +117,15 @@ static void btp_send_gap_settings(uint8_t opcode){
     btp_send(BTP_SERVICE_ID_GAP, opcode, 0, 4, buffer);
 }
 
+static void btp_send_error(uint8_t error){
+    MESSAGE("BTP_GAP_ERROR error %02x", error);
+    btp_send(BTP_SERVICE_ID_GAP, BTP_OP_ERROR, 0, 1, &error);
+}
+
+static void btp_send_error_unknown_command(void){
+    btp_send_error(BTP_ERROR_UNKNOWN_CMD);
+}
+
 static void reset_gap(void){
     // current settings
     current_settings |=  BTP_GAP_SETTING_SSP;
@@ -342,6 +351,7 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         default:
+            btp_send_error_unknown_command();
             break;
     }
 }
@@ -628,7 +638,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             }
             break;
         case BTP_GAP_OP_SET_IO_CAPA:
-            MESSAGE("BTP_GAP_OP_SET_IO_CAPA - not implemented");
+            MESSAGE("BTP_GAP_OP_SET_IO_CAPA");
             if (controller_index == 0){
                 uint8_t io_capabilities = data[0];
                 gap_ssp_set_io_capability(io_capabilities);
@@ -638,18 +648,22 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             break;
         case BTP_GAP_OP_PAIR:
             MESSAGE("BTP_GAP_OP_PAIR - not implemented");
+            btp_send_error_unknown_command();
             break;
         case BTP_GAP_OP_UNPAIR:
             MESSAGE("BTP_GAP_OP_UNPAIR - not implemented");
+            btp_send_error_unknown_command();
             break;
         case BTP_GAP_OP_PASSKEY_ENTRY_RSP:
             MESSAGE("BTP_GAP_OP_PASSKEY_ENTRY_RSP - not implemented");
+            btp_send_error_unknown_command();
             break;
         case BTP_GAP_OP_PASSKEY_CONFIRM_RSP:
             MESSAGE("BTP_GAP_OP_PASSKEY_CONFIRM_RSP - not implemented");
+            btp_send_error_unknown_command();
             break;
-
         default:
+            btp_send_error_unknown_command();
             break;
     }
 }
@@ -667,6 +681,7 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
         case BTP_SERVICE_ID_GAP:
             btp_gap_handler(opcode, controller_index, length, data);
         default:
+            btp_send_error_unknown_command();
             break;
     }
 }
@@ -686,11 +701,13 @@ static void usage(void){
             printf("BTstack BTP Client for auto-pts framework: GAP console interface\n");
             printf("s - Start active scanning\n");
             printf("S - Stop discovery and scanning\n");
-            printf("l - Start general discovery\n");
+            printf("g - Start general discovery\n");
             printf("l - Start limited discovery\n");
             printf("p - Power On\n");
             printf("P - Power Off\n");
             printf("x - Back to main\n");
+            printf("d - enable general discoverable mode\n");
+            printf("D - enable limited discoverable mode\n");
             printf("a - start advertising with public address\n");
             printf("r - start advertising with resolvable random address\n");
             printf("n - start advertising with resolvable random address\n");
@@ -703,7 +720,9 @@ static void stdin_process(char cmd){
     const uint8_t active_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_ACTIVE;
     const uint8_t limited_le_scan = BTP_GAP_DISCOVERY_FLAG_LE | BTP_GAP_DISCOVERY_FLAG_LIMITED;
     const uint8_t general_le_scan = BTP_GAP_DISCOVERY_FLAG_LE;
-    const uint8_t value_on = 1;
+    const uint8_t general_discoverable = BTP_GAP_DISCOVERABLE_GENERAL;
+    const uint8_t limited_discoverable = BTP_GAP_DISCOVERABLE_LIMITED;
+    const uint8_t value_on  = 1;
     const uint8_t value_off = 0;
     const uint8_t public_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
     const uint8_t rpa_adv[]    = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
@@ -748,6 +767,12 @@ static void stdin_process(char cmd){
                     break;
                 case 'n':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_ADVERTISING, 0, sizeof(non_rpa_adv), non_rpa_adv);
+                    break;
+                case 'd':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_DISCOVERABLE, 0, 1, &general_discoverable);
+                    break;
+                case 'D':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_DISCOVERABLE, 0, 1, &limited_discoverable);
                     break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;
