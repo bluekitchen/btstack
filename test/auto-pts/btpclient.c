@@ -859,8 +859,10 @@ static void usage(void){
             printf("D - enable limited discoverable mode\n");
             printf("a - start advertising with public address\n");
             printf("A - start directed advertising with public address to %s\n", bd_addr_to_str(pts_addr));
+            printf("C - connect to public address to %s\n", bd_addr_to_str(pts_addr));
             printf("r - start advertising with resolvable random address\n");
             printf("n - start advertising with resolvable random address\n");
+            printf("t - disconnect\n");
             break;
         default:
             break;
@@ -879,6 +881,7 @@ static void stdin_process(char cmd){
     const uint8_t rpa_adv[]     = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
     const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
     uint8_t directed_advertisement_request[8];
+    uint8_t connection_request[7];
     
     switch (console_state){
         case CONSOLE_STATE_MAIN:
@@ -938,6 +941,16 @@ static void stdin_process(char cmd){
                     reverse_bd_addr(pts_addr, &directed_advertisement_request[1]);
                     directed_advertisement_request[7] = 0;
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DIRECTED_ADVERTISING, 0, sizeof(directed_advertisement_request), directed_advertisement_request);
+                    break;
+                case 'C':
+                    connection_request[0] = 0;
+                    reverse_bd_addr(pts_addr, &connection_request[1]);
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_CONNECT, 0, sizeof(connection_request), connection_request);
+                    break;
+                case 't':
+                    connection_request[0] = 0;
+                    reverse_bd_addr(pts_addr, &connection_request[1]);
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_DISCONNECT, 0, sizeof(connection_request), connection_request);
                     break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;
