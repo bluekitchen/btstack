@@ -808,6 +808,21 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
             break;
+        case BTP_GAP_OP_CONNECTION_PARAM_UPDATE:
+            if (controller_index == 0){
+                MESSAGE("BTP_GAP_OP_CONNECTION_PARAM_UPDATE");
+                // assume already connected
+                uint8_t   command_addr_type = data[0];
+                bd_addr_t command_addr;
+                reverse_bd_addr(&data[1], command_addr);
+                uint16_t conn_interval_min = little_endian_read_16(data, 7);
+                uint16_t conn_interval_max = little_endian_read_16(data, 9);
+                uint16_t conn_latency = little_endian_read_16(data, 11);
+                uint16_t supervision_timeout = little_endian_read_16(data, 13);
+                gap_request_connection_parameter_update(remote_handle, conn_interval_min, conn_interval_max, conn_latency, supervision_timeout);
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
+            break;
         default:
             btp_send_error_unknown_command(BTP_SERVICE_ID_GAP);
             break;
