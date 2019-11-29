@@ -90,6 +90,8 @@ static uint8_t gap_inquriy_scan_active;
 
 static uint32_t current_settings;
 
+static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
+
 // log/debug output
 #define MESSAGE(format, ...) log_info(format, ## __VA_ARGS__); printf(format "\n", ## __VA_ARGS__)
 static void MESSAGE_HEXDUMP(const uint8_t * data, uint16_t len){
@@ -563,6 +565,32 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 btp_send_gap_settings(opcode);
             }
             break;
+
+        case BTP_GAP_OP_START_DIRECTED_ADVERTISING:
+            MESSAGE("BTP_GAP_OP_START_DIRECTED_ADVERTISING");
+            if (controller_index == 0){
+                remote_addr_type = data[0];
+                reverse_bd_addr(&data[1], remote_addr);
+                uint8_t high_duty =  data[7];
+                // uint8_t use_own_id_address = data[8];
+
+                uint16_t adv_int_min = 0;
+                uint16_t adv_int_max = 0;
+                uint8_t adv_type;
+                if (high_duty){
+                    adv_type = 0x01;
+                } else {
+                    adv_type = 0x04;
+                }
+
+                gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, remote_addr_type, remote_addr, 0x07, 0x00);
+                gap_advertisements_enable(1);
+                // update settings
+                current_settings |= BTP_GAP_SETTING_ADVERTISING;
+                btp_send_gap_settings(opcode);
+            }
+            break;
+
         case BTP_GAP_OP_START_ADVERTISING:
             MESSAGE("BTP_GAP_OP_START_ADVERTISING");
             if (controller_index == 0){
@@ -634,7 +662,8 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     adv_int_min = 0xa0;
                     adv_int_max = 0xa0;
                 }
-                gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+
+                gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, pts_addr, 0x07, 0x00);
                 gap_advertisements_set_data(gap_adv_data_len, (uint8_t *) gap_adv_data);
                 gap_scan_response_set_data(scan_response_len, (uint8_t *) scan_response);
                 gap_advertisements_enable(1);
@@ -829,6 +858,7 @@ static void usage(void){
             printf("d - enable general discoverable mode\n");
             printf("D - enable limited discoverable mode\n");
             printf("a - start advertising with public address\n");
+            printf("A - start directed advertising with public address to %s\n", bd_addr_to_str(pts_addr));
             printf("r - start advertising with resolvable random address\n");
             printf("n - start advertising with resolvable random address\n");
             break;
@@ -845,9 +875,11 @@ static void stdin_process(char cmd){
     const uint8_t limited_discoverable = BTP_GAP_DISCOVERABLE_LIMITED;
     const uint8_t value_on  = 1;
     const uint8_t value_off = 0;
-    const uint8_t public_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
-    const uint8_t rpa_adv[]    = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
-    const uint8_t non_rpa_adv[]    = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
+    const uint8_t public_adv[]  = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
+    const uint8_t rpa_adv[]     = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
+    const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
+    uint8_t directed_advertisement_request[8];
+    
     switch (console_state){
         case CONSOLE_STATE_MAIN:
             switch (cmd){
@@ -900,6 +932,12 @@ static void stdin_process(char cmd){
                     break;
                 case 'D':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_DISCOVERABLE, 0, 1, &limited_discoverable);
+                    break;
+                case 'A':
+                    directed_advertisement_request[0] = 0;
+                    reverse_bd_addr(pts_addr, &directed_advertisement_request[1]);
+                    directed_advertisement_request[7] = 0;
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DIRECTED_ADVERTISING, 0, sizeof(directed_advertisement_request), directed_advertisement_request);
                     break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;

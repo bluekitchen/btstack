@@ -142,6 +142,9 @@ extern "C" {
 #define BTP_GAP_OP_UNPAIR                       0x12
 #define BTP_GAP_OP_PASSKEY_ENTRY_RSP            0x13
 #define BTP_GAP_OP_PASSKEY_CONFIRM_RSP          0x14
+#define BTP_GAP_OP_START_DIRECTED_ADVERTISING   0x15
+#define BTP_GAP_OP_CONNECTION_PARAM_UPDATE      0x16
+#define BTP_GAP_OP_PAIRING_CONSENT_RSP          0x17
 
 #define BTP_GAP_EV_NEW_SETTINGS                 0x80
 
