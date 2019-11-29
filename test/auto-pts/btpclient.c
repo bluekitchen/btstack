@@ -143,7 +143,8 @@ static void reset_gap(void){
 #endif
 
     // TODO: check ENABLE_CLASSIC / Controller features
-    ad_flags = BT_LE_AD_NO_BREDR;
+    // ad_flags = BT_LE_AD_NO_BREDR;
+    ad_flags = 0;
 }
 
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -824,6 +825,7 @@ static void usage(void){
             printf("p - Power On\n");
             printf("P - Power Off\n");
             printf("x - Back to main\n");
+            printf("c - enable connectable mode\n");
             printf("d - enable general discoverable mode\n");
             printf("D - enable limited discoverable mode\n");
             printf("a - start advertising with public address\n");
@@ -865,6 +867,9 @@ static void stdin_process(char cmd){
                     break;
                 case 'P':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_POWERED, 0, 1, &value_off);
+                    break;
+                case 'c':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_CONNECTABLE, 0, 1, &value_on);
                     break;
                 case 'i':
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DISCOVERY, 0, 1, &inquiry_scan);
