@@ -67,6 +67,8 @@
 int btstack_main(int argc, const char * argv[]);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
+
 static bool gap_send_powered_state;
 static char gap_name[249];
 static char gap_short_name[11];
@@ -117,13 +119,13 @@ static void btp_send_gap_settings(uint8_t opcode){
     btp_send(BTP_SERVICE_ID_GAP, opcode, 0, 4, buffer);
 }
 
-static void btp_send_error(uint8_t error){
+static void btp_send_error(uint8_t service_id, uint8_t error){
     MESSAGE("BTP_GAP_ERROR error %02x", error);
-    btp_send(BTP_SERVICE_ID_GAP, BTP_OP_ERROR, 0, 1, &error);
+    btp_send(service_id, BTP_OP_ERROR, 0, 1, &error);
 }
 
-static void btp_send_error_unknown_command(void){
-    btp_send_error(BTP_ERROR_UNKNOWN_CMD);
+static void btp_send_error_unknown_command(uint8_t service_id){
+    btp_send_error(service_id, BTP_ERROR_UNKNOWN_CMD);
 }
 
 static void reset_gap(void){
@@ -277,7 +279,6 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     break;
                 }
 
-
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
                     switch (hci_event_le_meta_get_subevent_code(packet)){
@@ -305,6 +306,59 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     }
                     break;
 
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    uint8_t buffer[11];
+    uint32_t passkey;
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            MESSAGE("Just works requested\n");
+            // sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+            MESSAGE("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
+            // sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+            break;
+        case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            passkey = sm_event_passkey_display_number_get_passkey(packet);
+            MESSAGE("Display Passkey: %"PRIu32"\n", passkey);
+            buffer[0] = remote_addr_type;
+            reverse_bd_addr(remote_addr, &buffer[1]);
+            little_endian_store_32(buffer, 7, passkey);
+            btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_PASSKEY_DISPLAY, 0, 11, &buffer[0]);
+            break;
+        case SM_EVENT_PASSKEY_INPUT_NUMBER:
+            MESSAGE("Passkey Input requested\n");
+            // MESSAGE("Sending fixed passkey %"PRIu32"\n", FIXED_PASSKEY);
+            // sm_passkey_input(sm_event_passkey_input_number_get_handle(packet), FIXED_PASSKEY);
+            break;
+        case SM_EVENT_PAIRING_COMPLETE:
+            switch (sm_event_pairing_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    MESSAGE("Pairing complete, success\n");
+                    break;
+                case ERROR_CODE_CONNECTION_TIMEOUT:
+                    MESSAGE("Pairing failed, timeout\n");
+                    break;
+                case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                    MESSAGE("Pairing faileed, disconnected\n");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                    MESSAGE("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    break;
                 default:
                     break;
             }
@@ -370,7 +424,7 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         default:
-            btp_send_error_unknown_command();
+            btp_send_error_unknown_command(BTP_SERVICE_ID_CORE);
             break;
     }
 }
@@ -666,23 +720,66 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             }
             break;
         case BTP_GAP_OP_PAIR:
-            MESSAGE("BTP_GAP_OP_PAIR - not implemented");
-            btp_send_error_unknown_command();
+            MESSAGE("BTP_GAP_OP_PAIR");
+            if (controller_index == 0){
+                // assumption, already connected
+                sm_request_pairing(remote_handle);
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
             break;
-        case BTP_GAP_OP_UNPAIR:
-            MESSAGE("BTP_GAP_OP_UNPAIR - not implemented");
-            btp_send_error_unknown_command();
+        case BTP_GAP_OP_UNPAIR:{
+            MESSAGE("BTP_GAP_OP_UNPAIR");
+            if (controller_index == 0){
+                uint8_t   command_addr_type = data[0];
+                bd_addr_t command_addr;
+                reverse_bd_addr(&data[1], command_addr);
+                gap_drop_link_key_for_bd_addr(command_addr);
+                uint16_t index;
+                for (index =0 ; index < le_device_db_max_count(); index++){
+                    int addr_type;
+                    bd_addr_t addr;
+                    sm_key_t irk;
+                    memset(addr, 0, 6);
+                    le_device_db_info(index, &addr_type, addr, NULL);
+                    if (bd_addr_cmp(command_addr, addr) == 0){
+                        le_device_db_remove(index);
+                    }
+                }
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
             break;
+        }
         case BTP_GAP_OP_PASSKEY_ENTRY_RSP:
-            MESSAGE("BTP_GAP_OP_PASSKEY_ENTRY_RSP - not implemented");
-            btp_send_error_unknown_command();
+            if (controller_index == 0){
+                // assume already connected
+                uint8_t   command_addr_type = data[0];
+                bd_addr_t command_addr;
+                reverse_bd_addr(&data[1], command_addr);
+                uint32_t passkey = little_endian_read_32(data, 7);
+                MESSAGE("BTP_GAP_OP_PASSKEY_ENTRY_RSP, passkey %06u", passkey);
+                sm_passkey_input(remote_handle, passkey);
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
             break;
         case BTP_GAP_OP_PASSKEY_CONFIRM_RSP:
-            MESSAGE("BTP_GAP_OP_PASSKEY_CONFIRM_RSP - not implemented");
-            btp_send_error_unknown_command();
+            if (controller_index == 0){
+                // assume already connected
+                uint8_t   command_addr_type = data[0];
+                bd_addr_t command_addr;
+                reverse_bd_addr(&data[1], command_addr);
+                uint8_t match = data[7];
+                MESSAGE("BTP_GAP_OP_PASSKEY_CONFIRM_RSP - match %u", match);
+                if (match){
+                    // note: sm_numeric_comparison_confirm == sm_just_works_confirm for nwo
+                    sm_just_works_confirm(remote_handle);
+                } else {
+                    sm_bonding_decline(remote_handle);
+                }
+                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
+            }
             break;
         default:
-            btp_send_error_unknown_command();
+            btp_send_error_unknown_command(BTP_SERVICE_ID_GAP);
             break;
     }
 }
@@ -701,7 +798,7 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
             btp_gap_handler(opcode, controller_index, length, data);
             break;
         default:
-            btp_send_error_unknown_command();
+            btp_send_error_unknown_command(service_id);
             break;
     }
 }
@@ -834,6 +931,10 @@ int btstack_main(int argc, const char * argv[])
     // register for HCI events
     hci_event_callback_registration.callback = &btstack_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &sm_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     // configure GAP
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
