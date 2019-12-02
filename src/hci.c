@@ -439,7 +439,7 @@ static int hci_is_le_connection(hci_connection_t * connection){
 static int nr_hci_connections(void){
     int count = 0;
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL ; it = it->next){
         count++;
     }
     return count;
@@ -451,7 +451,7 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
     unsigned int num_packets_sent_le = 0;
 
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
         if (hci_is_le_connection(connection)){
             num_packets_sent_le += connection->num_packets_sent;
@@ -3533,7 +3533,7 @@ static void hci_run(void){
 #endif
     
     // send pending HCI commands
-    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
         
         switch(connection->state){
@@ -4593,7 +4593,7 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
 // @assumption: only a single outgoing LE Connection exists
 static hci_connection_t * gap_get_outgoing_connection(void){
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next){
         hci_connection_t * conn = (hci_connection_t *) it;
         if (!hci_is_le_connection(conn)) continue;
         switch (conn->state){

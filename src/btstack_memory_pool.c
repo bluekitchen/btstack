@@ -86,7 +86,7 @@ void btstack_memory_pool_free(btstack_memory_pool_t *pool, void * block){
 
     // raise error and abort if node already in list
     node_t * it;
-    for (it = free_blocks->next; it ; it = it->next){
+    for (it = free_blocks->next; it != NULL; it = it->next){
         if (it == node) {
             log_error("btstack_memory_pool_free: block %p freed twice for pool %p", block, pool);
             return;

@@ -138,7 +138,7 @@ static void gatt_client_timeout_stop(gatt_client_t * peripheral){
 
 static gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) gatt_client_connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
         gatt_client_t * peripheral = (gatt_client_t *) it;
         if (peripheral->con_handle == handle){
             return peripheral;
@@ -1074,7 +1074,7 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
 
 static void gatt_client_run(void){
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) gatt_client_connections; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
         gatt_client_t * peripheral = (gatt_client_t *) it;
         if (!att_dispatch_client_can_send_now(peripheral->con_handle)) {
             att_dispatch_client_request_can_send_now_event(peripheral->con_handle);

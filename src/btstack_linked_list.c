@@ -61,7 +61,7 @@ bool  btstack_linked_list_empty(btstack_linked_list_t * list){
 btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t * list){        // <-- find the last item in the list
     btstack_linked_item_t *lastItem = NULL;
     btstack_linked_item_t *it;
-    for (it = *list; it ; it = it->next){
+    for (it = *list; it != NULL; it = it->next){
         if (it) {
             lastItem = it;
         }
@@ -76,7 +76,7 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
 bool btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t *item){        // <-- add item to list
     // check if already in list
     btstack_linked_item_t *it;
-    for (it = *list; it ; it = it->next){
+    for (it = *list; it != NULL; it = it->next){
         if (it == item) {
             return false;
         }
@@ -90,7 +90,7 @@ bool btstack_linked_list_add(btstack_linked_list_t * list, btstack_linked_item_t
 bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_item_t *item){   // <-- add item to list as last element
     // check if already in list
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) list; it->next ; it = it->next){
+    for (it = (btstack_linked_item_t *) list; it->next != NULL ; it = it->next){
         if (it->next == item) {
             return false;
         }
@@ -103,7 +103,7 @@ bool btstack_linked_list_add_tail(btstack_linked_list_t * list, btstack_linked_i
 bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_item_t *item){    // <-- remove item from list
     if (!item) return false;
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) list; it ; it = it->next){
+    for (it = (btstack_linked_item_t *) list; it != NULL; it = it->next){
         if (it->next == item){
             it->next =  item->next;
             return true;
@@ -118,7 +118,7 @@ bool  btstack_linked_list_remove(btstack_linked_list_t * list, btstack_linked_it
  int btstack_linked_list_count(btstack_linked_list_t * list){
     btstack_linked_item_t *it;
     int counter = 0;
-    for (it = (btstack_linked_item_t *) list; it->next ; it = it->next) {
+    for (it = (btstack_linked_item_t *) list; it->next != NULL; it = it->next) {
         counter++;
     }
     return counter; 
