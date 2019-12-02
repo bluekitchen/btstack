@@ -55,6 +55,7 @@
 #include "hci_cmd.h"
 #include "gap.h"
 #include "hci_transport.h"
+#include "btstack_run_loop.h"
 
 #ifdef ENABLE_BLE
 #include "ble/att_db.h"

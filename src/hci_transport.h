@@ -49,19 +49,12 @@
 #include <stdint.h>
 #include "btstack_uart_block.h"
 #include "btstack_em9304_spi.h"
-#include "btstack_run_loop.h"
+#include "btstack_defines.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-/**
- * packet types - used in BTstack and over the H4 UART interface
- */
-#define HCI_COMMAND_DATA_PACKET 0x01
-#define HCI_ACL_DATA_PACKET     0x02
-#define HCI_SCO_DATA_PACKET     0x03
-#define HCI_EVENT_PACKET        0x04
     
 /* API_START */
 
