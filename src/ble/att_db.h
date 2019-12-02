@@ -43,6 +43,7 @@
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "btstack_defines.h"
+#include "btstack_bool.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -275,8 +276,8 @@ uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 
 // experimental GATT Server API
 
-// returns 1 if service found. only primary service.
-int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle);
+// returns true if service found. only primary service.
+bool gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle);
 
 // returns 0 if not found
 uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
@@ -303,7 +304,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
  * @param handle
  * @returns 1 if persistent
  */
-int att_is_persistent_ccc(uint16_t handle);
+bool att_is_persistent_ccc(uint16_t handle);
 
 
 #if defined __cplusplus
