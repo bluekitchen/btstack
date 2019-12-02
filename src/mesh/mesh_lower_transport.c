@@ -422,7 +422,7 @@ static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
         if (!pdu) return NULL;
 
         // cache network pdu header
-        memcpy(pdu->network_header, network_pdu->data, 9);
+        (void)memcpy(pdu->network_header, network_pdu->data, 9);
         // store lower 24 bit of SeqAuth for App / Device Nonce
         big_endian_store_24(pdu->network_header, 2, seq_auth);
 
@@ -476,7 +476,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
 #endif
 
     // store segment
-    memcpy(&transport_pdu->data[seg_o * 12], segment_data, 12);
+    (void)memcpy(&transport_pdu->data[seg_o * 12], segment_data, 12);
     // mark as received
     transport_pdu->block_ack |= (1<<seg_o);
     // last segment -> store len
@@ -590,7 +590,8 @@ static void mesh_lower_transport_setup_segment(mesh_transport_pdu_t *transport_p
     lower_transport_pdu_data[0] = 0x80 |  transport_pdu->akf_aid_control;
     big_endian_store_24(lower_transport_pdu_data, 1, (szmic << 23) | (seq_zero << 10) | (seg_o << 5) | seg_n);
     uint16_t segment_len = btstack_min(transport_pdu->len - seg_offset, max_segment_len);
-    memcpy(&lower_transport_pdu_data[4], &transport_pdu->data[seg_offset], segment_len);
+    (void)memcpy(&lower_transport_pdu_data[4],
+                 &transport_pdu->data[seg_offset], segment_len);
     uint16_t lower_transport_pdu_len = 4 + segment_len;
 
     mesh_network_setup_pdu(network_pdu, transport_pdu->netkey_index, nid, 0, ttl, seq, src, dest, lower_transport_pdu_data, lower_transport_pdu_len);

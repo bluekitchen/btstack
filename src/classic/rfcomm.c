@@ -312,7 +312,8 @@ static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
     uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
     event[1] = sizeof(rfcomm_rpn_data_t);
-    memcpy(&event[2], (uint8_t*) &channel->rpn_data, sizeof(rfcomm_rpn_data_t));
+    (void)memcpy(&event[2], (uint8_t *)&channel->rpn_data,
+                 sizeof(rfcomm_rpn_data_t));
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
@@ -583,7 +584,7 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 	
 	// copy actual data
 	if (len) {
-		memcpy(&rfcomm_out_buffer[pos], data, len);
+		(void)memcpy(&rfcomm_out_buffer[pos], data, len);
 		pos += len;
 	}
 	
@@ -702,7 +703,7 @@ static int rfcomm_send_uih_test_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t *
         len = RFCOMM_TEST_DATA_MAX_LEN;
     }
     payload[pos++] = (len << 1) | 1;  // len
-    memcpy(&payload[pos], data, len);
+    (void)memcpy(&payload[pos], data, len);
     pos += len;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
@@ -1068,7 +1069,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             // request
             rfcomm_ertm_request_t request;
             memset(&request, 0, sizeof(rfcomm_ertm_request_t));
-            memcpy(request.addr, event_addr, 6);
+            (void)memcpy(request.addr, event_addr, 6);
             request.ertm_id = rfcomm_next_ertm_id();
             if (rfcomm_ertm_request_callback){
                 (*rfcomm_ertm_request_callback)(&request);
@@ -1273,7 +1274,8 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     }
                     len = btstack_min(len, size - 1 - payload_offset);  // avoid information leak
                     multiplexer->test_data_len = len;
-                    memcpy(multiplexer->test_data, &packet[payload_offset + 2], len);
+                    (void)memcpy(multiplexer->test_data,
+                                 &packet[payload_offset + 2], len);
                     l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
                     return 1;
                 }
@@ -2334,7 +2336,7 @@ int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 #endif
     uint8_t * rfcomm_payload = rfcomm_get_outgoing_buffer();
 
-    memcpy(rfcomm_payload, data, len);
+    (void)memcpy(rfcomm_payload, data, len);
     err = rfcomm_send_prepared(rfcomm_cid, len);    
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
@@ -2449,7 +2451,7 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         // request 
         rfcomm_ertm_request_t request;
         memset(&request, 0, sizeof(rfcomm_ertm_request_t));
-        memcpy(request.addr, addr, 6);
+        (void)memcpy(request.addr, addr, 6);
         request.ertm_id = rfcomm_next_ertm_id();
         if (rfcomm_ertm_request_callback){
             (*rfcomm_ertm_request_callback)(&request);

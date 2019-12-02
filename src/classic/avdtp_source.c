@@ -218,7 +218,7 @@ static void avdtp_source_copy_media_payload(uint8_t * media_packet, int size, in
     
     int pos = *offset;
     media_packet[pos++] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    memcpy(media_packet + pos, storage, num_bytes_to_copy);
+    (void)memcpy(media_packet + pos, storage, num_bytes_to_copy);
     pos += num_bytes_to_copy;
     *offset = pos;
 }

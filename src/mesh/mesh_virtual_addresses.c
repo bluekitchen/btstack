@@ -81,7 +81,7 @@ mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uin
 
     virtual_address->hash = hash;
     virtual_address->pseudo_dst = pseudo_dst;
-    memcpy(virtual_address->label_uuid, label_uuid, 16);
+    (void)memcpy(virtual_address->label_uuid, label_uuid, 16);
     mesh_virtual_address_add(virtual_address);
 
     return virtual_address;

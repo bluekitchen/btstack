@@ -85,7 +85,8 @@ void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){
 
     // SBC Frame
     btstack_sbc_encoder_process_data(pcm_samples);
-    memcpy(msbc_buffer + msbc_buffer_offset, btstack_sbc_encoder_sbc_buffer(), MSBC_FRAME_SIZE);
+    (void)memcpy(msbc_buffer + msbc_buffer_offset,
+                 btstack_sbc_encoder_sbc_buffer(), MSBC_FRAME_SIZE);
     msbc_buffer_offset += MSBC_FRAME_SIZE;
 
     // Final padding to use 60 bytes for 120 audio samples
@@ -100,7 +101,7 @@ void hfp_msbc_read_from_stream(uint8_t * buf, int size){
         return;
     }
 
-    memcpy(buf, msbc_buffer, bytes_to_copy);
+    (void)memcpy(buf, msbc_buffer, bytes_to_copy);
     memmove(msbc_buffer, msbc_buffer + bytes_to_copy, sizeof(msbc_buffer) - bytes_to_copy);
     msbc_buffer_offset -= bytes_to_copy;
 }

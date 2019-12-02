@@ -237,7 +237,7 @@ int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
 static void mesh_network_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * pdu, uint32_t iv_index){
     unsigned int pos = 0;
     nonce[pos++] = 0x0;      // Network Nonce
-    memcpy(&nonce[pos], &pdu->data[1], 6);
+    (void)memcpy(&nonce[pos], &pdu->data[1], 6);
     pos += 6;
     big_endian_store_16(nonce, pos, 0);
     pos += 2;
@@ -248,7 +248,7 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
     unsigned int pos = 0;
     nonce[pos++] = 0x3;      // Proxy Nonce
     nonce[pos++] = 0;
-    memcpy(&nonce[pos], &pdu->data[2], 5);
+    (void)memcpy(&nonce[pos], &pdu->data[2], 5);
     pos += 5;
     big_endian_store_16(nonce, pos, 0);
     pos += 2;
@@ -321,7 +321,7 @@ static void mesh_network_send_b(void *arg){
 
     // store MIC
     uint8_t net_mic_len = outgoing_pdu->data[1] & 0x80 ? 8 : 4;
-    memcpy(&outgoing_pdu->data[outgoing_pdu->len], net_mic, net_mic_len);
+    (void)memcpy(&outgoing_pdu->data[outgoing_pdu->len], net_mic, net_mic_len);
     outgoing_pdu->len += net_mic_len;
 
     btstack_assert(outgoing_pdu->len <= 29);
@@ -334,7 +334,7 @@ static void mesh_network_send_b(void *arg){
     // calc PECB
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
-    memcpy(&encryption_block[9], &outgoing_pdu->data[7], 7);
+    (void)memcpy(&encryption_block[9], &outgoing_pdu->data[7], 7);
     btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, NULL);
 }
 
@@ -494,7 +494,8 @@ static void process_network_pdu_validate_d(void * arg){
     printf_hexdump(net_mic, net_mic_len);
 #endif
     // store in decoded pdu
-    memcpy(&incoming_pdu_decoded->data[incoming_pdu_decoded->len-net_mic_len], net_mic, net_mic_len);
+    (void)memcpy(&incoming_pdu_decoded->data[incoming_pdu_decoded->len - net_mic_len],
+                 net_mic, net_mic_len);
 
 #ifdef LOG_NETWORK
     uint8_t cypher_len  = incoming_pdu_decoded->len - 9 - net_mic_len;
@@ -661,7 +662,7 @@ static void process_network_pdu_validate(void){
     uint32_t iv_index = iv_index_for_pdu(incoming_pdu_raw);
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
-    memcpy(&encryption_block[9], &incoming_pdu_raw->data[7], 7);
+    (void)memcpy(&encryption_block[9], &incoming_pdu_raw->data[7], 7);
     btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, NULL);
 }
 
@@ -1017,7 +1018,7 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, ui
     if (!network_pdu) return;
 
     // store data
-    memcpy(network_pdu->data, pdu_data, pdu_len);
+    (void)memcpy(network_pdu->data, pdu_data, pdu_len);
     network_pdu->len = pdu_len;
     network_pdu->flags = flags;
 
@@ -1036,7 +1037,7 @@ void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, 
     if (!network_pdu) return;
 
     // store data
-    memcpy(network_pdu->data, pdu_data, pdu_len);
+    (void)memcpy(network_pdu->data, pdu_data, pdu_len);
     network_pdu->len = pdu_len;
     network_pdu->flags = MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION; // Network PDU
 
@@ -1106,7 +1107,8 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
     network_pdu->len += 2;
     big_endian_store_16(network_pdu->data, network_pdu->len, dest);
     network_pdu->len += 2;
-    memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
+    (void)memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data,
+                 transport_pdu_len);
     network_pdu->len += transport_pdu_len;
 }
 

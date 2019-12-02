@@ -119,7 +119,7 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
             case 'D': // variable data. passed: len, ptr
                 word = va_arg(argptr, int);
                 ptr  = va_arg(argptr, uint8_t *);
-                memcpy(&acl_buffer[pos], ptr, word);
+                (void)memcpy(&acl_buffer[pos], ptr, word);
                 pos += word;
                 break;
             default:

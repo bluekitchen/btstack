@@ -593,7 +593,7 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     
     /* TODO: Add extension headers, if we may support them at a later stage */
     /* Add the payload and then send out the package */
-    memcpy(bnep_out_buffer + pos_out, packet + pos, payload_len);
+    (void)memcpy(bnep_out_buffer + pos_out, packet + pos, payload_len);
     pos_out += payload_len;
 
     err = l2cap_send_prepared(channel->l2cap_cid, pos_out);

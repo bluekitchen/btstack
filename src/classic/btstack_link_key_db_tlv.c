@@ -95,7 +95,7 @@ static int btstack_link_key_db_tlv_get_link_key(bd_addr_t bd_addr, link_key_t li
         log_info("tag %x, addr %s", tag, bd_addr_to_str(entry.bd_addr));
         if (memcmp(bd_addr, entry.bd_addr, 6)) continue;
         // found, pass back
-        memcpy(link_key, entry.link_key, 16);
+        (void)memcpy(link_key, entry.link_key, 16);
         *link_key_type = entry.link_key_type;
         return 1;
     }
@@ -166,8 +166,8 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
 
     link_key_nvm_t entry;
     
-    memcpy(entry.bd_addr, bd_addr, 6);
-    memcpy(entry.link_key, link_key, 16);
+    (void)memcpy(entry.bd_addr, bd_addr, 6);
+    (void)memcpy(entry.link_key, link_key, 16);
     entry.link_key_type = link_key_type;
     entry.seq_nr = highest_seq_nr + 1;
 
@@ -190,8 +190,8 @@ static int  btstack_link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_
         uint32_t tag = btstack_link_key_db_tag_for_index(i++);
         int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
         if (size == 0) continue;
-        memcpy(bd_addr, entry.bd_addr, 6);
-        memcpy(link_key, entry.link_key, 16);
+        (void)memcpy(bd_addr, entry.bd_addr, 6);
+        (void)memcpy(link_key, entry.link_key, 16);
         *link_key_type = entry.link_key_type;
         found = 1;
         break;

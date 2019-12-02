@@ -295,7 +295,7 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
 void hsp_hs_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
     hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
-    memcpy(remote, bd_addr, 6);
+    (void)memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
@@ -549,7 +549,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             sco_handle = little_endian_read_16(packet, index);
             index+=2;
             bd_addr_t address; 
-            memcpy(address, &packet[index], 6);
+            (void)memcpy(address, &packet[index], 6);
             index+=6;
             uint8_t link_type = packet[index++];
             uint8_t transmission_interval = packet[index++];  // measured in slots

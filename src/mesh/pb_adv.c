@@ -282,7 +282,7 @@ static void pb_adv_handle_transaction_start(uint8_t transaction_nr, const uint8_
 
         // store payload
         uint16_t payload_len = size - 4;
-        memcpy(pb_adv_msg_in_buffer, &pdu[4], payload_len);
+        (void)memcpy(pb_adv_msg_in_buffer, &pdu[4], payload_len);
 
         // complete?
         if (pb_adv_msg_in_segments_missing == 0){
@@ -330,7 +330,7 @@ static void pb_adv_handle_transaction_cont(uint8_t transaction_nr, const uint8_t
     }
 
     // store segment and mark as received
-    memcpy(&pb_adv_msg_in_buffer[msg_pos], &pdu[1], fragment_size);
+    (void)memcpy(&pb_adv_msg_in_buffer[msg_pos], &pdu[1], fragment_size);
     pb_adv_msg_in_segments_missing &= ~seg_mask;
 
      // last segment
@@ -458,7 +458,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         big_endian_store_32(buffer, 0, pb_adv_link_id);
                         buffer[4] = 0;            // Transaction ID = 0
                         buffer[5] = (0 << 2) | 3; // Link Open | Provisioning Bearer Control
-                        memcpy(&buffer[6], pb_adv_peer_device_uuid, 16);
+                        (void)memcpy(&buffer[6], pb_adv_peer_device_uuid, 16);
                         adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         log_info("link open %08x", pb_adv_link_id);
                         printf("PB-ADV: Sending Link Open for device uuid: ");
@@ -547,7 +547,9 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         }
                         pb_adv_msg_out_seg++;
                         uint16_t bytes_to_copy = btstack_min(bytes_left, pb_adv_msg_out_len - pb_adv_msg_out_pos);
-                        memcpy(&buffer[pos], &pb_adv_msg_out_buffer[pb_adv_msg_out_pos], bytes_to_copy);
+                        (void)memcpy(&buffer[pos],
+                                     &pb_adv_msg_out_buffer[pb_adv_msg_out_pos],
+                                     bytes_to_copy);
                         pos += bytes_to_copy;
                         printf("bytes %02u, pos %02u, len %02u: ", bytes_to_copy, pb_adv_msg_out_pos, pb_adv_msg_out_len);
                         printf_hexdump(buffer, pos);

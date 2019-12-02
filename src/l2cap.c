@@ -377,7 +377,9 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, tx_state->sar);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
-    memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mps], tx_state->len);
+    (void)memcpy(&acl_buffer[8 + 2],
+                 &channel->tx_packets_data[index * channel->local_mps],
+                 tx_state->len);
     // (re-)start retransmission timer on 
     l2cap_ertm_start_retransmission_timer(channel);
     // send
@@ -400,7 +402,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
         little_endian_store_16(tx_packet, 0, sdu_length);
         pos += 2;
     }
-    memcpy(&tx_packet[pos], data, len);
+    (void)memcpy(&tx_packet[pos], data, len);
     tx_state->len = pos + len;
 
     // update
@@ -783,7 +785,7 @@ static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channe
     rx_state->sar = sar;
     rx_state->len = size;
     uint8_t * rx_buffer = &l2cap_channel->rx_packets_data[index];
-    memcpy(rx_buffer, payload, size);
+    (void)memcpy(rx_buffer, payload, size);
 }
 
 // @assumption size <= l2cap_channel->local_mps (checked in l2cap_acl_classic_handler)
@@ -805,21 +807,23 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             if (reassembly_sdu_length > l2cap_channel->local_mtu) break;
             // store start segment
             l2cap_channel->reassembly_sdu_length = reassembly_sdu_length;
-            memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
+            (void)memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
             l2cap_channel->reassembly_pos = size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
             // assert size of reassembled data <= our mtu
             if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
             // store continuation segment
-            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
+            (void)memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos],
+                         payload, size);
             l2cap_channel->reassembly_pos += size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
             // assert size of reassembled data <= our mtu
             if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
             // store continuation segment
-            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
+            (void)memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos],
+                         payload, size);
             l2cap_channel->reassembly_pos += size;
             // assert size of reassembled data matches announced sdu length
             if (l2cap_channel->reassembly_pos != l2cap_channel->reassembly_sdu_length) break;
@@ -991,7 +995,7 @@ int l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     
-    memcpy(&acl_buffer[8], data, len);
+    (void)memcpy(&acl_buffer[8], data, len);
     
     return l2cap_send_prepared_connectionless(con_handle, cid, len);
 }
@@ -1332,7 +1336,7 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    memcpy(&acl_buffer[8], data, len);
+    (void)memcpy(&acl_buffer[8], data, len);
     return l2cap_send_prepared(local_cid, len);
 }
 
@@ -1455,7 +1459,9 @@ static void l2cap_run(void){
         signaling_responses_pending--;
         int i;
         for (i=0; i < signaling_responses_pending; i++){
-            memcpy(&signaling_responses[i], &signaling_responses[i+1], sizeof(l2cap_signaling_response_t));
+            (void)memcpy(&signaling_responses[i],
+                         &signaling_responses[i + 1],
+                         sizeof(l2cap_signaling_response_t));
         }
 
         switch (response_code){
@@ -1563,7 +1569,7 @@ static void l2cap_run(void){
                 // send connection request - set state first
                 channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-                memcpy(l2cap_outgoing_classic_addr, channel->address, 6);
+                (void)memcpy(l2cap_outgoing_classic_addr, channel->address, 6);
                 hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                 break;
                 
@@ -2239,7 +2245,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             // check command status for create connection for errors
             if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
                 // cache outgoing address and reset
-                memcpy(address, l2cap_outgoing_classic_addr, 6);
+                (void)memcpy(address, l2cap_outgoing_classic_addr, 6);
                 memset(l2cap_outgoing_classic_addr, 0, 6);
                 // error => outgoing connection failed
                 uint8_t status = hci_event_command_status_get_status(packet);
@@ -3034,7 +3040,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
             event[1] = 8;
             little_endian_store_16(event, 2, handle);
-            memcpy(&event[4], &command[4], 8);
+            (void)memcpy(&event[4], &command[4], 8);
             hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
             (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
@@ -3572,7 +3578,9 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
                 uint16_t fragment_size   = size-COMPLETE_L2CAP_HEADER;
                 uint16_t remaining_space = l2cap_channel->local_mtu - l2cap_channel->receive_sdu_pos;
                 if (fragment_size > remaining_space) break;         // SDU would cause buffer overrun
-                memcpy(&l2cap_channel->receive_sdu_buffer[l2cap_channel->receive_sdu_pos], &packet[COMPLETE_L2CAP_HEADER+pos], fragment_size);
+                (void)memcpy(&l2cap_channel->receive_sdu_buffer[l2cap_channel->receive_sdu_pos],
+                             &packet[COMPLETE_L2CAP_HEADER + pos],
+                             fragment_size);
                 l2cap_channel->receive_sdu_pos += size - COMPLETE_L2CAP_HEADER;
                 // done?
                 log_debug("le packet pos %u, len %u", l2cap_channel->receive_sdu_pos, l2cap_channel->receive_sdu_len);
@@ -3778,7 +3786,9 @@ static void l2cap_le_send_pdu(l2cap_channel_t *channel){
     }
     uint16_t payload_size = btstack_min(channel->send_sdu_len + 2 - channel->send_sdu_pos, channel->remote_mps - pos);
     log_info("len %u, pos %u => payload %u, credits %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size, channel->credits_outgoing);
-    memcpy(&l2cap_payload[pos], &channel->send_sdu_buffer[channel->send_sdu_pos-2], payload_size); // -2 for virtual SDU len
+    (void)memcpy(&l2cap_payload[pos],
+                 &channel->send_sdu_buffer[channel->send_sdu_pos - 2],
+                 payload_size); // -2 for virtual SDU len
     pos += payload_size;
     channel->send_sdu_pos += payload_size;
     l2cap_setup_header(acl_buffer, channel->con_handle, 0, channel->remote_cid, pos);

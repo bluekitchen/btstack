@@ -659,7 +659,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
                 // setup key
                 new_network_key->internal_index = internal_index;
                 new_network_key->netkey_index   = new_netkey_index;
-                memcpy(new_network_key->net_key, new_netkey, 16);
+                (void)memcpy(new_network_key->net_key, new_netkey, 16);
 
                 // setup subnet
                 new_subnet->old_key = new_network_key;
@@ -743,7 +743,7 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     new_network_key->internal_index = internal_index;
     new_network_key->netkey_index   = netkey_index;
     new_network_key->version        = (uint8_t)(subnet->old_key->version + 1);
-    memcpy(new_network_key->net_key, new_netkey, 16);
+    (void)memcpy(new_network_key->net_key, new_netkey, 16);
 
     // store in subnet (not active yet)
     subnet->new_key = new_network_key;    
@@ -928,7 +928,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     app_key->version = 0;
     app_key->old_key = 0;
 
-    memcpy(app_key->key, appkey, 16);
+    (void)memcpy(app_key->key, appkey, 16);
 
     // calculate AID
     access_pdu_in_process = pdu;
@@ -999,7 +999,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     new_app_key->netkey_index = netkey_index;
     new_app_key->key_refresh  = 1;
     new_app_key->version = (uint8_t)(existing_app_key->version + 1);
-    memcpy(new_app_key->key, appkey, 16);
+    (void)memcpy(new_app_key->key, appkey, 16);
 
     // mark old key
     existing_app_key->old_key = 1;
@@ -1873,7 +1873,8 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
         }
 
         // accept update
-        memcpy(mesh_heartbeat_publication, &requested_publication, sizeof(mesh_heartbeat_publication_t));
+        (void)memcpy(mesh_heartbeat_publication, &requested_publication,
+                     sizeof(mesh_heartbeat_publication_t));
     }
 
     config_heartbeat_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, mesh_heartbeat_publication);
@@ -2032,7 +2033,8 @@ static uint32_t config_heartbeat_subscription_get_period_remaining_s(mesh_heartb
 static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
     mesh_heartbeat_subscription_t subscription;
-    memcpy(&subscription, mesh_heartbeat_subscription, sizeof(subscription));
+    (void)memcpy(&subscription, mesh_heartbeat_subscription,
+                 sizeof(subscription));
     if (mesh_heartbeat_subscription->source == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_subscription->destination == MESH_ADDRESS_UNSASSIGNED){
         memset(&subscription, 0, sizeof(subscription));
     } else {

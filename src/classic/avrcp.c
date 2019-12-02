@@ -398,7 +398,7 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->max_num_fragments = 0xFF;
     connection->avrcp_cid = avrcp_get_next_cid(role);
     log_info("avrcp_create_connection, role %d, avrcp cid 0x%02x", role, connection->avrcp_cid);
-    memcpy(connection->remote_addr, remote_addr, 6);
+    (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
     return connection;
 }

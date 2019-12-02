@@ -288,7 +288,9 @@ static void em9304_spi_engine_run(void){
             } else {
                 // TODO: get rid of alignment requirement
                 // enforce alignment by copying to spi buffer first
-                memcpy(em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_tx_data, em9304_spi_engine_tx_request_len);
+                (void)memcpy(em9304_spi_engine_spi_buffer.bytes,
+                             em9304_spi_engine_tx_data,
+                             em9304_spi_engine_tx_request_len);
                 btstack_em9304_spi->transmit( (uint8_t*) em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_tx_request_len);
             }
             break;

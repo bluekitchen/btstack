@@ -802,7 +802,7 @@ static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packe
     // store request
     att_server->state = ATT_SERVER_REQUEST_RECEIVED;
     att_server->request_size = size;
-    memcpy(att_server->request_buffer, packet, size);
+    (void)memcpy(att_server->request_buffer, packet, size);
 
     att_run_for_context(att_server);
 }

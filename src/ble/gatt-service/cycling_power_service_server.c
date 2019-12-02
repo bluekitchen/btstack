@@ -654,7 +654,8 @@ static void cycling_power_service_response_can_send_now(void * context){
                 pos += 2;
                 int data_len = (instance->num_manufacturer_specific_data < CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE) ? instance->num_manufacturer_specific_data : (CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE - 1);
                 value[pos++] = data_len;
-                memcpy(&value[pos], instance->manufacturer_specific_data, data_len);
+                (void)memcpy(&value[pos],
+                             instance->manufacturer_specific_data, data_len);
                 pos += data_len;
                 value[pos++] = 0;
                 break;

@@ -198,7 +198,7 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
     if (bytes_to_copy > buffer_size){
         bytes_to_copy = buffer_size;
     }
-    memcpy(buffer, it->value, bytes_to_copy);
+    (void)memcpy(buffer, it->value, bytes_to_copy);
     return bytes_to_copy;
 }
 
@@ -427,7 +427,7 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
         little_endian_store_16(response_buffer, offset, it.handle);
         offset += 2;
 
-        memcpy(response_buffer + offset, it.uuid, uuid_len);
+        (void)memcpy(response_buffer + offset, it.uuid, uuid_len);
         offset += uuid_len;
     }
     
@@ -892,7 +892,8 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
             offset += 2;
             little_endian_store_16(response_buffer, offset, prev_handle);
             offset += 2;
-            memcpy(response_buffer + offset, group_start_value, pair_len - 4);
+            (void)memcpy(response_buffer + offset, group_start_value,
+                         pair_len - 4);
             offset += pair_len - 4;
             in_group = 0;
             
@@ -1041,7 +1042,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     }
 
     // response: echo request
-    memcpy(response_buffer, request_buffer, request_len);
+    (void)memcpy(response_buffer, request_buffer, request_len);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
     return request_len;
 }
@@ -1114,7 +1115,7 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
     if (value_len > (att_connection->mtu - 3)){
         value_len = att_connection->mtu - 3;
     }
-    memcpy(&response_buffer[3], value, value_len);
+    (void)memcpy(&response_buffer[3], value, value_len);
     return value_len + 3;
 }
 
@@ -1386,7 +1387,7 @@ bool att_is_persistent_ccc(uint16_t handle){
 uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     if (buffer){
         uint16_t bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
-        memcpy(buffer, &blob[offset], bytes_to_copy);
+        (void)memcpy(buffer, &blob[offset], bytes_to_copy);
         return bytes_to_copy;
     } else {
         return blob_size;

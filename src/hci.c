@@ -870,7 +870,8 @@ static void acl_handler(uint8_t *packet, int size){
             }
 
             // append fragment payload (header already stored)
-            memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + conn->acl_recombination_pos], &packet[4], acl_length );
+            (void)memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + conn->acl_recombination_pos],
+                         &packet[4], acl_length);
             conn->acl_recombination_pos += acl_length;
             
             // log_error( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u", acl_length,
@@ -911,7 +912,8 @@ static void acl_handler(uint8_t *packet, int size){
                 }
 
                 // store first fragment and tweak acl length for complete package
-                memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], packet, acl_length + 4);
+                (void)memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE],
+                             packet, acl_length + 4);
                 conn->acl_recombination_pos    = acl_length + 4;
                 conn->acl_recombination_length = l2cap_length;
                 little_endian_store_16(conn->acl_recombination_buffer, HCI_INCOMING_PRE_BUFFER_SIZE + 2, l2cap_length +4);
@@ -1060,9 +1062,9 @@ static int hci_le_supported(void){
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
     *addr_type = hci_stack->le_own_addr_type;
     if (hci_stack->le_own_addr_type){
-        memcpy(addr, hci_stack->le_random_address, 6);
+        (void)memcpy(addr, hci_stack->le_random_address, 6);
     } else {
-        memcpy(addr, hci_stack->local_bd_addr, 6);
+        (void)memcpy(addr, hci_stack->local_bd_addr, 6);
     }
 }
 
@@ -1086,13 +1088,13 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
         int pos = 0;
         event[pos++] = GAP_EVENT_ADVERTISING_REPORT;
         event[pos++] = event_size;
-        memcpy(&event[pos], &packet[offset], 1+1+6); // event type + address type + address
+        (void)memcpy(&event[pos], &packet[offset], 1 + 1 + 6); // event type + address type + address
         offset += 8;
         pos += 8;
         event[pos++] = packet[offset + 1 + data_length]; // rssi
         event[pos++] = data_length;
         offset++;
-        memcpy(&event[pos], &packet[offset], data_length);
+        (void)memcpy(&event[pos], &packet[offset], data_length);
         pos +=    data_length;
         offset += data_length + 1; // rssi
         hci_emit_event(event, pos, 1);
@@ -1201,7 +1203,8 @@ static void hci_replace_bd_addr_placeholder(uint8_t * data, uint16_t size){
             continue;
         }
         // set real address
-        memcpy(&data[i], bd_addr_to_str(hci_stack->local_bd_addr), bd_addr_string_len);
+        (void)memcpy(&data[i], bd_addr_to_str(hci_stack->local_bd_addr),
+                     bd_addr_string_len);
         i += bd_addr_string_len;
     }
 }
@@ -1420,7 +1423,8 @@ static void hci_initializing_run(void){
             packet[1] = opcode >> 8;
             packet[2] = DEVICE_NAME_LEN;
             memset(&packet[3], 0, DEVICE_NAME_LEN);
-            memcpy(&packet[3], hci_stack->local_name, strlen(hci_stack->local_name));
+            (void)memcpy(&packet[3], hci_stack->local_name,
+                         strlen(hci_stack->local_name));
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[3], DEVICE_NAME_LEN);
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
@@ -1438,13 +1442,13 @@ static void hci_initializing_run(void){
             packet[2] = 1 + 240;
             packet[3] = 0;  // FEC not required
             if (hci_stack->eir_data){
-                memcpy(&packet[4], hci_stack->eir_data, 240);
+                (void)memcpy(&packet[4], hci_stack->eir_data, 240);
             } else {
                 memset(&packet[4], 0, 240);
                 int name_len = strlen(hci_stack->local_name);
                 packet[4] = name_len + 1;
                 packet[5] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
-                memcpy(&packet[6], hci_stack->local_name, name_len);
+                (void)memcpy(&packet[6], hci_stack->local_name, name_len);
             }
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[4], 240);
@@ -1841,7 +1845,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
     log_info("Outgoing connection to %s failed", bd_addr_to_str(conn->address));
     bd_addr_t bd_address;
-    memcpy(&bd_address, conn->address, 6);
+    (void)memcpy(&bd_address, conn->address, 6);
 
 #ifdef ENABLE_CLASSIC
     // cache needed data
@@ -1924,7 +1928,7 @@ static void event_handler(uint8_t *packet, int size){
                     uint8_t event[5];
                     event[0] = GAP_EVENT_RSSI_MEASUREMENT;
                     event[1] = 3;
-                    memcpy(&event[2], &packet[6], 3);
+                    (void)memcpy(&event[2], &packet[6], 3);
                     hci_emit_event(event, sizeof(event), 1);
                 }
             }
@@ -1978,7 +1982,9 @@ static void event_handler(uint8_t *packet, int size){
 
             // Note: HCI init checks 
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_features)){
-                memcpy(hci_stack->local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 8);
+                (void)memcpy(hci_stack->local_supported_features,
+			     &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
+			     8);
 
 #ifdef ENABLE_CLASSIC
                 // determine usable ACL packet types based on host buffer size and supported features
@@ -2591,7 +2597,7 @@ static void event_handler(uint8_t *packet, int size){
                 uint8_t status = aConn->bonding_status;
                 uint16_t flags = aConn->bonding_flags;
                 bd_addr_t bd_address;
-                memcpy(&bd_address, aConn->address, 6);
+                (void)memcpy(&bd_address, aConn->address, 6);
                 hci_shutdown_connection(aConn);
                 // connection struct is gone, don't access anymore
                 if (flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
@@ -2947,7 +2953,7 @@ void hci_disable_l2cap_timeout_check(void){
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 // Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
 void hci_set_bd_addr(bd_addr_t addr){
-    memcpy(hci_stack->custom_bd_addr, addr, 6);
+    (void)memcpy(hci_stack->custom_bd_addr, addr, 6);
     hci_stack->custom_bd_addr_set = 1;
 }
 #endif
@@ -3239,7 +3245,7 @@ void gap_connectable_control(uint8_t enable){
 #endif
 
 void gap_local_bd_addr(bd_addr_t address_buffer){
-    memcpy(address_buffer, hci_stack->local_bd_addr, 6);
+    (void)memcpy(address_buffer, hci_stack->local_bd_addr, 6);
 }
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
@@ -3440,7 +3446,8 @@ static void hci_run(void){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
             uint8_t adv_data_clean[31];
             memset(adv_data_clean, 0, sizeof(adv_data_clean));
-            memcpy(adv_data_clean, hci_stack->le_advertisements_data, hci_stack->le_advertisements_data_len);
+            (void)memcpy(adv_data_clean, hci_stack->le_advertisements_data,
+                         hci_stack->le_advertisements_data_len);
             hci_replace_bd_addr_placeholder(adv_data_clean, hci_stack->le_advertisements_data_len);
             hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, adv_data_clean);
             return;
@@ -3449,7 +3456,8 @@ static void hci_run(void){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
             uint8_t scan_data_clean[31];
             memset(scan_data_clean, 0, sizeof(scan_data_clean));
-            memcpy(scan_data_clean, hci_stack->le_scan_response_data, hci_stack->le_scan_response_data_len);
+            (void)memcpy(scan_data_clean, hci_stack->le_scan_response_data,
+                         hci_stack->le_scan_response_data_len);
             hci_replace_bd_addr_placeholder(scan_data_clean, hci_stack->le_scan_response_data_len);
             hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, scan_data_clean);
             return;
@@ -3498,7 +3506,7 @@ static void hci_run(void){
                 if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
                     bd_addr_t address;
                     bd_addr_type_t address_type = entry->address_type;                    
-                    memcpy(address, entry->address, 6);
+                    (void)memcpy(address, entry->address, 6);
                     btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
                     btstack_memory_whitelist_entry_free(entry);
                     hci_send_cmd(&hci_le_remove_device_from_white_list, address_type, address);
@@ -3550,7 +3558,8 @@ static void hci_run(void){
 #ifdef ENABLE_LE_CENTRAL
                         // track outgoing connection
                         hci_stack->outgoing_addr_type = connection->address_type;
-                        memcpy(hci_stack->outgoing_addr, connection->address, 6);
+                        (void)memcpy(hci_stack->outgoing_addr,
+                                     connection->address, 6);
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
                              hci_stack->le_connection_scan_interval,    // conn scan interval
@@ -3949,7 +3958,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 
         // track outgoing connection
         hci_stack->outgoing_addr_type = BD_ADDR_TYPE_ACL;
-        memcpy(hci_stack->outgoing_addr, addr, 6);
+        (void)memcpy(hci_stack->outgoing_addr, addr, 6);
     }
 
     if (IS_COMMAND(packet, hci_link_key_request_reply)){
@@ -4165,10 +4174,14 @@ static void gap_inquiry_explode(uint8_t * packet){
         event[0] = GAP_EVENT_INQUIRY_RESULT;
         uint8_t event_size = 18;    // if name is not set by EIR
 
-        memcpy(&event[2],  &packet[3 +                                               (i*6)], 6); // bd_addr
+        (void)memcpy(&event[2], &packet[3 + (i * 6)], 6); // bd_addr
         event[8] =          packet[3 + (num_responses*(6))                         + (i*1)];     // page_scan_repetition_mode
-        memcpy(&event[9],  &packet[3 + (num_responses*(6+1+num_reserved_fields))   + (i*3)], 3); // class of device
-        memcpy(&event[12], &packet[3 + (num_responses*(6+1+num_reserved_fields+3)) + (i*2)], 2); // clock offset
+        (void)memcpy(&event[9],
+                     &packet[3 + (num_responses * (6 + 1 + num_reserved_fields)) + (i * 3)],
+                     3); // class of device
+        (void)memcpy(&event[12],
+                     &packet[3 + (num_responses * (6 + 1 + num_reserved_fields + 3)) + (i * 2)],
+                     2); // clock offset
 
         switch (event_type){
             case HCI_EVENT_INQUIRY_RESULT:
@@ -4208,7 +4221,7 @@ static void gap_inquiry_explode(uint8_t * packet){
                     // truncate name if needed
                     int len = btstack_min(name_len, GAP_INQUIRY_MAX_NAME_LEN);
                     event[17] = len;
-                    memcpy(&event[18], name, len);
+                    (void)memcpy(&event[18], name, len);
                     event_size += len;
                 }
                 break;
@@ -4759,7 +4772,8 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     hci_stack->le_advertisements_direct_address_type = direct_address_typ;
     hci_stack->le_advertisements_channel_map = channel_map;
     hci_stack->le_advertisements_filter_policy = filter_policy;
-    memcpy(hci_stack->le_advertisements_direct_address, direct_address, 6);
+    (void)memcpy(hci_stack->le_advertisements_direct_address, direct_address,
+                 6);
 
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     gap_advertisments_changed();
@@ -4873,7 +4887,7 @@ int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = address_type;
-    memcpy(entry->address, address, 6);
+    (void)memcpy(entry->address, address, 6);
     entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
     btstack_linked_list_add(&hci_stack->le_whitelist, (btstack_linked_item_t*) entry);
     hci_run();
@@ -4993,7 +5007,7 @@ int gap_inquiry_stop(void){
  */
 int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset){
     if (hci_stack->remote_name_state != GAP_REMOTE_NAME_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
-    memcpy(hci_stack->remote_name_addr, addr, 6);
+    (void)memcpy(hci_stack->remote_name_addr, addr, 6);
     hci_stack->remote_name_page_scan_repetition_mode = page_scan_repetition_mode;
     hci_stack->remote_name_clock_offset = clock_offset;
     hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W2_SEND;
@@ -5003,7 +5017,7 @@ int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, u
 
 static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
     hci_stack->gap_pairing_state = state;
-    memcpy(hci_stack->gap_pairing_addr, addr, 6);
+    (void)memcpy(hci_stack->gap_pairing_addr, addr, 6);
     hci_run();
     return 0;
 }

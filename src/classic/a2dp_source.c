@@ -519,7 +519,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
         log_error(" no local_stream_endpoint for seid %d", loc_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
-    memcpy(sc.remote_addr, remote_addr, 6);
+    (void)memcpy(sc.remote_addr, remote_addr, 6);
     return avdtp_source_connect(remote_addr, a2dp_cid);
 }
 
@@ -532,7 +532,9 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uin
 
     log_info("a2dp_source_reconfigure_stream");
 
-    memcpy(sc.local_stream_endpoint->reconfigure_media_codec_sbc_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, 4);
+    (void)memcpy(sc.local_stream_endpoint->reconfigure_media_codec_sbc_info,
+                 sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information,
+                 4);
 
     // update sampling frequency
     uint8_t config = sc.local_stream_endpoint->reconfigure_media_codec_sbc_info[0] & 0x0f;

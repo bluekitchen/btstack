@@ -269,7 +269,8 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
             buffer[pos++] = caps.content_protection.cp_type_value_len + 2;
             big_endian_store_16(buffer, pos, caps.content_protection.cp_type);
             pos += 2;
-            memcpy(buffer+pos, caps.content_protection.cp_type_value, caps.content_protection.cp_type_value_len);
+            (void)memcpy(buffer + pos, caps.content_protection.cp_type_value,
+                         caps.content_protection.cp_type_value_len);
             break;
         case AVDTP_HEADER_COMPRESSION:
             buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
@@ -530,7 +531,8 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
         }
     }
     out_buffer[0] = avdtp_header(signaling_packet->transaction_label, signaling_packet->packet_type, signaling_packet->message_type);
-    memcpy(out_buffer+pos, signaling_packet->command + offset, data_len);
+    (void)memcpy(out_buffer + pos, signaling_packet->command + offset,
+                 data_len);
     pos += data_len; 
     return pos;
 }
@@ -777,7 +779,8 @@ static void avdtp_signaling_emit_content_protection_capability(btstack_packet_ha
     
     //TODO: reserve place for value
     if (content_protection->cp_type_value_len < 10){
-        memcpy(event+pos, content_protection->cp_type_value, content_protection->cp_type_value_len);
+        (void)memcpy(event + pos, content_protection->cp_type_value,
+                     content_protection->cp_type_value_len);
     }
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -841,7 +844,8 @@ static void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_han
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    memcpy(event+pos, media_codec.media_codec_information, btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH));
+    (void)memcpy(event + pos, media_codec.media_codec_information,
+                 btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH));
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -955,7 +959,8 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     pos += 2;
 
     int media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec.media_codec_information_len);
-    memcpy(event+pos, media_codec.media_codec_information, media_codec_len);
+    (void)memcpy(event + pos, media_codec.media_codec_information,
+                 media_codec_len);
     
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

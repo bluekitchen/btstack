@@ -109,7 +109,7 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     // setup beacon
     mesh_beacon_len = UNPROVISIONED_BEACON_LEN;
     mesh_beacon_data[0] = BEACON_TYPE_UNPROVISIONED_DEVICE;
-    memcpy(&mesh_beacon_data[1], beacon_device_uuid, 16);
+    (void)memcpy(&mesh_beacon_data[1], beacon_device_uuid, 16);
     big_endian_store_16(mesh_beacon_data, 17, beacon_oob_information);
     big_endian_store_32(mesh_beacon_data, 19, beacon_uri_hash);
 
@@ -122,7 +122,8 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     mesh_subnet_t * mesh_subnet = (mesh_subnet_t *) arg;
 
-    memcpy(&mesh_beacon_data[14], mesh_secure_network_beacon_auth_value, 8);
+    (void)memcpy(&mesh_beacon_data[14],
+                 mesh_secure_network_beacon_auth_value, 8);
     mesh_beacon_len = SECURE_NETWORK_BEACON_LEN;
 
     printf("Secure Network Beacon\n");
@@ -152,7 +153,7 @@ static void mesh_secure_network_beacon_setup(mesh_subnet_t * mesh_subnet){
     mesh_beacon_data[1] = mesh_secure_network_beacon_get_flags(mesh_subnet);
     // TODO: pick correct key based on key refresh phase
 
-    memcpy(&mesh_beacon_data[2], mesh_subnet->old_key->network_id, 8);
+    (void)memcpy(&mesh_beacon_data[2], mesh_subnet->old_key->network_id, 8);
     big_endian_store_32(mesh_beacon_data, 10, mesh_get_iv_index());
     mesh_network_key_t * network_key = mesh_subnet_get_outgoing_network_key(mesh_subnet);
     btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, network_key->beacon_key, 13,
@@ -325,7 +326,8 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
     if (mesh_secure_network_beacon_active) return;
 
     mesh_secure_network_beacon_active = 1;
-    memcpy(mesh_secure_network_beacon_validate_buffer, &packet[0], SECURE_NETWORK_BEACON_LEN);
+    (void)memcpy(mesh_secure_network_beacon_validate_buffer, &packet[0],
+                 SECURE_NETWORK_BEACON_LEN);
 
     btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, network_key->beacon_key, 13,
         &mesh_secure_network_beacon_validate_buffer[1], mesh_secure_network_beacon_auth_value, &beacon_handle_secure_beacon_auth_value_calculated, subnet);

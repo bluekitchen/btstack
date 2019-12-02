@@ -138,7 +138,7 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.aid   = 0;
     mesh_transport_device_key.akf   = 0;
     mesh_transport_device_key.netkey_index = 0; // unused
-    memcpy(mesh_transport_device_key.key, device_key, 16);
+    (void)memcpy(mesh_transport_device_key.key, device_key, 16);
 
     // use internal slot #0
     mesh_transport_device_key.internal_index = 0;

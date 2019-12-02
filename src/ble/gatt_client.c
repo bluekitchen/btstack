@@ -236,7 +236,7 @@ static uint8_t att_find_by_type_value_request(uint16_t request_type, uint16_t at
     little_endian_store_16(request, 1, start_handle);
     little_endian_store_16(request, 3, end_handle);
     little_endian_store_16(request, 5, attribute_group_type);
-    memcpy(&request[7], value, value_size);
+    (void)memcpy(&request[7], value, value_size);
     
     return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7+value_size);
 }
@@ -307,7 +307,7 @@ static uint8_t att_signed_write_request(uint16_t request_type, uint16_t peripher
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
-    memcpy(&request[3], value, value_length);
+    (void)memcpy(&request[3], value, value_length);
     little_endian_store_32(request, 3 + value_length, sign_counter);
     reverse_64(sgn, &request[3 + value_length + 4]);
     
@@ -321,7 +321,7 @@ static uint8_t att_write_request(uint16_t request_type, uint16_t peripheral_hand
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
-    memcpy(&request[3], value, value_length);
+    (void)memcpy(&request[3], value, value_length);
     
     return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length);
 }
@@ -343,7 +343,7 @@ static uint8_t att_prepare_write_request(uint16_t request_type, uint16_t periphe
     request[0] = request_type;
     little_endian_store_16(request, 1, attribute_handle);
     little_endian_store_16(request, 3, value_offset);
-    memcpy(&request[5], &value[value_offset], blob_length);
+    (void)memcpy(&request[5], &value[value_offset], blob_length);
     
     return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5+blob_length);
 }
@@ -630,7 +630,7 @@ static void characteristic_start_found(gatt_client_t * peripheral, uint16_t star
     if (peripheral->filter_with_uuid) return;
     
     peripheral->uuid16 = uuid16;
-    memcpy(peripheral->uuid128, uuid128, 16);
+    (void)memcpy(peripheral->uuid128, uuid128, 16);
 }
 
 static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_handle){
@@ -1624,7 +1624,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
         gatt_client_t * peripheral = (gatt_client_t *) btstack_linked_list_iterator_next(&it);
         if (peripheral->gatt_client_state == P_W4_CMAC_RESULT){
             // store result
-            memcpy(peripheral->cmac, hash, 8);
+            (void)memcpy(peripheral->cmac, hash, 8);
             // reverse_64(hash, peripheral->cmac);
             peripheral->gatt_client_state = P_W2_SEND_SIGNED_WRITE;
             gatt_client_run();
@@ -1687,7 +1687,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
     peripheral->uuid16 = 0;
-    memcpy(peripheral->uuid128, uuid128, 16);
+    (void)memcpy(peripheral->uuid128, uuid128, 16);
     peripheral->gatt_client_state = P_W2_SEND_SERVICE_WITH_UUID_QUERY;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
@@ -1748,7 +1748,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack
     peripheral->end_group_handle   = end_handle;
     peripheral->filter_with_uuid = 1;
     peripheral->uuid16 = 0;
-    memcpy(peripheral->uuid128, uuid128, 16);
+    (void)memcpy(peripheral->uuid128, uuid128, 16);
     peripheral->characteristic_start_handle = 0;
     peripheral->gatt_client_state = P_W2_SEND_CHARACTERISTIC_WITH_UUID_QUERY;
     gatt_client_run();
@@ -1822,7 +1822,7 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_hand
     peripheral->query_start_handle = start_handle;
     peripheral->query_end_handle = end_handle;
     peripheral->uuid16 = 0;
-    memcpy(peripheral->uuid128, uuid128, 16);
+    (void)memcpy(peripheral->uuid128, uuid128, 16);
     peripheral->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;

@@ -114,7 +114,8 @@ hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection)
 static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
         hfp_connection->ag_indicators_nr = hfp_ag_indicators_nr;
-        memcpy(hfp_connection->ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+        (void)memcpy(hfp_connection->ag_indicators, hfp_ag_indicators,
+                     hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
     }
     return hfp_connection->ag_indicators_nr;
 }
@@ -123,7 +124,8 @@ hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection)
     // TODO: save only value, and value changed in the hfp_connection?
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
         hfp_connection->ag_indicators_nr = hfp_ag_indicators_nr;
-        memcpy(hfp_connection->ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+        (void)memcpy(hfp_connection->ag_indicators, hfp_ag_indicators,
+                     hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
     }
     return (hfp_ag_indicator_t *)&(hfp_connection->ag_indicators);
 }
@@ -322,7 +324,7 @@ static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
         *buffer++ = '\r';
         *buffer++ = '\n';
         int len = strlen(HFP_INDICATOR);
-        memcpy(buffer, HFP_INDICATOR, len);
+        (void)memcpy(buffer, HFP_INDICATOR, len);
         buffer += len;
         *buffer++ = ':';
         return;
@@ -335,7 +337,7 @@ static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
         return;
     }
     if (indicator_index == (num_indicators-1)){
-        memcpy(buffer, "\r\n\r\nOK\r\n", 8);
+        (void)memcpy(buffer, "\r\n\r\nOK\r\n", 8);
         return;
     }
     *buffer = ',';
@@ -2095,18 +2097,21 @@ void hfp_ag_init_supported_features(uint32_t supported_features){
 
 void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_indicators){
     hfp_ag_indicators_nr = ag_indicators_nr;
-    memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    (void)memcpy(hfp_ag_indicators, ag_indicators,
+                 ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 }
 
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators){
     if (hf_indicators_nr > HFP_MAX_NUM_HF_INDICATORS) return;
     hfp_generic_status_indicators_nr = hf_indicators_nr;
-    memcpy(hfp_generic_status_indicators, hf_indicators, hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));
+    (void)memcpy(hfp_generic_status_indicators, hf_indicators,
+                 hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));
 }
 
 void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call_hold_services[]){
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
-    memcpy(hfp_ag_call_hold_services, call_hold_services, call_hold_services_nr * sizeof(char *));
+    (void)memcpy(hfp_ag_call_hold_services, call_hold_services,
+                 call_hold_services_nr * sizeof(char *));
 }
 
 

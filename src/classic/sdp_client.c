@@ -389,7 +389,7 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
 
     // continuation state
     if ((offset + continuationStateLen) > size) return;
-    memcpy(continuationState, packet+offset, continuationStateLen);
+    (void)memcpy(continuationState, packet + offset, continuationStateLen);
     // offset+=continuationStateLen;
 }
 
@@ -498,7 +498,8 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
     // parameters: 
     //     Service_search_pattern - DES (min 1 UUID, max 12)
     uint16_t service_search_pattern_len = de_get_len(service_search_pattern);
-    memcpy(data + offset, service_search_pattern, service_search_pattern_len);
+    (void)memcpy(data + offset, service_search_pattern,
+                 service_search_pattern_len);
     offset += service_search_pattern_len;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
@@ -507,13 +508,13 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
 
     //     AttibuteIDList  
     uint16_t attribute_id_list_len = de_get_len(attribute_id_list);
-    memcpy(data + offset, attribute_id_list, attribute_id_list_len);
+    (void)memcpy(data + offset, attribute_id_list, attribute_id_list_len);
     offset += attribute_id_list_len;
 
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
     data[offset++] = continuationStateLen;
     //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
+    (void)memcpy(data + offset, continuationState, continuationStateLen);
     offset += continuationStateLen;
 
     // uint16_t paramLength 
@@ -542,7 +543,8 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
     // parameters: 
     //     Service_search_pattern - DES (min 1 UUID, max 12)
     uint16_t service_search_pattern_len = de_get_len(service_search_pattern);
-    memcpy(data + offset, service_search_pattern, service_search_pattern_len);
+    (void)memcpy(data + offset, service_search_pattern,
+                 service_search_pattern_len);
     offset += service_search_pattern_len;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
@@ -552,7 +554,7 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
     data[offset++] = continuationStateLen;
     //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
+    (void)memcpy(data + offset, continuationState, continuationStateLen);
     offset += continuationStateLen;
 
     // uint16_t paramLength 
@@ -586,13 +588,13 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
 
     //     AttibuteIDList  
     uint16_t attribute_id_list_len = de_get_len(attribute_id_list);
-    memcpy(data + offset, attribute_id_list, attribute_id_list_len);
+    (void)memcpy(data + offset, attribute_id_list, attribute_id_list_len);
     offset += attribute_id_list_len;
 
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
     data[offset++] = continuationStateLen;
     //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
+    (void)memcpy(data + offset, continuationState, continuationStateLen);
     offset += continuationStateLen;
 
     // uint16_t paramLength 
@@ -633,7 +635,7 @@ static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t s
         return;
     }
     if (offset + continuationStateLen > size) return;
-    memcpy(continuationState, packet+offset, continuationStateLen);
+    (void)memcpy(continuationState, packet + offset, continuationStateLen);
     // offset+=continuationStateLen;
 }
 
@@ -668,7 +670,7 @@ static void sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_
         return;
     }
     if (offset + continuationStateLen > size) return;
-    memcpy(continuationState, packet+offset, continuationStateLen);
+    (void)memcpy(continuationState, packet + offset, continuationStateLen);
     // offset+=continuationStateLen;
 }
 #endif

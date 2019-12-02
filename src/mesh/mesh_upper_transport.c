@@ -251,13 +251,13 @@ static uint32_t iv_index_for_ivi_nid(uint8_t ivi_nid){
 
 static void transport_unsegmented_setup_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
     nonce[1] = 0x00;    // SZMIC if a Segmented Access message or 0 for all other message formats
-    memcpy(&nonce[2], &network_pdu->data[2], 7);
+    (void)memcpy(&nonce[2], &network_pdu->data[2], 7);
     big_endian_store_32(nonce, 9, iv_index_for_ivi_nid(network_pdu->data[0]));
 }
 
 static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_transport_pdu_t * transport_pdu){
     nonce[1] = transport_pdu->transmic_len == 8 ? 0x80 : 0x00;
-    memcpy(&nonce[2], &transport_pdu->network_header[2], 7);
+    (void)memcpy(&nonce[2], &transport_pdu->network_header[2], 7);
     big_endian_store_32(nonce, 9, iv_index_for_ivi_nid(transport_pdu->network_header[0]));
 }
 
@@ -505,7 +505,9 @@ static void mesh_upper_transport_validate_segmented_message(void){
 static void mesh_upper_transport_process_unsegmented_access_message(void){
     // copy original pdu
     incoming_network_pdu_decoded->len = incoming_network_pdu_raw->len;
-    memcpy(incoming_network_pdu_decoded->data, incoming_network_pdu_raw->data, incoming_network_pdu_decoded->len);
+    (void)memcpy(incoming_network_pdu_decoded->data,
+                 incoming_network_pdu_raw->data,
+                 incoming_network_pdu_decoded->len);
 
     // 
     uint8_t * lower_transport_pdu     = &incoming_network_pdu_raw->data[9];
@@ -525,7 +527,8 @@ static void mesh_upper_transport_process_unsegmented_access_message(void){
 
 static void mesh_upper_transport_process_message(void){
     // copy original pdu
-    memcpy(incoming_transport_pdu_decoded, incoming_transport_pdu_raw, sizeof(mesh_transport_pdu_t));
+    (void)memcpy(incoming_transport_pdu_decoded, incoming_transport_pdu_raw,
+                 sizeof(mesh_transport_pdu_t));
 
     // 
     uint8_t * upper_transport_pdu     =  incoming_transport_pdu_decoded->data;
@@ -623,7 +626,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_p
 
     uint8_t transport_pdu_data[12];
     transport_pdu_data[0] = opcode;
-    memcpy(&transport_pdu_data[1], control_pdu_data, control_pdu_len);
+    (void)memcpy(&transport_pdu_data[1], control_pdu_data, control_pdu_len);
     uint16_t transport_pdu_len = control_pdu_len + 1;
 
     // setup network_pdu
@@ -640,7 +643,7 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_p
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
-    memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
+    (void)memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
     transport_pdu->len = control_pdu_len;
     transport_pdu->netkey_index = netkey_index;
     transport_pdu->akf_aid_control = opcode;
@@ -695,7 +698,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pd
     if (status) return status;
 
     // store in transport pdu
-    memcpy(&network_pdu->data[10], access_pdu_data, access_pdu_len);
+    (void)memcpy(&network_pdu->data[10], access_pdu_data, access_pdu_len);
     network_pdu->len = 10 + access_pdu_len;
     return 0;
 }
@@ -741,7 +744,7 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pd
     if (status) return status;
 
     // store in transport pdu
-    memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
+    (void)memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
     transport_pdu->len = access_pdu_len;
     return 0;
 }

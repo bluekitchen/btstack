@@ -465,7 +465,7 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK
     int is_bad_frame  = bad_frame(plc_state, in, num_samples);
 
     if (is_bad_frame){
-        memcpy(out, in, num_samples * 2);
+        (void)memcpy(out, in, num_samples * 2);
         if (plc_state->good_samples > CVSD_LHIST){
             btstack_cvsd_plc_bad_frame(plc_state, num_samples, out);
             if (is_zero_frame){

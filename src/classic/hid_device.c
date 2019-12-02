@@ -142,7 +142,7 @@ static hid_device_t * hid_device_get_instance_for_hid_cid(uint16_t hid_cid){
 
 static hid_device_t * hid_device_provide_instance_for_bd_addr(bd_addr_t bd_addr){
     if (!_hid_device.cid){
-        memcpy(_hid_device.bd_addr, bd_addr, 6);
+        (void)memcpy(_hid_device.bd_addr, bd_addr, 6);
         _hid_device.cid = hid_device_get_next_cid();
         _hid_device.protocol_mode = HID_PROTOCOL_MODE_REPORT;
         _hid_device.con_handle = HCI_CON_HANDLE_INVALID;
@@ -942,7 +942,7 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     *hid_cid = hid_device_get_next_cid();
 
     // store address
-    memcpy(hid_device->bd_addr, addr, 6);
+    (void)memcpy(hid_device->bd_addr, addr, 6);
 
     // reset state
     hid_device->cid           = *hid_cid;

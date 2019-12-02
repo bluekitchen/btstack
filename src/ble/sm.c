@@ -612,7 +612,7 @@ static void gap_random_address_update_stop(void){
 static void sm_ah_r_prime(uint8_t r[3], uint8_t * r_prime){
     // r'= padding || r
     memset(r_prime, 0, 16);
-    memcpy(&r_prime[13], r, 3);
+    (void)memcpy(&r_prime[13], r, 3);
 }
 
 // d1 helper
@@ -661,8 +661,8 @@ static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, uint8_t * t3){
 
     sm_key_t p2;
     memset(p2, 0, 16);
-    memcpy(&p2[4],  ia, 6);
-    memcpy(&p2[10], ra, 6);
+    (void)memcpy(&p2[4], ia, 6);
+    (void)memcpy(&p2[10], ra, 6);
     log_info_key("p2", p2);
 
     // c1 = e(k, t2_xor_p2)
@@ -676,8 +676,8 @@ static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, uint8_t * t3){
 static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, uint8_t * r_prime){
     log_info_key("r1", r1);
     log_info_key("r2", r2);
-    memcpy(&r_prime[8], &r2[8], 8);
-    memcpy(&r_prime[0], &r1[8], 8);
+    (void)memcpy(&r_prime[8], &r2[8], 8);
+    (void)memcpy(&r_prime[0], &r1[8], 8);
 }
 
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
@@ -848,7 +848,7 @@ static int sm_address_resolution_idle(void){
 }
 
 static void sm_address_resolution_start_lookup(uint8_t addr_type, hci_con_handle_t con_handle, bd_addr_t addr, address_resolution_mode_t mode, void * context){
-    memcpy(sm_address_resolution_address, addr, 6);
+    (void)memcpy(sm_address_resolution_address, addr, 6);
     sm_address_resolution_addr_type = addr_type;
     sm_address_resolution_test = 0;
     sm_address_resolution_mode = mode;
@@ -871,7 +871,7 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     entry = btstack_memory_sm_lookup_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = (bd_addr_type_t) address_type;
-    memcpy(entry->address, address, 6);
+    (void)memcpy(entry->address, address, 6);
     btstack_linked_list_add(&sm_address_resolution_general_queue, (btstack_linked_item_t *) entry);
     sm_run();
     return 0;
@@ -1039,7 +1039,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 
     // fill in sm setup
     setup->sm_peer_addr_type = sm_conn->sm_peer_addr_type;
-    memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
+    (void)memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
 
     // query client for Legacy Pairing OOB data
     setup->sm_have_oob_data = 0;
@@ -1078,13 +1078,13 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         local_packet = &setup->sm_s_pres;
         gap_le_get_own_address(&setup->sm_s_addr_type, setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
-        memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
+        (void)memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
     } else {
         // master
         local_packet = &setup->sm_m_preq;
         gap_le_get_own_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
-        memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
+        (void)memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
 
         int key_distribution_flags = sm_key_distribution_flags_for_auth_req();
         sm_pairing_packet_set_initiator_key_distribution(setup->sm_m_preq, key_distribution_flags);
@@ -1418,7 +1418,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     switch (sm_conn->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
-            memcpy(setup->sm_local_confirm, hash, 16);
+            (void)memcpy(setup->sm_local_confirm, hash, 16);
             sm_conn->sm_engine_state = SM_SC_SEND_CONFIRMATION;
             break;
         case SM_SC_W4_CMAC_FOR_CHECK_CONFIRMATION:
@@ -1437,11 +1437,11 @@ static void sm_sc_cmac_done(uint8_t * hash){
             break;
         }
         case SM_SC_W4_CALCULATE_F5_SALT:
-            memcpy(setup->sm_t, hash, 16);
+            (void)memcpy(setup->sm_t, hash, 16);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_MACKEY;
             break;
         case SM_SC_W4_CALCULATE_F5_MACKEY:
-            memcpy(setup->sm_mackey, hash, 16);
+            (void)memcpy(setup->sm_mackey, hash, 16);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_LTK;
             break;
         case SM_SC_W4_CALCULATE_F5_LTK:
@@ -1449,13 +1449,13 @@ static void sm_sc_cmac_done(uint8_t * hash){
             // Errata Service Release to the Bluetooth Specification: ESR09
             //   E6405 – Cross transport key derivation from a key of size less than 128 bits
             //   Note: When the BR/EDR link key is being derived from the LTK, the derivation is done before the LTK gets masked."
-            memcpy(setup->sm_ltk, hash, 16);
-            memcpy(setup->sm_local_ltk, hash, 16);
+            (void)memcpy(setup->sm_ltk, hash, 16);
+            (void)memcpy(setup->sm_local_ltk, hash, 16);
             sm_truncate_key(setup->sm_ltk, sm_conn->sm_actual_encryption_key_size);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK;
             break;
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
-            memcpy(setup->sm_local_dhkey_check, hash, 16);
+            (void)memcpy(setup->sm_local_dhkey_check, hash, 16);
             if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_COMMAND_RECEIVED){
@@ -1481,7 +1481,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             }
             break;
         case SM_SC_W4_CALCULATE_H6_ILK:
-            memcpy(setup->sm_t, hash, 16);
+            (void)memcpy(setup->sm_t, hash, 16);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY;
             break;
         case SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY:
@@ -1514,8 +1514,8 @@ static void sm_sc_cmac_done(uint8_t * hash){
 static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
     const uint16_t message_len = 65;
     sm_cmac_connection = sm_conn;
-    memcpy(sm_cmac_sc_buffer, u, 32);
-    memcpy(sm_cmac_sc_buffer+32, v, 32);
+    (void)memcpy(sm_cmac_sc_buffer, u, 32);
+    (void)memcpy(sm_cmac_sc_buffer + 32, v, 32);
     sm_cmac_sc_buffer[64] = z;
     log_info("f4 key");
     log_info_hexdump(x, 16);
@@ -1533,7 +1533,7 @@ static void f5_calculate_salt(sm_connection_t * sm_conn){
     // calculate salt for f5
     const uint16_t message_len = 32;
     sm_cmac_connection = sm_conn;
-    memcpy(sm_cmac_sc_buffer, setup->sm_dhkey, message_len);
+    (void)memcpy(sm_cmac_sc_buffer, setup->sm_dhkey, message_len);
     sm_cmac_message_start(f5_salt, message_len, sm_cmac_sc_buffer, &sm_sc_cmac_done);
 }
 
@@ -1543,12 +1543,12 @@ static inline void f5_mackkey(sm_connection_t * sm_conn, sm_key_t t, const sm_ke
 
     // f5(W, N1, N2, A1, A2) = AES-CMACT (Counter = 0 || keyID || N1 || N2|| A1|| A2 || Length = 256) -- this is the MacKey
     sm_cmac_sc_buffer[0] = 0;
-    memcpy(sm_cmac_sc_buffer+01, f5_key_id, 4);
-    memcpy(sm_cmac_sc_buffer+05, n1, 16);
-    memcpy(sm_cmac_sc_buffer+21, n2, 16);
-    memcpy(sm_cmac_sc_buffer+37, a1, 7);
-    memcpy(sm_cmac_sc_buffer+44, a2, 7);
-    memcpy(sm_cmac_sc_buffer+51, f5_length, 2);
+    (void)memcpy(sm_cmac_sc_buffer + 01, f5_key_id, 4);
+    (void)memcpy(sm_cmac_sc_buffer + 05, n1, 16);
+    (void)memcpy(sm_cmac_sc_buffer + 21, n2, 16);
+    (void)memcpy(sm_cmac_sc_buffer + 37, a1, 7);
+    (void)memcpy(sm_cmac_sc_buffer + 44, a2, 7);
+    (void)memcpy(sm_cmac_sc_buffer + 51, f5_length, 2);
     log_info("f5 key");
     log_info_hexdump(t, 16);
     log_info("f5 message for MacKey");
@@ -1560,8 +1560,8 @@ static void f5_calculate_mackey(sm_connection_t * sm_conn){
     sm_key56_t bd_addr_master, bd_addr_slave;
     bd_addr_master[0] =  setup->sm_m_addr_type;
     bd_addr_slave[0]  =  setup->sm_s_addr_type;
-    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
-    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+    (void)memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+    (void)memcpy(&bd_addr_slave[1], setup->sm_s_address, 6);
     if (IS_RESPONDER(sm_conn->sm_role)){
         // responder
         f5_mackkey(sm_conn, setup->sm_t, setup->sm_peer_nonce, setup->sm_local_nonce, bd_addr_master, bd_addr_slave);
@@ -1591,12 +1591,12 @@ static void f5_calculate_ltk(sm_connection_t * sm_conn){
 static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
     const uint16_t message_len = 65;
     sm_cmac_connection = sm_conn;
-    memcpy(sm_cmac_sc_buffer, n1, 16);
-    memcpy(sm_cmac_sc_buffer+16, n2, 16);
-    memcpy(sm_cmac_sc_buffer+32, r, 16);
-    memcpy(sm_cmac_sc_buffer+48, io_cap, 3);
-    memcpy(sm_cmac_sc_buffer+51, a1, 7);
-    memcpy(sm_cmac_sc_buffer+58, a2, 7);
+    (void)memcpy(sm_cmac_sc_buffer, n1, 16);
+    (void)memcpy(sm_cmac_sc_buffer + 16, n2, 16);
+    (void)memcpy(sm_cmac_sc_buffer + 32, r, 16);
+    (void)memcpy(sm_cmac_sc_buffer + 48, io_cap, 3);
+    (void)memcpy(sm_cmac_sc_buffer + 51, a1, 7);
+    (void)memcpy(sm_cmac_sc_buffer + 58, a2, 7);
     log_info("f6 key");
     log_info_hexdump(w, 16);
     log_info("f6 message");
@@ -1612,9 +1612,9 @@ static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_
 static void g2_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, const sm_key_t y){
     const uint16_t message_len = 80;
     sm_cmac_connection = sm_conn;
-    memcpy(sm_cmac_sc_buffer, u, 32);
-    memcpy(sm_cmac_sc_buffer+32, v, 32);
-    memcpy(sm_cmac_sc_buffer+64, y, 16);
+    (void)memcpy(sm_cmac_sc_buffer, u, 32);
+    (void)memcpy(sm_cmac_sc_buffer + 32, v, 32);
+    (void)memcpy(sm_cmac_sc_buffer + 64, y, 16);
     log_info("g2 key");
     log_info_hexdump(x, 16);
     log_info("g2 message");
@@ -1696,8 +1696,8 @@ static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
     sm_key56_t bd_addr_master, bd_addr_slave;
     bd_addr_master[0] =  setup->sm_m_addr_type;
     bd_addr_slave[0]  =  setup->sm_s_addr_type;
-    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
-    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+    (void)memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+    (void)memcpy(&bd_addr_slave[1], setup->sm_s_address, 6);
     uint8_t iocap_a[3];
     iocap_a[0] = sm_pairing_packet_get_auth_req(setup->sm_m_preq);
     iocap_a[1] = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq);
@@ -1720,8 +1720,8 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
     sm_key56_t bd_addr_master, bd_addr_slave;
     bd_addr_master[0] =  setup->sm_m_addr_type;
     bd_addr_slave[0]  =  setup->sm_s_addr_type;
-    memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
-    memcpy(&bd_addr_slave[1],  setup->sm_s_address, 6);
+    (void)memcpy(&bd_addr_master[1], setup->sm_m_address, 6);
+    (void)memcpy(&bd_addr_slave[1], setup->sm_s_address, 6);
 
     uint8_t iocap_a[3];
     iocap_a[0] = sm_pairing_packet_get_auth_req(setup->sm_m_preq);
@@ -1801,7 +1801,7 @@ static void sm_load_security_info(sm_connection_t * sm_connection){
 
 #ifdef ENABLE_LE_PERIPHERAL
 static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_connection){
-    memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
+    (void)memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
     setup->sm_local_ediv = sm_connection->sm_local_ediv;
     // re-establish used key encryption size
     // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
@@ -1945,7 +1945,7 @@ static void sm_run(void){
             log_info("LE Device Lookup: calculate AH");
             log_info_key("IRK", irk);
 
-            memcpy(sm_aes128_key, irk, 16);
+            (void)memcpy(sm_aes128_key, irk, 16);
             sm_ah_r_prime(sm_address_resolution_address, sm_aes128_plaintext);
             sm_address_resolution_ah_calculation_active = 1;
             sm_aes128_state = SM_AES128_ACTIVE;
@@ -2051,7 +2051,9 @@ static void sm_run(void){
                     sm_reset_setup();
                     sm_init_setup(sm_connection);
                     // recover pairing request
-                    memcpy(&setup->sm_m_preq, &sm_connection->sm_m_preq, sizeof(sm_pairing_packet_t));
+                    (void)memcpy(&setup->sm_m_preq,
+                                 &sm_connection->sm_m_preq,
+                                 sizeof(sm_pairing_packet_t));
                     err = sm_stk_generation_init(sm_connection);
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -2087,7 +2089,8 @@ static void sm_run(void){
                             sm_reset_setup();
                             sm_load_security_info(sm_connection);
                             if ((setup->sm_peer_ediv == 0) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
-                                memcpy(setup->sm_ltk, setup->sm_peer_ltk, 16);
+                                (void)memcpy(setup->sm_ltk,
+                                             setup->sm_peer_ltk, 16);
                                 sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
                                 break;
                             }
@@ -2323,8 +2326,8 @@ static void sm_run(void){
                     case PK_RESP_INPUT:
                     case PK_BOTH_INPUT:
                         // use random TK for display
-                        memcpy(setup->sm_ra, setup->sm_tk, 16);
-                        memcpy(setup->sm_rb, setup->sm_tk, 16);
+                        (void)memcpy(setup->sm_ra, setup->sm_tk, 16);
+                        (void)memcpy(setup->sm_rb, setup->sm_tk, 16);
                         setup->sm_passkey_bit = 0;
 
                         if (IS_RESPONDER(connection->sm_role)){
@@ -2516,7 +2519,7 @@ static void sm_run(void){
                 // r' = padding || r
                 // r - 64 bit value
                 memset(&sm_aes128_plaintext[0], 0, 8);
-                memcpy(&sm_aes128_plaintext[8], setup->sm_local_rand, 8);
+                (void)memcpy(&sm_aes128_plaintext[8], setup->sm_local_rand, 8);
 
                 // Y = dm(DHK, Rand)
                 connection->sm_engine_state = SM_PH3_Y_W4_ENC;
@@ -2562,7 +2565,7 @@ static void sm_run(void){
                 // r' = padding || r
                 // r - 64 bit value
                 memset(&sm_aes128_plaintext[0], 0, 8);
-                memcpy(&sm_aes128_plaintext[8], setup->sm_local_rand, 8);
+                (void)memcpy(&sm_aes128_plaintext[8], setup->sm_local_rand, 8);
 
                 // Y = dm(DHK, Rand)
                 connection->sm_engine_state = SM_RESPONDER_PH4_Y_W4_ENC;
@@ -2911,7 +2914,7 @@ static void sm_handle_encryption_result_rau(void *arg){
     UNUSED(arg);
     sm_aes128_state = SM_AES128_IDLE;
 
-    memcpy(&sm_random_address[3], &sm_aes128_ciphertext[13], 3);
+    (void)memcpy(&sm_random_address[3], &sm_aes128_ciphertext[13], 3);
     rau_state = RAU_SET_ADDRESS;
     sm_run();
 }
@@ -3543,7 +3546,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // store pairing request
-            memcpy(&setup->sm_s_pres, packet, sizeof(sm_pairing_packet_t));
+            (void)memcpy(&setup->sm_s_pres, packet,
+                         sizeof(sm_pairing_packet_t));
             err = sm_stk_generation_init(sm_conn);
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -3629,7 +3633,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // store pairing request
-            memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
+            (void)memcpy(&sm_conn->sm_m_preq, packet,
+                         sizeof(sm_pairing_packet_t));
             sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
             break;
 #endif
@@ -3751,7 +3756,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         log_info("Reset rb as A does not have OOB data");
                         memset(setup->sm_rb, 0, 16);
                     } else {
-                        memcpy(setup->sm_rb, sm_sc_oob_random, 16);
+                        (void)memcpy(setup->sm_rb, sm_sc_oob_random, 16);
                         log_info("Use stored rb");
                         log_info_hexdump(setup->sm_rb, 16);
                     }
@@ -3760,7 +3765,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         log_info("Reset ra as B does not have OOB data");
                         memset(setup->sm_ra, 0, 16);
                     } else {
-                        memcpy(setup->sm_ra, sm_sc_oob_random, 16);
+                        (void)memcpy(setup->sm_ra, sm_sc_oob_random, 16);
                         log_info("Use stored ra");
                         log_info_hexdump(setup->sm_ra, 16);
                     }
@@ -3962,16 +3967,16 @@ void sm_set_request_security(int enable){
 #endif
 
 void sm_set_er(sm_key_t er){
-    memcpy(sm_persistent_er, er, 16);
+    (void)memcpy(sm_persistent_er, er, 16);
 }
 
 void sm_set_ir(sm_key_t ir){
-    memcpy(sm_persistent_ir, ir, 16);
+    (void)memcpy(sm_persistent_ir, ir, 16);
 }
 
 // Testing support only
 void sm_test_set_irk(sm_key_t irk){
-    memcpy(sm_persistent_irk, irk, 16);
+    (void)memcpy(sm_persistent_irk, irk, 16);
     dkg_state = DKG_CALC_DHK;
     test_use_fixed_local_irk = true;
 }
@@ -4210,8 +4215,8 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){
         btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) sm_conn->sm_handle);
     }
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    memcpy(setup->sm_ra, setup->sm_tk, 16);
-    memcpy(setup->sm_rb, setup->sm_tk, 16);
+    (void)memcpy(setup->sm_ra, setup->sm_tk, 16);
+    (void)memcpy(setup->sm_rb, setup->sm_tk, 16);
     if (sm_conn->sm_engine_state == SM_SC_W4_USER_RESPONSE){
         sm_sc_start_calculating_local_confirm(sm_conn);
     }
@@ -4346,7 +4351,7 @@ void gap_random_address_set_update_period(int period_ms){
 
 void gap_random_address_set(bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
-    memcpy(sm_random_address, addr, 6);
+    (void)memcpy(sm_random_address, addr, 6);
     rau_state = RAU_SET_ADDRESS;
     sm_run();
 }

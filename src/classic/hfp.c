@@ -204,7 +204,7 @@ void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_n
         tmp_codecs[tmp_codec_nr++] = codecs[i];
     }
     *codecs_nr = tmp_codec_nr;
-    memcpy(codecs, tmp_codecs, tmp_codec_nr);
+    (void)memcpy(codecs, tmp_codecs, tmp_codec_nr);
 }
 
 // UTILS
@@ -427,7 +427,7 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
-    memcpy(hfp_connection->remote_addr, bd_addr, 6);
+    (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
     hfp_connection->local_role = local_role;
     log_info("Create HFP context %p: role %u, addr %s", hfp_connection, local_role, bd_addr_to_str(bd_addr));
 
@@ -1483,7 +1483,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART;
             return;
         case HFP_IDLE:
-            memcpy(hfp_connection->remote_addr, bd_addr, 6);
+            (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
             hfp_connection->state = HFP_W4_SDP_QUERY_COMPLETE;
             connection_doing_sdp_query = hfp_connection;
             hfp_connection->service_uuid = service_uuid;

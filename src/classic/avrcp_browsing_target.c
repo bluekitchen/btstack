@@ -70,7 +70,8 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
     // Profile IDentifier (PID)
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
-    memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
+    (void)memcpy(packet + pos, connection->cmd_operands,
+                 connection->cmd_operands_length);
     
     pos += connection->cmd_operands_length;
     connection->wait_to_send = 0;
@@ -200,7 +201,8 @@ static uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_context_t * c
     connection->ertm_buffer_size = size;
     avrcp_connection->browsing_connection = connection;
 
-    memcpy(&connection->ertm_config, ertm_config, sizeof(l2cap_ertm_config_t));
+    (void)memcpy(&connection->ertm_config, ertm_config,
+                 sizeof(l2cap_ertm_config_t));
 
     return l2cap_create_ertm_channel(avrcp_browsing_target_packet_handler, remote_addr, avrcp_connection->browsing_l2cap_psm, 
                     &connection->ertm_config, connection->ertm_buffer, connection->ertm_buffer_size, NULL);
@@ -437,7 +439,8 @@ uint8_t avrcp_browsing_target_configure_incoming_connection(uint16_t avrcp_brows
     avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     avrcp_connection->browsing_connection->ertm_buffer = ertm_buffer;
     avrcp_connection->browsing_connection->ertm_buffer_size = size;
-    memcpy(&avrcp_connection->browsing_connection->ertm_config, ertm_config, sizeof(l2cap_ertm_config_t));
+    (void)memcpy(&avrcp_connection->browsing_connection->ertm_config,
+                 ertm_config, sizeof(l2cap_ertm_config_t));
     l2cap_accept_ertm_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid, &avrcp_connection->browsing_connection->ertm_config, avrcp_connection->browsing_connection->ertm_buffer, avrcp_connection->browsing_connection->ertm_buffer_size);
     return ERROR_CODE_SUCCESS;
 }
@@ -493,7 +496,7 @@ uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsin
         log_info(" todo: list too big, invoke fragmentation");
         return 1;
     }
-    memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
+    (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
     pos += attr_list_size;
     connection->cmd_operands_length = pos;    
     // printf_hexdump(connection->cmd_operands, connection->cmd_operands_length);

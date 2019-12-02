@@ -117,12 +117,12 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 break;
             case 'D': // 8 byte data block
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 8);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 8);
                 pos += 8;
                 break;
             case 'E': // Extended Inquiry Information 240 octets
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 240);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 240);
                 pos += 240;
                 break;
             case 'N': { // UTF-8 string, null terminated
@@ -131,7 +131,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 if (len > 248) {
                     len = 248;
                 }
-                memcpy(&hci_cmd_buffer[pos], ptr, len);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
                 if (len < 248) {
                     // fill remaining space with zeroes
                     memset(&hci_cmd_buffer[pos+len], 0, 248-len);
@@ -141,13 +141,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             }
             case 'P': // 16 byte PIN code or link key
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 16);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
 #ifdef ENABLE_BLE
             case 'A': // 31 bytes advertising data
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 31);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
                 break;
 #endif
@@ -155,7 +155,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case 'S': { // Service Record (Data Element Sequence)
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = de_get_len(ptr);
-                memcpy(&hci_cmd_buffer[pos], ptr, len);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
                 pos += len;
                 break;
             }

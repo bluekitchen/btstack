@@ -205,11 +205,14 @@ static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t p
 
     if (packet_type == AVRCP_SINGLE_PACKET){
         // operands
-        memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
+        (void)memcpy(command + pos, connection->cmd_operands,
+                     connection->cmd_operands_length);
         pos += connection->cmd_operands_length;
     } else {
         uint16_t bytes_to_copy = btstack_min(connection->cmd_operands_fragmented_len-connection->cmd_operands_fragmented_pos, max_bytes);
-        memcpy(command+pos, &connection->cmd_operands_fragmented_buffer[connection->cmd_operands_fragmented_pos], bytes_to_copy);
+        (void)memcpy(command + pos,
+                     &connection->cmd_operands_fragmented_buffer[connection->cmd_operands_fragmented_pos],
+                     bytes_to_copy);
         pos += bytes_to_copy;
         connection->cmd_operands_fragmented_pos += bytes_to_copy;
     }
@@ -288,22 +291,22 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
         case AVRCP_MEDIA_ATTR_TITLE:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO;
             event[pos++] = value_len;
-            memcpy(event+pos, value, value_len);
+            (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_ARTIST:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO;
             event[pos++] = value_len;
-            memcpy(event+pos, value, value_len);
+            (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_ALBUM:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO;
             event[pos++] = value_len;
-            memcpy(event+pos, value, value_len);
+            (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_GENRE:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO;
             event[pos++] = value_len;
-            memcpy(event+pos, value, value_len);
+            (void)memcpy(event + pos, value, value_len);
             break;
         case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO;
@@ -491,7 +494,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
             // operands:
-            memcpy(operands, packet+pos, 5);
+            (void)memcpy(operands, packet + pos, 5);
             uint8_t unit_type = operands[1] >> 3;
             uint8_t max_subunit_ID = operands[1] & 0x07;
             log_info("    SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
@@ -501,7 +504,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
             // operands:
-            memcpy(operands, packet+pos, 5);
+            (void)memcpy(operands, packet + pos, 5);
             uint8_t unit_type = operands[1] >> 3;
             uint8_t unit = operands[1] & 0x07;
             uint32_t company_id = (operands[2] << 16) | (operands[3] << 8) | operands[4];
@@ -515,7 +518,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 return;
             };
             // operands:
-            memcpy(operands, packet+pos, 7);
+            (void)memcpy(operands, packet + pos, 7);
             pos += 7;
             // uint32_t company_id = operands[0] << 16 | operands[1] << 8 | operands[2];
             pdu_id = operands[3];
@@ -1372,7 +1375,7 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
     connection->cmd_operands[pos++]  = scope;
     memset(&connection->cmd_operands[pos], 0, 8);
     if (uid){
-        memcpy(&connection->cmd_operands[pos], uid, 8);
+        (void)memcpy(&connection->cmd_operands[pos], uid, 8);
     }
     pos += 8;
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);
@@ -1412,7 +1415,7 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
     connection->cmd_operands[pos++]  = scope;
     memset(&connection->cmd_operands[pos], 0, 8);
     if (uid){
-        memcpy(&connection->cmd_operands[pos], uid, 8);
+        (void)memcpy(&connection->cmd_operands[pos], uid, 8);
     }
     pos += 8;
     big_endian_store_16(connection->cmd_operands, pos, uid_counter);

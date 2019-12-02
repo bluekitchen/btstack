@@ -124,7 +124,7 @@ static uint16_t avrcp_target_pack_single_element_attribute_string(uint8_t * pack
         big_endian_store_16(packet, pos, attr_value_size);
         pos += 2;
     }
-    memcpy(packet+pos, attr_value, attr_value_to_copy);
+    (void)memcpy(packet + pos, attr_value, attr_value_to_copy);
     pos += attr_value_size;
     return (header * 8) + attr_value_size;
 }
@@ -326,7 +326,8 @@ static int avrcp_target_send_response(uint16_t cid, avrcp_connection_t * connect
     //     pos += 3;
     // }
     // operands
-    memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
+    (void)memcpy(packet + pos, connection->cmd_operands,
+                 connection->cmd_operands_length);
     pos += connection->cmd_operands_length;
     // printf(" pos to send %d\n", pos);
     // printf_hexdump(packet, pos);
@@ -412,7 +413,7 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
     pos += 2;
     connection->cmd_operands[pos++] = event_id;
     if (value && (value_len > 0)){
-        memcpy(connection->cmd_operands + pos, value, value_len);
+        (void)memcpy(connection->cmd_operands + pos, value, value_len);
         pos += value_len;
     }
     connection->cmd_operands_length = pos;
@@ -561,7 +562,8 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->cmd_operands_length = 5;
     connection->cmd_operands[0] = (page << 4) | extension_code;
 
-    memcpy(connection->cmd_operands+1, connection->subunit_info_data + offset, 4);
+    (void)memcpy(connection->cmd_operands + 1,
+                 connection->subunit_info_data + offset, 4);
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -597,7 +599,8 @@ static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t
 
     connection->cmd_operands[connection->cmd_operands_length++] = capability_id;
     connection->cmd_operands[connection->cmd_operands_length++] = capabilities_num;
-    memcpy(connection->cmd_operands+connection->cmd_operands_length, capabilities, size);
+    (void)memcpy(connection->cmd_operands + connection->cmd_operands_length,
+                 capabilities, size);
     connection->cmd_operands_length += size;
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
@@ -676,7 +679,7 @@ void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t *
         connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
         return;
     } 
-    memcpy(connection->track_id, current_track->track_id, 8);
+    (void)memcpy(connection->track_id, current_track->track_id, 8);
     connection->song_length_ms = current_track->song_length_ms;
     connection->track_nr = current_track->track_nr;
     connection->total_tracks = total_tracks;
@@ -703,7 +706,7 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->track_changed = 1;
-        memcpy(connection->track_id, track_id, 8);
+        (void)memcpy(connection->track_id, track_id, 8);
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -907,7 +910,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // 1 - reserved
             // 2-3 param length,
             length = big_endian_read_16(pdu, 2);
-            memcpy(connection->cmd_operands, company_id, 3);
+            (void)memcpy(connection->cmd_operands, company_id, 3);
             connection->cmd_operands_length = 3;
             switch (pdu_id){
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
@@ -1140,7 +1143,7 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     big_endian_store_16(packet, pos, caped_value_len);
     pos += 2;
     packet[pos++] = notification_id;
-    memcpy(packet+pos, value, caped_value_len-1);    
+    (void)memcpy(packet + pos, value, caped_value_len - 1);    
     pos += caped_value_len - 1;
     connection->wait_to_send = 0;
     return l2cap_send_prepared(cid, pos);

@@ -55,7 +55,8 @@ static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transactio
 }
 
 static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_packet, uint8_t * packet, uint16_t size){
-    memcpy(signaling_packet->command + signaling_packet->size, packet, size);
+    (void)memcpy(signaling_packet->command + signaling_packet->size, packet,
+                 size);
     signaling_packet->size += size;
     return (signaling_packet->packet_type == AVDTP_SINGLE_PACKET) || (signaling_packet->packet_type == AVDTP_END_PACKET);
 }

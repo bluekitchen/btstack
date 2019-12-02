@@ -250,7 +250,7 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
 }
 
 void mesh_node_set_device_uuid(const uint8_t * device_uuid){
-    memcpy(mesh_node_device_uuid, device_uuid, 16);
+    (void)memcpy(mesh_node_device_uuid, device_uuid, 16);
     mesh_node_have_device_uuid = 1;
 }
 

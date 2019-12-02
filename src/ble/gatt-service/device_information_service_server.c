@@ -109,7 +109,9 @@ static uint16_t device_information_service_read_callback(hci_con_handle_t con_ha
 			return device_information_fields[i].len;
 		}
 		int bytes_to_copy = btstack_min(device_information_fields[i].len - offset, buffer_size);
-		memcpy(buffer, &device_information_fields[i].data[offset], bytes_to_copy);
+		(void)memcpy(buffer,
+			     &device_information_fields[i].data[offset],
+			     bytes_to_copy);
 		return bytes_to_copy;
 	}
 	return 0;

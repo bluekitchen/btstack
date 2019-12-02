@@ -289,7 +289,7 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
 void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
     hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
-    memcpy(remote, bd_addr, 6);
+    (void)memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 

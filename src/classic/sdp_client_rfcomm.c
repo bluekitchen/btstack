@@ -95,7 +95,7 @@ static void sdp_rfcomm_query_emit_service(void){
     event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
     event[1] = sdp_service_name_len + 1;
     event[2] = sdp_rfcomm_channel_nr;
-    memcpy(&event[3], sdp_service_name, sdp_service_name_len);
+    (void)memcpy(&event[3], sdp_service_name, sdp_service_name_len);
     event[3+sdp_service_name_len] = 0;
     (*sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
     sdp_rfcomm_channel_nr = 0;

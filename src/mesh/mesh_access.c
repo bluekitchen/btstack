@@ -565,12 +565,12 @@ void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * d
 }
 
 void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest){
-    memcpy( dest, state->data, 16);
+    (void)memcpy(dest, state->data, 16);
     mesh_access_parser_skip(state, 16);
 }
 
 void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest){
-    memcpy( dest, state->data, 16);
+    (void)memcpy(dest, state->data, 16);
     mesh_access_parser_skip(state, 16);
 }
 

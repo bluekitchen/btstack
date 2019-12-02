@@ -68,7 +68,7 @@ int bd_addr_cmp(const bd_addr_t a, const bd_addr_t b){
  * @param src
  */
 void bd_addr_copy(bd_addr_t dest, const bd_addr_t src){
-    memcpy(dest,src,BD_ADDR_LEN);
+    (void)memcpy(dest, src, BD_ADDR_LEN);
 }
 
 uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
@@ -294,7 +294,7 @@ const uint8_t bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x
     0x80, 0x00, /* - */ 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 
 void uuid_add_bluetooth_prefix(uint8_t *uuid, uint32_t shortUUID){
-    memcpy(uuid, bluetooth_base_uuid, 16);
+    (void)memcpy(uuid, bluetooth_base_uuid, 16);
     big_endian_store_32(uuid, 0, shortUUID);
 }
 

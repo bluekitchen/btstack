@@ -255,7 +255,9 @@ void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream
     uint16_t bitmap = store_bit16(stream_endpoint->sep.registered_service_categories, AVDTP_CONTENT_PROTECTION, 1);
     stream_endpoint->sep.registered_service_categories = bitmap;
     stream_endpoint->sep.capabilities.content_protection.cp_type = cp_type;
-    memcpy(stream_endpoint->sep.capabilities.content_protection.cp_type_value, cp_type_value, btstack_min(cp_type_value_len, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN));
+    (void)memcpy(stream_endpoint->sep.capabilities.content_protection.cp_type_value,
+                 cp_type_value,
+                 btstack_min(cp_type_value_len, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN));
     stream_endpoint->sep.capabilities.content_protection.cp_type_value_len = btstack_min(cp_type_value_len, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
 }
 
@@ -344,7 +346,7 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
     connection->avdtp_cid = avdtp_get_next_avdtp_cid(context);
     context->avdtp_cid = connection->avdtp_cid;
-    memcpy(connection->remote_addr, remote_addr, 6);
+    (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);
     return connection;
 }
@@ -1052,7 +1054,8 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
     stream_endpoint->media_codec_type = configuration.media_codec.media_codec_type;
     if (configuration.media_codec.media_codec_type == AVDTP_CODEC_SBC){
         stream_endpoint->media_type = configuration.media_codec.media_type;
-        memcpy(stream_endpoint->media_codec_sbc_info, configuration.media_codec.media_codec_information, 4);
+        (void)memcpy(stream_endpoint->media_codec_sbc_info,
+                     configuration.media_codec.media_codec_information, 4);
     }
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }

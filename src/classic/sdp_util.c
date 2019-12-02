@@ -149,7 +149,7 @@ int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
             shortUUID = big_endian_read_32(element, 1);
             break;
         case DE_SIZE_128:
-            memcpy(uuid128, element+1, 16);
+            (void)memcpy(uuid128, element + 1, 16);
             return 1;
         default:
             return 0;
@@ -254,7 +254,7 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
         de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
         data_size += 2;
     }
-    memcpy( seq + 3 + data_size, data, size);
+    (void)memcpy(seq + 3 + data_size, data, size);
     data_size += size;
     big_endian_store_16(seq, 1, data_size);
 }
@@ -262,7 +262,7 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
 void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
     int data_size   = big_endian_read_16(seq,1);
     de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128); 
-    memcpy( seq + 4 + data_size, uuid, 16);
+    (void)memcpy(seq + 4 + data_size, uuid, 16);
     big_endian_store_16(seq, 1, data_size+1+16);
 }
 
@@ -401,7 +401,8 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
             // copy Attribute
             de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
             data_size += 3; // 3 bytes
-            memcpy(context->buffer + 3 + data_size, attributeValue, attribute_len);
+            (void)memcpy(context->buffer + 3 + data_size, attributeValue,
+                         attribute_len);
             big_endian_store_16(context->buffer,1,data_size+attribute_len);
         } else {
             // not enought space left -> continue with previous element
@@ -441,7 +442,7 @@ static int spd_append_range(struct sdp_context_filter_attributes* context, uint1
         remainder_len = context->maxBytes;
         ok = 0;
     }
-    memcpy(context->buffer, &data[context->startOffset], remainder_len);
+    (void)memcpy(context->buffer, &data[context->startOffset], remainder_len);
     context->usedBytes += remainder_len;
     context->buffer    += remainder_len;
     context->maxBytes  -= remainder_len;
@@ -723,7 +724,7 @@ uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16){
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
-    memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
+    (void)memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
     return (uint8_t*)des_serviceSearchPatternUUID128;
 }
 

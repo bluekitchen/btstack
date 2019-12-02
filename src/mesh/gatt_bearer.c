@@ -129,7 +129,8 @@ static void gatt_bearer_request(mesh_msg_type_t type_id){
 static void gatt_bearer_start_sending(hci_con_handle_t con_handle){
     uint16_t pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, gatt_bearer_mtu - 1 - 3);
     sar_buffer.segmentation_buffer[0] = (segmentation_state << 6) | msg_type;
-    memcpy(&sar_buffer.segmentation_buffer[1], &proxy_pdu[segmentation_offset], pdu_segment_len);
+    (void)memcpy(&sar_buffer.segmentation_buffer[1],
+                 &proxy_pdu[segmentation_offset], pdu_segment_len);
     segmentation_offset += pdu_segment_len;
     mesh_proxy_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);
     
@@ -203,17 +204,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
                     memset(sar_buffer.reassembly_buffer, 0, sizeof(sar_buffer.reassembly_buffer));
                     if (sizeof(sar_buffer.reassembly_buffer) < pdu_segment_len) return;
-                    memcpy(sar_buffer.reassembly_buffer, packet+pos, pdu_segment_len);
+                    (void)memcpy(sar_buffer.reassembly_buffer, packet + pos,
+                                 pdu_segment_len);
                     reassembly_offset = pdu_segment_len;
                     break;
                 case MESH_MSG_SAR_FIELD_CONTINUE:
                     if ((sizeof(sar_buffer.reassembly_buffer) - reassembly_offset) < pdu_segment_len) return;
-                    memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
+                    (void)memcpy(sar_buffer.reassembly_buffer + reassembly_offset,
+                                 packet + pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
                     return;
                 case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
                     if ((sizeof(sar_buffer.reassembly_buffer) - reassembly_offset) < pdu_segment_len) return;
-                    memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
+                    (void)memcpy(sar_buffer.reassembly_buffer + reassembly_offset,
+                                 packet + pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
                     break;
                 default:

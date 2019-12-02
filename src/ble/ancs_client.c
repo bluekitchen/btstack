@@ -121,7 +121,7 @@ static void notify_client_text(int event_type){
     event[2] = event_type;
     little_endian_store_16(event, 3, gc_handle);
     little_endian_store_16(event, 5, ancs_attribute_id);
-    memcpy(&event[7], ancs_notification_buffer, ancs_attribute_len);
+    (void)memcpy(&event[7], ancs_notification_buffer, ancs_attribute_len);
     // we're nice
     event[7+ancs_attribute_len] = 0;
     (*client_handler)(HCI_EVENT_PACKET, 0, event, event[1] + 2);

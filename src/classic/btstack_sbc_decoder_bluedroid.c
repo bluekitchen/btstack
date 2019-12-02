@@ -203,7 +203,8 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
         log_error("SBC data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);
     }
 
-    memcpy(state->frame_buffer + state->bytes_in_frame_buffer, buffer, size);
+    (void)memcpy(state->frame_buffer + state->bytes_in_frame_buffer, buffer,
+                 size);
     state->bytes_in_frame_buffer += size;
 }
 
@@ -353,7 +354,9 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             if (plc_enabled) {
                 btstack_sbc_plc_bad_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
             } else {
-                memcpy(decoder_state->pcm_data, decoder_state->pcm_plc_data, decoder_state->pcm_bytes);
+                (void)memcpy(decoder_state->pcm_data,
+                             decoder_state->pcm_plc_data,
+                             decoder_state->pcm_bytes);
             }
 
             state->handle_pcm_data(decoder_state->pcm_data, 

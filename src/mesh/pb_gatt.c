@@ -110,15 +110,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (msg_sar_field){
                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
                     memset(sar_buffer.reassembly_buffer, 0, sizeof(sar_buffer.reassembly_buffer));
-                    memcpy(sar_buffer.reassembly_buffer, packet+pos, pdu_segment_len);
+                    (void)memcpy(sar_buffer.reassembly_buffer, packet + pos,
+                                 pdu_segment_len);
                     reassembly_offset = pdu_segment_len;
                     return;
                 case MESH_MSG_SAR_FIELD_CONTINUE:
-                    memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
+                    (void)memcpy(sar_buffer.reassembly_buffer + reassembly_offset,
+                                 packet + pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
                     return;
                 case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
-                    memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
+                    (void)memcpy(sar_buffer.reassembly_buffer + reassembly_offset,
+                                 packet + pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
                     // send to provisioning device
                     pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer.reassembly_buffer, reassembly_offset); 
@@ -147,7 +150,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                             sar_buffer.segmentation_buffer[0] = (segmentation_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
                             pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, pb_gatt_mtu - 1);
-                            memcpy(&sar_buffer.segmentation_buffer[1], &proxy_pdu[segmentation_offset], pdu_segment_len);
+                            (void)memcpy(&sar_buffer.segmentation_buffer[1],
+                                         &proxy_pdu[segmentation_offset],
+                                         pdu_segment_len);
                             segmentation_offset += pdu_segment_len;
 
                             mesh_provisioning_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);

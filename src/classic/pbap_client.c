@@ -165,7 +165,7 @@ static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t st
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
     event[pos++] = status;
-    memcpy(&event[pos], context->bd_addr, 6);
+    (void)memcpy(&event[pos], context->bd_addr, 6);
     pos += 6;
     little_endian_store_16(event,pos,context->con_handle);
     pos += 2;
@@ -246,11 +246,11 @@ static void pbap_client_emit_card_result_event(pbap_client_t * context, const ch
     pos+=2;
     int name_len = btstack_min(PBAP_MAX_NAME_LEN, strlen(name));
     event[pos++] = name_len;
-    memcpy(&event[pos], name, name_len);
+    (void)memcpy(&event[pos], name, name_len);
     pos += name_len;
     int handle_len = btstack_min(PBAP_MAX_HANDLE_LEN, strlen(handle));
     event[pos++] = handle_len;
-    memcpy(&event[pos], handle, handle_len);
+    (void)memcpy(&event[pos], handle, handle_len);
     pos += handle_len;
     event[1] = pos - 2;
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
@@ -308,7 +308,8 @@ static void pbap_handle_can_send_now(void){
             i += 16;
             challenge_response[i++] = 2;  // Tag Nonce
             challenge_response[i++] = 16; // Len
-            memcpy(&challenge_response[i], pbap_client->authentication_nonce, 16);
+            (void)memcpy(&challenge_response[i],
+                         pbap_client->authentication_nonce, 16);
             i += 16;
             goep_client_header_add_challenge_response(pbap_client->goep_cid, challenge_response, i);
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
@@ -401,7 +402,8 @@ static void pbap_handle_can_send_now(void){
                     phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
                     application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
                     application_parameters[i++] = phone_number_len;
-                    memcpy(&application_parameters[i], pbap_client->phone_number, phone_number_len);
+                    (void)memcpy(&application_parameters[i],
+                                 pbap_client->phone_number, phone_number_len);
                     i += phone_number_len;
                     application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
                     application_parameters[i++] = 1;
@@ -453,7 +455,9 @@ static void pbap_handle_can_send_now(void){
                 pbap_client->set_path_offset++;              
             }
             path_element_len = pbap_client->set_path_offset-path_element_start;
-            memcpy(path_element, &pbap_client->current_folder[path_element_start], path_element_len);
+            (void)memcpy(path_element,
+                         &pbap_client->current_folder[path_element_start],
+                         path_element_len);
             path_element[path_element_len] = 0;
 
             // skip /
@@ -494,7 +498,8 @@ static void pbap_parse_authentication_challenge(pbap_client_t * context, const u
                     log_error("Invalid OBEX digest len %u", len);
                     return;
                 }
-                memcpy(context->authentication_nonce, &challenge_data[i], 16);
+                (void)memcpy(context->authentication_nonce,
+                             &challenge_data[i], 16);
                 // printf("Nonce: ");
                 // printf_hexdump(context->authentication_nonce, 16);
                 break;

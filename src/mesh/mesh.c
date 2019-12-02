@@ -381,7 +381,7 @@ static void mesh_store_virtual_address(uint16_t pseudo_dest, uint16_t hash, cons
     mesh_persistent_virtual_address_t data;
     uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
     data.hash = hash;
-    memcpy(data.label_uuid, label_uuid, 16);
+    (void)memcpy(data.label_uuid, label_uuid, 16);
     int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
     report_store_error(result, "virtual address");
 }
@@ -405,7 +405,7 @@ void mesh_load_virtual_addresses(void){
 
         virtual_address->pseudo_dst = pseudo_dst;
         virtual_address->hash = data.hash;
-        memcpy(virtual_address->label_uuid, data.label_uuid, 16);
+        (void)memcpy(virtual_address->label_uuid, data.label_uuid, 16);
         mesh_virtual_address_add(virtual_address);
     }
 }
@@ -605,14 +605,14 @@ void mesh_store_network_key(mesh_network_key_t * network_key){
     printf_hexdump(network_key->net_key, 16);
     uint32_t tag = mesh_network_key_tag_for_internal_index(network_key->internal_index);
     data.netkey_index = network_key->netkey_index;
-    memcpy(data.net_key, network_key->net_key, 16);
-    memcpy(data.identity_key, network_key->identity_key, 16);
-    memcpy(data.beacon_key, network_key->beacon_key, 16);
-    memcpy(data.network_id, network_key->network_id, 8);
+    (void)memcpy(data.net_key, network_key->net_key, 16);
+    (void)memcpy(data.identity_key, network_key->identity_key, 16);
+    (void)memcpy(data.beacon_key, network_key->beacon_key, 16);
+    (void)memcpy(data.network_id, network_key->network_id, 8);
     data.nid = network_key->nid;
     data.version = network_key->version;
-    memcpy(data.encryption_key, network_key->encryption_key, 16);
-    memcpy(data.privacy_key, network_key->privacy_key, 16);
+    (void)memcpy(data.encryption_key, network_key->encryption_key, 16);
+    (void)memcpy(data.privacy_key, network_key->privacy_key, 16);
     int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
     report_store_error(result, "network key");
 }
@@ -636,14 +636,14 @@ void mesh_load_network_keys(void){
 
         network_key->internal_index = internal_index;
         network_key->netkey_index = data.netkey_index;
-        memcpy(network_key->net_key, data.net_key, 16);
-        memcpy(network_key->identity_key, data.identity_key, 16);
-        memcpy(network_key->beacon_key, data.beacon_key, 16);
-        memcpy(network_key->network_id, data.network_id, 8);
+        (void)memcpy(network_key->net_key, data.net_key, 16);
+        (void)memcpy(network_key->identity_key, data.identity_key, 16);
+        (void)memcpy(network_key->beacon_key, data.beacon_key, 16);
+        (void)memcpy(network_key->network_id, data.network_id, 8);
         network_key->nid = data.nid;
         network_key->version = data.version;
-        memcpy(network_key->encryption_key, data.encryption_key, 16);
-        memcpy(network_key->privacy_key, data.privacy_key, 16);
+        (void)memcpy(network_key->encryption_key, data.encryption_key, 16);
+        (void)memcpy(network_key->privacy_key, data.privacy_key, 16);
 
 #ifdef ENABLE_GATT_BEARER
         // setup advertisement with network id
@@ -686,7 +686,7 @@ void mesh_store_app_key(mesh_transport_key_t * app_key){
     data.appkey_index = app_key->appkey_index;
     data.aid = app_key->aid;
     data.version = app_key->version;
-    memcpy(data.key, app_key->key, 16);
+    (void)memcpy(data.key, app_key->key, 16);
     int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
     report_store_error(result, "app key");
 }
@@ -714,7 +714,7 @@ void mesh_load_app_keys(void){
         key->aid          = data.aid;
         key->akf          = 1;
         key->version      = data.version;
-        memcpy(key->key, data.key, 16);
+        (void)memcpy(key->key, data.key, 16);
         mesh_transport_key_add(key);
         printf("- internal index 0x%x, AppKey Index 0x%06x, AID %02x: ", key->internal_index, key->appkey_index, key->aid);
         printf_hexdump(key->key, 16);
@@ -1035,7 +1035,8 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
 
     persistent_provisioning_data.unicast_address = provisioning_data->unicast_address;
     persistent_provisioning_data.flags = provisioning_data->flags;
-    memcpy(persistent_provisioning_data.device_key, provisioning_data->device_key, 16);
+    (void)memcpy(persistent_provisioning_data.device_key,
+                 provisioning_data->device_key, 16);
 
     // store in tlv
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
@@ -1087,7 +1088,8 @@ static int mesh_node_startup_from_tlv(void){
 
         // copy into mesh_provisioning_data
         mesh_provisioning_data_t provisioning_data;
-        memcpy(provisioning_data.device_key, persistent_provisioning_data.device_key, 16);
+        (void)memcpy(provisioning_data.device_key,
+                     persistent_provisioning_data.device_key, 16);
         provisioning_data.unicast_address = persistent_provisioning_data.unicast_address;
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
