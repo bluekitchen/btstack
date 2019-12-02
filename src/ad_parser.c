@@ -97,7 +97,8 @@ const uint8_t * ad_iterator_get_data(const ad_context_t * context){
 
 bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid16){
     ad_context_t context;
-    for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+    ad_iterator_init(&context, ad_len, ad_data);
+    while ( ad_iterator_has_more(&context) ){
         uint8_t data_type    = ad_iterator_get_data_type(&context);
         uint8_t data_len     = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
@@ -125,6 +126,7 @@ bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t u
             default:
                 break;
         }  
+        ad_iterator_next(&context);
     }
     return false;
 }
@@ -134,7 +136,8 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
     // input in big endian/network order, bluetooth data in little endian
     uint8_t uuid128_le[16];
     reverse_128(uuid128, uuid128_le);
-    for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+    ad_iterator_init(&context, ad_len, ad_data);
+    while ( ad_iterator_has_more(&context) ){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t data_len  = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
@@ -163,6 +166,7 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
             default:
                 break;
         }  
+        ad_iterator_next(&context);
     }
     return false;
 }
