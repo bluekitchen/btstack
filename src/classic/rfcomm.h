@@ -406,7 +406,7 @@ uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
  *     rfcomm_reserve_packet_buffer();
  *     uint8_t * buffer = rfcomm_get_outgoing_buffer();
  *     uint16_t buffer_size = rfcomm_get_max_frame_size(cid);
- *     // .. setup data in buffer with len
+ *     .. setup data in buffer with len ..
  *     rfcomm_send_prepared(cid, len)
  * }
  */
