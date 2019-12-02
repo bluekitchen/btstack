@@ -234,6 +234,7 @@ static dhcp_config_t dhcp_config =
 
 /* LISTING_START(LargeFile): Provide large file. */
 
+int fs_open_custom(struct fs_file *file, const char *name);
 int fs_open_custom(struct fs_file *file, const char *name){
     if (*name != '/') return 0;
     uint32_t file_size = btstack_atoi(&name[1]);
@@ -279,6 +280,7 @@ static uint16_t cgi_buffer_fill(char * cgi_buffer, uint16_t cgi_buffer_size, uin
     return pos;
 }
 
+int fs_read_custom(struct fs_file *file, char *buffer, int count);
 int fs_read_custom(struct fs_file *file, char *buffer, int count)
 {
     uint32_t remaining_data = file->len - file->index;
@@ -288,7 +290,7 @@ int fs_read_custom(struct fs_file *file, char *buffer, int count)
     }
 
     uint32_t bytes_to_fill = remaining_data;
-    if (bytes_to_fill > count){
+    if (bytes_to_fill > (uint32_t) count){
         bytes_to_fill = count;
     }
 
@@ -298,8 +300,9 @@ int fs_read_custom(struct fs_file *file, char *buffer, int count)
     return bytes_written;
 }
 
-void
-fs_close_custom(struct fs_file *file){
+void fs_close_custom(struct fs_file *file);
+void fs_close_custom(struct fs_file *file){
+    UNUSED(file);
 }
 
 /* LISTING_END */
