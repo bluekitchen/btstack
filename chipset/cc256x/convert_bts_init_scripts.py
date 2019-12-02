@@ -224,7 +224,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
             str_list.append("\n" + data_indent + "// BTstack: no calibration sequence found, adding power commands and calibration\n\n")
             part_size += append_power_vector_gfsk(additions, str_list, data_indent)
             part_size += append_power_vector_edr2(additions, str_list, data_indent)
-            part_size += append_power_vector_edr2(additions, str_list, data_indent)
+            part_size += append_power_vector_edr3(additions, str_list, data_indent)
             part_size += append_class2_single_power(additions, str_list, data_indent)
             part_size += append_calibration_sequence(additions, str_list, data_indent)
 
