@@ -42,6 +42,8 @@
 #ifndef SDP_UTIL_H
 #define SDP_UTIL_H
 
+#include "btstack_bool.h"
+
 #include <stdint.h>
 
 #if defined __cplusplus
@@ -125,8 +127,8 @@ typedef struct {
     uint16_t length;
 } des_iterator_t;
 
-int des_iterator_init(des_iterator_t * it, uint8_t * element);
-int  des_iterator_has_more(des_iterator_t * it);
+bool des_iterator_init(des_iterator_t * it, uint8_t * element);
+bool des_iterator_has_more(des_iterator_t * it);
 de_type_t des_iterator_get_type (des_iterator_t * it);
 uint16_t des_iterator_get_size (des_iterator_t * it);
 uint8_t * des_iterator_get_element(des_iterator_t * it);

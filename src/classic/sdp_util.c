@@ -267,15 +267,15 @@ void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
 }
 
 // MARK: DES iterator
-int des_iterator_init(des_iterator_t * it, uint8_t * element){
+bool des_iterator_init(des_iterator_t * it, uint8_t * element){
     de_type_t type = de_get_element_type(element);
-    if (type != DE_DES) return 0;
+    if (type != DE_DES) return false;
 
     it->element = element;
     it->pos = de_get_header_size(element);
     it->length = de_get_len(element);
     // printf("des_iterator_init current pos %d, total len %d\n", it->pos, it->length);
-    return 1;
+    return true;
 }
 
 de_type_t des_iterator_get_type (des_iterator_t * it){
@@ -288,7 +288,7 @@ uint16_t des_iterator_get_size (des_iterator_t * it){
     return length - header_size;
 }
 
-int des_iterator_has_more(des_iterator_t * it){
+bool des_iterator_has_more(des_iterator_t * it){
     return it->pos < it->length;
 }
 
