@@ -335,6 +335,12 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
+static void report_store_error(int result, const char * type){
+    if (result != 0){
+        log_error("Store %s data failed", type);
+    }
+}
+
 // Foundation state
 static const uint32_t mesh_foundation_state_tag = ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16)  | ((uint32_t) 'N' << 8) | ((uint32_t) 'D' << 8);
 
@@ -362,7 +368,8 @@ void mesh_foundation_state_store(void){
     data.network_transmit = mesh_foundation_network_transmit_get();
     data.relay            = mesh_foundation_relay_get();
     data.relay_retransmit = mesh_foundation_relay_retransmit_get();
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "foundation");
 }
 
 // Mesh Virtual Address Management
@@ -375,7 +382,8 @@ static void mesh_store_virtual_address(uint16_t pseudo_dest, uint16_t hash, cons
     uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
     data.hash = hash;
     memcpy(data.label_uuid, label_uuid, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "virtual address");
 }
 
 static void mesh_delete_virtual_address(uint16_t pseudo_dest){
@@ -458,7 +466,8 @@ static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
 
 void mesh_model_store_subscriptions(mesh_model_t * model){
     uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+    report_store_error(result, "subscription");
 }
 
 static void mesh_model_delete_subscriptions(mesh_model_t * model){
@@ -543,7 +552,8 @@ void mesh_model_store_publication(mesh_model_t * mesh_model){
     data.publish_period             = publication->period;
     data.publish_retransmit         = publication->retransmit;
     uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_publication_t));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_publication_t));
+    report_store_error(result, "publication");
 }
 
 static void mesh_model_delete_publication(mesh_model_t * mesh_model){
@@ -603,7 +613,8 @@ void mesh_store_network_key(mesh_network_key_t * network_key){
     data.version = network_key->version;
     memcpy(data.encryption_key, network_key->encryption_key, 16);
     memcpy(data.privacy_key, network_key->privacy_key, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
+    report_store_error(result, "network key");
 }
 
 void mesh_delete_network_key(uint16_t internal_index){
@@ -676,7 +687,8 @@ void mesh_store_app_key(mesh_transport_key_t * app_key){
     data.aid = app_key->aid;
     data.version = app_key->version;
     memcpy(data.key, app_key->key, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "app key");
 }
 
 void mesh_delete_app_key(uint16_t internal_index){
@@ -735,7 +747,8 @@ static void mesh_load_appkey_list(mesh_model_t * model){
 
 static void mesh_store_appkey_list(mesh_model_t * model){
     uint32_t tag = mesh_model_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+    report_store_error(result, "appkey list");
 }
 
 static void mesh_delete_appkey_list(mesh_model_t * model){
@@ -854,7 +867,8 @@ static void mesh_store_iv_index_and_sequence_number(uint32_t iv_index, uint32_t 
     iv_index_and_sequence_number_t data;
     data.iv_index   = iv_index;
     data.seq_number = sequence_number;
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "index and sequence number");
 
     sequence_number_last_stored = data.seq_number;
     sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
@@ -1025,7 +1039,8 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
 
     // store in tlv
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data, (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data, (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    report_store_error(result, "provisioning");
 
     // store IV Index and sequence number
     mesh_store_iv_index_and_sequence_number(provisioning_data->iv_index, 0);

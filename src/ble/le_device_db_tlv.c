@@ -110,7 +110,7 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
 
 // @returns success
 // @param index = entry_pos
-static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
+static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
     btstack_assert(index >= 0);
     btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
@@ -122,25 +122,25 @@ static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 
 // @returns success
 // @param index = entry_pos
-static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
+static bool le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
     btstack_assert(index >= 0);
     btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
 
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
-    le_device_db_tlv_btstack_tlv_impl->store_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
-	return 1;
+    int result = le_device_db_tlv_btstack_tlv_impl->store_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
+    return result == 0;
 }
 
 // @param index = entry_pos
-static int le_device_db_tlv_delete(int index){
+static bool le_device_db_tlv_delete(int index){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
     btstack_assert(index >= 0);
     btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
 
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     le_device_db_tlv_btstack_tlv_impl->delete_tag(le_device_db_tlv_btstack_tlv_context, tag);
-	return 1;
+	return true;
 }
 
 static void le_device_db_tlv_scan(void){
@@ -256,8 +256,11 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 #endif
 
     // store
-    le_device_db_tlv_store(index_to_use, &entry);
-    
+    bool ok = le_device_db_tlv_store(index_to_use, &entry);
+    if (!ok){
+        log_error("tag store failed");
+        return -1;
+    }
     // set in entry_mape
     entry_map[index_to_use] = 1;
 
@@ -308,7 +311,10 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
     entry.secure_connection = secure_connection;
 
     // store
-    le_device_db_tlv_store(index, &entry);
+    ok = le_device_db_tlv_store(index, &entry);
+    if (!ok){
+        log_error("Set encryption data failed");
+    }
 }
 
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){

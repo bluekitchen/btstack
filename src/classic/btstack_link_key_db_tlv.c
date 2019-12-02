@@ -171,7 +171,10 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
     entry.link_key_type = link_key_type;
     entry.seq_nr = highest_seq_nr + 1;
 
-    self->btstack_tlv_impl->store_tag(self->btstack_tlv_context, tag_to_use, (uint8_t*) &entry, sizeof(entry));
+    int result = self->btstack_tlv_impl->store_tag(self->btstack_tlv_context, tag_to_use, (uint8_t*) &entry, sizeof(entry));
+    if (result != 0){
+        log_error("store link key failed");
+    }
 }
 
 static int btstack_link_key_db_tlv_iterator_init(btstack_link_key_iterator_t * it){

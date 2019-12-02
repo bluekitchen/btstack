@@ -898,7 +898,10 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
             entry.value = value;
             entry.seq_nr = highest_seq_nr + 1;
             log_info("CCC Index %u: Store", index);
-            tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+            int result = tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+            if (result != 0){
+                log_error("Store tag index %u failed", index);
+            }
         } else {
             // delete
             log_info("CCC Index %u: Delete", index);
@@ -907,7 +910,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         return;
     }
 
-    log_info("tag_for_empy %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
+    log_info("tag_for_empty %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
 
     if (value == 0){
         // done
@@ -928,7 +931,10 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     entry.device_index = le_device_index;
     entry.att_handle   = att_handle;
     entry.value        = value;
-    tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+    int result = tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+    if (result != 0){
+        log_error("Store tag index %u failed", index);
+    }
 }
 
 static void att_server_persistent_ccc_clear(att_server_t * att_server){
