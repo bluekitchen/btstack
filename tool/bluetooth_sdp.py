@@ -92,7 +92,7 @@ def process_rows(fout, rows, pattern):
 
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
-    fout.write(header.format(page=url,datetime=str(datetime.datetime.now())))
+    fout.write(header.format(page=url.replace('https://',''),datetime=str(datetime.datetime.now())))
 
     # get from web
     r = requests.get(url, headers=headers)
