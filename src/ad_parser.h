@@ -72,7 +72,7 @@ uint8_t         ad_iterator_get_data_len(const ad_context_t * context);
 const uint8_t * ad_iterator_get_data(const ad_context_t * context);
 
 // convenience function on complete advertisements
-bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid);
+bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid16);
 bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint8_t * uuid128);
 
 /* API_END */
