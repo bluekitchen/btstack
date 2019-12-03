@@ -552,15 +552,16 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             }
             break;
         case BTP_GAP_OP_SET_BONDABLE:
-            MESSAGE("BTP_GAP_OP_SET_BONDABLE - NOP");
+            MESSAGE("BTP_GAP_OP_SET_BONDABLE");
             if (controller_index == 0){
                 uint8_t bondable = data[0];
-                // TODO:
+                // TODO: Classic
                 if (bondable) {
+                    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
                     current_settings |= BTP_GAP_SETTING_BONDABLE;
                 } else {
+                    sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
                     current_settings &= ~BTP_GAP_SETTING_BONDABLE;
-
                 }
                 btp_send_gap_settings(opcode);
             }
@@ -876,6 +877,7 @@ static void usage(void){
             printf("c - enable connectable mode\n");
             printf("d - enable general discoverable mode\n");
             printf("D - enable limited discoverable mode\n");
+            printf("B - enable bondable mode\n");
             printf("a - start advertising with public address\n");
             printf("A - start directed advertising with public address to %s\n", bd_addr_to_str(pts_addr));
             printf("C - connect to public address to %s\n", bd_addr_to_str(pts_addr));
@@ -883,6 +885,7 @@ static void usage(void){
             printf("n - start advertising with resolvable random address\n");
             printf("L - send L2CAP Conn Param Update Request\n");
             printf("t - disconnect\n");
+            printf("b - start pairing\n");
             break;
         default:
             break;
@@ -982,7 +985,12 @@ static void stdin_process(char cmd){
                     little_endian_store_16(conn_param_update, 13, 0x1f4);
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_CONNECTION_PARAM_UPDATE, 0, sizeof(conn_param_update), conn_param_update);
                     break;
-
+                case 'b':
+                      btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_PAIR, 0, 0, NULL);
+                    break;
+                case 'B':
+                      btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_BONDABLE, 0, 1, &value_on);
+                    break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;
                     usage();
@@ -1034,6 +1042,9 @@ int btstack_main(int argc, const char * argv[])
     gap_cod = 0x007a020c;   // smartphone
     gap_set_class_of_device(gap_cod);
 
+    // configure GAP LE
+    sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+    
     reset_gap();
 
     MESSAGE("auto-pts iut-btp-client started");
