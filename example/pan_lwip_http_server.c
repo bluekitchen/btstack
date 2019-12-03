@@ -166,6 +166,9 @@ static void pan_bnep_setup(void){
     gap_set_local_name("PAN HTTP 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
+    // Major: Networking Device, Minor: Networ Access Point
+    gap_set_class_of_device(0x20300);
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
