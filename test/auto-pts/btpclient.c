@@ -574,13 +574,17 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 uint8_t high_duty =  data[7];
                 // uint8_t use_own_id_address = data[8];
 
-                uint16_t adv_int_min = 0;
-                uint16_t adv_int_max = 0;
+                uint16_t adv_int_min;
+                uint16_t adv_int_max;
                 uint8_t adv_type;
                 if (high_duty){
                     adv_type = 0x01;
+                    adv_int_min = 0;
+                    adv_int_max = 0;
                 } else {
                     adv_type = 0x04;
+                    adv_int_min = 0x800;
+                    adv_int_max = 0x800;
                 }
 
                 gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, remote_addr_type, remote_addr, 0x07, 0x00);
@@ -877,6 +881,7 @@ static void usage(void){
             printf("C - connect to public address to %s\n", bd_addr_to_str(pts_addr));
             printf("r - start advertising with resolvable random address\n");
             printf("n - start advertising with resolvable random address\n");
+            printf("L - send L2CAP Conn Param Update Request\n");
             printf("t - disconnect\n");
             break;
         default:
@@ -897,7 +902,8 @@ static void stdin_process(char cmd){
     const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
     uint8_t directed_advertisement_request[8];
     uint8_t connection_request[7];
-    
+    uint8_t conn_param_update[15];
+
     switch (console_state){
         case CONSOLE_STATE_MAIN:
             switch (cmd){
@@ -954,7 +960,7 @@ static void stdin_process(char cmd){
                 case 'A':
                     directed_advertisement_request[0] = 0;
                     reverse_bd_addr(pts_addr, &directed_advertisement_request[1]);
-                    directed_advertisement_request[7] = 0;
+                    directed_advertisement_request[7] = 1; // 0 low duty - 1 high duty
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_START_DIRECTED_ADVERTISING, 0, sizeof(directed_advertisement_request), directed_advertisement_request);
                     break;
                 case 'C':
@@ -967,6 +973,16 @@ static void stdin_process(char cmd){
                     reverse_bd_addr(pts_addr, &connection_request[1]);
                     btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_DISCONNECT, 0, sizeof(connection_request), connection_request);
                     break;
+                case 'L':
+                    conn_param_update[0] = 0;
+                    reverse_bd_addr(pts_addr, &conn_param_update[1]);
+                    little_endian_store_16(conn_param_update, 7, 0x32);
+                    little_endian_store_16(conn_param_update, 9, 0x46);
+                    little_endian_store_16(conn_param_update, 11, 0x01);
+                    little_endian_store_16(conn_param_update, 13, 0x1f4);
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_CONNECTION_PARAM_UPDATE, 0, sizeof(conn_param_update), conn_param_update);
+                    break;
+
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;
                     usage();
