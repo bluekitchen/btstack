@@ -842,7 +842,8 @@ static void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list)
     }
 }
 
-int  mesh_lower_transport_can_send_to_dest(uint16_t dest){
+bool mesh_lower_transport_can_send_to_dest(uint16_t dest){
+    UNUSED(dest);
     return (lower_transport_outgoing_pdu == NULL) && btstack_linked_list_empty(&lower_transport_outgoing);
 }
 

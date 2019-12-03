@@ -41,6 +41,7 @@
 #include <stdint.h>
 
 #include "mesh/mesh_network.h"
+#include "btstack_bool.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -100,7 +101,7 @@ void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_tra
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
-int  mesh_lower_transport_can_send_to_dest(uint16_t dest);
+bool mesh_lower_transport_can_send_to_dest(uint16_t dest);
 void mesh_lower_transport_reserve_slot(void);
 void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
 
