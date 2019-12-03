@@ -2,6 +2,9 @@
 
 #include "uECC.h"
 
+// NULL
+#include "stddef.h"
+
 #ifndef uECC_PLATFORM
     #if __AVR__
         #define uECC_PLATFORM uECC_avr
