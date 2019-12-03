@@ -489,7 +489,7 @@ static int hci_transport_link_inc_seq_nr(int seq_nr){
 }
 
 static int hci_transport_link_have_outgoing_packet(void){
-    return hci_packet != 0;
+    return hci_packet != NULL;
 }
 
 static void hci_transport_link_clear_queue(void){

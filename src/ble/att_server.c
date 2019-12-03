@@ -771,7 +771,7 @@ static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packe
     // directly process command
     // note: signed write cannot be handled directly as authentication needs to be verified
     if (packet[0] == ATT_WRITE_COMMAND){
-        att_handle_request(&att_server->connection, packet, size, 0);
+        att_handle_request(&att_server->connection, packet, size, NULL);
         return;
     }
 

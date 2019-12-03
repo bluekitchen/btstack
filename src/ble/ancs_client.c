@@ -144,7 +144,7 @@ static void ancs_chunk_parser_init(void){
 }
 
 const char * ancs_client_attribute_name_for_id(int id){
-    if (id >= ANCS_ATTRBUTE_NAMES_COUNT) return 0;
+    if (id >= ANCS_ATTRBUTE_NAMES_COUNT) return NULL;
     return ancs_attribute_names[id];
 }
 

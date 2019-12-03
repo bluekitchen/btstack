@@ -113,7 +113,7 @@ static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
 
 uint8_t * sdp_get_record_for_handle(uint32_t handle){
     service_record_item_t * record_item =  sdp_get_record_item_for_handle(handle);
-    if (!record_item) return 0;
+    if (!record_item) return NULL;
     return record_item->service_record;
 }
 
