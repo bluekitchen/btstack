@@ -373,7 +373,7 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
 
 uint32_t btstack_atoi(const char *str){
     uint32_t val = 0;
-    while (1){
+    while (true){
         char chr = *str;
         if (!chr || (chr < '0') || (chr > '9'))
             return val;

@@ -107,7 +107,7 @@ static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_
 static int mesh_transport_key_and_virtual_address_iterator_has_more(mesh_transport_key_and_virtual_address_iterator_t * it){
     if (mesh_network_address_virtual(it->dst)) {
         // find next valid entry
-        while (1){
+        while (true){
             if (mesh_virtual_address_iterator_has_more(&it->address_it)) return 1;
             if (!mesh_transport_key_aid_iterator_has_more(&it->key_it)) return 0;
             // get next key

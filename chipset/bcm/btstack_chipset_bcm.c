@@ -181,7 +181,7 @@ void btstack_chipset_bcm_set_hcd_folder_path(const char * path){
 static int equal_ignore_case(const char *str1, const char *str2){
     if (!str1 || !str2) return (1);
     int i = 0;
-    while (1){
+    while (true){
         if (!str1[i] && !str2[i]) return 1;
         if (tolower(str1[i]) != tolower(str2[i])) return 0;
         if (!str1[i] || !str2[i]) return 0;
@@ -229,7 +229,7 @@ void btstack_chipset_bcm_set_device_name(const char * device_name){
         log_error("chipset-bcm: could not get directory for %s", hcd_folder_path);
         return;
     }
-    while (1){
+    while (true){
         struct dirent *dp = readdir(dirp);
         if (!dp) break;
         if (equal_ignore_case(filename_complete, dp->d_name)){

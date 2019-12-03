@@ -213,7 +213,7 @@ void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(v
 static void btstack_run_loop_freertos_execute(void) {
     log_debug("RL: execute");
     
-    while (1) {
+    while (true) {
 
         // process data sources
         btstack_data_source_t *ds;
@@ -226,7 +226,7 @@ static void btstack_run_loop_freertos_execute(void) {
         }
 
         // process registered function calls on run loop thread
-        while (1){
+        while (true){
             function_call_t message = { NULL, NULL };
             BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, 0);
             if (res == pdFALSE) break;

@@ -128,7 +128,7 @@ void btstack_run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(voi
  * Execute run_loop
  */
 static void btstack_run_loop_wiced_execute(void) {
-    while (1) {
+    while (true) {
         // get next timeout
         uint32_t timeout_ms = WICED_NEVER_TIMEOUT;
         if (timers) {

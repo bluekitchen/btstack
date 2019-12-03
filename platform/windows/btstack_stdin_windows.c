@@ -63,7 +63,7 @@ static HANDLE key_processed_handle;
 static void (*stdin_handler)(char c);
 
 static WINAPI DWORD stdin_reader_thread_process(void * p){
-    while (1){
+    while (true){
         key_read_buffer = getch();
         SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);        
     }

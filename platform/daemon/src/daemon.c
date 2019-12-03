@@ -2166,7 +2166,7 @@ int main (int argc,  char * const * argv){
         { 0,0,0,0 } // This is a filler for -1
     };
     
-    while (1) {
+    while (true) {
         int c;
         int option_index = -1;
         c = getopt_long(argc, argv, "h", long_options, &option_index);

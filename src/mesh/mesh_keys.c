@@ -110,7 +110,7 @@ void mesh_network_key_nid_iterator_init(mesh_network_key_iterator_t *it, uint8_t
 
 int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it){
     // find next matching key
-    while (1){
+    while (true){
         if (it->key && it->key->nid == it->nid) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_network_key_t *) btstack_linked_list_iterator_next(&it->it);
@@ -188,7 +188,7 @@ void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_
 
 int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
     // find next matching key
-    while (1){
+    while (true){
         if (it->key && it->key->netkey_index == it->netkey_index) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);
@@ -220,7 +220,7 @@ int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it){
         return it->key != NULL;
     }
     // find next matching key
-    while (1){
+    while (true){
         if (it->key && it->key->aid == it->aid && it->key->netkey_index == it->netkey_index) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);

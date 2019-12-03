@@ -180,7 +180,7 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
 	    	if (memcmp(header, btstack_tlv_header_magic, strlen(btstack_tlv_header_magic)) == 0){
 		    	log_info("BTstack Magic Header found");
 		    	// read entries
-		    	while (1){
+		    	while (true){
 					uint8_t entry[8];
 					size_t 	entries_read = fread(entry, 1, sizeof(entry), self->file);
 					if (entries_read == 0){

@@ -222,7 +222,7 @@ void btstack_run_loop_embedded_execute_once(void) {
  * Execute run_loop
  */
 static void btstack_run_loop_embedded_execute(void) {
-    while (1) {
+    while (true) {
         btstack_run_loop_embedded_execute_once();
     }
 }

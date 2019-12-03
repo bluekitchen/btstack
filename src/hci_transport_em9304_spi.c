@@ -400,7 +400,7 @@ static void hci_transport_em9304_spi_reset_statemachine(void){
 }
 
 static void hci_transport_em9304_spi_process_data(void){
-    while (1){
+    while (true){
 
         uint16_t bytes_available = em9304_engine_num_bytes_available();
         log_debug("transfer_rx_data: ring buffer has %u -> hci wants %u", bytes_available, hci_transport_em9304_spi_bytes_to_read);

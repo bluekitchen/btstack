@@ -210,7 +210,7 @@ static void btstack_run_loop_posix_execute(void) {
     log_info("POSIX run loop using ettimeofday fallback.");
 #endif
 
-    while (1) {
+    while (true) {
         // collect FDs
         FD_ZERO(&descriptors_read);
         FD_ZERO(&descriptors_write);

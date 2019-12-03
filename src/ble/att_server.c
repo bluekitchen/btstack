@@ -696,7 +696,7 @@ static void att_server_handle_can_send_now(void){
     for (phase_index = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase_index <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase_index++){
         att_server_run_phase_t phase = (att_server_run_phase_t) phase_index;
         hci_con_handle_t skip_connections_until = att_server_last_can_send_now;
-        while (1){
+        while (true){
             btstack_linked_list_iterator_t it;
             hci_connections_get_iterator(&it);
             while(btstack_linked_list_iterator_has_next(&it)){

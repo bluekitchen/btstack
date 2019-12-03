@@ -646,7 +646,7 @@ static void btstack_crypto_run(void){
     if (hci_get_state() != HCI_STATE_WORKING) return;
 
     // try to do as much as possible
-    while (1){
+    while (true){
 
         // anything to do?
         if (btstack_linked_list_empty(&btstack_crypto_operations)) return;

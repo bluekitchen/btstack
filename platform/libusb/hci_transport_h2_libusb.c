@@ -1022,7 +1022,7 @@ static int usb_open(void){
     } else {
 
         int deviceIndex = -1;
-        while (1){
+        while (true){
             // look for next Bluetooth dongle
             deviceIndex = scan_for_bt_device(devs, deviceIndex+1);
             if (deviceIndex < 0) break;

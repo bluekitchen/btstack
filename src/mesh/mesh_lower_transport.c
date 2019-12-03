@@ -742,7 +742,7 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
         // network pdu without payload = 9 bytes
         if (network_pdu->len < 9){
             printf("too short, %u\n", network_pdu->len);
-            while(1);
+            while (true);
         }
     }
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);

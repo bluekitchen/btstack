@@ -2008,7 +2008,7 @@ static void sm_run(void){
     // active connection handling
     // -- use loop to handle next connection if lock on setup context is released
 
-    while (1) {
+    while (true) {
 
         // Find connections that requires setup context and make active if no other is locked
         hci_connections_get_iterator(&it);

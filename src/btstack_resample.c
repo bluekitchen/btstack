@@ -68,7 +68,7 @@ uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * in
         context->src_pos += context->src_step;
     }
     // process current block
-    while (1){
+    while (true){
         const uint16_t src_pos = context->src_pos >> 16;
         const uint16_t t       = context->src_pos & 0xffff;
         int index = src_pos * context->num_channels;

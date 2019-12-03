@@ -653,7 +653,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     int err;
     // multiple packets could be send on a synchronous HCI transport
-    while (1){
+    while (true){
 
         log_debug("hci_send_acl_packet_fragments loop entered");
 

@@ -152,7 +152,7 @@ static void btstack_run_loop_windows_execute(void) {
     btstack_timer_source_t *ts;
     btstack_linked_list_iterator_t it;
 
-    while (1) {
+    while (true) {
 
         // collect handles to wait for
         HANDLE handles[100];

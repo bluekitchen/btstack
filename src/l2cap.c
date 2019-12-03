@@ -725,7 +725,7 @@ static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t 
     int num_buffers_acked = 0;
     l2cap_ertm_tx_packet_state_t * tx_state;
     log_info("l2cap_ertm_process_req_seq: tx_read_index %u, tx_write_index %u, req_seq %u", l2cap_channel->tx_read_index, l2cap_channel->tx_write_index, req_seq);
-    while (1){
+    while (true){
 
         // no unack packets left
         if (l2cap_channel->unacked_frames == 0) {
@@ -3460,7 +3460,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, payload_data, payload_len);
 
                             // process stored segments
-                            while (1){
+                            while (true){
                                 int index = l2cap_channel->rx_store_index;
                                 l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
                                 if (!rx_state->valid) break;
