@@ -142,6 +142,7 @@
 #include "mesh/mesh_configuration_server.h"
 #include "mesh/mesh_crypto.h"
 #include "mesh/mesh_foundation.h"
+#include "mesh/mesh_generic_default_transition_time_server.h"
 #include "mesh/mesh_generic_level_client.h"
 #include "mesh/mesh_generic_level_server.h"
 #include "mesh/mesh_generic_model.h"
