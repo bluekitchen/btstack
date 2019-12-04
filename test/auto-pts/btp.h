@@ -76,6 +76,7 @@ extern "C" {
 #define BTP_CORE_OP_READ_SUPPORTED_SERVICES     0x02
 #define BTP_CORE_OP_REGISTER                    0x03
 #define BTP_CORE_OP_UNREGISTER                  0x04
+#define BTP_CORE_OP_LOG_MESSAGE                 0x05
 
 #define BTP_CORE_EV_READY                       0x80
     

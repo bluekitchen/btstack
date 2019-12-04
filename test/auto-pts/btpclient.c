@@ -90,7 +90,8 @@ static uint8_t gap_inquriy_scan_active;
 
 static uint32_t current_settings;
 
-static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
+// static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
+static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
 
 // log/debug output
 #define MESSAGE(format, ...) log_info(format, ## __VA_ARGS__); printf(format "\n", ## __VA_ARGS__)
@@ -382,6 +383,8 @@ static void gap_limited_discovery_timeout_handler(btstack_timer_source_t * ts){
 
 static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
     uint8_t status;
+    uint8_t message_buffer[100];
+    
     switch (opcode){
         case BTP_OP_ERROR:
             MESSAGE("BTP_OP_ERROR");
@@ -423,6 +426,14 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
         case BTP_CORE_OP_UNREGISTER:
             MESSAGE("BTP_CORE_OP_UNREGISTER");
             if (controller_index == BTP_INDEX_NON_CONTROLLER){
+                btp_send(BTP_SERVICE_ID_CORE, opcode, controller_index, 0, NULL);
+            }
+            break;
+        case BTP_CORE_OP_LOG_MESSAGE:
+            if (controller_index == BTP_INDEX_NON_CONTROLLER){
+                uint16_t len = btstack_min(sizeof(message_buffer)-1,length);
+                memcpy(message_buffer, data, len);
+                MESSAGE("BTP_CORE_LOG_MESSAGE %s", message_buffer);
                 btp_send(BTP_SERVICE_ID_CORE, opcode, controller_index, 0, NULL);
             }
             break;
