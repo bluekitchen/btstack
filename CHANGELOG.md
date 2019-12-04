@@ -9,26 +9,62 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- example/pan_lwip_http_server: use Network Access Point, CoD
+
+### Added
+
+### Changed
+- Updated CC256x initscript: CC256xC v1.3
+
+
+## Changes November 2019
+
+### Fixed
+- AVDTP Source: return correct `avdtp_cid` and `local_seid` in `AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW`
+- L2CAP: send LE Data Channel SDUs round robin with other data
+- L2CAP ERTM: send ERTM I-frames round robin with other data
+
+### Added
+- ATT Server: return error if request to send now for Notification or Indication already registered
+- Linked List: return if item was added for `btstack_linked_list_add[_tail]`
+- btstack_run_loop_remove: return bool true if timer/data source was removed
+- segger-rtt: allow to configure with `SEGGER_RTT_PACKETLOG_*` directives, update to v6.54
+- GAP: support setting Link Supervision Timetout for outgoing Classic connections using `gap_set_link_supervision_timeout`
+- lwip: add download test files to http server demo
+
+### Changed
+- Linked List: return bool true if item was removed
+
+
+## Changes October 2019
+
+### Fixed
+
+### Added
+- `btstack_bool.h`: provide boolean type 'bool' via `<stdbool.h>` or as backport
+- provide `btstack_assert(condition)`
+- H4 Transport: avoid calling `hci_transport_h4_trigger_next_read` when transport is closed
+
+### Changed
+- libusb and posix ports: store bonding information in TLV
+
+
+## Changes September 2019
+
+### Fixed
 - L2CAP ERTM: assert that packet can be stored in fragment buffers in ertm
 - L2CAP ERTM: reject incoming connection if ERTM is configured as mandatory but not supported by remote
-- L2CAP ERTM: send ERTM I-frames round robin with other data
-- L2CAP: send le data channel sdus round robin with other data
 - GATT Client: allow Write Without Response independent of other requests
 
 ### Added
 - GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter
-- GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits GAP_EVENT_RSSI_MEASUREMENT
-- GAP: support setting Link Supervision Timetout for outgoing Classic connections using gap_set_link_supervision_timeout
-- Linked List: return if item was added for `btstack_linked_list_add[_tail]`
-- ATT Server: return error if request to send now for Notification or Indication already registered
+- GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits `GAP_EVENT_RSSI_MEASUREMENT`
 
-## Changed
+### Changed
 - Bluetooth and BTstack Error Codes and Events: collect status codes in bluetooth.h and events in btstack_defines.h
 - bluetooth.h: extract internal defintitions to respective protocol layers
-- Updated CC256x initscripts (CC256xB v1.8, CC256xC v1.2, CC256xC v1.3)
-- libusb and posix ports: store bonding information in TLV
-- Linked List: return bool true if item was removed
-- btstack_run_loop_remove: return bool true if timer/data source was removed
+- Updated CC256x initscripts (CC256xB v1.8, CC256xC v1.2, CC256xC v1.2)
+
 
 ## Changes August 2019
 
@@ -42,7 +78,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: generate local nonce for confirm value in JW+NC+PK in Secure Connections Responder role
 
 ### Added
-- btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations
+- `btstack_run_loop_base`: portable implementation of timer and data source managment as base for platform specific implementations
 
 ## Changed
 - FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
