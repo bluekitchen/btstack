@@ -4710,7 +4710,8 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
     connection->le_conn_latency = conn_latency;
     connection->le_supervision_timeout = supervision_timeout;
     connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_REQUEST;
-    hci_run();
+    uint8_t l2cap_trigger_run_event[2] = { L2CAP_EVENT_TRIGGER_RUN, 0};
+    hci_emit_event(l2cap_trigger_run_event, sizeof(l2cap_trigger_run_event), 0);
     return 0;
 }
 
