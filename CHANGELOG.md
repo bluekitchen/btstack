@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changed
 - Bluetooth and BTstack Error Codes and Events: collect status codes in bluetooth.h and events in btstack_defines.h
 - bluetooth.h: extract internal defintitions to respective protocol layers
-- Updated CC256x initscripts (CC256xB v1.8, CC256xC v1.2)
+- Updated CC256x initscripts (CC256xB v1.8, CC256xC v1.2, CC256xC v1.3)
 - libusb and posix ports: store bonding information in TLV
 - Linked List: return bool true if item was removed
 - btstack_run_loop_remove: return bool true if timer/data source was removed
