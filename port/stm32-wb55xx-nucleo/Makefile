@@ -81,8 +81,8 @@ $(FREERTOS_ROOT)/FreeRTOS/list.c \
 $(FREERTOS_ROOT)/FreeRTOS/portable/GCC/ARM_CM4F/port.c \
 $(FREERTOS_ROOT)/FreeRTOS/portable/MemMang/heap_4.c \
 $(FREERTOS_ROOT)/FreeRTOS/timers.c \
-Middlewares/STM32_WPAN/interface/patterns/ble_thread/tl/tl_if.c \
 Middlewares/STM32_WPAN/interface/patterns/ble_thread/tl/shci_tl.c \
+Middlewares/STM32_WPAN/interface/patterns/ble_thread/tl/shci_tl_if.c \
 Middlewares/STM32_WPAN/interface/patterns/ble_thread/tl/tl_mbox.c \
 Middlewares/STM32_WPAN/interface/patterns/ble_thread/shci/shci.c \
 Middlewares/STM32_WPAN/utilities/stm_list.c \
@@ -94,7 +94,6 @@ Src/stm32wbxx_it.c \
 Src/stm32wbxx_hal_timebase_tim.c \
 Src/system_stm32wbxx.c \
 Src/hw_ipcc.c \
-Src/hw_lpm.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_tim_ex.c \
 Drivers/STM32WBxx_HAL_Driver/Src/stm32wbxx_hal_uart.c \
@@ -175,6 +174,9 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include \
 
 C_INCLUDES += -IMiddlewares/STM32_WPAN
+C_INCLUDES += -IMiddlewares/STM32_WPAN/ble
+C_INCLUDES += -IMiddlewares/STM32_WPAN/ble/core
+C_INCLUDES += -IMiddlewares/STM32_WPAN/ble/core/template
 C_INCLUDES += -IMiddlewares/STM32_WPAN/utilities
 C_INCLUDES += -IMiddlewares/STM32_WPAN/interface/patterns/ble_thread
 C_INCLUDES += -IMiddlewares/STM32_WPAN/interface/patterns/ble_thread/tl

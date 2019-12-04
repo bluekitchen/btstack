@@ -6,11 +6,11 @@
  ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics. 
+  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
   * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the 
+  * the "License"; You may not use this file except in compliance with the
   * License. You may obtain a copy of the License at:
   *                        opensource.org/licenses/BSD-3-Clause
   *
@@ -186,6 +186,12 @@ typedef struct
 
 typedef struct
 {
+  uint8_t *p_LldTestsCliRspBuffer;
+  uint8_t *p_LldTestsNotAckBuffer;
+} TL_LLD_tests_Config_t;
+
+typedef struct
+{
   uint8_t *p_Mac_802_15_4_CmdRspBuffer;
   uint8_t *p_Mac_802_15_4_NotAckBuffer;
 } TL_MAC_802_15_4_Config_t;
@@ -193,8 +199,8 @@ typedef struct
 typedef struct
 {
   uint8_t *p_ZigbeeOtCmdRspBuffer;
-  uint8_t *p_ZigbeeCliRspBuffer;
   uint8_t *p_ZigbeeNotAckBuffer;
+  uint8_t *p_ZigbeeLoggingBuffer;
 } TL_ZIGBEE_Config_t;
 
 /**
@@ -257,6 +263,15 @@ void TL_THREAD_CliSendAck ( void );
 void TL_THREAD_CliNotReceived( TL_EvtPacket_t * Notbuffer );
 
 /******************************************************************************
+ * LLD tests
+ ******************************************************************************/
+void TL_LLDTESTS_Init( TL_LLD_tests_Config_t *p_Config );
+void TL_LLDTESTS_CliSendCmd( void );
+void TL_LLDTESTS_NotReceived( TL_EvtPacket_t * Notbuffer );
+void TL_LLDTESTS_CliSendAck ( void );
+void TL_LLDTESTS_CliNotReceived( TL_EvtPacket_t * Notbuffer );
+
+/******************************************************************************
  * MEMORY MANAGER
  ******************************************************************************/
 void TL_MM_Init( TL_MM_Config_t *p_Config );
@@ -277,18 +292,16 @@ void TL_MAC_802_15_4_CmdEvtReceived( TL_EvtPacket_t * Otbuffer );
 void TL_MAC_802_15_4_NotReceived( TL_EvtPacket_t * Notbuffer );
 void TL_MAC_802_15_4_SendAck ( void );
 
-
 /******************************************************************************
  * ZIGBEE
  ******************************************************************************/
 void TL_ZIGBEE_Init( TL_ZIGBEE_Config_t *p_Config );
 void TL_ZIGBEE_SendAppliCmdToM0( void );
-void TL_ZIGBEE_SendCliCmdToM0( void );
 void TL_ZIGBEE_SendAckAfterAppliNotifFromM0 ( void );
-void TL_ZIGBEE_SendAckAfterCliNotifFromM0 ( void );
 void TL_ZIGBEE_NotReceived( TL_EvtPacket_t * Notbuffer );
-void TL_ZIGBEE_CliNotReceived( TL_EvtPacket_t * Notbuffer );
 void TL_ZIGBEE_CmdEvtReceived( TL_EvtPacket_t * Otbuffer );
+void TL_ZIGBEE_LoggingReceived(TL_EvtPacket_t * Otbuffer );
+void TL_ZIGBEE_SendAckAfterAppliLoggingFromM0 ( void );
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -32,7 +32,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "utilities_conf.h"
+#include "app_conf.h"
 
   /* -------------------------------- *
    *  Basic definitions               *

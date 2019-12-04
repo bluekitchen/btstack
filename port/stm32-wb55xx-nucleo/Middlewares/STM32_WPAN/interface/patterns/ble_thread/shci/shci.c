@@ -23,8 +23,6 @@
 
 #include "shci_tl.h"
 #include "shci.h"
-#include "mbox_def.h"
-#include "stm32wb55xx.h"
 #include "stm32wbxx.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -277,6 +275,24 @@ SHCI_CmdStatus_t SHCI_C2_THREAD_Init( void )
   shci_send( SHCI_OPCODE_C2_THREAD_INIT,
              0,
              0,
+             p_rsp );
+
+  return (SHCI_CmdStatus_t)(((TL_CcEvt_t*)(p_rsp->evtserial.evt.payload))->payload[0]);
+}
+
+SHCI_CmdStatus_t SHCI_C2_LLDTESTS_Init( uint8_t param_size, uint8_t * p_param )
+{
+  /**
+   * Buffer is large enough to hold command complete without payload
+   */
+  uint8_t local_buffer[TL_BLEEVT_CS_BUFFER_SIZE];
+  TL_EvtPacket_t * p_rsp;
+
+  p_rsp = (TL_EvtPacket_t *)local_buffer;
+
+  shci_send( SHCI_OPCODE_C2_LLD_TESTS_INIT,
+             param_size,
+             p_param,
              p_rsp );
 
   return (SHCI_CmdStatus_t)(((TL_CcEvt_t*)(p_rsp->evtserial.evt.payload))->payload[0]);

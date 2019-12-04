@@ -1,151 +1,30 @@
 /**
  ******************************************************************************
   * File Name          : app_conf.h
-  * Description        : Application configuration file for BLE middleWare.
-  ******************************************************************************
-  * This notice applies to any and all portions of this file
-  * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether
-  * inserted by the user or by software development tools
-  * are owned by their respective copyright owners.
+  * Description        : Application configuration file for STM32WPAN Middleware.
   *
-  * Copyright (c) 2019 STMicroelectronics International N.V.
-  * All rights reserved.
+ ******************************************************************************
+  * @attention
   *
-  * Redistribution and use in source and binary forms, with or without
-  * modification, are permitted, provided that the following conditions are met:
+  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * 1. Redistribution of source code must retain the above copyright notice,
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other
-  *    contributors to this software may be used to endorse or promote products
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under
-  *    this license is void and will automatically terminate your rights under
-  *    this license.
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  * This software component is licensed by ST under Ultimate Liberty license
+  * SLA0044, the "License"; You may not use this file except in compliance with
+  * the License. You may obtain a copy of the License at:
+  *                             www.st.com/SLA0044
   *
   ******************************************************************************
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __APP_CONF_H
-#define __APP_CONF_H
+#ifndef APP_CONF_H
+#define APP_CONF_H
 
-/******************************************************************************
- * Application Config
- ******************************************************************************/
-/**< generic parameters *//*****************************************************/
 #include "hw.h"
 #include "hw_conf.h"
-/**
- * Define Tx Power
- */
-#define CFG_TX_POWER                      (0x18) /**< 0dbm */
+#include "hw_if.h"
 
-/**
- * Define Advertising parameters
- */
-#define CFG_ADV_BD_ADDRESS                (0)
-#define CFG_FAST_CONN_ADV_INTERVAL_MIN    (0x80)   /**< 80ms */
-#define CFG_FAST_CONN_ADV_INTERVAL_MAX    (0xa0)  /**< 100ms */
-#define CFG_LP_CONN_ADV_INTERVAL_MIN      (0x640) /**< 1s */
-#define CFG_LP_CONN_ADV_INTERVAL_MAX      (0xfa0) /**< 2.5s */
-
-/**
- * Define IO Authentication
- */
-#define CFG_BONDING_MODE                  (1)
-#define CFG_FIXED_PIN                     (111111)
-#define CFG_USED_FIXED_PIN                (0)
-#define CFG_ENCRYPTION_KEY_SIZE_MAX       (16)
-#define CFG_ENCRYPTION_KEY_SIZE_MIN       (8)
-
-/**
- * Define IO capabilities
- */
-#define CFG_IO_CAPABILITY_DISPLAY_ONLY       (0x00)
-#define CFG_IO_CAPABILITY_DISPLAY_YES_NO     (0x01)
-#define CFG_IO_CAPABILITY_KEYBOARD_ONLY      (0x02)
-#define CFG_IO_CAPABILITY_NO_INPUT_NO_OUTPUT (0x03)
-#define CFG_IO_CAPABILITY_KEYBOARD_DISPLAY   (0x04)
-
-#define CFG_IO_CAPABILITY             CFG_IO_CAPABILITY_DISPLAY_ONLY
-
-/**
- * Define MITM modes
- */
-#define CFG_MITM_PROTECTION_NOT_REQUIRED      (0x00)
-#define CFG_MITM_PROTECTION_REQUIRED          (0x01)
-
-#define CFG_MITM_PROTECTION             CFG_MITM_PROTECTION_REQUIRED
-/**
- * Define PHY
- */
-#define ALL_PHYS_PREFERENCE                             0x00
-#define RX_2M_PREFERRED                                 0x02
-#define TX_2M_PREFERRED                                 0x02
-#define TX_1M                                           0x01
-#define TX_2M                                           0x02
-#define RX_1M                                           0x01
-#define RX_2M                                           0x02
-/**< specific parameters *//*****************************************************/
-#define PUSH_BUTTON_SW1_EXTI_IRQHandler                         EXTI4_IRQHandler
-#define PUSH_BUTTON_SW2_EXTI_IRQHandler                         EXTI0_IRQHandler
-
-#define P2P_SERVER1    1    /*1 = Device is Peripherique*/
-#define P2P_SERVER2    0
-#define P2P_SERVER3    0
-#define P2P_SERVER4    0
-#define P2P_SERVER5    0
-#define P2P_SERVER6    0
-
-#define CFG_DEV_ID_P2P_SERVER1                  (0x83)
-#define CFG_DEV_ID_P2P_SERVER2                  (0x84)
-#define CFG_DEV_ID_P2P_SERVER3                  (0x87)
-#define CFG_DEV_ID_P2P_SERVER4                  (0x88)
-#define CFG_DEV_ID_P2P_SERVER5                  (0x89)
-#define CFG_DEV_ID_P2P_SERVER6                  (0x8A)
-#define CFG_DEV_ID_P2P_ROUTER                   (0x85)
-
-#define  RADIO_ACTIVITY_EVENT   1          //1 for OOB Demo
-
-/**
-* AD Element - Group B Feature
-*/
-//LSB - First Byte
-#define CFG_FEATURE_THREAD_SWITCH               (0x40)
-
-//LSB - Second Byte
-#define CFG_FEATURE_OTA_REBOOT                  (0x60)
-#define CONN_L(x) ((int)((x)/0.625f))
-#define CONN_P(x) ((int)((x)/1.25f))
-
-  /*  L2CAP Connection Update request parameters used for test only with smart Phone */
-#define  L2CAP_REQUEST_NEW_CONN_PARAM    0
-
-#define L2CAP_INTERVAL_MIN              CONN_P(1000) //1s
-#define L2CAP_INTERVAL_MAX              CONN_P(1000) //1s
-#define L2CAP_SLAVE_LATENCY             0x0000
-#define L2CAP_TIMEOUT_MULTIPLIER        0x1F4          //0x320
 /******************************************************************************
  * BLE Stack
  ******************************************************************************/
@@ -153,7 +32,7 @@
  * Maximum number of simultaneous connections that the device will support.
  * Valid values are from 1 to 8
  */
-#define CFG_BLE_NUM_LINK            1
+#define CFG_BLE_NUM_LINK            8
 
 /**
  * Maximum number of Services that can be stored in the GATT database.
@@ -173,7 +52,7 @@
 /**
  * Maximum supported ATT_MTU size
  */
-#define CFG_BLE_MAX_ATT_MTU             (512)
+#define CFG_BLE_MAX_ATT_MTU             (156)
 
 /**
  * Size of the storage area for Attribute values
@@ -225,7 +104,7 @@
  *  1 : internal RO
  *  0 : external crystal ( no calibration )
  */
-#define CFG_BLE_LSE_SOURCE  1
+#define CFG_BLE_LSE_SOURCE  0
 
 /**
  * Start up time of the high speed (16 or 32 MHz) crystal oscillator in units of 625/256 us (~2.44 us)
@@ -290,8 +169,8 @@
 /**
  * Select UART interfaces
  */
-#define DBG_TRACE_UART_CFG
-
+#define CFG_DEBUG_TRACE_UART    hw_uart1
+#define CFG_CONSOLE_MENU
 /******************************************************************************
  * USB interface
  ******************************************************************************/
@@ -385,11 +264,6 @@
 /** tick timer value in us */
 #define CFG_TS_TICK_VAL           DIVR( (CFG_RTCCLK_DIV * 1000000), LSE_VALUE )
 
-typedef enum
-{
-  CFG_TimProcID_isr,
-} CFG_TimProcID_t;
-
 /******************************************************************************
  * Debug
  ******************************************************************************/
@@ -402,14 +276,11 @@ typedef enum
  */
 #define CFG_HW_RESET_BY_FW         1
 
-#define CFG_LED_SUPPORTED         0
-#define CFG_BUTTON_SUPPORTED      0
-
 /**
  * keep debugger enabled while in any low power mode when set to 1
  * should be set to 0 in production
  */
-#define CFG_DEBUGGER_SUPPORTED    1
+#define CFG_DEBUGGER_SUPPORTED    0
 
 /**
  * When set to 1, the traces are enabled in the BLE services
@@ -421,15 +292,6 @@ typedef enum
  */
 #define CFG_DEBUG_APP_TRACE     0
 
-#if   defined ( __CC_ARM )     /* Keil */
-#undef CFG_DEBUG_BLE_TRACE
-#undef CFG_DEBUG_APP_TRACE
-#undef CFG_LPM_SUPPORTED
-#define CFG_DEBUG_BLE_TRACE     0
-#define CFG_DEBUG_APP_TRACE     0
-#define CFG_LPM_SUPPORTED   0
-#endif
-
 #if (CFG_DEBUG_APP_TRACE != 0)
 #define APP_DBG_MSG                 PRINT_MESG_DBG
 #else
@@ -438,8 +300,6 @@ typedef enum
 
 #if ( (CFG_DEBUG_BLE_TRACE != 0) || (CFG_DEBUG_APP_TRACE != 0) )
 #define CFG_DEBUG_TRACE             1
-#else
-#define CFG_DEBUG_TRACE             0
 #endif
 
 #if (CFG_DEBUG_TRACE != 0)
@@ -449,73 +309,49 @@ typedef enum
 #define CFG_DEBUGGER_SUPPORTED      1
 #endif
 
-/******************************************************************************
- * Scheduler
- ******************************************************************************/
+/**
+ * When CFG_DEBUG_TRACE_FULL is set to 1, the trace are output with the API name, the file name and the line number
+ * When CFG_DEBUG_TRACE_LIGHT is set to 1, only the debug message is output
+ *
+ * When both are set to 0, no trace are output
+ * When both are set to 1,  CFG_DEBUG_TRACE_FULL is selected
+ */
+#define CFG_DEBUG_TRACE_LIGHT     1
+#define CFG_DEBUG_TRACE_FULL      0
+
+#if (( CFG_DEBUG_TRACE != 0 ) && ( CFG_DEBUG_TRACE_LIGHT == 0 ) && (CFG_DEBUG_TRACE_FULL == 0))
+#undef CFG_DEBUG_TRACE_FULL
+#undef CFG_DEBUG_TRACE_LIGHT
+#define CFG_DEBUG_TRACE_FULL      0
+#define CFG_DEBUG_TRACE_LIGHT     1
+#endif
+
+#if ( CFG_DEBUG_TRACE == 0 )
+#undef CFG_DEBUG_TRACE_FULL
+#undef CFG_DEBUG_TRACE_LIGHT
+#define CFG_DEBUG_TRACE_FULL      0
+#define CFG_DEBUG_TRACE_LIGHT     0
+#endif
 
 /**
- * These are the lists of task id registered to the scheduler
- * Each task id shall be in the range [0:31]
- * This mechanism allows to implement a generic code in the API TL_BLE_HCI_StatusNot() to comply with
- * the requirement that a HCI/ACI command shall never be sent if there is already one pending
+ * When not set, the traces is looping on sending the trace over UART
  */
-
-/**< Add in that list all tasks that may send a ACI/HCI command */
-
-typedef enum
-{
-  CFG_IdleTask_AdvCancel,
-  CFG_IdleTask_SW1_Button_Pushed,
-  CFG_IdleTask_HciAsynchEvt,
-  CFG_IdleTask_Update_Parameter,
-/* USER CODE BEGIN CFG_Task_Id_With_HCI_Cmd_t */
-/* USER CODE END CFG_Task_Id_With_HCI_Cmd_t */
-  CFG_LAST_TASK_ID_WITH_HCICMD,                                               /**< Shall be LAST in the list */
-} CFG_Task_Id_With_HCI_Cmd_t;
-
-/**< Add in that list all tasks that never send a ACI/HCI command */
-typedef enum
-{
-    CFG_FIRST_TASK_ID_WITH_NO_HCICMD = CFG_LAST_TASK_ID_WITH_HCICMD - 1,        /**< Shall be FIRST in the list */
-    CFG_IdleTask_SystemHciAsynchEvt,
-/* USER CODE BEGIN CFG_Task_Id_With_NO_HCI_Cmd_t */
-
-/* USER CODE END CFG_Task_Id_With_NO_HCI_Cmd_t */
-    CFG_LAST_TASK_ID_WITHO_NO_HCICMD                                            /**< Shall be LAST in the list */
-} CFG_Task_Id_With_NO_HCI_Cmd_t;
-#define CFG_TASK_NBR    CFG_LAST_TASK_ID_WITHO_NO_HCICMD
+#define DBG_TRACE_USE_CIRCULAR_QUEUE 1
 
 /**
- * This is the list of priority required by the application
- * Each Id shall be in the range 0..31
+ * max buffer Size to queue data traces and max data trace allowed.
+ * Only Used if DBG_TRACE_USE_CIRCULAR_QUEUE is defined
  */
-
-/**
- * This is a bit mapping over 32bits listing all events id supported in the application
- */
-typedef enum
-{
-  CFG_TASK_CONN_MGR_ID,
-  CFG_TASK_HCI_ASYNCH_EVT_ID,
-  CFG_TASK_SYSTEM_HCI_ASYNCH_EVT_ID,
-  CFG_IDLEEVT_HCI_CMD_EVT_RSP_ID,
-  CFG_IDLEEVT_SYSTEM_HCI_CMD_EVT_RSP_ID,
-  CFG_EVT_NBR,
-} CFG_IdleEvt_Id_t;
+#define DBG_TRACE_MSG_QUEUE_SIZE 4096
+#define MAX_DBG_TRACE_MSG_SIZE 1024
 
 /******************************************************************************
- * LOW POWER
+ * OTP manager
  ******************************************************************************/
-/**
- * Supported requester to the MCU Low Power Manager - can be increased up  to 32
- * It lits a bit mapping of all user of the Low Power Manager
- */
-typedef enum
-{
-    CFG_LPM_App,
-    CFG_LPM_App_BLE,
-} CFG_LPM_Id_t;
+#define CFG_OTP_BASE_ADDRESS    OTP_AREA_BASE
 
-#endif /*__APP_CONF_H */
+#define CFG_OTP_END_ADRESS      OTP_AREA_END_ADDR
+
+#endif /*APP_CONF_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -20,7 +20,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "ble_common.h"
-#include "hal_types.h"
 #include "ble_const.h"
 
 #include "stm_list.h"
@@ -44,7 +43,6 @@
  */
 PLACE_IN_SECTION("BLE_DRIVER_CONTEXT") static volatile uint8_t hci_timer_id;
 PLACE_IN_SECTION("BLE_DRIVER_CONTEXT") static tListNode HciAsynchEventQueue;
-PLACE_IN_SECTION("BLE_DRIVER_CONTEXT") static volatile HCI_TL_CmdStatus_t HCICmdStatus;
 PLACE_IN_SECTION("BLE_DRIVER_CONTEXT") static TL_CmdPacket_t *pCmdBuffer;
 PLACE_IN_SECTION("BLE_DRIVER_CONTEXT") HCI_TL_UserEventFlowStatus_t UserEventFlow;
 /**
@@ -56,8 +54,7 @@ static tListNode HciCmdEventQueue;
 static void (* StatusNotCallBackFunction) (HCI_TL_CmdStatus_t status);
 
 /* Private function prototypes -----------------------------------------------*/
-static void Cmd_SetStatus(HCI_TL_CmdStatus_t hcicmdstatus);
-static HCI_TL_CmdStatus_t CmdGetStatus( void );
+static void NotifyCmdStatus(HCI_TL_CmdStatus_t hcicmdstatus);
 static void SendCmd(uint16_t opcode, uint8_t plen, void *param);
 static void TlEvtReceived(TL_EvtPacket_t *hcievt);
 static void TlInit( TL_CmdPacket_t * p_cmdbuffer );
@@ -81,11 +78,21 @@ void hci_user_evt_proc(void)
   tHCI_UserEvtRxParam UserEvtRxParam;
 
   /**
+   * Up to release version v1.2.0, a while loop was implemented to read out events from the queue as long as
+   * it is not empty. However, in a bare metal implementation, this leads to calling in a "blocking" mode
+   * hci_user_evt_proc() as long as events are received without giving the opportunity to run other tasks
+   * in the background.
+   * From now, the events are reported one by one. When it is checked there is still an event pending in the queue,
+   * a request to the user is made to call again hci_user_evt_proc().
+   * This gives the opportunity to the application to run other background tasks between each event.
+   */
+
+  /**
    * It is more secure to use LST_remove_head()/LST_insert_head() compare to LST_get_next_node()/LST_remove_node()
    * in case the user overwrite the header where the next/prev pointers are located
    */
 
-  while((LST_is_empty(&HciAsynchEventQueue) == FALSE) && (UserEventFlow != HCI_TL_UserEventFlow_Disable))
+  if((LST_is_empty(&HciAsynchEventQueue) == FALSE) && (UserEventFlow != HCI_TL_UserEventFlow_Disable))
   {
     LST_remove_head ( &HciAsynchEventQueue, (tListNode **)&phcievtbuffer );
 
@@ -111,6 +118,12 @@ void hci_user_evt_proc(void)
     }
   }
 
+  if((LST_is_empty(&HciAsynchEventQueue) == FALSE) && (UserEventFlow != HCI_TL_UserEventFlow_Disable))
+  {
+    hci_notify_asynch_evt((void*) &HciAsynchEventQueue);
+  }
+
+
   return;
 }
 
@@ -127,19 +140,21 @@ void hci_resume_flow( void )
   return;
 }
 
-int hci_send_req(struct hci_request *p_cmd, BOOL async)
+int hci_send_req(struct hci_request *p_cmd, uint8_t async)
 {
   uint16_t opcode;
   TL_CcEvt_t  *pcommand_complete_event;
   TL_CsEvt_t    *pcommand_status_event;
   TL_EvtPacket_t *pevtpacket;
   uint8_t hci_cmd_complete_return_parameters_length;
+  HCI_TL_CmdStatus_t local_cmd_status;
 
-  Cmd_SetStatus(HCI_TL_CmdBusy);
+  NotifyCmdStatus(HCI_TL_CmdBusy);
+  local_cmd_status = HCI_TL_CmdBusy;
   opcode = ((p_cmd->ocf) & 0x03ff) | ((p_cmd->ogf) << 10);
   SendCmd(opcode, p_cmd->clen, p_cmd->cparam);
 
-  while(CmdGetStatus() == HCI_TL_CmdBusy)
+  while(local_cmd_status == HCI_TL_CmdBusy)
   {
     hci_cmd_resp_wait(HCI_TL_DEFAULT_TIMEOUT);
 
@@ -160,7 +175,7 @@ int hci_send_req(struct hci_request *p_cmd, BOOL async)
 
         if(pcommand_status_event->numcmd != 0)
         {
-          Cmd_SetStatus(HCI_TL_CmdAvailable);
+          local_cmd_status = HCI_TL_CmdAvailable;
         }
       }
       else
@@ -176,11 +191,13 @@ int hci_send_req(struct hci_request *p_cmd, BOOL async)
 
         if(pcommand_complete_event->numcmd != 0)
         {
-          Cmd_SetStatus(HCI_TL_CmdAvailable);
+          local_cmd_status = HCI_TL_CmdAvailable;
         }
       }
     }
   }
+
+  NotifyCmdStatus(HCI_TL_CmdAvailable);
 
   return 0;
 }
@@ -199,8 +216,6 @@ static void TlInit( TL_CmdPacket_t * p_cmdbuffer )
 
   LST_init_head (&HciAsynchEventQueue);
 
-  Cmd_SetStatus(HCI_TL_CmdAvailable);
-
   UserEventFlow = HCI_TL_UserEventFlow_Enable;
 
   /* Initialize low level driver */
@@ -215,11 +230,6 @@ static void TlInit( TL_CmdPacket_t * p_cmdbuffer )
   return;
 }
 
-static HCI_TL_CmdStatus_t CmdGetStatus(void)
-{
-  return HCICmdStatus;
-}
-
 static void SendCmd(uint16_t opcode, uint8_t plen, void *param)
 {
   pCmdBuffer->cmdserial.cmd.cmdcode = opcode;
@@ -231,7 +241,7 @@ static void SendCmd(uint16_t opcode, uint8_t plen, void *param)
   return;
 }
 
-static void Cmd_SetStatus(HCI_TL_CmdStatus_t hcicmdstatus)
+static void NotifyCmdStatus(HCI_TL_CmdStatus_t hcicmdstatus)
 {
   if(hcicmdstatus == HCI_TL_CmdBusy)
   {
@@ -239,11 +249,9 @@ static void Cmd_SetStatus(HCI_TL_CmdStatus_t hcicmdstatus)
     {
       StatusNotCallBackFunction(HCI_TL_CmdBusy);
     }
-    HCICmdStatus = HCI_TL_CmdBusy;
   }
   else
   {
-    HCICmdStatus = HCI_TL_CmdAvailable;
     if(StatusNotCallBackFunction != 0)
     {
       StatusNotCallBackFunction(HCI_TL_CmdAvailable);

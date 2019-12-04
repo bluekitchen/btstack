@@ -68,7 +68,7 @@ size_t __write(int handle, const unsigned char * buf, size_t bufSize);
 /** @defgroup TRACE Log private variables 
  * @{
  */
-#if (( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 ))
+#if (( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 ))
 #if (DBG_TRACE_USE_CIRCULAR_QUEUE != 0)
 static queue_t MsgDbgTraceQueue;
 static uint8_t MsgDbgTraceQueueBuff[DBG_TRACE_MSG_QUEUE_SIZE];
@@ -91,7 +91,7 @@ __IO ITStatus DbgTracePeripheralReady = SET;
 /** @defgroup TRACE Log private function prototypes 
  * @{
  */
-#if (( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 ))
+#if (( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 ))
 static void DbgTrace_TxCpltCallback(void);
 #endif
 
@@ -156,7 +156,7 @@ void DbgTraceBuffer(const void *pBuffer, uint32_t u32Length, const char *strForm
   }
 }
 
-#if (( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 ))
+#if (( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 ))
 /**
  * @brief  DBG_TRACE USART Tx Transfer completed callback
  * @param  UartHandle: UART handle.
@@ -205,7 +205,7 @@ static void DbgTrace_TxCpltCallback(void)
 
 void DbgTraceInit( void )
 {
-#if (( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 ))
+#if (( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 ))
   DbgOutputInit();
 #if (DBG_TRACE_USE_CIRCULAR_QUEUE != 0)
   CircularQueue_Init(&MsgDbgTraceQueue, MsgDbgTraceQueueBuff, DBG_TRACE_MSG_QUEUE_SIZE, 0, CIRCULAR_QUEUE_SPLIT_IF_WRAPPING_FLAG);
@@ -215,7 +215,7 @@ void DbgTraceInit( void )
 }
 
 
-#if (( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 ))
+#if (( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 ))
 #if defined(__GNUC__)  /* SW4STM32 (GCC) */
 /**
  * @brief	_write: override the __write standard lib function to redirect printf to USART.
@@ -316,7 +316,7 @@ int fputc(int ch, FILE *f)
 
 #endif /* #if   defined ( __CC_ARM )  */
 
-#endif /* #if (( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 )) */
+#endif /* #if (( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 )) */
 
 /**
  * @}

@@ -27,14 +27,12 @@ extern "C"
 {
 #endif
 
-#include "utilities_conf.h"
-
 /* Exported types ------------------------------------------------------------*/
 /* External variables --------------------------------------------------------*/
 /* Exported macros -----------------------------------------------------------*/
-#if ( ( DBG_TRACE_FULL != 0 ) || ( DBG_TRACE_LIGTH != 0 ) )
+#if ( ( CFG_DEBUG_TRACE_FULL != 0 ) || ( CFG_DEBUG_TRACE_LIGHT != 0 ) )
 #define PRINT_LOG_BUFF_DBG(...) DbgTraceBuffer(__VA_ARGS__)
-#if ( DBG_TRACE_FULL != 0 )
+#if ( CFG_DEBUG_TRACE_FULL != 0 )
 #define PRINT_MESG_DBG(...)     do{printf("\r\n [%s][%s][%d] ", DbgTraceGetFileName(__FILE__),__FUNCTION__,__LINE__);printf(__VA_ARGS__);}while(0);
 #else
 #define PRINT_MESG_DBG          printf

@@ -134,7 +134,8 @@ extern "C" {
     SHCI_OCF_C2_RADIO_ALLOW_LOW_POWER,
     SHCI_OCF_C2_MAC_802_15_4_INIT,
     SHCI_OCF_C2_REINIT,
-    SHCI_OCF_C2_ZIGBEE_INIT
+    SHCI_OCF_C2_ZIGBEE_INIT,
+    SHCI_OCF_C2_LLD_TESTS_INIT
   } SHCI_OCF_t;
 
 #define SHCI_OPCODE_C2_FUS_GET_STATE         (( SHCI_OGF << 10) + SHCI_OCF_C2_FUS_GET_STATE)
@@ -195,7 +196,7 @@ extern "C" {
   typedef PACKED_STRUCT{
   uint8_t KeyType;
   uint8_t KeySize;
-  uint8_t KeyData[32];
+  uint8_t KeyData[32 + 12];
   } SHCI_C2_FUS_StoreUsrKey_Cmd_Param_t;
 
   /** Response parameters*/
@@ -345,6 +346,8 @@ extern "C" {
 
 #define SHCI_OPCODE_C2_ZIGBEE_INIT                (( SHCI_OGF << 10) + SHCI_OCF_C2_ZIGBEE_INIT)
 
+#define SHCI_OPCODE_C2_LLD_TESTS_INIT                (( SHCI_OGF << 10) + SHCI_OCF_C2_LLD_TESTS_INIT)
+
  /* Exported type --------------------------------------------------------*/
 
 typedef  MB_WirelessFwInfoTable_t SHCI_WirelessFwInfoTable_t;
@@ -404,6 +407,7 @@ typedef  MB_WirelessFwInfoTable_t SHCI_WirelessFwInfoTable_t;
 #define INFO_STACK_TYPE_ZIGBEE                      0x30
 #define INFO_STACK_TYPE_MAC                         0x40
 #define INFO_STACK_TYPE_BLE_THREAD_FTD_STATIC       0x50
+#define INFO_STACK_TYPE_802154_LLD_TESTS            0x60
 
 typedef struct {
 /**
@@ -542,6 +546,16 @@ typedef struct {
   * @retval Status
   */
   SHCI_CmdStatus_t SHCI_C2_THREAD_Init( void );
+
+  /**
+  * SHCI_C2_LLDTESTS_Init
+  * @brief Starts the LLD tests CLI
+  *
+  * @param  param_size : Nb of bytes
+  * @param  p_param : pointeur with data to give from M4 to M0
+  * @retval Status
+  */
+  SHCI_CmdStatus_t SHCI_C2_LLDTESTS_Init( uint8_t param_size, uint8_t * p_param );
 
     /**
   * SHCI_C2_ZIGBEE_Init

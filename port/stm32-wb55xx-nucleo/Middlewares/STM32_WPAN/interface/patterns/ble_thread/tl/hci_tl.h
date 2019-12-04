@@ -87,9 +87,9 @@ typedef struct
 void hci_register_io_bus(tHciIO* fops);
 
 /**
- * @brief  Interrupt service routine that must be called when the BlueNRG 
+ * @brief  Interrupt service routine that must be called when the BLE core
  *         reports a packet received or an event to the host through the 
- *         BlueNRG-MS interrupt line.
+ *         related IPCC RX interrupt line.
  *
  * @param  pdata Packet or event pointer
  * @retval None
