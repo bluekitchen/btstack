@@ -98,8 +98,8 @@ ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow 
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
 ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
-
-
+ENABLE_CONTROLLER_WARM_BOOT      | Enable stack startup without power cycle (if supported/possible)
+ENABLE_SEGGER_RTT                | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)
 Notes:
 
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
@@ -187,11 +187,24 @@ If implemented, bonding information is stored in Non-volatile memory. For Classi
 <!-- a name "lst:nvmDefines"></a-->
 <!-- -->
 
-\#define                   | Description
+\#define                  | Description
 --------------------------|------------
 NVM_NUM_LINK_KEYS         | Max number of Classic Link Keys that can be stored 
 NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored
 NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' values that can be stored by GATT Server
+
+
+### SEGGER Real Time Transfer (RTT) directives {#sec:rttConfiguration}
+
+[SEGGER RTT](https://www.segger.com/products/debug-probes/j-link/technology/about-real-time-transfer/) replaces use of an UART for debugging with higher throughput and less overhead. In addition, it allows for direct logging in PacketLogger/BlueZ format via the provided JLinkRTTLogger tool.
+
+When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_open` was called with either `HCI_DUMP_BLUEZ` or `HCI_DUMP_PACKETLOGGER`, the following directives are used to configure the up channel:
+
+\#define                         | Default                        | Description
+---------------------------------|--------------------------------|------------------------
+SEGGER_RTT_PACKETLOG_MODE        | SEGGER_RTT_MODE_NO_BLOCK_SKIP  | SEGGER_RTT_MODE_NO_BLOCK_SKIP to skip messages if buffer is full, or, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL to block 
+SEGGER_RTT_PACKETLOG_CHANNEL     | 1                              | Channel to use for packet log. Channel 0 is used for terminal
+SEGGER_RTT_PACKETLOG_BUFFER_SIZE | 1024                           | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings
 
 ## Source tree structure {#sec:sourceTreeHowTo}
 

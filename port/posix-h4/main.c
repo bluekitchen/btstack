@@ -53,7 +53,8 @@
 
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_link_key_db_fs.h"
+#include "ble/le_device_db_tlv.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
@@ -105,6 +106,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
+#ifdef ENABLE_CLASSIC
+            hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+#endif    
+#ifdef ENABLE_BLE
+            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+#endif
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
@@ -252,9 +259,7 @@ int main(int argc, const char * argv[]){
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
-    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
 	hci_init(transport, (void*) &config);
-    hci_set_link_key_db(link_key_db);
 
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};

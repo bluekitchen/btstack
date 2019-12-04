@@ -48,10 +48,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"
 #include "btstack_config.h"
 #include "classic/core.h"
 #include "classic/sdp_util.h"
+#include "l2cap.h"
 
 static const char default_panu_service_name[] = "Personal Ad-hoc User Service";
 static const char default_panu_service_desc[] = "Personal Ad-hoc User Service";
@@ -90,7 +92,7 @@ static void pan_create_service(uint8_t *service, uint32_t service_record_handle,
 		uint8_t* l2cpProtocol = de_push_sequence(attribute);
 		{
 			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-			de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_BNEP);  // l2cap psm
+			de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_BNEP);  // l2cap psm
 		}
 		de_pop_sequence(attribute, l2cpProtocol);
 		

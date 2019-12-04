@@ -57,7 +57,7 @@ static uint8_t obex_message_builder_packet_init(uint8_t * buffer, uint16_t buffe
 static uint8_t obex_message_builder_packet_append(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t len){
     uint16_t pos = big_endian_read_16(buffer, 1);
     if (buffer_len < pos + len) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
-    memcpy(&buffer[pos], data, len);
+    (void)memcpy(&buffer[pos], data, len);
     pos += len;
     big_endian_store_16(buffer, 1, pos);
      return ERROR_CODE_SUCCESS;

@@ -79,8 +79,8 @@ static float sqrt3(const float x){
     // Two Babylonian Steps (simplified from:)
     // u.x = 0.5f * (u.x + x/u.x);
     // u.x = 0.5f * (u.x + x/u.x);
-    u.x =       u.x + x/u.x;
-    u.x = 0.25f*u.x + x/u.x;
+    u.x =       u.x + (x/u.x);
+    u.x = (0.25f*u.x) + (x/u.x);
 
     return u.x;
 }
@@ -334,18 +334,18 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<num_samples+CVSD_OLAL;i++){
+        for (;i<(num_samples+CVSD_OLAL);i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-num_samples] + right*rcos[CVSD_OLAL-1-i+num_samples];
+            val = (left*rcos[i-num_samples]) + (right*rcos[CVSD_OLAL-1-i+num_samples]);
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
 
-        for (;i<num_samples+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<(num_samples+CVSD_RT+CVSD_OLAL);i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
-        for (;i<num_samples+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<(num_samples+CVSD_RT+CVSD_OLAL);i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
@@ -355,7 +355,7 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     }
     
     // shift the history buffer 
-    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
+    for (i=0;i<(CVSD_LHIST+CVSD_RT+CVSD_OLAL);i++){
         plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
 
@@ -384,10 +384,10 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t n
             out[i] = plc_state->hist[CVSD_LHIST+i];
         }
             
-        for (i=CVSD_RT;i<CVSD_RT+CVSD_OLAL;i++){
+        for (i=CVSD_RT;i<(CVSD_RT+CVSD_OLAL);i++){
             float left  = plc_state->hist[CVSD_LHIST+i];
             float right = in[i];
-            val = left * rcos[i-CVSD_RT] + right *rcos[CVSD_OLAL+CVSD_RT-1-i];
+            val = (left * rcos[i-CVSD_RT]) + (right *rcos[CVSD_OLAL+CVSD_RT-1-i]);
             out[i] = btstack_cvsd_plc_crop_sample((BTSTACK_CVSD_PLC_SAMPLE_FORMAT)val);
         }
     }
@@ -417,7 +417,7 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
     int count = 0;
     int temp_count = 1;
     int i;
-    for (i = 0; i < size-1; i++){
+    for (i = 0; i < (size-1); i++){
         if (packet[i] == packet[i+1]){
             temp_count++;
             continue;
@@ -427,7 +427,7 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
         }
         temp_count = 1;
     }
-    if (temp_count > count + 1){
+    if (temp_count > (count + 1)){
         count = temp_count;
     }
     return count;
@@ -436,7 +436,7 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
 static int count_zeros(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
     int nr_zeros = 0;
     int i;
-    for (i = 0; i < size-1; i++){
+    for (i = 0; i < (size-1); i++){
         if (frame[i] == 0){
             nr_zeros++;
         }
@@ -465,7 +465,7 @@ void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK
     int is_bad_frame  = bad_frame(plc_state, in, num_samples);
 
     if (is_bad_frame){
-        memcpy(out, in, num_samples * 2);
+        (void)memcpy(out, in, num_samples * 2);
         if (plc_state->good_samples > CVSD_LHIST){
             btstack_cvsd_plc_bad_frame(plc_state, num_samples, out);
             if (is_zero_frame){

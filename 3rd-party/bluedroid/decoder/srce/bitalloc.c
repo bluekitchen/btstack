@@ -68,7 +68,7 @@ PRIVATE OI_UINT16 internal_CalculateFramelen(OI_CODEC_SBC_FRAME_INFO *frame)
         if (frame->mode == SBC_DUAL_CHANNEL) { result += nbits; }
         if (frame->mode == SBC_MONO) { result += 4*nrof_subbands; } else { result += 8*nrof_subbands; }
     }
-    return SBC_HEADER_LEN + (result + 7) / 8;
+    return SBC_HEADER_LEN + ((result + 7) / 8);
 }
 
 
@@ -83,7 +83,7 @@ PRIVATE OI_UINT32 internal_CalculateBitrate(OI_CODEC_SBC_FRAME_INFO *frame)
 
 INLINE OI_UINT16 OI_SBC_CalculateFrameAndHeaderlen(OI_CODEC_SBC_FRAME_INFO *frame, OI_UINT *headerLen_)
 {
-    OI_UINT headerLen = SBC_HEADER_LEN + frame->nrof_subbands * frame->nrof_channels/2;
+    OI_UINT headerLen = SBC_HEADER_LEN + (frame->nrof_subbands * frame->nrof_channels/2);
 
     if (frame->mode == SBC_JOINT_STEREO) { headerLen++; }
 
@@ -266,7 +266,7 @@ OI_INT adjustToFitBitpool(const OI_UINT bitpool,
         adjust4 |= (adjust4 << 8);
         adjust4 |= (adjust4 << 16);
 
-        for (i = (subbands / 4 - 1); i >= 0; --i) {
+        for (i = ((subbands / 4) - 1); i >= 0; --i) {
             OI_UINT32 mask;
             OI_UINT32 n = bitneeds[i] + adjust4;
             mask = 0x7F7F7F7F + ((n & 0x40404040) >> 6);

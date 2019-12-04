@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "provisioning_device.c"
+#define BTSTACK_FILE__ "provisioning_device.c"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -146,6 +146,7 @@ typedef enum {
     DEVICE_W4_DATA,
     DEVICE_SEND_COMPLETE,
     DEVICE_SEND_ERROR,
+    DEVICE_W4_DONE,
 } device_state_t;
 
 static device_state_t device_state;
@@ -266,7 +267,7 @@ static void provisioning_send_capabilites(void){
     big_endian_store_16(prov_buffer_out, 10, prov_input_oob_actions);
 
     // store for confirmation inputs: len 11
-    memcpy(&prov_confirmation_inputs[1], &prov_buffer_out[1], 11);
+    (void)memcpy(&prov_confirmation_inputs[1], &prov_buffer_out[1], 11);
 
     // send
 
@@ -276,10 +277,10 @@ static void provisioning_send_capabilites(void){
 static void provisioning_send_public_key(void){
     // setup response 
     prov_buffer_out[0] = MESH_PROV_PUB_KEY;
-    memcpy(&prov_buffer_out[1], prov_ec_q, 64);
+    (void)memcpy(&prov_buffer_out[1], prov_ec_q, 64);
 
     // store for confirmation inputs: len 64
-    memcpy(&prov_confirmation_inputs[81], &prov_buffer_out[1], 64);
+    (void)memcpy(&prov_confirmation_inputs[81], &prov_buffer_out[1], 64);
 
     // send
     pb_send_pdu(pb_transport_cid, prov_buffer_out, 65);
@@ -295,7 +296,7 @@ static void provisioning_send_input_complete(void){
 static void provisioning_send_confirm(void){
     // setup response 
     prov_buffer_out[0] = MESH_PROV_CONFIRM;
-    memcpy(&prov_buffer_out[1], confirmation_device, 16);
+    (void)memcpy(&prov_buffer_out[1], confirmation_device, 16);
 
     // send
     pb_send_pdu(pb_transport_cid, prov_buffer_out, 17);
@@ -304,7 +305,7 @@ static void provisioning_send_confirm(void){
 static void provisioning_send_random(void){
     // setup response 
     prov_buffer_out[0] = MESH_PROV_RANDOM;
-    memcpy(&prov_buffer_out[1],  random_device, 16);
+    (void)memcpy(&prov_buffer_out[1], random_device, 16);
 
     // send pdu
     pb_send_pdu(pb_transport_cid, prov_buffer_out, 17);
@@ -361,7 +362,8 @@ static void provisioning_public_key_exchange_complete(void){
             device_state = DEVICE_W4_CONFIRM;
             break;        
         case 0x01:
-            memcpy(&auth_value[16-prov_static_oob_len], prov_static_oob_data, prov_static_oob_len);
+            (void)memcpy(&auth_value[16 - prov_static_oob_len],
+                         prov_static_oob_data, prov_static_oob_len);
             device_state = DEVICE_W4_CONFIRM;
             break;
         case 0x02:
@@ -388,9 +390,9 @@ static void provisioning_run(void){
     switch (device_state){
         case DEVICE_SEND_ERROR:
             start_timer = 0;    // game over
+            device_state = DEVICE_W4_DONE;
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_provisioning_error();
-            provisioning_done();
             break;
         case DEVICE_SEND_CAPABILITIES:
             device_state = DEVICE_W4_START;
@@ -419,9 +421,9 @@ static void provisioning_run(void){
             break;
         case DEVICE_SEND_COMPLETE:
             start_timer = 0;    // last message
+            device_state = DEVICE_W4_DONE;
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_complete();
-            provisioning_done();
             break;
         default:
             return;
@@ -444,7 +446,7 @@ static void provisioning_handle_invite(uint8_t *packet, uint16_t size){
     if (size != 1) return;
 
     // store for confirmation inputs: len 1
-    memcpy(&prov_confirmation_inputs[0], packet, 1);
+    (void)memcpy(&prov_confirmation_inputs[0], packet, 1);
 
     // handle invite message
     prov_attention_timer_timeout = packet[0];
@@ -498,7 +500,7 @@ static void provisioning_handle_start(uint8_t * packet, uint16_t size){
     }
 
     // store for confirmation inputs: len 5
-    memcpy(&prov_confirmation_inputs[12], packet, 5);
+    (void)memcpy(&prov_confirmation_inputs[12], packet, 5);
 
     // public key oob
     prov_public_key_oob_used = packet[1];
@@ -527,7 +529,7 @@ static void provisioning_handle_public_key_dhkey(void * arg){
     // skip sending own public key when public key oob is used
     if (prov_public_key_oob_available && prov_public_key_oob_used){
         // just copy key for confirmation inputs
-        memcpy(&prov_confirmation_inputs[81], prov_ec_q, 64);
+        (void)memcpy(&prov_confirmation_inputs[81], prov_ec_q, 64);
         provisioning_public_key_exchange_complete();
     } else {
         // queue public key pdu
@@ -551,16 +553,16 @@ static void provisioning_handle_public_key(uint8_t *packet, uint16_t size){
         provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB);
 
         printf("Replace generated ECC with Public Key OOB:");
-        memcpy(prov_ec_q, prov_public_key_oob_q, 64);
+        (void)memcpy(prov_ec_q, prov_public_key_oob_q, 64);
         printf_hexdump(prov_ec_q, sizeof(prov_ec_q));
         btstack_crypto_ecc_p256_set_key(prov_public_key_oob_q, prov_public_key_oob_d);
     }
 
     // store for confirmation inputs: len 64
-    memcpy(&prov_confirmation_inputs[17], packet, 64);
+    (void)memcpy(&prov_confirmation_inputs[17], packet, 64);
 
     // store remote q
-    memcpy(remote_ec_q, packet, sizeof(remote_ec_q));
+    (void)memcpy(remote_ec_q, packet, sizeof(remote_ec_q));
 
     // calculate DHKey
     btstack_crypto_ecc_p256_calculate_dhkey(&prov_ecc_p256_request, remote_ec_q, dhkey, provisioning_handle_public_key_dhkey, NULL);
@@ -580,8 +582,8 @@ static void provisioning_handle_confirmation_random_device(void * arg){
     UNUSED(arg);
 
     // re-use prov_confirmation_inputs buffer
-    memcpy(&prov_confirmation_inputs[0],  random_device, 16);
-    memcpy(&prov_confirmation_inputs[16], auth_value, 16);
+    (void)memcpy(&prov_confirmation_inputs[0], random_device, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], auth_value, 16);
 
     // calc confirmation device
     btstack_crypto_aes128_cmac_message(&prov_cmac_request, confirmation_key, 32, prov_confirmation_inputs, confirmation_device, &provisioning_handle_confirmation_device_calculated, NULL);
@@ -635,8 +637,8 @@ static void provisioning_handle_random_session_nonce_calculated(void * arg){
 
     // The nonce shall be the 13 least significant octets == zero most significant octets
     uint8_t temp[13];
-    memcpy(temp, &session_nonce[3], 13);
-    memcpy(session_nonce, temp, 13);
+    (void)memcpy(temp, &session_nonce[3], 13);
+    (void)memcpy(session_nonce, temp, 13);
 
     // SessionNonce
     printf("SessionNonce:   ");
@@ -677,9 +679,9 @@ static void provisioning_handle_random(uint8_t *packet, uint16_t size){
     // TODO: validate Confirmation
 
     // calc ProvisioningSalt = s1(ConfirmationSalt || RandomProvisioner || RandomDevice)
-    memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
-    memcpy(&prov_confirmation_inputs[16], packet, 16);
-    memcpy(&prov_confirmation_inputs[32], random_device, 16);
+    (void)memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], packet, 16);
+    (void)memcpy(&prov_confirmation_inputs[32], random_device, 16);
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_random_s1_calculated, NULL);
 }
 
@@ -718,7 +720,7 @@ static void provisioning_handle_data_ccm(void * arg){
     network_key = btstack_memory_mesh_network_key_get();
 
     // sort provisoning data
-    memcpy(network_key->net_key, provisioning_data, 16);
+    (void)memcpy(network_key->net_key, provisioning_data, 16);
     network_key->netkey_index = big_endian_read_16(provisioning_data, 16);
     // assume free index available for very first network key
     network_key->internal_index = mesh_network_key_get_free_index();
@@ -734,7 +736,7 @@ static void provisioning_handle_data(uint8_t *packet, uint16_t size){
 
     UNUSED(size);
 
-    memcpy(enc_provisioning_data, packet, 25);
+    (void)memcpy(enc_provisioning_data, packet, 25);
 
     // decode response
     btstack_crypto_ccm_init(&prov_ccm_request, session_key, session_nonce, 25, 0, 8);
@@ -765,6 +767,9 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                 case MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT:
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
+                    if (device_state == DEVICE_W4_DONE){
+                        provisioning_done();
+                    }
                     break;                    
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
@@ -828,7 +833,7 @@ static void prov_key_generated(void * arg){
     // allow override
     if (prov_public_key_oob_available){
         printf("Replace generated ECC with Public Key OOB:");
-        memcpy(prov_ec_q, prov_public_key_oob_q, 64);
+        (void)memcpy(prov_ec_q, prov_public_key_oob_q, 64);
         printf_hexdump(prov_ec_q, sizeof(prov_ec_q));
         btstack_crypto_ecc_p256_set_key(prov_public_key_oob_q, prov_public_key_oob_d);
     }
@@ -848,11 +853,8 @@ void provisioning_device_init(void){
     
     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
     
-    // init provisioning state
+    // init provisioning state and generate ecc key
     provisioning_done();
-
-    // generate public key
-    btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
 }
 
 void provisioning_device_register_packet_handler(btstack_packet_handler_t packet_handler){
@@ -899,7 +901,7 @@ void provisioning_device_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, co
     // store input_oob and fillup with zeros
     input_oob_len = btstack_min(input_oob_len, 16);
     memset(auth_value, 0, 16);
-    memcpy(auth_value, input_oob_data, input_oob_len);
+    (void)memcpy(auth_value, input_oob_data, input_oob_len);
     device_state = DEVICE_SEND_INPUT_COMPLETE;
     provisioning_run();
 }
@@ -908,6 +910,6 @@ void provisioning_device_data_get(mesh_provisioning_data_t * the_provisioning_da
     the_provisioning_data->unicast_address = unicast_address;
     the_provisioning_data->iv_index = iv_index;
     the_provisioning_data->flags = flags;
-    memcpy(the_provisioning_data->device_key, device_key, 16);
+    (void)memcpy(the_provisioning_data->device_key, device_key, 16);
     the_provisioning_data->network_key = network_key;
 }

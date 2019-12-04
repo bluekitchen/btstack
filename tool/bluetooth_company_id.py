@@ -77,7 +77,7 @@ def scrape_page(fout, url):
     global headers
 
     print("Parsing %s" % url)    
-    fout.write(page_info.format(page=url))
+    fout.write(page_info.format(page=url.replace('https://','')))
 
     # get from web
     r = requests.get(url, headers=headers)

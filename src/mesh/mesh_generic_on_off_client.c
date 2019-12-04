@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_generic_on_off_client.c"
+#define BTSTACK_FILE__ "mesh_generic_on_off_client.c"
 
 #include "mesh/mesh_generic_on_off_client.h"
 

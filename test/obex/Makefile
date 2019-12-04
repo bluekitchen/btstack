@@ -6,6 +6,7 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -30,4 +31,5 @@ test: all
 	
 clean:
 	rm -fr obex_message_builder_test *.dSYM *.o
+	rm -f *.gcno *.gcda
 	

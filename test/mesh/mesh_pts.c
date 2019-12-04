@@ -59,6 +59,11 @@ static mesh_model_t                 mesh_vendor_model;
 
 static mesh_model_t                 mesh_generic_on_off_server_model;
 static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
+static mesh_publication_model_t     generic_on_off_server_publication;
+
+static mesh_model_t                 mesh_generic_level_server_model;
+static mesh_generic_level_state_t   mesh_generic_level_state;
+static mesh_publication_model_t     generic_level_server_publication;
 
 static char gap_name_buffer[30];
 static char gap_name_prefix[] = "Mesh ";
@@ -87,7 +92,8 @@ static int ui_chars_for_pin;
 static uint8_t ui_pin[17];
 static int ui_pin_offset;
 
-static mesh_publication_model_t generic_on_off_server_publication;
+
+static mesh_health_fault_t health_fault;
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     mesh_network_key_t * key = data->network_key;
@@ -466,9 +472,12 @@ static void show_usage(void){
     printf("i      - Input  Output OOB \n");
     printf("s      - Static Output OOB \n");
     printf("b      - Set Secure Network Beacon %s\n", mesh_foundation_beacon_get() ? "Off" : "On");
+#ifdef ENABLE_MESH_PROXY_SERVER
     printf("n      - Start Advertising with Node Identity\n");
     printf("N      - Stop Advertising with Node Identity\n");
+#endif
     printf("g      - Generic ON/OFF Server Toggle Value\n");
+    printf("f      - Register Battery Low warning\n");
     printf("\n");
 }
 
@@ -546,6 +555,7 @@ static void stdin_process(char cmd){
             mesh_foundation_beacon_set(1 - mesh_foundation_beacon_get());
             mesh_foundation_state_store();
             break;
+#ifdef ENABLE_MESH_PROXY_SERVER
         case 'n':
             printf("Start Advertising with Node ID\n");
             mesh_proxy_start_advertising_with_node_id();
@@ -554,6 +564,10 @@ static void stdin_process(char cmd){
             printf("Stop Advertising with Node ID\n");
             mesh_proxy_start_advertising_with_node_id();
             break;
+#endif
+        case 'f':
+            // 0x01 = Battery Low
+            mesh_health_server_set_fault(mesh_node_get_health_server(), BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1);
         case ' ':
             show_usage();
             break;
@@ -611,6 +625,12 @@ int btstack_main(void)
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_node_set_element_location(mesh_node_get_primary_element(), 0x103);
 
+    // Setup node info
+    mesh_node_set_info(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0, 0);
+
+    // setup health server
+    mesh_health_server_add_fault_state(mesh_node_get_health_server(), BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, &health_fault);
+
     // Setup Generic On/Off model
     mesh_generic_on_off_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
     mesh_generic_on_off_server_model.operations = mesh_generic_on_off_server_get_operations();    
@@ -618,6 +638,14 @@ int btstack_main(void)
     mesh_generic_on_off_server_register_packet_handler(&mesh_generic_on_off_server_model, &mesh_state_update_message_handler);
     mesh_generic_on_off_server_set_publication_model(&mesh_generic_on_off_server_model, &generic_on_off_server_publication);
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_generic_on_off_server_model);
+    
+    // Setup Generic On/Off model
+    mesh_generic_level_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_LEVEL_SERVER);
+    mesh_generic_level_server_model.operations = mesh_generic_level_server_get_operations();
+    mesh_generic_level_server_model.model_data = (void *) &mesh_generic_level_state;
+    mesh_generic_level_server_register_packet_handler(&mesh_generic_level_server_model, &mesh_state_update_message_handler);
+    mesh_generic_level_server_set_publication_model(&mesh_generic_level_server_model, &generic_level_server_publication);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_generic_level_server_model);
 
     // Setup our custom model
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);

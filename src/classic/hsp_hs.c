@@ -295,7 +295,7 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
 void hsp_hs_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
     hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
-    memcpy(remote, bd_addr, 6);
+    (void)memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
@@ -483,7 +483,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type == RFCOMM_DATA_PACKET){
         // printf("packet_handler type RFCOMM_DATA_PACKET %u, packet[0] %x\n", packet_type, packet[0]);
         // skip over leading newline
-        while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+        while ((size > 0) && ((packet[0] == '\n') || (packet[0] == '\r'))){
             size--;
             packet++;
         }
@@ -501,7 +501,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         } else {
             if (!hsp_hs_callback) return;
             // strip trailing newline
-            while (size > 0 && (packet[size-1] == '\n' || packet[size-1] == '\r')){
+            while ((size > 0) && ((packet[size-1] == '\n') || (packet[size-1] == '\r'))){
                 size--;
             }
             // add trailing \0
@@ -549,7 +549,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             sco_handle = little_endian_read_16(packet, index);
             index+=2;
             bd_addr_t address; 
-            memcpy(address, &packet[index], 6);
+            (void)memcpy(address, &packet[index], 6);
             index+=6;
             uint8_t link_type = packet[index++];
             uint8_t transmission_interval = packet[index++];  // measured in slots
@@ -683,7 +683,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 }
 
 void hsp_hs_send_button_press(void){
-    if (hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED || hsp_state >= HSP_W4_RFCOMM_DISCONNECTED) return;
+    if ((hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED) || (hsp_state >= HSP_W4_RFCOMM_DISCONNECTED)) return;
     hs_send_button_press = 1;
     hsp_run();
 }

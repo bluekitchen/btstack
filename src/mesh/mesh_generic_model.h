@@ -46,19 +46,24 @@ extern "C"
 #endif
 
 
-#define MESH_GENERIC_ON_OFF_GET                     0x8201u    
-#define MESH_GENERIC_ON_OFF_SET                     0x8202u
-#define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED      0x8203u
-#define MESH_GENERIC_ON_OFF_STATUS                  0x8204u
+#define MESH_GENERIC_ON_OFF_GET                                     0x8201u    
+#define MESH_GENERIC_ON_OFF_SET                                     0x8202u
+#define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED                      0x8203u
+#define MESH_GENERIC_ON_OFF_STATUS                                  0x8204u
 
-#define MESH_GENERIC_LEVEL_GET                      0x8205u    
-#define MESH_GENERIC_LEVEL_SET                      0x8206u
-#define MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED       0x8207u
-#define MESH_GENERIC_LEVEL_STATUS                   0x8208u
-#define MESH_GENERIC_DELTA_SET                      0x8209u
-#define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED       0x820Au
-#define MESH_GENERIC_MOVE_SET                       0x820Bu
-#define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED        0x820Cu
+#define MESH_GENERIC_DEFAULT_TRANSITION_TIME_GET                    0x820Du    
+#define MESH_GENERIC_DEFAULT_TRANSITION_TIME_SET                    0x820Eu
+#define MESH_GENERIC_DEFAULT_TRANSITION_TIME_SET_UNACKNOWLEDGED     0x820Fu
+#define MESH_GENERIC_DEFAULT_TRANSITION_TIME_STATUS                 0x8210u
+
+#define MESH_GENERIC_LEVEL_GET                                      0x8205u    
+#define MESH_GENERIC_LEVEL_SET                                      0x8206u
+#define MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED                       0x8207u
+#define MESH_GENERIC_LEVEL_STATUS                                   0x8208u
+#define MESH_GENERIC_DELTA_SET                                      0x8209u
+#define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED                       0x820Au
+#define MESH_GENERIC_MOVE_SET                                       0x820Bu
+#define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED                        0x820Cu
  
 typedef struct {
     mesh_transition_t base_transition;
@@ -74,8 +79,6 @@ typedef struct {
     int16_t initial_value;
     int16_t target_value;
     int16_t stepwise_value_increment;
-    int16_t delta_from_initial_value;
-    int16_t transition_speed;
 } mesh_transition_int16_t;
 
 typedef struct {
@@ -83,15 +86,12 @@ typedef struct {
 } mesh_generic_on_off_state_t;
 
 typedef struct {
-    mesh_transition_int16_t transition_data;       
-} mesh_generic_level_state_t;
+    uint8_t  value;          
+} mesh_generic_default_transition_time_state_t;
 
 typedef struct {
-    btstack_linked_list_t current_faults;
-    btstack_linked_list_t registered_faults;
-
-    uint8_t fast_period_divisor;
-} mesh_health_state_t;
+    mesh_transition_int16_t transition_data;       
+} mesh_generic_level_state_t;
 
 #ifdef __cplusplus
 } /* end of extern "C" */

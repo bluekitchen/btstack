@@ -53,7 +53,7 @@
 #include <string.h>
 
 // calculate combined ogf/ocf value
-#define OPCODE(ogf, ocf) (ocf | ogf << 10)
+#define OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
 
 /**
  * construct HCI Command based on template
@@ -117,12 +117,12 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 break;
             case 'D': // 8 byte data block
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 8);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 8);
                 pos += 8;
                 break;
             case 'E': // Extended Inquiry Information 240 octets
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 240);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 240);
                 pos += 240;
                 break;
             case 'N': { // UTF-8 string, null terminated
@@ -131,7 +131,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 if (len > 248) {
                     len = 248;
                 }
-                memcpy(&hci_cmd_buffer[pos], ptr, len);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
                 if (len < 248) {
                     // fill remaining space with zeroes
                     memset(&hci_cmd_buffer[pos+len], 0, 248-len);
@@ -141,13 +141,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             }
             case 'P': // 16 byte PIN code or link key
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 16);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
 #ifdef ENABLE_BLE
             case 'A': // 31 bytes advertising data
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 31);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
                 break;
 #endif
@@ -155,7 +155,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case 'S': { // Service Record (Data Element Sequence)
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = de_get_len(ptr);
-                memcpy(&hci_cmd_buffer[pos], ptr, len);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
                 pos += len;
                 break;
             }
@@ -592,7 +592,21 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
  * @param handle
  */
 const hci_cmd_t hci_flush = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x09), "H"
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x08), "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_pin_type = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x09), ""
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_write_pin_type = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x0A), "1"
 };
 
 /**
@@ -1303,4 +1317,17 @@ OPCODE(0x3f, 0x1c), "11111"
  */
 const hci_cmd_t hci_bcm_set_sleep_mode = {
 OPCODE(0x3f, 0x0027), "111111111111"
+};
+
+/**
+ * @brief Set TX Power Table
+ * @param is_le 0=classic, 1=LE
+ * @param chip_max_tx_pwr_db chip level max TX power in dBM 
+ */
+const hci_cmd_t hci_bcm_write_tx_power_table = {
+OPCODE(0x3f, 0x1C9), "11"
+};
+
+const hci_cmd_t hci_bcm_set_tx_pwr = {
+OPCODE(0x3f, 0x1A5), "11H"
 };

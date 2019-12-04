@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "provisioning.c"
+#define BTSTACK_FILE__ "provisioning.c"
 
 #include "mesh/provisioning.h"
 

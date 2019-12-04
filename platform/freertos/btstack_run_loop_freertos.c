@@ -74,8 +74,6 @@ typedef struct function_call {
     void * arg;
 } function_call_t;
 
-static const btstack_run_loop_t btstack_run_loop_freertos;
-
 // pick allocation style, prefer static
 #if( configSUPPORT_STATIC_ALLOCATION == 1 )
 #define USE_STATIC_ALLOC
@@ -140,7 +138,7 @@ static void btstack_run_loop_freertos_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_freertos_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_freertos_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
@@ -215,7 +213,7 @@ void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(v
 static void btstack_run_loop_freertos_execute(void) {
     log_debug("RL: execute");
     
-    while (1) {
+    while (true) {
 
         // process data sources
         btstack_data_source_t *ds;
@@ -228,7 +226,7 @@ static void btstack_run_loop_freertos_execute(void) {
         }
 
         // process registered function calls on run loop thread
-        while (1){
+        while (true){
             function_call_t message = { NULL, NULL };
             BaseType_t res = xQueueReceive( btstack_run_loop_queue, &message, 0);
             if (res == pdFALSE) break;
@@ -269,7 +267,7 @@ static void btstack_run_loop_freertos_add_data_source(btstack_data_source_t *ds)
     btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
-static int btstack_run_loop_freertos_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_freertos_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -304,9 +302,6 @@ static void btstack_run_loop_freertos_init(void){
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
-const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){
-    return &btstack_run_loop_freertos;
-}
 
 static const btstack_run_loop_t btstack_run_loop_freertos = {
     &btstack_run_loop_freertos_init,
@@ -321,3 +316,7 @@ static const btstack_run_loop_t btstack_run_loop_freertos = {
     &btstack_run_loop_freertos_dump_timer,
     &btstack_run_loop_freertos_get_time_ms,
 };
+
+const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){
+    return &btstack_run_loop_freertos;
+}

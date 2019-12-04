@@ -97,3 +97,4 @@ test: all
 
 clean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc 
+	rm -f *.gcno *.gcda

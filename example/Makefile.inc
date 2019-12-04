@@ -63,7 +63,6 @@ COMMON += \
 	sm.c                        \
 
 CLASSIC += \
-	btstack_link_key_db_memory.c   \
 	sdp_util.c	                \
 	gatt_sdp.c                  \
 	spp_server.c  				\
@@ -142,6 +141,7 @@ MESH = \
 	mesh_configuration_server.c \
 	mesh_crypto.c \
 	mesh_foundation.c \
+	mesh_generic_default_transition_time_server.c \
 	mesh_generic_level_client.c \
 	mesh_generic_level_server.c \
 	mesh_generic_on_off_client.c \
@@ -207,6 +207,7 @@ EXAMPLES_LE_ONLY=           \
 	gatt_battery_query      \
 	gatt_browser            \
 	gatt_counter            \
+	gatt_heart_rate_client  \
 	gatt_streamer_server    \
 	hog_keyboard_demo       \
 	hog_mouse_demo          \
@@ -332,7 +333,7 @@ spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streame
 spp_flowcontrol: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_flowcontrol.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_streamer_client.c
+spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c

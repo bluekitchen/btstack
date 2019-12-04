@@ -121,7 +121,7 @@ static void notify_client_text(int event_type){
     event[2] = event_type;
     little_endian_store_16(event, 3, gc_handle);
     little_endian_store_16(event, 5, ancs_attribute_id);
-    memcpy(&event[7], ancs_notification_buffer, ancs_attribute_len);
+    (void)memcpy(&event[7], ancs_notification_buffer, ancs_attribute_len);
     // we're nice
     event[7+ancs_attribute_len] = 0;
     (*client_handler)(HCI_EVENT_PACKET, 0, event, event[1] + 2);
@@ -144,7 +144,7 @@ static void ancs_chunk_parser_init(void){
 }
 
 const char * ancs_client_attribute_name_for_id(int id){
-    if (id >= ANCS_ATTRBUTE_NAMES_COUNT) return 0;
+    if (id >= ANCS_ATTRBUTE_NAMES_COUNT) return NULL;
     return ancs_attribute_names[id];
 }
 
@@ -316,7 +316,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             break;
         case TC_SUBSCRIBED:
-            if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION && hci_event_packet_get_type(packet) != GATT_EVENT_INDICATION ) break;
+            if ((hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) && (hci_event_packet_get_type(packet) != GATT_EVENT_INDICATION) ) break;
 
             value_handle = little_endian_read_16(packet, 4);
             value_length = little_endian_read_16(packet, 6);

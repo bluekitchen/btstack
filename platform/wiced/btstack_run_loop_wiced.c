@@ -101,7 +101,7 @@ static void btstack_run_loop_wiced_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
@@ -128,7 +128,7 @@ void btstack_run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(voi
  * Execute run_loop
  */
 static void btstack_run_loop_wiced_execute(void) {
-    while (1) {
+    while (true) {
         // get next timeout
         uint32_t timeout_ms = WICED_NEVER_TIMEOUT;
         if (timers) {

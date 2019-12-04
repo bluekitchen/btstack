@@ -62,7 +62,7 @@ void btstack_run_loop_base_add_data_source(btstack_data_source_t *ds){
     btstack_linked_list_add(&btstack_run_loop_base_data_sources, (btstack_linked_item_t *) ds);
 }
 
-int btstack_run_loop_base_remove_data_source(btstack_data_source_t *ds){
+bool btstack_run_loop_base_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&btstack_run_loop_base_data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -75,7 +75,7 @@ void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t *
 }
 
 
-int btstack_run_loop_base_remove_timer(btstack_timer_source_t *ts){
+bool btstack_run_loop_base_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&btstack_run_loop_base_timers, (btstack_linked_item_t *) ts);
 }
 

@@ -107,7 +107,7 @@ typedef enum {
 
 static void btstack_crypto_run(void);
 
-const static uint8_t zero[16] = { 0 };
+static const uint8_t zero[16] = { 0 };
 
 static uint8_t btstack_crypto_initialized;
 static btstack_linked_list_t btstack_crypto_operations;
@@ -191,7 +191,7 @@ static void btstack_crypto_cmac_handle_aes_engine_ready(btstack_crypto_aes128_cm
             int j;
             sm_key_t y;
             for (j=0;j<16;j++){
-                y[j] = btstack_crypto_cmac_x[j] ^ btstack_crypto_cmac_get_byte(btstack_crypto_cmac, btstack_crypto_cmac_block_current*16 + j);
+                y[j] = btstack_crypto_cmac_x[j] ^ btstack_crypto_cmac_get_byte(btstack_crypto_cmac, (btstack_crypto_cmac_block_current*16) + j);
             }
             btstack_crypto_cmac_block_current++;
             btstack_crypto_cmac_next_state();
@@ -220,7 +220,7 @@ static void btstack_crypto_cmac_shift_left_by_one_bit_inplace(int len, uint8_t *
     int carry = 0;
     for (i=len-1; i >= 0 ; i--){
         int new_carry = data[i] >> 7;
-        data[i] = data[i] << 1 | carry;
+        data[i] = (data[i] << 1) | carry;
         carry = new_carry;
     }
 }
@@ -229,13 +229,13 @@ static void btstack_crypto_cmac_handle_encryption_result(btstack_crypto_aes128_c
     switch (btstack_crypto_cmac_state){
         case CMAC_W4_SUBKEYS: {
             sm_key_t k1;
-            memcpy(k1, data, 16);
+            (void)memcpy(k1, data, 16);
             btstack_crypto_cmac_shift_left_by_one_bit_inplace(16, k1);
             if (data[0] & 0x80){
                 k1[15] ^= 0x87;
             }
             sm_key_t k2;
-            memcpy(k2, k1, 16);
+            (void)memcpy(k2, k1, 16);
             btstack_crypto_cmac_shift_left_by_one_bit_inplace(16, k2);
             if (k1[0] & 0x80){
                 k2[15] ^= 0x87;
@@ -267,19 +267,19 @@ static void btstack_crypto_cmac_handle_encryption_result(btstack_crypto_aes128_c
             }
 
             // next
-            btstack_crypto_cmac_state = btstack_crypto_cmac_block_current < btstack_crypto_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;
+            btstack_crypto_cmac_state = (btstack_crypto_cmac_block_current < (btstack_crypto_cmac_block_count - 1)) ? CMAC_CALC_MI : CMAC_CALC_MLAST;
             break;
         }
         case CMAC_W4_MI:
-            memcpy(btstack_crypto_cmac_x, data, 16);
-            btstack_crypto_cmac_state = btstack_crypto_cmac_block_current < btstack_crypto_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;
+            (void)memcpy(btstack_crypto_cmac_x, data, 16);
+            btstack_crypto_cmac_state = (btstack_crypto_cmac_block_current < (btstack_crypto_cmac_block_count - 1)) ? CMAC_CALC_MI : CMAC_CALC_MLAST;
             break;
         case CMAC_W4_MLAST:
             // done
             log_info("Setting CMAC Engine to IDLE");
             btstack_crypto_cmac_state = CMAC_IDLE;
             log_info_key("CMAC", data);
-            memcpy(btstack_crypto_cmac->hash, data, 16);
+            (void)memcpy(btstack_crypto_cmac->hash, data, 16);
 			btstack_linked_list_pop(&btstack_crypto_operations);
 			(*btstack_crypto_cmac->btstack_crypto.context_callback.callback)(btstack_crypto_cmac->btstack_crypto.context_callback.context);
             break;
@@ -291,7 +291,7 @@ static void btstack_crypto_cmac_handle_encryption_result(btstack_crypto_aes128_c
 
 static void btstack_crypto_cmac_start(btstack_crypto_aes128_cmac_t * btstack_crypto_cmac){
 
-    memcpy(btstack_crypto_cmac_k, btstack_crypto_cmac->key, 16);
+    (void)memcpy(btstack_crypto_cmac_k, btstack_crypto_cmac->key, 16);
     memset(btstack_crypto_cmac_x, 0, 16);
     btstack_crypto_cmac_block_current = 0;
 
@@ -338,7 +338,7 @@ static void btstack_crypto_cmac_start(btstack_crypto_aes128_cmac_t * btstack_cry
 
 static void btstack_crypto_ccm_setup_a_i(btstack_crypto_ccm_t * btstack_crypto_ccm, uint16_t counter){
     btstack_crypto_ccm_s[0] = 1;  // L' = L - 1
-    memcpy(&btstack_crypto_ccm_s[1], btstack_crypto_ccm->nonce, 13);
+    (void)memcpy(&btstack_crypto_ccm_s[1], btstack_crypto_ccm->nonce, 13);
     big_endian_store_16(btstack_crypto_ccm_s, 14, counter);
 #ifdef DEBUG_CCM
     printf("ststack_crypto_ccm_setup_a_%u\n", counter);
@@ -375,7 +375,7 @@ static void btstack_crypto_ccm_setup_b_0(btstack_crypto_ccm_t * btstack_crypto_c
     uint8_t m_prime = (btstack_crypto_ccm->auth_len - 2) / 2;
     uint8_t Adata   = btstack_crypto_ccm->aad_len ? 1 : 0;
     b0[0] = (Adata << 6) | (m_prime << 3) | 1 ;  // Adata, M', L' = L - 1
-    memcpy(&b0[1], btstack_crypto_ccm->nonce, 13);
+    (void)memcpy(&b0[1], btstack_crypto_ccm->nonce, 13);
     big_endian_store_16(b0, 14, btstack_crypto_ccm->message_len);
 #ifdef DEBUG_CCM
     printf("%16s: ", "B0");
@@ -524,8 +524,6 @@ static void btstack_crypto_ccm_calc_x1(btstack_crypto_ccm_t * btstack_crypto_ccm
 }
 
 static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm, const uint8_t * plaintext){
-    int i;
-    int bytes_to_decrypt;
     uint8_t btstack_crypto_ccm_buffer[16];
     btstack_crypto_ccm->state = CCM_W4_XN;
 
@@ -533,13 +531,17 @@ static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm
     printf("%16s: ", "bn");
     printf_hexdump(plaintext, 16);
 #endif
-    bytes_to_decrypt = btstack_min(btstack_crypto_ccm->block_len, 16);
-    i = 0;
-    while (i < bytes_to_decrypt){
-        btstack_crypto_ccm_buffer[i] =  btstack_crypto_ccm->x_i[i] ^ plaintext[i];
-        i++;
+    uint8_t i;
+    uint8_t bytes_to_decrypt = btstack_crypto_ccm->block_len;
+    // use explicit min implementation as c-stat worried about out-of-bounds-reads
+    if (bytes_to_decrypt > 16) {
+        bytes_to_decrypt = 16;
     }
-    memcpy(&btstack_crypto_ccm_buffer[i], &btstack_crypto_ccm->x_i[i], 16 - bytes_to_decrypt);
+    for (i = 0; i < bytes_to_decrypt ; i++){
+        btstack_crypto_ccm_buffer[i] =  btstack_crypto_ccm->x_i[i] ^ plaintext[i];
+    }
+    (void)memcpy(&btstack_crypto_ccm_buffer[i], &btstack_crypto_ccm->x_i[i],
+                 16 - bytes_to_decrypt);
 #ifdef DEBUG_CCM
     printf("%16s: ", "Xn XOR bn");
     printf_hexdump(btstack_crypto_ccm_buffer, 16);
@@ -644,7 +646,7 @@ static void btstack_crypto_run(void){
     if (hci_get_state() != HCI_STATE_WORKING) return;
 
     // try to do as much as possible
-    while (1){
+    while (true){
 
         // anything to do?
         if (btstack_linked_list_empty(&btstack_crypto_operations)) return;
@@ -705,7 +707,7 @@ static void btstack_crypto_run(void){
                         btstack_crypto_ccm_calc_sn(btstack_crypto_ccm);
                         break;
                     case CCM_CALCULATE_XN:
-                        btstack_crypto_ccm_calc_xn(btstack_crypto_ccm, btstack_crypto->operation == BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK ? btstack_crypto_ccm->input : btstack_crypto_ccm->output);
+                        btstack_crypto_ccm_calc_xn(btstack_crypto_ccm, (btstack_crypto->operation == BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK) ? btstack_crypto_ccm->input : btstack_crypto_ccm->output);
                         break;
                     default:
                         break;
@@ -720,7 +722,8 @@ static void btstack_crypto_run(void){
                     case ECC_P256_KEY_GENERATION_DONE:
                         // done
                         btstack_crypto_log_ec_publickey(btstack_crypto_ecc_p256_public_key);
-                        memcpy(btstack_crypto_ec_p192->public_key, btstack_crypto_ecc_p256_public_key, 64);
+                        (void)memcpy(btstack_crypto_ec_p192->public_key,
+                                     btstack_crypto_ecc_p256_public_key, 64);
                         btstack_linked_list_pop(&btstack_crypto_operations);
                         (*btstack_crypto_ec_p192->btstack_crypto.context_callback.callback)(btstack_crypto_ec_p192->btstack_crypto.context_callback.context);                    
                         break;
@@ -778,7 +781,7 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
         case BTSTACK_CRYPTO_RANDOM:
             btstack_crypto_random = (btstack_crypto_random_t*) btstack_crypto;
             bytes_to_copy = btstack_min(btstack_crypto_random->size, len);
-            memcpy(btstack_crypto_random->buffer, data, bytes_to_copy);
+            (void)memcpy(btstack_crypto_random->buffer, data, bytes_to_copy);
             btstack_crypto_random->buffer += bytes_to_copy;
             btstack_crypto_random->size   -= bytes_to_copy;
             // data processed, more?
@@ -790,7 +793,8 @@ static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len
             break;
 #ifdef ENABLE_ECC_P256
         case BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY:
-            memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len], data, 8);
+            (void)memcpy(&btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_len],
+			 data, 8);
             btstack_crypto_ecc_p256_random_len += 8;
             if (btstack_crypto_ecc_p256_random_len >= 64) {
                 btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_ACTIVE;
@@ -1171,7 +1175,7 @@ void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additio
 }
 
 void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value){
-    memcpy(authentication_value, request->x_i, request->auth_len);
+    (void)memcpy(authentication_value, request->x_i, request->auth_len);
 }
 
 void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t block_len, const uint8_t * plaintext, uint8_t * ciphertext, void (* callback)(void * arg), void * callback_arg){
@@ -1208,8 +1212,8 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t b
 // PTS only
 void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key){
 #ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
-    memcpy(btstack_crypto_ecc_p256_d, private_key, 32);
-    memcpy(btstack_crypto_ecc_p256_public_key, public_key, 64);
+    (void)memcpy(btstack_crypto_ecc_p256_d, private_key, 32);
+    (void)memcpy(btstack_crypto_ecc_p256_public_key, public_key, 64);
     btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_DONE;
 #else
     UNUSED(public_key);

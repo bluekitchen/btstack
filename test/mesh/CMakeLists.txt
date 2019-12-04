@@ -13,7 +13,7 @@ include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
 include_directories(../../platform/posix)
-# include_directories(../../platform/embedded)
+include_directories(../rijndael)
 include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c"                     "../../src/*.h" "../../example/sco_demo_util.c" "../../example/sco_demo_util.h")
@@ -66,3 +66,36 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	endif()
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)
+
+# create mesh_message_test target
+
+## hard-coded to use CPPUtest
+include_directories( /usr/local/include)
+link_directories( /usr/local/lib)
+link_libraries(CppUTest CppUTestExt)
+add_executable(mesh_message_test 
+../../src/mesh/mesh_foundation.c
+../../src/mesh/mesh_node.c
+../../src/mesh/mesh_iv_index_seq_number.c
+../../src/mesh/mesh_network.c
+../../src/mesh/mesh_peer.c
+../../src/mesh/mesh_lower_transport.c
+../../src/mesh/mesh_upper_transport.c
+../../src/mesh/mesh_virtual_addresses.c
+../../src/mesh/mesh_keys.c
+../../src/mesh/mesh_crypto.c
+../../src/btstack_memory.c
+../../src/btstack_memory_pool.c
+../../src/btstack_util.c
+../../src/btstack_crypto.c
+../../src/btstack_linked_list.c
+../../src/hci_dump.c
+../../src/hci_cmd.c
+../../3rd-party/micro-ecc/uECC.c
+../rijndael/rijndael.c
+mock.c
+mesh_message_test.cpp
+)
+
+
+

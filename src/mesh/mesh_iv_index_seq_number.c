@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_iv_index_seq_number.c"
+#define BTSTACK_FILE__ "mesh_iv_index_seq_number.c"
 
 #include "mesh/mesh_iv_index_seq_number.h"
 

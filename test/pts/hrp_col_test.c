@@ -244,7 +244,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_ENABLE_NOTIFICATIONS_COMPLETE:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
+                    printf("Notifications enabled, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
                     state = TC_CONNECTED;
                     break;
                 default:

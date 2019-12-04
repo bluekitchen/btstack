@@ -2,6 +2,9 @@
 
 #include "uECC.h"
 
+// NULL
+#include "stddef.h"
+
 #ifndef uECC_PLATFORM
     #if __AVR__
         #define uECC_PLATFORM uECC_avr
@@ -1794,7 +1797,7 @@ static int EccPoint_compute_public_key(EccPoint *result, uECC_word_t *private) {
     // impact (about 2% slower on average) and requires the vli_xxx_n functions, leading to
     // a significant increase in code size.
 
-    EccPoint_mult(result, &curve_G, private, 0, vli_numBits(private, uECC_WORDS));
+    EccPoint_mult(result, &curve_G, private, NULL, vli_numBits(private, uECC_WORDS));
 #else
     if (vli_cmp(curve_n, private) != 1) {
         return 0;
@@ -1804,7 +1807,7 @@ static int EccPoint_compute_public_key(EccPoint *result, uECC_word_t *private) {
     // attack to learn the number of leading zeros.
     carry = vli_add(tmp1, private, curve_n);
     vli_add(tmp2, tmp1, curve_n);
-    EccPoint_mult(result, &curve_G, p2[!carry], 0, (uECC_BYTES * 8) + 1);
+    EccPoint_mult(result, &curve_G, p2[!carry], NULL, (uECC_BYTES * 8) + 1);
 #endif
 
     if (EccPoint_isZero(result)) {
@@ -2037,7 +2040,7 @@ int uECC_shared_secret(const uint8_t public_key[uECC_BYTES*2],
     uECC_word_t tmp[uECC_WORDS];
     uECC_word_t *p2[2] = {private, tmp};
     uECC_word_t random[uECC_WORDS];
-    uECC_word_t *initial_Z = 0;
+    uECC_word_t *initial_Z = NULL;
     uECC_word_t tries;
     uECC_word_t carry;
 
@@ -2450,7 +2453,7 @@ static int uECC_sign_with_k(const uint8_t private_key[uECC_BYTES],
     vli_add_n(s, tmp, curve_n);
 
     /* p = k * G */
-    EccPoint_mult(&p, &curve_G, k2[!carry], 0, (uECC_BYTES * 8) + 2);
+    EccPoint_mult(&p, &curve_G, k2[!carry], NULL, (uECC_BYTES * 8) + 2);
 #else
     /* Make sure that we don't leak timing information about k.
        See http://eprint.iacr.org/2011/232.pdf */
@@ -2458,7 +2461,7 @@ static int uECC_sign_with_k(const uint8_t private_key[uECC_BYTES],
     vli_add(s, tmp, curve_n);
 
     /* p = k * G */
-    EccPoint_mult(&p, &curve_G, k2[!carry], 0, (uECC_BYTES * 8) + 1);
+    EccPoint_mult(&p, &curve_G, k2[!carry], NULL, (uECC_BYTES * 8) + 1);
 
     /* r = x1 (mod n) */
     if (vli_cmp(curve_n, p.x) != 1) {

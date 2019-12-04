@@ -86,7 +86,7 @@ print(program_info)
 
 with open(gen_path, 'wt') as fout:
     url = 'https://www.bluetooth.com/specifications/assigned-numbers/generic-access-profile'
-    fout.write(header.format(datetime=str(datetime.datetime.now()), url=url))
+    fout.write(header.format(datetime=str(datetime.datetime.now()), url=url.replace('https://','')))
     scrape_page(fout, url)
     fout.write(trailer)
 

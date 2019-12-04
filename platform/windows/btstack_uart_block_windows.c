@@ -49,7 +49,6 @@
 #include "btstack_debug.h"
 
 #include <fcntl.h>    /* File control definitions */
-#include <unistd.h>   /* UNIX standard function definitions */
 #include <string.h>
 #include <errno.h>
 

@@ -144,7 +144,7 @@ static enum update_result update_init_script_command(uint8_t *hci_cmd_buffer){
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 
-    while (1){
+    while (true){
 
         if (init_script_offset >= init_script_size) {
             return BTSTACK_CHIPSET_DONE;

@@ -147,7 +147,7 @@ OI_UINT16 OI_CODEC_SBC_CalculateBitpool(OI_CODEC_SBC_FRAME_INFO *frame,
             nrof_blocks *= 2;
         }
     }
-    bits = 8 * (frameLen - SBC_HEADER_LEN) - hdr;
+    bits = (8 * (frameLen - SBC_HEADER_LEN)) - hdr;
     return DIVIDE(bits, nrof_blocks);
 }
 

@@ -191,6 +191,8 @@ static void hci_transport_h4_trigger_next_read(void){
 
 static void hci_transport_h4_block_read(void){
 
+    uint16_t packet_len;
+
     read_pos += bytes_to_read;
 
     switch (h4_state) {
@@ -285,10 +287,15 @@ static void hci_transport_h4_block_read(void){
 #endif
             }
 #endif
-            packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
+            packet_len = read_pos-1;
+
+            // reset state machine before delivering packet to stack as it might close the transport
             hci_transport_h4_reset_statemachine();
+            packet_handler(hci_packet[0], &hci_packet[1], packet_len);
             break;
-        default:
+
+        case H4_OFF:
+            bytes_to_read = 0;
             break;
     }
 
@@ -301,7 +308,9 @@ static void hci_transport_h4_block_read(void){
     }
 #endif
 
-    hci_transport_h4_trigger_next_read();
+    if (h4_state != H4_OFF) {
+        hci_transport_h4_trigger_next_read();
+    }
 }
 
 static void hci_transport_h4_block_sent(void){
@@ -334,6 +343,7 @@ static void hci_transport_h4_block_sent(void){
 }
 
 static int hci_transport_h4_can_send_now(uint8_t packet_type){
+    UNUSED(packet_type);
     return tx_state == TX_IDLE;
 }
 
@@ -433,6 +443,9 @@ static void hci_transport_h4_register_packet_handler(void (*handler)(uint8_t pac
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 //

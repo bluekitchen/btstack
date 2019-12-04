@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_lower_transport.c"
+#define BTSTACK_FILE__ "mesh_lower_transport.c"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -126,6 +126,12 @@ static btstack_linked_list_t lower_transport_outgoing;
 static mesh_transport_pdu_t * lower_transport_outgoing_pdu;
 static mesh_network_pdu_t   * lower_transport_outgoing_segment;
 static uint16_t               lower_transport_outgoing_seg_o;
+// segment at network layer
+static int                    lower_transport_outgoing_segment_queued;
+// transmission timeout occured (while outgoing segment queued at network layer)
+static int                    lower_transport_outgoing_transmission_timeout;
+// transmission completed either fully acked or remote aborted (while outgoing segment queued at network layer)
+static int                    lower_transport_outgoing_trasnmission_complete;
 
 static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
     if (lower_transport_outgoing_pdu == NULL) return;
@@ -147,7 +153,11 @@ static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_ne
 #ifdef LOG_LOWER_TRANSPORT
         printf("[+] Block Ack == 0 => Abort\n");
 #endif
-        mesh_lower_transport_outgoing_complete();
+        if (lower_transport_outgoing_segment_queued){
+            lower_transport_outgoing_trasnmission_complete = 1;
+        } else {
+            mesh_lower_transport_outgoing_complete();
+        }
         return;
     }
     if (seq_zero_pdu != seq_zero_out){
@@ -167,7 +177,12 @@ static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_ne
 #ifdef LOG_LOWER_TRANSPORT
         printf("[+] Sent complete\n");
 #endif
-        mesh_lower_transport_outgoing_complete();
+
+        if (lower_transport_outgoing_segment_queued){
+            lower_transport_outgoing_trasnmission_complete = 1;
+        } else {
+            mesh_lower_transport_outgoing_complete();
+        }
     }
 }
 
@@ -315,7 +330,7 @@ static void mesh_lower_transport_tx_restart_segment_transmission_timer(void){
     }
 
 #ifdef LOG_LOWER_TRANSPORT
-    printf("ACK: start segment transmission timer for %p, timeout %u ms\n", lower_transport_outgoing_pdu, (int) timeout);
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: setup transmission timeout %u ms\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), (int) timeout);
 #endif
 
     btstack_run_loop_set_timer(&lower_transport_outgoing_pdu->acknowledgement_timer, timeout);
@@ -407,7 +422,7 @@ static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
         if (!pdu) return NULL;
 
         // cache network pdu header
-        memcpy(pdu->network_header, network_pdu->data, 9);
+        (void)memcpy(pdu->network_header, network_pdu->data, 9);
         // store lower 24 bit of SeqAuth for App / Device Nonce
         big_endian_store_24(pdu->network_header, 2, seq_auth);
 
@@ -461,7 +476,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
 #endif
 
     // store segment
-    memcpy(&transport_pdu->data[seg_o * 12], segment_data, 12);
+    (void)memcpy(&transport_pdu->data[seg_o * 12], segment_data, 12);
     // mark as received
     transport_pdu->block_ack |= (1<<seg_o);
     // last segment -> store len
@@ -552,7 +567,14 @@ static void mesh_lower_transport_setup_segment(mesh_transport_pdu_t *transport_p
     int ctl = mesh_transport_ctl(transport_pdu);
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
 
-    uint32_t seq      = mesh_sequence_number_next();
+    // use seq number from transport pdu once if MESH_TRANSPORT_FLAG_SEQ_RESERVED (to allow reserving seq number in upper transport while using all seq numbers)
+    uint32_t seq;
+    if ((transport_pdu->flags & MESH_TRANSPORT_FLAG_SEQ_RESERVED) != 0){
+        transport_pdu->flags &= ~(MESH_TRANSPORT_FLAG_SEQ_RESERVED);
+        seq = mesh_transport_seq(transport_pdu);
+    } else {
+        seq = mesh_sequence_number_next();
+    }
     uint16_t seq_zero = mesh_transport_seq(transport_pdu) & 0x01fff;
     uint8_t  seg_n    = (transport_pdu->len - 1) / max_segment_len;
     uint8_t  szmic    = ((!ctl) && (transport_pdu->transmic_len == 8)) ? 1 : 0; // only 1 for access messages with 64 bit TransMIC
@@ -568,7 +590,8 @@ static void mesh_lower_transport_setup_segment(mesh_transport_pdu_t *transport_p
     lower_transport_pdu_data[0] = 0x80 |  transport_pdu->akf_aid_control;
     big_endian_store_24(lower_transport_pdu_data, 1, (szmic << 23) | (seq_zero << 10) | (seg_o << 5) | seg_n);
     uint16_t segment_len = btstack_min(transport_pdu->len - seg_offset, max_segment_len);
-    memcpy(&lower_transport_pdu_data[4], &transport_pdu->data[seg_offset], segment_len);
+    (void)memcpy(&lower_transport_pdu_data[4],
+                 &transport_pdu->data[seg_offset], segment_len);
     uint16_t lower_transport_pdu_len = 4 + segment_len;
 
     mesh_network_setup_pdu(network_pdu, transport_pdu->netkey_index, nid, 0, ttl, seq, src, dest, lower_transport_pdu_data, lower_transport_pdu_len);
@@ -576,6 +599,10 @@ static void mesh_lower_transport_setup_segment(mesh_transport_pdu_t *transport_p
 
 static void mesh_lower_transport_send_next_segment(void){
     if (!lower_transport_outgoing_pdu) return;
+
+    #ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send next segment\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu));
+    #endif
 
     int ctl = mesh_transport_ctl(lower_transport_outgoing_pdu);
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
@@ -588,7 +615,7 @@ static void mesh_lower_transport_send_next_segment(void){
 
     if (lower_transport_outgoing_seg_o > seg_n){
 #ifdef LOG_LOWER_TRANSPORT
-        printf("[+] Lower Transport, send segmented pdu complete (dst %x)\n", mesh_transport_dst(lower_transport_outgoing_pdu));
+        printf("[+] Lower Transport, segmented pdu %p, seq %06x: send complete (dst %x)\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), mesh_transport_dst(lower_transport_outgoing_pdu));
 #endif
         lower_transport_outgoing_seg_o   = 0;
 
@@ -621,15 +648,40 @@ static void mesh_lower_transport_send_next_segment(void){
                                        lower_transport_outgoing_segment);
 
 #ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower Transport, send segmented pdu: seg_o %x, seg_n %x\n", lower_transport_outgoing_seg_o, seg_n);
-    mesh_print_hex("LowerTransportPDU", lower_transport_outgoing_segment->data, lower_transport_outgoing_segment->len);
+    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send seg_o %x, seg_n %x\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), lower_transport_outgoing_seg_o, seg_n);
+    mesh_print_hex("LowerTransportPDU", &lower_transport_outgoing_segment->data[9], lower_transport_outgoing_segment->len-9);
 #endif
 
     // next segment
     lower_transport_outgoing_seg_o++;
 
     // send network pdu
+    lower_transport_outgoing_segment_queued = 1;
     mesh_network_send_pdu(lower_transport_outgoing_segment);
+}
+
+static void mesh_lower_transport_setup_sending_segmented_pdus(void){
+    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send retry count %u\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), lower_transport_retry_count);
+    lower_transport_retry_count--;
+    lower_transport_outgoing_seg_o   = 0;
+}
+
+static void mesh_lower_transport_segment_transmission_fired(void){
+    // once more?
+    if (lower_transport_retry_count == 0){
+        printf("[!] Lower transport, segmented pdu %p, seq %06x: send failed, retries exhausted\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu));
+        mesh_lower_transport_outgoing_complete();
+        return;
+    }
+
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission fired\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu) );
+#endif
+
+    // send remaining segments again
+    mesh_lower_transport_setup_sending_segmented_pdus();
+    // send next segment
+    mesh_lower_transport_send_next_segment();
 }
 
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu){
@@ -637,6 +689,27 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
 
     // single segment of segmented message?
     if (lower_transport_outgoing_segment == network_pdu){
+
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), network_pdu);
+#endif
+
+        lower_transport_outgoing_segment_queued = 0;
+        if (lower_transport_outgoing_trasnmission_complete){
+            // handle complete
+            lower_transport_outgoing_trasnmission_complete = 0;
+            lower_transport_outgoing_transmission_timeout  = 0;
+            mesh_lower_transport_outgoing_complete();
+            return;
+        }
+        if (lower_transport_outgoing_transmission_timeout){
+            // handle timeout
+            lower_transport_outgoing_transmission_timeout = 0;
+            mesh_lower_transport_segment_transmission_fired();
+            return;
+        }
+
+        // send next segment
         mesh_lower_transport_send_next_segment();
         return;
     }
@@ -663,22 +736,13 @@ static void mesh_lower_transport_setup_block_ack(mesh_transport_pdu_t *transport
     }
 }
 
-static void mesh_lower_transport_send_current_segmented_pdu_once(void){
-    printf("[+] Lower Transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
-    lower_transport_retry_count--;
-
-    // start sending
-    lower_transport_outgoing_seg_o   = 0;
-    mesh_lower_transport_send_next_segment();
-}
-
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) pdu;
-        // network pdu without payload and minimal mic = 13 bytes
-        if (network_pdu->len <13){
+        // network pdu without payload = 9 bytes
+        if (network_pdu->len < 9){
             printf("too short, %u\n", network_pdu->len);
-            while(1);
+            while (true);
         }
     }
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
@@ -688,19 +752,15 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
 static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_source_t * ts){
     UNUSED(ts);
 #ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower transport, segment transmission timer fired for %p\n", lower_transport_outgoing_pdu);
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission timer fired\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu));
 #endif
     lower_transport_outgoing_pdu->acknowledgement_timer_active = 0;
-
-    // once more?
-    if (lower_transport_retry_count == 0){
-        printf("[!] Lower transport, send segmented pdu failed, retries exhausted\n");
-        mesh_lower_transport_outgoing_complete();
-        return;
+    
+    if (lower_transport_outgoing_segment_queued){
+        lower_transport_outgoing_transmission_timeout = 1;
+    } else {
+        mesh_lower_transport_segment_transmission_fired();
     }
-
-    // send remaining segments again
-    mesh_lower_transport_send_current_segmented_pdu_once();
 }
 
 static void mesh_lower_transport_run(void){
@@ -749,11 +809,16 @@ static void mesh_lower_transport_run(void){
                 break;
             case MESH_PDU_TYPE_TRANSPORT:
                 transport_pdu = (mesh_transport_pdu_t *) pdu;
+                printf("[+] Lower transport, segmented pdu %p, seq %06x: run start sending now\n", transport_pdu, mesh_transport_seq(transport_pdu));
                 // start sending segmented pdu
-                lower_transport_retry_count = 2;
+                lower_transport_retry_count = 3;
                 lower_transport_outgoing_pdu = transport_pdu;
+                lower_transport_outgoing_transmission_timeout  = 0;
+                lower_transport_outgoing_trasnmission_complete = 0;
                 mesh_lower_transport_setup_block_ack(transport_pdu);
-                mesh_lower_transport_send_current_segmented_pdu_once();
+                mesh_lower_transport_setup_sending_segmented_pdus();
+                mesh_lower_transport_send_next_segment();
+
                 return;
             default:
                 break;
@@ -777,6 +842,14 @@ static void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list)
     }
 }
 
+bool mesh_lower_transport_can_send_to_dest(uint16_t dest){
+    UNUSED(dest);
+    return (lower_transport_outgoing_pdu == NULL) && btstack_linked_list_empty(&lower_transport_outgoing);
+}
+
+void mesh_lower_transport_reserve_slot(void){
+}
+
 void mesh_lower_transport_dump(void){
     mesh_lower_transport_dump_network_pdus("lower_transport_incoming", &lower_transport_incoming);
 }
@@ -788,6 +861,7 @@ void mesh_lower_transport_reset(void){
         lower_transport_outgoing_pdu = NULL;
     }
     mesh_network_pdu_free(lower_transport_outgoing_segment);
+    lower_transport_outgoing_segment_queued = 0;
     lower_transport_outgoing_segment = NULL;
 }
 
@@ -795,6 +869,7 @@ void mesh_lower_transport_init(){
     // register with network layer
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
     // allocate network_pdu for segmentation
+    lower_transport_outgoing_segment_queued = 0;
     lower_transport_outgoing_segment = mesh_network_pdu_get();
 }
 

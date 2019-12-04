@@ -292,8 +292,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_ENABLE_NOTIFICATIONS_COMPLETE:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
-                    if ( gatt_event_query_complete_get_status(packet)) break;
+                    printf("Notifications enabled, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
+                    if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS) break;
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");

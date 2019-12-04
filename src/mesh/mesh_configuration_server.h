@@ -51,6 +51,7 @@ extern "C"
 
 typedef struct  {
     btstack_timer_source_t timer;
+    uint8_t timer_active;
     uint16_t active_features;
     uint32_t period_ms;
     uint16_t count;

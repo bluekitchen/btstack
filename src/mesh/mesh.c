@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh.c"
+#define BTSTACK_FILE__ "mesh.c"
 
 #include <string.h>
 #include <stdio.h>
@@ -54,6 +54,7 @@
 #include "mesh/gatt_bearer.h"
 #include "mesh/mesh_access.h"
 #include "mesh/mesh_configuration_server.h"
+#include "mesh/mesh_health_server.h"
 #include "mesh/mesh_foundation.h"
 #include "mesh/mesh_generic_model.h"
 #include "mesh/mesh_generic_on_off_server.h"
@@ -139,10 +140,12 @@ static int provisioned;
 
 // Mandatory Confiuration Server 
 static mesh_model_t                 mesh_configuration_server_model;
+static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
 
 // Mandatory Health Server
+static mesh_publication_model_t     mesh_health_server_publication;
 static mesh_model_t                 mesh_health_server_model;
-static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
+static mesh_health_state_t  mesh_health_server_model_context;
 
 // Random UUID on start
 static btstack_crypto_random_t mesh_access_crypto_random;
@@ -160,7 +163,31 @@ static uint32_t sequence_number_storage_trigger;
 static uint8_t                attention_timer_timeout_s;
 static btstack_timer_source_t attention_timer_timer;
 
-static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+// used to log all keys to packet log for log viewer
+// mesh-appkey-0xxx: 1234567890abcdef1234567890abcdef
+static void mesh_log_key(const char * prefix, uint16_t id, const uint8_t * key){
+    char line[60];
+    strcpy(line, prefix);
+    uint16_t pos = strlen(line);
+    if (id != 0xffff){
+        line[pos++] = '-';
+        line[pos++] = '0';
+        line[pos++] = char_for_nibble((id >> 8) & 0x0f);
+        line[pos++] = char_for_nibble((id >> 4) & 0x0f);
+        line[pos++] = char_for_nibble( id       & 0x0f);
+    }
+    line[pos++] = ':';
+    line[pos++] = ' ';
+    uint16_t i;
+    for (i=0;i<16;i++){
+        line[pos++] = char_for_nibble((key[i] >> 4) & 0x0f);
+        line[pos++] = char_for_nibble( key[i]       & 0x0f);
+    }
+    line[pos++] = 0;
+    hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "%s", line);
+}
+
+static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
     // set iv_index and iv index update active
     int iv_index_update_active = (provisioning_data->flags & 2) >> 1;
@@ -247,7 +274,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_node_store_provisioning_data(&provisioning_data);
 
                     // setup node after provisioned
-                    mesh_access_setup_from_provisioning_data(&provisioning_data);
+                    mesh_setup_from_provisioning_data(&provisioning_data);
 
 #ifdef ENABLE_MESH_PROXY_SERVER
                     // start advertising with node id after provisioning
@@ -308,6 +335,12 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
+static void report_store_error(int result, const char * type){
+    if (result != 0){
+        log_error("Store %s data failed", type);
+    }
+}
+
 // Foundation state
 static const uint32_t mesh_foundation_state_tag = ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16)  | ((uint32_t) 'N' << 8) | ((uint32_t) 'D' << 8);
 
@@ -335,7 +368,8 @@ void mesh_foundation_state_store(void){
     data.network_transmit = mesh_foundation_network_transmit_get();
     data.relay            = mesh_foundation_relay_get();
     data.relay_retransmit = mesh_foundation_relay_retransmit_get();
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "foundation");
 }
 
 // Mesh Virtual Address Management
@@ -347,8 +381,9 @@ static void mesh_store_virtual_address(uint16_t pseudo_dest, uint16_t hash, cons
     mesh_persistent_virtual_address_t data;
     uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
     data.hash = hash;
-    memcpy(data.label_uuid, label_uuid, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    (void)memcpy(data.label_uuid, label_uuid, 16);
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "virtual address");
 }
 
 static void mesh_delete_virtual_address(uint16_t pseudo_dest){
@@ -370,7 +405,7 @@ void mesh_load_virtual_addresses(void){
 
         virtual_address->pseudo_dst = pseudo_dst;
         virtual_address->hash = data.hash;
-        memcpy(virtual_address->label_uuid, data.label_uuid, 16);
+        (void)memcpy(virtual_address->label_uuid, data.label_uuid, 16);
         mesh_virtual_address_add(virtual_address);
     }
 }
@@ -431,7 +466,8 @@ static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
 
 void mesh_model_store_subscriptions(mesh_model_t * model){
     uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+    report_store_error(result, "subscription");
 }
 
 static void mesh_model_delete_subscriptions(mesh_model_t * model){
@@ -516,7 +552,8 @@ void mesh_model_store_publication(mesh_model_t * mesh_model){
     data.publish_period             = publication->period;
     data.publish_retransmit         = publication->retransmit;
     uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_publication_t));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_publication_t));
+    report_store_error(result, "publication");
 }
 
 static void mesh_model_delete_publication(mesh_model_t * mesh_model){
@@ -568,22 +605,22 @@ void mesh_store_network_key(mesh_network_key_t * network_key){
     printf_hexdump(network_key->net_key, 16);
     uint32_t tag = mesh_network_key_tag_for_internal_index(network_key->internal_index);
     data.netkey_index = network_key->netkey_index;
-    memcpy(data.net_key, network_key->net_key, 16);
-    memcpy(data.identity_key, network_key->identity_key, 16);
-    memcpy(data.beacon_key, network_key->beacon_key, 16);
-    memcpy(data.network_id, network_key->network_id, 8);
+    (void)memcpy(data.net_key, network_key->net_key, 16);
+    (void)memcpy(data.identity_key, network_key->identity_key, 16);
+    (void)memcpy(data.beacon_key, network_key->beacon_key, 16);
+    (void)memcpy(data.network_id, network_key->network_id, 8);
     data.nid = network_key->nid;
     data.version = network_key->version;
-    memcpy(data.encryption_key, network_key->encryption_key, 16);
-    memcpy(data.privacy_key, network_key->privacy_key, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
+    (void)memcpy(data.encryption_key, network_key->encryption_key, 16);
+    (void)memcpy(data.privacy_key, network_key->privacy_key, 16);
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
+    report_store_error(result, "network key");
 }
 
 void mesh_delete_network_key(uint16_t internal_index){
     uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
     btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
 }
-
 
 void mesh_load_network_keys(void){
     printf("Load Network Keys\n");
@@ -599,14 +636,14 @@ void mesh_load_network_keys(void){
 
         network_key->internal_index = internal_index;
         network_key->netkey_index = data.netkey_index;
-        memcpy(network_key->net_key, data.net_key, 16);
-        memcpy(network_key->identity_key, data.identity_key, 16);
-        memcpy(network_key->beacon_key, data.beacon_key, 16);
-        memcpy(network_key->network_id, data.network_id, 8);
+        (void)memcpy(network_key->net_key, data.net_key, 16);
+        (void)memcpy(network_key->identity_key, data.identity_key, 16);
+        (void)memcpy(network_key->beacon_key, data.beacon_key, 16);
+        (void)memcpy(network_key->network_id, data.network_id, 8);
         network_key->nid = data.nid;
         network_key->version = data.version;
-        memcpy(network_key->encryption_key, data.encryption_key, 16);
-        memcpy(network_key->privacy_key, data.privacy_key, 16);
+        (void)memcpy(network_key->encryption_key, data.encryption_key, 16);
+        (void)memcpy(network_key->privacy_key, data.privacy_key, 16);
 
 #ifdef ENABLE_GATT_BEARER
         // setup advertisement with network id
@@ -619,6 +656,9 @@ void mesh_load_network_keys(void){
 
         printf("- internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
         printf_hexdump(network_key->net_key, 16);
+
+        // dump into packet log
+        mesh_log_key("mesh-netkey",  network_key->netkey_index, network_key->net_key);
     }
 }
 
@@ -646,8 +686,9 @@ void mesh_store_app_key(mesh_transport_key_t * app_key){
     data.appkey_index = app_key->appkey_index;
     data.aid = app_key->aid;
     data.version = app_key->version;
-    memcpy(data.key, app_key->key, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    (void)memcpy(data.key, app_key->key, 16);
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "app key");
 }
 
 void mesh_delete_app_key(uint16_t internal_index){
@@ -673,10 +714,13 @@ void mesh_load_app_keys(void){
         key->aid          = data.aid;
         key->akf          = 1;
         key->version      = data.version;
-        memcpy(key->key, data.key, 16);
+        (void)memcpy(key->key, data.key, 16);
         mesh_transport_key_add(key);
         printf("- internal index 0x%x, AppKey Index 0x%06x, AID %02x: ", key->internal_index, key->appkey_index, key->aid);
         printf_hexdump(key->key, 16);
+
+        // dump into packet log
+        mesh_log_key("mesh-appkey",  key->appkey_index, key->key);
     }
 }
 
@@ -703,7 +747,8 @@ static void mesh_load_appkey_list(mesh_model_t * model){
 
 static void mesh_store_appkey_list(mesh_model_t * model){
     uint32_t tag = mesh_model_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+    report_store_error(result, "appkey list");
 }
 
 static void mesh_delete_appkey_list(mesh_model_t * model){
@@ -822,7 +867,8 @@ static void mesh_store_iv_index_and_sequence_number(uint32_t iv_index, uint32_t 
     iv_index_and_sequence_number_t data;
     data.iv_index   = iv_index;
     data.seq_number = sequence_number;
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
+    report_store_error(result, "index and sequence number");
 
     sequence_number_last_stored = data.seq_number;
     sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
@@ -989,11 +1035,13 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
 
     persistent_provisioning_data.unicast_address = provisioning_data->unicast_address;
     persistent_provisioning_data.flags = provisioning_data->flags;
-    memcpy(persistent_provisioning_data.device_key, provisioning_data->device_key, 16);
+    (void)memcpy(persistent_provisioning_data.device_key,
+                 provisioning_data->device_key, 16);
 
     // store in tlv
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data, (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    int result = btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data, (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    report_store_error(result, "provisioning");
 
     // store IV Index and sequence number
     mesh_store_iv_index_and_sequence_number(provisioning_data->iv_index, 0);
@@ -1040,47 +1088,50 @@ static int mesh_node_startup_from_tlv(void){
 
         // copy into mesh_provisioning_data
         mesh_provisioning_data_t provisioning_data;
-        memcpy(provisioning_data.device_key, persistent_provisioning_data.device_key, 16);
+        (void)memcpy(provisioning_data.device_key,
+                     persistent_provisioning_data.device_key, 16);
         provisioning_data.unicast_address = persistent_provisioning_data.unicast_address;
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
-
-        printf("Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
+        printf("Provisioning Data: Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
         
-        // load iv index and sequence number
-        uint32_t iv_index;
-        uint32_t sequence_number;
-        int ok = mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
-        if (ok){
-            mesh_sequence_number_set(sequence_number);
-            provisioning_data.iv_index = iv_index;
-        }            
+        // try load iv index and sequence number
+        uint32_t iv_index        = 0;
+        uint32_t sequence_number = 0;
+        (void) mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
+
+        // bump sequence number to account for interval updates
+        sequence_number += MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+        mesh_store_iv_index_and_sequence_number(iv_index, sequence_number);
+
+        mesh_set_iv_index(iv_index);
+        mesh_sequence_number_set(sequence_number);
+        provisioning_data.iv_index = iv_index;
+        printf("IV Index: %08x, Sequence Number %08x\n", (int) iv_index, (int) sequence_number);
+
+        // setup iv update, node address, device key ...
+        mesh_setup_from_provisioning_data(&provisioning_data);
 
         // load network keys
         mesh_load_network_keys();
+
         // load app keys
         mesh_load_app_keys();
-        // load model to appkey bindings
-        mesh_load_appkey_lists();
-        // load virtual addresses
-        mesh_load_virtual_addresses();
-        // load model subscriptions
-        mesh_load_subscriptions();
-        // load model publications
-        mesh_load_publications();
+
         // load foundation state
         mesh_foundation_state_load();
 
-        mesh_access_setup_from_provisioning_data(&provisioning_data);
+        // load model to appkey bindings
+        mesh_load_appkey_lists();
 
-        // bump sequence number to account for interval updates
-        sequence_number = mesh_sequence_number_peek() + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-        iv_index = mesh_get_iv_index();
-        mesh_store_iv_index_and_sequence_number(iv_index, sequence_number);
-        mesh_sequence_number_set(sequence_number);
-        log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
+        // load virtual addresses
+        mesh_load_virtual_addresses();
 
-        printf("IV Index: %08x, Sequence Number %08x\n", (int) iv_index, (int) sequence_number);
+        // load model subscriptions
+        mesh_load_subscriptions();
+
+        // load model publications
+        mesh_load_publications();
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
         // start sending Secure Network Beacon
@@ -1093,6 +1144,10 @@ static int mesh_node_startup_from_tlv(void){
         if (mesh_node_get_device_uuid() == NULL){
             btstack_crypto_random_generate(&mesh_access_crypto_random, random_device_uuid, 16, &mesh_access_setup_with_provisiong_data_random, NULL);
         }
+
+        // dump into packet log
+        hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "mesh-iv-index: %08x",  iv_index);
+        mesh_log_key("mesh-devkey",  0xffff, persistent_provisioning_data.device_key);
 
     } else {
 
@@ -1141,7 +1196,11 @@ static void mesh_node_setup_default_models(void){
 
     // Config Health Server
     mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
+    mesh_health_server_model.model_data       = &mesh_health_server_model_context;
+    mesh_health_server_model.operations       = mesh_health_server_get_operations();
+    mesh_health_server_model.publication_model = &mesh_health_server_publication;
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_health_server_model);
+    mesh_health_server_set_publication_model(&mesh_health_server_model, &mesh_health_server_publication);
 }
 
 void mesh_init(void){

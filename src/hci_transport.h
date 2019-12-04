@@ -49,12 +49,13 @@
 #include <stdint.h>
 #include "btstack_uart_block.h"
 #include "btstack_em9304_spi.h"
-#include "btstack_run_loop.h"
+#include "btstack_defines.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+    
 /* API_START */
 
 /* HCI packet types */

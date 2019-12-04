@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_access.c"
+#define BTSTACK_FILE__ "mesh_access.c"
 
 #include <string.h>
 #include <stdio.h>
@@ -61,14 +61,15 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
 
+// receive
+static uint16_t mesh_access_received_pdu_refcount;
+
 // acknowledged messages
 static btstack_linked_list_t  mesh_access_acknowledged_messages;
 static btstack_timer_source_t mesh_access_acknowledged_timer;
+static int                    mesh_access_acknowledged_timer_active;
 
 // Transitions
-static btstack_linked_list_t  transitions;
-static btstack_timer_source_t transitions_timer;
-static uint32_t transition_step_min_ms;
 static uint8_t mesh_transaction_id_counter = 0;
 
 void mesh_access_init(void){
@@ -117,9 +118,10 @@ uint32_t mesh_access_acknowledged_message_timeout_ms(void){
 }
 
 #define MESH_ACCESS_OPCODE_INVALID 0xFFFFFFFFu
+#define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
 
 void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu){
-    pdu->ack_opcode = MESH_ACCESS_OPCODE_INVALID;;
+    pdu->ack_opcode = MESH_ACCESS_OPCODE_INVALID;
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
@@ -182,6 +184,8 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
         }
     }
 
+    if (mesh_access_acknowledged_timer_active) return;
+    
     // find earliest timeout and set timer
     btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
     int32_t next_timeout_ms = 0;
@@ -199,6 +203,7 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     btstack_run_loop_set_timer(&mesh_access_acknowledged_timer, next_timeout_ms);
     btstack_run_loop_set_timer_handler(&mesh_access_acknowledged_timer, mesh_access_acknowledged_run);
     btstack_run_loop_add_timer(&mesh_access_acknowledged_timer);
+    mesh_access_acknowledged_timer_active = 1;
 }
 
 static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
@@ -241,36 +246,18 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
 
 // Mesh Model Transitions
 
-void mesh_access_transitions_setup_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){
-    transition->transaction_timestamp_ms = btstack_run_loop_get_time_ms();
-    transition->transaction_identifier = transaction_identifier;
-    transition->src_address = src_address;
-    transition->dst_address = dst_address;
-}
+uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt){
+    uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(time_gdtt);
+    if (num_steps > 0x3E) return 0;
 
-void mesh_access_transitions_abort_transaction(mesh_transition_t * transition){
-    mesh_access_transitions_remove(transition);
-}
-
-
-static int mesh_access_transitions_transaction_is_expired(mesh_transition_t * transition){
-    return (btstack_run_loop_get_time_ms() - transition->transaction_timestamp_ms) > MEST_TRANSACTION_TIMEOUT_MS;
-}
-
-mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){
-    if (transition->src_address != src_address || transition->dst_address != dst_address) return MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC; 
-
-    if (transition->transaction_identifier == transaction_identifier && !mesh_access_transitions_transaction_is_expired(transition)){
-            return MESH_TRANSACTION_STATUS_RETRANSMISSION;
-    }
-    return MESH_TRANSACTION_STATUS_NEW;
+    return mesh_access_transitions_step_ms_from_gdtt(time_gdtt) * num_steps;
 }
 
 uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt){
     return time_gdtt & 0x3fu;
 }
 
-static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt){
+uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt){
     mesh_default_transition_step_resolution_t step_resolution = (mesh_default_transition_step_resolution_t) (time_gdtt >> 6);
     switch (step_resolution){
         case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms:
@@ -286,98 +273,113 @@ static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt){
     }
 }
 
-uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt){
-    uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(time_gdtt);
-    if (num_steps > 0x3E) return 0;
-
-    return mesh_access_transitions_step_ms_from_gdtt(time_gdtt) * num_steps;
-}
-
-static void mesh_access_transitions_timeout_handler(btstack_timer_source_t * timer){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &transitions);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_transition_t * transition = (mesh_transition_t *)btstack_linked_list_iterator_next(&it);
-        (transition->transition_callback)(transition, TRANSITION_UPDATE, btstack_run_loop_get_time_ms());
-    }
-    if (btstack_linked_list_empty(&transitions)) return;
-    
-    btstack_run_loop_set_timer(timer, transition_step_min_ms); 
-    btstack_run_loop_add_timer(timer);
-}
-
-static void mesh_access_transitions_timer_start(void){
-    btstack_run_loop_remove_timer(&transitions_timer);
-    btstack_run_loop_set_timer_handler(&transitions_timer, mesh_access_transitions_timeout_handler);
-    btstack_run_loop_set_timer(&transitions_timer, transition_step_min_ms); 
-    btstack_run_loop_add_timer(&transitions_timer);
-}
-
-static void mesh_access_transitions_timer_stop(void){
-    btstack_run_loop_remove_timer(&transitions_timer);
-} 
-
-static uint32_t mesh_access_transitions_get_step_min_ms(void){
-    uint32_t min_timeout_ms = 0;
-
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &transitions);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_transition_t * transition = (mesh_transition_t *)btstack_linked_list_iterator_next(&it);
-        if (min_timeout_ms == 0 || transition->step_duration_ms < min_timeout_ms){
-            min_timeout_ms = transition->step_duration_ms;
-        }
-    }
-    return min_timeout_ms;
-}
-
-void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t * mesh_model, 
-    uint8_t transition_time_gdtt, uint8_t delay_gdtt,
-    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp)){
-
-    //  Only values of 0x00 through 0x3E shall be used to specify the value of the Transition Number of Steps field
-    uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
-    if (num_steps > 0x3E) return;
-
-    transition->state = MESH_TRANSITION_STATE_IDLE;
-    transition->phase_start_ms = 0;
-
-    transition->mesh_model = mesh_model;
-    transition->transition_callback = transition_callback;
-    transition->step_duration_ms = mesh_access_transitions_step_ms_from_gdtt(transition_time_gdtt);
-    transition->remaining_delay_time_ms = delay_gdtt * 5;
-    transition->remaining_transition_time_ms = num_steps * transition->step_duration_ms;
-}
-
-void mesh_access_transitions_add(mesh_transition_t * transition){
-    if (transition->step_duration_ms == 0) return;
-    
-    if (btstack_linked_list_empty(&transitions) || transition->step_duration_ms < transition_step_min_ms){
-        transition_step_min_ms = transition->step_duration_ms;
-    }
-    mesh_access_transitions_timer_start();
-    btstack_linked_list_add(&transitions, (btstack_linked_item_t *) transition);
-    (transition->transition_callback)(transition, TRANSITION_START, btstack_run_loop_get_time_ms());
-}
-
-void mesh_access_transitions_remove(mesh_transition_t * transition){
-    mesh_access_transitions_setup(transition, NULL, 0, 0, NULL);
-    btstack_linked_list_remove(&transitions, (btstack_linked_item_t *) transition);
-
-    if (btstack_linked_list_empty(&transitions)){
-        mesh_access_transitions_timer_stop();
-    } else {
-        transition_step_min_ms = mesh_access_transitions_get_step_min_ms();        
-    }
-}
-
 uint8_t mesh_access_transactions_get_next_transaction_id(void){
     mesh_transaction_id_counter++;
     if (mesh_transaction_id_counter == 0){
         mesh_transaction_id_counter = 1;
     }
     return mesh_transaction_id_counter;
-}   
+}
+
+static int mesh_access_transitions_transaction_is_expired(mesh_transition_t * transition){
+    return (btstack_run_loop_get_time_ms() - transition->transaction_timestamp_ms) > MEST_TRANSACTION_TIMEOUT_MS;
+}
+
+mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){
+    if (transition->src_address != src_address || transition->dst_address != dst_address) return MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC;
+
+    if (transition->transaction_identifier == transaction_identifier && !mesh_access_transitions_transaction_is_expired(transition)){
+            return MESH_TRANSACTION_STATUS_RETRANSMISSION;
+    }
+    return MESH_TRANSACTION_STATUS_NEW;
+}
+
+void mesh_access_transitions_init_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){
+    transition->transaction_timestamp_ms = btstack_run_loop_get_time_ms();
+    transition->transaction_identifier = transaction_identifier;
+    transition->src_address = src_address;
+    transition->dst_address = dst_address;
+}
+
+static void mesh_server_transition_timeout(btstack_timer_source_t * ts){
+    mesh_transition_t * base_transition = (mesh_transition_t*) btstack_run_loop_get_timer_context(ts);
+    switch (base_transition->state){
+        case MESH_TRANSITION_STATE_DELAYED:
+            base_transition->state = MESH_TRANSITION_STATE_ACTIVE;
+            (*base_transition->transition_callback)(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_START);
+            if (base_transition->num_steps > 0){
+                btstack_run_loop_set_timer(&base_transition->timer, base_transition->step_duration_ms);
+                btstack_run_loop_add_timer(&base_transition->timer);
+                return;
+            }
+            base_transition->state = MESH_TRANSITION_STATE_IDLE;
+            (*base_transition->transition_callback)(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_END);
+            break;
+        case MESH_TRANSITION_STATE_ACTIVE:
+            if (base_transition->num_steps < MESH_TRANSITION_NUM_STEPS_INFINITE){
+                base_transition->num_steps--;
+            }
+            (*base_transition->transition_callback)(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE);
+            if (base_transition->num_steps > 0){
+                btstack_run_loop_set_timer(&base_transition->timer, base_transition->step_duration_ms);
+                btstack_run_loop_add_timer(&base_transition->timer);
+                return;
+            }
+            base_transition->state = MESH_TRANSITION_STATE_IDLE;
+            (*base_transition->transition_callback)(base_transition, MODEL_STATE_UPDATE_REASON_TRANSITION_END);
+            break;
+        default:
+            break;
+    }
+}
+
+void mesh_access_transition_setup(mesh_model_t *mesh_model, mesh_transition_t * base_transition, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, void (*transition_callback)(mesh_transition_t * base_transition, model_state_update_reason_t event)){
+    
+    base_transition->mesh_model          = mesh_model;
+    base_transition->num_steps           = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
+    base_transition->step_resolution     = (mesh_default_transition_step_resolution_t) (transition_time_gdtt >> 6);
+    base_transition->step_duration_ms    = mesh_access_transitions_step_ms_from_gdtt(transition_time_gdtt);
+    base_transition->transition_callback = transition_callback;
+
+    btstack_run_loop_set_timer_context(&base_transition->timer, base_transition);
+    btstack_run_loop_set_timer_handler(&base_transition->timer, &mesh_server_transition_timeout);
+
+    // delayed
+    if (delay_time_gdtt > 0){
+        base_transition->state = MESH_TRANSITION_STATE_DELAYED;
+        btstack_run_loop_set_timer(&base_transition->timer, delay_time_gdtt * 5);
+        btstack_run_loop_add_timer(&base_transition->timer);
+        return;
+    }
+
+    // started
+    if (base_transition->num_steps > 0){
+        base_transition->state = MESH_TRANSITION_STATE_ACTIVE;
+        btstack_run_loop_set_timer(&base_transition->timer, base_transition->step_duration_ms);
+        btstack_run_loop_add_timer(&base_transition->timer);
+        return;
+    }
+    
+    // instanteneous update
+    base_transition->state = MESH_TRANSITION_STATE_IDLE;
+    (*transition_callback)(base_transition, MODEL_STATE_UPDATE_REASON_SET);
+    return;
+}
+
+void mesh_access_transitions_abort_transaction(mesh_transition_t * base_transition){
+    btstack_run_loop_add_timer(&base_transition->timer);
+}
+
+uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_ctl((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_control((mesh_network_pdu_t *) pdu);
+        default:
+            return 0;
+    }
+}
 
 uint16_t mesh_pdu_ttl(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
@@ -552,7 +554,7 @@ uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state){
 }
 
 uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state){
-    uint32_t value = little_endian_read_24(state->data, 0);
+    uint32_t value = little_endian_read_32(state->data, 0);
     mesh_access_parser_skip(state, 4);
     return value;
 }
@@ -563,21 +565,22 @@ void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * d
 }
 
 void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest){
-    memcpy( dest, state->data, 16);
+    (void)memcpy(dest, state->data, 16);
     mesh_access_parser_skip(state, 16);
 }
 
 void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest){
-    memcpy( dest, state->data, 16);
+    (void)memcpy(dest, state->data, 16);
     mesh_access_parser_skip(state, 16);
 }
 
 uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser){
+    uint16_t vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
     if (mesh_access_parser_available(parser) == 4){
-        return mesh_access_parser_get_u32(parser);
-    } else {
-        return (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | mesh_access_parser_get_u16(parser);
+        vendor_id = mesh_access_parser_get_u16(parser);
     }
+    uint16_t model_id = mesh_access_parser_get_u16(parser);
+    return mesh_model_get_model_identifier(vendor_id, model_id);
 }
 
 // Mesh Access Message Builder
@@ -603,6 +606,7 @@ mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
     if (!pdu) return NULL;
 
     pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
+    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
@@ -625,11 +629,10 @@ void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value
     pdu->len += 4;
 }
 void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier){
-    if (mesh_model_is_bluetooth_sig(model_identifier)){
-        mesh_access_transport_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
-    } else {
-        mesh_access_transport_add_uint32( pdu, model_identifier );
+    if (!mesh_model_is_bluetooth_sig(model_identifier)){
+        mesh_access_transport_add_uint16( pdu, mesh_model_get_vendor_id(model_identifier) );
     }
+    mesh_access_transport_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
 }
 
 mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode){
@@ -637,6 +640,7 @@ mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode){
     if (!pdu) return NULL;
 
     pdu->len  = mesh_access_setup_opcode(&pdu->data[10], opcode) + 10;
+    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
@@ -795,11 +799,24 @@ static int mesh_access_validate_appkey_index(mesh_model_t * model, uint16_t appk
     return mesh_model_contains_appkey(model, appkey_index);
 }
 
+// decrease use count and report as free if done
+void mesh_access_message_processed(mesh_pdu_t * pdu){
+    if (mesh_access_received_pdu_refcount > 0){
+        mesh_access_received_pdu_refcount--;
+    }
+    if (mesh_access_received_pdu_refcount == 0){
+        mesh_upper_transport_message_processed_by_higher_layer(pdu);
+    }
+}
+
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
+
+    // init use count
+    mesh_access_received_pdu_refcount = 1;
+    
     // get opcode and size
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
-
 
     int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
     if (!ok) {
@@ -828,8 +845,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 if (operation == NULL) continue;
                 if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                 mesh_access_acknowledged_received(src, opcode);
+                mesh_access_received_pdu_refcount++;
                 operation->handler(model, pdu);
-                return;
             }
         }
     }
@@ -849,7 +866,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                     break;
                 case MESH_ADDRESS_ALL_RELAYS:
                     if (mesh_foundation_relay_get() == 1){
-                        deliver_to_primary_element =1;
+                        deliver_to_primary_element = 1;
                     }
                     break;
                 case MESH_ADDRESS_ALL_NODES:
@@ -868,8 +885,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                     if (operation == NULL) continue;
                     if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                     mesh_access_acknowledged_received(src, opcode);
+                    mesh_access_received_pdu_refcount++;
                     operation->handler(model, pdu);
-                    return;
                 }
             }
         }
@@ -889,21 +906,16 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                         if (operation == NULL) continue;
                         if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                         mesh_access_acknowledged_received(src, opcode);
+                        mesh_access_received_pdu_refcount++;
                         operation->handler(model, pdu);
-                        return;
                     }
                 }
             }
         }
     }
 
-    // operation not found -> done
-    printf("Message not handled\n");
+    // we're done
     mesh_access_message_processed(pdu);
-}
-
-void mesh_access_message_processed(mesh_pdu_t * pdu){
-    mesh_upper_transport_message_processed_by_higher_layer(pdu);
 }
 
 // Mesh Model Publication
@@ -923,7 +935,7 @@ static void mesh_model_publication_setup_publication(mesh_publication_model_t * 
     publication_model->retransmit_count = mesh_model_publication_retransmit_count(publication_model->retransmit);
 
     // schedule next publication or retransmission
-    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period);
+    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period) >> publication_model->period_divisor;
 
     // set next publication
     if (publication_period_ms != 0){
@@ -936,7 +948,7 @@ static void mesh_model_publication_setup_publication(mesh_publication_model_t * 
 
 // assumes retransmit_count is valid
 static void mesh_model_publication_setup_retransmission(mesh_publication_model_t * publication_model, uint32_t now){
-    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period);
+    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period) >> publication_model->period_divisor;
 
     // retransmission done
     if (publication_model->retransmit_count == 0) {
@@ -950,7 +962,8 @@ static void mesh_model_publication_setup_retransmission(mesh_publication_model_t
     }
 
     // calc next retransmit time
-    uint32_t retransmission_ms = now + mesh_model_publication_retransmission_period_ms(publication_model->retransmit);
+    uint32_t retransmission_period_ms = mesh_model_publication_retransmission_period_ms(publication_model->retransmit) >> publication_model->period_divisor;
+    uint32_t retransmission_ms = now + retransmission_period_ms;
 
     // check next publication timeout is before next retransmission
     if (publication_period_ms != 0){
@@ -976,8 +989,14 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_pdu_t * pdu = (*publication_model->publish_state_fn)(mesh_model);
     if (pdu == NULL) return;
 
-    mesh_upper_transport_setup_access_pdu_header(pdu, app_key->netkey_index, appkey_index, publication_model->ttl, mesh_access_get_element_address(mesh_model), dest, 0);
-    mesh_upper_transport_send_access_pdu(pdu);
+    // handle ttl = default
+    uint8_t ttl = publication_model->ttl;
+    if (ttl == 0xff){
+        ttl = mesh_foundation_default_ttl_get();
+    }
+    
+    mesh_upper_transport_setup_access_pdu_header(pdu, app_key->netkey_index, appkey_index, ttl, mesh_access_get_element_address(mesh_model), dest, 0);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void mesh_model_publication_run(btstack_timer_source_t * ts){

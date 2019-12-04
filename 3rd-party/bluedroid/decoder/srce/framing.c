@@ -205,7 +205,7 @@ PRIVATE OI_UINT8 OI_SBC_CalculateChecksum(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYT
 
     OI_UINT count = (frame->nrof_subbands * frame->nrof_channels / 2u) + 4;
 
-    if (frame->mode == SBC_JOINT_STEREO && frame->nrof_subbands == 8) {
+    if ((frame->mode == SBC_JOINT_STEREO) && (frame->nrof_subbands == 8)) {
         count++;
     }
 
@@ -215,7 +215,7 @@ PRIVATE OI_UINT8 OI_SBC_CalculateChecksum(OI_CODEC_SBC_FRAME_INFO *frame, OI_BYT
         }
     }
 
-    if (frame->mode == SBC_JOINT_STEREO && frame->nrof_subbands == 4) {
+    if ((frame->mode == SBC_JOINT_STEREO) && (frame->nrof_subbands == 4)) {
         crc = crc_iterate_top4(crc, data[i]);
     }
 

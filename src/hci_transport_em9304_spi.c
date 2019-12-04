@@ -288,7 +288,9 @@ static void em9304_spi_engine_run(void){
             } else {
                 // TODO: get rid of alignment requirement
                 // enforce alignment by copying to spi buffer first
-                memcpy(em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_tx_data, em9304_spi_engine_tx_request_len);
+                (void)memcpy(em9304_spi_engine_spi_buffer.bytes,
+                             em9304_spi_engine_tx_data,
+                             em9304_spi_engine_tx_request_len);
                 btstack_em9304_spi->transmit( (uint8_t*) em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_tx_request_len);
             }
             break;
@@ -398,7 +400,7 @@ static void hci_transport_em9304_spi_reset_statemachine(void){
 }
 
 static void hci_transport_em9304_spi_process_data(void){
-    while (1){
+    while (true){
 
         uint16_t bytes_available = em9304_engine_num_bytes_available();
         log_debug("transfer_rx_data: ring buffer has %u -> hci wants %u", bytes_available, hci_transport_em9304_spi_bytes_to_read);
@@ -482,6 +484,7 @@ static void hci_transport_em9304_spi_block_sent(void){
 }
 
 static int hci_transport_em9304_spi_can_send_now(uint8_t packet_type){
+    UNUSED(packet_type);
     return tx_state == TX_IDLE;
 }
 
@@ -499,6 +502,7 @@ static int hci_transport_em9304_spi_send_packet(uint8_t packet_type, uint8_t * p
 }
 
 static void hci_transport_em9304_spi_init(const void * transport_config){
+    UNUSED(transport_config);
 }
 
 static int hci_transport_em9304_spi_open(void){
@@ -524,6 +528,9 @@ static void hci_transport_em9304_spi_register_packet_handler(void (*handler)(uin
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 // --- end of eHCILL implementation ---------

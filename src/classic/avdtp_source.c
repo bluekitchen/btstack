@@ -40,16 +40,20 @@
 
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "l2cap.h"
+
 #include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_source.h"
 
 static avdtp_context_t * avdtp_source_context;
+#define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -172,6 +176,110 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     avdtp_source_context->stream_endpoints_id_counter = 0;
     avdtp_source_context->packet_handler = packet_handler;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_2);
+    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, LEVEL_2);
 }
 
+
+static void avdtp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
+    if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
+        log_error("small outgoing buffer");
+        return;
+    }
+
+    uint8_t  rtp_version = 2;
+    uint8_t  padding = 0;
+    uint8_t  extension = 0;
+    uint8_t  csrc_count = 0;
+    uint8_t  payload_type = 0x60;
+    // uint16_t sequence_number = stream_endpoint->sequence_number;
+    uint32_t timestamp = btstack_run_loop_get_time_ms();
+    uint32_t ssrc = 0x11223344;
+
+    // rtp header (min size 12B)
+    int pos = 0;
+    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+
+    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
+    media_packet[pos++] = (marker << 1) | payload_type;
+    big_endian_store_16(media_packet, pos, sequence_number);
+    pos += 2;
+    big_endian_store_32(media_packet, pos, timestamp);
+    pos += 4;
+    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
+    pos += 4;
+    *offset = pos;
+}
+
+static void avdtp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
+    if (size < (num_bytes_to_copy + 1)){
+        log_error("small outgoing buffer: buffer size %u, but need %u", size, num_bytes_to_copy + 1);
+        return;
+    }
+    
+    int pos = *offset;
+    media_packet[pos++] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    (void)memcpy(media_packet + pos, storage, num_bytes_to_copy);
+    pos += num_bytes_to_copy;
+    *offset = pos;
+}
+
+int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
+    if (avdtp_source_context->avdtp_cid != avdtp_cid){
+        log_error("avdtp source: avdtp cid 0x%02x not known, expected 0x%02x", avdtp_cid, avdtp_source_context->avdtp_cid);
+        return 0;
+    }
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    if (!stream_endpoint) {
+        log_error("avdtp source: no stream_endpoint with seid %d", local_seid);
+        return 0;
+    }
+    
+    if (stream_endpoint->l2cap_media_cid == 0){
+        log_error("avdtp source: no media connection for seid %d", local_seid);
+        return 0;
+    } 
+
+    int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
+    int offset = 0;
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * media_packet = l2cap_get_outgoing_buffer();
+
+    avdtp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
+    avdtp_source_copy_media_payload(media_packet, size, &offset, storage, num_bytes_to_copy, num_frames);
+    stream_endpoint->sequence_number++;
+    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
+    return size;
+}
+
+void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
+    if (avdtp_source_context->avdtp_cid != avdtp_cid){
+        log_error("AVDTP source: avdtp cid 0x%02x not known, expected 0x%02x", avdtp_cid, avdtp_source_context->avdtp_cid);
+        return;
+    }
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    if (!stream_endpoint) {
+        log_error("AVDTP source: no stream_endpoint with seid %d", local_seid);
+        return;
+    }
+    stream_endpoint->send_stream = 1;
+    avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+}
+
+int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid){
+    if (avdtp_source_context->avdtp_cid != avdtp_cid){
+        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", avdtp_cid, avdtp_source_context->avdtp_cid);
+        return 0;
+    }
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    if (!stream_endpoint) {
+        log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
+        return 0;
+    }
+    
+    if (stream_endpoint->l2cap_media_cid == 0){
+        log_error("A2DP source: no media connection for seid %d", local_seid);
+        return 0;
+    }  
+    return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - AVDTP_MEDIA_PAYLOAD_HEADER_SIZE;
+}

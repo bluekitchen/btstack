@@ -37,6 +37,7 @@
 
 #define BTSTACK_FILE__ "btstack_resample.c"
 
+#include "btstack_bool.h"
 #include "btstack_resample.h"
 
 void btstack_resample_init(btstack_resample_t * context, int num_channels){
@@ -61,14 +62,14 @@ uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * in
         for (i=0;i<context->num_channels;i++){
             int s1 = context->last_sample[i];
             int s2 = input_buffer[i];
-            int os = (s1*(0x10000 - t) + s2*t) >> 16;
+            int os = ((s1*(0x10000 - t)) + (s2*t)) >> 16;
             output_buffer[dest_samples++] = os;
         }
         dest_frames++;
         context->src_pos += context->src_step;
     }
     // process current block
-    while (1){
+    while (true){
         const uint16_t src_pos = context->src_pos >> 16;
         const uint16_t t       = context->src_pos & 0xffff;
         int index = src_pos * context->num_channels;
@@ -85,7 +86,7 @@ uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * in
         for (i=0;i<context->num_channels;i++){
             int s1 = input_buffer[index];
             int s2 = input_buffer[index+context->num_channels];
-            int os = (s1*(0x10000 - t) + s2*t) >> 16;
+            int os = ((s1*(0x10000 - t)) + (s2*t)) >> 16;
             output_buffer[dest_samples++] = os;
             index++;
         }

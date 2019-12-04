@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_node.c"
+#define BTSTACK_FILE__ "mesh_node.c"
 
 #include "bluetooth_company_id.h"
 #include "mesh/mesh_foundation.h"
@@ -58,6 +58,10 @@ static uint16_t mid_counter;
 static uint8_t mesh_node_device_uuid[16];
 static int     mesh_node_have_device_uuid;
 
+static uint16_t mesh_node_company_id;
+static uint16_t mesh_node_product_id;
+static uint16_t mesh_node_product_version_id;
+
 void mesh_node_primary_element_address_set(uint16_t unicast_address){
     primary_element_address = unicast_address;
 }
@@ -69,6 +73,24 @@ uint16_t mesh_node_get_primary_element_address(void){
 void mesh_node_init(void){
     // dd Primary Element to list of elements
     mesh_node_add_element(&primary_element);
+}
+
+void mesh_node_set_info(uint16_t company_id, uint16_t product_id, uint16_t product_version_id){
+    mesh_node_company_id = company_id;
+    mesh_node_product_id = product_id;
+    mesh_node_product_version_id = product_version_id;
+}
+
+uint16_t mesh_node_get_company_id(void){
+    return mesh_node_company_id;
+}
+
+uint16_t mesh_node_get_product_id(void){
+    return mesh_node_product_id;
+}
+
+uint16_t mesh_node_get_product_version_id(void){
+    return mesh_node_product_version_id;
 }
 
 void mesh_node_add_element(mesh_element_t * element){
@@ -152,8 +174,12 @@ int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
     return mesh_model_get_vendor_id(model_identifier) == BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
 }
 
-mesh_model_t * mesh_model_get_configuration_server(void){
+mesh_model_t * mesh_node_get_configuration_server(void){
     return mesh_model_get_by_identifier(mesh_node_get_primary_element(), mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
+}
+
+mesh_model_t * mesh_node_get_health_server(void){
+    return mesh_model_get_by_identifier(mesh_node_get_primary_element(), mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER));
 }
 
 void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
@@ -224,7 +250,7 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
 }
 
 void mesh_node_set_device_uuid(const uint8_t * device_uuid){
-    memcpy(mesh_node_device_uuid, device_uuid, 16);
+    (void)memcpy(mesh_node_device_uuid, device_uuid, 16);
     mesh_node_have_device_uuid = 1;
 }
 

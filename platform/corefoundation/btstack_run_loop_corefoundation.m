@@ -158,7 +158,7 @@ static void btstack_run_loop_embedded_disable_data_source_callbacks(btstack_data
     CFSocketDisableCallBacks(references->socket, option_flags);   
 }
 
-static int  btstack_run_loop_corefoundation_remove_data_source(btstack_data_source_t *ds){
+static bool  btstack_run_loop_corefoundation_remove_data_source(btstack_data_source_t *ds){
     btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
     // printf("btstack_run_loop_corefoundation_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->source.fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
     CFRunLoopRemoveSource( CFRunLoopGetCurrent(), references->socket_run_loop, kCFRunLoopCommonModes);
@@ -168,7 +168,7 @@ static int  btstack_run_loop_corefoundation_remove_data_source(btstack_data_sour
     CFRelease(references->socket);
 
     free(references);
-	return 0;
+	return true;
 }
 
 static void btstack_run_loop_corefoundation_add_timer(btstack_timer_source_t * ts)
@@ -189,8 +189,9 @@ static int btstack_run_loop_corefoundation_remove_timer(btstack_timer_source_t *
 	if (ts->item.next != NULL) {
     	CFRunLoopTimerInvalidate((CFRunLoopTimerRef) ts->item.next);    // also removes timer from run loops + releases it
     	CFRelease((CFRunLoopTimerRef) ts->item.next);
+        return true;
 	}
-	return 0;
+	return false;
 }
 
 /**

@@ -46,6 +46,7 @@
 
 #include "btstack_config.h"
 
+#include "btstack_bool.h"
 #include "btstack_linked_list.h"
 
 #include <stdint.h>
@@ -96,12 +97,12 @@ typedef struct btstack_timer_source {
 typedef struct btstack_run_loop {
 	void (*init)(void);
 	void (*add_data_source)(btstack_data_source_t * data_source);
-	int  (*remove_data_source)(btstack_data_source_t * data_source);
+	bool (*remove_data_source)(btstack_data_source_t * data_source);
 	void (*enable_data_source_callbacks)(btstack_data_source_t * data_source, uint16_t callbacks);
 	void (*disable_data_source_callbacks)(btstack_data_source_t * data_source, uint16_t callbacks);
 	void (*set_timer)(btstack_timer_source_t * timer, uint32_t timeout_in_ms);
 	void (*add_timer)(btstack_timer_source_t *timer);
-	int  (*remove_timer)(btstack_timer_source_t *timer); 
+	bool  (*remove_timer)(btstack_timer_source_t *timer);
 	void (*execute)(void);
 	void (*dump_timer)(void);
 	uint32_t (*get_time_ms)(void);

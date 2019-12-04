@@ -117,7 +117,7 @@ static void hfp_hf_emit_subscriber_information(btstack_packet_handler_t callback
     event[2] = event_subtype;
     event[3] = status;
     event[4] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 6) ? (int) strlen(bnip_number) : (int) sizeof(event) - 6;
+    uint16_t size = btstack_min(strlen(bnip_number), sizeof(event) - 6);
     strncpy((char*)&event[5], bnip_number, size);
     event[5 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -130,7 +130,7 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 5) ? (int) strlen(bnip_number) : (int) sizeof(event) - 5;
+    uint16_t size = btstack_min(strlen(bnip_number), sizeof(event) - 5);
     strncpy((char*)&event[4], bnip_number, size);
     event[4 + size] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -151,7 +151,7 @@ static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, 
     event[pos++] = clcc_mode;
     event[pos++] = clcc_mpty;
     event[pos++] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - pos) ? (int) strlen(bnip_number) : (int) sizeof(event) - pos;
+    uint16_t size = btstack_min(strlen(bnip_number), sizeof(event) - pos);
     strncpy((char*)&event[pos], bnip_number, size);
     pos += size;
     event[pos++] = 0;
@@ -526,7 +526,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
                 hfp_connection->ok_pending = 1;
                 hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
                 hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
-                log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
+                log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
                 hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
             } else {
                 hfp_connection->codec_confirmed = 0;
@@ -546,8 +546,8 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 }
 
 static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
-    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
-        hfp_connection->state > HFP_W2_DISCONNECT_SCO) return 0;
+    if ((hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) ||
+        (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return 0;
 
     if (hfp_connection->release_audio_connection){
         hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
@@ -994,7 +994,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 }
 
 static int hfp_parser_is_end_of_line(uint8_t byte){
-    return byte == '\n' || byte == '\r';
+    return (byte == '\n') || (byte == '\r');
 }
 
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1378,8 +1378,8 @@ void hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle){
         return;
     }
     
-    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
-        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
+        (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
         hfp_connection->hf_send_chld_1 = 1;
         hfp_run_for_context(hfp_connection);
     }
@@ -1392,8 +1392,8 @@ void hfp_hf_swap_calls(hci_con_handle_t acl_handle){
         return;
     }
     
-    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
-        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
+        (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
         hfp_connection->hf_send_chld_2 = 1;
         hfp_run_for_context(hfp_connection);
     }
@@ -1406,8 +1406,8 @@ void hfp_hf_join_held_call(hci_con_handle_t acl_handle){
         return;
     }
     
-    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
-        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
+        (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
         hfp_connection->hf_send_chld_3 = 1;
         hfp_run_for_context(hfp_connection);
     }
@@ -1420,8 +1420,8 @@ void hfp_hf_connect_calls(hci_con_handle_t acl_handle){
         return;
     }
     
-    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
-        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
+        (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
         hfp_connection->hf_send_chld_4 = 1;
         hfp_run_for_context(hfp_connection);
     }
@@ -1434,8 +1434,8 @@ void hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index){
         return;
     }
     
-    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
-        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
+        (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
         hfp_connection->hf_send_chld_x = 1;
         hfp_connection->hf_send_chld_x_index = 10 + index;
         hfp_run_for_context(hfp_connection);
@@ -1449,8 +1449,8 @@ void hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int inde
         return;
     }
     
-    if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS ||
-        hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT){
+    if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
+        (hfp_call_status == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
         hfp_connection->hf_send_chld_x = 1;
         hfp_connection->hf_send_chld_x_index = 20 + index;
         hfp_run_for_context(hfp_connection);
@@ -1592,7 +1592,7 @@ void hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
     }
     
     if (hfp_connection->microphone_gain == gain) return;
-    if (gain < 0 || gain > 15){
+    if ((gain < 0) || (gain > 15)){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
         return;
     }
@@ -1609,7 +1609,7 @@ void hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
     }
     
     if (hfp_connection->speaker_gain == gain) return;
-    if (gain < 0 || gain > 15){
+    if ((gain < 0) || (gain > 15)){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
         return;
     }

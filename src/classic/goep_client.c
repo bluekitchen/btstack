@@ -126,7 +126,7 @@ static inline void goep_client_emit_connected_event(goep_client_t * context, uin
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
     event[pos++] = status;
-    memcpy(&event[pos], context->bd_addr, 6);
+    (void)memcpy(&event[pos], context->bd_addr, 6);
     pos += 6;
     little_endian_store_16(event,pos,context->con_handle);
     pos += 2;
@@ -325,7 +325,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                 goep_client_emit_connected_event(goep_client, status);
                 break;
             }
-            if (context->rfcomm_port == 0 && context->l2cap_psm == 0){
+            if ((context->rfcomm_port == 0) && (context->l2cap_psm == 0)){
                 log_info("No GOEP RFCOMM or L2CAP server found");
                 context->state = GOEP_INIT;
                 goep_client_emit_connected_event(goep_client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
@@ -386,7 +386,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     context->l2cap_psm   = 0;
     context->rfcomm_port = 0;
     context->pbap_supported_features = PBAP_FEATURES_NOT_PRESENT;
-    memcpy(context->bd_addr, addr, 6);
+    (void)memcpy(context->bd_addr, addr, 6);
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
     return 0;

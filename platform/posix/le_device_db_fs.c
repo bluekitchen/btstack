@@ -211,7 +211,7 @@ static void le_device_db_read(void){
     FILE * wFile = fopen(db_path,"r");
     if (wFile == NULL) return;
     // skip header
-    while (1) {
+    while (true) {
         int c = fgetc(wFile);
         if (feof(wFile)) goto exit;
         if (c == '\n') break;

@@ -90,7 +90,8 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     // copy first chunk
     unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_written_index;
     unsigned int bytes_to_copy = btstack_min(bytes_until_end, data_length);
-    memcpy(&ring_buffer->storage[ring_buffer->last_written_index], data, bytes_to_copy);
+    (void)memcpy(&ring_buffer->storage[ring_buffer->last_written_index],
+                 data, bytes_to_copy);
     data_length -= bytes_to_copy;
     data += bytes_to_copy;
 
@@ -102,7 +103,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
 
     // copy second chunk
     if (data_length) {
-        memcpy(&ring_buffer->storage[0], data, data_length);
+        (void)memcpy(&ring_buffer->storage[0], data, data_length);
         ring_buffer->last_written_index += data_length;
     }
 
@@ -125,7 +126,8 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     // copy first chunk
     unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_read_index;
     unsigned int bytes_to_copy = btstack_min(bytes_until_end, data_length);
-    memcpy(data, &ring_buffer->storage[ring_buffer->last_read_index], bytes_to_copy);
+    (void)memcpy(data, &ring_buffer->storage[ring_buffer->last_read_index],
+                 bytes_to_copy);
     data_length -= bytes_to_copy;
     data += bytes_to_copy;
 
@@ -137,7 +139,7 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
 
     // copy second chunk
     if (data_length) {
-        memcpy(data, &ring_buffer->storage[0], data_length);
+        (void)memcpy(data, &ring_buffer->storage[0], data_length);
         ring_buffer->last_read_index += data_length;
     }
 

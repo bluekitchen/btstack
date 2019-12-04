@@ -149,7 +149,7 @@ int de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element){
             shortUUID = big_endian_read_32(element, 1);
             break;
         case DE_SIZE_128:
-            memcpy(uuid128, element+1, 16);
+            (void)memcpy(uuid128, element + 1, 16);
             return 1;
         default:
             return 0;
@@ -254,7 +254,7 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
         de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
         data_size += 2;
     }
-    memcpy( seq + 3 + data_size, data, size);
+    (void)memcpy(seq + 3 + data_size, data, size);
     data_size += size;
     big_endian_store_16(seq, 1, data_size);
 }
@@ -262,20 +262,20 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
 void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
     int data_size   = big_endian_read_16(seq,1);
     de_store_descriptor(seq+3+data_size, DE_UUID, DE_SIZE_128); 
-    memcpy( seq + 4 + data_size, uuid, 16);
+    (void)memcpy(seq + 4 + data_size, uuid, 16);
     big_endian_store_16(seq, 1, data_size+1+16);
 }
 
 // MARK: DES iterator
-int des_iterator_init(des_iterator_t * it, uint8_t * element){
+bool des_iterator_init(des_iterator_t * it, uint8_t * element){
     de_type_t type = de_get_element_type(element);
-    if (type != DE_DES) return 0;
+    if (type != DE_DES) return false;
 
     it->element = element;
     it->pos = de_get_header_size(element);
     it->length = de_get_len(element);
     // printf("des_iterator_init current pos %d, total len %d\n", it->pos, it->length);
-    return 1;
+    return true;
 }
 
 de_type_t des_iterator_get_type (des_iterator_t * it){
@@ -288,7 +288,7 @@ uint16_t des_iterator_get_size (des_iterator_t * it){
     return length - header_size;
 }
 
-int des_iterator_has_more(des_iterator_t * it){
+bool des_iterator_has_more(des_iterator_t * it){
     return it->pos < it->length;
 }
 
@@ -329,7 +329,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
     while (pos < end_pos){
         de_type_t idType = de_get_element_type(element + pos);
         de_size_t idSize = de_get_size_type(element + pos);
-        if (idType != DE_UINT || idSize != DE_SIZE_16) break; // wrong type
+        if ( (idType != DE_UINT) || (idSize != DE_SIZE_16) ) break; // wrong type
         uint16_t attribute_id = big_endian_read_16(element, pos + 1);
         pos += 3;
         if (pos >= end_pos) break; // array out of bounds
@@ -359,8 +359,8 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
             }
             break;
         case DE_SIZE_32:
-            if (big_endian_read_16(element, 1) <= context->attributeID
-            &&  context->attributeID <= big_endian_read_16(element, 3)) {
+            if ((big_endian_read_16(element, 1) <= context->attributeID)
+            &&  (context->attributeID <= big_endian_read_16(element, 3))) {
                 context->result = 1;
                 return 1;
             }
@@ -397,11 +397,12 @@ static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attri
         // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
         uint16_t data_size = big_endian_read_16(context->buffer, 1);
         int attribute_len = de_get_len(attributeValue);
-        if (3 + data_size + (3 + attribute_len) <= context->maxBytes) {
+        if ((3 + data_size + (3 + attribute_len)) <= context->maxBytes) {
             // copy Attribute
             de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
             data_size += 3; // 3 bytes
-            memcpy(context->buffer + 3 + data_size, attributeValue, attribute_len);
+            (void)memcpy(context->buffer + 3 + data_size, attributeValue,
+                         attribute_len);
             big_endian_store_16(context->buffer,1,data_size+attribute_len);
         } else {
             // not enought space left -> continue with previous element
@@ -441,7 +442,7 @@ static int spd_append_range(struct sdp_context_filter_attributes* context, uint1
         remainder_len = context->maxBytes;
         ok = 0;
     }
-    memcpy(context->buffer, &data[context->startOffset], remainder_len);
+    (void)memcpy(context->buffer, &data[context->startOffset], remainder_len);
     context->usedBytes += remainder_len;
     context->buffer    += remainder_len;
     context->maxBytes  -= remainder_len;
@@ -610,7 +611,7 @@ static int sdp_traversal_contains_UUID128(uint8_t * element, de_type_t type, de_
     uint8_t normalizedUUID[16];
     if (type == DE_UUID){
         uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);
-        context->result = uuidOK && memcmp(context->uuid128, normalizedUUID, 16) == 0;
+        context->result = uuidOK && (memcmp(context->uuid128, normalizedUUID, 16) == 0);
     }
     if (type == DE_DES){
         context->result = sdp_record_contains_UUID128(element, context->uuid128);
@@ -723,7 +724,7 @@ uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16){
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
-    memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
+    (void)memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
     return (uint8_t*)des_serviceSearchPatternUUID128;
 }
 

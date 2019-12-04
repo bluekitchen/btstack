@@ -51,7 +51,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 static void btstack_run_loop_windows_dump_timer(void);
 
@@ -74,7 +73,7 @@ static void btstack_run_loop_windows_add_data_source(btstack_data_source_t *ds){
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_windows_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_windows_remove_data_source(btstack_data_source_t *ds){
     data_sources_modified = 1;
     // log_info("btstack_run_loop_windows_remove_data_source %x\n", (int) ds);
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
@@ -105,7 +104,7 @@ static void btstack_run_loop_windows_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_windows_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_windows_remove_timer(btstack_timer_source_t *ts){
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // btstack_run_loop_windows_dump_timer();
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
@@ -153,7 +152,7 @@ static void btstack_run_loop_windows_execute(void) {
     btstack_timer_source_t *ts;
     btstack_linked_list_iterator_t it;
 
-    while (1) {
+    while (true) {
 
         // collect handles to wait for
         HANDLE handles[100];

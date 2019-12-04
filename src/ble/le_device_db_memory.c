@@ -129,8 +129,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     log_info_key("irk", irk);
 
     le_devices[index].addr_type = addr_type;
-    memcpy(le_devices[index].addr, addr, 6);
-    memcpy(le_devices[index].irk, irk, 16);
+    (void)memcpy(le_devices[index].addr, addr, 6);
+    (void)memcpy(le_devices[index].irk, irk, 16);
 #ifdef ENABLE_LE_SIGNED_WRITE
     le_devices[index].remote_counter = 0; 
 #endif
@@ -141,8 +141,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 // get device information: addr type and address
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk){
     if (addr_type) *addr_type = le_devices[index].addr_type;
-    if (addr) memcpy(addr, le_devices[index].addr, 6);
-    if (irk) memcpy(irk, le_devices[index].irk, 16);
+    if (addr) (void)memcpy(addr, le_devices[index].addr, 6);
+    if (irk) (void)memcpy(irk, le_devices[index].irk, 16);
 }
 
 void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection){
@@ -150,8 +150,8 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
         index, ediv, key_size, authenticated, authorized, secure_connection);
     le_device_memory_db_t * device = &le_devices[index];
     device->ediv = ediv;
-    if (rand) memcpy(device->rand, rand, 8);
-    if (ltk) memcpy(device->ltk, ltk, 16);
+    if (rand) (void)memcpy(device->rand, rand, 8);
+    if (ltk) (void)memcpy(device->ltk, ltk, 16);
     device->key_size = key_size;
     device->authenticated = authenticated;
     device->authorized = authorized;
@@ -163,8 +163,8 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
     log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
         index, device->ediv, device->key_size, device->authenticated, device->authorized, device->secure_connection);
     if (ediv) *ediv = device->ediv;
-    if (rand) memcpy(rand, device->rand, 8);
-    if (ltk)  memcpy(ltk, device->ltk, 16);    
+    if (rand) (void)memcpy(rand, device->rand, 8);
+    if (ltk)  (void)memcpy(ltk, device->ltk, 16);    
     if (key_size) *key_size = device->key_size;
     if (authenticated) *authenticated = device->authenticated;
     if (authorized) *authorized = device->authorized;
@@ -179,7 +179,7 @@ void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
         log_error("le_device_db_remote_csrk_get called with invalid index %d", index);
         return;
     }
-    if (csrk) memcpy(csrk, le_devices[index].remote_csrk, 16);
+    if (csrk) (void)memcpy(csrk, le_devices[index].remote_csrk, 16);
 }
 
 void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
@@ -187,7 +187,7 @@ void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
         log_error("le_device_db_remote_csrk_set called with invalid index %d", index);
         return;
     }
-    if (csrk) memcpy(le_devices[index].remote_csrk, csrk, 16);
+    if (csrk) (void)memcpy(le_devices[index].remote_csrk, csrk, 16);
 }
 
 void le_device_db_local_csrk_get(int index, sm_key_t csrk){
@@ -195,7 +195,7 @@ void le_device_db_local_csrk_get(int index, sm_key_t csrk){
         log_error("le_device_db_local_csrk_get called with invalid index %d", index);
         return;
     }
-    if (csrk) memcpy(csrk, le_devices[index].local_csrk, 16);
+    if (csrk) (void)memcpy(csrk, le_devices[index].local_csrk, 16);
 }
 
 void le_device_db_local_csrk_set(int index, sm_key_t csrk){
@@ -203,7 +203,7 @@ void le_device_db_local_csrk_set(int index, sm_key_t csrk){
         log_error("le_device_db_local_csrk_set called with invalid index %d", index);
         return;
     }
-    if (csrk) memcpy(le_devices[index].local_csrk, csrk, 16);
+    if (csrk) (void)memcpy(le_devices[index].local_csrk, csrk, 16);
 }
 
 // query last used/seen signing counter

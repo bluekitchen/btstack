@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_configuration_server.c"
+#define BTSTACK_FILE__ "mesh_configuration_server.c"
 
 #include <string.h>
 #include <stdio.h>
@@ -98,13 +98,15 @@ static uint8_t heartbeat_count_log(uint16_t value){
     if (value == 0)      return 0x00;
     if (value == 0xffff) return 0xff;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value);
+    // note: CountLog(8) == CountLog(7) = 3
+    return 33 - __builtin_clz(value - 1);
 }
 
 static uint8_t heartbeat_period_log(uint16_t value){
     if (value == 0)      return 0x00;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value);
+    // note: PeriodLog(8) == PeriodLog(7) = 3
+    return 33 - __builtin_clz(value - 1);
 }
 
 // TLV
@@ -273,15 +275,22 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
     mesh_access_transport_add_uint8(transport_pdu, 0);
 
     // CID
-    mesh_access_transport_add_uint16(transport_pdu, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
+    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_company_id());
     // PID
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_product_id());
     // VID
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_product_version_id());
     // CRPL - number of protection list entries
     mesh_access_transport_add_uint16(transport_pdu, 1);
     // Features - Relay, Proxy, Friend, Lower Power, ...
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    uint16_t features = 0;
+#ifdef ENABLE_MESH_RELAY
+    features |= 1;
+#endif
+#ifdef ENABLE_MESH_PROXY_SERVER
+    features |= 2;
+#endif
+    mesh_access_transport_add_uint16(transport_pdu, features);
 
     mesh_element_iterator_t element_it;
     mesh_element_iterator_init(&element_it);
@@ -302,14 +311,14 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
+            mesh_access_transport_add_model_identifier(transport_pdu, model->model_identifier);
         }
         // Vendor Models
         mesh_model_iterator_init(&model_it, element);
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
+            mesh_access_transport_add_model_identifier(transport_pdu, model->model_identifier);
         }
     }
     
@@ -608,7 +617,7 @@ static void config_netkey_add_derived(void * arg){
     mesh_proxy_start_advertising_with_network_id();
 #endif
 
-    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
+    config_netkey_status(mesh_node_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
 
@@ -650,7 +659,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
                 // setup key
                 new_network_key->internal_index = internal_index;
                 new_network_key->netkey_index   = new_netkey_index;
-                memcpy(new_network_key->net_key, new_netkey, 16);
+                (void)memcpy(new_network_key->net_key, new_netkey, 16);
 
                 // setup subnet
                 new_subnet->old_key = new_network_key;
@@ -693,7 +702,7 @@ static void config_netkey_update_derived(void * arg){
     subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
 
     // report status    
-    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
+    config_netkey_status(mesh_node_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
 
@@ -734,7 +743,7 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     new_network_key->internal_index = internal_index;
     new_network_key->netkey_index   = netkey_index;
     new_network_key->version        = (uint8_t)(subnet->old_key->version + 1);
-    memcpy(new_network_key->net_key, new_netkey, 16);
+    (void)memcpy(new_network_key->net_key, new_netkey, 16);
 
     // store in subnet (not active yet)
     subnet->new_key = new_network_key;    
@@ -749,21 +758,22 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
 
     // get params
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index_to_remove = mesh_access_parser_get_u16(&parser);
 
-    // get existing network_key
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    // get message netkey
+    uint16_t netkey_index_pdu = mesh_pdu_netkey_index(pdu);
 
     // remove subnet
-    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index_to_remove);
     if (subnet != NULL){
         // A NetKey shall not be deleted from the NetKey List using a message secured with this NetKey.
         // Also prevents deleting the last network key
-        if (netkey_index != mesh_pdu_netkey_index(pdu)){
+        if (netkey_index_to_remove != netkey_index_pdu){
 
             // remove all appkeys for this netkey
             mesh_transport_key_iterator_t it;
-            mesh_transport_key_iterator_init(&it, netkey_index);
+            mesh_transport_key_iterator_init(&it, netkey_index_to_remove);
             while (mesh_transport_key_iterator_has_more(&it)){
                 mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
                 mesh_configuration_server_delete_appkey(transport_key);
@@ -787,7 +797,8 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
         }
     }
-    config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index);
+    config_netkey_status(mesh_model, netkey_index_pdu, mesh_pdu_src(pdu), status, netkey_index_to_remove);
+    mesh_access_message_processed(pdu);
 }
 
 static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
@@ -851,7 +862,7 @@ static void config_appkey_add_or_update_aid(void *arg){
     mesh_transport_key_add(transport_key);
 
     uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
-    config_appkey_status(mesh_model_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
+    config_appkey_status(mesh_node_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
 
     mesh_access_message_processed(access_pdu_in_process);
 }
@@ -917,7 +928,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     app_key->version = 0;
     app_key->old_key = 0;
 
-    memcpy(app_key->key, appkey, 16);
+    (void)memcpy(app_key->key, appkey, 16);
 
     // calculate AID
     access_pdu_in_process = pdu;
@@ -988,7 +999,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     new_app_key->netkey_index = netkey_index;
     new_app_key->key_refresh  = 1;
     new_app_key->version = (uint8_t)(existing_app_key->version + 1);
-    memcpy(new_app_key->key, appkey, 16);
+    (void)memcpy(new_app_key->key, appkey, 16);
 
     // mark old key
     existing_app_key->old_key = 1;
@@ -1123,7 +1134,7 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
 
 static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_model_t * mesh_model = mesh_node_get_configuration_server();
 
     // add if not exists
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
@@ -1205,7 +1216,7 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
 
 static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_model_t * mesh_model = mesh_node_get_configuration_server();
 
     // add if not exists
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
@@ -1762,7 +1773,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
     }
 }
 void mesh_configuration_server_feature_changed(void){
-    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_model_t * mesh_model = mesh_node_get_configuration_server();
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_publication;
 
     // filter features by observed features for heartbeats
@@ -1778,6 +1789,7 @@ void mesh_configuration_server_feature_changed(void){
 static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t * ts){
 
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = (mesh_heartbeat_publication_t*) ts;
+    mesh_heartbeat_publication->timer_active = 0;
 
     // emit beat
     config_heartbeat_publication_emit(mesh_heartbeat_publication);
@@ -1790,6 +1802,7 @@ static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t 
 
     btstack_run_loop_set_timer(ts, mesh_heartbeat_publication->period_ms);
     btstack_run_loop_add_timer(ts);
+    mesh_heartbeat_publication->timer_active = 1;
 }
 
 static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, mesh_heartbeat_publication_t * mesh_heartbeat_publication){
@@ -1817,7 +1830,8 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
 
     mesh_heartbeat_publication_t requested_publication;
-
+    memset(&requested_publication, 0, sizeof(requested_publication));
+    
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1851,8 +1865,16 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
         printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
             requested_publication.destination, requested_publication.count, requested_publication.period_ms);
 
+        // stop timer if active
+        // note: accept update below using memcpy overwwrite timer_active flag
+        if (mesh_heartbeat_publication->timer_active){
+            btstack_run_loop_remove_timer(&mesh_heartbeat_publication->timer);
+            mesh_heartbeat_publication->timer_active = 0;
+        }
+
         // accept update
-        memcpy(mesh_heartbeat_publication, &requested_publication, sizeof(mesh_heartbeat_publication_t));
+        (void)memcpy(mesh_heartbeat_publication, &requested_publication,
+                     sizeof(mesh_heartbeat_publication_t));
     }
 
     config_heartbeat_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, mesh_heartbeat_publication);
@@ -1860,19 +1882,18 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     mesh_access_message_processed(pdu);
 
     if (status != MESH_FOUNDATION_STATUS_SUCCESS) return;
-
+    
     // check if heartbeats should be disabled
     if (mesh_heartbeat_publication->destination == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_publication->period_log == 0) {
-        btstack_run_loop_remove_timer(&mesh_heartbeat_publication->timer);
-        printf("MESH config_heartbeat_publication_set, disable periodic sending\n");
         return;
     }
-
-    // NOTE: defer first heartbeat to allow config status getting sent first
+    
+    // initial heartbeat after 2000 ms
     btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication->timer, config_heartbeat_publication_timeout_handler);
     btstack_run_loop_set_timer_context(&mesh_heartbeat_publication->timer, mesh_heartbeat_publication);
     btstack_run_loop_set_timer(&mesh_heartbeat_publication->timer, 2000);
     btstack_run_loop_add_timer(&mesh_heartbeat_publication->timer);
+    mesh_heartbeat_publication->timer_active = 1;
 }
 
 static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -2012,7 +2033,8 @@ static uint32_t config_heartbeat_subscription_get_period_remaining_s(mesh_heartb
 static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
     mesh_heartbeat_subscription_t subscription;
-    memcpy(&subscription, mesh_heartbeat_subscription, sizeof(subscription));
+    (void)memcpy(&subscription, mesh_heartbeat_subscription,
+                 sizeof(subscription));
     if (mesh_heartbeat_subscription->source == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_subscription->destination == MESH_ADDRESS_UNSASSIGNED){
         memset(&subscription, 0, sizeof(subscription));
     } else {

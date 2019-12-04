@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_virtual_addresses.c"
+#define BTSTACK_FILE__ "mesh_virtual_addresses.c"
 
 #include "mesh/mesh_virtual_addresses.h"
 
@@ -81,7 +81,7 @@ mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uin
 
     virtual_address->hash = hash;
     virtual_address->pseudo_dst = pseudo_dst;
-    memcpy(virtual_address->label_uuid, label_uuid, 16);
+    (void)memcpy(virtual_address->label_uuid, label_uuid, 16);
     mesh_virtual_address_add(virtual_address);
 
     return virtual_address;
@@ -116,7 +116,7 @@ void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, ui
 
 int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it){
     // find next matching key
-    while (1){
+    while (true){
         printf("check %p\n", it->address);
         if (it->address && it->address->hash == it->hash) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;

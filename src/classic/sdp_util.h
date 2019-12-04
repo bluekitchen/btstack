@@ -42,14 +42,34 @@
 #ifndef SDP_UTIL_H
 #define SDP_UTIL_H
 
+#include "btstack_bool.h"
+
 #include <stdint.h>
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
+
+typedef enum {
+    SDP_Invalid = 0,
+    SDP_ErrorResponse = 1,
+    SDP_ServiceSearchRequest,
+    SDP_ServiceSearchResponse,
+    SDP_ServiceAttributeRequest,
+    SDP_ServiceAttributeResponse,
+    SDP_ServiceSearchAttributeRequest,
+    SDP_ServiceSearchAttributeResponse
+} SDP_PDU_ID_t;
+
+
 /* API_START */
     
+// OFFSETS FOR LOCALIZED ATTRIBUTES - BLUETOOTH_ATTRIBUTE_LANGUAGE_BASE_ATTRIBUTE_ID_LIST
+#define SDP_Offset_ServiceName        0x0000
+#define SDP_Offset_ServiceDescription 0x0001
+#define SDP_Offset_ProviderName       0x0002
+
 typedef enum {
     DE_NIL = 0,
     DE_UINT,
@@ -107,8 +127,8 @@ typedef struct {
     uint16_t length;
 } des_iterator_t;
 
-int des_iterator_init(des_iterator_t * it, uint8_t * element);
-int  des_iterator_has_more(des_iterator_t * it);
+bool des_iterator_init(des_iterator_t * it, uint8_t * element);
+bool des_iterator_has_more(des_iterator_t * it);
 de_type_t des_iterator_get_type (des_iterator_t * it);
 uint16_t des_iterator_get_size (des_iterator_t * it);
 uint8_t * des_iterator_get_element(des_iterator_t * it);

@@ -69,7 +69,7 @@ public class GATTClientTest implements PacketHandler {
 		if (packet instanceof GATTEventQueryComplete){
 			GATTEventQueryComplete event = (GATTEventQueryComplete) packet;
 			System.out.println(testAddr + " battery data");
-			if (event.getStatus() != 0){
+			if (event.getATTStatus() != 0){
 				System.out.println("Battery data could not be read.\nRestart scanning.");
 				state = STATE.w4_scan_result;
 				btstack.GAPLEScanStart(); 

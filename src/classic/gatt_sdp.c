@@ -46,11 +46,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bluetooth_gatt.h"
+#include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"
 #include "btstack_config.h"
 #include "classic/core.h"
 #include "classic/sdp_util.h"
-#include "bluetooth_gatt.h"
+#include "l2cap.h"
 
 void gatt_create_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t gatt_start_handle, uint16_t gatt_end_handle){
 
@@ -76,7 +78,7 @@ void gatt_create_sdp_record(uint8_t *service, uint32_t service_record_handle, ui
         uint8_t* l2cap_protocol = de_push_sequence(attribute);
         {
             de_add_number(l2cap_protocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cap_protocol,  DE_UINT, DE_SIZE_16, PSM_ATT);
+            de_add_number(l2cap_protocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_ATT);
         }
         de_pop_sequence(attribute, l2cap_protocol);
         

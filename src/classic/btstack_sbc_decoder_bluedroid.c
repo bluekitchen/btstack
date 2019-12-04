@@ -159,7 +159,7 @@ void OI_AssertFail(const char* file, int line, const char* reason){
 #endif
 
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
-    if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
+    if (sbc_decoder_state_singleton && (sbc_decoder_state_singleton != state) ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
     OI_STATUS status = OI_STATUS_SUCCESS;
@@ -203,7 +203,8 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
         log_error("SBC data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);
     }
 
-    memcpy(state->frame_buffer + state->bytes_in_frame_buffer, buffer, size);
+    (void)memcpy(state->frame_buffer + state->bytes_in_frame_buffer, buffer,
+                 size);
     state->bytes_in_frame_buffer += size;
 }
 
@@ -239,7 +240,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
         if (corrupt_frame_period > 0){
             frame_count++;
 
-            if (frame_count % corrupt_frame_period == 0){
+            if ((frame_count % corrupt_frame_period) == 0){
                 *(uint8_t*)&frame_data[5] = 0;
                 frame_count = 0;
             }
@@ -326,7 +327,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
     while (input_bytes_to_process > 0){
 
         // Use PLC to insert missing frames (after first sync found)
-        while (decoder_state->first_good_frame_found && decoder_state->msbc_bad_bytes >= MSBC_FRAME_SIZE){
+        while (decoder_state->first_good_frame_found && (decoder_state->msbc_bad_bytes >= MSBC_FRAME_SIZE)){
     
             decoder_state->msbc_bad_bytes -= MSBC_FRAME_SIZE;
             state->bad_frames_nr++;
@@ -353,7 +354,9 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             if (plc_enabled) {
                 btstack_sbc_plc_bad_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
             } else {
-                memcpy(decoder_state->pcm_data, decoder_state->pcm_plc_data, decoder_state->pcm_bytes);
+                (void)memcpy(decoder_state->pcm_data,
+                             decoder_state->pcm_plc_data,
+                             decoder_state->pcm_bytes);
             }
 
             state->handle_pcm_data(decoder_state->pcm_data, 
@@ -384,7 +387,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         if (corrupt_frame_period > 0){
            frame_count++;
 
-            if (frame_count % corrupt_frame_period == 0){
+            if ((frame_count % corrupt_frame_period) == 0){
                 *(uint8_t*)&frame_data[5] = 0;
                 frame_count = 0;
             }

@@ -1,6 +1,6 @@
 /**
  * bluetooth_data_types.h generated from Bluetooth SIG website for BTstack by tool/bluetooth_data_types.py
- * https://www.bluetooth.com/specifications/assigned-numbers/generic-access-profile
+ * www.bluetooth.com/specifications/assigned-numbers/generic-access-profile
  * 2018-10-05 15:01:05.830879
  */
 

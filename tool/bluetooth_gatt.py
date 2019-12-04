@@ -43,7 +43,7 @@ def strip_non_ascii(string):
 
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
-    fout.write(page_info.format(page=url))
+    fout.write(page_info.format(page=url.replace('https://','')))
     page = requests.get(url, headers=headers)
     tree = html.fromstring(page.content)
     # get all <tr> elements in <table>

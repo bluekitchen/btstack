@@ -78,8 +78,6 @@
 #define TIMER_SUPPORT
 #endif
 
-static const btstack_run_loop_t btstack_run_loop_embedded;
-
 // the run loop
 static btstack_linked_list_t data_sources;
 
@@ -103,7 +101,7 @@ static void btstack_run_loop_embedded_add_data_source(btstack_data_source_t *ds)
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -146,7 +144,7 @@ static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 #else
@@ -224,7 +222,7 @@ void btstack_run_loop_embedded_execute_once(void) {
  * Execute run_loop
  */
 static void btstack_run_loop_embedded_execute(void) {
-    while (1) {
+    while (true) {
         btstack_run_loop_embedded_execute_once();
     }
 }
@@ -279,9 +277,6 @@ static void btstack_run_loop_embedded_init(void){
 /**
  * Provide btstack_run_loop_embedded instance 
  */
-const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
-    return &btstack_run_loop_embedded;
-}
 
 static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_init,
@@ -296,3 +291,8 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
 };
+
+const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
+    return &btstack_run_loop_embedded;
+}
+

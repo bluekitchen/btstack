@@ -38,16 +38,19 @@
 #define BTSTACK_FILE__ "avdtp_sink.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "l2cap.h"
+
 #include "classic/avdtp.h"
+#include "classic/avdtp_acceptor.h"
+#include "classic/avdtp_initiator.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_util.h"
-#include "classic/avdtp_initiator.h"
-#include "classic/avdtp_acceptor.h"
 
 static avdtp_context_t * avdtp_sink_context;
 
@@ -117,7 +120,7 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context->stream_endpoints_id_counter = 0;
     avdtp_sink_context->packet_handler = packet_handler;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_2);
+    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, LEVEL_2);
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
@@ -192,14 +195,15 @@ uint8_t avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t r
     return avdtp_reconfigure(avdtp_cid, local_seid, remote_seid, configured_services_bitmap, configuration, avdtp_sink_context);
 }
 
-uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_ms){
+uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_100us){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, avdtp_sink_context);
     if (!connection){
         log_error("delay_report: no connection for signaling cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED ||
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) ||
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         log_error("delay_report: connection in wrong state, state %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
@@ -209,15 +213,15 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         log_error("delay_report: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
-
+    
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED){
         log_error("Stream endpoint seid %d in wrong state %d", local_seid, stream_endpoint->state);
         return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
     }
-
+    
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT;
-    connection->delay_ms = delay_ms * 10;
+    connection->delay_ms = delay_100us;
     connection->local_seid = local_seid;
     connection->remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);

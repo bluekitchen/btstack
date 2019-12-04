@@ -61,3 +61,5 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 	return 0;
 }
 
+void hci_halting_defer(void){
+}

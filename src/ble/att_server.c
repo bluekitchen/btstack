@@ -278,7 +278,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
                     // store connection info
-                    att_server->peer_addr_type = BD_ADDR_TYPE_CLASSIC;
+                    att_server->peer_addr_type = BD_ADDR_TYPE_ACL;
                     l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
                     att_server->connection.con_handle = con_handle;
                     att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
@@ -516,7 +516,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
     uint16_t  att_response_size   = att_handle_request(&att_server->connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
-    if (att_response_size == ATT_READ_RESPONSE_PENDING || att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING){
+    if ((att_response_size == ATT_READ_RESPONSE_PENDING) || (att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING)){
         // update state
         att_server->state = ATT_SERVER_RESPONSE_PENDING;
 
@@ -659,7 +659,7 @@ static int att_server_data_ready_for_phase(att_server_t * att_server,  att_serve
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
             return att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
         case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
-             return (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0);
+             return (!btstack_linked_list_empty(&att_server->indication_requests) && (att_server->value_indication_handle == 0));
         case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
             return (!btstack_linked_list_empty(&att_server->notification_requests));
     }
@@ -696,7 +696,7 @@ static void att_server_handle_can_send_now(void){
     for (phase_index = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase_index <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase_index++){
         att_server_run_phase_t phase = (att_server_run_phase_t) phase_index;
         hci_con_handle_t skip_connections_until = att_server_last_can_send_now;
-        while (1){
+        while (true){
             btstack_linked_list_iterator_t it;
             hci_connections_get_iterator(&it);
             while(btstack_linked_list_iterator_has_next(&it)){
@@ -709,7 +709,7 @@ static void att_server_handle_can_send_now(void){
 
                 // skip until last sender found (which is also skipped)
                 if (skip_connections_until != HCI_CON_HANDLE_INVALID){
-                    if (data_ready && request_att_server == NULL){
+                    if (data_ready && (request_att_server == NULL)){
                         request_att_server = att_server;
                     }
                     if (skip_connections_until == att_server->connection.con_handle){
@@ -724,7 +724,7 @@ static void att_server_handle_can_send_now(void){
                         last_send_con_handle = att_server->connection.con_handle;
                         can_send_now = att_server_can_send_packet(att_server);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
-                        if (data_ready && request_att_server == NULL){
+                        if (data_ready && (request_att_server == NULL)){
                             request_att_server = att_server;
                         }
                     } else {
@@ -759,7 +759,7 @@ static void att_server_handle_can_send_now(void){
 static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size){
 
     // handle value indication confirms
-    if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_server->value_indication_handle){
+    if ((packet[0] == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
         uint16_t att_handle = att_server->value_indication_handle;
         att_server->value_indication_handle = 0;    
@@ -771,7 +771,7 @@ static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packe
     // directly process command
     // note: signed write cannot be handled directly as authentication needs to be verified
     if (packet[0] == ATT_WRITE_COMMAND){
-        att_handle_request(&att_server->connection, packet, size, 0);
+        att_handle_request(&att_server->connection, packet, size, NULL);
         return;
     }
 
@@ -802,7 +802,7 @@ static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packe
     // store request
     att_server->state = ATT_SERVER_REQUEST_RECEIVED;
     att_server->request_size = size;
-    memcpy(att_server->request_buffer, packet, size);
+    (void)memcpy(att_server->request_buffer, packet, size);
 
     att_run_for_context(att_server);
 }
@@ -840,7 +840,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 // ---------------------
 // persistent CCC writes
 static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
-    return 'B' << 24 | 'T' << 16 | 'C' << 8 | index;
+    return ('B' << 24) | ('T' << 16) | ('C' << 8) | index;
 }
 
 static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t value){
@@ -898,7 +898,10 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
             entry.value = value;
             entry.seq_nr = highest_seq_nr + 1;
             log_info("CCC Index %u: Store", index);
-            tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+            int result = tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+            if (result != 0){
+                log_error("Store tag index %u failed", index);
+            }
         } else {
             // delete
             log_info("CCC Index %u: Delete", index);
@@ -907,7 +910,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         return;
     }
 
-    log_info("tag_for_empy %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
+    log_info("tag_for_empty %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
 
     if (value == 0){
         // done
@@ -928,7 +931,10 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     entry.device_index = le_device_index;
     entry.att_handle   = att_handle;
     entry.value        = value;
-    tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+    int result = tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+    if (result != 0){
+        log_error("Store tag index %u failed", index);
+    }
 }
 
 static void att_server_persistent_ccc_clear(att_server_t * att_server){
@@ -1065,7 +1071,7 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     }
 
     // track CCC writes
-    if (att_is_persistent_ccc(attribute_handle) && offset == 0 && buffer_size == 2){
+    if (att_is_persistent_ccc(attribute_handle) && (offset == 0) && (buffer_size == 2)){
         att_server_persistent_ccc_write(con_handle, attribute_handle, little_endian_read_16(buffer, 0));
     }
 
@@ -1139,17 +1145,25 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
 int att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
+    bool added = btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
     att_server_request_can_send_now(att_server);
-    return ERROR_CODE_SUCCESS;
+    if (added){
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 }
 
 int att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
+    bool added = btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
     att_server_request_can_send_now(att_server);
-    return ERROR_CODE_SUCCESS;
+    if (added){
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 }
 
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){

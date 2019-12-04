@@ -121,12 +121,12 @@ static OI_STATUS DecodeBody(OI_CODEC_SBC_DECODER_CONTEXT *context,
     /*
      * Based on the header data, make sure that there is enough room to write the output samples.
      */
-    if (*pcmBytes < (sizeof(OI_INT16) * frameSamples * context->common.pcmStride) && !allowPartial) {
+    if ((*pcmBytes < (sizeof(OI_INT16) * frameSamples * context->common.pcmStride)) && !allowPartial) {
         /* If we're not allowing partial decodes, we need room for the entire
          * codec frame */
         TRACE(("-OI_CODEC_SBC_Decode: OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA"));
         return OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA;
-    } else if (*pcmBytes < sizeof (OI_INT16) * context->common.frameInfo.nrof_subbands * context->common.pcmStride) {
+    } else if (*pcmBytes < (sizeof (OI_INT16) * context->common.frameInfo.nrof_subbands * context->common.pcmStride)) {
         /* Even if we're allowing partials, we can still only decode on a frame
          * boundary */
         return OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA;
@@ -174,10 +174,10 @@ static OI_STATUS DecodeBody(OI_CODEC_SBC_DECODER_CONTEXT *context,
     /*
      * When decoding mono into a stride-2 array, copy pcm data to second channel
      */
-    if (context->common.frameInfo.nrof_channels == 1 && context->common.pcmStride == 2) {
+    if ((context->common.frameInfo.nrof_channels == 1) && (context->common.pcmStride == 2)) {
         OI_UINT i;
         for (i = 0; i < frameSamples; ++i) {
-            pcmData[2*i+1] = pcmData[2*i];
+            pcmData[(2*i)+1] = pcmData[2*i];
         }
     }
 
@@ -226,7 +226,7 @@ PRIVATE OI_STATUS internal_DecodeRaw(OI_CODEC_SBC_DECODER_CONTEXT *context,
      * tones.
      */
     status = DecodeBody(context, *frameData, pcmData, pcmBytes, TRUE);
-    if (OI_SUCCESS(status) || status == OI_CODEC_SBC_PARTIAL_DECODE) {
+    if (OI_SUCCESS(status) || (status == OI_CODEC_SBC_PARTIAL_DECODE)) {
         *frameData += bodyLen;
         *frameBytes -= bodyLen;
     }
@@ -303,7 +303,7 @@ OI_STATUS OI_CODEC_SBC_DecodeFrame(OI_CODEC_SBC_DECODER_CONTEXT *context,
         return OI_STATUS_INVALID_PARAMETERS;
     }
 
-    if (context->common.pcmStride < 1 || context->common.pcmStride > 2) {
+    if ((context->common.pcmStride < 1) || (context->common.pcmStride > 2)) {
         ERROR(("PCM stride not set correctly during reset"));
         return OI_STATUS_INVALID_PARAMETERS;
     }
@@ -443,7 +443,7 @@ OI_UINT8 OI_CODEC_SBC_FrameCount(OI_BYTE  *frameData,
         }
 
         frameCount++;
-        frameLen = SBC_HEADER_LEN + (frameLen + 7) / 8;
+        frameLen = SBC_HEADER_LEN + ((frameLen + 7) / 8);
         if (frameBytes > frameLen){
             frameBytes -= frameLen;
             frameData += frameLen;

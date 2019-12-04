@@ -39,17 +39,19 @@
 #define BTSTACK_FILE__ "a2dp_source.c"
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "classic/avdtp.h"
-#include "classic/avdtp_util.h"
-#include "classic/avdtp_source.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 #include "classic/a2dp_source.h"
+#include "classic/avdtp_source.h"
+#include "classic/avdtp_util.h"
+#include "classic/sdp_util.h"
+#include "l2cap.h"
 
 #define AVDTP_MAX_SEP_NUM 10
-#define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
@@ -85,7 +87,7 @@ void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_ha
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
         }
         de_pop_sequence(attribute, l2cpProtocol);
         
@@ -153,6 +155,27 @@ static void a2dp_streaming_emit_can_send_media_packet_now(btstack_packet_handler
     pos += 2;
     event[pos++] = seid;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static inline void a2dp_signaling_emit_delay_report_capability(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
+static inline void a2dp_signaling_emit_capabilities_done(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
+static inline void a2dp_signaling_emit_delay_report(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_DELAY_REPORT;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
 }
 
 static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
@@ -267,6 +290,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
             uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
+
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[0] = (sampling_frequency << 4) | channel_mode;
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[1] = (block_length << 4) | (subbands << 2) | allocation_method;
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
@@ -284,38 +308,45 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_media_transport_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, remote seid %d", avdtp_subevent_signaling_media_transport_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_reporting_capability_get_remote_seid(packet));
-            break;
-        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, remote seid %d", avdtp_subevent_signaling_reporting_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_recovery_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY, remote seid %d", avdtp_subevent_signaling_recovery_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_content_protection_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY, remote seid %d", avdtp_subevent_signaling_content_protection_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_header_compression_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY, remote seid %d", avdtp_subevent_signaling_header_compression_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY, remote seid %d", avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(packet));
             break;
-        case AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE:
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            a2dp_signaling_emit_delay_report_capability(a2dp_source_context.a2dp_callback, packet, size);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
+            a2dp_signaling_emit_capabilities_done(a2dp_source_context.a2dp_callback, packet, size);
             break;
 
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
+            // forward packet:
+            a2dp_signaling_emit_delay_report(a2dp_source_context.a2dp_callback, packet, size);
+            break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             // TODO check cid
             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
+            sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
             sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
+            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            sc.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            log_info("A2DP received SBC Config: sample rate %u, max bitpool %u.", sc.sampling_frequency, sc.max_bitpool_value);
             log_info("A2DP received SBC Config: sample rate %u, max bitpool %u.", sc.sampling_frequency, sc.max_bitpool_value);
             app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             a2dp_signaling_emit_media_codec_sbc(a2dp_source_context.a2dp_callback, packet, size);
@@ -324,7 +355,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
        
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
             cid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
-            a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, cid, 0);
+            local_seid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
+            log_info("AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW cid 0x%02x, local_seid %d", cid, local_seid);
+            a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, cid, local_seid);
             break;
         
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
@@ -472,9 +505,11 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
     avdtp_source_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     avdtp_source_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type, 
         codec_capabilities, codec_capabilities_len);
+    
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information     = media_codec_info;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_info_len;
     sc.local_stream_endpoint = local_stream_endpoint;                     
+    avdtp_source_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     return local_stream_endpoint;
 }
 
@@ -484,7 +519,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
         log_error(" no local_stream_endpoint for seid %d", loc_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
-    memcpy(sc.remote_addr, remote_addr, 6);
+    (void)memcpy(sc.remote_addr, remote_addr, 6);
     return avdtp_source_connect(remote_addr, a2dp_cid);
 }
 
@@ -497,7 +532,9 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uin
 
     log_info("a2dp_source_reconfigure_stream");
 
-    memcpy(sc.local_stream_endpoint->reconfigure_media_codec_sbc_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, 4);
+    (void)memcpy(sc.local_stream_endpoint->reconfigure_media_codec_sbc_info,
+                 sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information,
+                 4);
 
     // update sampling frequency
     uint8_t config = sc.local_stream_endpoint->reconfigure_media_codec_sbc_info[0] & 0x0f;
@@ -545,106 +582,14 @@ uint8_t a2dp_source_pause_stream(uint16_t a2dp_cid, uint8_t local_seid){
     return avdtp_suspend_stream(a2dp_cid, local_seid, &a2dp_source_context);
 }
 
-static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
-    if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
-        log_error("small outgoing buffer");
-        return;
-    }
-
-    uint8_t  rtp_version = 2;
-    uint8_t  padding = 0;
-    uint8_t  extension = 0;
-    uint8_t  csrc_count = 0;
-    uint8_t  payload_type = 0x60;
-    // uint16_t sequence_number = stream_endpoint->sequence_number;
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
-    uint32_t ssrc = 0x11223344;
-
-    // rtp header (min size 12B)
-    int pos = 0;
-    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-
-    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
-    media_packet[pos++] = (marker << 1) | payload_type;
-    big_endian_store_16(media_packet, pos, sequence_number);
-    pos += 2;
-    big_endian_store_32(media_packet, pos, timestamp);
-    pos += 4;
-    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
-    pos += 4;
-    *offset = pos;
-}
-
 void a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
-    if (!stream_endpoint) {
-        log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
-        return;
-    }
-    if (a2dp_source_context.avdtp_cid != a2dp_cid){
-        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
-        return;
-    }
-    stream_endpoint->send_stream = 1;
-    avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+    avdtp_source_stream_endpoint_request_can_send_now(a2dp_cid, local_seid);
 }
 
 int a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
-    if (!stream_endpoint) {
-        log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
-        return 0;
-    }
-    if (a2dp_source_context.avdtp_cid != a2dp_cid){
-        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
-        return 0;
-    }
-
-    if (stream_endpoint->l2cap_media_cid == 0){
-        log_error("A2DP source: no media connection for seid %d", local_seid);
-        return 0;
-    }  
-    return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - AVDTP_MEDIA_PAYLOAD_HEADER_SIZE;
-}
-
-static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
-    if (size < num_bytes_to_copy + 1){
-        log_error("small outgoing buffer: buffer size %u, but need %u", size, num_bytes_to_copy + 1);
-        return;
-    }
-    
-    int pos = *offset;
-    media_packet[pos++] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    memcpy(media_packet + pos, storage, num_bytes_to_copy);
-    pos += num_bytes_to_copy;
-    *offset = pos;
+    return avdtp_max_media_payload_size(a2dp_cid, local_seid);
 }
 
 int a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
-    if (!stream_endpoint) {
-        log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
-        return 0;
-    }
-    if (a2dp_source_context.avdtp_cid != a2dp_cid){
-        log_error("A2DP source: a2dp cid 0x%02x not known, expected 0x%02x", a2dp_cid, a2dp_source_context.avdtp_cid);
-        return 0;
-    }
-
-    if (stream_endpoint->l2cap_media_cid == 0){
-        log_error("A2DP source: no media connection for seid %d", local_seid);
-        return 0;
-    } 
-
-    int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    int offset = 0;
-
-    l2cap_reserve_packet_buffer();
-    uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-    a2dp_source_copy_media_payload(media_packet, size, &offset, storage, num_bytes_to_copy, num_frames);
-    stream_endpoint->sequence_number++;
-    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
-    return size;
+    return avdtp_source_stream_send_media_payload(a2dp_cid, local_seid, storage, num_bytes_to_copy, num_frames, marker);
 }

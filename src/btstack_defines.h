@@ -44,8 +44,8 @@
 #define BTSTACK_DEFINES_H
 
 #include <stdint.h>
-#include "btstack_linked_list.h" 
 
+#include "btstack_linked_list.h" 
 
 // UNUSED macro
 #ifndef UNUSED
@@ -132,83 +132,6 @@ typedef uint8_t sm_key_t[16];
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
-
-// ERRORS
-// last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
-
-/* ENUM_START: BTSTACK_ERROR_CODE */
-#define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
-#define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH         0x51
-#define BTSTACK_ACTIVATION_POWERON_FAILED                  0x52
-#define BTSTACK_ACTIVATION_FAILED_UNKNOWN                  0x53
-#define BTSTACK_NOT_ACTIVATED                              0x54
-#define BTSTACK_BUSY                                       0x55
-#define BTSTACK_MEMORY_ALLOC_FAILED                        0x56
-#define BTSTACK_ACL_BUFFERS_FULL                           0x57
-
-// l2cap errors - enumeration by the command that created them
-#define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD 0x60
-#define L2CAP_COMMAND_REJECT_REASON_SIGNALING_MTU_EXCEEDED 0x61
-#define L2CAP_COMMAND_REJECT_REASON_INVALID_CID_IN_REQUEST 0x62
-
-#define L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL        0x63
-#define L2CAP_CONNECTION_RESPONSE_RESULT_PENDING           0x64
-#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM       0x65
-#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY  0x66
-#define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES 0x67
-#define L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED 0x68
-// should be L2CAP_CONNECTION_RTX_TIMEOUT
-#define L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT       0x69
-#define L2CAP_CONNECTION_BASEBAND_DISCONNECT               0x6A
-#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6B
-#define L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU                  0x6C
-#define L2CAP_SERVICE_DOES_NOT_EXIST                       0x6D
-#define L2CAP_LOCAL_CID_DOES_NOT_EXIST                     0x6E
-    
-#define RFCOMM_MULTIPLEXER_STOPPED                         0x70
-#define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
-#define RFCOMM_NO_OUTGOING_CREDITS                         0x72
-#define RFCOMM_AGGREGATE_FLOW_OFF                          0x73
-#define RFCOMM_DATA_LEN_EXCEEDS_MTU                        0x74
-
-#define SDP_HANDLE_ALREADY_REGISTERED                      0x80
-#define SDP_QUERY_INCOMPLETE                               0x81
-#define SDP_SERVICE_NOT_FOUND                              0x82
-#define SDP_HANDLE_INVALID                                 0x83
-#define SDP_QUERY_BUSY                                     0x84
-
-#define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
-#define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
-#define ATT_HANDLE_VALUE_INDICATION_DISCONNECT             0x92
-
-#define GATT_CLIENT_NOT_CONNECTED                          0x93
-#define GATT_CLIENT_BUSY                                   0x94
-#define GATT_CLIENT_IN_WRONG_STATE                         0x95
-#define GATT_CLIENT_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS 0x96
-#define GATT_CLIENT_VALUE_TOO_LONG                         0x97
-#define GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED 0x98
-#define GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED   0x99 
-
-#define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
-#define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
-#define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
-
-// OBEX ERRORS
-#define OBEX_UNKNOWN_ERROR                                 0xB0
-#define OBEX_CONNECT_FAILED                                0xB1
-#define OBEX_DISCONNECTED                                  0xB2
-#define OBEX_NOT_FOUND                                     0xB3
-#define OBEX_NOT_ACCEPTABLE                                0xB4
-
-#define AVDTP_SEID_DOES_NOT_EXIST                          0xC0
-#define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
-#define AVDTP_CONNECTION_IN_WRONG_STATE                    0xC2
-#define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
-#define AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST               0xC4
-#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC5 
-
-#define MESH_ERROR_APPKEY_INDEX_INVALID                    0xD0
-/* ENUM_END */
 
 // DAEMON COMMANDS
 
@@ -330,6 +253,380 @@ typedef uint8_t sm_key_t[16];
 #define ATT_DB_VERSION                                     0x01
 
 // EVENTS
+
+// Events from host controller to host
+
+/**
+ * @format 1
+ * @param status
+ */
+#define HCI_EVENT_INQUIRY_COMPLETE                         0x01
+
+/** 
+ * @format 1B11132
+ * @param num_responses
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved1
+ * @param reserved2
+ * @param class_of_device
+ * @param clock_offset
+ */
+#define HCI_EVENT_INQUIRY_RESULT                           0x02
+
+/**
+ * @format 12B11
+ * @param status
+ * @param connection_handle
+ * @param bd_addr
+ * @param link_type
+ * @param encryption_enabled
+ */
+#define HCI_EVENT_CONNECTION_COMPLETE                      0x03
+/**
+ * @format B31
+ * @param bd_addr
+ * @param class_of_device
+ * @param link_type
+ */
+#define HCI_EVENT_CONNECTION_REQUEST                       0x04
+/**
+ * @format 121
+ * @param status
+ * @param connection_handle
+ * @param reason 
+ */
+#define HCI_EVENT_DISCONNECTION_COMPLETE                   0x05
+/**
+ * @format 12
+ * @param status
+ * @param connection_handle
+ */
+#define HCI_EVENT_AUTHENTICATION_COMPLETE                 0x06
+
+// HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT is deprecated, use HCI_EVENT_AUTHENTICATION_COMPLETE instead
+#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT HCI_EVENT_AUTHENTICATION_COMPLETE
+
+/**
+ * @format 1BN
+ * @param status
+ * @param bd_addr
+ * @param remote_name
+ */
+#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE             0x07
+/**
+ * @format 121
+ * @param status
+ * @param connection_handle
+ * @param encryption_enabled 
+ */
+#define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
+/**
+ * @format 12
+ * @param status
+ * @param connection_handle
+ */
+#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
+/**
+ * @format 121
+ * @param status
+ * @param connection_handle
+ * @param key_flag 
+ */
+#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
+
+#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
+
+/**
+ * @format 12122
+ * @param status
+ * @param connection_handle
+ * @param version
+ * @param manufacturer_name
+ * @param subversion
+ */
+#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
+
+#define HCI_EVENT_QOS_SETUP_COMPLETE                       0x0D
+
+/**
+ * @format 12R
+ * @param num_hci_command_packets
+ * @param command_opcode
+ * @param return_parameters
+ */
+#define HCI_EVENT_COMMAND_COMPLETE                         0x0E
+/**
+ * @format 112
+ * @param status
+ * @param num_hci_command_packets
+ * @param command_opcode
+ */
+#define HCI_EVENT_COMMAND_STATUS                           0x0F
+
+/**
+ * @format 1
+ * @param hardware_code
+ */
+#define HCI_EVENT_HARDWARE_ERROR                           0x10
+
+#define HCI_EVENT_FLUSH_OCCURRED                           0x11
+
+/**
+ * @format 1B1
+ * @param status
+ * @param bd_addr
+ * @param role
+ */
+#define HCI_EVENT_ROLE_CHANGE                              0x12
+
+// TODO: number_of_handles 1, connection_handle[H*i], hc_num_of_completed_packets[2*i]
+#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS              0x13
+
+/**
+ * @format 1H12
+ * @param status
+ * @param handle
+ * @param mode
+ * @param interval
+ */
+#define HCI_EVENT_MODE_CHANGE                              0x14
+
+// TODO: num_keys, bd_addr[B*i], link_key[16 octets * i]
+#define HCI_EVENT_RETURN_LINK_KEYS                         0x15
+
+/**
+ * @format B
+ * @param bd_addr
+ */
+#define HCI_EVENT_PIN_CODE_REQUEST                         0x16
+
+/**
+ * @format B
+ * @param bd_addr
+ */
+#define HCI_EVENT_LINK_KEY_REQUEST                         0x17
+
+// TODO: bd_addr B, link_key 16octets, key_type 1
+#define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18
+
+/**
+ * @format 1
+ * @param link_type
+ */
+#define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
+
+/**
+ * @format H1
+ * @param handle
+ * @param lmp_max_slots
+ */
+#define HCI_EVENT_MAX_SLOTS_CHANGED                        0x1B
+
+/**
+ * @format 1H2
+ * @param status
+ * @param handle
+ * @param clock_offset
+ */
+#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
+
+/**
+ * @format 1H2
+ * @param status
+ * @param handle
+ * @param packet_types
+ * @pnote packet_type is in plural to avoid clash with Java binding Packet.getPacketType()
+ */
+#define HCI_EVENT_CONNECTION_PACKET_TYPE_CHANGED           0x1D
+
+/** 
+ * @format 1B11321
+ * @param num_responses
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved
+ * @param class_of_device
+ * @param clock_offset
+ * @param rssi
+ */
+#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22
+
+/**
+ * @format 1HB111221
+ * @param status
+ * @param handle
+ * @param bd_addr
+ * @param link_type
+ * @param transmission_interval
+ * @param retransmission_interval
+ * @param rx_packet_length
+ * @param tx_packet_length
+ * @param air_mode
+ */
+#define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE          0x2C
+
+// TODO: serialize extended_inquiry_response and provide parser
+/** 
+ * @format 1B11321
+ * @param num_responses
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved
+ * @param class_of_device
+ * @param clock_offset
+ * @param rssi
+ */
+#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
+
+ /** 
+  * @format 1H
+  * @param status
+  * @param handle
+  */
+#define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE          0x30
+
+#define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
+#define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
+
+/**
+ * @format B4
+ * @param bd_addr
+ * @param numeric_value
+ */
+#define HCI_EVENT_USER_CONFIRMATION_REQUEST                0x33
+
+/**
+ * @format B
+ * @param bd_addr
+ */
+#define HCI_EVENT_USER_PASSKEY_REQUEST                     0x34
+
+/**
+ * @format B
+ * @param bd_addr
+ */
+#define HCI_EVENT_REMOTE_OOB_DATA_REQUEST                  0x35
+
+/**
+ * @format 1B
+ * @param status
+ * @param bd_addr
+ */
+#define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36
+
+#define HCI_EVENT_LE_META                                  0x3E
+
+// last used HCI_EVENT in 2.1 is 0x3d
+// last used HCI_EVENT in 4.1 is 0x57
+
+#define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
+
+/** 
+ * @format 11H11B2221
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param role
+ * @param peer_address_type
+ * @param peer_address
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ * @param master_clock_accuracy
+ */
+#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
+
+/**
+ * @format 11H222
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ */
+ #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
+
+/**
+ * @format 1HD2
+ * @param subevent_code
+ * @param connection_handle
+ * @param random_number
+ * @param encryption_diversifier
+ */
+#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
+
+/**
+ * @format 1HD2
+ * @param subevent_code
+ * @param connection_handle
+ * @param random_number
+ * @param encryption_diversifier
+ */
+#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05
+
+/**
+ * @format 1H2222
+ * @param subevent_code
+ * @param connection_handle
+ * @param interval_min
+ * @param interval_max
+ * @param latency
+ * @param timeout
+ */
+#define HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST 0x06
+
+/**
+ * @format 1H2222
+ * @param subevent_code
+ * @param connection_handle
+ * @param max_tx_octets
+ * @param max_tx_time
+ * @param max_rx_octets
+ * @param max_rx_time
+ */
+#define HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE 0x07
+
+/**
+ * @format 11QQ
+ * @param subevent_code
+ * @param status
+ * @param dhkey_x x coordinate of P256 public key
+ * @param dhkey_y y coordinate of P256 public key
+ */
+#define HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE 0x08
+ /**
+ * @format 11Q
+ * @param subevent_code
+ * @param status
+ * @param dhkey Diffie-Hellman key
+ */
+#define HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE            0x09
+
+/**
+ * @format 11H11BBB2221
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param role
+ * @param peer_address_type
+ * @param perr_addresss
+ * @param local_resolvable_private_addres
+ * @param peer_resolvable_private_addres
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ * @param master_clock_accuracy
+ */
+#define HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE       0x0A
+
+// array of advertisements, not handled by event accessor generator
+#define HCI_SUBEVENT_LE_DIRECT_ADVERTISING_REPORT          0x0B
+
 
 /**
  * @format 1
@@ -665,7 +962,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format H1
  * @param handle
- * @param status
+ * @param att_status  see ATT errors in bluetooth.h  
  */
 #define GATT_EVENT_QUERY_COMPLETE                                0xA0
 
@@ -1611,7 +1908,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE             0x15
+#define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE           0x15
 
 
 /**
@@ -1621,6 +1918,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x16
 
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param delay_100us
+ */
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT               0x17
 
 /** A2DP Subevent */
 /* Stream goes through following states:
@@ -1760,6 +2065,34 @@ typedef uint8_t sm_key_t[16];
  * @param status
  */
 #define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x0E
+
+
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param delay_100us
+ */
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x0F
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x10
 
 /** AVRCP Subevent */
 
@@ -2252,7 +2585,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param con_handle
- * @param measurement_type  // 0 - force magnitude, 1 - torque magnitude, see cycling_power_sensor_measurement_context_t
+ * @param measurement_type 0 - force magnitude, 1 - torque magnitude, see cycling_power_sensor_measurement_context_t
  * @param is_enhanced
 */
 #define GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION               0x01
@@ -2547,7 +2880,7 @@ typedef uint8_t sm_key_t[16];
  * @param element_index
  * @param model_identifier
  * @param present_value
- * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
+ * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
 #define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x31
@@ -2558,46 +2891,28 @@ typedef uint8_t sm_key_t[16];
  * @param element_index
  * @param model_identifier
  * @param present_value
- * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
+ * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
 #define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
 
-
 /**
- * @format 112
+ * @format 1222211
  * @param subevent_code
- * @param element_index
- * @param company_id
- */
-#define MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS                                 0x33
-
-/**
- * @format 11422221
- * @param subevent_code
- * @param element_index
- * @param model_identifier
  * @param dest
  * @param netkey_index
  * @param appkey_index
  * @param company_id
  * @param test_id
+ * @param acknowledged
  */
-#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x34
-
-/**
- * @format 111
- * @param subevent_code
- * @param element_index
- * @param fast_period_divisor
- */
-#define MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED                             0x35
+#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x33
 
 /**
  * @format 11
  * @param subevent_code
  * @param element_index
  */
-#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x36
+#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x34
 
 #endif

@@ -289,7 +289,7 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
 void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
     hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
-    memcpy(remote, bd_addr, 6);
+    (void)memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
@@ -542,7 +542,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);    // ok: no channel for HCI_EVENT_PACKET and only single active RFCOMM channel
 
     if (packet_type == RFCOMM_DATA_PACKET){
-        while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+        while ((size > 0) && ((packet[0] == '\n') || (packet[0] == '\r'))){
             size--;
             packet++;
         }

@@ -69,6 +69,7 @@ typedef struct {
 
 	/**
 	 * Delete Tag
+     *  @note it is not expected that delete operation fails, please use at least log_error in case of errors
 	 * @param context
 	 * @param tag
 	 */

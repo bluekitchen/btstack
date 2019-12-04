@@ -55,6 +55,7 @@
 #include "hci_cmd.h"
 #include "gap.h"
 #include "hci_transport.h"
+#include "btstack_run_loop.h"
 
 #ifdef ENABLE_BLE
 #include "ble/att_db.h"
@@ -141,12 +142,21 @@ extern "C" {
 #endif
 #endif
 
+// packet header sizes
+#define HCI_CMD_HEADER_SIZE          3
+#define HCI_ACL_HEADER_SIZE          4
+#define HCI_SCO_HEADER_SIZE          3
+#define HCI_EVENT_HEADER_SIZE        2
+
+#define HCI_EVENT_PAYLOAD_SIZE     255
+#define HCI_CMD_PAYLOAD_SIZE       255
+
 // 
-#define IS_COMMAND(packet, command) (little_endian_read_16(packet,0) == command.opcode)
+#define IS_COMMAND(packet, command) ( little_endian_read_16(packet,0) == command.opcode )
 
 // check if command complete event for given command
-#define HCI_EVENT_IS_COMMAND_COMPLETE(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && little_endian_read_16(event,3) == cmd.opcode)
-#define HCI_EVENT_IS_COMMAND_STATUS(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && little_endian_read_16(event,4) == cmd.opcode)
+#define HCI_EVENT_IS_COMMAND_COMPLETE(event,cmd) ( (event[0] == HCI_EVENT_COMMAND_COMPLETE) && (little_endian_read_16(event,3) == cmd.opcode) )
+#define HCI_EVENT_IS_COMMAND_STATUS(event,cmd)   ( (event[0] == HCI_EVENT_COMMAND_STATUS)   && (little_endian_read_16(event,4) == cmd.opcode) )
 
 // Code+Len=2, Pkts+Opcode=3; total=5
 #define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
@@ -200,6 +210,8 @@ typedef enum {
 
     // errands
     READ_RSSI                      = 0x10000,
+    WRITE_SUPERVISION_TIMEOUT      = 0x20000,
+
 } hci_authentication_flags_t;
 
 /**
@@ -754,7 +766,8 @@ typedef struct {
     inquiry_mode_t     inquiry_mode;
 #ifdef ENABLE_CLASSIC
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
-    uint8_t             gap_required_encyrption_key_size;
+    uint8_t            gap_required_encyrption_key_size;
+    uint16_t           link_supervision_timeout;
 #endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers

@@ -6,6 +6,7 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/src
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 # -L$(CPPUTEST_HOME) 
 
@@ -46,4 +47,5 @@ test: all
 clean:
 	rm -f sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query *.o *.o
 	rm -rf *.dSYM
+	rm -f *.gcno *.gcda
 	

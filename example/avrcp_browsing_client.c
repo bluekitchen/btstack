@@ -142,11 +142,11 @@ static inline int next_index(int * index, int max_value){
     return (*index);
 }
 
-static int next_folder_index(){
+static int next_folder_index(void){
     return next_index(&folder_index, AVRCP_BROWSING_MAX_FOLDERS);
 }
 
-static int next_player_index(){
+static int next_player_index(void){
     return next_index(&player_index, AVRCP_BROWSING_MAX_PLAYERS);
 }
 

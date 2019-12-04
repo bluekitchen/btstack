@@ -6,6 +6,7 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -28,5 +29,6 @@ test: all
 	./btstack_linked_list_test
 	
 clean:
-	rm -fr btstack_linked_list_test *.dSYM *.o ../src/*.o
+	rm -fr btstack_linked_list_test *.dSYM *.o ../src/*.o 
+	rm -f *.gcno *.gcda
 	

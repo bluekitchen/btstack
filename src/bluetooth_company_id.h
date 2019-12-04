@@ -7,7 +7,7 @@
 #define BLUETOOTH_COMPANY_ID_H
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers
+ * Assigned numbers from www.bluetooth.com/specifications/assigned-numbers/company-identifiers
  */
 #define BLUETOOTH_COMPANY_ID_ERICSSON_TECHNOLOGY_LICENSING                               0x0000
 #define BLUETOOTH_COMPANY_ID_NOKIA_MOBILE_PHONES                                         0x0001

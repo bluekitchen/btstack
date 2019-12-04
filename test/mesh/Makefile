@@ -38,6 +38,8 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \
 	-I$(BTSTACK_ROOT)/test/rijndael \
 
+CFLAGS += -fprofile-arcs -ftest-coverage
+
 VPATH += ${BTSTACK_ROOT}/test/rijndael
 VPATH += ${BTSTACK_ROOT}/src/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
@@ -63,7 +65,7 @@ mesh_pts: mesh_pts.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${S
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o mesh_network.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-mesh_message_test: mesh_foundation.o mesh_node.o mesh_message_test.c mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
+mesh_message_test: mesh_message_test.cpp mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
 	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} mesh_keys.o mesh_network.o mesh_foundation.o sniffer.c 
@@ -80,9 +82,13 @@ EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_pr
 
 all: ${EXAMPLES}
 
+test: mesh_message_test
+	./mesh_message_test
+
 clean:
 	rm -f  *.o *.out *.exe
 	rm -rf *.dSYM
 	rm -f ${EXAMPLES}
 	rm -f  mesh_provisioning_device.h
+	rm -f *.gcno *.gcda
 	

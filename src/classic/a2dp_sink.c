@@ -38,14 +38,16 @@
 #define BTSTACK_FILE__ "a2dp_sink.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "classic/avdtp_util.h"
-#include "classic/avdtp_sink.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 #include "classic/a2dp_sink.h"
+#include "classic/avdtp_sink.h"
+#include "classic/avdtp_util.h"
+#include "classic/sdp_util.h"
 
 static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service";
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
@@ -82,7 +84,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
         }
         de_pop_sequence(attribute, l2cpProtocol);
         
@@ -161,21 +163,20 @@ void a2dp_sink_init(void){
     avdtp_sink_init(&a2dp_sink_context);
 }
 
-uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+avdtp_stream_endpoint_t *  a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
     uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
-    uint8_t * media_codec_info, uint16_t media_codec_info_len, uint8_t * local_seid){
-    *local_seid = 0;
+    uint8_t * media_codec_info, uint16_t media_codec_info_len){
     avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, media_type);
     if (!local_stream_endpoint){
-        return BTSTACK_MEMORY_ALLOC_FAILED;
+        return NULL;
     }
-    *local_seid = avdtp_local_seid(local_stream_endpoint);
     avdtp_sink_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     avdtp_sink_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type, 
         codec_capabilities, codec_capabilities_len);
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information     = media_codec_info;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_info_len;
-    return ERROR_CODE_SUCCESS;
+    avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
+    return local_stream_endpoint;
 }
 
 uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
@@ -206,6 +207,7 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     if (event_size < 113) return;
     event[0] = HCI_EVENT_A2DP_META;
     event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
 }
 
 static inline void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t a2dp_cid, uint8_t eventID, uint8_t local_seid){
@@ -283,7 +285,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            log_info("received non SBC codec. not implemented");
             avdtp_signaling_emit_media_codec_other(a2dp_sink_context.a2dp_callback, packet, size);
             break;
         

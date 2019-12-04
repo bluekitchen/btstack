@@ -65,7 +65,7 @@ typedef enum {
 typedef enum {
     MODEL_STATE_UPDATE_REASON_SET = 0x00u, 
     MODEL_STATE_UPDATE_REASON_TRANSITION_START, 
-    // MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE,
+    MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE,
     MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
     MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT, 
     // MODEL_STATE_UPDATE_REASON_BOUND_STATE, 
@@ -88,16 +88,26 @@ typedef enum {
     MODEL_STATE_ID_GENERIC_LEVEL  = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 1u,
 } model_state_id_t;
 
-#define MESH_MAX_NUM_FAULTS 3
+#define MESH_MAX_NUM_FAULTS 5
+
+#define MESH_TRANSITION_NUM_STEPS_INFINITE 0x3f
 
 typedef struct {
     // linked list item
     btstack_linked_item_t item;
     uint8_t  test_id;
     uint16_t company_id;
-    uint16_t num_faults;
-    uint8_t  faults[MESH_MAX_NUM_FAULTS];
-} mesh_fault_t;
+    uint16_t num_current_faults;
+    uint16_t num_registered_faults;
+    uint8_t  current_faults[MESH_MAX_NUM_FAULTS];
+    uint8_t  registered_faults[MESH_MAX_NUM_FAULTS];
+} mesh_health_fault_t;
+
+typedef struct {
+    // linked list of mesh_health_fault items
+    btstack_linked_list_t faults;
+    uint8_t fast_period_divisor;
+} mesh_health_state_t;
 
 typedef struct {
     uint32_t opcode;
@@ -117,7 +127,7 @@ typedef enum {
 } mesh_transaction_status_t;
 
 typedef struct mesh_transition {
-    btstack_linked_item_t item;
+    btstack_timer_source_t timer;
 
     mesh_transition_state_t state;
 
@@ -126,15 +136,15 @@ typedef struct mesh_transition {
     uint16_t src_address;
     uint16_t dst_address; 
 
-    mesh_default_transition_step_resolution_t step_duration_ms;
-    uint32_t phase_start_ms;
-    uint32_t remaining_delay_time_ms;  
-    uint32_t remaining_transition_time_ms;      
+    uint8_t num_steps;
+    mesh_default_transition_step_resolution_t step_resolution;
+    uint32_t step_duration_ms;
+
     // to send events and/or publish changes
     mesh_model_t * mesh_model;
-
+        
     // to execute transition
-    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp);
+    void (* transition_callback)(struct mesh_transition * transition, model_state_update_reason_t event);
 } mesh_transition_t;
 
 /**
@@ -172,26 +182,22 @@ void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu);
  */
 void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode);
 
-uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt);
+
+// Mesh Model Transitions
+uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt);
+uint8_t  mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt);
 uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt);
+void mesh_access_transitions_init_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address);
+void mesh_access_transition_setup(mesh_model_t *mesh_model, mesh_transition_t * base_transition, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, void (*transition_callback)(mesh_transition_t * base_transition, model_state_update_reason_t event));
+void mesh_access_transitions_abort_transaction(mesh_transition_t * transition);
+uint8_t mesh_access_transactions_get_next_transaction_id(void);
+mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address);
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
-void mesh_access_emit_state_update_int16(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier, 
+
+void mesh_access_emit_state_update_int16(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
     model_state_id_t state_identifier, model_state_update_reason_t reason, int16_t value);
-
-// Mesh Model Transitions
-void mesh_access_transitions_setup_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address);
-void mesh_access_transitions_abort_transaction(mesh_transition_t * transition);
-mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address);
-
-void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t * mesh_model, 
-    uint8_t transition_time_gdtt, uint8_t delay_gdtt,
-    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp));
-
-void mesh_access_transitions_add(mesh_transition_t * transition);
-void mesh_access_transitions_remove(mesh_transition_t * transition);
-uint8_t mesh_access_transactions_get_next_transaction_id(void);
 
 // Mesh Model Publicaation
 
@@ -214,6 +220,7 @@ void mesh_model_publication_start(mesh_model_t * mesh_model);
 void mesh_model_publication_stop(mesh_model_t * mesh_model);
 
 // Mesh PDU Getter
+uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_ttl(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);

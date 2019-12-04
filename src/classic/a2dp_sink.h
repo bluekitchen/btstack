@@ -78,13 +78,12 @@ void a2dp_sink_init(void);
  * @param codec_capabilities_len	media codec capabilities length
  * @param codec_configuration 		default media codec configuration
  * @param codec_configuration_len	media codec configuration length 
- * @param out_local_seid			Assigned stream endpoint ID used in further A2DP commands.
  *
- * @return status 					ERROR_CODE_SUCCESS if sucessful
+ * @return local_stream_endpoint 	
  */
-uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+avdtp_stream_endpoint_t *  a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
-	uint8_t * codec_configuration, uint16_t codec_configuration_len, uint8_t * out_local_seid);
+	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
 /**
  * @brief Register callback for the A2DP Sink client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 

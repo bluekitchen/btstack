@@ -8,7 +8,7 @@
 #define BLUETOOTH_GATT_H
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/declarations
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/declarations
  */
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_CHARACTERISTIC_DECLARATION                          0x2803 // Characteristic Declaration
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_INCLUDE_DECLARATION                                 0x2802 // Include
@@ -16,7 +16,7 @@
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_SECONDARY_SERVICE_DECLARATION                       0x2801 // Secondary Service
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/services
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/services
  */
 #define ORG_BLUETOOTH_SERVICE_ALERT_NOTIFICATION                                         0x1811 // Alert Notification Service
 #define ORG_BLUETOOTH_SERVICE_AUTOMATION_IO                                              0x1815 // Automation IO
@@ -60,7 +60,7 @@
 #define ORG_BLUETOOTH_SERVICE_WEIGHT_SCALE                                               0x181D // Weight Scale
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/characteristics
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/characteristics
  */
 #define ORG_BLUETOOTH_CHARACTERISTIC_AEROBIC_HEART_RATE_LOWER_LIMIT                      0x2A7E // Aerobic Heart Rate Lower Limit
 #define ORG_BLUETOOTH_CHARACTERISTIC_AEROBIC_HEART_RATE_UPPER_LIMIT                      0x2A84 // Aerobic Heart Rate Upper Limit
@@ -290,7 +290,7 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_WIND_CHILL                                          0x2A79 // Wind Chill
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/descriptors
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/descriptors
  */
 #define ORG_BLUETOOTH_DESCRIPTOR_ES_CONFIGURATION                                        0x290B // Environmental Sensing Configuration
 #define ORG_BLUETOOTH_DESCRIPTOR_ES_MEASUREMENT                                          0x290C // Environmental Sensing Measurement

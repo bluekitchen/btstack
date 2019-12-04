@@ -124,9 +124,9 @@ static uint16_t avrcp_target_pack_single_element_attribute_string(uint8_t * pack
         big_endian_store_16(packet, pos, attr_value_size);
         pos += 2;
     }
-    memcpy(packet+pos, attr_value, attr_value_to_copy);
+    (void)memcpy(packet + pos, attr_value, attr_value_to_copy);
     pos += attr_value_size;
-    return header * 8 + attr_value_size;
+    return (header * 8) + attr_value_size;
 }
 
 static int avrcp_target_abort_continue_response(uint16_t cid, avrcp_connection_t * connection){
@@ -207,7 +207,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
     int num_free_bytes = size - pos - 2;
     uint8_t MAX_NUMBER_ATTR_LEN = 10;
 
-    while (!fragmented && num_free_bytes > 0 && connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
+    while (!fragmented && (num_free_bytes > 0) && (connection->next_attr_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS)){
         avrcp_media_attribute_id_t attr_id = connection->next_attr_id;
         int attr_index = attr_id - 1;
 
@@ -250,7 +250,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
                     uint8_t * attr_value =     (uint8_t *) (connection->now_playing_info[attr_index].value + connection->attribute_value_offset);
                     uint16_t  attr_value_len = connection->now_playing_info[attr_index].len - connection->attribute_value_offset;
                     
-                    num_bytes_to_write = attr_value_len + header * AVRCP_ATTR_HEADER_LEN;
+                    num_bytes_to_write = attr_value_len + (header * AVRCP_ATTR_HEADER_LEN);
                     if (num_bytes_to_write <= num_free_bytes){
                         connection->attribute_value_offset = 0;
                         num_written_bytes = num_bytes_to_write;
@@ -259,7 +259,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
                     } 
                     fragmented = 1;
                     num_written_bytes = num_free_bytes;
-                    attr_value_len = num_free_bytes - header * AVRCP_ATTR_HEADER_LEN;
+                    attr_value_len = num_free_bytes - (header * AVRCP_ATTR_HEADER_LEN);
                     avrcp_target_pack_single_element_attribute_string(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value, attr_value_len, connection->now_playing_info[attr_index].len, header);
                     connection->attribute_value_offset += attr_value_len;
                     break;
@@ -326,7 +326,8 @@ static int avrcp_target_send_response(uint16_t cid, avrcp_connection_t * connect
     //     pos += 3;
     // }
     // operands
-    memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
+    (void)memcpy(packet + pos, connection->cmd_operands,
+                 connection->cmd_operands_length);
     pos += connection->cmd_operands_length;
     // printf(" pos to send %d\n", pos);
     // printf_hexdump(packet, pos);
@@ -411,8 +412,8 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
     big_endian_store_16(connection->cmd_operands, pos, 1 + value_len);
     pos += 2;
     connection->cmd_operands[pos++] = event_id;
-    if (value && value_len > 0){
-        memcpy(connection->cmd_operands + pos, value, value_len);
+    if (value && (value_len > 0)){
+        (void)memcpy(connection->cmd_operands + pos, value, value_len);
         pos += value_len;
     }
     connection->cmd_operands_length = pos;
@@ -548,7 +549,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
 
 static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_t offset){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    if (offset - 4 > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
+    if ((offset - 4) > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
 
     connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
     connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
@@ -561,7 +562,8 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->cmd_operands_length = 5;
     connection->cmd_operands[0] = (page << 4) | extension_code;
 
-    memcpy(connection->cmd_operands+1, connection->subunit_info_data + offset, 4);
+    (void)memcpy(connection->cmd_operands + 1,
+                 connection->subunit_info_data + offset, 4);
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
@@ -597,7 +599,8 @@ static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t
 
     connection->cmd_operands[connection->cmd_operands_length++] = capability_id;
     connection->cmd_operands[connection->cmd_operands_length++] = capabilities_num;
-    memcpy(connection->cmd_operands+connection->cmd_operands_length, capabilities, size);
+    (void)memcpy(connection->cmd_operands + connection->cmd_operands_length,
+                 capabilities, size);
     connection->cmd_operands_length += size;
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
@@ -676,7 +679,7 @@ void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t *
         connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
         return;
     } 
-    memcpy(connection->track_id, current_track->track_id, 8);
+    (void)memcpy(connection->track_id, current_track->track_id, 8);
     connection->song_length_ms = current_track->song_length_ms;
     connection->track_nr = current_track->track_nr;
     connection->total_tracks = total_tracks;
@@ -703,7 +706,7 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
 
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED)) {
         connection->track_changed = 1;
-        memcpy(connection->track_id, track_id, 8);
+        (void)memcpy(connection->track_id, track_id, 8);
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -769,12 +772,12 @@ uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentag
 }
 
 static void avrcp_target_set_transaction_label_for_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t notification, uint8_t transaction_label){
-    if (notification > AVRCP_NOTIFICATION_EVENT_COUNT) return;
+    if (notification > AVRCP_NOTIFICATION_EVENT_MAX_VALUE) return;
     connection->notifications_transaction_label[notification] = transaction_label;
 }
 
 static uint8_t avrcp_target_get_transaction_label_for_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t notification){
-    if (notification > AVRCP_NOTIFICATION_EVENT_COUNT) return 0;
+    if (notification > AVRCP_NOTIFICATION_EVENT_MAX_VALUE) return 0;
     return connection->notifications_transaction_label[notification];
 }
 
@@ -907,7 +910,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // 1 - reserved
             // 2-3 param length,
             length = big_endian_read_16(pdu, 2);
-            memcpy(connection->cmd_operands, company_id, 3);
+            (void)memcpy(connection->cmd_operands, company_id, 3);
             connection->cmd_operands_length = 3;
             switch (pdu_id){
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
@@ -1140,7 +1143,7 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     big_endian_store_16(packet, pos, caped_value_len);
     pos += 2;
     packet[pos++] = notification_id;
-    memcpy(packet+pos, value, caped_value_len-1);    
+    (void)memcpy(packet + pos, value, caped_value_len - 1);    
     pos += caped_value_len - 1;
     connection->wait_to_send = 0;
     return l2cap_send_prepared(cid, pos);

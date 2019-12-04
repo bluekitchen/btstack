@@ -197,6 +197,7 @@ static uint16_t crc16_calc_for_slip_frame(const uint8_t * header, const uint8_t 
 
 // -----------------------------
 static void hci_transport_inactivity_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
     log_info("inactivity timeout. link state %d, peer asleep %u, actions 0x%02x, outgoing packet %u",
         link_state, link_peer_asleep, hci_transport_link_actions, hci_transport_link_have_outgoing_packet());
     if (hci_transport_link_have_outgoing_packet()) return;
@@ -440,7 +441,8 @@ static void hci_transport_link_set_timer(uint16_t timeout_ms){
     btstack_run_loop_add_timer(&link_timer);
 }
 
-static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
+static void hci_transport_link_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
     switch (link_state){
         case LINK_UNINITIALIZED:
             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
@@ -487,7 +489,7 @@ static int hci_transport_link_inc_seq_nr(int seq_nr){
 }
 
 static int hci_transport_link_have_outgoing_packet(void){
-    return hci_packet != 0;
+    return hci_packet != NULL;
 }
 
 static void hci_transport_link_clear_queue(void){
@@ -634,10 +636,10 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             }
 
             // Process ACKs in reliable packet and explicit ack packets
-            if (reliable_packet || link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE){
+            if (reliable_packet || (link_packet_type == LINK_ACKNOWLEDGEMENT_TYPE)){
                 // our packet is good if the remote expects our seq nr + 1
                 int next_seq_nr = hci_transport_link_inc_seq_nr(link_seq_nr);
-                if (hci_transport_link_have_outgoing_packet() && next_seq_nr == ack_nr){
+                if (hci_transport_link_have_outgoing_packet() && (next_seq_nr == ack_nr)){
                     log_debug("outoing packet with seq %u ack'ed", link_seq_nr);
                     link_seq_nr = next_seq_nr;
                     hci_transport_link_clear_queue();
@@ -740,7 +742,7 @@ static void hci_transport_h5_block_received(){
     if (hci_transport_h5_active == 0) return;
 
     // track start time when receiving first byte // a bit hackish
-    if (hci_transport_h5_receive_start == 0 && hci_transport_link_read_byte != BTSTACK_SLIP_SOF){
+    if ((hci_transport_h5_receive_start == 0) && (hci_transport_link_read_byte != BTSTACK_SLIP_SOF)){
         hci_transport_h5_receive_start = btstack_run_loop_get_time_ms();
     }
     btstack_slip_decoder_process(hci_transport_link_read_byte);
@@ -862,7 +864,7 @@ static void hci_transport_h5_register_packet_handler(void (*handler)(uint8_t pac
 }
 
 static int hci_transport_h5_can_send_packet_now(uint8_t packet_type){
-    int res = !hci_transport_link_have_outgoing_packet() && link_state == LINK_ACTIVE;
+    int res = !hci_transport_link_have_outgoing_packet() && (link_state == LINK_ACTIVE);
     // log_info("can_send_packet_now: %u", res);
     return res;
 }

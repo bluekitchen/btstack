@@ -88,9 +88,9 @@ static void btstack_run_loop_posix_add_data_source(btstack_data_source_t *ds){
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_posix_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_posix_remove_data_source(btstack_data_source_t *ds){
     data_sources_modified = 1;
-    // log_info("btstack_run_loop_posix_remove_data_source %x\n", (int) ds);
+    log_debug("btstack_run_loop_posix_remove_data_source %p\n", ds);
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -101,10 +101,7 @@ static void btstack_run_loop_posix_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
-        if (next == ts){
-            log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
-            return;
-        }
+        btstack_assert(next != ts);
         // exit if new timeout before list timeout
         int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
         if (delta < 0) break;
@@ -118,7 +115,7 @@ static void btstack_run_loop_posix_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_posix_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_posix_remove_timer(btstack_timer_source_t *ts){
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // btstack_run_loop_posix_dump_timer();
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
@@ -129,7 +126,7 @@ static void btstack_run_loop_posix_dump_timer(void){
     int i = 0;
     for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u, timeout %u\n", i, ts->timeout);
+        log_info("timer %u (%p): timeout %u\n", i, ts, ts->timeout);
     }
 }
 
@@ -213,7 +210,7 @@ static void btstack_run_loop_posix_execute(void) {
     log_info("POSIX run loop using ettimeofday fallback.");
 #endif
 
-    while (1) {
+    while (true) {
         // collect FDs
         FD_ZERO(&descriptors_read);
         FD_ZERO(&descriptors_write);

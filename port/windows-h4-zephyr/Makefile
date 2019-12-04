@@ -5,7 +5,6 @@ CORE += main.c btstack_stdin_windows.c
 
 COMMON  += \
 			btstack_chipset_zephyr.c     \
-			btstack_link_key_db_fs.c     \
 			btstack_run_loop_windows.c   \
 			btstack_uart_block_windows.c \
 			hci_transport_h4.c           \

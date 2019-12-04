@@ -963,7 +963,7 @@ void SbcAnalysisFilter4(SBC_ENC_PARAMS *pstrEncParams)
         }
         for (s32Ch=0;s32Ch<s32NumOfChannels;s32Ch++)
         {
-            ChOffset=s32Ch*Offset2+Offset;
+            ChOffset=(s32Ch*Offset2)+Offset;
             
             WINDOW_PARTIAL_4
 
@@ -1066,7 +1066,7 @@ void SbcAnalysisFilter8 (SBC_ENC_PARAMS *pstrEncParams)
         }
         for (s32Ch=0;s32Ch<s32NumOfChannels;s32Ch++)
         {
-            ChOffset=s32Ch*Offset2+Offset;
+            ChOffset=(s32Ch*Offset2)+Offset;
 
             WINDOW_PARTIAL_8
 

@@ -50,7 +50,7 @@ CPPFLAGS+=-g3 -ggdb -DDEBUG
 TARGET_UC:=$(shell echo $(TARGET) | tr a-z A-Z)
 TARGET_LC:=$(shell echo $(TARGET) | tr A-Z a-z)
 
-CC2564B = bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o
+CC2564B = bluetooth_init_cc2564B_1.8_BT_Spec_4.1.o
 
 # Select 'GCC' or 'IAR' compiler
 COMPILER=GCC

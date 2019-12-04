@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "provisioning_provisioner.c"
+#define BTSTACK_FILE__ "provisioning_provisioner.c"
 
 #include "mesh/provisioning_provisioner.h"
 
@@ -184,7 +184,7 @@ static void provisioning_send_invite(uint16_t the_pb_adv_cid){
     prov_buffer_out[1] = prov_attention_timer;
     pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 2);
     // collect confirmation_inputs
-    memcpy(&prov_confirmation_inputs[0], &prov_buffer_out[1], 1);
+    (void)memcpy(&prov_confirmation_inputs[0], &prov_buffer_out[1], 1);
 }
 
 static void provisioning_send_start(uint16_t the_pb_adv_cid){
@@ -196,7 +196,7 @@ static void provisioning_send_start(uint16_t the_pb_adv_cid){
     prov_buffer_out[5] = prov_start_authentication_size;
     pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 6);
     // store for confirmation inputs: len 5
-    memcpy(&prov_confirmation_inputs[12], &prov_buffer_out[1], 5);
+    (void)memcpy(&prov_confirmation_inputs[12], &prov_buffer_out[1], 5);
 }
 
 static void provisioning_send_provisioning_error(uint16_t the_pb_adv_cid){
@@ -207,28 +207,28 @@ static void provisioning_send_provisioning_error(uint16_t the_pb_adv_cid){
 
 static void provisioning_send_public_key(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_PUB_KEY;
-    memcpy(&prov_buffer_out[1], prov_ec_q, 64);
+    (void)memcpy(&prov_buffer_out[1], prov_ec_q, 64);
     pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 65);
     // store for confirmation inputs: len 64
-    memcpy(&prov_confirmation_inputs[17], &prov_buffer_out[1], 64);
+    (void)memcpy(&prov_confirmation_inputs[17], &prov_buffer_out[1], 64);
 }
 
 static void provisioning_send_confirm(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_CONFIRM;
-    memcpy(&prov_buffer_out[1], confirmation_provisioner, 16);
+    (void)memcpy(&prov_buffer_out[1], confirmation_provisioner, 16);
     pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 17);
 }
 
 static void provisioning_send_random(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_RANDOM;
-    memcpy(&prov_buffer_out[1], random_provisioner, 16);
+    (void)memcpy(&prov_buffer_out[1], random_provisioner, 16);
     pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 17);
 }
 
 static void provisioning_send_data(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_DATA;
-    memcpy(&prov_buffer_out[1], enc_provisioning_data, 25);
-    memcpy(&prov_buffer_out[26], provisioning_data_mic, 8);
+    (void)memcpy(&prov_buffer_out[1], enc_provisioning_data, 25);
+    (void)memcpy(&prov_buffer_out[26], provisioning_data_mic, 8);
     pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 34);
 }
 
@@ -341,7 +341,7 @@ static void provisioning_handle_capabilities(uint16_t the_pb_adv_cid, const uint
     if (packet_len != 11) return;
 
     // collect confirmation_inputs
-    memcpy(&prov_confirmation_inputs[1], packet_data, packet_len);
+    (void)memcpy(&prov_confirmation_inputs[1], packet_data, packet_len);
 
     provisioner_state = PROVISIONER_W4_AUTH_CONFIGURATION; 
 
@@ -376,8 +376,8 @@ static void provisioning_handle_random_provisioner(void * arg){
     printf_hexdump(random_provisioner, sizeof(random_provisioner));
 
     // re-use prov_confirmation_inputs buffer
-    memcpy(&prov_confirmation_inputs[0],  random_provisioner, 16);
-    memcpy(&prov_confirmation_inputs[16], auth_value, 16);
+    (void)memcpy(&prov_confirmation_inputs[0], random_provisioner, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], auth_value, 16);
 
     // calc confirmation device
     btstack_crypto_aes128_cmac_message(&prov_cmac_request, confirmation_key, 32, prov_confirmation_inputs, confirmation_provisioner, &provisioning_handle_confirmation_provisioner_calculated, NULL);
@@ -451,7 +451,8 @@ static void provisioning_public_key_exchange_complete(void){
             provisioning_handle_auth_value_ready();
             break;        
         case 0x01:
-            memcpy(&auth_value[16-prov_static_oob_len], prov_static_oob_data, prov_static_oob_len);
+            (void)memcpy(&auth_value[16 - prov_static_oob_len],
+                         prov_static_oob_data, prov_static_oob_len);
             provisioning_handle_auth_value_ready();
             break;
         case 0x02:
@@ -524,10 +525,10 @@ static void provisioning_handle_public_key(uint16_t the_pb_adv_cid, const uint8_
 #endif
 
     // store for confirmation inputs: len 64
-    memcpy(&prov_confirmation_inputs[81], packet_data, 64);
+    (void)memcpy(&prov_confirmation_inputs[81], packet_data, 64);
 
     // store remote q
-    memcpy(remote_ec_q, packet_data, sizeof(remote_ec_q));
+    (void)memcpy(remote_ec_q, packet_data, sizeof(remote_ec_q));
 
     provisioning_public_key_ready();
 }
@@ -576,15 +577,15 @@ static void provisioning_handle_session_nonce_calculated(void * arg){
 
     // The nonce shall be the 13 least significant octets == zero most significant octets
     uint8_t temp[13];
-    memcpy(temp, &session_nonce[3], 13);
-    memcpy(session_nonce, temp, 13);
+    (void)memcpy(temp, &session_nonce[3], 13);
+    (void)memcpy(session_nonce, temp, 13);
 
     // SessionNonce
     printf("SessionNonce:   ");
     printf_hexdump(session_nonce, 13);
 
     // setup provisioning data
-    memcpy(&provisioning_data[0], net_key, 16);
+    (void)memcpy(&provisioning_data[0], net_key, 16);
     big_endian_store_16(provisioning_data, 16, net_key_index);
     provisioning_data[18] = flags;
     big_endian_store_32(provisioning_data, 19, iv_index);
@@ -625,9 +626,9 @@ static void provisioning_handle_random(uint16_t the_pb_adv_cid, const uint8_t *p
     // TODO: validate Confirmation
 
     // calc ProvisioningSalt = s1(ConfirmationSalt || RandomProvisioner || RandomDevice)
-    memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
-    memcpy(&prov_confirmation_inputs[16], random_provisioner, 16);
-    memcpy(&prov_confirmation_inputs[32], packet_data, 16);
+    (void)memcpy(&prov_confirmation_inputs[0], confirmation_salt, 16);
+    (void)memcpy(&prov_confirmation_inputs[16], random_provisioner, 16);
+    (void)memcpy(&prov_confirmation_inputs[32], packet_data, 16);
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_provisioning_salt_calculated, NULL);
 }
 
@@ -714,7 +715,7 @@ static void prov_key_generated(void * arg){
     // allow override
     if (prov_public_key_oob_available){
         printf("Replace generated ECC with Public Key OOB:");
-        memcpy(prov_ec_q, prov_public_key_oob_q, 64);
+        (void)memcpy(prov_ec_q, prov_public_key_oob_q, 64);
         printf_hexdump(prov_ec_q, sizeof(prov_ec_q));
         btstack_crypto_ecc_p256_set_key(prov_public_key_oob_q, prov_public_key_oob_d);
     }
@@ -767,10 +768,10 @@ uint8_t provisioning_provisioner_public_key_oob_received(uint16_t the_pb_adv_cid
     if (provisioner_state != PROVISIONER_W4_PUB_KEY_OOB) return ERROR_CODE_COMMAND_DISALLOWED;
 
     // store for confirmation inputs: len 64
-    memcpy(&prov_confirmation_inputs[81], public_key, 64);
+    (void)memcpy(&prov_confirmation_inputs[81], public_key, 64);
 
     // store remote q
-    memcpy(remote_ec_q, public_key, sizeof(remote_ec_q));
+    (void)memcpy(remote_ec_q, public_key, sizeof(remote_ec_q));
 
     // continue procedure
     provisioner_state = PROVISIONER_SEND_PUB_KEY;
@@ -795,7 +796,7 @@ void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t the_pb_ad
     // store input_oob and fillup with zeros
     input_oob_len = btstack_min(input_oob_len, 16);
     memset(auth_value, 0, 16);
-    memcpy(auth_value, input_oob_data, input_oob_len);
+    (void)memcpy(auth_value, input_oob_data, input_oob_len);
     provisioning_handle_auth_value_ready();
 }
 

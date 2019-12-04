@@ -1,5 +1,6 @@
-C_HEADERS=/Projects/c_headers/include/
-BTSTACK_ROOT=../..
+C_HEADERS    ?= /Projects/c_headers/include/
+BTSTACK_ROOT ?= ../..
+
 VPATH=${BTSTACK_ROOT}/src
 
 INCLUDES= \
@@ -18,13 +19,16 @@ SRC_CLASSIC_FILES=$(wildcard ${BTSTACK_ROOT}/src/classic/*.c)
 
 SRCS = ${SRC_FILES} ${SRC_BLE_FILES} ${SRC_BLE_GATT_SERVICE_FILES} ${SRC_CLASSIC_FILES}
 
-all: metrics.txt
+all: metrics.md metrics.html
 
 metrics.tsv: ${SRCS}
 	ccsm --disable-file --disable-global --exclude-std-headers --exclude-file=.h$$ --output-format=tsv --output-metrics=HIS_.* $^ -- -isystem ${C_HEADERS}/c90 -isystem ${C_HEADERS}/c99 ${INCLUDES} > $@
 
-metrics.txt: metrics.tsv metrics-ccsm.py
-	./metrics-ccsm.py > metrics.txt
+metrics.md: metrics.tsv metrics-ccsm.py
+	./metrics-ccsm.py > metrics.md
+
+metrics.html: metrics.md
+	pandoc --from markdown --to html -o metrics.html metrics.md
 
 clean:
-	rm -f metrics.tsv metrics.txt
+	rm -f metrics.tsv metrics.md

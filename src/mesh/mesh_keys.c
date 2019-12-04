@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_keys.c"
+#define BTSTACK_FILE__ "mesh_keys.c"
 
 #include <string.h>
 #include <stdio.h>
@@ -69,7 +69,7 @@ void mesh_network_key_add(mesh_network_key_t * network_key){
     btstack_linked_list_add_tail(&network_keys, (btstack_linked_item_t *) network_key);
 }
 
-int mesh_network_key_remove(mesh_network_key_t * network_key){
+bool mesh_network_key_remove(mesh_network_key_t * network_key){
     mesh_network_key_used[network_key->internal_index] = 0;
     return btstack_linked_list_remove(&network_keys, (btstack_linked_item_t *) network_key);
 }
@@ -110,7 +110,7 @@ void mesh_network_key_nid_iterator_init(mesh_network_key_iterator_t *it, uint8_t
 
 int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it){
     // find next matching key
-    while (1){
+    while (true){
         if (it->key && it->key->nid == it->nid) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_network_key_t *) btstack_linked_list_iterator_next(&it->it);
@@ -138,7 +138,7 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.aid   = 0;
     mesh_transport_device_key.akf   = 0;
     mesh_transport_device_key.netkey_index = 0; // unused
-    memcpy(mesh_transport_device_key.key, device_key, 16);
+    (void)memcpy(mesh_transport_device_key.key, device_key, 16);
 
     // use internal slot #0
     mesh_transport_device_key.internal_index = 0;
@@ -161,7 +161,7 @@ void mesh_transport_key_add(mesh_transport_key_t * transport_key){
     btstack_linked_list_add_tail(&application_keys, (btstack_linked_item_t *) transport_key);
 }
 
-int mesh_transport_key_remove(mesh_transport_key_t * transport_key){
+bool mesh_transport_key_remove(mesh_transport_key_t * transport_key){
     mesh_transport_key_used[transport_key->internal_index] = 0;
     return btstack_linked_list_remove(&application_keys, (btstack_linked_item_t *) transport_key);
 }
@@ -188,7 +188,7 @@ void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_
 
 int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
     // find next matching key
-    while (1){
+    while (true){
         if (it->key && it->key->netkey_index == it->netkey_index) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);
@@ -220,7 +220,7 @@ int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it){
         return it->key != NULL;
     }
     // find next matching key
-    while (1){
+    while (true){
         if (it->key && it->key->aid == it->aid && it->key->netkey_index == it->netkey_index) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);

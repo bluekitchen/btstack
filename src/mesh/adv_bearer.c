@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "adv_bearer.c"
+#define BTSTACK_FILE__ "adv_bearer.c"
 
 #define ENABLE_LOG_DEBUG
 
@@ -86,6 +86,7 @@ static void adv_bearer_run(void);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_timer_source_t adv_timer;
+static int        adv_timer_active;
 static bd_addr_t null_addr;
 
 static btstack_packet_handler_t client_callbacks[NUM_TYPES];
@@ -199,6 +200,7 @@ static void adv_bearer_emit_can_send_now(void){
 
 static void adv_bearer_timeout_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
+    adv_timer_active = 0;
     uint32_t now = btstack_run_loop_get_time_ms();
     switch (adv_bearer_state){
         case STATE_GAP:
@@ -229,20 +231,25 @@ static void adv_bearer_set_timeout(uint32_t time_ms){
     btstack_run_loop_set_timer_handler(&adv_timer, &adv_bearer_timeout_handler);
     btstack_run_loop_set_timer(&adv_timer, time_ms);    // compile time constants
     btstack_run_loop_add_timer(&adv_timer);
+    adv_timer_active = 1;
 }
 
 // scheduler
 static void adv_bearer_run(void){
 
     if (hci_get_state() != HCI_STATE_WORKING) return;
-
+    if (adv_timer_active) return;
+    
     uint32_t now = btstack_run_loop_get_time_ms();
     switch (adv_bearer_state){
         case STATE_IDLE:
             if (gap_advertising_enabled){
                 if ((int32_t)(now - gap_adv_next_ms) >= 0){
                     adv_bearer_connectable_advertisement_data_item_t * item = (adv_bearer_connectable_advertisement_data_item_t *) btstack_linked_list_pop(&gap_connectable_advertisements);
-                    if (item != NULL){
+                    if (item == NULL){
+                        gap_adv_next_ms += gap_adv_int_ms;
+                        log_debug("Next adv: %u", gap_adv_next_ms);
+                    } else {
                         // queue again
                         btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);                        
                         // time to advertise again
@@ -250,10 +257,10 @@ static void adv_bearer_run(void){
                         gap_advertisements_set_params(ADVERTISING_INTERVAL_CONNECTABLE_MIN, ADVERTISING_INTERVAL_CONNECTABLE_MIN, gap_adv_type, gap_direct_address_typ, gap_direct_address, gap_channel_map, gap_filter_policy);
                         gap_advertisements_set_data(item->adv_length, item->adv_data);
                         gap_advertisements_enable(1);
-                        adv_bearer_set_timeout(ADVERTISING_INTERVAL_CONNECTABLE_MIN_MS);
                         adv_bearer_state = STATE_GAP;
+                        adv_bearer_set_timeout(ADVERTISING_INTERVAL_CONNECTABLE_MIN_MS);
+                        break;
                     }
-                    break;
                 }
             }
             if (adv_bearer_count > 0){
@@ -264,8 +271,8 @@ static void adv_bearer_run(void){
                 gap_advertisements_set_params(ADVERTISING_INTERVAL_NONCONNECTABLE_MIN, ADVERTISING_INTERVAL_NONCONNECTABLE_MIN, 3, 0, null_addr, 0x07, 0);
                 gap_advertisements_set_data(adv_bearer_buffer_length, adv_bearer_buffer);
                 gap_advertisements_enable(1);
-                adv_bearer_set_timeout(ADVERTISING_INTERVAL_NONCONNECTABLE_MIN_MS);
                 adv_bearer_state = STATE_BEARER;
+                adv_bearer_set_timeout(ADVERTISING_INTERVAL_NONCONNECTABLE_MIN_MS);
                 break;
                 // }
             }
@@ -281,11 +288,12 @@ static void adv_bearer_run(void){
 
 //
 static void adv_bearer_prepare_message(const uint8_t * data, uint16_t data_len, uint8_t type, uint8_t count, uint16_t interval){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     log_debug("adv bearer message, type 0x%x\n", type);
     // prepare message
     adv_bearer_buffer[0] = data_len+1;
     adv_bearer_buffer[1] = type;
-    memcpy(&adv_bearer_buffer[2], data, data_len);
+    (void)memcpy(&adv_bearer_buffer[2], data, data_len);
     adv_bearer_buffer_length = data_len + 2;
 
     // setup trasmission schedule
@@ -336,14 +344,17 @@ void adv_bearer_request_can_send_now_for_provisioning_pdu(void){
 // adv bearer send message
 
 void adv_bearer_send_network_pdu(const uint8_t * data, uint16_t data_len, uint8_t count, uint16_t interval){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_MESH_MESSAGE, count, interval);
     adv_bearer_run();
 }
 void adv_bearer_send_beacon(const uint8_t * data, uint16_t data_len){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_MESH_BEACON, 3, 100);
     adv_bearer_run();
 }
 void adv_bearer_send_provisioning_pdu(const uint8_t * data, uint16_t data_len){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_PB_ADV, 3, 100);
     adv_bearer_run();
 }
@@ -377,7 +388,7 @@ void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int
     gap_adv_int_ms         = gap_adv_int_min * 625 / 1000;
     gap_adv_type           = adv_type;
     gap_direct_address_typ = direct_address_typ; 
-    memcpy(gap_direct_address, &direct_address, 6);
+    (void)memcpy(gap_direct_address, &direct_address, 6);
     gap_channel_map        = channel_map; 
     gap_filter_policy      = filter_policy; 
 

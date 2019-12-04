@@ -49,16 +49,17 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
+#include "btstack_stdin.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "btstack_stdin.h"
-#include "bluetooth_sdp.h"
  
 static void show_usage(void);
 
@@ -165,9 +166,9 @@ static void stdin_process(char buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
             if (l2cap_ertm){
-                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, &ertm_config, ertm_buffer, sizeof(ertm_buffer), &local_cid);
+                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PSM_SDP, &ertm_config, ertm_buffer, sizeof(ertm_buffer), &local_cid);
             } else {
-                l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, &local_cid);
+                l2cap_create_channel(packet_handler, remote, BLUETOOTH_PSM_SDP, 100, &local_cid);
             }
             break;
         case 'b':
@@ -233,7 +234,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
-    l2cap_register_service(packet_handler, BLUETOOTH_PROTOCOL_SDP, 100, LEVEL_0);
+    l2cap_register_service(packet_handler, BLUETOOTH_PSM_SDP, 100, LEVEL_0);
     
     // turn on!
     hci_power_control(HCI_POWER_ON);

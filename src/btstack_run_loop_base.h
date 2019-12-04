@@ -65,13 +65,16 @@ void btstack_run_loop_base_init(void);
 
 /**
  * @brief Add timer source.
+ * @param timer to add
  */
 void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer); 
 
 /**
  * @brief Remove timer source.
+ * @param timer to remove
+ * @returns true if timer was removed
  */
-int  btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer);
+bool  btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer);
 
 /**
  * @brief Process timers: remove expired timers from list and call their process function
@@ -94,8 +97,9 @@ void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source);
 /**
  * @brief Remove data source from run loop
  * @param data_source to remove
+ * @returns true if data srouce was removed
  */
-int btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source);
+bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source);
 
 /**
  * @brief Enable callbacks for a data source

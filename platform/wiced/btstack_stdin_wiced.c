@@ -58,7 +58,7 @@ static wiced_result_t stdin_reader_notify(void * p){
 
 static void stdin_reader_thread_process(wiced_thread_arg_t p){
     UNUSED(p);
-    while (1){
+    while (true){
         uint8_t c = getchar();
         btstack_run_loop_wiced_execute_code_on_main_thread(&stdin_reader_notify, (void *)(uintptr_t) c);
     }

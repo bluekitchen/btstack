@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_crypto.c"
+#define BTSTACK_FILE__ "mesh_crypto.c"
 
 #include <string.h>
 
@@ -83,7 +83,7 @@ static void mesh_k2_callback_d(void * arg){
     log_info("PrivacyKey: ");
     log_info_hexdump(mesh_k2_t, 16);
     // collect result
-    memcpy(&mesh_k2_result[17], mesh_k2_t2, 16);
+    (void)memcpy(&mesh_k2_result[17], mesh_k2_t2, 16);
     //
     (*mesh_k2_callback)(mesh_k2_arg);        
 }
@@ -92,9 +92,9 @@ static void mesh_k2_callback_c(void * arg){
     log_info("EncryptionKey: ");
     log_info_hexdump(mesh_k2_t, 16);
     // collect result
-    memcpy(&mesh_k2_result[1], mesh_k2_t2, 16);
+    (void)memcpy(&mesh_k2_result[1], mesh_k2_t2, 16);
     //
-    memcpy(mesh_k2_t1, mesh_k2_t2, 16);
+    (void)memcpy(mesh_k2_t1, mesh_k2_t2, 16);
     mesh_k2_t1[16] = 0; // p
     mesh_k2_t1[17] = 0x03;
     btstack_crypto_aes128_cmac_message(request, mesh_k2_t, 18, mesh_k2_t1, mesh_k2_t2, mesh_k2_callback_d, request);
@@ -105,7 +105,7 @@ static void mesh_k2_callback_b(void * arg){
     // collect result
     mesh_k2_result[0] = mesh_k2_t2[15] & 0x7f;
     //
-    memcpy(mesh_k2_t1, mesh_k2_t2, 16);
+    (void)memcpy(mesh_k2_t1, mesh_k2_t2, 16);
     mesh_k2_t1[16] = 0; // p
     mesh_k2_t1[17] = 0x02;
     btstack_crypto_aes128_cmac_message(request, mesh_k2_t, 18, mesh_k2_t1, mesh_k2_t2, mesh_k2_callback_c, request);
@@ -140,7 +140,7 @@ static const uint8_t mesh_salt_smk3[] = { 0x00, 0x36, 0x44, 0x35, 0x03, 0xf1, 0x
 
 static void mesh_k3_result128_calculated(void * arg){
     UNUSED(arg);
-    memcpy(mesh_k3_result, &mesh_k3_result128[8], 8);
+    (void)memcpy(mesh_k3_result, &mesh_k3_result128[8], 8);
     (*mesh_k3_callback)(mesh_k3_arg);        
 }
 static void mesh_k3_temp_callback(void * arg){
@@ -237,8 +237,9 @@ static void mesh_network_key_derive_network_id_calculated(void * arg) {
 static void mesh_network_key_derive_k2_calculated(void * arg){
     // store
     mesh_network_key_derive_key->nid = k2_result[0];
-    memcpy(mesh_network_key_derive_key->encryption_key, &k2_result[1], 16);
-    memcpy(mesh_network_key_derive_key->privacy_key, &k2_result[17], 16);
+    (void)memcpy(mesh_network_key_derive_key->encryption_key, &k2_result[1],
+                 16);
+    (void)memcpy(mesh_network_key_derive_key->privacy_key, &k2_result[17], 16);
 
     // calculate Network ID / k3
     btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;

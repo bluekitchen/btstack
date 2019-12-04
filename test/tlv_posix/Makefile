@@ -25,6 +25,7 @@ CFLAGS  = \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/posix \
 
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 TESTS = tlv_test
@@ -33,6 +34,7 @@ all: ${TESTS}
 
 clean:
 	rm -rf *.o $(TESTS) *.dSYM *.pklg
+	rm -f *.gcno *.gcda
 
 tlv_test: ${COMMON_OBJ} tlv_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@

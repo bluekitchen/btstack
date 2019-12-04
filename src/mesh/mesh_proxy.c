@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_proxy.c"
+#define BTSTACK_FILE__ "mesh_proxy.c"
 
 #include "mesh/mesh_proxy.h"
 
@@ -125,9 +125,11 @@ static void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_ad
     // store in advertisement item
     memset(advertisement_item, 0, sizeof(adv_bearer_connectable_advertisement_data_item_t));
     advertisement_item->adv_length = adv_data_unprovisioned_template_len + 18;
-    memcpy(advertisement_item->adv_data, (uint8_t*) adv_data_unprovisioned_template, adv_data_unprovisioned_template_len);
+    (void)memcpy(advertisement_item->adv_data,
+                 (uint8_t *)adv_data_unprovisioned_template,
+                 adv_data_unprovisioned_template_len);
     // dynamically store device uuid into adv data
-    memcpy(&advertisement_item->adv_data[11], device_uuid, 16);
+    (void)memcpy(&advertisement_item->adv_data[11], device_uuid, 16);
     little_endian_store_16(advertisement_item->adv_data, 27, 0);
 }
 
@@ -150,8 +152,8 @@ void mesh_proxy_stop_advertising_unprovisioned_device(void){
 #endif
 
 static uint8_t mesh_proxy_setup_advertising_with_network_id(uint8_t * buffer, uint8_t * network_id){
-    memcpy(&buffer[0], adv_data_with_network_id_template, 12);
-    memcpy(&buffer[12], network_id, 8);
+    (void)memcpy(&buffer[0], adv_data_with_network_id_template, 12);
+    (void)memcpy(&buffer[12], network_id, 8);
     return 20;
 }
 
@@ -181,9 +183,12 @@ static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
 static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     mesh_subnet_t * mesh_subnet = (mesh_subnet_t *) arg;
 
-    memcpy(mesh_subnet->advertisement_with_node_id.adv_data, adv_data_with_node_id_template, 12);
-    memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
-    memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[20], mesh_proxy_node_id_random_value, 8);
+    (void)memcpy(mesh_subnet->advertisement_with_node_id.adv_data,
+                 adv_data_with_node_id_template, 12);
+    (void)memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[12],
+                 &mesh_proxy_node_id_hash[8], 8);
+    (void)memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[20],
+                 mesh_proxy_node_id_random_value, 8);
     mesh_subnet->advertisement_with_node_id.adv_length = 28;
     
     // setup advertisements
@@ -208,7 +213,8 @@ static void mesh_proxy_node_id_handle_random(void * arg){
 
     // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
     memset(mesh_proxy_node_id_plaintext, 0, sizeof(mesh_proxy_node_id_plaintext));
-    memcpy(&mesh_proxy_node_id_plaintext[6] , mesh_proxy_node_id_random_value, 8);
+    (void)memcpy(&mesh_proxy_node_id_plaintext[6],
+                 mesh_proxy_node_id_random_value, 8);
     big_endian_store_16(mesh_proxy_node_id_plaintext, 14, primary_element_address);
     // TODO: old vs. new key
     btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, mesh_subnet->old_key->identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, mesh_subnet);
