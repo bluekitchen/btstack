@@ -2875,10 +2875,10 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30
 
 /**
- * @format 114114
+ * @format 121114
  * @param subevent_code
- * @param element_index
- * @param model_identifier
+ * @param dest
+ * @param status
  * @param present_value
  * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
@@ -2886,10 +2886,10 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x31
 
 /**
- * @format 114224
+ * @format 121224
  * @param subevent_code
- * @param element_index
- * @param model_identifier
+ * @param dest
+ * @param status
  * @param present_value
  * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
@@ -2915,4 +2915,12 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x34
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param dest
+ * @param status
+ * @param transition_time_gdtt  
+ */
+#define MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS                         0x35
 #endif
