@@ -91,7 +91,6 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	UNUSED(buffer_size);
 	
 	if (attribute_handle == nordic_spp_rx_value_handle){
-		printf_hexdump(buffer, buffer_size);
 		client_callback(con_handle, &buffer[0], buffer_size);
 	}
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){

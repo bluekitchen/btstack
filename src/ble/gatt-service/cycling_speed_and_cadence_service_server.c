@@ -138,7 +138,7 @@ static uint16_t cycling_speed_and_cadence_service_read_callback(hci_con_handle_t
 static void cycling_speed_and_cadence_service_csc_measurement_can_send_now(void * context){
 	cycling_speed_and_cadence_t * instance = (cycling_speed_and_cadence_t *) context;
 	if (!instance){
-		printf("instance is null (cycling_speed_and_cadence_service_csc_measurement_can_send_now)\n");
+		// printf("instance is null (cycling_speed_and_cadence_service_csc_measurement_can_send_now)\n");
 		return;
 	}
 	uint8_t flags = (instance->wheel_revolution_data_supported << CSC_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED);
@@ -153,7 +153,7 @@ static void cycling_speed_and_cadence_service_csc_measurement_can_send_now(void 
 		pos += 4;
 		little_endian_store_16(value, pos, instance->last_wheel_event_time);
 		pos += 2;
-		printf("send cumulative 0x%04x\n", instance->cumulative_wheel_revolutions);
+		// printf("send cumulative 0x%04x\n", instance->cumulative_wheel_revolutions);
 	}
 
 	if (instance->crank_revolution_data_supported){
@@ -169,7 +169,7 @@ static void cycling_speed_and_cadence_service_csc_measurement_can_send_now(void 
 static void cycling_speed_and_cadence_service_response_can_send_now(void * context){
 	cycling_speed_and_cadence_t * instance = (cycling_speed_and_cadence_t *) context;
 	if (!instance){
-		printf("instance is null (cycling_speed_and_cadence_service_response_can_send_now)\n");
+		// printf("instance is null (cycling_speed_and_cadence_service_response_can_send_now)\n");
 		return;
 	}
 		
@@ -194,9 +194,7 @@ static void cycling_speed_and_cadence_service_response_can_send_now(void * conte
 	csc_opcode_t temp_request_opcode = instance->request_opcode;
 	instance->request_opcode = CSC_OPCODE_IDLE;
 
-	printf_hexdump(value, pos);
 	uint8_t status = att_server_indicate(instance->con_handle, instance->control_point_value_handle, &value[0], pos); 
-	printf("att_server_indicate status 0x%02x\n", status);
 	switch (temp_request_opcode){
 		case CSC_OPCODE_SET_CUMULATIVE_VALUE:
 			if (instance->response_value != CSC_RESPONSE_VALUE_SUCCESS) break;
@@ -225,9 +223,9 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 		}
 		instance->measurement_client_configuration_descriptor_notify = little_endian_read_16(buffer, 0);
 		instance->con_handle = con_handle;
-		if (instance->measurement_client_configuration_descriptor_notify){
-			printf("enable notification\n");
-		}
+		// if (instance->measurement_client_configuration_descriptor_notify){
+		// 		printf("enable notification\n");
+		// }
 		return 0;
 	}
 
@@ -237,9 +235,9 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 		}
 		instance->control_point_client_configuration_descriptor_indicate = little_endian_read_16(buffer, 0);
 		instance->con_handle = con_handle;
-		if (instance->control_point_client_configuration_descriptor_indicate){
-			printf("enable indication\n");
-		}
+		// if (instance->control_point_client_configuration_descriptor_indicate){
+		// 	printf("enable indication\n");
+		// }
 		return 0;
 	}
 
@@ -278,7 +276,7 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 				instance->response_value = CSC_RESPONSE_VALUE_OP_CODE_NOT_SUPPORTED;
 				break;
 		}
-		printf("control point, opcode %02x, response %02x\n", instance->request_opcode, instance->response_value);
+		// printf("control point, opcode %02x, response %02x\n", instance->request_opcode, instance->response_value);
 	
 		if (instance->control_point_client_configuration_descriptor_indicate){
 			instance->control_point_callback.callback = &cycling_speed_and_cadence_service_response_can_send_now;
@@ -288,7 +286,7 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 		return 0;
 	}
 
-	printf("heart_rate_service_read_callback, not handeled read on handle 0x%02x\n", attribute_handle);
+	// printf("heart_rate_service_read_callback, not handeled read on handle 0x%02x\n", attribute_handle);
 	return 0;
 }
 
@@ -308,7 +306,7 @@ void cycling_speed_and_cadence_service_server_init(uint32_t supported_sensor_loc
 	uint16_t end_handle   = 0xffff;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_CYCLING_SPEED_AND_CADENCE, &start_handle, &end_handle);
 	if (!service_found){
-		printf("no service found\n");
+		// printf("no service found\n");
 		return;
 	}
 	// // get CSC Mesurement characteristic value handle and client configuration handle
@@ -324,12 +322,12 @@ void cycling_speed_and_cadence_service_server_init(uint32_t supported_sensor_loc
 	// get SC Control Point characteristic value handle and client configuration handle
 	instance->control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_SC_CONTROL_POINT);
 	instance->control_point_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_SC_CONTROL_POINT);
-	printf("Measurement     value handle 0x%02x\n", instance->measurement_value_handle);
-	printf("Measurement Cfg value handle 0x%02x\n", instance->measurement_client_configuration_descriptor_handle);
-	printf("Feature         value  handle 0x%02x\n", instance->feature_handle);
-	printf("Sensor location value handle 0x%02x\n", instance->sensor_location_value_handle);
-	printf("Control Point   value handle 0x%02x\n", instance->control_point_value_handle);
-	printf("Control P. Cfg. value handle 0x%02x\n", instance->control_point_client_configuration_descriptor_handle);
+	log_info("Measurement     value handle 0x%02x", instance->measurement_value_handle);
+	log_info("Measurement Cfg value handle 0x%02x", instance->measurement_client_configuration_descriptor_handle);
+	log_info("Feature         value handle 0x%02x", instance->feature_handle);
+	log_info("Sensor location value handle 0x%02x", instance->sensor_location_value_handle);
+	log_info("Control Point   value handle 0x%02x", instance->control_point_value_handle);
+	log_info("Control P. Cfg. value handle 0x%02x", instance->control_point_client_configuration_descriptor_handle);
 	
 	cycling_speed_and_cadence_service.start_handle   = start_handle;
 	cycling_speed_and_cadence_service.end_handle     = end_handle;
@@ -354,7 +352,7 @@ static void cycling_speed_and_cadence_service_calculate_cumulative_wheel_revolut
 			instance->cumulative_wheel_revolutions = 0xffffffff;
 		} 
 	}
-	printf("cumulative 0x%04x, wheel revolution change %d\n", instance->cumulative_wheel_revolutions, revolutions_change);
+	// printf("cumulative 0x%04x, wheel revolution change %d\n", instance->cumulative_wheel_revolutions, revolutions_change);
 }
 
 static void cycling_speed_and_cadence_service_calculate_cumulative_crank_revolutions(uint16_t revolutions_change){
