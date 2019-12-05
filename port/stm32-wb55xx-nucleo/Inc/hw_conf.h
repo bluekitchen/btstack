@@ -64,6 +64,12 @@
 /* Index of the semaphore used to access the FLASH */
 #define CFG_HW_FLASH_SEMID                                      2
 
+/* Index of the semaphore used to access the PKA */
+#define CFG_HW_PKA_SEMID                                        1
+
+/* Index of the semaphore used to access the RNG */
+#define CFG_HW_RNG_SEMID                                        0
+
 /******************************************************************************
  * HW TIMER SERVER
  *****************************************************************************/

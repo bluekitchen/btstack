@@ -45,6 +45,8 @@
 
 #include "hal_flash_bank_stm32wb.h"
 #include "stm32wbxx_hal.h"
+#include "shci.h"
+#include "app_conf.h"
 
 #define STM32WB_FLASH_ALIGNMENT     8
 #define LITTLE_TO_64(buff, offset)	((uint64_t)  (  (((uint64_t) ((uint8_t*)(buff))[(offset)+7]) << 56)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+6]) << 48)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+5]) << 40)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+4]) << 32)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+3]) << 24)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+2]) << 16)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+1]) <<  8)  |  (((uint64_t) ((uint8_t*)(buff))[(offset)+0]) <<  0)  ))
@@ -67,9 +69,27 @@ static void hal_flash_bank_stm32wb_erase(void * context, int bank){
 	eraseInit.Page = self->page[bank];
 	eraseInit.NbPages = 1;
 	uint32_t sectorError;
+
+	// Get HW semaphore to get flash access
+    while( LL_HSEM_1StepLock( HSEM, CFG_HW_FLASH_SEMID ) );
+
+	// Inform CPU2 from erase activity
+    SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_ON);
+
+	// Unlock the flash
 	HAL_FLASH_Unlock();
+
+	// Erase the flash
 	HAL_FLASHEx_Erase(&eraseInit, &sectorError);
+
+	// RE-Lock the flash
 	HAL_FLASH_Lock();
+
+	// Release HW semaphore
+    LL_HSEM_ReleaseLock( HSEM, CFG_HW_FLASH_SEMID, 0 );
+
+	// Inform CPU2 from end of flash erase activity
+    SHCI_C2_FLASH_EraseActivity(ERASE_ACTIVITY_OFF);
 }
 
 static void hal_flash_bank_stm32wb_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
@@ -89,12 +109,18 @@ static void hal_flash_bank_stm32wb_write(void * context, int bank, uint32_t offs
 	if (offset > self->page_size) return;
 	if ((offset + size) > self->page_size) return;
 
+	// Get HW semaphore to get flash access
+    while( LL_HSEM_1StepLock( HSEM, CFG_HW_FLASH_SEMID ) );
+
 	unsigned int i;
 	HAL_FLASH_Unlock();
 	for (i=0;i<size;i+=STM32WB_FLASH_ALIGNMENT){
 		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, (FLASH_BASE + (self->page[bank] * self->page_size)) + offset + i, LITTLE_TO_64(data, i));
 	}
 	HAL_FLASH_Lock();
+
+	// Release HW semaphore
+    LL_HSEM_ReleaseLock( HSEM, CFG_HW_FLASH_SEMID, 0 );
 }
 
 static const hal_flash_bank_t hal_flash_bank_stm32wb_impl = {
