@@ -33,6 +33,7 @@ extern "C" {
 #include "stm32wbxx_ll_system.h"
 #include "stm32wbxx_ll_rcc.h"
 #include "stm32wbxx_ll_ipcc.h"
+#include "stm32wbxx_ll_hsem.h"
 
 #ifdef  USE_STM32WBXX_USB_DONGLE
 #include "stm32wbxx_usb_dongle.h"
