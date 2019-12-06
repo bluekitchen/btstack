@@ -55,15 +55,25 @@ extern "C"
 void mesh_configuration_client_register_packet_handler(mesh_model_t *configuration_client_model, btstack_packet_handler_t events_packet_handler);
 
 /**
- * @brief Get configuration beacon
+ * @brief Get the current Secure Network Beacon state of a node.
  * @param mesh_model
  * @param dest
  * @param netkey_index
  * @param appkey_index
- * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED  
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_message_config_beacon_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
+/**
+ * @brief Get the current Secure Network Beacon state of a node.
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param Beacon        0x01 The node is broadcasting a Secure Network beacon, 0x00 broadcastinis  off
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_message_config_beacon_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t beacon);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

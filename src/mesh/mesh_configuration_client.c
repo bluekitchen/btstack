@@ -76,13 +76,12 @@ static uint8_t mesh_access_validate_envelop_params(mesh_model_t * mesh_model, ui
 static const mesh_access_message_t mesh_configuration_client_beacon_get = {
         MESH_FOUNDATION_OPERATION_BEACON_GET, ""
 };
-
-#if 0
 static const mesh_access_message_t mesh_configuration_client_beacon_set = {
         MESH_FOUNDATION_OPERATION_BEACON_SET, "1"
 };
 
 
+#if 0
 static const mesh_access_message_t mesh_configuration_client_composition_data_get = {
         MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET, "1"
 };
@@ -127,6 +126,19 @@ uint8_t mesh_configuration_client_send_message_config_beacon_get(mesh_model_t * 
     if (status != ERROR_CODE_SUCCESS) return status;
 
     mesh_network_pdu_t * network_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_beacon_get);
+    if (!network_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, MESH_FOUNDATION_OPERATION_BEACON_STATUS);
+    return ERROR_CODE_SUCCESS;;
+}
+
+uint8_t mesh_configuration_client_send_message_config_beacon_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t beacon){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    if (beacon > 1) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+
+    mesh_network_pdu_t * network_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_beacon_set, beacon);
     if (!network_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, MESH_FOUNDATION_OPERATION_BEACON_STATUS);
