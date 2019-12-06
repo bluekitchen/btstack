@@ -364,6 +364,9 @@ static void transport_init(const void *transport_config){
 	TL_BLE_InitConf_t tl_ble_config;
 	SHCI_TL_HciInitConf_t shci_init_config;
 
+    if (transport_config == NULL)
+        return;
+
     log_info("transport_init");
 
 	/* Take BLE out of reset */
@@ -549,6 +552,7 @@ void port_thread(void* args){
             HAL_FLASH_PAGE_0_ID,
             HAL_FLASH_PAGE_1_ID);
 #endif
+    transport_init((void*)1);
 
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
             &btstack_tlv_flash_bank_context,
