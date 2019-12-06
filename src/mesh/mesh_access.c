@@ -628,6 +628,12 @@ void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value
     little_endian_store_32(pdu->data, pdu->len, value);
     pdu->len += 4;
 }
+
+void mesh_access_transport_add_label_uuid(mesh_transport_pdu_t * pdu, uint8_t * value){
+    (void)memcpy(value, pdu->data, 16);
+    pdu->len += 16;
+}
+
 void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier){
     if (!mesh_model_is_bluetooth_sig(model_identifier)){
         mesh_access_transport_add_uint16( pdu, mesh_model_get_vendor_id(model_identifier) );
@@ -729,6 +735,7 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
     const char * format = message_template->format;
     uint16_t word;
     uint32_t longword;
+    uint8_t * ptr;
     while (*format){
         switch (*format++){
             case '1':
@@ -746,6 +753,10 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
             case '4':
                 longword = va_arg(argptr, uint32_t);
                 mesh_access_transport_add_uint32( transport_pdu, longword);
+                break;
+            case 'P': // 16 byte, eg LabelUUID, in network endianess
+                ptr = va_arg(argptr, uint8_t *);
+                mesh_access_transport_add_label_uuid( transport_pdu, ptr);
                 break;
             case 'm':
                 longword = va_arg(argptr, uint32_t);
