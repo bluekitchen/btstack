@@ -122,7 +122,7 @@ static const mesh_access_message_t mesh_configuration_client_publication_virtual
 };
 #endif
 
-uint8_t mesh_configuration_send_message_client_config_beacon_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+uint8_t mesh_configuration_client_send_message_config_beacon_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
@@ -131,6 +131,34 @@ uint8_t mesh_configuration_send_message_client_config_beacon_get(mesh_model_t * 
 
     mesh_configuration_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, MESH_FOUNDATION_OPERATION_BEACON_STATUS);
     return ERROR_CODE_SUCCESS;;
+}
+
+// Model Operations
+static void mesh_configuration_client_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    
+    uint8_t beacon_status = mesh_access_parser_get_u8(&parser);
+    
+    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_BEACON_STATUS};
+    int pos = 3;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
+    event[pos++] = beacon_status;
+    
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+const static mesh_operation_t mesh_configuration_client_model_operations[] = {
+    { MESH_FOUNDATION_OPERATION_BEACON_STATUS, 0, mesh_configuration_client_status_handler },
+    { 0, 0, NULL }
+};
+
+const mesh_operation_t * mesh_configuration_client_get_operations(void){
+    return mesh_configuration_client_model_operations;
 }
 
 void mesh_configuration_client_register_packet_handler(mesh_model_t *configuration_client_model, btstack_packet_handler_t events_packet_handler){

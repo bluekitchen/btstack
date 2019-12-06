@@ -8008,6 +8008,34 @@ static inline uint8_t mesh_subevent_generic_default_transition_time_status_get_t
     return event[6];
 }
 
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_foundation_beacon_status_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_beacon_status_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field secure_network_beacon_state from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @param event packet
+ * @return secure_network_beacon_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_beacon_status_get_secure_network_beacon_state(const uint8_t * event){
+    return event[6];
+}
+
 
 
 /* API_END */

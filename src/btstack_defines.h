@@ -2928,4 +2928,14 @@ typedef uint8_t sm_key_t[16];
  * @param transition_time_gdtt  
  */
 #define MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS                         0x35
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param secure_network_beacon_state  
+ */
+#define MESH_SUBEVENT_FOUNDATION_BEACON_STATUS                                       0x36
+
 #endif
