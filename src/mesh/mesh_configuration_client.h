@@ -52,7 +52,17 @@ extern "C"
  * @param configuration_client_model
  * @param events_packet_handler
  */
-void mesh_configuration_client_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t events_packet_handler);
+void mesh_configuration_client_register_packet_handler(mesh_model_t *configuration_client_model, btstack_packet_handler_t events_packet_handler);
+
+/**
+ * @brief Get configuration beacon
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED  
+ */
+uint8_t mesh_configuration_send_message_client_config_beacon_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
 
 #ifdef __cplusplus
