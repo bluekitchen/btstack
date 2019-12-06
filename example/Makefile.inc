@@ -138,6 +138,7 @@ MESH = \
 	gatt_bearer.c \
 	mesh.c \
 	mesh_access.c \
+	mesh_configuration_client.c \
 	mesh_configuration_server.c \
 	mesh_crypto.c \
 	mesh_foundation.c \

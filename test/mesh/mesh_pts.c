@@ -65,6 +65,8 @@ static mesh_model_t                 mesh_generic_level_server_model;
 static mesh_generic_level_state_t   mesh_generic_level_state;
 static mesh_publication_model_t     generic_level_server_publication;
 
+static mesh_model_t                 mesh_configuration_client_model;
+
 static char gap_name_buffer[30];
 static char gap_name_prefix[] = "Mesh ";
 
@@ -196,6 +198,7 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
                         mesh_subevent_state_update_bool_get_value(packet));
                     break;
                 default:
+                    printf("mesh_state_update_message_handler: event not parsed");
                     break;
             }
             break;
@@ -204,6 +207,21 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
     }
 }
 
+static void mesh_configuration_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+   
+    switch(packet[0]){
+        case HCI_EVENT_MESH_META:
+            switch(packet[2]){
+                default:
+                    printf("mesh_configuration_message_handler: event not parsed");
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
 // PTS
 
 // helper network layer, temp
@@ -651,6 +669,11 @@ int btstack_main(void)
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_vendor_model);
     
+    // Setup Configuration Client model
+    mesh_configuration_client_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_LEVEL_SERVER);
+    mesh_configuration_client_register_packet_handler(&mesh_configuration_client_model, &mesh_configuration_message_handler);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_configuration_client_model);
+
     // Enable PROXY
     mesh_foundation_gatt_proxy_set(1);
     
