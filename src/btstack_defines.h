@@ -864,7 +864,7 @@ typedef uint8_t sm_key_t[16];
 /*
  * @format
  */
-#define L2CAP_EVENT_TRIGGER_RUN                            0x77
+#define L2CAP_EVENT_TRIGGER_RUN                            0x7f
 
 
 // RFCOMM EVENTS
