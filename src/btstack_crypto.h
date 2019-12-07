@@ -270,6 +270,17 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t l
  */
 void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg);
 
+#ifdef HAVE_AES128
+/** 
+ * Encrypt plaintext using AES128
+ * @note Prototype for custom AES128 implementation
+ * @param key (16 bytes)
+ * @param plaintext (16 bytes)
+ * @param ciphertext (16 bytes)
+ */
+void btstack_aes128_calc(const uint8_t * key, const uint8_t * plaintext, uint8_t * ciphertext);
+#endif
+
 // PTS testing only - not possible when using Buetooth Controller for ECC operations
 void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key);
 

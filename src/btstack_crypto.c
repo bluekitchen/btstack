@@ -46,6 +46,30 @@
 #include "btstack_util.h"
 #include "hci.h"
 
+//
+// AES128 Configuration
+//
+
+// By default, AES128 is computed by Bluetooth Controller using HCI Command/Event asynchronously
+// as fallback/alternative, a software implementation can be used
+// configure ECC implementations
+#if defined(HAVE_AES128) && defined(ENABLE_SOFTWARE_AES128)
+#error "If you have custom AES128 implementation (HAVE_AES128), please disable software AES128 (ENABLE_SOFTWARE_AES128) in bstack_config.h"
+#endif
+
+#ifdef ENABLE_SOFTWARE_AES128
+#define HAVE_AES128
+#include "rijndael.h"
+#endif
+
+#ifdef HAVE_AES128
+#define USE_BTSTACK_AES128
+#endif
+
+//
+// ECC Configuration
+// 
+
 // backwards-compatitility ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS -> ENABLE_MICRO_ECC_P256
 #if defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_P256)
 #define ENABLE_MICRO_ECC_P256
@@ -76,12 +100,6 @@
 
 #if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_ECC_P256)
 #define ENABLE_ECC_P256
-#endif
-
-// Software AES128
-#ifdef HAVE_AES128
-#define USE_BTSTACK_AES128
-void btstack_aes128_calc(const uint8_t * key, const uint8_t * plaintext, uint8_t * result);
 #endif
 
 // degbugging
@@ -145,6 +163,15 @@ static mbedtls_ecp_group   mbedtls_ec_group;
 #endif
 
 #endif /* ENABLE_ECC_P256 */
+
+#ifdef ENABLE_SOFTWARE_AES128
+// AES128 using public domain rijndael implementation
+void btstack_aes128_calc(const uint8_t * key, const uint8_t * plaintext, uint8_t * ciphertext){
+    uint32_t rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, plaintext, ciphertext);
+}
+#endif
 
 static void btstack_crypto_done(btstack_crypto_t * btstack_crypto){
     btstack_linked_list_pop(&btstack_crypto_operations);
