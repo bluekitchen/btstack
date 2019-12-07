@@ -155,18 +155,21 @@ static void sm_peripheral_setup(void){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+
     hci_con_handle_t con_handle;
     bd_addr_t addr;
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // setup new 
-                        printf("Connection complete\n");
-                            con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                            sm_send_security_request(con_handle);
+                            printf("Connection complete\n");
+                            // Uncomment the next lines to trigger explicit pairing on connect
+                            // con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            // sm_send_security_request(con_handle);
+                            UNUSED(con_handle);
                             break;
                         default:
                             break;
