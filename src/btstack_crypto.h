@@ -46,6 +46,7 @@
 #define BTSTACK_CTRYPTO_H
 
 #include "btstack_defines.h"
+#include "btstack_config.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -270,7 +271,7 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t l
  */
 void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg);
 
-#ifdef HAVE_AES128
+#if defined(ENABLE_SOFTWARE_AES128) || defined (HAVE_AES128)
 /** 
  * Encrypt plaintext using AES128
  * @note Prototype for custom AES128 implementation
