@@ -137,7 +137,6 @@ static void reset_gap(void){
     // current settings
     current_settings |=  BTP_GAP_SETTING_SSP;
     current_settings |=  BTP_GAP_SETTING_LE;
-    current_settings |=  BTP_GAP_SETTING_PRIVACY;
 #ifdef ENABLE_CLASSIC
     current_settings |=  BTP_GAP_SETTING_BREDR;
 #endif
