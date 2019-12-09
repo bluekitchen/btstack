@@ -1534,6 +1534,7 @@ static inline uint16_t l2cap_event_ertm_buffer_released_get_local_cid(const uint
     return little_endian_read_16(event, 2);
 }
 
+
 /**
  * @brief Get field status from event RFCOMM_EVENT_CHANNEL_OPENED
  * @param event packet
@@ -8163,6 +8164,52 @@ static inline uint8_t mesh_subevent_foundation_gatt_proxy_status_get_foundation_
  */
 static inline uint8_t mesh_subevent_foundation_gatt_proxy_status_get_gatt_proxy_state(const uint8_t * event){
     return event[6];
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_foundation_relay_status_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_relay_status_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field relay from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @param event packet
+ * @return relay
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_relay_status_get_relay(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field retransmit_count from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @param event packet
+ * @return retransmit_count
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_relay_status_get_retransmit_count(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field retransmit_interval_ms from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @param event packet
+ * @return retransmit_interval_ms
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_relay_status_get_retransmit_interval_ms(const uint8_t * event){
+    return event[8];
 }
 
 

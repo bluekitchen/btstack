@@ -2970,4 +2970,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS                                   0x39
 
+/**
+ * @format 121111
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param relay
+ * @param retransmit_count                          the number of times that packet is transmitted for each packet that is relayed.
+ * @param retransmit_interval_ms                    retransmission interval in ms
+ */
+#define MESH_SUBEVENT_FOUNDATION_RELAY_STATUS                                        0x40
+
 #endif
