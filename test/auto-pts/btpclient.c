@@ -80,6 +80,8 @@ static bd_addr_type_t   remote_addr_type;
 static bd_addr_t        remote_addr;
 static hci_con_handle_t remote_handle = HCI_CON_HANDLE_INVALID;
 
+static uint8_t connection_role;
+
 // gap_adv_data_len/gap_scan_response is 16-bit to simplify bounds calculation
 static uint8_t  ad_flags;
 static uint8_t  gap_adv_data[31];
@@ -291,10 +293,11 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             remote_handle          = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             remote_addr_type       = hci_subevent_le_connection_complete_get_peer_address_type(packet);
                             hci_subevent_le_connection_complete_get_peer_address(packet, remote_addr);
+                            connection_role               = hci_subevent_le_connection_complete_get_role(packet);
                             uint16_t conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
                             uint16_t conn_latency  = hci_subevent_le_connection_complete_get_conn_latency(packet);
                             uint16_t supervision_timeout = hci_subevent_le_connection_complete_get_supervision_timeout(packet);
-
+                            
                             printf("Connected LE to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
 
                             uint8_t buffer[13];
@@ -776,7 +779,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_UNPAIR:{
             MESSAGE("BTP_GAP_OP_UNPAIR");
             if (controller_index == 0){
-                uint8_t   command_addr_type = data[0];
+                // uint8_t   command_addr_type = data[0];
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
                 gap_drop_link_key_for_bd_addr(command_addr);
@@ -784,7 +787,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 for (index =0 ; index < le_device_db_max_count(); index++){
                     int addr_type;
                     bd_addr_t addr;
-                    sm_key_t irk;
+                    // sm_key_t irk;
                     memset(addr, 0, 6);
                     le_device_db_info(index, &addr_type, addr, NULL);
                     if (bd_addr_cmp(command_addr, addr) == 0){
@@ -798,7 +801,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_PASSKEY_ENTRY_RSP:
             if (controller_index == 0){
                 // assume already connected
-                uint8_t   command_addr_type = data[0];
+                // uint8_t   command_addr_type = data[0];
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
                 uint32_t passkey = little_endian_read_32(data, 7);
@@ -810,7 +813,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_PASSKEY_CONFIRM_RSP:
             if (controller_index == 0){
                 // assume already connected
-                uint8_t   command_addr_type = data[0];
+                // uint8_t   command_addr_type = data[0];
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
                 uint8_t match = data[7];
@@ -828,14 +831,18 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             if (controller_index == 0){
                 MESSAGE("BTP_GAP_OP_CONNECTION_PARAM_UPDATE");
                 // assume already connected
-                uint8_t   command_addr_type = data[0];
-                bd_addr_t command_addr;
-                reverse_bd_addr(&data[1], command_addr);
+                // uint8_t   command_addr_type = data[0];
+                // bd_addr_t command_addr;
+                // reverse_bd_addr(&data[1], command_addr);
                 uint16_t conn_interval_min = little_endian_read_16(data, 7);
                 uint16_t conn_interval_max = little_endian_read_16(data, 9);
                 uint16_t conn_latency = little_endian_read_16(data, 11);
                 uint16_t supervision_timeout = little_endian_read_16(data, 13);
-                gap_request_connection_parameter_update(remote_handle, conn_interval_min, conn_interval_max, conn_latency, supervision_timeout);
+                if (connection_role == HCI_ROLE_MASTER){
+                    gap_update_connection_parameters(remote_handle, conn_interval_min, conn_interval_max, conn_latency, supervision_timeout);
+                } else {
+                    gap_request_connection_parameter_update(remote_handle, conn_interval_min, conn_interval_max, conn_latency, supervision_timeout);
+                }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
             break;
