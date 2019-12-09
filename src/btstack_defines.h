@@ -2938,4 +2938,27 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_FOUNDATION_BEACON_STATUS                                       0x36
 
+/**
+ * @format 121122222
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param page 
+ * @param cid        company identifier assigned by the Bluetooth SIG 
+ * @param pid        vendor-assigned product identifier
+ * @param vid        vendor-assigned product version identifier
+ * @param crpl       the minimum number of replay protection list entries in a device
+ * @param features   device features
+ */
+#define MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS                             0x37
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param default_ttl  
+ */
+#define MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS                                  0x38
+
 #endif

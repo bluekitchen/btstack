@@ -86,6 +86,27 @@ uint8_t mesh_configuration_client_send_beacon_set(mesh_model_t * mesh_model, uin
  */
 uint8_t mesh_configuration_client_send_composition_data_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t page);
 
+/**
+ * @brief Get the current Default TTL state of a node
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_default_ttl_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+
+/**
+ * @brief Set Default TTL state of a node
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param ttl           allowed values: 0x00, 0x02–0x7F
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_default_ttl_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
