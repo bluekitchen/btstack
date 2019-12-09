@@ -93,7 +93,7 @@ static const mesh_access_message_t mesh_configuration_client_default_ttl_set = {
         MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET, "1"
 };
 
-#if 0
+
 static const mesh_access_message_t mesh_configuration_client_gatt_proxy_get = {
         MESH_FOUNDATION_OPERATION_GATT_PROXY_GET, ""
 };
@@ -101,7 +101,7 @@ static const mesh_access_message_t mesh_configuration_client_gatt_proxy_set = {
         MESH_FOUNDATION_OPERATION_GATT_PROXY_SET, "1"
 };
 
-
+#if 0
 static const mesh_access_message_t mesh_configuration_client_relay_get = {
         MESH_FOUNDATION_OPERATION_RELAY_GET, ""
 };
@@ -180,6 +180,31 @@ uint8_t mesh_configuration_client_send_default_ttl_set(mesh_model_t * mesh_model
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t mesh_configuration_client_send_gatt_proxy_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * network_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_gatt_proxy_get);
+    if (!network_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, MESH_FOUNDATION_OPERATION_GATT_PROXY_GET);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_gatt_proxy_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t gatt_proxy_state){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    if (gatt_proxy_state > 2) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+
+    mesh_network_pdu_t * network_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_gatt_proxy_set, gatt_proxy_state);
+    if (!network_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, MESH_FOUNDATION_OPERATION_GATT_PROXY_SET);
+    return ERROR_CODE_SUCCESS;
+}
+
+
 // Model Operations
 static void mesh_configuration_client_beacon_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
@@ -253,10 +278,29 @@ static void mesh_configuration_client_default_ttl_handler(mesh_model_t *mesh_mod
     mesh_access_message_processed(pdu);
 }
 
+static void mesh_configuration_client_gatt_proxy_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    
+    uint8_t gatt_proxy_state = mesh_access_parser_get_u8(&parser);
+
+    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS};
+    int pos = 3;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
+    event[pos++] = gatt_proxy_state;
+    
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_STATUS,           1, mesh_configuration_client_beacon_status_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS, 1, mesh_configuration_client_composition_data_status_handler },
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,      1, mesh_configuration_client_default_ttl_handler },
+    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,       1, mesh_configuration_client_gatt_proxy_handler },
     { 0, 0, NULL }
 };
 

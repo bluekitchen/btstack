@@ -107,6 +107,27 @@ uint8_t mesh_configuration_client_send_default_ttl_get(mesh_model_t * mesh_model
  */
 uint8_t mesh_configuration_client_send_default_ttl_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl);
 
+/**
+ * @brief Get the current Default GATT proxy state of a node
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_default_gatt_proxy_state_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+
+/**
+ * @brief Set Default GATT proxy state of a node
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param gatt_proxy_state        0 - the proxy feature is supported and disabled, 1 - supported and enabled, 2 - not supported
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_default_gatt_proxy_state_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t gatt_proxy_state);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

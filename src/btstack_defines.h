@@ -2961,4 +2961,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS                                  0x38
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param gatt_proxy_state  
+ */
+#define MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS                                   0x39
+
 #endif

@@ -8110,30 +8110,58 @@ static inline uint16_t mesh_subevent_foundation_composition_data_status_get_feat
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_foundation_beacon_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_foundation_default_ttl_status_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS
  * @param event packet
  * @return foundation_status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_beacon_status_get_foundation_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_foundation_default_ttl_status_get_foundation_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field default_ttl from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @brief Get field default_ttl from event MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS
  * @param event packet
  * @return default_ttl
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_beacon_status_get_default_ttl(const uint8_t * event){
+static inline uint8_t mesh_subevent_foundation_default_ttl_status_get_default_ttl(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_foundation_gatt_proxy_status_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_gatt_proxy_status_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field gatt_proxy_state from event MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS
+ * @param event packet
+ * @return gatt_proxy_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_foundation_gatt_proxy_status_get_gatt_proxy_state(const uint8_t * event){
     return event[6];
 }
 
