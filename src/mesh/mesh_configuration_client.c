@@ -54,21 +54,88 @@
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_upper_transport.h"
 
+#define MESH_VENDOR_MODEL_SIZE 4
+#define MESH_SIG_MODEL_SIZE    2
 
-static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
-    uint8_t  ttl  = mesh_foundation_default_ttl_get();
-    mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
-    mesh_access_send_acknowledged_pdu(pdu, mesh_access_acknowledged_message_retransmissions(), ack_opcode);
+// Mesh Composition Data Element iterator
+
+uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uint8_t * event, uint16_t size){
+    uint16_t pos = 16; 
+    uint16_t num_elements = 0;
+
+    while ((pos + 4) <= size){
+        // location descriptor
+        pos += 2;
+        uint8_t num_sig_model_ids = event[pos++];
+        uint8_t num_vendor_model_ids = event[pos++];
+        pos += (num_sig_model_ids + num_vendor_model_ids) * 2;
+        num_elements++;
+    }
+    return num_elements;
 }
 
-static uint8_t mesh_access_validate_envelop_params(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
-    btstack_assert(mesh_model != NULL);
-    // TODO: validate other params
-    UNUSED(dest);
-    UNUSED(netkey_index);
-    UNUSED(appkey_index);
+void mesh_composition_data_iterator_init(mesh_composite_data_iterator_t * it, const uint8_t * elements, uint16_t size){
+    it->elements = elements;
+    it->size = size;
+    it->offset = 16;
+}
 
-    return ERROR_CODE_SUCCESS;
+bool mesh_composition_data_iterator_has_next_element(mesh_composite_data_iterator_t * it){
+    uint16_t sig_model_list_size    = it->elements[it->offset + 2] * MESH_SIG_MODEL_SIZE;
+    uint16_t vendor_model_list_size = it->elements[it->offset + 3] * MESH_VENDOR_MODEL_SIZE;
+    uint16_t element_len =  2 + sig_model_list_size + vendor_model_list_size;
+
+    return (it->offset + element_len) <= it->size;
+}
+
+void mesh_composition_data_iterator_next_element(mesh_composite_data_iterator_t * it){
+    uint16_t sig_model_list_size    = it->elements[it->offset + 2] * MESH_SIG_MODEL_SIZE;
+    uint16_t vendor_model_list_size = it->elements[it->offset + 3] * MESH_VENDOR_MODEL_SIZE;
+    uint16_t element_len =  2 + sig_model_list_size + vendor_model_list_size;
+
+    it->sig_model_iterator.models = &it->elements[it->offset + 4];
+    it->sig_model_iterator.size = sig_model_list_size;
+    it->sig_model_iterator.offset = 0;
+    
+    it->vendor_model_iterator.models = &it->elements[it->offset + 4 + it->sig_model_iterator.size];
+    it->vendor_model_iterator.size = vendor_model_list_size;
+    it->vendor_model_iterator.offset = 0;
+
+    it->loc = little_endian_read_16(it->elements, it->offset);
+    it->offset += element_len;
+}
+
+uint16_t mesh_composition_data_iterator_element_loc(mesh_composite_data_iterator_t * it){
+    return it->loc;
+}
+
+bool mesh_composition_data_iterator_has_next_sig_model(mesh_composite_data_iterator_t * it){
+    return (it->sig_model_iterator.offset + MESH_SIG_MODEL_SIZE) <= it->sig_model_iterator.size;
+}
+
+void mesh_composition_data_iterator_next_sig_model(mesh_composite_data_iterator_t * it){
+    it->sig_model_iterator.id = little_endian_read_16(it->sig_model_iterator.models, it->sig_model_iterator.offset);
+    it->sig_model_iterator.offset += 2;
+}
+
+uint16_t mesh_composition_data_iterator_sig_model_id(mesh_composite_data_iterator_t * it){
+    return (uint16_t)it->sig_model_iterator.id;
+}
+
+bool mesh_composition_data_iterator_has_next_vendor_model(mesh_composite_data_iterator_t * it){
+    return (it->vendor_model_iterator.offset + MESH_VENDOR_MODEL_SIZE) <= it->vendor_model_iterator.size;
+}
+
+void mesh_composition_data_iterator_next_vendor_modeld(mesh_composite_data_iterator_t * it){
+    uint16_t vendor_id = little_endian_read_16(it->vendor_model_iterator.models, it->vendor_model_iterator.offset);
+    it->vendor_model_iterator.offset += 2;
+    uint16_t model_id = little_endian_read_16(it->vendor_model_iterator.models, it->vendor_model_iterator.offset);
+    it->vendor_model_iterator.offset += 2;
+    it->vendor_model_iterator.id = mesh_model_get_model_identifier(vendor_id, model_id);
+}
+
+uint32_t mesh_composition_data_iterator_vendor_model_id(mesh_composite_data_iterator_t * it){
+    return it->vendor_model_iterator.id;
 }
 
 // Configuration client messages
@@ -120,6 +187,23 @@ static const mesh_access_message_t mesh_configuration_client_publication_virtual
         MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET, "2P2111m"
 };
 #endif
+
+
+static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+    mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    mesh_access_send_acknowledged_pdu(pdu, mesh_access_acknowledged_message_retransmissions(), ack_opcode);
+}
+
+static uint8_t mesh_access_validate_envelop_params(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    btstack_assert(mesh_model != NULL);
+    // TODO: validate other params
+    UNUSED(dest);
+    UNUSED(netkey_index);
+    UNUSED(appkey_index);
+
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t mesh_configuration_client_send_config_beacon_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
@@ -253,6 +337,27 @@ static void mesh_configuration_client_composition_data_status_handler(mesh_model
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }
+
+uint8_t mesh_subevent_configuration_composition_data_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 1);
+}
+
+uint8_t mesh_subevent_configuration_composition_data_get_pid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+uint8_t mesh_subevent_configuration_composition_data_get_vid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
+uint8_t mesh_subevent_configuration_composition_data_get_crpl(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+
+uint8_t mesh_subevent_configuration_composition_data_get_features(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+
 
 static inline void mesh_configuration_client_handle_uint8_value(mesh_model_t *mesh_model, mesh_pdu_t * pdu, uint8_t subevent_type){
     mesh_access_parser_state_t parser;

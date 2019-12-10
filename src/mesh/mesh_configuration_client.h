@@ -47,6 +47,96 @@ extern "C"
 {
 #endif
 
+
+typedef struct {
+    const uint8_t * models;
+    uint16_t size;
+    uint16_t offset;
+
+    uint32_t id;
+} mesh_model_id_iterator_t;
+
+typedef struct {
+    const uint8_t * elements;
+    uint16_t size;
+    uint16_t offset;
+
+    uint16_t loc;
+
+    mesh_model_id_iterator_t sig_model_iterator;
+    mesh_model_id_iterator_t vendor_model_iterator;
+} mesh_composite_data_iterator_t;
+
+
+/**
+ * @brief Initialize iterator for element descriptions list from Composition data in MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA event
+ * @param iterator
+ * @param elements
+ * @param size
+ */
+void mesh_composition_data_iterator_init(mesh_composite_data_iterator_t * iterator, const uint8_t * elements, uint16_t size);
+
+/**
+ * @brief Check if there is another element description in the list
+ * @param iterator
+ * @return has_next_element  
+ */
+bool mesh_composition_data_iterator_has_next_element(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Select the next element 
+ * @param iterator
+ */
+void mesh_composition_data_iterator_next_element(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Get the element location descriptor for the current element
+ * @param iterator
+ * @return loc 
+ */
+uint16_t mesh_composition_data_iterator_element_loc(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Check if there is another SIG model in current element
+ * @param iterator
+ * @return has_next_sig_model  
+ */
+bool mesh_composition_data_iterator_has_next_sig_model(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Select the next SIG model
+ * @param iterator
+ */
+void mesh_composition_data_iterator_get_next_sig_model(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Get the SIG model ID for the current SIG model of the current element
+ * @param iterator
+ * @return loc 
+ */
+uint16_t mesh_composition_data_iterator_sig_model_id(mesh_composite_data_iterator_t * iterator);
+
+
+/**
+ * @brief Check if there is another vendor model in current element
+ * @param iterator
+ * @return has_next_vendor_model  
+ */
+bool mesh_composition_data_iterator_has_next_vendor_model(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Select the next VVendor model
+ * @param iterator
+ */
+void mesh_composition_data_iterator_next_vendor_modeld(mesh_composite_data_iterator_t * iterator);
+
+/**
+ * @brief Get the Vendor model ID for the current vendor model of the current element
+ * @param iterator
+ * @return loc 
+ */
+uint32_t mesh_composition_data_iterator_vendor_model_id(mesh_composite_data_iterator_t * iterator);
+
 /**
  * @brief Register packet handler
  * @param configuration_client_model
@@ -85,6 +175,36 @@ uint8_t mesh_configuration_client_send_beacon_set(mesh_model_t * mesh_model, uin
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_composition_data_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t page);
+
+/**
+ * @brief Get field cid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint8_t mesh_subevent_configuration_composition_data_get_cid(const uint8_t * event);
+
+/**
+ * @brief Get field pid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint8_t mesh_subevent_configuration_composition_data_get_pid(const uint8_t * event);
+
+/**
+ * @brief Get field vid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint8_t mesh_subevent_configuration_composition_data_get_vid(const uint8_t * event);
+
+/**
+ * @brief Get field crpl from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint8_t mesh_subevent_configuration_composition_data_get_crpl(const uint8_t * event);
+
+/**
+ * @brief Get field features from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint8_t mesh_subevent_configuration_composition_data_get_features(const uint8_t * event);
+
+/**
+ * @brief Get number elements from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uint8_t * event, uint16_t size);
 
 /**
  * @brief Get the current Default TTL state of a node
