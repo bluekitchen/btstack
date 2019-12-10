@@ -230,94 +230,58 @@ uint8_t mesh_configuration_client_send_relay_set(mesh_model_t * mesh_model, uint
 }
 
 // Model Operations
-static void mesh_configuration_client_beacon_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+static void mesh_configuration_client_composition_data_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    // Composition Data has variable of element descriptions, with two lists of model lists
+    // Pass raw data to application but provide convenient setters instead of parsing pdu here
+
+    // reuse part of the mesh_network_t / mesh_transport_t struct to create event without memcpy or allocation
+    uint8_t * data = mesh_pdu_data(pdu);
+    uint8_t * event = &data[-6];
+
+    // TODO: list of element descriptions, see Table 4.4
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    // Composite Data might be larger than 251 bytes - in this case only lower 8 bit are stored here. packet size is correct
+    event[pos++] = (uint8_t) (6 + mesh_pdu_len(pdu));
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
+
+
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+static inline void mesh_configuration_client_handle_uint8_value(mesh_model_t *mesh_model, mesh_pdu_t * pdu, uint8_t subevent_type){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     
-    uint8_t beacon_status = mesh_access_parser_get_u8(&parser);
+    uint8_t value = mesh_access_parser_get_u8(&parser);
 
-    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_BEACON_STATUS};
+    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, subevent_type};
     int pos = 3;
     // dest
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = ERROR_CODE_SUCCESS;
-    event[pos++] = beacon_status;
+    event[pos++] = value;
     
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }
 
-static void mesh_configuration_client_composition_data_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
-    uint8_t page = mesh_access_parser_get_u8(&parser);
-    uint16_t cid = mesh_access_parser_get_u16(&parser);
-    uint16_t pid = mesh_access_parser_get_u16(&parser);
-    uint16_t vid = mesh_access_parser_get_u16(&parser);
-    uint16_t crpl = mesh_access_parser_get_u16(&parser);
-    uint16_t features = mesh_access_parser_get_u16(&parser);
-
-    // TODO: list of element descriptions, see Table 4.4
-
-    uint8_t event[17] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS};
-    int pos = 3;
-    // dest
-    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
-    pos += 2;
-    event[pos++] = ERROR_CODE_SUCCESS;
-    event[pos++] = page;
-    
-    little_endian_store_16(event, pos, cid);
-    pos += 2;
-    little_endian_store_16(event, pos, pid);
-    pos += 2;
-    little_endian_store_16(event, pos, vid);
-    pos += 2;
-    little_endian_store_16(event, pos, crpl);
-    pos += 2;
-    little_endian_store_16(event, pos, features);
-    pos += 2;
-
-    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-    mesh_access_message_processed(pdu);
+static void mesh_configuration_client_beacon_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_configuration_client_handle_uint8_value(mesh_model, pdu, MESH_SUBEVENT_CONFIGURATION_BEACON);
 }
 
 static void mesh_configuration_client_default_ttl_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
-    uint8_t default_ttl = mesh_access_parser_get_u8(&parser);
-
-    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS};
-    int pos = 3;
-    // dest
-    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
-    pos += 2;
-    event[pos++] = ERROR_CODE_SUCCESS;
-    event[pos++] = default_ttl;
-    
-    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-    mesh_access_message_processed(pdu);
+    mesh_configuration_client_handle_uint8_value(mesh_model, pdu, MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL);
 }
 
 static void mesh_configuration_client_gatt_proxy_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    
-    uint8_t gatt_proxy_state = mesh_access_parser_get_u8(&parser);
-
-    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS};
-    int pos = 3;
-    // dest
-    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
-    pos += 2;
-    event[pos++] = ERROR_CODE_SUCCESS;
-    event[pos++] = gatt_proxy_state;
-    
-    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
-    mesh_access_message_processed(pdu);
+    mesh_configuration_client_handle_uint8_value(mesh_model, pdu, MESH_SUBEVENT_CONFIGURATION_GATT_PROXY);
 }
 
 static void mesh_configuration_client_relay_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -327,7 +291,7 @@ static void mesh_configuration_client_relay_handler(mesh_model_t *mesh_model, me
     uint8_t relay = mesh_access_parser_get_u8(&parser);
     uint8_t retransmition = mesh_access_parser_get_u8(&parser);
 
-    uint8_t event[9] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_FOUNDATION_RELAY_STATUS};
+    uint8_t event[9] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_CONFIGURATION_RELAY};
     int pos = 3;
     // dest
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
@@ -342,11 +306,11 @@ static void mesh_configuration_client_relay_handler(mesh_model_t *mesh_model, me
 }
 
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
-    { MESH_FOUNDATION_OPERATION_BEACON_STATUS,           1, mesh_configuration_client_beacon_status_handler },
-    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS, 1, mesh_configuration_client_composition_data_status_handler },
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,      1, mesh_configuration_client_default_ttl_handler },
-    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,       1, mesh_configuration_client_gatt_proxy_handler },
-    { MESH_FOUNDATION_OPERATION_RELAY_STATUS,            2, mesh_configuration_client_relay_handler },
+    { MESH_FOUNDATION_OPERATION_BEACON_STATUS,            1, mesh_configuration_client_beacon_status_handler },
+    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS, 10, mesh_configuration_client_composition_data_status_handler },
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,       1, mesh_configuration_client_default_ttl_handler },
+    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,        1, mesh_configuration_client_gatt_proxy_handler },
+    { MESH_FOUNDATION_OPERATION_RELAY_STATUS,             2, mesh_configuration_client_relay_handler },
     { 0, 0, NULL }
 };
 

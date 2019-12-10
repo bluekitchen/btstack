@@ -230,7 +230,7 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
         remaining_time_gdtt = mesh_access_parser_get_u8(&parser);
     }
 
-    uint8_t event[14] = {HCI_EVENT_MESH_META, 12, MESH_SUBEVENT_GENERIC_LEVEL_STATUS};
+    uint8_t event[14] = {HCI_EVENT_MESH_META, 12, MESH_SUBEVENT_GENERIC_LEVEL};
     
     int pos = 3;
     // dest

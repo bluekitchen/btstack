@@ -127,7 +127,7 @@ static void generic_default_transition_time_status_handler(mesh_model_t *mesh_mo
 
     uint8_t transition_time_gdtt = mesh_access_parser_get_u8(&parser);
 
-    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS};
+    uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME};
     int pos = 3;
     // dest
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));

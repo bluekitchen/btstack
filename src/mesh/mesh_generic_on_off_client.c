@@ -155,7 +155,7 @@ static void generic_on_off_status_handler(mesh_model_t *mesh_model, mesh_pdu_t *
         remaining_time_gdtt = mesh_access_parser_get_u8(&parser);
     }
 
-    uint8_t event[12] = {HCI_EVENT_MESH_META, 10, MESH_SUBEVENT_GENERIC_ON_OFF_STATUS};
+    uint8_t event[12] = {HCI_EVENT_MESH_META, 10, MESH_SUBEVENT_GENERIC_ON_OFF};
     int pos = 3;
     // dest
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));

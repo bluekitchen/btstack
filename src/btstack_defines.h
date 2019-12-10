@@ -2888,7 +2888,7 @@ typedef uint8_t sm_key_t[16];
  * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
-#define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x31
+#define MESH_SUBEVENT_GENERIC_ON_OFF                                                  0x31
 
 /**
  * @format 121224
@@ -2899,7 +2899,7 @@ typedef uint8_t sm_key_t[16];
  * @param target_value       optional, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
-#define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
+#define MESH_SUBEVENT_GENERIC_LEVEL                                                   0x32
 
 /**
  * @format 1222211
@@ -2927,7 +2927,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param transition_time_gdtt  
  */
-#define MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS                         0x35
+#define MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME                                0x35
 
 /**
  * @format 1211
@@ -2936,21 +2936,11 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param secure_network_beacon_state  
  */
-#define MESH_SUBEVENT_FOUNDATION_BEACON_STATUS                                       0x36
+#define MESH_SUBEVENT_CONFIGURATION_BEACON                                           0x36
 
-/**
- * @format 121122222
- * @param subevent_code
- * @param dest
- * @param foundation_status
- * @param page 
- * @param cid        company identifier assigned by the Bluetooth SIG 
- * @param pid        vendor-assigned product identifier
- * @param vid        vendor-assigned product version identifier
- * @param crpl       the minimum number of replay protection list entries in a device
- * @param features   device features
- */
-#define MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS                             0x37
+// Composition Data has variable of element descriptions, with two lists of model lists
+// Use .. getters to access data
+#define MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA                                 0x37
 
 /**
  * @format 1211
@@ -2959,7 +2949,7 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param default_ttl  
  */
-#define MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS                                  0x38
+#define MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL                                      0x38
 
 /**
  * @format 1211
@@ -2968,7 +2958,7 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param gatt_proxy_state  
  */
-#define MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS                                   0x39
+#define MESH_SUBEVENT_CONFIGURATION_GATT_PROXY                                       0x39
 
 /**
  * @format 121111
@@ -2979,6 +2969,6 @@ typedef uint8_t sm_key_t[16];
  * @param retransmit_count                          the number of times that packet is transmitted for each packet that is relayed.
  * @param retransmit_interval_ms                    retransmission interval in ms
  */
-#define MESH_SUBEVENT_FOUNDATION_RELAY_STATUS                                        0x40
+#define MESH_SUBEVENT_CONFIGURATION_RELAY                                            0x40
 
 #endif

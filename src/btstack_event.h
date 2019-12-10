@@ -7825,94 +7825,94 @@ static inline uint16_t mesh_subevent_message_not_acknowledged_get_dest(const uin
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_GENERIC_ON_OFF
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_generic_on_off_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_generic_on_off_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @brief Get field status from event MESH_SUBEVENT_GENERIC_ON_OFF
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_on_off_status_get_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_generic_on_off_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_ON_OFF
  * @param event packet
  * @return present_value
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_on_off_status_get_present_value(const uint8_t * event){
+static inline uint8_t mesh_subevent_generic_on_off_get_present_value(const uint8_t * event){
     return event[6];
 }
 /**
- * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_ON_OFF
  * @param event packet
  * @return target_value
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_on_off_status_get_target_value(const uint8_t * event){
+static inline uint8_t mesh_subevent_generic_on_off_get_target_value(const uint8_t * event){
     return event[7];
 }
 /**
- * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_ON_OFF
  * @param event packet
  * @return remaining_time_ms
  * @note: btstack_type 4
  */
-static inline uint32_t mesh_subevent_generic_on_off_status_get_remaining_time_ms(const uint8_t * event){
+static inline uint32_t mesh_subevent_generic_on_off_get_remaining_time_ms(const uint8_t * event){
     return little_endian_read_32(event, 8);
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_GENERIC_LEVEL
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_generic_level_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_generic_level_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @brief Get field status from event MESH_SUBEVENT_GENERIC_LEVEL
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_level_status_get_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_generic_level_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_LEVEL
  * @param event packet
  * @return present_value
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_generic_level_status_get_present_value(const uint8_t * event){
+static inline uint16_t mesh_subevent_generic_level_get_present_value(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
- * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_LEVEL
  * @param event packet
  * @return target_value
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_generic_level_status_get_target_value(const uint8_t * event){
+static inline uint16_t mesh_subevent_generic_level_get_target_value(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
 /**
- * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_LEVEL
  * @param event packet
  * @return remaining_time_ms
  * @note: btstack_type 4
  */
-static inline uint32_t mesh_subevent_generic_level_status_get_remaining_time_ms(const uint8_t * event){
+static inline uint32_t mesh_subevent_generic_level_get_remaining_time_ms(const uint8_t * event){
     return little_endian_read_32(event, 10);
 }
 
@@ -7982,233 +7982,160 @@ static inline uint8_t mesh_subevent_health_attention_timer_changed_get_element_i
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_generic_default_transition_time_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_generic_default_transition_time_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS
+ * @brief Get field status from event MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_default_transition_time_status_get_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_generic_default_transition_time_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field transition_time_gdtt from event MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME_STATUS
+ * @brief Get field transition_time_gdtt from event MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME
  * @param event packet
  * @return transition_time_gdtt
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_default_transition_time_status_get_transition_time_gdtt(const uint8_t * event){
+static inline uint8_t mesh_subevent_generic_default_transition_time_get_transition_time_gdtt(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_BEACON
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_foundation_beacon_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_configuration_beacon_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_BEACON
  * @param event packet
  * @return foundation_status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_beacon_status_get_foundation_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_beacon_get_foundation_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field secure_network_beacon_state from event MESH_SUBEVENT_FOUNDATION_BEACON_STATUS
+ * @brief Get field secure_network_beacon_state from event MESH_SUBEVENT_CONFIGURATION_BEACON
  * @param event packet
  * @return secure_network_beacon_state
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_beacon_status_get_secure_network_beacon_state(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_beacon_get_secure_network_beacon_state(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_foundation_composition_data_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_configuration_default_ttl_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL
  * @param event packet
  * @return foundation_status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_composition_data_status_get_foundation_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_default_ttl_get_foundation_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field page from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
- * @param event packet
- * @return page
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_foundation_composition_data_status_get_page(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field cid from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
- * @param event packet
- * @return cid
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_foundation_composition_data_status_get_cid(const uint8_t * event){
-    return little_endian_read_16(event, 7);
-}
-/**
- * @brief Get field pid from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
- * @param event packet
- * @return pid
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_foundation_composition_data_status_get_pid(const uint8_t * event){
-    return little_endian_read_16(event, 9);
-}
-/**
- * @brief Get field vid from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
- * @param event packet
- * @return vid
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_foundation_composition_data_status_get_vid(const uint8_t * event){
-    return little_endian_read_16(event, 11);
-}
-/**
- * @brief Get field crpl from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
- * @param event packet
- * @return crpl
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_foundation_composition_data_status_get_crpl(const uint8_t * event){
-    return little_endian_read_16(event, 13);
-}
-/**
- * @brief Get field features from event MESH_SUBEVENT_FOUNDATION_COMPOSITION_DATA_STATUS
- * @param event packet
- * @return features
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_foundation_composition_data_status_get_features(const uint8_t * event){
-    return little_endian_read_16(event, 15);
-}
-
-/**
- * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS
- * @param event packet
- * @return dest
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_foundation_default_ttl_status_get_dest(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS
- * @param event packet
- * @return foundation_status
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_foundation_default_ttl_status_get_foundation_status(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field default_ttl from event MESH_SUBEVENT_FOUNDATION_DEFAULT_TTL_STATUS
+ * @brief Get field default_ttl from event MESH_SUBEVENT_CONFIGURATION_DEFAULT_TTL
  * @param event packet
  * @return default_ttl
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_default_ttl_status_get_default_ttl(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_default_ttl_get_default_ttl(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_GATT_PROXY
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_foundation_gatt_proxy_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_configuration_gatt_proxy_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_GATT_PROXY
  * @param event packet
  * @return foundation_status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_gatt_proxy_status_get_foundation_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_gatt_proxy_get_foundation_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field gatt_proxy_state from event MESH_SUBEVENT_FOUNDATION_GATT_PROXY_STATUS
+ * @brief Get field gatt_proxy_state from event MESH_SUBEVENT_CONFIGURATION_GATT_PROXY
  * @param event packet
  * @return gatt_proxy_state
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_gatt_proxy_status_get_gatt_proxy_state(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_gatt_proxy_get_gatt_proxy_state(const uint8_t * event){
     return event[6];
 }
 
 /**
- * @brief Get field dest from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_RELAY
  * @param event packet
  * @return dest
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_foundation_relay_status_get_dest(const uint8_t * event){
+static inline uint16_t mesh_subevent_configuration_relay_get_dest(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field foundation_status from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_RELAY
  * @param event packet
  * @return foundation_status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_relay_status_get_foundation_status(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_relay_get_foundation_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field relay from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @brief Get field relay from event MESH_SUBEVENT_CONFIGURATION_RELAY
  * @param event packet
  * @return relay
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_relay_status_get_relay(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_relay_get_relay(const uint8_t * event){
     return event[6];
 }
 /**
- * @brief Get field retransmit_count from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @brief Get field retransmit_count from event MESH_SUBEVENT_CONFIGURATION_RELAY
  * @param event packet
  * @return retransmit_count
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_relay_status_get_retransmit_count(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_relay_get_retransmit_count(const uint8_t * event){
     return event[7];
 }
 /**
- * @brief Get field retransmit_interval_ms from event MESH_SUBEVENT_FOUNDATION_RELAY_STATUS
+ * @brief Get field retransmit_interval_ms from event MESH_SUBEVENT_CONFIGURATION_RELAY
  * @param event packet
  * @return retransmit_interval_ms
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_foundation_relay_status_get_retransmit_interval_ms(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_relay_get_retransmit_interval_ms(const uint8_t * event){
     return event[8];
 }
 
