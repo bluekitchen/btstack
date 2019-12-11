@@ -435,6 +435,7 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             if (controller_index == BTP_INDEX_NON_CONTROLLER){
                 uint16_t len = btstack_min(sizeof(message_buffer)-1,length);
                 memcpy(message_buffer, data, len);
+                message_buffer[len] = 0;
                 MESSAGE("BTP_CORE_LOG_MESSAGE %s", message_buffer);
                 btp_send(BTP_SERVICE_ID_CORE, opcode, controller_index, 0, NULL);
             }
