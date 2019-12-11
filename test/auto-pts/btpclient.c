@@ -151,6 +151,10 @@ static void reset_gap(void){
     ad_flags = 0;
 }
 
+static void reset_gatt(void){
+    att_db_util_init();
+}
+
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     switch (packet_type) {
@@ -164,6 +168,9 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                                 current_settings |= BTP_GAP_SETTING_POWERED;
                                 btp_send_gap_settings(BTP_GAP_OP_SET_POWERED);
                             }
+                            // reset state and services
+                            reset_gap();
+                            reset_gatt();
 #ifdef TEST_POWER_CYCLE
                             hci_power_control(HCI_POWER_OFF);
 #endif
@@ -852,6 +859,169 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
     }
 }
 
+static uint8_t att_read_perm_for_btp_perm(uint8_t perm){
+    if (perm & BTP_GATT_PERM_READ_AUTHZ) return ATT_SECURITY_AUTHORIZED;
+    if (perm & BTP_GATT_PERM_READ_AUTHN) return ATT_SECURITY_AUTHENTICATED;
+    if (perm & BTP_GATT_PERM_READ_ENC) return ATT_SECURITY_ENCRYPTED;
+    return ATT_SECURITY_NONE;
+}
+
+static uint8_t att_write_perm_for_btp_perm(uint8_t perm){
+    if (perm & BTP_GATT_PERM_WRITE_AUTHZ) return ATT_SECURITY_AUTHORIZED;
+    if (perm & BTP_GATT_PERM_WRITE_AUTHN) return ATT_SECURITY_AUTHENTICATED;
+    if (perm & BTP_GATT_PERM_WRITE_ENC) return ATT_SECURITY_ENCRYPTED;
+    return ATT_SECURITY_NONE;
+}
+
+static void btp_gatt_add_characteristic(uint8_t uuid_len, uint16_t uuid16, uint8_t * uuid128, uint8_t properties, uint8_t permissions, uint16_t data_len, const uint8_t * data){
+
+    uint8_t read_perm = att_read_perm_for_btp_perm(permissions);
+    uint8_t write_perm = att_write_perm_for_btp_perm(permissions);
+    MESSAGE("PERM 0x%02x -> read %u, write %u", permissions, read_perm, write_perm);
+    switch (uuid_len){
+        case 2:
+            att_db_util_add_characteristic_uuid16(uuid16, properties, read_perm, write_perm, (uint8_t *) data, data_len);
+            break;
+        case 16:
+            att_db_util_add_characteristic_uuid128(uuid128, properties, read_perm, write_perm, (uint8_t *) data, data_len);
+            break;
+        default:
+            break;
+    }
+}
+
+static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    static bool     add_char_pending = false;
+    static uint16_t uuid16;
+    static uint8_t  uuid128[16];
+    static uint8_t  uuid_len;
+    static uint8_t  characteristic_properties;
+    static uint8_t  characteristic_permissions;
+
+    if (add_char_pending && opcode != BTP_GATT_OP_SET_VALUE){
+        add_char_pending = false;
+        btp_gatt_add_characteristic(uuid_len, uuid16, uuid128, characteristic_properties, characteristic_permissions, 0, NULL);
+    }
+
+    switch (opcode){
+        case BTP_GATT_OP_READ_SUPPORTED_COMMANDS:
+            MESSAGE("BTP_CORE_OP_READ_SUPPORTED_COMMANDS");
+            if (controller_index == BTP_INDEX_NON_CONTROLLER){
+                uint8_t commands = 0;
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 1, &commands);
+            }
+            break;
+        case BTP_GATT_OP_ADD_SERVICE:
+            MESSAGE("BTP_GATT_OP_ADD_SERVICE");
+            if (controller_index == 0){
+                uint8_t service_type = data[0];
+                uuid_len = data[1];
+                switch (service_type){
+                    case BTP_GATT_SERVICE_TYPE_PRIMARY:
+                        switch (uuid_len){
+                            case 2:
+                                uuid16 = little_endian_read_16(data, 2);
+                                att_db_util_add_service_uuid16(uuid16);
+                                break;
+                            case 16:
+                                reverse_128(&data[2], uuid128);
+                                att_db_util_add_service_uuid128(uuid128);
+                                break;
+                            default:
+                                MESSAGE("Invalid UUID len");
+                                btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                                break;
+                        }
+                        break;
+                    default:
+                        MESSAGE("Non-Primiary Service not supported");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
+                // @note: returning service_id == 0
+                uint8_t service_id_buffer[2] = { 0 };
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, service_id_buffer);
+            }
+            break;
+        case BTP_GATT_OP_ADD_CHARACTERISTIC:
+            MESSAGE("BTP_GATT_OP_ADD_CHARACTERISTIC");
+            if (controller_index == 0){
+                // @note: ignoring service_id, assume latest added service
+                characteristic_properties  = data[2];
+                characteristic_permissions = data[3];
+                uuid_len = data[4];
+                switch (uuid_len){
+                    case 2:
+                        uuid16 = little_endian_read_16(data, 5);
+                        add_char_pending = true;
+                        break;
+                    case 16:
+                        reverse_128(&data[5], uuid128);
+                        add_char_pending = true;
+                        break;
+                    default:
+                        MESSAGE("Invalid UUID len");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
+                // @note: returning characteristic_id == 0
+                uint8_t characteristic_id[2] = { 0 };
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, characteristic_id);
+            }
+            break;
+        case BTP_GATT_OP_SET_VALUE:
+            MESSAGE("BTP_GATT_OP_SET_VALUE");
+            if (controller_index == 0){
+                add_char_pending = false;
+                // @note: ignoring characteristic_id, assume latest added characteristic
+                uint16_t value_len = little_endian_read_16(data, 2);
+                btp_gatt_add_characteristic(uuid_len, uuid16, uuid128, characteristic_properties, characteristic_permissions, value_len, &data[4]);
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            }
+            break;
+        case BTP_GATT_OP_ADD_DESCRIPTOR:
+            MESSAGE("BTP_GATT_OP_ADD_DESCRIPTOR");
+            if (controller_index == 0){
+                // @note: ignoring characteristic_id, assume latest added characteristic
+                uint8_t permissions = data[2];
+                uuid_len = data[3];
+                uint8_t read_perm = att_read_perm_for_btp_perm(permissions);
+                uint8_t write_perm = att_write_perm_for_btp_perm(permissions);
+                MESSAGE("PERM 0x%02x -> read %u, write %u", permissions, read_perm, write_perm);
+                switch (uuid_len){
+                    case 2:
+                        uuid16 = little_endian_read_16(data, 4);
+                        att_db_util_add_descriptor_uuid16(uuid16, ATT_PROPERTY_READ, read_perm, write_perm, NULL, 0);
+                        break;
+                    case 16:
+                        reverse_128(&data[4], uuid128);
+                        att_db_util_add_descriptor_uuid16(uuid128, ATT_PROPERTY_READ, read_perm, write_perm, NULL, 0);
+                        break;
+                    default:
+                        MESSAGE("Invalid UUID len");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
+                // @note: returning descriptor_id == 0
+                uint8_t descriptor_id[2] = { 0 };
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, descriptor_id);
+            }
+            break;
+        case BTP_GATT_OP_SET_ENC_KEY_SIZE:
+            MESSAGE("BTP_GATT_OP_SET_ENC_KEY_SIZE - NOP");
+            btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            break;
+
+        case BTP_GATT_OP_START_SERVER:
+            MESSAGE("BTP_GATT_OP_START_SERVER - NOP");
+            btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            break;
+        default:
+            btp_send_error_unknown_command(BTP_SERVICE_ID_GATT);
+            break;
+    }
+}
+
 static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
     MESSAGE("Command: service id 0x%02x, opcode 0x%02x, controller_index 0x%0x, len %u", service_id, opcode, controller_index, length);
     if (length > 0){
@@ -864,6 +1034,9 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
             break;
         case BTP_SERVICE_ID_GAP:
             btp_gap_handler(opcode, controller_index, length, data);
+            break;
+        case BTP_SERVICE_ID_GATT:
+            btp_gatt_handler(opcode, controller_index, length, data);
             break;
         default:
             btp_send_error_unknown_command(service_id);
@@ -1065,6 +1238,21 @@ int btstack_main(int argc, const char * argv[])
     
     reset_gap();
 
+    // GATT Server
+    att_db_util_init();
+    att_server_init(att_db_util_get_address(), NULL, NULL );
+
+#if 0
+    // Test GATT Server commands
+    uint8_t add_primary_svc_aa50[] = { BTP_GATT_SERVICE_TYPE_PRIMARY, 2, 0x50, 0xAA};
+    uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ, 2, 0x51, 0xaa};
+    uint8_t set_value_01[] = { 0x00, 0x00, 0x01, 0x00, 0x01 };
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_SERVICE, 0, sizeof(add_primary_svc_aa50), add_primary_svc_aa50);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_CHARACTERISTIC, 0, sizeof(add_characteristic_aa51), add_characteristic_aa51);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_SET_VALUE, 0, sizeof(set_value_01), set_value_01);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_START_SERVER, 0,0, NULL);
+#endif
+    
     MESSAGE("auto-pts iut-btp-client started");
 
     // connect to auto-pts client 

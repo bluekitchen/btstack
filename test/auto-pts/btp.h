@@ -165,14 +165,26 @@ extern "C" {
 // GATT Service
 
 #define BTP_GATT_OP_READ_SUPPORTED_COMMANDS     0x01
-#define BTP_GATT_OP_SERVICE_PRIMARY             0x00
-#define BTP_GATT_OP_SERVICE_SECONDARY           0x01
+
+#define BTP_GATT_SERVICE_TYPE_PRIMARY           0x00
+#define BTP_GATT_SERVICE_TYPE_SECONDARY         0x01
 #define BTP_GATT_OP_ADD_SERVICE                 0x02
+
+#define BTP_GATT_PERM_READ                      0x01
+#define BTP_GATT_PERM_WRITE                     0x02
+#define BTP_GATT_PERM_READ_ENC                  0x04
+#define BTP_GATT_PERM_WRITE_ENC                 0x08
+#define BTP_GATT_PERM_READ_AUTHN                0x10
+#define BTP_GATT_PERM_WRITE_AUTHN               0x20
+#define BTP_GATT_PERM_READ_AUTHZ                0x40
+#define BTP_GATT_PERM_WRITE_AUTHZ               0x80
+
 #define BTP_GATT_OP_ADD_CHARACTERISTIC          0x03
 #define BTP_GATT_OP_ADD_DESCRIPTOR              0x04
 #define BTP_GATT_OP_ADD_INCLUDED_SERVICE        0x05
 #define BTP_GATT_OP_SET_VALUE                   0x06
 #define BTP_GATT_OP_START_SERVER                0x07
+#define BTP_GATT_OP_RESET_SERVER                0x08
 #define BTP_GATT_OP_SET_ENC_KEY_SIZE            0x09
 #define BTP_GATT_OP_EXCHANGE_MTU                0x0a
 #define BTP_GATT_OP_DISC_PRIM_UUID              0x0c

@@ -70,7 +70,6 @@
 #define LOG_BTP
 
 /** prototypes */
-static void btp_socket_hci_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 
 /** globals */
 
