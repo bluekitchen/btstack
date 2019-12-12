@@ -107,7 +107,7 @@ bool mesh_composition_data_iterator_has_next_sig_model(mesh_composite_data_itera
  * @brief Select the next SIG model
  * @param iterator
  */
-void mesh_composition_data_iterator_get_next_sig_model(mesh_composite_data_iterator_t * iterator);
+void mesh_composition_data_iterator_next_sig_model(mesh_composite_data_iterator_t * iterator);
 
 /**
  * @brief Get the SIG model ID for the current SIG model of the current element
@@ -128,7 +128,7 @@ bool mesh_composition_data_iterator_has_next_vendor_model(mesh_composite_data_it
  * @brief Select the next VVendor model
  * @param iterator
  */
-void mesh_composition_data_iterator_next_vendor_modeld(mesh_composite_data_iterator_t * iterator);
+void mesh_composition_data_iterator_next_vendor_model(mesh_composite_data_iterator_t * iterator);
 
 /**
  * @brief Get the Vendor model ID for the current vendor model of the current element

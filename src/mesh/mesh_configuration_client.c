@@ -54,13 +54,32 @@
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_upper_transport.h"
 
-#define MESH_VENDOR_MODEL_SIZE 4
-#define MESH_SIG_MODEL_SIZE    2
 
 // Mesh Composition Data Element iterator
+#define MESH_VENDOR_MODEL_SIZE                                  4
+#define MESH_SIG_MODEL_SIZE                                     2
+#define MESH_COMPOSITION_DATA_ELEMENT_DESCRIPTION_OFFSET       17
+#define MESH_COMPOSITION_DATA_ELEMENT_LOCATION_DESCRIPTOR_LEN   2
+#define MESH_COMPOSITION_DATA_ELEMENT_MODEL_SIZE_LEN            1
+
+static inline uint16_t mesh_composition_data_iterator_sig_model_list_size(mesh_composite_data_iterator_t * it){
+    return it->elements[it->offset + 2] * MESH_SIG_MODEL_SIZE;
+}
+
+static inline uint16_t mesh_composition_data_iterator_vendor_model_list_size(mesh_composite_data_iterator_t * it){
+    return it->elements[it->offset + 3] * MESH_VENDOR_MODEL_SIZE;
+}
+
+static inline uint16_t mesh_composition_data_iterator_element_len(mesh_composite_data_iterator_t * it){
+    uint16_t sig_model_list_size    = mesh_composition_data_iterator_sig_model_list_size(it);
+    uint16_t vendor_model_list_size = mesh_composition_data_iterator_vendor_model_list_size(it);
+    uint16_t previous_fields_len = MESH_COMPOSITION_DATA_ELEMENT_LOCATION_DESCRIPTOR_LEN + 2 * MESH_COMPOSITION_DATA_ELEMENT_MODEL_SIZE_LEN;
+
+    return previous_fields_len + sig_model_list_size + vendor_model_list_size;;
+}
 
 uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uint8_t * event, uint16_t size){
-    uint16_t pos = 16; 
+    uint16_t pos = MESH_COMPOSITION_DATA_ELEMENT_DESCRIPTION_OFFSET; 
     uint16_t num_elements = 0;
 
     while ((pos + 4) <= size){
@@ -77,32 +96,24 @@ uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uin
 void mesh_composition_data_iterator_init(mesh_composite_data_iterator_t * it, const uint8_t * elements, uint16_t size){
     it->elements = elements;
     it->size = size;
-    it->offset = 16;
+    it->offset = MESH_COMPOSITION_DATA_ELEMENT_DESCRIPTION_OFFSET;
 }
 
 bool mesh_composition_data_iterator_has_next_element(mesh_composite_data_iterator_t * it){
-    uint16_t sig_model_list_size    = it->elements[it->offset + 2] * MESH_SIG_MODEL_SIZE;
-    uint16_t vendor_model_list_size = it->elements[it->offset + 3] * MESH_VENDOR_MODEL_SIZE;
-    uint16_t element_len =  2 + sig_model_list_size + vendor_model_list_size;
-
-    return (it->offset + element_len) <= it->size;
+    return (it->offset + mesh_composition_data_iterator_element_len(it)) <= it->size;
 }
 
 void mesh_composition_data_iterator_next_element(mesh_composite_data_iterator_t * it){
-    uint16_t sig_model_list_size    = it->elements[it->offset + 2] * MESH_SIG_MODEL_SIZE;
-    uint16_t vendor_model_list_size = it->elements[it->offset + 3] * MESH_VENDOR_MODEL_SIZE;
-    uint16_t element_len =  2 + sig_model_list_size + vendor_model_list_size;
-
     it->sig_model_iterator.models = &it->elements[it->offset + 4];
-    it->sig_model_iterator.size = sig_model_list_size;
+    it->sig_model_iterator.size = mesh_composition_data_iterator_sig_model_list_size(it);
     it->sig_model_iterator.offset = 0;
     
     it->vendor_model_iterator.models = &it->elements[it->offset + 4 + it->sig_model_iterator.size];
-    it->vendor_model_iterator.size = vendor_model_list_size;
+    it->vendor_model_iterator.size = mesh_composition_data_iterator_vendor_model_list_size(it);
     it->vendor_model_iterator.offset = 0;
 
     it->loc = little_endian_read_16(it->elements, it->offset);
-    it->offset += element_len;
+    it->offset += mesh_composition_data_iterator_element_len(it);
 }
 
 uint16_t mesh_composition_data_iterator_element_loc(mesh_composite_data_iterator_t * it){
@@ -126,7 +137,7 @@ bool mesh_composition_data_iterator_has_next_vendor_model(mesh_composite_data_it
     return (it->vendor_model_iterator.offset + MESH_VENDOR_MODEL_SIZE) <= it->vendor_model_iterator.size;
 }
 
-void mesh_composition_data_iterator_next_vendor_modeld(mesh_composite_data_iterator_t * it){
+void mesh_composition_data_iterator_next_vendor_model(mesh_composite_data_iterator_t * it){
     uint16_t vendor_id = little_endian_read_16(it->vendor_model_iterator.models, it->vendor_model_iterator.offset);
     it->vendor_model_iterator.offset += 2;
     uint16_t model_id = little_endian_read_16(it->vendor_model_iterator.models, it->vendor_model_iterator.offset);
@@ -322,7 +333,6 @@ static void mesh_configuration_client_composition_data_status_handler(mesh_model
     uint8_t * data = mesh_pdu_data(pdu);
     uint8_t * event = &data[-6];
 
-    // TODO: list of element descriptions, see Table 4.4
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
     // Composite Data might be larger than 251 bytes - in this case only lower 8 bit are stored here. packet size is correct
