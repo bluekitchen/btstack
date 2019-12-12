@@ -24,7 +24,7 @@ CORE += \
 	l2cap.c \
 	uECC.c \
 	rijndael.c \
-	main.c \
+	
 
 
 # examples
@@ -59,16 +59,16 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 
-mesh_pts: mesh_pts.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${MESH_OBJ} mesh_pts.o
+mesh_pts: mesh_pts.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${MESH_OBJ} main.o mesh_pts.o
 	${CC} $(filter-out mesh_pts.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o mesh_network.o provisioner.o
+provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o  pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o mesh_network.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 mesh_message_test: mesh_message_test.cpp mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
 	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} mesh_keys.o mesh_network.o mesh_foundation.o sniffer.c 
+sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o mesh_keys.o mesh_network.o mesh_foundation.o sniffer.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o
@@ -77,8 +77,10 @@ provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o prov
 provisioning_provisioner_test: provisioning_provisioner_test.cpp uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o
 	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
 
+mesh_configuration_composition_data_message_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${MESH_OBJ} mesh_configuration_composition_data_message_test.cpp 
+	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@
 
-EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_message_test
+EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_message_test mesh_configuration_composition_data_message_test
 
 all: ${EXAMPLES}
 

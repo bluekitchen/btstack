@@ -138,6 +138,60 @@ void mesh_composition_data_iterator_next_vendor_model(mesh_composite_data_iterat
 uint32_t mesh_composition_data_iterator_vendor_model_id(mesh_composite_data_iterator_t * iterator);
 
 /**
+ * @brief Get field page from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ * @param event packet
+ * @return page
+ * @note: btstack_type 1
+ */
+uint8_t mesh_subevent_configuration_composition_data_get_page(const uint8_t * event);
+
+/**
+ * @brief Get field cid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ * @param event packet
+ * @return cid
+ * @note: btstack_type 2
+ */
+uint16_t mesh_subevent_configuration_composition_data_get_cid(const uint8_t * event);
+
+/**
+ * @brief Get field pid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ * @param event packet
+ * @return pid
+ * @note: btstack_type 2
+ */
+uint16_t mesh_subevent_configuration_composition_data_get_pid(const uint8_t * event);
+
+/**
+ * @brief Get field vid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ * @param event packet
+ * @return vid
+ * @note: btstack_type 2
+ */
+uint16_t mesh_subevent_configuration_composition_data_get_vid(const uint8_t * event);
+
+/**
+ * @brief Get field crpl from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ * @param event packet
+ * @return crpl
+ * @note: btstack_type 2
+ */
+uint16_t mesh_subevent_configuration_composition_data_get_crpl(const uint8_t * event);
+
+/**
+ * @brief Get field features from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ * @param event packet
+ * @return features
+ * @note: btstack_type 2
+ */
+uint16_t mesh_subevent_configuration_composition_data_get_features(const uint8_t * event);
+
+/**
+ * @brief Get number elements from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
+ **/
+uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uint8_t * event, uint16_t size);
+
+
+/**
  * @brief Register packet handler
  * @param configuration_client_model
  * @param events_packet_handler
@@ -175,36 +229,6 @@ uint8_t mesh_configuration_client_send_beacon_set(mesh_model_t * mesh_model, uin
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_composition_data_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t page);
-
-/**
- * @brief Get field cid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
- **/
-uint8_t mesh_subevent_configuration_composition_data_get_cid(const uint8_t * event);
-
-/**
- * @brief Get field pid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
- **/
-uint8_t mesh_subevent_configuration_composition_data_get_pid(const uint8_t * event);
-
-/**
- * @brief Get field vid from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
- **/
-uint8_t mesh_subevent_configuration_composition_data_get_vid(const uint8_t * event);
-
-/**
- * @brief Get field crpl from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
- **/
-uint8_t mesh_subevent_configuration_composition_data_get_crpl(const uint8_t * event);
-
-/**
- * @brief Get field features from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
- **/
-uint8_t mesh_subevent_configuration_composition_data_get_features(const uint8_t * event);
-
-/**
- * @brief Get number elements from event MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA
- **/
-uint16_t mesh_subevent_configuration_composition_data_get_num_elements(const uint8_t * event, uint16_t size);
 
 /**
  * @brief Get the current Default TTL state of a node

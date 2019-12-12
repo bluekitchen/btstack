@@ -348,24 +348,28 @@ static void mesh_configuration_client_composition_data_status_handler(mesh_model
     mesh_access_message_processed(pdu);
 }
 
-uint8_t mesh_subevent_configuration_composition_data_get_cid(const uint8_t * event){
-    return little_endian_read_16(event, 1);
+uint8_t mesh_subevent_configuration_composition_data_get_page(const uint8_t * event){
+    return event[6];
 }
 
-uint8_t mesh_subevent_configuration_composition_data_get_pid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-uint8_t mesh_subevent_configuration_composition_data_get_vid(const uint8_t * event){
-    return little_endian_read_16(event, 5);
-}
-
-uint8_t mesh_subevent_configuration_composition_data_get_crpl(const uint8_t * event){
+uint16_t mesh_subevent_configuration_composition_data_get_cid(const uint8_t * event){
     return little_endian_read_16(event, 7);
 }
 
-uint8_t mesh_subevent_configuration_composition_data_get_features(const uint8_t * event){
+uint16_t mesh_subevent_configuration_composition_data_get_pid(const uint8_t * event){
     return little_endian_read_16(event, 9);
+}
+
+uint16_t mesh_subevent_configuration_composition_data_get_vid(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+
+uint16_t mesh_subevent_configuration_composition_data_get_crpl(const uint8_t * event){
+    return little_endian_read_16(event, 13);
+}
+
+uint16_t mesh_subevent_configuration_composition_data_get_features(const uint8_t * event){
+    return little_endian_read_16(event, 15);
 }
 
 
