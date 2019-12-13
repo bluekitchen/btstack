@@ -99,6 +99,9 @@ static uint8_t gap_inquriy_scan_active;
 
 static uint32_t current_settings;
 
+// debug
+static btstack_timer_source_t heartbeat;
+
 // static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
 static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
 
@@ -107,6 +110,14 @@ static bd_addr_t pts_addr = { 0x00, 0x1b, 0xdc, 0x08, 0xe2, 0x5c};
 static void MESSAGE_HEXDUMP(const uint8_t * data, uint16_t len){
     log_info_hexdump(data, len);
     printf_hexdump(data, len);
+}
+
+static void heartbeat_handler(btstack_timer_source_t *ts){
+    UNUSED(ts);
+    log_info("heartbeat");
+    btstack_run_loop_set_timer_handler(&heartbeat, &heartbeat_handler);
+    btstack_run_loop_set_timer(&heartbeat, 5000);
+    btstack_run_loop_add_timer(&heartbeat);
 }
 
 static void btp_send(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
@@ -1302,7 +1313,8 @@ int btstack_main(int argc, const char * argv[])
     }
 #endif
 #endif
-
+    heartbeat_handler(NULL);
+    
 #ifdef TEST_POWER_CYCLE
     hci_power_control(HCI_POWER_ON);
 #endif
