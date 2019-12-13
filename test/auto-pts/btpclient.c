@@ -61,6 +61,7 @@
 #define BT_LE_AD_NO_BREDR (1U << 2)
 
 #define LIM_DISC_SCAN_MIN_MS 10000
+#define GAP_CONNECT_TIMEOUT_MS 10000
 
 //#define TEST_POWER_CYCLE
 
@@ -69,7 +70,13 @@ int btstack_main(int argc, const char * argv[]);
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
+// Synchronous Set Powered
 static bool gap_send_powered_state;
+
+// Synchronous Connect
+static bool gap_send_connect_response;
+static btstack_timer_source_t gap_connection_timer;
+
 static char gap_name[249];
 static char gap_short_name[11];
 static uint32_t gap_cod;
@@ -133,6 +140,13 @@ static void btp_send_error_unknown_command(uint8_t service_id){
     btp_send_error(service_id, BTP_ERROR_UNKNOWN_CMD);
 }
 
+static void gap_connect_send_response(void){
+    if (gap_send_connect_response){
+        gap_send_connect_response = false;
+        btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_OP_CONNECT, 0, 0, NULL);
+    }
+}
+
 static void reset_gap(void){
     // current settings
     current_settings |=  BTP_GAP_SETTING_SSP;
@@ -149,6 +163,8 @@ static void reset_gap(void){
     // TODO: check ENABLE_CLASSIC / Controller features
     // ad_flags = BT_LE_AD_NO_BREDR;
     ad_flags = 0;
+
+    gap_send_connect_response = false;
 }
 
 static void reset_gatt(void){
@@ -295,6 +311,9 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     // wait for connection complete
                     switch (hci_event_le_meta_get_subevent_code(packet)){
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // send connect response if pending
+                            gap_connect_send_response();
+
                             // Assume success
                             remote_handle          = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             remote_addr_type       = hci_subevent_le_connection_complete_get_peer_address_type(packet);
@@ -388,6 +407,11 @@ static void gap_limited_discovery_timeout_handler(btstack_timer_source_t * ts){
         gap_discovery_flags = 0;
         gap_stop_scan();
     }
+}
+
+static void gap_connect_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    gap_connect_send_response();
 }
 
 static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
@@ -752,8 +776,14 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 remote_addr_type = data[0];
                 reverse_bd_addr(&data[1], remote_addr);
                 // uint8_t own_addr_type = data[7];
+
+                // schedule response
+                gap_send_connect_response = true;
+                btstack_run_loop_set_timer_handler(&gap_connection_timer, &gap_connect_timeout_handler);
+                btstack_run_loop_set_timer(&gap_connection_timer, GAP_CONNECT_TIMEOUT_MS);
+                btstack_run_loop_add_timer(&gap_connection_timer);
+                // todo: handle Classic
                 gap_auto_connection_start(remote_addr_type, remote_addr);
-                btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
             break;
         case BTP_GAP_OP_DISCONNECT:
