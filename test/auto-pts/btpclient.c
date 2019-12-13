@@ -424,7 +424,7 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             status = data[0];
             if (status == BTP_ERROR_NOT_READY){
                 // connection stopped, abort
-                // exit(10);
+                exit(10);
             }
             break;
         case BTP_CORE_OP_READ_SUPPORTED_COMMANDS:
