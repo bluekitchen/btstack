@@ -91,14 +91,15 @@ typedef struct {
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         
-static const char * device_addr_string = "00:1B:DC:08:E2:72";
+// pts:         static const char * device_addr_string = "00:1B:DC:08:E2:72";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // BT dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
 // BT dongle:   static const char * device_addr_string = "00:1A:7D:DA:71:0A";
+
+static const char * device_addr_string = "00:02:72:DC:31:C1";
 #endif
 
 typedef struct {
@@ -188,42 +189,12 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
 }
 
 
-static int avdtp_source_stream_send_media_payload(uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
-    if (!stream_endpoint) {
-        log_error("no stream_endpoint found for seid %d", local_seid);
-        return 0;
-    }
-
-    if (stream_endpoint->l2cap_media_cid == 0){
-        log_error("no media cid found for seid %d", local_seid);
-        return 0;
-    }        
-
-    int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    int offset = 0;
-
-    // HACK / PTS requests ERTM although we did not offer it in L2CAP Information Request. Withouth ERTM support, default MTU of 48 will be used, but that's to
-    // small for a 44.1kHz/16/8/Stereo/bitpool 53 sbc frame of 119 bytes (+ media info)
-    size = 0x290;
-
-    l2cap_reserve_packet_buffer();
-    uint8_t * media_packet = l2cap_get_outgoing_buffer();
-    //int size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-    a2dp_source_setup_media_header(media_packet, size, &offset, marker, stream_endpoint->sequence_number);
-    a2dp_source_copy_media_payload(media_packet, size, &offset, storage, num_bytes_to_copy, num_frames);
-    stream_endpoint->sequence_number++;
-    l2cap_send_prepared(stream_endpoint->l2cap_media_cid, offset);
-    return size;
-}
-
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
     
-    avdtp_source_stream_send_media_payload(media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
-
+    avdtp_source_stream_send_media_payload(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
 }
@@ -540,7 +511,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             dump_sbc_configuration(sbc_configuration);
-
+            printf("sbc config remote %d, local %d\n", avdtp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet), avdtp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet));
+            media_tracker.remote_seid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet);
             sc.block_length = sbc_configuration.block_length;
             sc.subbands     = sbc_configuration.subbands;
             sc.allocation_method = sbc_configuration.allocation_method - 1;
