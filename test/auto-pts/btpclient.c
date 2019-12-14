@@ -793,7 +793,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
 
                 // schedule response
                 gap_send_connect_response = true;
-#if 0
+#if 1
                 btstack_run_loop_set_timer_handler(&gap_connection_timer, &gap_connect_timeout_handler);
                 btstack_run_loop_set_timer(&gap_connection_timer, GAP_CONNECT_TIMEOUT_MS);
                 btstack_run_loop_add_timer(&gap_connection_timer);
