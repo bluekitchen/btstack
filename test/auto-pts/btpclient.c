@@ -788,13 +788,18 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 reverse_bd_addr(&data[1], remote_addr);
                 // uint8_t own_addr_type = data[7];
 
+                // todo: handle Classic
+                gap_auto_connection_start(remote_addr_type, remote_addr);
+
                 // schedule response
                 gap_send_connect_response = true;
+#if 0
                 btstack_run_loop_set_timer_handler(&gap_connection_timer, &gap_connect_timeout_handler);
                 btstack_run_loop_set_timer(&gap_connection_timer, GAP_CONNECT_TIMEOUT_MS);
                 btstack_run_loop_add_timer(&gap_connection_timer);
-                // todo: handle Classic
-                gap_auto_connection_start(remote_addr_type, remote_addr);
+#else
+                gap_connect_send_response();
+#endif
             }
             break;
         case BTP_GAP_OP_DISCONNECT:
