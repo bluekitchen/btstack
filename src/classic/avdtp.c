@@ -362,14 +362,18 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
     return stream_endpoint;
 }
 
-
 static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, avdtp_context_t * context){
-    int offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
-    switch (connection->signaling_packet.message_type){
+    if (size < 2) return;
+
+    uint16_t offset;
+    avdtp_message_type_t message_type = avdtp_get_signaling_packet_type(packet);
+    switch (message_type){
         case AVDTP_CMD_MSG:
+            offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
             avdtp_acceptor_stream_config_subsm(connection, packet, size, offset, context);
             break;
         default:
+            offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
             avdtp_initiator_stream_config_subsm(connection, packet, size, offset, context);
             break;
     }
