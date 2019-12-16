@@ -379,6 +379,13 @@ typedef struct {
     avdtp_packet_type_t         packet_type;
 } avdtp_signaling_packet_t;
 
+typedef enum {
+    AVDTP_CONFIGURATION_STATE_IDLE,
+    AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED,
+    AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED,
+    AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED,
+    AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED,
+} avtdp_configuration_state_t;
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -422,6 +429,9 @@ typedef struct {
     // store configurations with remote seps
     // avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
     // uint8_t remote_seps_num;
+
+    // configuration state machine
+    avtdp_configuration_state_t configuration_state;
 
     // store current role
     uint8_t is_initiator;

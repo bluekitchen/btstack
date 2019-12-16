@@ -345,6 +345,7 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
     connection->avdtp_cid = avdtp_get_next_avdtp_cid(context);
+    connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
     context->avdtp_cid = connection->avdtp_cid;
     (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);
