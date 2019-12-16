@@ -67,9 +67,6 @@ static avdtp_connection_t connection;
 static avdtp_capabilities_t caps;
 
 TEST_GROUP(AvdtpUtil){
-    void setup(void){
-        connection.signaling_packet.signal_identifier = AVDTP_SI_GET_CONFIGURATION;
-    }
 };
 
 // typedef enum {
@@ -98,7 +95,7 @@ TEST(AvdtpUtil, avdtp_unpack_service_capabilities_test){
     };
 
     uint16_t expected_categories = (1 << AVDTP_MEDIA_TRANSPORT) | (1 << AVDTP_MEDIA_CODEC) | (1 << AVDTP_DELAY_REPORTING);
-    CHECK_EQUAL(expected_categories, avdtp_unpack_service_capabilities(&connection, &caps, &packet[0], sizeof(packet)));
+    CHECK_EQUAL(expected_categories, avdtp_unpack_service_capabilities(&connection, AVDTP_SI_GET_CONFIGURATION, &caps, &packet[0], sizeof(packet)));
 
     // media codec:
     CHECK_EQUAL(AVDTP_CODEC_SBC, caps.media_codec.media_codec_type);
