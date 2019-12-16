@@ -404,8 +404,10 @@ typedef struct {
 
     uint8_t disconnect;
 
-    uint8_t local_seid;
+    uint8_t initiator_local_seid;
     uint8_t initiator_remote_seid;
+
+    uint8_t acceptor_local_seid;
 
     uint16_t delay_ms;
 
