@@ -399,9 +399,8 @@ typedef struct {
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
     
-    // used for fragmentation
-    // avdtp_signaling_packet_header_t signaling_header;
-    avdtp_signaling_packet_t signaling_packet;
+    avdtp_signaling_packet_t acceptor_signaling_packet;
+    avdtp_signaling_packet_t initiator_signaling_packet;
 
     uint8_t disconnect;
 

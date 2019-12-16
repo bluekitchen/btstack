@@ -369,11 +369,11 @@ static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t
     avdtp_message_type_t message_type = avdtp_get_signaling_packet_type(packet);
     switch (message_type){
         case AVDTP_CMD_MSG:
-            offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
+            offset = avdtp_read_signaling_header(&connection->acceptor_signaling_packet, packet, size);
             avdtp_acceptor_stream_config_subsm(connection, packet, size, offset, context);
             break;
         default:
-            offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
+            offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
             avdtp_initiator_stream_config_subsm(connection, packet, size, offset, context);
             break;
     }
