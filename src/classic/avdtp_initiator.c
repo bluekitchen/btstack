@@ -127,7 +127,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
+                    sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
                     avdtp_emit_capabilities(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, &sep.capabilities, sep.registered_service_categories);
                     break;
                 case AVDTP_SI_DELAYREPORT:

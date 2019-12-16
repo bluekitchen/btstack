@@ -374,7 +374,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
     return 0;
 }
 
-uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
+uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdtp_signal_identifier_t signal_identifier, avdtp_capabilities_t * caps, uint8_t * packet, uint16_t size){
     
     int i;
 
@@ -394,7 +394,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
             return 0;
         }
 
-        if (avdtp_unpack_service_capabilities_has_errors(connection, connection->signaling_packet.signal_identifier, category, cap_len)) return 0;
+        if (avdtp_unpack_service_capabilities_has_errors(connection, signal_identifier, category, cap_len)) return 0;
 
         int category_valid = 1;
 

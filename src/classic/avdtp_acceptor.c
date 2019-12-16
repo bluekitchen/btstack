@@ -89,7 +89,7 @@ static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *conn
     stream_endpoint->connection = connection;
     avdtp_sep_t sep;
     sep.seid = connection->signaling_packet.command[offset++] >> 2;
-    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
+    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, connection->signaling_packet.signal_identifier, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
     sep.in_use = 1;
 
     if (connection->error_code){
@@ -278,7 +278,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     avdtp_sep_t sep;
                     sep.seid = connection->local_seid;
                     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE seid %d", sep.seid);
-                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
+                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, connection->signaling_packet.signal_identifier, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
                     if (connection->error_code){
                         // fire configuration parsing errors 
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
