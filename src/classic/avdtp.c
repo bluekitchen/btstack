@@ -538,12 +538,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             if (stream_endpoint->connection){
                 if (channel == stream_endpoint->connection->l2cap_signaling_cid){
-                    int offset = avdtp_read_signaling_header(&stream_endpoint->connection->signaling_packet, packet, size);
-                    if (stream_endpoint->connection->signaling_packet.message_type == AVDTP_CMD_MSG){
-                        avdtp_acceptor_stream_config_subsm(stream_endpoint->connection, packet, size, offset, context);
-                    } else {
-                        avdtp_initiator_stream_config_subsm(stream_endpoint->connection, packet, size, offset, context);
-                    } 
+                    handle_l2cap_data_packet_for_signaling_connection(stream_endpoint->connection, packet, size, context);
                     break;
                 }
             }
