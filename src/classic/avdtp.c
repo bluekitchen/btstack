@@ -88,8 +88,6 @@ void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer){
         return;
     }   
     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE) return;    
-    connection->is_configuration_initiated_locally = 1;
-    connection->is_initiator = 1;
     connection->initiator_transaction_label++;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);  
@@ -179,7 +177,6 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
     switch (connection->state){
         case AVDTP_SIGNALING_CONNECTION_IDLE:
             connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
-            connection->is_initiator = 1;
             sdp_query_context = avdtp_context;
             avdtp_context->avdtp_l2cap_psm = 0;
             avdtp_context->avdtp_version = 0;
@@ -613,9 +610,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     }
 
                     if (accept_signaling_connection){
-                        connection->is_initiator = 0;
                         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-                        log_info("L2CAP_EVENT_INCOMING_CONNECTION: role is_initiator %d", connection->is_initiator);
                         log_info("L2CAP_EVENT_INCOMING_CONNECTION, connection %p, state connection %d, avdtp cid 0x%02x", connection, connection->state, connection->avdtp_cid);
                         l2cap_accept_connection(local_cid);
                         break;
@@ -629,16 +624,16 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     }
 
-                    log_info("Checking l2cap_media_cid %d, for local seid %d, state of stream endpoint %d, is_our_configuration %u", stream_endpoint->l2cap_media_cid, connection->local_seid, stream_endpoint->state, connection->is_our_configuration);
-                    if (stream_endpoint->l2cap_media_cid == 0){
-                        if (connection->is_our_configuration){
-                            l2cap_decline_connection(local_cid);
-                            break;
-                        } 
-                        l2cap_accept_connection(local_cid);
+                    log_info("Checking l2cap_media_cid %d, for local seid %d, state of stream endpoint %d", stream_endpoint->l2cap_media_cid, connection->local_seid, stream_endpoint->state);
+                    if (stream_endpoint->l2cap_media_cid != 0){
+                        l2cap_decline_connection(local_cid);
                         break;
-                    } 
-                    l2cap_decline_connection(local_cid);
+                    }
+                    if (connection->configuration_state != AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED){
+                        l2cap_decline_connection(local_cid);
+                        break;
+                    }
+                    l2cap_accept_connection(local_cid);
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -1030,7 +1025,11 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
         log_error("connection in wrong state, %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
-    
+    if (connection->configuration_state != AVDTP_CONFIGURATION_STATE_IDLE){
+        log_info("configuration already started, config state %u", connection->configuration_state);
+        return AVDTP_CONNECTION_IN_WRONG_STATE;
+    }
+
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, context);
     if (!stream_endpoint) {
         log_error("No initiator stream endpoint for seid %d", local_seid);
@@ -1040,9 +1039,9 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
         log_error("Stream endpoint seid %d in wrong state %d", local_seid, stream_endpoint->state);
         return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
     }
-    connection->active_stream_endpoint = (void*) stream_endpoint;    
-    connection->is_configuration_initiated_locally = 1;
-    connection->is_initiator = 1;
+
+    connection->active_stream_endpoint = (void*) stream_endpoint;
+    connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED;
     
     connection->initiator_transaction_label++;
     connection->remote_seid = remote_seid;

@@ -81,6 +81,57 @@ static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_i
     return msg_size >= minimal_msg_lenght;
 }
 
+static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, avdtp_context_t *context, int offset, uint16_t packet_size, avdtp_stream_endpoint_t *stream_endpoint) {
+    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION connection %p", connection);
+    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
+    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
+    connection->reject_service_category = 0;
+    stream_endpoint->connection = connection;
+    avdtp_sep_t sep;
+    sep.seid = connection->signaling_packet.command[offset++] >> 2;
+    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
+    sep.in_use = 1;
+
+    if (connection->error_code){
+        log_info("fire configuration parsing errors ");
+        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+        return;
+    }
+    // find or add sep
+
+    log_info("ACP .. seid %d, remote sep seid %d", sep.seid, stream_endpoint->remote_sep.seid);
+    
+    if (is_avdtp_remote_seid_registered(stream_endpoint)){
+        if (stream_endpoint->remote_sep.in_use){
+            log_info("reject as it is already in use");
+            connection->error_code = SEP_IN_USE;
+            // find first registered category and fire the error
+            connection->reject_service_category = 0;
+            int i;
+            for (i = 1; i < 9; i++){
+                if (get_bit16(sep.configured_service_categories, i)){
+                    connection->reject_service_category = i;
+                    break;
+                }
+            }
+            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+        } else {
+            stream_endpoint->remote_sep = sep;
+            log_info("ACP: update seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
+        }
+    } else {
+        // add new
+        log_info("ACP: seid %d not found in %p", sep.seid, stream_endpoint);
+        stream_endpoint->remote_sep = sep;
+        log_info("ACP: add seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
+    }
+    
+    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
+    avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
+}
+
 void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint;
     connection->acceptor_transaction_label = connection->signaling_packet.transaction_label;
@@ -203,68 +254,21 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:{
                     // log_info("acceptor SM received SET_CONFIGURATION cmd: role is_initiator %d", connection->is_initiator);
-                    if (connection->is_initiator){
-                        if (connection->is_configuration_initiated_locally){
+                    switch (connection->configuration_state){
+                        case AVDTP_CONFIGURATION_STATE_IDLE:
+                            avdtp_acceptor_handle_configuration_command(connection, context, offset, packet_size, stream_endpoint);
+                            connection->configuration_state = AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED;
+                            break;
+                        case AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED:
+                        case AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED:
                             log_info("ACP: Set configuration already initiated locally, reject cmd ");
-                            // fire configuration parsing errors 
+                            // fire configuration parsing errors
                             connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
-                            connection->is_initiator = 1;
                             break;
-                        }
-                        connection->is_initiator = 0;   
-                        log_info("acceptor SM received SET_CONFIGURATION cmd: change role to acceptor, is_initiator %d", connection->is_initiator);
+                        default:
+                            break;
                     }
-                    
-                    connection->is_our_configuration = false;
-                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION connection %p", connection);
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
-                    connection->reject_service_category = 0;
-                    stream_endpoint->connection = connection;
-                    avdtp_sep_t sep;
-                    sep.seid = connection->signaling_packet.command[offset++] >> 2;
-                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
-                    sep.in_use = 1;
-
-                    if (connection->error_code){
-                        log_info("fire configuration parsing errors ");
-                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
-                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
-                        break;
-                    }
-                    // find or add sep
-
-                    log_info("ACP .. seid %d, remote sep seid %d", sep.seid, stream_endpoint->remote_sep.seid);
-                    
-                    if (is_avdtp_remote_seid_registered(stream_endpoint)){
-                        if (stream_endpoint->remote_sep.in_use){
-                            log_info("reject as it is already in use");
-                            connection->error_code = SEP_IN_USE;
-                            // find first registered category and fire the error
-                            connection->reject_service_category = 0;
-                            int i;
-                            for (i = 1; i < 9; i++){
-                                if (get_bit16(sep.configured_service_categories, i)){
-                                    connection->reject_service_category = i;
-                                    break;
-                                }
-                            }    
-                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
-                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
-                        } else {
-                            stream_endpoint->remote_sep = sep;
-                            log_info("ACP: update seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
-                        }
-                    } else {
-                        // add new
-                        log_info("ACP: seid %d not found in %p", sep.seid, stream_endpoint);
-                        stream_endpoint->remote_sep = sep;
-                        log_info("ACP: add seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
-                    } 
-                    
-                    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
-                    avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
                     break;
                 }
                 case AVDTP_SI_RECONFIGURE:{
@@ -530,6 +534,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             log_info("    -> AVDTP_STREAM_ENDPOINT_CONFIGURED");
             stream_endpoint->connection = connection;
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+            connection->configuration_state = AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED;
             // TODO: consider reconfiguration
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SET_CONFIGURATION);
             break;
