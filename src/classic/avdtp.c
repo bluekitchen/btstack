@@ -628,9 +628,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     }
 
-                    log_info("Checking l2cap_media_cid %d, for local seid %d, state of stream endpoint %d, role is_initiator %d", stream_endpoint->l2cap_media_cid, connection->local_seid, stream_endpoint->state, connection->is_initiator);
+                    log_info("Checking l2cap_media_cid %d, for local seid %d, state of stream endpoint %d, is_our_configuration %u", stream_endpoint->l2cap_media_cid, connection->local_seid, stream_endpoint->state, connection->is_our_configuration);
                     if (stream_endpoint->l2cap_media_cid == 0){
-                        if (connection->is_initiator){
+                        if (connection->is_our_configuration){
                             l2cap_decline_connection(local_cid);
                             break;
                         } 

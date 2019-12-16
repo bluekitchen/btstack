@@ -253,6 +253,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_SET_CONFIGURATION:
                     connection->is_initiator = 0;
+                    connection->is_configuration_initiated_locally = 0;
                     log_info("Received reject for set configuration, role changed from initiator to acceptor. Start timer.");
                     avdtp_configuration_timer_start(connection);
                     break;
