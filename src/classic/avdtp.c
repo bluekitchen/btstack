@@ -820,7 +820,7 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED) return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
     
     connection->initiator_transaction_label++;
-    connection->remote_seid = remote_seid;
+    connection->initiator_remote_seid = remote_seid;
     connection->local_seid = local_seid;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_OPEN_STREAM;
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM;
@@ -853,7 +853,7 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
 
     stream_endpoint->start_stream = 1;
     connection->local_seid = local_seid;
-    connection->remote_seid = stream_endpoint->remote_sep.seid;
+    connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -882,7 +882,7 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_
 
     stream_endpoint->stop_stream = 1;
     connection->local_seid = local_seid;
-    connection->remote_seid = stream_endpoint->remote_sep.seid;
+    connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -911,7 +911,7 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
     
     stream_endpoint->abort_stream = 1;
     connection->local_seid = local_seid;
-    connection->remote_seid = stream_endpoint->remote_sep.seid;
+    connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -939,7 +939,7 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_conte
 
     stream_endpoint->suspend_stream = 1;
     connection->local_seid = local_seid;
-    connection->remote_seid = stream_endpoint->remote_sep.seid;
+    connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -974,7 +974,7 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_co
     
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
-    connection->remote_seid = remote_seid;
+    connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
@@ -992,7 +992,7 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdt
     
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
-    connection->remote_seid = remote_seid;
+    connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1009,7 +1009,7 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_c
 
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION;
-    connection->remote_seid = remote_seid;
+    connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
@@ -1043,7 +1043,7 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED;
     
     connection->initiator_transaction_label++;
-    connection->remote_seid = remote_seid;
+    connection->initiator_remote_seid = remote_seid;
     connection->local_seid = local_seid;
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
     stream_endpoint->remote_configuration = configuration;
@@ -1083,7 +1083,7 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     } 
 
     connection->initiator_transaction_label++;
-    connection->remote_seid = remote_seid;
+    connection->initiator_remote_seid = remote_seid;
     connection->local_seid = local_seid;
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
     stream_endpoint->remote_configuration = configuration;
