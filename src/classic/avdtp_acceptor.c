@@ -216,6 +216,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         log_info("acceptor SM received SET_CONFIGURATION cmd: change role to acceptor, is_initiator %d", connection->is_initiator);
                     }
                     
+                    connection->is_our_configuration = false;
                     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION connection %p", connection);
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;

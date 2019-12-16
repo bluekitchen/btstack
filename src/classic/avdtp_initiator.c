@@ -176,7 +176,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                     stream_endpoint->remote_sep = sep;
                     stream_endpoint->connection = connection;
-                
+                    connection->is_our_configuration = true;
+
                     log_info("INT: configured remote seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
                    
                     switch (stream_endpoint->media_codec_type){

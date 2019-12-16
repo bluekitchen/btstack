@@ -426,6 +426,10 @@ typedef struct {
     // store current role
     uint8_t is_initiator;
     uint8_t is_configuration_initiated_locally;
+
+    // we won the configuration race, only valid after configuration was accepted
+    bool    is_our_configuration;
+
     btstack_timer_source_t configuration_timer;
 } avdtp_connection_t;
 
