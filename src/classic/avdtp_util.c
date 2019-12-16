@@ -301,18 +301,18 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
     return pos;
 }
 
-static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_service_category_t category, uint8_t cap_len){
+static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * connection, avdtp_signal_identifier_t signal_identifier, avdtp_service_category_t category, uint8_t cap_len){
     connection->error_code = 0;
     
     if ((category == AVDTP_SERVICE_CATEGORY_INVALID_0) || 
-        ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE))){
+        ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (signal_identifier == AVDTP_SI_RECONFIGURE))){
         log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
         connection->error_code = BAD_SERV_CATEGORY;
         return 1;
     }
 
-    if (connection->signaling_packet.signal_identifier == AVDTP_SI_RECONFIGURE){
+    if (signal_identifier == AVDTP_SI_RECONFIGURE){
         if ( (category != AVDTP_CONTENT_PROTECTION) && (category != AVDTP_MEDIA_CODEC)){
             log_info("    ERROR: REJECT CATEGORY, INVALID_CAPABILITIES\n");
             connection->reject_service_category = category;
@@ -394,7 +394,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
             return 0;
         }
 
-        if (avdtp_unpack_service_capabilities_has_errors(connection, category, cap_len)) return 0;
+        if (avdtp_unpack_service_capabilities_has_errors(connection, connection->signaling_packet.signal_identifier, category, cap_len)) return 0;
 
         int category_valid = 1;
 
