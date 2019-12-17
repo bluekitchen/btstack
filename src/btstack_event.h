@@ -4285,13 +4285,22 @@ static inline uint8_t avdtp_subevent_signaling_accept_get_local_seid(const uint8
     return event[5];
 }
 /**
+ * @brief Get field is_initiator from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
+ * @param event packet
+ * @return is_initiator
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_accept_get_is_initiator(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field signal_identifier from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
  * @param event packet
  * @return signal_identifier
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_accept_get_signal_identifier(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 
 /**
@@ -4313,13 +4322,22 @@ static inline uint8_t avdtp_subevent_signaling_reject_get_local_seid(const uint8
     return event[5];
 }
 /**
+ * @brief Get field is_initiator from event AVDTP_SUBEVENT_SIGNALING_REJECT
+ * @param event packet
+ * @return is_initiator
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_reject_get_is_initiator(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field signal_identifier from event AVDTP_SUBEVENT_SIGNALING_REJECT
  * @param event packet
  * @return signal_identifier
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_reject_get_signal_identifier(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 
 /**
@@ -4341,13 +4359,22 @@ static inline uint8_t avdtp_subevent_signaling_general_reject_get_local_seid(con
     return event[5];
 }
 /**
+ * @brief Get field is_initiator from event AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT
+ * @param event packet
+ * @return is_initiator
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_general_reject_get_is_initiator(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field signal_identifier from event AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT
  * @param event packet
  * @return signal_identifier
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_general_reject_get_signal_identifier(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 
 /**

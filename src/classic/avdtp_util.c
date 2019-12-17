@@ -657,9 +657,9 @@ void avdtp_signaling_emit_delay(btstack_packet_handler_t callback, uint16_t avdt
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier){
+void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier, bool is_initiator){
     if (!callback) return;
-    uint8_t event[7];
+    uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
@@ -667,13 +667,14 @@ void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avd
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = local_seid;
+    event[pos++] = is_initiator ? 1 : 0;
     event[pos++] = identifier;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_signaling_emit_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier){
+void avdtp_signaling_emit_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier, bool is_initiator){
     if (!callback) return;
-    uint8_t event[7];
+    uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
@@ -681,13 +682,14 @@ void avdtp_signaling_emit_reject(btstack_packet_handler_t callback, uint16_t avd
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = local_seid;
+    event[pos++] = is_initiator ? 1 : 0;
     event[pos++] = identifier;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_signaling_emit_general_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier){
+void avdtp_signaling_emit_general_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier, bool is_initiator){
     if (!callback) return;
-    uint8_t event[7];
+    uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
@@ -695,6 +697,7 @@ void avdtp_signaling_emit_general_reject(btstack_packet_handler_t callback, uint
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = local_seid;
+    event[pos++] = is_initiator ? 1 : 0;
     event[pos++] = identifier;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

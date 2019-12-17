@@ -246,7 +246,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     log_info("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
                     break;
             }
-            avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier);
+            avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
             connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
@@ -259,12 +259,12 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 default:
                     break;
             }
-            log_info("    AVDTP_RESPONSE_REJECT_MSG signal %d", connection->initiator_signaling_packet.signal_identifier);
-            avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier);
+            log_info("    AVDTP_RESPONSE_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
+            avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier, true);
             return;
         case AVDTP_GENERAL_REJECT_MSG:
-            log_info("    AVDTP_GENERAL_REJECT_MSG signal %d", connection->initiator_signaling_packet.signal_identifier);
-            avdtp_signaling_emit_general_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier);
+            log_info("    AVDTP_GENERAL_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
+            avdtp_signaling_emit_general_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier, true);
             return;
         default:
             break;

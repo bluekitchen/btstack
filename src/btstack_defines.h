@@ -1674,28 +1674,31 @@ typedef uint8_t sm_key_t[16];
 /** AVDTP Subevent */
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param avdtp_cid
  * @param local_seid
+ * @param is_initiator
  * @param signal_identifier
  */
 #define AVDTP_SUBEVENT_SIGNALING_ACCEPT                     0x01
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
+ * @param local_seid 
+ * @param is_initiator
  * @param signal_identifier 
  */
 #define AVDTP_SUBEVENT_SIGNALING_REJECT                     0x02
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param avdtp_cid
  * @param local_seid
+ * @param is_initiator
  * @param signal_identifier
  */
 #define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03

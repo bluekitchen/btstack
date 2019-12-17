@@ -96,11 +96,16 @@ void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer){
 void avdtp_configuration_timer_start(avdtp_connection_t * connection){
     avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t*) connection->active_stream_endpoint;
     if (!stream_endpoint) {
-        log_error("avdtp_configuration_timeout_handler: no initiator stream endpoint for seid %d", connection->initiator_local_seid);
+        log_error("avdtp_configuration_timer_start: no initiator stream endpoint for seid %d", connection->initiator_local_seid);
         return;
     }   
-    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE) return; 
-
+        
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE){
+        log_info("avdtp_configuration_timer_start: stream endpoint in wrong state %d, expected %d", stream_endpoint->state, AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE);
+        return; 
+    } 
+    log_info("avdtp_configuration_timer_start: start");
+        
     btstack_run_loop_remove_timer(&connection->configuration_timer);
     btstack_run_loop_set_timer_handler(&connection->configuration_timer, avdtp_configuration_timeout_handler);
     btstack_run_loop_set_timer_context(&connection->configuration_timer, connection);
