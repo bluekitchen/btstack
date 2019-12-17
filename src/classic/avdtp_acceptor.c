@@ -493,6 +493,9 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
     uint8_t * out_buffer;
     uint16_t pos;
 
+    bool emit_accept = false;
+    bool emit_reject = false;
+    
     switch (acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             break;
@@ -506,12 +509,14 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
                 log_info("ACP: fragmented");
             } else {
                 log_info("ACP:DONE");
+                emit_accept = true;
             }
             l2cap_send_prepared(cid, pos);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT:
             log_info("ACP: DONE ");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_DELAYREPORT);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
             avdtp_prepare_capabilities(&connection->acceptor_signaling_packet, trid, stream_endpoint->sep.registered_service_categories, stream_endpoint->sep.capabilities, AVDTP_SI_GET_ALL_CAPABILITIES);
@@ -523,6 +528,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
                 log_info("ACP: fragmented");
             } else {
                 log_info("ACP:DONE");
+                emit_accept = true;
             }
             l2cap_send_prepared(cid, pos);
             break;
@@ -534,11 +540,12 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             connection->configuration_state = AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED;
             // TODO: consider reconfiguration
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SET_CONFIGURATION);
-            avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE:
             log_info("ACP: DONE ");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_RECONFIGURE);
+            emit_accept = true;
             break;
 
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION:{
@@ -552,6 +559,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
                 log_info("ACP: fragmented");
             } else {
                 log_info("ACP:DONE");
+                emit_accept = true;
             }
             l2cap_send_prepared(cid, pos);
             break;
@@ -559,48 +567,60 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
         case AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM:
             log_info("ACP: DONE");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_OPEN);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
             log_info("ACP: DONE ");
             log_info("    -> AVDTP_STREAM_ENDPOINT_STREAMING ");
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_START);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
             log_info("ACP: DONE");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_CLOSE);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM:
             log_info("ACP: DONE");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_ABORT);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_SUSPEND_STREAM:
             log_info("ACP: DONE");
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SUSPEND);
+            emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD:
             log_info("ACP: DONE REJECT");
             connection->reject_signal_identifier = AVDTP_SI_NONE;
             avdtp_acceptor_send_response_reject(cid, reject_signal_identifier, trid);
+            emit_reject = true;
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE:
             log_info("ACP: DONE REJECT CATEGORY");
             connection->reject_service_category = 0;
             avdtp_acceptor_send_response_reject_service_category(cid, reject_signal_identifier, reject_service_category, error_code, trid);
+            emit_reject = true;
             break;
         case AVDTP_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE:
             log_info("ACP: DONE REJECT");
             connection->reject_signal_identifier = AVDTP_SI_NONE;
             connection->error_code = 0;
             avdtp_acceptor_send_response_reject_with_error_code(cid, reject_signal_identifier, error_code, trid);
+            emit_reject = true;
             break;
         default:  
             log_info("ACP: NOT IMPLEMENTED");
             sent = 0;
             break;
     } 
-    avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+    if (emit_accept == true){
+        avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+    } else if (emit_reject == true){
+        avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+    }
     // check fragmentation
     if ((connection->acceptor_signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->acceptor_signaling_packet.packet_type != AVDTP_END_PACKET)){
         avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
