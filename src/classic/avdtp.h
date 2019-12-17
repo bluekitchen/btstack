@@ -585,12 +585,7 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value);
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
-
-
 uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
-void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer);
-void avdtp_configuration_timer_start(avdtp_connection_t * connection);
-void avdtp_configuration_timer_stop(avdtp_connection_t * connection);
 
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 #if defined __cplusplus

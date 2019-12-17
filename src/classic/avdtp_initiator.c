@@ -164,7 +164,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:{
-                    avdtp_configuration_timer_stop(connection);
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
                         break;
@@ -253,8 +252,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
             switch (connection->initiator_signaling_packet.signal_identifier){
                 case AVDTP_SI_SET_CONFIGURATION:
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
-                    log_info("Received reject for set configuration, role changed from initiator to acceptor. Start timer.");
-                    avdtp_configuration_timer_start(connection);
+                    log_info("Received reject for set configuration, role changed from initiator to acceptor. TODO: implement retry.");
                     break;
                 default:
                     break;
