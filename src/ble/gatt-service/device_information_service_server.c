@@ -105,7 +105,7 @@ static uint16_t device_information_service_read_callback(hci_con_handle_t con_ha
 	unsigned int i;
 	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
 		if (device_information_fields[i].value_handle == attribute_handle) {
-			return att_read_callback_handle_blob(&device_information_fields[i].data, device_information_fields[i].len, offset, buffer, buffer_size);
+			return att_read_callback_handle_blob(device_information_fields[i].data, device_information_fields[i].len, offset, buffer, buffer_size);
 		};
 	}
 	return 0;
