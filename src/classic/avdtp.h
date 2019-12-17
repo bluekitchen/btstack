@@ -427,10 +427,6 @@ typedef struct {
     avdtp_signal_identifier_t reject_signal_identifier;
     uint8_t error_code;
 
-    // store configurations with remote seps
-    // avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
-    // uint8_t remote_seps_num;
-
     // configuration state machine
     avtdp_configuration_state_t configuration_state;
 
@@ -473,8 +469,8 @@ typedef struct avdtp_stream_endpoint {
     a2dp_state_t a2dp_state;
     // active connection
     avdtp_connection_t * connection;
+    
     // currently active remote seid
-    // uint8_t remote_sep_index;
     avdtp_capabilities_t remote_capabilities;
     uint16_t remote_capabilities_bitmap;
     

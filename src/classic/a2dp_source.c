@@ -349,7 +349,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             sc.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
-            log_info("A2DP received SBC Config: sample rate %u, max bitpool %u.", sc.sampling_frequency, sc.max_bitpool_value);
+            log_info("A2DP received SBC Config: sample rate %u, max bitpool %u., remote seid %d", sc.sampling_frequency, sc.max_bitpool_value, avdtp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet));
             app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             a2dp_signaling_emit_media_codec_sbc(a2dp_source_context.a2dp_callback, packet, size);
             break;
@@ -358,7 +358,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
             cid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
             local_seid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
-            log_info("AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW cid 0x%02x, local_seid %d", cid, local_seid);
+            // log_info("A2DP STREAMING_CAN_SEND_MEDIA_PACKET_NOW cid 0x%02x, local_seid %d", cid, local_seid);
             a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, cid, local_seid);
             break;
         
@@ -369,11 +369,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             local_seid  = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             if (status != 0){
-                log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
+                log_info("A2DP streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
                 a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, address, local_seid, remote_seid, status);
                 break;
             }
-            log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
+            log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
             app_state = A2DP_STREAMING_OPENED;
             a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, address, local_seid, remote_seid, 0);
             break;
@@ -384,7 +384,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
             sep.media_type = (avdtp_media_type_t) avdtp_subevent_signaling_sep_found_get_media_type(packet);
             sep.type = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-            log_info("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)", sep.seid, sep.in_use, sep.media_type, sep.type);
+            log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %d (1-SNK), index %d", sep.seid, sep.in_use, sep.media_type, sep.type, num_remote_seps);
             remote_seps[num_remote_seps++] = sep;
             break;
         }
@@ -397,12 +397,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // TODO check cid
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            log_info("A2DP Accepted %d, state %d", signal_identifier, app_state);
+            log_info("A2DP cmd %s accepted , cid 0x%2x, local seid %d, active remote seid %d", avdtp_si2str(signal_identifier), app_state, cid, avdtp_subevent_signaling_accept_get_local_seid(packet), sc.active_remote_sep->seid);
             
             switch (app_state){
                 case A2DP_W2_GET_CAPABILITIES:
                     if (sc.active_remote_sep_index < num_remote_seps){
                         sc.active_remote_sep = &remote_seps[sc.active_remote_sep_index++];
+                        log_info("A2DP get capabilities for remote seid %d", sc.active_remote_sep->seid);
                         avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
                     }
                     break;
@@ -414,12 +415,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 }
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
-                    log_info("A2DP reconfigured");
+                    log_info("A2DP reconfigured ... local seid %d, active remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
                     a2dp_signaling_emit_reconfigured(a2dp_source_context.a2dp_callback, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), 0);
                     app_state = A2DP_STREAMING_OPENED;
                     break;
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:{
-                    log_info("A2DP open stream ");
+                    log_info("A2DP open stream ... local seid %d, active remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
                     app_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
                     avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
                     break;

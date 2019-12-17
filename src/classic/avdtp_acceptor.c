@@ -239,17 +239,17 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             switch (connection->acceptor_signaling_packet.signal_identifier){
                 case AVDTP_SI_DELAYREPORT:
-                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT");
+                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT;
                     avdtp_signaling_emit_delay(context->avdtp_callback, connection->avdtp_cid, connection->acceptor_local_seid, big_endian_read_16(packet, offset));
                     break;
                 
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    log_info("ACP: AVDTP_SI_GET_ALL_CAPABILITIES");
+                    log_info("ACP: AVDTP_SI_GET_ALL_CAPABILITIES, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
                     break;
                 case AVDTP_SI_GET_CAPABILITIES:
-                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES");
+                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:{
@@ -261,7 +261,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             break;
                         case AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED:
                         case AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED:
-                            log_info("ACP: Set configuration already initiated locally, reject cmd ");
+                            log_info("ACP: Set configuration already initiated locally, reject cmd, local seid %d", connection->acceptor_local_seid);
                             // fire configuration parsing errors
                             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
@@ -276,8 +276,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     connection->reject_service_category = 0;
 
                     avdtp_sep_t sep;
-                    sep.seid = connection->acceptor_local_seid;
-                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE seid %d", sep.seid);
+                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE, local seid %d, remote seid %d", connection->acceptor_local_seid, stream_endpoint->remote_sep.seid);
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, connection->acceptor_signaling_packet.signal_identifier, &sep.configuration, connection->acceptor_signaling_packet.command+offset, packet_size-offset);
                     if (connection->error_code){
                         // fire configuration parsing errors 
@@ -294,8 +293,10 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                         break;
                     }
-                    stream_endpoint->remote_sep = sep;
-                    log_info("ACP: update seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
+                    stream_endpoint->remote_sep.configured_service_categories = sep.configured_service_categories;
+                    stream_endpoint->remote_sep.configuration = sep.configuration;
+                    
+                    log_info("ACP: update active remote seid %d", stream_endpoint->remote_sep.seid);
 
                     avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
                     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier);
