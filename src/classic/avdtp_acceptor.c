@@ -262,9 +262,11 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         case AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED:
                         case AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED:
                             log_info("ACP: Set configuration already initiated locally, reject cmd, local seid %d", connection->acceptor_local_seid);
-                            // fire configuration parsing errors
+                            // send reject with category
                             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
-                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
+                            connection->reject_service_category = 0;
+                            connection->error_code = BAD_STATE;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                             break;
                         default:
                             break;
