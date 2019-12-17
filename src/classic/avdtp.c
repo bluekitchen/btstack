@@ -581,10 +581,10 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     }
 
-                    // now, we're only dealing with media connections
-                    stream_endpoint = avdtp_stream_endpoint_for_signaling_cid(local_cid, context);
+                    // now, we're only dealing with media connections that are created by remote side - we're acceptor here
+                    stream_endpoint = avdtp_stream_endpoint_with_seid(connection->acceptor_local_seid, context);
                     if (!stream_endpoint) {
-                        log_info("L2CAP_EVENT_INCOMING_CONNECTION no streamendpoint found for local cid %x", local_cid);
+                        log_info("L2CAP_EVENT_INCOMING_CONNECTION no streamendpoint found for local seid %x", connection->acceptor_local_seid);
                         l2cap_decline_connection(local_cid);
                         break;
                     }
