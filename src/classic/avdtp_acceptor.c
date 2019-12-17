@@ -299,7 +299,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     log_info("ACP: update active remote seid %d", stream_endpoint->remote_sep.seid);
 
                     avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
-                    avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier);
                     break;
                 }
 
@@ -538,6 +537,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             connection->configuration_state = AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED;
             // TODO: consider reconfiguration
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_SET_CONFIGURATION);
+            avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE:
             log_info("ACP: DONE ");
