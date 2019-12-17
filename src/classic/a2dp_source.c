@@ -399,6 +399,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
             log_info("A2DP cmd %s accepted , cid 0x%2x, local seid %d", avdtp_si2str(signal_identifier), cid, avdtp_subevent_signaling_accept_get_local_seid(packet));
             
+            if (avdtp_subevent_signaling_accept_get_is_initiator(packet) != 1) break;
+            
             switch (app_state){
                 case A2DP_W2_GET_CAPABILITIES:
                     if (sc.active_remote_sep_index < num_remote_seps){
