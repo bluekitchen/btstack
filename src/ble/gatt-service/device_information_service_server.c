@@ -102,17 +102,11 @@ static void set_string(device_information_field_id_t field_id, const char * text
 
 static uint16_t device_information_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);	// ok: info same for all devices
-	int i;
+	unsigned int i;
 	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
-		if (device_information_fields[i].value_handle != attribute_handle) continue;
-		if (buffer == NULL){
-			return device_information_fields[i].len;
-		}
-		int bytes_to_copy = btstack_min(device_information_fields[i].len - offset, buffer_size);
-		(void)memcpy(buffer,
-			     &device_information_fields[i].data[offset],
-			     bytes_to_copy);
-		return bytes_to_copy;
+		if (device_information_fields[i].value_handle == attribute_handle) {
+			return att_read_callback_handle_blob(&device_information_fields[i].data, device_information_fields[i].len, offset, buffer, buffer_size);
+		};
 	}
 	return 0;
 }
