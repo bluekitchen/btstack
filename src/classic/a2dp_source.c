@@ -52,6 +52,7 @@
 #include "l2cap.h"
 
 #define AVDTP_MAX_SEP_NUM 10
+#define A2DP_SET_CONFIG_DELAY_MS 150
 
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
@@ -61,6 +62,7 @@ static a2dp_state_t app_state = A2DP_IDLE;
 static avdtp_stream_endpoint_context_t sc;
 static avdtp_sep_t remote_seps[AVDTP_MAX_SEP_NUM];
 static int num_remote_seps = 0;
+static btstack_timer_source_t a2dp_source_set_config_timer;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -236,6 +238,25 @@ static void a2dp_signaling_emit_reconfigured(btstack_packet_handler_t callback, 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    log_info("a2dp_source_set_config_timer_handler, app state %u", app_state);
+    if (app_state != A2DP_CONNECTED) return;
+    app_state = A2DP_W2_DISCOVER_SEPS;
+    avdtp_source_discover_stream_endpoints(sc.avdtp_cid);
+}
+static void a2dp_source_set_config_timer_start(void){
+    log_info("a2dp_source_set_config_timer_start");
+    btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
+    btstack_run_loop_set_timer_handler(&a2dp_source_set_config_timer,a2dp_source_set_config_timer_handler);
+    btstack_run_loop_set_timer(&a2dp_source_set_config_timer, A2DP_SET_CONFIG_DELAY_MS);
+    btstack_run_loop_add_timer(&a2dp_source_set_config_timer);
+}
+static void a2dp_source_set_config_timer_stop(void){
+    log_info("a2dp_source_set_config_timer_stop");
+    btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -263,13 +284,25 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 break;
             }
             log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION established avdtp_cid 0x%02x ---", a2dp_source_context.avdtp_cid);
+
+            sc.avdtp_cid = cid;
             sc.active_remote_sep = NULL;
             sc.active_remote_sep_index = 0;
-            app_state = A2DP_W2_DISCOVER_SEPS;
             num_remote_seps = 0;
             memset(remote_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
-            a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, status);
-            avdtp_source_discover_stream_endpoints(cid);
+
+            // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
+            log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION app_state %u", app_state);
+            if (app_state == A2DP_W4_CONNECTED){
+                app_state = A2DP_W2_DISCOVER_SEPS;
+                avdtp_source_discover_stream_endpoints(sc.avdtp_cid);
+            } else {
+                app_state = A2DP_CONNECTED;
+                a2dp_source_set_config_timer_start();
+            }
+            
+            // notify app
+            a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, ERROR_CODE_SUCCESS);
             break;
         }
 
@@ -341,6 +374,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             // TODO check cid
+            a2dp_source_set_config_timer_stop();
             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
             sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
@@ -525,6 +559,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
     (void)memcpy(sc.remote_addr, remote_addr, 6);
+    app_state = A2DP_W4_CONNECTED;
     return avdtp_source_connect(remote_addr, a2dp_cid);
 }
 

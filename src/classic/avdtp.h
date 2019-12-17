@@ -435,6 +435,7 @@ typedef struct {
 
 typedef enum {
     A2DP_IDLE,
+    A2DP_W4_CONNECTED,
     A2DP_CONNECTED,
     A2DP_W2_DISCOVER_SEPS,
     A2DP_W2_GET_CAPABILITIES,
@@ -502,7 +503,8 @@ typedef struct avdtp_stream_endpoint {
 typedef struct {
 // to app
     bd_addr_t remote_addr;
-    
+    uint16_t avdtp_cid;
+
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // msstream
     uint32_t acc_num_missed_samples;
