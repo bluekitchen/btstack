@@ -24,6 +24,7 @@ include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
+include_directories(.)
 include_directories(..)
 
 # find src files
