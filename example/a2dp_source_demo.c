@@ -168,6 +168,7 @@ static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 // Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
 // Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
+// BeatsX:          static const char * device_addr_string = "DC:D3:A2:89:57:FB";
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
@@ -276,6 +277,9 @@ static void a2dp_demo_reconfigure_sample_rate(int new_sample_rate){
 }
 
 static int a2dp_source_and_avrcp_services_init(void){
+
+    // request role change on reconnecting headset to always use them in slave mode
+    hci_set_master_slave_policy(0);
 
     l2cap_init();
     // Initialize  A2DP Source.
