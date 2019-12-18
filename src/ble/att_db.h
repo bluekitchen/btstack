@@ -306,6 +306,12 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
  */
 bool att_is_persistent_ccc(uint16_t handle);
 
+// auto-pts testing, returns response size
+#ifdef ENABLE_BTP
+uint16_t btp_att_get_attributes_by_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, uint8_t * response_buffer, uint16_t response_buffer_size);
+uint16_t btp_att_get_attributes_by_uuid128(uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128, uint8_t * response_buffer, uint16_t response_buffer_size);
+uint16_t btp_att_get_attribute_value(uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size);
+#endif
 
 #if defined __cplusplus
 }
