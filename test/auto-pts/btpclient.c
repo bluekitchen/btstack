@@ -942,6 +942,9 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
     static uint8_t  characteristic_properties;
     static uint8_t  characteristic_permissions;
 
+    uint8_t response_buffer[100];
+    uint16_t response_len;
+
     if (add_char_pending && opcode != BTP_GATT_OP_SET_VALUE){
         add_char_pending = false;
         btp_gatt_add_characteristic(uuid_len, uuid16, uuid128, characteristic_properties, characteristic_permissions, 0, NULL);
@@ -1039,7 +1042,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                         break;
                     case 16:
                         reverse_128(&data[4], uuid128);
-                        att_db_util_add_descriptor_uuid16(uuid128, ATT_PROPERTY_READ, read_perm, write_perm, NULL, 0);
+                        att_db_util_add_descriptor_uuid128(uuid128, ATT_PROPERTY_READ, read_perm, write_perm, NULL, 0);
                         break;
                     default:
                         MESSAGE("Invalid UUID len");
@@ -1049,6 +1052,38 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 // @note: returning descriptor_id == 0
                 uint8_t descriptor_id[2] = { 0 };
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, descriptor_id);
+            }
+            break;
+        case BTP_GATT_OP_GET_ATTRIBUTES:
+            MESSAGE("BTP_GATT_OP_GET_ATTRIBUTES");
+            if (controller_index == 0) {
+                uint16_t start_handle = little_endian_read_16(data, 0);
+                uint16_t end_handle = little_endian_read_16(data, 2);
+                uuid_len = data[4];
+                switch (uuid_len){
+                    case 2:
+                        uuid16 = little_endian_read_16(data, 5);
+                        response_len = btp_att_get_attributes_by_uuid16(start_handle, end_handle, uuid16, response_buffer, sizeof(response_buffer));
+                        btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, response_len, response_buffer);
+                        break;
+                    case 16:
+                        reverse_128(&data[5], uuid128);
+                        response_len = btp_att_get_attributes_by_uuid128(start_handle, end_handle, uuid128, response_buffer, sizeof(response_buffer));
+                        btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, response_len, response_buffer);
+                        break;
+                    default:
+                        MESSAGE("Invalid UUID len");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
+            }
+            break;
+        case BTP_GATT_OP_GET_ATTRIBUTE_VALUE:
+            MESSAGE("BTP_GATT_OP_GET_ATTRIBUTES");
+            if (controller_index == 0) {
+                uint16_t attribute_handle = little_endian_read_16(data,7);
+                uint16_t response_len = btp_att_get_attribute_value(attribute_handle, response_buffer, sizeof(response_buffer));
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, response_len, response_buffer);
             }
             break;
         case BTP_GATT_OP_SET_ENC_KEY_SIZE:
@@ -1291,10 +1326,14 @@ int btstack_main(int argc, const char * argv[])
     uint8_t add_primary_svc_aa50[] = { BTP_GATT_SERVICE_TYPE_PRIMARY, 2, 0x50, 0xAA};
     uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ, 2, 0x51, 0xaa};
     uint8_t set_value_01[] = { 0x00, 0x00, 0x01, 0x00, 0x01 };
+    uint8_t get_attributes[] = { 0x00, 0x00,  0xff, 0xff,  0x02,  0x03, 0x28 };
+    uint8_t get_attribute_value[] = { 0x00, 1,2,3,4,5,6,  0x01, 0x00 };
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_SERVICE, 0, sizeof(add_primary_svc_aa50), add_primary_svc_aa50);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_CHARACTERISTIC, 0, sizeof(add_characteristic_aa51), add_characteristic_aa51);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_SET_VALUE, 0, sizeof(set_value_01), set_value_01);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_START_SERVER, 0,0, NULL);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTES, 0, sizeof(get_attributes), get_attributes);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTE_VALUE, 0, sizeof(get_attribute_value), get_attribute_value);
 #endif
     
     MESSAGE("auto-pts iut-btp-client started");
