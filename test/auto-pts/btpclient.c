@@ -1065,6 +1065,10 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 uint16_t end_handle = little_endian_read_16(data, 2);
                 uuid_len = data[4];
                 switch (uuid_len){
+                    case 0:
+                        response_len = btp_att_get_attributes_by_uuid16(start_handle, end_handle, 0, response_buffer, sizeof(response_buffer));
+                        btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, response_len, response_buffer);
+                        break;
                     case 2:
                         uuid16 = little_endian_read_16(data, 5);
                         response_len = btp_att_get_attributes_by_uuid16(start_handle, end_handle, uuid16, response_buffer, sizeof(response_buffer));

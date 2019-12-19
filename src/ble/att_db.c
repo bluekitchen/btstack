@@ -1510,7 +1510,7 @@ uint16_t btp_att_get_attributes_by_uuid16(uint16_t start_handle, uint16_t end_ha
         if (it.handle == 0) break;
         if (it.handle < start_handle) continue;
         if (it.handle > end_handle) break;
-        if (att_iterator_match_uuid16(&it, uuid16)){
+        if ((uuid16 == 0) || att_iterator_match_uuid16(&it, uuid16)){
             little_endian_store_16(response_buffer, pos, it.handle);
             pos += 2;
             response_buffer[pos++] = btp_permissions_for_flags(it.flags);
