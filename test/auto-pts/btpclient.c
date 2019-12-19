@@ -948,6 +948,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
     if (add_char_pending && opcode != BTP_GATT_OP_SET_VALUE){
         add_char_pending = false;
         btp_gatt_add_characteristic(uuid_len, uuid16, uuid128, characteristic_properties, characteristic_permissions, 0, NULL);
+        att_dump_attributes();
     }
 
     switch (opcode){
@@ -985,6 +986,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                         btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
                         break;
                 }
+                att_dump_attributes();
                 // @note: returning service_id == 0
                 uint8_t service_id_buffer[2] = { 0 };
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, service_id_buffer);
@@ -1023,6 +1025,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 // @note: ignoring characteristic_id, assume latest added characteristic
                 uint16_t value_len = little_endian_read_16(data, 2);
                 btp_gatt_add_characteristic(uuid_len, uuid16, uuid128, characteristic_properties, characteristic_permissions, value_len, &data[4]);
+                att_dump_attributes();
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             }
             break;
@@ -1049,6 +1052,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                         btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
                         break;
                 }
+                att_dump_attributes();
                 // @note: returning descriptor_id == 0
                 uint8_t descriptor_id[2] = { 0 };
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, descriptor_id);

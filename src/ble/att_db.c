@@ -226,6 +226,7 @@ void att_dump_attributes(void){
     att_iterator_t it;
     att_iterator_init(&it);
     uint8_t uuid128[16];
+    log_info("att_dump_attributes, table %p", att_db);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle == 0u) {
