@@ -1079,7 +1079,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         case BTP_GATT_OP_GET_ATTRIBUTE_VALUE:
-            MESSAGE("BTP_GATT_OP_GET_ATTRIBUTES");
+            MESSAGE("BTP_GATT_OP_GET_ATTRIBUTE_VALUE");
             if (controller_index == 0) {
                 uint16_t attribute_handle = little_endian_read_16(data,7);
                 uint16_t response_len = btp_att_get_attribute_value(attribute_handle, response_buffer, sizeof(response_buffer));
@@ -1326,7 +1326,7 @@ int btstack_main(int argc, const char * argv[])
     uint8_t add_primary_svc_aa50[] = { BTP_GATT_SERVICE_TYPE_PRIMARY, 2, 0x50, 0xAA};
     uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ, 2, 0x51, 0xaa};
     uint8_t set_value_01[] = { 0x00, 0x00, 0x01, 0x00, 0x01 };
-    uint8_t get_attributes[] = { 0x00, 0x00,  0xff, 0xff,  0x02,  0x03, 0x28 };
+    uint8_t get_attributes[] = { 0x01, 0x00,  0xff, 0xff,  0x02,  0x03, 0x28 };
     uint8_t get_attribute_value[] = { 0x00, 1,2,3,4,5,6,  0x01, 0x00 };
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_SERVICE, 0, sizeof(add_primary_svc_aa50), add_primary_svc_aa50);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_CHARACTERISTIC, 0, sizeof(add_characteristic_aa51), add_characteristic_aa51);

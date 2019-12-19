@@ -210,6 +210,7 @@ void att_set_db(uint8_t const * db){
         log_error("ATT DB version differs, please regenerate .h from .gatt file or update att_db_util.c");
         return;
     }
+    log_info("att_set_db %p", db);
     att_db = db;
 }
 
@@ -1494,12 +1495,17 @@ static uint8_t btp_permissions_for_flags(uint16_t flags){
 }
 
 uint16_t btp_att_get_attributes_by_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, uint8_t * response_buffer, uint16_t response_buffer_size){
+    log_info("btp_att_get_attributes_by_uuid16 %04x from 0x%04x to 0x%04x, db %p", uuid16, start_handle, end_handle, att_db);
+    att_dump_attributes();
+
     uint8_t num_attributes = 0;
     uint16_t pos = 1;
+
     att_iterator_t  it;
     att_iterator_init(&it);
     while (att_iterator_has_next(&it) && ((pos + 6) < response_buffer_size)){
         att_iterator_fetch_next(&it);
+        log_info("handle %04x", it.handle);
         if (it.handle == 0) break;
         if (it.handle < start_handle) continue;
         if (it.handle > end_handle) break;
