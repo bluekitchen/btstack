@@ -982,7 +982,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                         }
                         break;
                     default:
-                        MESSAGE("Non-Primiary Service not supported");
+                        MESSAGE("Non-Primary Service not supported");
                         btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
                         break;
                 }
@@ -1127,6 +1127,24 @@ static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t contr
     }
 }
 
+static void test_gatt_server(void){
+
+    reset_gatt();
+
+    // Test GATT Server commands
+    uint8_t add_primary_svc_aa50[] = { BTP_GATT_SERVICE_TYPE_PRIMARY, 2, 0x50, 0xAA};
+    uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ, 2, 0x51, 0xaa};
+    uint8_t set_value_01[] = { 0x00, 0x00, 0x01, 0x00, 0x01 };
+    uint8_t get_attributes[] = { 0x01, 0x00,  0xff, 0xff,  0x02,  0x03, 0x28 };
+    uint8_t get_attribute_value[] = { 0x00, 1,2,3,4,5,6,  0x01, 0x00 };
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_SERVICE, 0, sizeof(add_primary_svc_aa50), add_primary_svc_aa50);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_CHARACTERISTIC, 0, sizeof(add_characteristic_aa51), add_characteristic_aa51);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_SET_VALUE, 0, sizeof(set_value_01), set_value_01);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_START_SERVER, 0,0, NULL);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTES, 0, sizeof(get_attributes), get_attributes);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTE_VALUE, 0, sizeof(get_attribute_value), get_attribute_value);
+}
+
 enum console_state {
     CONSOLE_STATE_MAIN = 0,
     CONSOLE_STATE_GAP,
@@ -1187,6 +1205,9 @@ static void stdin_process(char cmd){
                 case 'g':
                     console_state = CONSOLE_STATE_GAP;
                     usage();
+                    break;
+                case 'z':
+                    test_gatt_server();
                     break;
                 default:
                     usage();
@@ -1325,21 +1346,6 @@ int btstack_main(int argc, const char * argv[])
     att_db_util_init();
     att_server_init(att_db_util_get_address(), NULL, NULL );
 
-#if 0
-    // Test GATT Server commands
-    uint8_t add_primary_svc_aa50[] = { BTP_GATT_SERVICE_TYPE_PRIMARY, 2, 0x50, 0xAA};
-    uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ, 2, 0x51, 0xaa};
-    uint8_t set_value_01[] = { 0x00, 0x00, 0x01, 0x00, 0x01 };
-    uint8_t get_attributes[] = { 0x01, 0x00,  0xff, 0xff,  0x02,  0x03, 0x28 };
-    uint8_t get_attribute_value[] = { 0x00, 1,2,3,4,5,6,  0x01, 0x00 };
-    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_SERVICE, 0, sizeof(add_primary_svc_aa50), add_primary_svc_aa50);
-    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_CHARACTERISTIC, 0, sizeof(add_characteristic_aa51), add_characteristic_aa51);
-    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_SET_VALUE, 0, sizeof(set_value_01), set_value_01);
-    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_START_SERVER, 0,0, NULL);
-    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTES, 0, sizeof(get_attributes), get_attributes);
-    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTE_VALUE, 0, sizeof(get_attribute_value), get_attribute_value);
-#endif
-    
     MESSAGE("auto-pts iut-btp-client started");
 
     // connect to auto-pts client 
