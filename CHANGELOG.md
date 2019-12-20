@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - example/pan_lwip_http_server: use Network Access Point, CoD
+- sm: emit pairing complete in master role when no keys are distributed / bonding disabled
 
 ### Added
 

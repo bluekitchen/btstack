@@ -1015,6 +1015,12 @@ static void sm_done_for_handle(hci_con_handle_t con_handle){
     }
 }
 
+void sm_master_pairing_success(sm_connection_t *connection) {// master -> all done
+    connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+    sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
+    sm_done_for_handle(connection->sm_handle);
+}
+
 static int sm_key_distribution_flags_for_auth_req(void){
 
     int flags = SM_KEYDIST_ID_KEY;
@@ -2677,10 +2683,7 @@ static void sm_run(void){
                         connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                     }
                 } else {
-                    // master -> all done
-                    connection->sm_engine_state = SM_INITIATOR_CONNECTED;
-                    sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
-                    sm_done_for_handle(connection->sm_handle);
+                    sm_master_pairing_success(connection);
                 }
                 break;
 
@@ -2850,9 +2853,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
                 connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
             } else {
-                // master -> all done
-                connection->sm_engine_state = SM_INITIATOR_CONNECTED;
-                sm_done_for_handle(connection->sm_handle);
+                sm_master_pairing_success(connection);
             }
         }
     }
