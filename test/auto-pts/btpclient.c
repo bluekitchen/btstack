@@ -1137,16 +1137,18 @@ static void test_gatt_server(void){
 
     // Test GATT Server commands
     uint8_t add_primary_svc_aa50[] = { BTP_GATT_SERVICE_TYPE_PRIMARY, 2, 0x50, 0xAA};
-    uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ, 2, 0x51, 0xaa};
+    uint8_t add_characteristic_aa51[] = { 0, 0,  ATT_PROPERTY_READ, BTP_GATT_PERM_READ_AUTHN, 2, 0x51, 0xaa};
     uint8_t set_value_01[] = { 0x00, 0x00, 0x01, 0x00, 0x01 };
     uint8_t get_attributes[] = { 0x01, 0x00,  0xff, 0xff,  0x02,  0x03, 0x28 };
     uint8_t get_attribute_value[] = { 0x00, 1,2,3,4,5,6,  0x01, 0x00 };
+    uint8_t get_single_attribute[] = {0x03, 0x00, 0x03, 0x00, 0x00 };
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_SERVICE, 0, sizeof(add_primary_svc_aa50), add_primary_svc_aa50);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_ADD_CHARACTERISTIC, 0, sizeof(add_characteristic_aa51), add_characteristic_aa51);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_SET_VALUE, 0, sizeof(set_value_01), set_value_01);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_START_SERVER, 0,0, NULL);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTES, 0, sizeof(get_attributes), get_attributes);
     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTE_VALUE, 0, sizeof(get_attribute_value), get_attribute_value);
+    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_GET_ATTRIBUTES, 0, sizeof(get_single_attribute), get_single_attribute);
 }
 
 enum console_state {
@@ -1342,8 +1344,12 @@ int btstack_main(int argc, const char * argv[])
     gap_set_class_of_device(gap_cod);
 
     // configure GAP LE
-    sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
-    
+
+    // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION | SM_AUTHREQ_NO_BONDING);
+    // sm_use_fixed_passkey_in_display_role(0);
+
     reset_gap();
 
     // GATT Server
