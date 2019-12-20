@@ -1402,6 +1402,7 @@ static void test_gatt_server(void){
 enum console_state {
     CONSOLE_STATE_MAIN = 0,
     CONSOLE_STATE_GAP,
+    CONSOLE_STATE_GATT_CLIENT,
 } console_state;
 
 static void usage(void){
@@ -1409,6 +1410,7 @@ static void usage(void){
         case CONSOLE_STATE_MAIN:
             printf("BTstack BTP Client for auto-pts framework: MAIN console interface\n");
             printf("g - GAP Command\n");
+            printf("c - GATT Client Command\n");
             break;
         case CONSOLE_STATE_GAP:
             printf("BTstack BTP Client for auto-pts framework: GAP console interface\n");
@@ -1419,7 +1421,6 @@ static void usage(void){
             printf("i - Start inquiry scan\n");
             printf("p - Power On\n");
             printf("P - Power Off\n");
-            printf("x - Back to main\n");
             printf("c - enable connectable mode\n");
             printf("d - enable general discoverable mode\n");
             printf("D - enable limited discoverable mode\n");
@@ -1432,6 +1433,12 @@ static void usage(void){
             printf("L - send L2CAP Conn Param Update Request\n");
             printf("t - disconnect\n");
             printf("b - start pairing\n");
+            printf("x - Back to main\n");
+            break;
+        case CONSOLE_STATE_GATT_CLIENT:
+            printf("BTstack BTP Client for auto-pts framework: GATT Client console interface\n");
+            printf("a - read attribute with handle 0009\n");
+            printf("x - Back to main\n");
             break;
         default:
             break;
@@ -1449,6 +1456,7 @@ static void stdin_process(char cmd){
     const uint8_t public_adv[]  = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
     const uint8_t rpa_adv[]     = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
     const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
+    const uint8_t gc_read_0009[] = { 0, 1,2,3,4,5,6, 0x09, 0x00};
     uint8_t directed_advertisement_request[8];
     uint8_t connection_request[7];
     uint8_t conn_param_update[15];
@@ -1458,6 +1466,10 @@ static void stdin_process(char cmd){
             switch (cmd){
                 case 'g':
                     console_state = CONSOLE_STATE_GAP;
+                    usage();
+                    break;
+                case 'c':
+                    console_state = CONSOLE_STATE_GATT_CLIENT;
                     usage();
                     break;
                 case 'z':
@@ -1549,6 +1561,19 @@ static void stdin_process(char cmd){
                     break;
             }
             break;
+        case CONSOLE_STATE_GATT_CLIENT:
+            switch (cmd){
+                case 'a':
+                    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_READ, 0, sizeof(gc_read_0009), gc_read_0009);
+                    break;
+                case 'x':
+                    console_state = CONSOLE_STATE_MAIN;
+                    usage();
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -1603,6 +1628,9 @@ int btstack_main(int argc, const char * argv[])
     // GATT Server
     att_db_util_init();
     att_server_init(att_db_util_get_address(), NULL, NULL );
+
+    // GATT Client
+    gatt_client_init();
 
     MESSAGE("auto-pts iut-btp-client started");
 
