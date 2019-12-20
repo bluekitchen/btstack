@@ -502,6 +502,15 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             if (response_op != 0){
                 uint8_t op = response_op;
                 response_op = 0;
+                switch (op){
+                    case BTP_GATT_OP_READ:
+                        // if we got here, the read failed
+                        btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
+                        btp_append_uint16(0);
+                        break;
+                    default:
+                        break;
+                }
                 btp_socket_send_packet(response_service_id, op, 0, response_len, response_buffer);
             } else {
                 MESSAGE("GATT_EVENT_QUERY_COMPLETE but not op pending");
