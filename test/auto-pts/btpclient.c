@@ -77,6 +77,12 @@ static bool gap_send_powered_state;
 static bool gap_send_connect_response;
 static btstack_timer_source_t gap_connection_timer;
 
+// Global response buffer
+static uint8_t  response_service_id;
+static uint8_t  response_op;
+static uint8_t  response_buffer[200];
+static uint16_t response_len;
+
 static char gap_name[249];
 static char gap_short_name[11];
 static uint32_t gap_cod;
@@ -98,6 +104,8 @@ static uint16_t gap_scan_response_len;
 static uint8_t gap_inquriy_scan_active;
 
 static uint32_t current_settings;
+
+// GATT
 
 // debug
 static btstack_timer_source_t heartbeat;
@@ -407,6 +415,97 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             }
             break;
         default:
+            break;
+    }
+}
+
+static void btp_append_uint8(uint8_t uint){
+    response_buffer[response_len++] = uint;
+}
+
+static void btp_append_uint16(uint16_t uint){
+    little_endian_store_16(response_buffer, response_len, uint);
+    response_len += 2;
+}
+
+static void btp_append_blob(uint16_t len, const uint8_t * data){
+    memcpy(&response_buffer[response_len], data, len);
+    response_len += len;
+}
+
+static void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128){
+    if (uuid16 == 0){
+        response_buffer[response_len++] = 16;
+        reverse_128(uuid128, &response_buffer[response_len]);
+        response_len += 16;
+    } else {
+        response_buffer[response_len++] = 2;
+        btp_append_uint16(uuid16);
+    }
+}
+
+static void btp_append_service(gatt_client_service_t * service){
+    btp_append_uint16(service->start_group_handle);
+    btp_append_uint16(service->end_group_handle);
+    btp_append_uuid(service->uuid16, service->uuid128);
+}
+
+static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(channel);
+    UNUSED(size);
+    if (packet_type != HCI_EVENT_PACKET) return;
+    gatt_client_service_t service;
+    gatt_client_characteristic_t characteristic;
+    gatt_client_characteristic_descriptor_t descriptor;
+    uint16_t value_len;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case GATT_EVENT_SERVICE_QUERY_RESULT:
+            gatt_event_service_query_result_get_service(packet, &service);
+            btp_append_service(&service);
+            response_buffer[0]++;
+            break;
+        case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+            gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
+            btp_append_uint16(characteristic.start_handle);
+            btp_append_uint16(characteristic.value_handle);
+            btp_append_uint8(characteristic.properties);
+            response_buffer[0]++;
+            break;
+        case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+            btp_append_uint16(gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
+            gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &descriptor);
+            btp_append_uint16(descriptor.handle);
+            btp_append_uuid(descriptor.uuid16, descriptor.uuid128);
+            break;
+        case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
+            btp_append_uint16(gatt_event_included_service_query_result_get_include_handle(packet));
+            btp_append_uint8(0); // Note: included primary service not reported currently
+            gatt_event_included_service_query_result_get_service(packet, &service);
+            btp_append_service(&service);
+            response_buffer[0]++;
+            break;
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+            if (response_op != 0) {
+                btp_append_uint8(0);    // SUCCESS
+                value_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
+                btp_append_uint16(value_len);
+                btp_append_blob(value_len, gatt_event_characteristic_value_query_result_get_value(packet));
+                uint8_t op = response_op;
+                response_op = 0;
+                btp_socket_send_packet(response_service_id, op, 0, response_len, response_buffer);
+            } else {
+                MESSAGE("GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT but not op pending");
+            }
+            break;
+        case GATT_EVENT_QUERY_COMPLETE:
+            if (response_op != 0){
+                uint8_t op = response_op;
+                response_op = 0;
+                btp_socket_send_packet(response_service_id, op, 0, response_len, response_buffer);
+            } else {
+                MESSAGE("GATT_EVENT_QUERY_COMPLETE but not op pending");
+            }
             break;
     }
 }
@@ -942,9 +1041,6 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
     static uint8_t  characteristic_properties;
     static uint8_t  characteristic_permissions;
 
-    uint8_t response_buffer[100];
-    uint16_t response_len;
-
     if (add_char_pending && opcode != BTP_GATT_OP_SET_VALUE){
         add_char_pending = false;
         btp_gatt_add_characteristic(uuid_len, uuid16, uuid128, characteristic_properties, characteristic_permissions, 0, NULL);
@@ -1090,7 +1186,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             MESSAGE("BTP_GATT_OP_GET_ATTRIBUTE_VALUE");
             if (controller_index == 0) {
                 uint16_t attribute_handle = little_endian_read_16(data,7);
-                uint16_t response_len = btp_att_get_attribute_value(attribute_handle, response_buffer, sizeof(response_buffer));
+                response_len= btp_att_get_attribute_value(attribute_handle, response_buffer, sizeof(response_buffer));
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, response_len, response_buffer);
             }
             break;
@@ -1102,6 +1198,139 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
         case BTP_GATT_OP_START_SERVER:
             MESSAGE("BTP_GATT_OP_START_SERVER - NOP");
             btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            break;
+        case BTP_GATT_OP_DISC_ALL_PRIM:
+            MESSAGE("BTP_GATT_OP_DISC_ALL_PRIM - NOP");
+            break;
+        case BTP_GATT_OP_DISC_PRIM_UUID:
+            MESSAGE("BTP_GATT_OP_DISC_PRIM_UUID");
+            // initialize response
+            response_len = 0;
+            response_buffer[response_len++] = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uuid_len = data[7];
+                switch (uuid_len){
+                    case 2:
+                        uuid16 = little_endian_read_16(data, 8);
+                        gatt_client_discover_primary_services_by_uuid16(&gatt_client_packet_handler, remote_handle, uuid16);
+                        break;
+                    case 16:
+                        reverse_128(&data[8], uuid128);
+                        gatt_client_discover_primary_services_by_uuid128(&gatt_client_packet_handler, remote_handle, uuid128);
+                        break;
+                    default:
+                        MESSAGE("Invalid UUID len");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
+            }
+            break;
+        case BTP_GATT_OP_FIND_INCLUDED:
+            MESSAGE("BTP_GATT_OP_FIND_INCLUDED");
+            // initialize response
+            response_len = 0;
+            response_buffer[response_len++] = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                gatt_client_service_t service;
+                service.start_group_handle = little_endian_read_16(response_buffer, 7);
+                service.end_group_handle = little_endian_read_16(response_buffer, 9);
+                gatt_client_find_included_services_for_service(gatt_client_packet_handler, remote_handle, &service);
+            }
+            break;
+        case BTP_GATT_OP_DISC_ALL_CHRC:
+            MESSAGE("BTP_GATT_OP_DISC_ALL_CHRC");
+            // initialize response
+            response_len = 0;
+            response_buffer[response_len++] = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                gatt_client_service_t service;
+                service.start_group_handle = little_endian_read_16(response_buffer, 7);
+                service.end_group_handle = little_endian_read_16(response_buffer, 9);
+                gatt_client_discover_characteristics_for_service(gatt_client_packet_handler, remote_handle, &service);
+            }
+            break;
+        case BTP_GATT_OP_DISC_CHRC_UUID:
+            MESSAGE("BTP_GATT_OP_DISC_CHRC_UUID - NOP");
+            // initialize response
+            response_len = 0;
+            response_buffer[response_len++] = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                gatt_client_service_t service;
+                service.start_group_handle = little_endian_read_16(response_buffer, 7);
+                service.end_group_handle = little_endian_read_16(response_buffer, 9);
+                uuid_len = data[7];
+                switch (uuid_len){
+                    case 2:
+                        uuid16 = little_endian_read_16(data, 8);
+                        gatt_client_discover_characteristics_for_service_by_uuid16(&gatt_client_packet_handler, remote_handle, &service, uuid16);
+                        break;
+                    case 16:
+                        reverse_128(&data[8], uuid128);
+                        gatt_client_discover_characteristics_for_service_by_uuid128(&gatt_client_packet_handler, remote_handle, &service, uuid128);
+                        break;
+                    default:
+                        MESSAGE("Invalid UUID len");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
+            }
+            break;
+        case BTP_GATT_OP_DISC_ALL_DESC:
+            MESSAGE("BTP_GATT_OP_DISC_ALL_DESC");
+            // initialize response
+            response_len = 0;
+            response_buffer[response_len++] = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                gatt_client_characteristic_t characteristic;
+                characteristic.start_handle = little_endian_read_16(response_buffer, 7);
+                characteristic.end_handle = little_endian_read_16(response_buffer, 9);
+                gatt_client_discover_characteristic_descriptors(&gatt_client_packet_handler, remote_handle, &characteristic);
+            }
+            break;
+        case BTP_GATT_OP_READ:
+            MESSAGE("BTP_GATT_OP_READ");
+            // initialize response
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint16_t handle = little_endian_read_16(response_buffer, 7);
+                gatt_client_read_value_of_characteristic_using_value_handle(&gatt_client_packet_handler, remote_handle, handle);
+            }
+            break;
+        case BTP_GATT_OP_READ_LONG:
+            MESSAGE("BTP_GATT_OP_READ_LONG - NOP");
+            break;
+        case BTP_GATT_OP_READ_MULTIPLE:
+            MESSAGE("BTP_GATT_OP_READ_MULTIPLE - NOP");
+            break;
+        case BTP_GATT_OP_WRITE_WITHOUT_RSP:
+            MESSAGE("BTP_GATT_OP_WRITE_WITHOUT_RSP - NOP");
+            break;
+        case BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP:
+            MESSAGE("BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP - NOP");
+            break;
+        case BTP_GATT_OP_WRITE:
+            MESSAGE("BTP_GATT_OP_WRITE - NOP");
+            break;
+        case BTP_GATT_OP_WRITE_LONG:
+            MESSAGE("BTP_GATT_OP_WRITE_LONG - NOP");
+            break;
+        case BTP_GATT_OP_CFG_NOTIFY:
+            MESSAGE("BTP_GATT_OP_CFG_NOTIFY - NOP");
+            break;
+        case BTP_GATT_OP_CFG_INDICATE:
+            MESSAGE("BTP_GATT_OP_CFG_INDICATE - NOP");
             break;
         default:
             btp_send_error_unknown_command(BTP_SERVICE_ID_GATT);

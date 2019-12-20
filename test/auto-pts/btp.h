@@ -187,6 +187,7 @@ extern "C" {
 #define BTP_GATT_OP_RESET_SERVER                0x08
 #define BTP_GATT_OP_SET_ENC_KEY_SIZE            0x09
 #define BTP_GATT_OP_EXCHANGE_MTU                0x0a
+#define BTP_GATT_OP_DISC_ALL_PRIM               0x0b
 #define BTP_GATT_OP_DISC_PRIM_UUID              0x0c
 #define BTP_GATT_OP_FIND_INCLUDED               0x0d
 #define BTP_GATT_OP_DISC_ALL_CHRC               0x0e
