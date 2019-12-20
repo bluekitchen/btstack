@@ -194,6 +194,7 @@ extern "C" {
 #define BTP_GATT_OP_DISC_CHRC_UUID              0x0f
 #define BTP_GATT_OP_DISC_ALL_DESC               0x10
 #define BTP_GATT_OP_READ                        0x11
+#define BTP_GATT_OP_READ_UUID                   0x12
 #define BTP_GATT_OP_READ_LONG                   0x13
 #define BTP_GATT_OP_READ_MULTIPLE               0x14
 #define BTP_GATT_OP_WRITE_WITHOUT_RSP           0x15

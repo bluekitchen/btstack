@@ -504,6 +504,7 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 response_op = 0;
                 switch (op){
                     case BTP_GATT_OP_READ:
+                    case BTP_GATT_OP_READ_LONG:
                         // if we got here, the read failed
                         btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
                         btp_append_uint16(0);
@@ -1265,7 +1266,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         case BTP_GATT_OP_DISC_CHRC_UUID:
-            MESSAGE("BTP_GATT_OP_DISC_CHRC_UUID - NOP");
+            MESSAGE("BTP_GATT_OP_DISC_CHRC_UUID");
             // initialize response
             response_len = 0;
             response_buffer[response_len++] = 0;
@@ -1313,12 +1314,21 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_service_id = BTP_SERVICE_ID_GATT;
             response_op = opcode;
             if (controller_index == 0){
-                uint16_t handle = little_endian_read_16(response_buffer, 7);
-                gatt_client_read_value_of_characteristic_using_value_handle(&gatt_client_packet_handler, remote_handle, handle);
+                uint16_t value_handle = little_endian_read_16(response_buffer, 7);
+                gatt_client_read_value_of_characteristic_using_value_handle(&gatt_client_packet_handler, remote_handle, value_handle);
             }
             break;
         case BTP_GATT_OP_READ_LONG:
-            MESSAGE("BTP_GATT_OP_READ_LONG - NOP");
+            MESSAGE("BTP_GATT_OP_READ_LONG");
+            // initialize response
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint16_t value_handle = little_endian_read_16(response_buffer, 7);
+                uint16_t offset = little_endian_read_16(response_buffer, 9);
+                gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(&gatt_client_packet_handler, remote_handle, value_handle, offset);
+            }
             break;
         case BTP_GATT_OP_READ_MULTIPLE:
             MESSAGE("BTP_GATT_OP_READ_MULTIPLE - NOP");
