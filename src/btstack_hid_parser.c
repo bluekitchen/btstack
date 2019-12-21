@@ -140,8 +140,8 @@ static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_
     const char * item_tag_name = "Invalid";
     if (item_tag_table){
         item_tag_name = item_tag_table[item->item_tag];
-    }  
-    log_info("%-15s (%-6s) // %02x 0x%0008x", item_tag_table[item->item_tag], type_names[item->item_type], parser->descriptor[parser->descriptor_pos], item->item_value);
+    }
+    log_info("%-15s (%-6s) // %02x 0x%0008x", item_tag_name, type_names[item->item_type], parser->descriptor[parser->descriptor_pos], item->item_value);
 #else
     UNUSED(parser);
     UNUSED(item);
