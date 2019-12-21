@@ -83,6 +83,8 @@ static uint8_t  response_op;
 static uint8_t  response_buffer[200];
 static uint16_t response_len;
 
+static uint8_t  value_buffer[100];
+
 static char gap_name[249];
 static char gap_short_name[11];
 static uint32_t gap_cod;
@@ -1246,8 +1248,8 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_op = opcode;
             if (controller_index == 0){
                 gatt_client_service_t service;
-                service.start_group_handle = little_endian_read_16(response_buffer, 7);
-                service.end_group_handle = little_endian_read_16(response_buffer, 9);
+                service.start_group_handle = little_endian_read_16(data, 7);
+                service.end_group_handle = little_endian_read_16(data, 9);
                 gatt_client_find_included_services_for_service(gatt_client_packet_handler, remote_handle, &service);
             }
             break;
@@ -1260,8 +1262,8 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_op = opcode;
             if (controller_index == 0){
                 gatt_client_service_t service;
-                service.start_group_handle = little_endian_read_16(response_buffer, 7);
-                service.end_group_handle = little_endian_read_16(response_buffer, 9);
+                service.start_group_handle = little_endian_read_16(data, 7);
+                service.end_group_handle = little_endian_read_16(data, 9);
                 gatt_client_discover_characteristics_for_service(gatt_client_packet_handler, remote_handle, &service);
             }
             break;
@@ -1274,8 +1276,8 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_op = opcode;
             if (controller_index == 0){
                 gatt_client_service_t service;
-                service.start_group_handle = little_endian_read_16(response_buffer, 7);
-                service.end_group_handle = little_endian_read_16(response_buffer, 9);
+                service.start_group_handle = little_endian_read_16(data, 7);
+                service.end_group_handle = little_endian_read_16(data, 9);
                 uuid_len = data[7];
                 switch (uuid_len){
                     case 2:
@@ -1302,8 +1304,8 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_op = opcode;
             if (controller_index == 0){
                 gatt_client_characteristic_t characteristic;
-                characteristic.start_handle = little_endian_read_16(response_buffer, 7);
-                characteristic.end_handle = little_endian_read_16(response_buffer, 9);
+                characteristic.start_handle = little_endian_read_16(data, 7);
+                characteristic.end_handle = little_endian_read_16(data, 9);
                 gatt_client_discover_characteristic_descriptors(&gatt_client_packet_handler, remote_handle, &characteristic);
             }
             break;
@@ -1314,7 +1316,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_service_id = BTP_SERVICE_ID_GATT;
             response_op = opcode;
             if (controller_index == 0){
-                uint16_t value_handle = little_endian_read_16(response_buffer, 7);
+                uint16_t value_handle = little_endian_read_16(data, 7);
                 gatt_client_read_value_of_characteristic_using_value_handle(&gatt_client_packet_handler, remote_handle, value_handle);
             }
             break;
@@ -1325,8 +1327,8 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             response_service_id = BTP_SERVICE_ID_GATT;
             response_op = opcode;
             if (controller_index == 0){
-                uint16_t value_handle = little_endian_read_16(response_buffer, 7);
-                uint16_t offset = little_endian_read_16(response_buffer, 9);
+                uint16_t value_handle = little_endian_read_16(data, 7);
+                uint16_t offset = little_endian_read_16(data, 9);
                 gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(&gatt_client_packet_handler, remote_handle, value_handle, offset);
             }
             break;
@@ -1334,10 +1336,24 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             MESSAGE("BTP_GATT_OP_READ_MULTIPLE - NOP");
             break;
         case BTP_GATT_OP_WRITE_WITHOUT_RSP:
-            MESSAGE("BTP_GATT_OP_WRITE_WITHOUT_RSP - NOP");
+            MESSAGE("BTP_GATT_OP_WRITE_WITHOUT_RSP");
+            if (controller_index == 0){
+                uint16_t value_handle = little_endian_read_16(data, 7);
+                uint16_t value_length = little_endian_read_16(data, 9);
+                memcpy(value_buffer,  &data[11], value_length);
+                gatt_client_write_value_of_characteristic_without_response(remote_handle, value_handle, value_length, value_buffer);
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            }
             break;
         case BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP:
-            MESSAGE("BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP - NOP");
+            MESSAGE("BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP");
+            if (controller_index == 0){
+                uint16_t value_handle = little_endian_read_16(data, 7);
+                uint16_t value_length = little_endian_read_16(data, 9);
+                memcpy(value_buffer,  &data[11], value_length);
+                gatt_client_signed_write_without_response(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            }
             break;
         case BTP_GATT_OP_WRITE:
             MESSAGE("BTP_GATT_OP_WRITE - NOP");
