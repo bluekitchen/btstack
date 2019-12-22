@@ -1278,7 +1278,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 gatt_client_service_t service;
                 service.start_group_handle = little_endian_read_16(data, 7);
                 service.end_group_handle = little_endian_read_16(data, 9);
-                uuid_len = data[7];
+                uuid_len = data[11];
                 switch (uuid_len){
                     case 2:
                         uuid16 = little_endian_read_16(data, 8);
@@ -1318,6 +1318,32 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             if (controller_index == 0){
                 uint16_t value_handle = little_endian_read_16(data, 7);
                 gatt_client_read_value_of_characteristic_using_value_handle(&gatt_client_packet_handler, remote_handle, value_handle);
+            }
+            break;
+        case BTP_GATT_OP_READ_UUID:
+        MESSAGE("BTP_GATT_OP_READ_UUID");
+            // initialize response
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint16_t start_handle = little_endian_read_16(data, 7);
+                uint16_t end_handle = little_endian_read_16(data, 9);
+                uuid_len = data[11];
+                switch (uuid_len){
+                    case 2:
+                        uuid16 = little_endian_read_16(data, 12);
+                        gatt_client_read_value_of_characteristics_by_uuid16(&gatt_client_packet_handler, remote_handle, start_handle, end_handle, uuid16);
+                        break;
+                    case 16:
+                        reverse_128(&data[12], uuid128);
+                        gatt_client_read_value_of_characteristics_by_uuid128(&gatt_client_packet_handler, remote_handle, start_handle, end_handle, uuid128);
+                        break;
+                    default:
+                    MESSAGE("Invalid UUID len");
+                        btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                        break;
+                }
             }
             break;
         case BTP_GATT_OP_READ_LONG:
