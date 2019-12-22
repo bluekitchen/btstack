@@ -71,12 +71,5 @@ set (EXAMPLE btpclient)
 # create targets
 set (SOURCE_FILES ${EXAMPLE}.c btp_socket.c)
 
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-	COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
-	ARGS ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-)
-list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
-
 add_executable(${EXAMPLE} ${SOURCE_FILES} )
 target_link_libraries(${EXAMPLE} btstack)
