@@ -46,11 +46,23 @@ project(EXAMPLE)
 '''
 
 main_cmake_template = '''
-set(COMPONENT_SRCS "EXAMPLE.c")
-set(COMPONENT_ADD_INCLUDEDIRS "")
-register_component()
+idf_component_register(
+        SRCS "EXAMPLE.c"
+        INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}")
 '''
 
+main_cmake_gatt_add_on = '''
+if(NOT CMAKE_BUILD_EARLY_EXPANSION)
+    add_custom_command(
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/EXAMPLE.h
+            COMMAND ${CMAKE_SOURCE_DIR}/../../../../tool/compile_gatt.py ${COMPONENT_DIR}/EXAMPLE.gatt ${CMAKE_CURRENT_BINARY_DIR}/EXAMPLE.h
+            DEPENDS EXAMPLE.gatt
+            VERBATIM
+    )
+    add_custom_target(GATT_DB DEPENDS EXAMPLE.h)
+    add_dependencies(${COMPONENT_LIB} GATT_DB)
+endif()
+'''
 
 def create_examples(script_path, suffix):
     # path to examples
@@ -118,7 +130,8 @@ def create_examples(script_path, suffix):
         shutil.copyfile(script_path + '/template/main/component.mk', main_component_mk)
 
         # create CMakeLists.txt file
-        with open(apps_folder + "/main/CMakeLists.txt", "wt") as fout:
+        main_cmake_file = apps_folder + "/main/CMakeLists.txt"
+        with open(main_cmake_file, "wt") as fout:
             fout.write(main_cmake_template.replace("EXAMPLE", example))
 
         # add rules to compile gatt db if .gatt file is present
@@ -127,6 +140,8 @@ def create_examples(script_path, suffix):
             shutil.copy(gatt_path, apps_folder + "/main/" + example + ".gatt")
             with open(main_component_mk, "a") as fout:
                 fout.write(component_mk_gatt_add_on.replace("EXAMPLE", example))
+            with open(main_cmake_file, "a") as fout:
+                fout.write(main_cmake_gatt_add_on.replace("EXAMPLE", example))
             print("- %s including GATT DB compilation rules" % example)
         else:
             print("- %s" % example)

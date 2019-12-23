@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Updated CC256x initscript: CC256xC v1.3
-
+- ESP32: add CMake project files
 
 ## Changes November 2019
 
