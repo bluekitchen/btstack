@@ -74,10 +74,6 @@ static uint16_t avdtp_cid_counter = 0;
 static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-void avdtp_configuration_timer_stop(avdtp_connection_t * connection){
-    btstack_run_loop_remove_timer(&connection->configuration_timer);
-} 
-
 static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * context){
     context->initiator_transaction_id_counter++;
     if (context->initiator_transaction_id_counter == 0){
