@@ -71,11 +71,10 @@
 #include "lwip/apps/httpd.h"
 #include "dhserver.h"
 
-#if !LWIP_HTTPD_CUSTOM_FILES
-#error This needs LWIP_HTTPD_CUSTOM_FILES
-#endif
-#if !LWIP_HTTPD_DYNAMIC_HEADERS
-#error This needs LWIP_HTTPD_DYNAMIC_HEADERS
+#if defined(LWIP_HTTPD_CUSTOM_FILES) && defined(LWIP_HTTPD_DYNAMIC_HEADERS)
+#define ENABLE_TEST_FILE_DOWNLOAD
+#else
+#warning "Test file download requires LWIP_HTTPD_CUSTOM_FILES and LWIP_HTTPD_DYNAMIC_HEADERS to be defined. Not supported currently."
 #endif
 
 // network types
@@ -228,6 +227,7 @@ static dhcp_config_t dhcp_config =
 };
 /* LISTING_END */
 
+#ifdef ENABLE_TEST_FILE_DOWNLOAD
 
 /* @section Large File Download
  *
@@ -307,7 +307,7 @@ void fs_close_custom(struct fs_file *file);
 void fs_close_custom(struct fs_file *file){
     UNUSED(file);
 }
-
+#endif 
 /* LISTING_END */
 
 /* @section DHCP Server Setup
