@@ -2979,4 +2979,20 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_CONFIGURATION_RELAY                                            0x40
 
+
+/**
+ * @format 12122111114
+ * @param subevent_code
+ * @param dest                                      element_address
+ * @param foundation_status
+ * @param publish_address
+ * @param appkey_index
+ * @param credential_flag
+ * @param publish_ttl
+ * @param publish_period
+ * @param publish_retransmit_count
+ * @param publish_retransmit_interval_steps
+ * @param model_identifier
+ */
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION                                0x41
 #endif

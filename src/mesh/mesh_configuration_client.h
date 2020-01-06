@@ -67,6 +67,16 @@ typedef struct {
     mesh_model_id_iterator_t vendor_model_iterator;
 } mesh_composite_data_iterator_t;
 
+typedef struct {
+    uint16_t publish_address_unicast;       
+    uint8_t  publish_address_virtual[16];
+    uint16_t appkey_index;
+    uint8_t  credential_flag;
+    uint8_t  publish_ttl;
+    uint8_t  publish_period;
+    uint8_t  publish_retransmit_count;
+    uint8_t  publish_retransmit_interval_steps;
+} mesh_publication_model_config_t;
 
 /**
  * @brief Initialize iterator for element descriptions list from Composition data in MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA event
@@ -271,6 +281,41 @@ uint8_t mesh_configuration_client_send_default_gatt_proxy_state_get(mesh_model_t
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_default_gatt_proxy_state_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t gatt_proxy_state);
+
+/**
+ * @brief Get the publish address and parameters of an outgoing message that originates from a model
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param model_id
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_publication_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id);
+
+/**
+ * @brief Set the Model Publication state of an outgoing message that originates from a model.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param model_id
+ * @param publication_config  
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config);
+
+/**
+ * @brief Set the Model Publication state of an outgoing message that originates from a model.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param model_id
+ * @param publication_config  
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_publication_virtual_address_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

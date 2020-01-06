@@ -8166,6 +8166,97 @@ static inline uint8_t mesh_subevent_configuration_relay_get_retransmit_interval_
     return event[8];
 }
 
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_model_publication_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_publication_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field publish_address from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return publish_address
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_model_publication_get_publish_address(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field appkey_index from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return appkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_model_publication_get_appkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field credential_flag from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return credential_flag
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_publication_get_credential_flag(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field publish_ttl from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return publish_ttl
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_publication_get_publish_ttl(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field publish_period from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return publish_period
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_publication_get_publish_period(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field publish_retransmit_count from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return publish_retransmit_count
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_publication_get_publish_retransmit_count(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field publish_retransmit_interval_steps from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return publish_retransmit_interval_steps
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_publication_get_publish_retransmit_interval_steps(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_configuration_model_publication_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 15);
+}
+
 
 
 /* API_END */
