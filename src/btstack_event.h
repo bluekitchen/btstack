@@ -4035,33 +4035,15 @@ static inline const char * hfp_subevent_transmit_dtmf_codes_get_dtmf(const uint8
 
 
 /**
- * @brief Get field status from event HFP_SUBEVENT_SPEAKER_VOLUME
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_speaker_volume_get_status(const uint8_t * event){
-    return event[3];
-}
-/**
  * @brief Get field gain from event HFP_SUBEVENT_SPEAKER_VOLUME
  * @param event packet
  * @return gain
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_speaker_volume_get_gain(const uint8_t * event){
-    return event[4];
-}
-
-/**
- * @brief Get field status from event HFP_SUBEVENT_MICROPHONE_VOLUME
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t hfp_subevent_microphone_volume_get_status(const uint8_t * event){
     return event[3];
 }
+
 /**
  * @brief Get field gain from event HFP_SUBEVENT_MICROPHONE_VOLUME
  * @param event packet
@@ -4069,7 +4051,7 @@ static inline uint8_t hfp_subevent_microphone_volume_get_status(const uint8_t * 
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_microphone_volume_get_gain(const uint8_t * event){
-    return event[4];
+    return event[3];
 }
 
 /**

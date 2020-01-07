@@ -1590,17 +1590,15 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_RING                                     0x13
 
 /**
- * @format 111
+ * @format 11
  * @param subevent_code
- * @param status
  * @param gain
  */
  #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
 
 /**
- * @format 111
+ * @format 11
  * @param subevent_code
- * @param status
  * @param gain
  */
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15

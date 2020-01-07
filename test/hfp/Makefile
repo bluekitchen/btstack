@@ -52,7 +52,7 @@ CFLAGS   = -g -Wall -Wmissing-prototypes -Wnarrowing
 # CFLAGS += -Werror
 CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
 # CFLAGS  += -D OCTAVE_OUTPUT
-CFLAGS += -fprofile-arcs -ftest-coverage
+CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
 LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
 
 EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test

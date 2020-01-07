@@ -454,13 +454,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 (const char *) hfp_subevent_number_for_voice_tag_get_number(event));
             break;
         case HFP_SUBEVENT_SPEAKER_VOLUME:
-            printf("Speaker volume: status %u, gain %u\n", 
-                hfp_subevent_speaker_volume_get_status(event),
+            printf("Speaker volume: gain %u\n", 
                 hfp_subevent_speaker_volume_get_gain(event));
             break;
         case HFP_SUBEVENT_MICROPHONE_VOLUME:
-            printf("Microphone volume: status %u, gain %u\n", 
-                hfp_subevent_microphone_volume_get_status(event),
+            printf("Microphone volume: gain %u\n", 
                 hfp_subevent_microphone_volume_get_gain(event));
             break;
         case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
