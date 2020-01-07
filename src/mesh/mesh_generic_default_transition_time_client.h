@@ -50,6 +50,13 @@ extern "C"
 const mesh_operation_t * mesh_generic_default_transition_time_client_get_operations(void);
 
 /**
+ * @brief Register packet handler
+ * @param mesh_model
+ * @param transition_events_packet_handler
+ */
+void mesh_generic_default_transition_time_client_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t transition_events_packet_handler);
+
+/**
  * @brief Set Default Transition Time value acknowledged
  * @param mesh_model
  * @param dest

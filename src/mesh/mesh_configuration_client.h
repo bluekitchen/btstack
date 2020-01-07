@@ -78,6 +78,8 @@ typedef struct {
     uint8_t  publish_retransmit_interval_steps;
 } mesh_publication_model_config_t;
 
+const mesh_operation_t * mesh_configuration_client_get_operations(void);
+
 /**
  * @brief Initialize iterator for element descriptions list from Composition data in MESH_SUBEVENT_CONFIGURATION_COMPOSITION_DATA event
  * @param iterator
@@ -269,7 +271,7 @@ uint8_t mesh_configuration_client_send_default_ttl_set(mesh_model_t * mesh_model
  * @param appkey_index
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t mesh_configuration_client_send_default_gatt_proxy_state_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+uint8_t mesh_configuration_client_send_gatt_proxy_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
 /**
  * @brief Set Default GATT proxy state of a node
@@ -280,7 +282,31 @@ uint8_t mesh_configuration_client_send_default_gatt_proxy_state_get(mesh_model_t
  * @param gatt_proxy_state        0 - the proxy feature is supported and disabled, 1 - supported and enabled, 2 - not supported
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t mesh_configuration_client_send_default_gatt_proxy_state_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t gatt_proxy_state);
+uint8_t mesh_configuration_client_send_gatt_proxy_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t gatt_proxy_state);
+
+
+/**
+ * @brief Get the current Relay and Relay Retransmit states of a node
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_relay_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+
+/**
+ * @brief Set the current Relay and Relay Retransmit states of a node
+ * @param mesh_model
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param relay
+ * @param relay_retransmit_count
+ * @param relay_retransmit_interval_steps
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_relay_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t relay, uint8_t relay_retransmit_count, uint8_t relay_retransmit_interval_steps);
 
 /**
  * @brief Get the publish address and parameters of an outgoing message that originates from a model
