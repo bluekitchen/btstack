@@ -40,6 +40,8 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 
 CFLAGS += -fprofile-arcs -ftest-coverage
 
+CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare -Wimplicit-fallthrough
+
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/src/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
