@@ -10,7 +10,7 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src \
 		  -I${BTSTACK_ROOT}/platform/embedded
 		  
-CFLAGS += -fprofile-arcs -ftest-coverage
+CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
 
 CFLAGS += -DHAVE_HAL_AUDIO
 

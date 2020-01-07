@@ -6,7 +6,7 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src
-CFLAGS  += -fprofile-arcs -ftest-coverage
+CFLAGS  += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
