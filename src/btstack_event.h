@@ -7656,22 +7656,13 @@ static inline uint8_t mesh_subevent_attention_timer_get_attention_time(const uin
 }
 
 /**
- * @brief Get field status from event MESH_SUBEVENT_PROXY_CONNECTED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_proxy_connected_get_status(const uint8_t * event){
-    return event[3];
-}
-/**
  * @brief Get field con_handle from event MESH_SUBEVENT_PROXY_CONNECTED
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
 static inline hci_con_handle_t mesh_subevent_proxy_connected_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 4);
+    return little_endian_read_16(event, 3);
 }
 
 /**

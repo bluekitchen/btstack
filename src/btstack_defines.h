@@ -2824,9 +2824,8 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_ATTENTION_TIMER                                                0x1e
 
 /**
- * @format 11H
+ * @format 1H
  * @param subevent_code
- * @param status
  * @param con_handle
  */
 #define MESH_SUBEVENT_PROXY_CONNECTED                                                0x20
