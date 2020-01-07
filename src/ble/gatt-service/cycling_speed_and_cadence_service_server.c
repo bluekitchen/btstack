@@ -194,7 +194,7 @@ static void cycling_speed_and_cadence_service_response_can_send_now(void * conte
 	csc_opcode_t temp_request_opcode = instance->request_opcode;
 	instance->request_opcode = CSC_OPCODE_IDLE;
 
-	uint8_t status = att_server_indicate(instance->con_handle, instance->control_point_value_handle, &value[0], pos); 
+	(void) att_server_indicate(instance->con_handle, instance->control_point_value_handle, &value[0], pos); 
 	switch (temp_request_opcode){
 		case CSC_OPCODE_SET_CUMULATIVE_VALUE:
 			if (instance->response_value != CSC_RESPONSE_VALUE_SUCCESS) break;
