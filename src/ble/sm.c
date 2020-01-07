@@ -4116,7 +4116,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                         break;
                     }
 #endif
-                    /* explicit fall-through */
+                    /* fall through */
 
                 case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;

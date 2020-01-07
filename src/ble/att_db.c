@@ -330,12 +330,12 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
             if ((att_connection->authorized == 0) || sc_missing){
                 return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
             }
-            /* explicit fall through */
+            /* fall through */
         case ATT_SECURITY_AUTHENTICATED:
             if ((att_connection->authenticated == 0) || sc_missing){
                 return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
             }
-            /* explicit fall through */
+            /* fall through */
         case ATT_SECURITY_ENCRYPTED:
             if ((required_encryption_size > 0) && ((att_connection->encryption_key_size == 0) || sc_missing)){
                 return ATT_ERROR_INSUFFICIENT_ENCRYPTION;

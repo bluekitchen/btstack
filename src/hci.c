@@ -1155,7 +1155,9 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             if (hci_stack->hci_transport->reset_link){
                 hci_stack->hci_transport->reset_link();
             }
-            // no break - explicit fallthrough to HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT
+
+            /* fall through */
+
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
             log_info("Resend HCI Reset - CSR Warm Boot");
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
@@ -1792,19 +1794,22 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // skip write synchronous flow control if not supported
             if (hci_stack->local_supported_commands[0] & 0x04) break;
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
-            // explicit fall through to reduce repetitions
+
+            /* fall through */
 
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             // skip write default erroneous data reporting if not supported
             if (hci_stack->local_supported_commands[0] & 0x08) break;
             hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
-            // explicit fall through to reduce repetitions
+
+            /* fall through */
 
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             // skip bcm set sco pcm config on non-Broadcom chipsets
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) break;
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
-            // explicit fall through to reduce repetitions
+
+            /* fall through */
 
         case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
             if (!hci_le_supported()){
@@ -3826,7 +3831,7 @@ static void hci_run(void){
                         break;
                     }
 
-                    /* explicit fall-through */
+                    /* fall through */
 
                 case HCI_HALTING_CLOSE:
                     log_info("HCI_STATE_HALTING, calling off");
@@ -3886,7 +3891,8 @@ static void hci_run(void){
                         hci_stack->substate = HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE;
                         break;
                     }
-                    // no break - fall through for ble-only chips
+
+                    /* fall through */
 
                 case HCI_FALLING_ASLEEP_COMPLETE:
                     log_info("HCI_STATE_HALTING, calling sleep");
@@ -4207,7 +4213,7 @@ static void gap_inquiry_explode(uint8_t * packet){
                     switch (data_type){
                         case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
                             if (name) continue;
-                            /* explicit fall-through */
+                            /* fall through */
                         case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                             name = data;
                             name_len = data_size;
