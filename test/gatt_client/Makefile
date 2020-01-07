@@ -5,7 +5,7 @@ CC = g++
 BTSTACK_ROOT =  ../..
 
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I../ -I${BTSTACK_ROOT}/src
-CFLAGS += -fprofile-arcs -ftest-coverage
+CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
