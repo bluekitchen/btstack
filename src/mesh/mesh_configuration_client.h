@@ -343,6 +343,57 @@ uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh
  */
 uint8_t mesh_configuration_client_send_model_publication_virtual_address_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id, mesh_publication_model_config_t * publication_config);
 
+/**
+ * @brief Add an address to a Subscription List of a model
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param address
+ * @param model_id
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_subscription_add(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+uint8_t mesh_configuration_client_send_model_subscription_virtual_address_add(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
+
+/**
+ * @brief Delete an address from a Subscription List of a model
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param address
+ * @param model_id
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_subscription_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+uint8_t mesh_configuration_client_send_model_subscription_virtual_address_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
+
+/**
+ * @brief Discard the Subscription List and add an address to the cleared Subscription List of a model 
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param address
+ * @param model_id
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_subscription_overwrite(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+uint8_t mesh_configuration_client_send_model_subscription_virtual_address_overwrite(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t * address, uint32_t model_id);
+
+/**
+ * @brief Discard the Subscription List of a model
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param address
+ * @param model_id
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_subscription_delete_all(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
+ 
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

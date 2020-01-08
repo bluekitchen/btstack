@@ -2992,4 +2992,14 @@ typedef uint8_t sm_key_t[16];
  * @param model_identifier
  */
 #define MESH_SUBEVENT_CONFIGURATION_MODEL_PUBLICATION                                0x41
+
+/**
+ * @format 12124
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param address  
+ * @param model_identifier
+ */
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION                               0x42
 #endif

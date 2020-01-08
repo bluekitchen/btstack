@@ -8230,6 +8230,43 @@ static inline uint32_t mesh_subevent_configuration_model_publication_get_model_i
     return little_endian_read_32(event, 15);
 }
 
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_model_subscription_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_model_subscription_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field address from event MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION
+ * @param event packet
+ * @return address
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_model_subscription_get_address(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_configuration_model_subscription_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+
 
 
 /* API_END */
