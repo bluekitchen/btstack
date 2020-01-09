@@ -177,6 +177,16 @@ uint16_t att_db_util_add_secondary_service_uuid128(const uint8_t * uuid128){
     return service_handle;
 }
 
+uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, uint16_t  end_group_handle, uint16_t uuid16){
+    uint8_t buffer[6];
+    little_endian_store_16(buffer, 0, start_group_handle);
+    little_endian_store_16(buffer, 2, end_group_handle);
+    little_endian_store_16(buffer, 4, uuid16);
+    uint16_t service_handle = att_db_next_handle;
+    att_db_util_add_attribute_uuid16(GATT_SECONDARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
+    return service_handle;
+}
+
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0091)

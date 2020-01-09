@@ -71,7 +71,7 @@ uint16_t att_db_util_add_service_uuid16(uint16_t uuid16);
 
 /**
  * @brief Add primary service for 128-bit UUID
- * @param uuid1286
+ * @param uuid128
  * @returns attribute handle for the new service definition
  */
 uint16_t att_db_util_add_service_uuid128(const uint8_t * uuid128);
@@ -85,10 +85,19 @@ uint16_t att_db_util_add_secondary_service_uuid16(uint16_t uuid16);
 
 /**
  * @brief Add secondary service for 128-bit UUID
- * @param uuid1286
+ * @param uuid128
  * @returns attribute handle for the new service definition
  */
 uint16_t att_db_util_add_secondary_service_uuid128(const uint8_t * uuid128);
+
+/**
+ * @brief Add included service with 16-bit UUID
+ * @param start_group_handle
+ * @param end_group_handle
+ * @param uuid16
+ * @returns attribute handle for the new service definition
+ */
+uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, uint16_t  end_group_handle, uint16_t uuid16);
 
 /**
  * @brief Add Characteristic with 16-bit UUID, properties, and data
@@ -142,7 +151,7 @@ uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties,
 */
 uint16_t att_db_util_add_descriptor_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len);
 
-/** 
+/**
  * @brief Get address of constructed ATT DB
  */
 uint8_t * att_db_util_get_address(void);
