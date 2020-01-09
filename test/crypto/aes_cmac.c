@@ -33,6 +33,7 @@ void aes_cmac_calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t k2){
 }
 
 void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int sm_cmac_message_len){
+    unsigned int i;
 	sm_key_t k0, k1, k2, zero;
 	memset(zero, 0, 16);
 
@@ -46,10 +47,25 @@ void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int s
         sm_cmac_block_count = 1;
     }
 
+    // printf("sm_cmac_start: len %u, block count %u\n", sm_cmac_message_len, sm_cmac_block_count);
+    // LOG_KEY(sm_cmac_m_last);
+
+    // Step 5
+    sm_key_t sm_cmac_x;
+    memset(sm_cmac_x, 0, 16);
+
+    // Step 6
+    sm_key_t sm_cmac_y;
+    for (int block = 0 ; block < sm_cmac_block_count-1 ; block++){
+        for (i=0;i<16;i++){
+        	sm_cmac_y[i] = sm_cmac_x[i] ^ data[block * 16 + i];
+        }
+        aes128_calc_cyphertext(key, sm_cmac_y, sm_cmac_x);
+    }
+
     // step 4: set m_last
     sm_key_t sm_cmac_m_last;
     int sm_cmac_last_block_complete = sm_cmac_message_len != 0 && (sm_cmac_message_len & 0x0f) == 0;
-    int i;
     if (sm_cmac_last_block_complete){
         for (i=0;i<16;i++){
             sm_cmac_m_last[i] = data[sm_cmac_message_len - 16 + i] ^ k1[i];
@@ -69,21 +85,6 @@ void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int s
         }
     }
 
-    // printf("sm_cmac_start: len %u, block count %u\n", sm_cmac_message_len, sm_cmac_block_count);
-    // LOG_KEY(sm_cmac_m_last);
-
-    // Step 5
-    sm_key_t sm_cmac_x;
-    memset(sm_cmac_x, 0, 16);
-
-    // Step 6
-    sm_key_t sm_cmac_y;
-    for (int block = 0 ; block < sm_cmac_block_count-1 ; block++){
-        for (i=0;i<16;i++){
-        	sm_cmac_y[i] = sm_cmac_x[i] ^ data[block * 16 + i];
-        }
-        aes128_calc_cyphertext(key, sm_cmac_y, sm_cmac_x);
-    }
     for (i=0;i<16;i++){
 		sm_cmac_y[i] = sm_cmac_x[i] ^ sm_cmac_m_last[i];
     }
