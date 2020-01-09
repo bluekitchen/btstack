@@ -166,6 +166,16 @@ uint16_t att_db_util_get_size(void);
  */
 uint16_t att_db_util_hash_len(void);
 
+/**
+ * @brief init generator for GATT Database Hash
+ */
+void att_db_util_hash_init(void);
+
+/**
+ * @brief get next byte from generator for GATT Database Hash
+ */
+uint8_t att_db_util_hash_get_next(void);
+
 /* API_END */
 
 #if defined __cplusplus

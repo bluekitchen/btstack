@@ -113,10 +113,6 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
     }
 }
 
-uint16_t att_db_util_hash_len(void){
-    return att_db_hash_len;
-}
-
 /**
  * asserts that the requested amount of bytes can be stored in the att_db
  * @returns TRUE if space is available
@@ -224,7 +220,7 @@ uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, ui
     little_endian_store_16(buffer, 2, end_group_handle);
     little_endian_store_16(buffer, 4, uuid16);
     uint16_t service_handle = att_db_next_handle;
-    att_db_util_add_attribute_uuid16(GATT_SECONDARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
+    att_db_util_add_attribute_uuid16(GATT_INCLUDE_SERVICE_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
     return service_handle;
 }
 
@@ -318,4 +314,58 @@ uint8_t * att_db_util_get_address(void){
 
 uint16_t att_db_util_get_size(void){
 	return att_db_size + 2;	// end tag 
+}
+
+static uint8_t * att_db_util_hash_att_ptr;
+static uint16_t att_db_util_hash_offset;
+static uint16_t att_db_util_hash_bytes_available;
+
+static void att_db_util_hash_fetch_next_attribute(void){
+    while (1){
+        uint16_t size = little_endian_read_16(att_db_util_hash_att_ptr, 0);
+        btstack_assert(size != 0);
+        UNUSED(size);
+        uint16_t flags = little_endian_read_16(att_db_util_hash_att_ptr, 2);
+        if ((flags & ATT_PROPERTY_UUID128) == 0) {
+            uint16_t uuid16 = little_endian_read_16(att_db_util_hash_att_ptr, 6);
+            if (att_db_util_hash_include_with_value(uuid16)){
+                att_db_util_hash_offset = 4;
+                att_db_util_hash_bytes_available = size - 4;
+                return;
+            } else if (att_db_util_hash_include_without_value(uuid16)){
+                att_db_util_hash_offset = 4;
+                att_db_util_hash_bytes_available = 4;
+                return;
+            }
+        }
+        att_db_util_hash_att_ptr += size;
+    }
+}
+
+uint16_t att_db_util_hash_len(void){
+    return att_db_hash_len;
+}
+
+void att_db_util_hash_init(void){
+    // skip version info
+    att_db_util_hash_att_ptr = &att_db[1];
+    att_db_util_hash_bytes_available = 0;
+}
+
+uint8_t att_db_util_hash_get_next(void){
+    // find next hashable data blob
+    if (att_db_util_hash_bytes_available == 0){
+        att_db_util_hash_fetch_next_attribute();
+    }
+
+    // get next byte
+    uint8_t next = att_db_util_hash_att_ptr[att_db_util_hash_offset++];
+    att_db_util_hash_bytes_available--;
+
+    // go to next attribute if blob used up
+    if (att_db_util_hash_bytes_available == 0){
+        uint16_t size = little_endian_read_16(att_db_util_hash_att_ptr, 0);
+        att_db_util_hash_att_ptr += size;
+    }
+    return next;
 }
