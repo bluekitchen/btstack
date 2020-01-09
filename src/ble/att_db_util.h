@@ -77,6 +77,20 @@ uint16_t att_db_util_add_service_uuid16(uint16_t uuid16);
 uint16_t att_db_util_add_service_uuid128(const uint8_t * uuid128);
 
 /**
+ * @brief Add secondary service for 16-bit UUID
+ * @param uuid16
+ * @returns attribute handle for the new service definition
+ */
+uint16_t att_db_util_add_secondary_service_uuid16(uint16_t uuid16);
+
+/**
+ * @brief Add secondary service for 128-bit UUID
+ * @param uuid1286
+ * @returns attribute handle for the new service definition
+ */
+uint16_t att_db_util_add_secondary_service_uuid128(const uint8_t * uuid128);
+
+/**
  * @brief Add Characteristic with 16-bit UUID, properties, and data
  * @param uuid16
  * @param properties        - see ATT_PROPERTY_* in src/bluetooth.h
