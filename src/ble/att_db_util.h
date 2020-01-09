@@ -161,6 +161,11 @@ uint8_t * att_db_util_get_address(void);
  */
 uint16_t att_db_util_get_size(void);
 
+/**
+ * @brief Get number of bytes that are included in GATT Database Hash
+ */
+uint16_t att_db_util_hash_len(void);
+
 /* API_END */
 
 #if defined __cplusplus

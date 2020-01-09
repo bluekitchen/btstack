@@ -62,6 +62,17 @@ uint8_t counter_service_uuid[] = { 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x0
 // 0000FF11-0000-1000-8000-00805F9B34FB
 uint8_t counter_characteristic_uuid[] = { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 
+// gatt database hash test message
+static const uint8_t gatt_database_hash_test_message[] = {
+        0x01, 0x00, 0x00, 0x28, 0x00, 0x18, 0x02, 0x00, 0x03, 0x28, 0x0A, 0x03, 0x00, 0x00, 0x2A, 0x04,
+        0x00, 0x03, 0x28, 0x02, 0x05, 0x00, 0x01, 0x2A, 0x06, 0x00, 0x00, 0x28, 0x01, 0x18, 0x07, 0x00,
+        0x03, 0x28, 0x20, 0x08, 0x00, 0x05, 0x2A, 0x09, 0x00, 0x02, 0x29, 0x0A, 0x00, 0x03, 0x28, 0x0A,
+        0x0B, 0x00, 0x29, 0x2B, 0x0C, 0x00, 0x03, 0x28, 0x02, 0x0D, 0x00, 0x2A, 0x2B, 0x0E, 0x00, 0x00,
+        0x28, 0x08, 0x18, 0x0F, 0x00, 0x02, 0x28, 0x14, 0x00, 0x16, 0x00, 0x0F, 0x18, 0x10, 0x00, 0x03,
+        0x28, 0xA2, 0x11, 0x00, 0x18, 0x2A, 0x12, 0x00, 0x02, 0x29, 0x13, 0x00, 0x00, 0x29, 0x00, 0x00,
+        0x14, 0x00, 0x01, 0x28, 0x0F, 0x18, 0x15, 0x00, 0x03, 0x28, 0x02, 0x16, 0x00, 0x19, 0x2A
+};
+
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
     for (int i=0; i<size; i++){
         printf("%03u: %02x - %02x\n", i, expected[i], actual[i]);
@@ -86,7 +97,7 @@ TEST(AttDbUtil, LeCounterDb){
     att_db_util_add_characteristic_uuid16(GAP_DEVICE_NAME_UUID, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)"SPP+LE Counter", 14);
 
     att_db_util_add_service_uuid16(0x1801);
-    att_db_util_add_characteristic_uuid16(0x2a05, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
+    att_db_util_add_characteristic_uuid16(GAP_SERVICE_CHANGED, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
 
     att_db_util_add_service_uuid128(counter_service_uuid);
     att_db_util_add_characteristic_uuid128(counter_characteristic_uuid, ATT_PROPERTY_READ | ATT_PROPERTY_NOTIFY | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
@@ -94,10 +105,43 @@ TEST(AttDbUtil, LeCounterDb){
     uint8_t * addr = att_db_util_get_address();
     uint16_t  size = att_db_util_get_size();
 
+    printf("LE Counter DB\n");
     printf_hexdump(addr, size);
 
     CHECK_EQUAL(size, (uint16_t)sizeof(profile_data));
     CHECK_EQUAL_ARRAY(profile_data, addr, size);
+}
+
+TEST(AttDbUtil, GattHash){
+    const uint8_t appearance[] = {0};
+    const uint8_t service_changed[] = {0} ;
+    const uint8_t supported_features[] = {0} ;
+    const uint8_t extended_properties[] = {0,0} ;
+    const uint8_t battery_level[] = { 100 } ;
+    att_db_util_add_service_uuid16(GAP_SERVICE_UUID);
+    att_db_util_add_characteristic_uuid16(GAP_DEVICE_NAME_UUID, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)"HASH", 4);
+    att_db_util_add_characteristic_uuid16(GAP_APPEARANCE_UUID, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)appearance, sizeof(appearance));
+    att_db_util_add_service_uuid16(0x1801);
+    att_db_util_add_characteristic_uuid16(GAP_SERVICE_CHANGED, ATT_PROPERTY_READ | ATT_PROPERTY_INDICATE, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)service_changed, sizeof(service_changed));
+    att_db_util_add_characteristic_uuid16(0x2b29, ATT_PROPERTY_READ | ATT_PROPERTY_WRITE, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)supported_features, sizeof(supported_features));
+    att_db_util_add_characteristic_uuid16(0x2b2a, ATT_PROPERTY_READ | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
+    att_db_util_add_service_uuid16(0x1808);
+    att_db_util_add_included_service_uuid16(0x0014, 0x0016, 0x180f);
+    att_db_util_add_characteristic_uuid16(0x2a18, ATT_PROPERTY_READ | ATT_PROPERTY_EXTENDED_PROPERTIES | ATT_PROPERTY_INDICATE, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
+    att_db_util_add_descriptor_uuid16(0x2900, 0, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)extended_properties, sizeof(extended_properties));
+    att_db_util_add_secondary_service_uuid16(0x180f);
+    att_db_util_add_characteristic_uuid16(0x2a18, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)battery_level, sizeof(battery_level));
+
+    uint8_t * addr = att_db_util_get_address();
+    uint16_t  size = att_db_util_get_size();
+
+    printf("HASH DB, len %u\n", size);
+    printf_hexdump(addr, size);
+
+    uint16_t hash_len = att_db_util_hash_len();
+    printf("Hashable part len %u\n", hash_len);
+
+CHECK_EQUAL(sizeof(gatt_database_hash_test_message), hash_len);
 }
 
 int main (int argc, const char * argv[]){

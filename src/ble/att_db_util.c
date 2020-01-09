@@ -60,6 +60,7 @@ static uint8_t * att_db;
 static uint16_t  att_db_size;
 static uint16_t  att_db_max_size;
 static uint16_t  att_db_next_handle;
+static uint16_t  att_db_hash_len;
 
 static void att_db_util_set_end_tag(void){
 	// end tag
@@ -79,7 +80,41 @@ void att_db_util_init(void){
 	att_db[0] = ATT_DB_VERSION;
 	att_db_size = 1;
 	att_db_next_handle = 1;
+	att_db_hash_len = 0;
 	att_db_util_set_end_tag();
+}
+
+static bool att_db_util_hash_include_with_value(uint16_t uuid16){
+    /* «Primary Service», «Secondary Service», «Included Service», «Characteristic», or «Characteristic Extended Properties» */
+    switch (uuid16){
+        case GATT_PRIMARY_SERVICE_UUID:
+        case GATT_SECONDARY_SERVICE_UUID:
+        case GATT_INCLUDE_SERVICE_UUID:
+        case GATT_CHARACTERISTICS_UUID:
+        case GATT_CHARACTERISTIC_EXTENDED_PROPERTIES:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool att_db_util_hash_include_without_value(uint16_t uuid16){
+    /*  «Characteristic User Description», «Client Characteristic Configuration», «Server Characteristic Configuration»,
+     * «Characteristic Aggregate Format», «Characteristic Format» */
+    switch (uuid16){
+        case GATT_CHARACTERISTIC_USER_DESCRIPTION:
+        case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
+        case GATT_SERVER_CHARACTERISTICS_CONFIGURATION:
+        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+            return true;
+        default:
+            return false;
+    }
+}
+
+uint16_t att_db_util_hash_len(void){
+    return att_db_hash_len;
 }
 
 /**
@@ -125,6 +160,12 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 	(void)memcpy(&att_db[att_db_size], data, data_len);
 	att_db_size += data_len;
 	att_db_util_set_end_tag();
+
+	if (att_db_util_hash_include_with_value(uuid16)){
+	    att_db_hash_len += 4 + data_len;
+	} else if (att_db_util_hash_include_without_value(uuid16)){
+        att_db_hash_len += 4;
+	}
 }
 
 static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
