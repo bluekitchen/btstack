@@ -369,3 +369,14 @@ uint8_t att_db_util_hash_get_next(void){
     }
     return next;
 }
+
+static uint8_t att_db_util_hash_get(uint16_t offset){
+    UNUSED(offset);
+    return att_db_util_hash_get_next();
+}
+
+void att_db_util_hash_calc(btstack_crypto_aes128_cmac_t * request, uint8_t * db_hash, void (* callback)(void * arg), void * callback_arg){
+    static const uint8_t zero_key[16] = { 0 };
+    att_db_util_hash_init();
+    btstack_crypto_aes128_cmac_generator(request, zero_key, att_db_hash_len, &att_db_util_hash_get, db_hash, callback, callback_arg);
+}

@@ -44,10 +44,7 @@
 #define __ATT_DB_UTIL
 
 #include "btstack_config.h"
-#
-#ifdef HAVE_MALLOC
-#else
-#endif
+#include "btstack_crypto.h"
 
 #include <stdint.h>
 
@@ -175,6 +172,15 @@ void att_db_util_hash_init(void);
  * @brief get next byte from generator for GATT Database Hash
  */
 uint8_t att_db_util_hash_get_next(void);
+
+/**
+ * @brief Calculate GATT Database Hash using crypto engine
+ * @param request
+ * @param db_hash
+ * @param callback
+ * @param callback_arg
+ */
+void att_db_util_hash_calc(btstack_crypto_aes128_cmac_t * request, uint8_t * db_hash, void (* callback)(void * arg), void * callback_arg);
 
 /* API_END */
 

@@ -5,13 +5,15 @@ CC = g++
 BTSTACK_ROOT =  ../..
 
 CFLAGS  = -g -Wall \
-		  -I.. \
+		  -I. \
 		  -I${BTSTACK_ROOT}/src
-		  
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
+
 CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
 
 LDFLAGS += -lCppUTest -lCppUTestExt 
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -20,6 +22,10 @@ COMMON = \
     btstack_util.c		  \
     hci_dump.c    \
     att_db_util.c \
+    btstack_crypto.c \
+    btstack_linked_list.c \
+    hci_cmd.c \
+    rijndael.c
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
