@@ -15,6 +15,7 @@ import re
 import string
 import sys
 import argparse
+import tempfile
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -262,7 +263,7 @@ def write_8(fout, value):
 def write_16(fout, value):
     fout.write('0x%02x, 0x%02x, ' % (value & 0xff, (value >> 8) & 0xff))
 
-def write_uuid(uuid):
+def write_uuid(fout, uuid):
     for byte in uuid:
         fout.write( "0x%02x, " % byte)
 
@@ -371,7 +372,7 @@ def parseService(fout, parts, service_type):
     write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, service_type)
-    write_uuid(uuid)
+    write_uuid(fout, uuid)
     fout.write("\n")
 
     current_service_uuid_string = c_string_for_uuid(parts[1])
@@ -412,7 +413,7 @@ def parseIncludeService(fout, parts):
     write_16(fout, services[keyUUID][0])
     write_16(fout, services[keyUUID][1])
     if uuid_size > 0:
-        write_uuid(uuid)
+        write_uuid(fout, uuid)
     fout.write("\n")
 
     handle = handle + 1
@@ -460,7 +461,7 @@ def parseCharacteristic(fout, parts):
     write_16(fout, 0x2803)
     write_8(fout, characteristic_properties)
     write_16(fout, handle+1)
-    write_uuid(uuid)
+    write_uuid(fout, uuid)
     fout.write("\n")
     handle = handle + 1
     total_size = total_size + size
@@ -486,7 +487,7 @@ def parseCharacteristic(fout, parts):
     write_16(fout, size)
     write_16(fout, value_flags)
     write_16(fout, handle)
-    write_uuid(uuid)
+    write_uuid(fout, uuid)
     if is_string(value):
         write_string(fout, value)
     else:
@@ -625,9 +626,9 @@ def parseCharacteristicFormat(fout, parts):
     write_16(fout, 0x2904)
     write_sequence(fout, format)
     write_sequence(fout, exponent)
-    write_uuid(unit)
+    write_uuid(fout, unit)
     write_sequence(fout, name_space)
-    write_uuid(description)
+    write_uuid(fout, description)
     fout.write("\n")
     handle = handle + 1
 
@@ -923,10 +924,20 @@ try:
 
     filename = args.hfile
     fin  = codecs.open (args.gattfile, encoding='utf-8')
+
+    # pass 1: create temp .h file
+    ftemp = tempfile.TemporaryFile()
+    parse(args.gattfile, fin, filename, sys.argv[0], ftemp)
+    listHandles(ftemp)
+
+    # pass 2: insert GATT Database Hash
     fout = open (filename, 'w')
-    parse(args.gattfile, fin, filename, sys.argv[0], fout)
-    listHandles(fout)    
+    ftemp.seek(0)
+    for line in ftemp:
+        fout.write(line)
     fout.close()
+    ftemp.close()
+
     print('Created %s' % filename)
 
 except IOError as e:
