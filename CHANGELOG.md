@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - att_db_util: provide GATT Database Hash via att_db_util_hash_calc
+- GATT Compiler: provide GATT Database Hash via GATT_DATABASE_HASH Characteristic
 
 ### Changed
 - btstack_crypto: update AES-CMAC implementation to access all message bytes sequentially
