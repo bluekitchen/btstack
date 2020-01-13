@@ -1578,7 +1578,7 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
-                btstack_linked_list_iterator_remove(&it);
+                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                 l2cap_free_channel_entry(channel);
                 channel = NULL;
                 break;
