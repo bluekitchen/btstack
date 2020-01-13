@@ -435,7 +435,7 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * connection , uint8_t *packet){
+static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * connection , uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
 

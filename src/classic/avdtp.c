@@ -340,7 +340,7 @@ static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t
     }
 }
 
-static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet, uint16_t size){
+static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
 
@@ -443,7 +443,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            avdtp_handle_sdp_client_query_attribute_value(packet, size);
+            avdtp_handle_sdp_client_query_attribute_value(packet);
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
