@@ -70,6 +70,10 @@ def analyze_folders(btstack_root, folders):
     # "Nesting Level","VOCF","Number of functions which call this function",
     fields = [ 'file','function','GOTO','RETURN','_','STMT' ,'_','CCN','PATH','CALLS','PARAM','LEVEL','_','_','_']
 
+    # init deviations
+    for key in fields:
+        metrics[key + '_DEVIATIONS'] = 0
+
     # for now, just read the file
     with open("metrics.tsv") as fd:
         rd = csv.reader(fd, delimiter="\t")
