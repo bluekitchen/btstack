@@ -3421,7 +3421,6 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             default:
                                 break;
                         }
-                        break;
                     } else {
                         // I-Frame
                         // get control
