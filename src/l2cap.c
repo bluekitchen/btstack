@@ -1579,7 +1579,8 @@ static void l2cap_run(void){
                 l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 btstack_linked_list_iterator_remove(&it);
-                l2cap_free_channel_entry(channel); 
+                l2cap_free_channel_entry(channel);
+                channel = NULL;
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
@@ -1676,7 +1677,7 @@ static void l2cap_run(void){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
-        // handle channel finalize on L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE
+        // handle channel finalize on L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE and L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE
         if (!channel) continue;
 
         // ERTM mode

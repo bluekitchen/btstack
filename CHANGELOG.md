@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- L2CAP ERTM: avoid read-after-free on decline of incoming connection
 
 ### Added
 - att_db_util: provide GATT Database Hash via att_db_util_hash_calc
