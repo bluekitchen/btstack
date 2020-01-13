@@ -271,13 +271,12 @@ void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_c
             btstack_linked_list_iterator_init(&it, &context->stream_endpoints);
             while (btstack_linked_list_iterator_has_next(&it)){
                 avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-                if (stream_endpoint->connection == connection){
-                    if ((stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED) && (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED)){
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
-                        avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
-                        l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
-                        return;
-                    }
+                if (stream_endpoint->connection != connection) continue;
+                if ((stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED) && (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED)){
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
+                    avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                    l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                    return;
                 }
             }
             connection->disconnect = 0;
@@ -341,6 +340,93 @@ static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t
     }
 }
 
+static void avdtp_handle_sdp_client_query_attribute_value(packet, size){
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
+
+    // Handle new SDP record
+    if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
+        record_id = sdp_event_query_attribute_byte_get_record_id(packet);
+        // log_info("SDP Record: Nr: %d", record_id);
+    }
+
+    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
+        attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+
+        if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+
+            switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
+                    if (de_get_element_type(attribute_value) != DE_DES) break;
+                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t * element = des_iterator_get_element(&des_list_it);
+                        if (de_get_element_type(element) != DE_UUID) continue;
+                        uint32_t uuid = de_get_uuid32(element);
+                        switch (uuid){
+                            case BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE:
+                                if (sdp_query_context->query_role == AVDTP_SOURCE) {
+                                    sdp_query_context->role_supported = 1;
+                                    break;
+                                }
+                                // log_info("SDP Attribute 0x%04x: AVDTP SOURCE protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
+                                // avdtp_remote_uuid = uuid;
+                                break;
+                            case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
+                                if (sdp_query_context->query_role == AVDTP_SINK) {
+                                    sdp_query_context->role_supported = 1;
+                                    break;
+                                }
+                                // log_info("SDP Attribute 0x%04x: AVDTP SINK protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
+                                // avdtp_remote_uuid = uuid;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
+                    // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        switch (uuid){
+                            case BLUETOOTH_PROTOCOL_L2CAP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_l2cap_psm);
+                                break;
+                            case BLUETOOTH_PROTOCOL_AVDTP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_version);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                    break;
+                default:
+                    break;
+            }
+        }
+    } else {
+        log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+    }
+
+}
+
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(sdp_query_context->avdtp_cid, sdp_query_context);
     if (!connection) {
@@ -353,92 +439,11 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
-    des_iterator_t des_list_it;
-    des_iterator_t prot_it;
     uint8_t status;
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            // Handle new SDP record 
-            if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
-                record_id = sdp_event_query_attribute_byte_get_record_id(packet);
-                // log_info("SDP Record: Nr: %d", record_id);
-            }
-
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
-                attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
-                
-                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-
-                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
-                        case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
-                            if (de_get_element_type(attribute_value) != DE_DES) break;
-                            for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                                uint8_t * element = des_iterator_get_element(&des_list_it);
-                                if (de_get_element_type(element) != DE_UUID) continue;
-                                uint32_t uuid = de_get_uuid32(element);
-                                switch (uuid){
-                                    case BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE:
-                                        if (sdp_query_context->query_role == AVDTP_SOURCE) {
-                                            sdp_query_context->role_supported = 1;
-                                            break;
-                                        }
-                                        // log_info("SDP Attribute 0x%04x: AVDTP SOURCE protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                        // avdtp_remote_uuid = uuid;
-                                        break;
-                                    case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
-                                        if (sdp_query_context->query_role == AVDTP_SINK) {
-                                            sdp_query_context->role_supported = 1;
-                                            break;
-                                        }
-                                        // log_info("SDP Attribute 0x%04x: AVDTP SINK protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                        // avdtp_remote_uuid = uuid;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                            break;
-                        
-                        case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
-                                // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-                                for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
-                                    uint8_t       *des_element;
-                                    uint8_t       *element;
-                                    uint32_t       uuid;
-
-                                    if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
-
-                                    des_element = des_iterator_get_element(&des_list_it);
-                                    des_iterator_init(&prot_it, des_element);
-                                    element = des_iterator_get_element(&prot_it);
-                                    
-                                    if (de_get_element_type(element) != DE_UUID) continue;
-                                    
-                                    uuid = de_get_uuid32(element);
-                                    des_iterator_next(&prot_it);
-                                    switch (uuid){
-                                        case BLUETOOTH_PROTOCOL_L2CAP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_l2cap_psm);
-                                            break;
-                                        case BLUETOOTH_PROTOCOL_AVDTP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_version);
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            } else {
-                log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
-            }
+            avdtp_handle_sdp_client_query_attribute_value(packet, size);
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
@@ -1126,29 +1131,35 @@ uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_end
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t supported_sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
-    uint8_t sampling_frequency = AVDTP_SBC_44100;   // some default
 
     // use preferred sampling frequency if possible
-    if        ((stream_endpoint->preferred_sampling_frequency == 48000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_48000)){
-        sampling_frequency = AVDTP_SBC_48000;
-    } else if ((stream_endpoint->preferred_sampling_frequency == 44100) && (supported_sampling_frequency_bitmap & AVDTP_SBC_44100)){
-        sampling_frequency = AVDTP_SBC_44100;
-    } else if ((stream_endpoint->preferred_sampling_frequency == 32000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_32000)){
-        sampling_frequency = AVDTP_SBC_32000;
-    } else if ((stream_endpoint->preferred_sampling_frequency == 16000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_16000)){
-        sampling_frequency = AVDTP_SBC_16000;
+    if ((stream_endpoint->preferred_sampling_frequency == 48000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_48000)){
+        return AVDTP_SBC_48000;
     }
+    if ((stream_endpoint->preferred_sampling_frequency == 44100) && (supported_sampling_frequency_bitmap & AVDTP_SBC_44100)){
+        return AVDTP_SBC_44100;
+    }
+    if ((stream_endpoint->preferred_sampling_frequency == 32000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_32000)){
+        return AVDTP_SBC_32000;
+    }
+    if ((stream_endpoint->preferred_sampling_frequency == 16000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_16000)){
+        return AVDTP_SBC_16000;
+    }
+
     // otherwise, use highest available
-    else if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
-        sampling_frequency = AVDTP_SBC_48000;
-    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
-        sampling_frequency = AVDTP_SBC_44100;
-    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
-        sampling_frequency = AVDTP_SBC_32000;
-    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
-        sampling_frequency = AVDTP_SBC_16000;
+    if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
+        return AVDTP_SBC_48000;
+    }
+    if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
+        return AVDTP_SBC_44100;
+    }
+    if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
+        return AVDTP_SBC_32000;
+    }
+    if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
+        return AVDTP_SBC_16000;
     } 
-    return sampling_frequency;
+    return AVDTP_SBC_44100; // some default
 }
 
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value){
