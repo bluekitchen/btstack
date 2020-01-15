@@ -456,12 +456,17 @@ static uint16_t handle_find_information_request(att_connection_t * att_connectio
 //
 // NOTE: doesn't handle DYNAMIC values
 // NOTE: only supports 16 bit UUIDs
-// 
-static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size,
-                                           uint16_t start_handle, uint16_t end_handle,
-                                           uint16_t attribute_type, uint16_t attribute_len, uint8_t* attribute_value){
-    
+//
+static uint16_t handle_find_by_type_value_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
+                                           uint8_t * response_buffer, uint16_t response_buffer_size){
     UNUSED(att_connection);
+
+    // parse request
+    int attribute_len = request_len - 7;
+    uint16_t start_handle = little_endian_read_16(request_buffer, 1);
+    uint16_t end_handle = little_endian_read_16(request_buffer, 3);
+    uint16_t attribute_type = little_endian_read_16(request_buffer, 5);
+    const uint8_t *attribute_value = &request_buffer[7];
 
     log_info("ATT_FIND_BY_TYPE_VALUE_REQUEST: from %04X to %04X, type %04X, value: ", start_handle, end_handle, attribute_type);
     log_info_hexdump(attribute_value, attribute_len);
@@ -474,33 +479,33 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
     uint16_t offset      = 1;
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
-    
+
     att_iterator_t it;
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        
+
         if (it.handle && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
-        
+
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
             ((it.handle == 0) || att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID))){
-            
+
             log_info("End of group, handle 0x%04x", prev_handle);
             little_endian_store_16(response_buffer, offset, prev_handle);
             offset += 2;
             in_group = 0;
-            
+
             // check if space for another handle pair available
             if ((offset + 4) > response_buffer_size){
                 break;
             }
         }
-        
+
         // keep track of previous handle
         prev_handle = it.handle;
-        
+
         // does current attribute match
         if (it.handle && att_iterator_match_uuid16(&it, attribute_type) && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             log_info("Begin of group, handle 0x%04x", it.handle);
@@ -509,20 +514,13 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
             in_group = 1;
         }
     }
-    
+
     if (offset == 1){
         return setup_error_atribute_not_found(response_buffer, request_type, start_handle);
     }
-    
+
     response_buffer[0] = ATT_FIND_BY_TYPE_VALUE_RESPONSE;
     return offset;
-}
-                                         
-static uint16_t handle_find_by_type_value_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
-                                           uint8_t * response_buffer, uint16_t response_buffer_size){
-    int attribute_len = request_len - 7;
-    return handle_find_by_type_value_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1),
-                                              little_endian_read_16(request_buffer, 3), little_endian_read_16(request_buffer, 5), attribute_len, &request_buffer[7]);
 }
 
 //
