@@ -233,7 +233,8 @@ static void btstack_crypto_cmac_calc(btstack_crypto_aes128_cmac_t * btstack_cryp
 
     // Step 6
     sm_key_t cmac_y;
-    for (int block = 0 ; block < cmac_block_count-1 ; block++){
+    int block;
+    for (block = 0 ; block < cmac_block_count-1 ; block++){
         for (i=0;i<16;i++){
             cmac_y[i] = cmac_x[i] ^ btstack_crypto_cmac_get_byte(btstack_crypto_cmac, (block*16) + i);
         }
