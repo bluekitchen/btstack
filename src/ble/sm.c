@@ -1594,15 +1594,18 @@ static void f5_calculate_ltk(sm_connection_t * sm_conn){
     f5_ltk(sm_conn, setup->sm_t);
 }
 
-static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w, const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
-    const uint16_t message_len = 65;
-    sm_cmac_connection = sm_conn;
+static void f6_setup(const sm_key_t n1, const sm_key_t n2, const sm_key_t r, const sm_key24_t io_cap, const sm_key56_t a1, const sm_key56_t a2){
     (void)memcpy(sm_cmac_sc_buffer, n1, 16);
     (void)memcpy(sm_cmac_sc_buffer + 16, n2, 16);
     (void)memcpy(sm_cmac_sc_buffer + 32, r, 16);
     (void)memcpy(sm_cmac_sc_buffer + 48, io_cap, 3);
     (void)memcpy(sm_cmac_sc_buffer + 51, a1, 7);
     (void)memcpy(sm_cmac_sc_buffer + 58, a2, 7);
+}
+
+static void f6_engine(sm_connection_t * sm_conn, const sm_key_t w){
+    const uint16_t message_len = 65;
+    sm_cmac_connection = sm_conn;
     log_info("f6 key");
     log_info_hexdump(w, 16);
     log_info("f6 message");
@@ -1714,10 +1717,12 @@ static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
     iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
     if (IS_RESPONDER(sm_conn->sm_role)){
         // responder
-        f6_engine(sm_conn, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+        f6_setup(setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+        f6_engine(sm_conn, setup->sm_mackey);
     } else {
         // initiator
-        f6_engine(sm_conn, setup->sm_mackey, setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+        f6_setup( setup->sm_local_nonce, setup->sm_peer_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+        f6_engine(sm_conn, setup->sm_mackey);
     }
 }
 
@@ -1739,10 +1744,12 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
     iocap_b[2] = sm_pairing_packet_get_io_capability(setup->sm_s_pres);
     if (IS_RESPONDER(sm_conn->sm_role)){
         // responder
-        f6_engine(sm_conn, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+        f6_setup(setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_rb, iocap_a, bd_addr_master, bd_addr_slave);
+        f6_engine(sm_conn, setup->sm_mackey);
     } else {
         // initiator
-        f6_engine(sm_conn, setup->sm_mackey, setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+        f6_setup(setup->sm_peer_nonce, setup->sm_local_nonce, setup->sm_ra, iocap_b, bd_addr_slave, bd_addr_master);
+        f6_engine(sm_conn, setup->sm_mackey);
     }
 }
 
