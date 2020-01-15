@@ -16,7 +16,8 @@ CORE += \
 	main.c \
 	wav_util.c 					\
 	btstack_stdin_posix.c \
-	raspi_get_model.c 
+	raspi_get_model.c \
+	rijndael.c
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
@@ -28,11 +29,15 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/chipset/bcm \
-	-I${BTSTACK_ROOT}/3rd-party/tinydir
+	-I${BTSTACK_ROOT}/3rd-party/tinydir \
+    -I${BTSTACK_ROOT}/3rd-party/rijndael
+
+
 
 # add 'real time' lib for clock_gettime
 LDFLAGS += -lrt
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 
