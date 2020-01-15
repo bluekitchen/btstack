@@ -2409,10 +2409,8 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
     if (!multiplexer) {
         multiplexer = rfcomm_multiplexer_create_for_addr(addr);
-        if (!multiplexer){
-            status = BTSTACK_MEMORY_ALLOC_FAILED;
-            goto fail;
-        }
+        if (!multiplexer) return BTSTACK_MEMORY_ALLOC_FAILED;
+
         multiplexer->outgoing = 1;
         multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
         new_multiplexer = 1;
@@ -2422,15 +2420,15 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     dlci = (server_channel << 1) | (multiplexer->outgoing ^ 1);
     channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
     if (channel){
-        status = RFCOMM_CHANNEL_ALREADY_REGISTERED;
-        goto fail;
+        if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
+        return RFCOMM_CHANNEL_ALREADY_REGISTERED;
     }
 
     // prepare channel
     channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
     if (!channel){
-        status = BTSTACK_MEMORY_ALLOC_FAILED;
-        goto fail;
+        if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
     // rfcomm_cid is already assigned by rfcomm_channel_create
@@ -2466,21 +2464,20 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         {
             status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
         }
-        if (status) goto fail;
+        if (status) {
+            if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
+            btstack_memory_rfcomm_channel_free(channel);
+            return status;
+        }
         multiplexer->l2cap_cid = l2cap_cid;
-        return 0;
+        return ERROR_CODE_SUCCESS;
     }
     
     channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
     
     // start connecting, if multiplexer is already up and running
     l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
-    return 0;
-
-fail:
-    if (new_multiplexer) btstack_memory_rfcomm_multiplexer_free(multiplexer);
-    if (channel)         btstack_memory_rfcomm_channel_free(channel);
-    return status;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t rfcomm_create_channel_with_initial_credits(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_rfcomm_cid){
