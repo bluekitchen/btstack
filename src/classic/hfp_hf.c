@@ -136,23 +136,22 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, uint8_t clcc_idx, uint8_t clcc_dir,
-                uint8_t clcc_status, uint8_t clcc_mode, uint8_t clcc_mpty, uint8_t bnip_type, const char * bnip_number){
+static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, hfp_connection_t * connection){
     if (!callback) return;
-    printf("hfp_hf_emit_enhanced_call_status: %s \n", bnip_number);
+    printf("hfp_hf_emit_enhanced_call_status: %s \n", connection->bnip_number);
     uint8_t event[36];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
-    event[pos++] = clcc_idx;
-    event[pos++] = clcc_dir;
-    event[pos++] = clcc_status;
-    event[pos++] = clcc_mode;
-    event[pos++] = clcc_mpty;
-    event[pos++] = bnip_type;
-    uint16_t size = btstack_min(strlen(bnip_number), sizeof(event) - pos);
-    strncpy((char*)&event[pos], bnip_number, size);
+    event[pos++] = connection->clcc_idx;
+    event[pos++] = connection->clcc_dir;
+    event[pos++] = connection->clcc_status;
+    event[pos++] = connection->clcc_mode;
+    event[pos++] = connection->clcc_mpty;
+    event[pos++] = connection->bnip_type;
+    uint16_t size = btstack_min(strlen(connection->bnip_number), sizeof(event) - pos);
+    strncpy((char*)&event[pos], connection->bnip_number, size);
     pos += size;
     event[pos++] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
@@ -1011,9 +1010,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_enhanced_call_status(hfp_hf_callback, hfp_connection->clcc_idx,
-                                             hfp_connection->clcc_dir, hfp_connection->clcc_status, hfp_connection->clcc_mode,
-                                             hfp_connection->clcc_mpty, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            hfp_hf_emit_enhanced_call_status(hfp_hf_callback, hfp_connection);
             break;
         case HFP_CMD_SET_SPEAKER_GAIN:
             hfp_connection->command = HFP_CMD_NONE;
