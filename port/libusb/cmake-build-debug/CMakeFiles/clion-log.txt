@@ -1,0 +1,54 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Projects/btstack/port/libusb
+example a2dp_sink_demo
+example a2dp_source_demo
+example ancs_client_demo -- with GATT DB
+example att_delayed_response -- with GATT DB
+example audio_duplex
+example dut_mode_classic
+example gap_dedicated_bonding
+example gap_inquiry
+example gap_le_advertisements
+example gap_link_keys
+example gatt_battery_query -- with GATT DB
+example gatt_browser -- with GATT DB
+example gatt_counter -- with GATT DB
+example gatt_heart_rate_client
+example gatt_streamer_server -- with GATT DB
+example hfp_ag_demo
+example hfp_hf_demo
+example hid_host_demo
+example hid_keyboard_demo
+example hid_mouse_demo
+example hog_keyboard_demo -- with GATT DB
+example hog_mouse_demo -- with GATT DB
+example hsp_ag_demo
+example hsp_hs_demo
+example le_data_channel_client
+example le_data_channel_server -- with GATT DB
+example le_mitm
+example le_streamer_client
+example led_counter
+example mesh_node_demo -- with GATT DB
+example mod_player
+example nordic_spp_le_counter -- with GATT DB
+example nordic_spp_le_streamer -- with GATT DB
+example pan_lwip_http_server
+example panu_demo
+example pbap_client_demo
+example sdp_bnep_query
+example sdp_general_query
+example sdp_rfcomm_query
+example servo_server
+example sine_player
+example sm_pairing_central -- with GATT DB
+example sm_pairing_peripheral -- with GATT DB
+example spp_and_gatt_counter -- with GATT DB
+example spp_and_gatt_streamer -- with GATT DB
+example spp_counter
+example spp_flowcontrol
+example spp_streamer
+example spp_streamer_client
+example ublox_spp_le_counter -- with GATT DB
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Projects/btstack/port/libusb/cmake-build-debug

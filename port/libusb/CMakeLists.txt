@@ -17,6 +17,7 @@ include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
 include_directories(../../3rd-party/lwip/core/src/include)
 include_directories(../../3rd-party/lwip/dhcp-server)
+include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
@@ -37,6 +38,7 @@ file(GLOB SOURCES_MD5       "../../3rd-party/md5/md5.c")
 file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
 file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
+file(GLOB SOURCES_RIJNDAEL  "../../3rd-party/rijndael/rijndael.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
@@ -94,6 +96,7 @@ set(SOURCES
 	${SOURCES_YXML}
 	${SOURCES_BLUEDROID}
 	${SOURCES_POSIX}
+	${SOURCES_RIJNDAEL}
 	${SOURCES_LIBUSB}
 	${SOURCES_SRC}
 	${SOURCES_BLE}

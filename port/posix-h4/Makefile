@@ -15,6 +15,7 @@ CORE += \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
 	le_device_db_tlv.c \
+	rijndael.c \
 	main.c \
 	btstack_stdin_posix.c \
 	wav_util.c 					\
@@ -42,7 +43,10 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/chipset/em9301 \
 	-I$(BTSTACK_ROOT)/chipset/stlc2500d \
 	-I$(BTSTACK_ROOT)/chipset/tc3566x \
+    -I${BTSTACK_ROOT}/3rd-party/rijndael \
     -I${BTSTACK_ROOT}/3rd-party/tinydir
+
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded

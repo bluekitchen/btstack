@@ -16,7 +16,8 @@ COMMON  += \
 			btstack_chipset_stlc2500d.c \
 			btstack_chipset_tc3566x.c \
 			btstack_chipset_bcm.c \
-			wav_util.c 					\
+            rijndael.c \
+            wav_util.c 					\
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
@@ -40,12 +41,15 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I$(BTSTACK_ROOT)/chipset/em9301 \
 		  -I$(BTSTACK_ROOT)/chipset/stlc2500d \
 		  -I$(BTSTACK_ROOT)/chipset/tc3566x \
+          -I${BTSTACK_ROOT}/3rd-party/rijndael \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir
+
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 
 VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
-VPATH += ${BTSTACK_ROOT}/chipset/bcm	
+VPATH += ${BTSTACK_ROOT}/chipset/bcm
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/chipset/csr
 VPATH += ${BTSTACK_ROOT}/chipset/em9301
