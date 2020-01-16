@@ -101,32 +101,36 @@ static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_hand
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+// returns number of bytes stored
+static uint16_t avrcp_target_pack_single_element_header(uint8_t * packet, uint16_t pos, rfc2978_charset_mib_enumid_t mib_enumid, avrcp_media_attribute_id_t attr_id, uint16_t attr_value_size){
+    btstack_assert(attr_id >= 1);
+    btstack_assert(attr_id <= AVRCP_MEDIA_ATTR_COUNT);
+
+    big_endian_store_32(packet, pos, attr_id);
+    big_endian_store_16(packet, pos+4, mib_enumid);
+    big_endian_store_16(packet, pos+6, attr_value_size);
+    return 8;
+}
+
+// returns number of bytes stored
 static uint16_t avrcp_target_pack_single_element_attribute_number(uint8_t * packet, uint16_t pos, avrcp_media_attribute_id_t attr_id, uint32_t value){
     if ((attr_id < 1) || (attr_id > AVRCP_MEDIA_ATTR_COUNT)) return 0;
     uint16_t attr_value_length = sprintf((char *)(packet+pos+8), "%0" PRIu32, value);
-    big_endian_store_32(packet, pos, attr_id); 
-    pos += 4;
-    big_endian_store_16(packet, pos, RFC2978_CHARSET_MIB_UTF8);
-    pos += 2;
-    big_endian_store_16(packet, pos, attr_value_length);
-    pos += 2;
+    (void) avrcp_target_pack_single_element_header(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value_length);
     return 8 + attr_value_length;
 }
 
-static uint16_t avrcp_target_pack_single_element_attribute_string(uint8_t * packet, uint16_t pos, rfc2978_charset_mib_enumid_t mib_enumid, avrcp_media_attribute_id_t attr_id, uint8_t * attr_value, uint16_t attr_value_to_copy, uint16_t attr_value_size, uint8_t header){
+// returns number of bytes stored
+static uint16_t avrcp_target_pack_single_element_attribute_string_fragment(uint8_t * packet, uint16_t pos, rfc2978_charset_mib_enumid_t mib_enumid, avrcp_media_attribute_id_t attr_id, uint8_t * attr_value, uint16_t attr_value_to_copy, uint16_t attr_value_size, uint8_t header){
     if (attr_value_size == 0) return 0;
     if ((attr_id < 1) || (attr_id > AVRCP_MEDIA_ATTR_COUNT)) return 0;
+    uint16_t bytes_stored = 0;
     if (header){
-        big_endian_store_32(packet, pos, attr_id); 
-        pos += 4;
-        big_endian_store_16(packet, pos, mib_enumid);
-        pos += 2;
-        big_endian_store_16(packet, pos, attr_value_size);
-        pos += 2;
+        bytes_stored += avrcp_target_pack_single_element_header(packet, pos, mib_enumid, attr_id, attr_value_size);
     }
-    (void)memcpy(packet + pos, attr_value, attr_value_to_copy);
-    pos += attr_value_size;
-    return (header * 8) + attr_value_size;
+    (void)memcpy(packet + pos + bytes_stored, attr_value, attr_value_to_copy);
+    bytes_stored += attr_value_to_copy;
+    return bytes_stored;
 }
 
 static int avrcp_target_abort_continue_response(uint16_t cid, avrcp_connection_t * connection){
@@ -254,13 +258,13 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
                     if (num_bytes_to_write <= num_free_bytes){
                         connection->attribute_value_offset = 0;
                         num_written_bytes = num_bytes_to_write;
-                        avrcp_target_pack_single_element_attribute_string(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value, attr_value_len, connection->now_playing_info[attr_index].len, header);
+                        avrcp_target_pack_single_element_attribute_string_fragment(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value, attr_value_len, connection->now_playing_info[attr_index].len, header);
                         break;
                     } 
                     fragmented = 1;
                     num_written_bytes = num_free_bytes;
                     attr_value_len = num_free_bytes - (header * AVRCP_ATTR_HEADER_LEN);
-                    avrcp_target_pack_single_element_attribute_string(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value, attr_value_len, connection->now_playing_info[attr_index].len, header);
+                    avrcp_target_pack_single_element_attribute_string_fragment(packet, pos, RFC2978_CHARSET_MIB_UTF8, attr_id, attr_value, attr_value_len, connection->now_playing_info[attr_index].len, header);
                     connection->attribute_value_offset += attr_value_len;
                     break;
                 }
