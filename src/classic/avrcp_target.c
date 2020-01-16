@@ -338,12 +338,17 @@ static int avrcp_target_send_response(uint16_t cid, avrcp_connection_t * connect
     return l2cap_send_prepared(cid, pos);
 }
 
-static uint8_t avrcp_target_response_accept(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t status){
-    // AVRCP_CTYPE_RESPONSE_REJECTED
-    connection->command_type = AVRCP_CTYPE_RESPONSE_ACCEPTED;
-    connection->subunit_type = subunit_type; 
+static void avrcp_target_response_setup(avrcp_connection_t * connection, avrcp_command_type_t command_type, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
+                                        avrcp_command_opcode_t opcode){
+    connection->command_type = command_type;
+    connection->subunit_type = subunit_type;
     connection->subunit_id =   subunit_id;
     connection->command_opcode = opcode;
+}
+
+static uint8_t avrcp_target_response_accept(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t status){
+    // AVRCP_CTYPE_RESPONSE_REJECTED
+    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_ACCEPTED, subunit_type, subunit_id, opcode);
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -360,10 +365,7 @@ static uint8_t avrcp_target_response_accept(avrcp_connection_t * connection, avr
 
 static uint8_t avrcp_target_response_reject(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, avrcp_status_code_t status){
     // AVRCP_CTYPE_RESPONSE_REJECTED
-    connection->command_type = AVRCP_CTYPE_RESPONSE_REJECTED;
-    connection->subunit_type = subunit_type; 
-    connection->subunit_id =   subunit_id;
-    connection->command_opcode = opcode;
+    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_REJECTED, subunit_type, subunit_id, opcode);
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -379,11 +381,7 @@ static uint8_t avrcp_target_response_reject(avrcp_connection_t * connection, avr
 }
 
 static uint8_t avrcp_target_response_not_implemented(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t event_id){
-    connection->command_type = AVRCP_CTYPE_RESPONSE_NOT_IMPLEMENTED;
-    connection->subunit_type = subunit_type; 
-    connection->subunit_id =   subunit_id;
-    connection->command_opcode = opcode;
-    
+    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_NOT_IMPLEMENTED, subunit_type, subunit_id, opcode);
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -399,13 +397,11 @@ static uint8_t avrcp_target_response_not_implemented(avrcp_connection_t * connec
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
+static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
     avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t event_id, const uint8_t * value, uint16_t value_len){
-    connection->command_type = AVRCP_CTYPE_RESPONSE_INTERIM;
-    connection->subunit_type = subunit_type; 
-    connection->subunit_id =   subunit_id;
-    connection->command_opcode = opcode;
-    
+
+    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -425,11 +421,8 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
 }
 
 static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id){
-    connection->command_type = AVRCP_CTYPE_RESPONSE_INTERIM;
-    connection->subunit_type = subunit_type; 
-    connection->subunit_id =   subunit_id;
-    connection->command_opcode = opcode;
-    
+    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -451,11 +444,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
 
 
 // static uint8_t avrcp_target_response_vendor_dependent_changed(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint8_t event_id){
-//     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-//     connection->command_type = AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
-//     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-//     connection->subunit_id = AVRCP_SUBUNIT_ID;
-    
+//     avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_CHANGED_STABLE, AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT);
 //     // company id is 3 bytes long
 //     int pos = connection->cmd_operands_length;
 //     connection->cmd_operands[pos++] = pdu_id;
@@ -477,11 +466,8 @@ static uint8_t avrcp_target_pass_through_response(uint16_t avrcp_cid, avrcp_comm
         log_error("Could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    connection->command_type = cmd_type;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
-    connection->subunit_id =   AVRCP_SUBUNIT_ID;
-    connection->command_opcode = AVRCP_CMD_OPCODE_PASS_THROUGH;
-    
+    avrcp_target_response_setup(connection, cmd_type, AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, AVRCP_CMD_OPCODE_PASS_THROUGH);
+
     int pos = 0; 
     connection->cmd_operands[pos++] = opid;
     connection->cmd_operands[pos++] = operands_length;
