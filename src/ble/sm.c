@@ -1015,7 +1015,7 @@ static void sm_done_for_handle(hci_con_handle_t con_handle){
     }
 }
 
-void sm_master_pairing_success(sm_connection_t *connection) {// master -> all done
+static void sm_master_pairing_success(sm_connection_t *connection) {// master -> all done
     connection->sm_engine_state = SM_INITIATOR_CONNECTED;
     sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
     sm_done_for_handle(connection->sm_handle);
