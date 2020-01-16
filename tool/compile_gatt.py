@@ -22,7 +22,7 @@ import tempfile
 
 # try to import Cryptodome
 try:
-    from Cryptodome2.Cipher import AES
+    from Cryptodome.Cipher import AES
     from Cryptodome.Hash import CMAC
     have_crypto = True
 except ImportError:
