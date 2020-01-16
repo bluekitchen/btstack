@@ -397,10 +397,7 @@ static uint8_t avrcp_target_response_not_implemented(avrcp_connection_t * connec
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id,
-    avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t event_id, const uint8_t * value, uint16_t value_len){
-
-    avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint8_t event_id, const uint8_t * value, uint16_t value_len){
 
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
@@ -977,28 +974,33 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
                             connection->notifications_enabled |= event_mask;
+                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
                             if (connection->track_selected){
-                                avrcp_target_response_vendor_dependent_interim(connection, subunit_type, subunit_id, opcode, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_SELECTED, 8);
+                                avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_SELECTED, 8);
                             } else {
-                                avrcp_target_response_vendor_dependent_interim(connection, subunit_type, subunit_id, opcode, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_NOT_SELECTED, 8);
+                                avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, AVRCP_NOTIFICATION_TRACK_NOT_SELECTED, 8);
                             }
                             break;
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:
                             connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_vendor_dependent_interim(connection, subunit_type, subunit_id, opcode, pdu_id, event_id, (const uint8_t *)&connection->playback_status, 1);
+                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->playback_status, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED: 
                             connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_vendor_dependent_interim(connection, subunit_type, subunit_id, opcode, pdu_id, event_id, NULL, 0);
+                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, NULL, 0);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:
                             connection->notify_volume_percentage_changed = 0;
                             connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_vendor_dependent_interim(connection, subunit_type, subunit_id, opcode, pdu_id, event_id, (const uint8_t *)&connection->volume_percentage, 1);
+                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->volume_percentage, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:
                             connection->notifications_enabled |= event_mask;
-                            avrcp_target_response_vendor_dependent_interim(connection, subunit_type, subunit_id, opcode, pdu_id, event_id, (const uint8_t *)&connection->battery_status, 1);
+                            avrcp_target_response_setup(connection, AVRCP_CTYPE_RESPONSE_INTERIM, subunit_type, subunit_id, opcode);
+                            avrcp_target_response_vendor_dependent_interim(connection, pdu_id, event_id, (const uint8_t *)&connection->battery_status, 1);
                             break;
                         case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
