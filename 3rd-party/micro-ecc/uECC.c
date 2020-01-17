@@ -368,7 +368,7 @@ typedef struct EccPoint {
 } EccPoint;
 
 static const uECC_word_t curve_p[uECC_WORDS] = uECC_CONCAT(Curve_P_, uECC_CURVE);
-static const uECC_word_t curve_b[uECC_WORDS] = uECC_CONCAT(Curve_B_, uECC_CURVE);
+// Global object `curve_b' is only referenced from function `curve_x_side', it should be defined within that functions block scope
 static const EccPoint curve_G = uECC_CONCAT(Curve_G_, uECC_CURVE);
 static const uECC_word_t curve_n[uECC_N_WORDS] = uECC_CONCAT(Curve_N_, uECC_CURVE);
 
@@ -2083,6 +2083,7 @@ void uECC_compress(const uint8_t public_key[uECC_BYTES*2], uint8_t compressed[uE
 
 /* Computes result = x^3 + ax + b. result must not overlap x. */
 static void curve_x_side(uECC_word_t * RESTRICT result, const uECC_word_t * RESTRICT x) {
+    static const uECC_word_t curve_b[uECC_WORDS] = uECC_CONCAT(Curve_B_, uECC_CURVE);
 #if (uECC_CURVE == uECC_secp256k1)
     vli_modSquare_fast(result, x); /* r = x^2 */
     vli_modMult_fast(result, result, x); /* r = x^3 */

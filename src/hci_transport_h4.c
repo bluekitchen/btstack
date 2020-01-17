@@ -136,8 +136,6 @@ static uint8_t * ehcill_tx_data;
 static uint16_t  ehcill_tx_len;   // 0 == no outgoing packet
 #endif
 
-static uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
@@ -314,6 +312,9 @@ static void hci_transport_h4_block_read(void){
 }
 
 static void hci_transport_h4_block_sent(void){
+
+    static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+
     switch (tx_state){
         case TX_W4_PACKET_SENT:
             // packet fully sent, reset state
@@ -715,21 +716,23 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
 #endif
 // --- end of eHCILL implementation ---------
 
-static const hci_transport_t hci_transport_h4 = {
-    /* const char * name; */                                        "H4",
-    /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
-    /* int    (*open)(void); */                                     &hci_transport_h4_open,
-    /* int    (*close)(void); */                                    &hci_transport_h4_close,
-    /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
-    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
-    /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
-    /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
-    /* void   (*reset_link)(void); */                               NULL,
-    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
-};
 
 // configure and return h4 singleton
 const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
+
+    static const hci_transport_t hci_transport_h4 = {
+            /* const char * name; */                                        "H4",
+            /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
+            /* int    (*open)(void); */                                     &hci_transport_h4_open,
+            /* int    (*close)(void); */                                    &hci_transport_h4_close,
+            /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
+            /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
+            /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
+            /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
+            /* void   (*reset_link)(void); */                               NULL,
+            /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
+    };
+
     btstack_uart = uart_driver;
     return &hci_transport_h4;
 }

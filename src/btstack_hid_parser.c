@@ -54,8 +54,6 @@
  *  btstack_hid_parser.c
  */
 
-const int hid_item_sizes[] = { 0, 1, 2, 4 };
-
 #ifdef HID_PARSER_PRETTY_PRINT
 
 static const char * type_names[] = {
@@ -150,6 +148,9 @@ static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_
 
 // parse descriptor item and read up to 32-bit bit value
 void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+
+    const int hid_item_sizes[] = { 0, 1, 2, 4 };
+
     // parse item header
     if (hid_descriptor_len < 1) return;
     uint16_t pos = 0;

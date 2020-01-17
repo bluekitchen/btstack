@@ -100,11 +100,12 @@ static uint32_t num_valid_entries;
 static const btstack_tlv_t * le_device_db_tlv_btstack_tlv_impl;
 static       void *          le_device_db_tlv_btstack_tlv_context;
 
-static const char tag_0 = 'B';
-static const char tag_1 = 'T';
-static const char tag_2 = 'D';
 
 static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
+    static const char tag_0 = 'B';
+    static const char tag_1 = 'T';
+    static const char tag_2 = 'D';
+
     return (tag_0 << 24) | (tag_1 << 16) | (tag_2 << 8) | index;
 }
 

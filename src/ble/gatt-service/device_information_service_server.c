@@ -75,18 +75,6 @@ typedef struct {
 	uint16_t  value_handle;
 } device_information_field_t;
 
-const uint16_t device_information_characteristic_uuids[] = {
-	ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING,
-	ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING,
-	ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
-	ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING,
-	ORG_BLUETOOTH_CHARACTERISTIC_FIRMWARE_REVISION_STRING,
-	ORG_BLUETOOTH_CHARACTERISTIC_SOFTWARE_REVISION_STRING,
-	ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID,
-	ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST,
-	ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID
-};
-
 static device_information_field_t device_information_fields[NUM_INFORMATION_FIELDS];
 
 static uint8_t device_information_system_id[8];
@@ -94,7 +82,6 @@ static uint8_t device_information_ieee_regulatory_certification[4];
 static uint8_t device_information_pnp_id[7];
 
 static att_service_handler_t       device_information_service;
-
 static void set_string(device_information_field_id_t field_id, const char * text){
 	device_information_fields[field_id].data = (uint8_t*) text;
 	device_information_fields[field_id].len  = strlen(text);
@@ -113,7 +100,20 @@ static uint16_t device_information_service_read_callback(hci_con_handle_t con_ha
 
 void device_information_service_server_init(void){
 
-	// get service handle range
+    const uint16_t device_information_characteristic_uuids[] = {
+            ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING,
+            ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING,
+            ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING,
+            ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING,
+            ORG_BLUETOOTH_CHARACTERISTIC_FIRMWARE_REVISION_STRING,
+            ORG_BLUETOOTH_CHARACTERISTIC_SOFTWARE_REVISION_STRING,
+            ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID,
+            ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST,
+            ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID
+    };
+
+
+    // get service handle range
 	uint16_t start_handle;
 	uint16_t end_handle;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION, &start_handle, &end_handle);

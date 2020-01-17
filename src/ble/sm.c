@@ -376,27 +376,6 @@ static uint16_t sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
 static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random);
 
-// horizontal: initiator capabilities
-// vertial:    responder capabilities
-static const stk_generation_method_t stk_generation_method [5] [5] = {
-    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
-    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
-    { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
-};
-
-// uses numeric comparison if one side has DisplayYesNo and KeyboardDisplay combinations
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-static const stk_generation_method_t stk_generation_method_with_secure_connection[5][5] = {
-    { JUST_WORKS,      JUST_WORKS,         PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT      },
-    { JUST_WORKS,      NUMERIC_COMPARISON, PK_INIT_INPUT,   JUST_WORKS,    NUMERIC_COMPARISON },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,      PK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT      },
-    { JUST_WORKS,      JUST_WORKS,         JUST_WORKS,      JUST_WORKS,    JUST_WORKS         },
-    { PK_RESP_INPUT,   NUMERIC_COMPARISON, PK_INIT_INPUT,   JUST_WORKS,    NUMERIC_COMPARISON },
-};
-#endif
-
 static void sm_run(void);
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
@@ -749,6 +728,27 @@ static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t st
 // - io capabilities
 // - OOB data availability
 static void sm_setup_tk(void){
+
+    // horizontal: initiator capabilities
+    // vertial:    responder capabilities
+    static const stk_generation_method_t stk_generation_method [5] [5] = {
+            { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+            { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+            { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+            { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
+            { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+    };
+
+    // uses numeric comparison if one side has DisplayYesNo and KeyboardDisplay combinations
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    static const stk_generation_method_t stk_generation_method_with_secure_connection[5][5] = {
+            { JUST_WORKS,      JUST_WORKS,         PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT      },
+            { JUST_WORKS,      NUMERIC_COMPARISON, PK_INIT_INPUT,   JUST_WORKS,    NUMERIC_COMPARISON },
+            { PK_RESP_INPUT,   PK_RESP_INPUT,      PK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT      },
+            { JUST_WORKS,      JUST_WORKS,         JUST_WORKS,      JUST_WORKS,    JUST_WORKS         },
+            { PK_RESP_INPUT,   NUMERIC_COMPARISON, PK_INIT_INPUT,   JUST_WORKS,    NUMERIC_COMPARISON },
+    };
+#endif
 
     // default: just works
     setup->sm_stk_generation_method = JUST_WORKS;
@@ -1530,11 +1530,13 @@ static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_k
     sm_cmac_message_start(x, message_len, sm_cmac_sc_buffer, &sm_sc_cmac_done);
 }
 
-static const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
 static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 static const uint8_t f5_length[] = { 0x01, 0x00};
 
 static void f5_calculate_salt(sm_connection_t * sm_conn){
+
+    static const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38, 0x60, 0x37, 0x0B, 0xDB, 0x5A, 0x60, 0x83, 0xBE};
+
     log_info("f5_calculate_salt");
     // calculate salt for f5
     const uint16_t message_len = 32;
@@ -3439,26 +3441,26 @@ static int sm_validate_stk_generation_method(void){
     }
 }
 
-// size of complete sm_pdu used to validate input
-static const uint8_t sm_pdu_size[] = {
-    0,  // 0x00 invalid opcode
-    7,  // 0x01 pairing request
-    7,  // 0x02 pairing response
-    17, // 0x03 pairing confirm
-    17, // 0x04 pairing random
-    2,  // 0x05 pairing failed
-    17, // 0x06 encryption information
-    11, // 0x07 master identification
-    17, // 0x08 identification information
-    8,  // 0x09 identify address information
-    17, // 0x0a signing information
-    2,  // 0x0b security request
-    65, // 0x0c pairing public key
-    17, // 0x0d pairing dhk check
-    2,  // 0x0e keypress notification
-};
-
 static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
+
+    // size of complete sm_pdu used to validate input
+    static const uint8_t sm_pdu_size[] = {
+            0,  // 0x00 invalid opcode
+            7,  // 0x01 pairing request
+            7,  // 0x02 pairing response
+            17, // 0x03 pairing confirm
+            17, // 0x04 pairing random
+            2,  // 0x05 pairing failed
+            17, // 0x06 encryption information
+            11, // 0x07 master identification
+            17, // 0x08 identification information
+            8,  // 0x09 identify address information
+            17, // 0x0a signing information
+            2,  // 0x0b security request
+            65, // 0x0c pairing public key
+            17, // 0x0d pairing dhk check
+            2,  // 0x0e keypress notification
+    };
 
     if ((packet_type == HCI_EVENT_PACKET) && (packet[0] == L2CAP_EVENT_CAN_SEND_NOW)){
         sm_run();
@@ -4290,6 +4292,9 @@ static void sm_handle_random_result_oob(void * arg){
     sm_run();
 }
 uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value)){
+
+    static btstack_crypto_random_t   sm_crypto_random_oob_request;
+
     if (sm_sc_oob_state != SM_SC_OOB_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     sm_sc_oob_callback = callback;
     sm_sc_oob_state = SM_SC_OOB_W4_RANDOM;
