@@ -418,6 +418,11 @@ static void hci_transport_em9304_spi_process_data(void){
     }
 }
 
+static void hci_transport_em9304_spi_packet_complete(void){
+    packet_handler(hci_packet[0], &hci_packet[1], hci_transport_em9304_spi_read_pos-1);
+    hci_transport_em9304_spi_reset_statemachine();
+}
+
 static void hci_transport_em9304_spi_block_read(void){
     switch (hci_transport_em9304_h4_state) {
         case H4_W4_PACKET_TYPE:
@@ -445,6 +450,10 @@ static void hci_transport_em9304_spi_block_read(void){
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
             }
+            if (hci_transport_em9304_spi_bytes_to_read == 0){
+                hci_transport_em9304_spi_packet_complete();
+                break;
+            }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
             
@@ -456,12 +465,15 @@ static void hci_transport_em9304_spi_block_read(void){
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
             }
+            if (hci_transport_em9304_spi_bytes_to_read == 0){
+                hci_transport_em9304_spi_packet_complete();
+                break;
+            }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
             
         case H4_W4_PAYLOAD:
-            packet_handler(hci_packet[0], &hci_packet[1], hci_transport_em9304_spi_read_pos-1);
-            hci_transport_em9304_spi_reset_statemachine();
+            hci_transport_em9304_spi_packet_complete();
             break;
         default:
             break;
