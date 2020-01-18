@@ -328,7 +328,7 @@ static void hci_transport_h4_block_sent(void){
             hci_transport_h4_ehcill_handle_packet_sent();
 #endif
             // notify upper stack that it can send again
-            packet_handler(HCI_EVENT_PACKET, &packet_sent_event[0], sizeof(packet_sent_event));
+            packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
             break;
 
 #ifdef ENABLE_EHCILL        
