@@ -137,7 +137,7 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
 static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
-static void gap_inquiry_explode(uint8_t * packet);
+static void gap_inquiry_explode(uint8_t *packet, uint16_t size);
 #endif
 
 static int  hci_power_control_on(void);
@@ -2083,8 +2083,11 @@ static void event_handler(uint8_t *packet, int size){
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
-            int offset = 3;
-            for (i=0; i<packet[2];i++){
+            if (size < 3) return;
+            uint16_t num_handles = packet[2];
+            if (size != (3 + num_handles * 2)) return;
+            uint16_t offset = 3;
+            for (i=0; i<num_handles;i++){
                 handle = little_endian_read_16(packet, offset) & 0x0fff;
                 offset += 2;
                 uint16_t num_packets = little_endian_read_16(packet, offset);
@@ -2434,7 +2437,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
         case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
-            gap_inquiry_explode(packet);
+            gap_inquiry_explode(packet, size);
             break;
 #endif
 
@@ -4161,7 +4164,7 @@ static void hci_notify_if_sco_can_send_now(void){
 }
 
 // parsing end emitting has been merged to reduce code size
-static void gap_inquiry_explode(uint8_t * packet){
+static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
     uint8_t event[19+GAP_INQUIRY_MAX_NAME_LEN];
 
     uint8_t * eir_data;
@@ -4169,9 +4172,24 @@ static void gap_inquiry_explode(uint8_t * packet){
     const uint8_t * name;
     uint8_t         name_len;
 
+    if (size < 3) return;
+
     int event_type = hci_event_packet_get_type(packet);
     int num_reserved_fields = (event_type == HCI_EVENT_INQUIRY_RESULT) ? 2 : 1;    // 2 for old event, 1 otherwise
     int num_responses       = hci_event_inquiry_result_get_num_responses(packet);
+
+    switch (event_type){
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+            if (size != (3 + (num_responses * 14))) return;
+            break;
+        case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
+            if (size != 257) return;
+            if (num_responses != 1) return;
+            break;
+        default:
+            return;
+    }
 
     // event[1] is set at the end
     int i;
