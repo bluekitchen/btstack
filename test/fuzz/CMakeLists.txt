@@ -101,14 +101,14 @@ set(SOURCES
         )
 list(SORT SOURCES)
 
+add_compile_options( -fsanitize=fuzzer,address -fprofile-instr-generate -fcoverage-mapping)
+add_link_options( -fsanitize=fuzzer,address)
+
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
 # create fuzz targets
 file(GLOB TARGETS_C "fuzz_*.c")
-
-add_compile_options( -fsanitize=fuzzer,address)
-add_link_options( -fsanitize=fuzzer,address)
 
 # create targets
 foreach(TARGET_FILE ${TARGETS_C})

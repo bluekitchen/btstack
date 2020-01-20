@@ -5312,3 +5312,15 @@ void hci_halting_defer(void){
             break;
     }
 }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void hci_free_connections_fuzz(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
+        btstack_linked_list_iterator_remove(&it);
+        btstack_memory_hci_connection_free(con);
+    }
+}
+#endif

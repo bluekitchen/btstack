@@ -1229,6 +1229,11 @@ void hci_le_set_own_address_type(uint8_t own_address_type);
  */
 uint16_t hci_get_manufacturer(void);
 
+/**
+ * Defer halt. Used by btstack_crypto to allow current HCI operation to complete
+ */
+void hci_halting_defer(void);
+
 // Only for PTS testing
 
 /** 
@@ -1241,10 +1246,8 @@ void hci_disable_l2cap_timeout_check(void);
  */
 HCI_STATE hci_get_state(void);
 
-/**
- * Defer halt. Used by btstack_crypto to allow current HCI operation to complete
- */
-void hci_halting_defer(void);
+// free all connections, used for fuzzing
+void hci_free_connections_fuzz(void);
 
 #if defined __cplusplus
 }
