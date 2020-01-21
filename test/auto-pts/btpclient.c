@@ -486,7 +486,7 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
         case GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT:
             btp_append_uint16(gatt_event_included_service_query_result_get_include_handle(packet));
-            btp_append_uint8(0); // Note: included primary service not reported currently
+            // btp_append_uint8(0); // Note: included primary service not reported currently
             gatt_event_included_service_query_result_get_service(packet, &service);
             btp_append_service(&service);
             response_buffer[0]++;
