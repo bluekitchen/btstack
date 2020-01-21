@@ -3002,4 +3002,31 @@ typedef uint8_t sm_key_t[16];
  * @param model_identifier
  */
 #define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION                               0x42
+
+/**
+ * @format 12124112
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param address  
+ * @param model_identifier
+ * @param num_subscription_ddresses
+ * @param subscription_address_index
+ * @param subscription_address
+ */
+#define MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM                 0x43   
+
+/**
+ * @format 12124112
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param address  
+ * @param model_identifier
+ * @param num_subscription_ddresses
+ * @param subscription_address_index
+ * @param subscription_address
+ */
+#define MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM                 0x43   
+
 #endif

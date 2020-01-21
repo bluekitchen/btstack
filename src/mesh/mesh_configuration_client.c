@@ -221,6 +221,14 @@ static const mesh_access_message_t mesh_configuration_client_model_subscription_
 };
 
 
+static const mesh_access_message_t mesh_configuration_client_sig_model_subscription_get = {
+        MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET, "22"
+};
+
+static const mesh_access_message_t mesh_configuration_client_vendor_model_subscription_get = {
+        MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET, "24"
+};
+
 static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -490,6 +498,27 @@ uint8_t mesh_configuration_client_send_model_subscription_delete_all(mesh_model_
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL);
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t mesh_configuration_client_send_model_subscription_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * network_pdu = NULL;
+    uint32_t ack_opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET;
+
+    if (mesh_model_is_bluetooth_sig(model_id)){
+        network_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_sig_model_subscription_get, dest, model_id);
+    } else {
+        network_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_vendor_model_subscription_get, dest, model_id);
+        ack_opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET;
+    }
+    
+    if (!network_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) network_pdu, ack_opcode);
+    return ERROR_CODE_SUCCESS;
+}
+
 // Model Operations
 static void mesh_configuration_client_composition_data_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     // Composition Data has variable of element descriptions, with two lists of model lists
@@ -671,14 +700,61 @@ static void mesh_configuration_client_model_subscription_handler(mesh_model_t *m
     mesh_access_message_processed(pdu);
 }
 
+static void mesh_configuration_client_model_subscription_event(mesh_model_t *mesh_model, mesh_pdu_t * pdu, uint8_t subevent_type){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t  status = mesh_access_parser_get_u8(&parser);
+    uint16_t address = mesh_access_parser_get_u16(&parser);
+    uint32_t model_identifier;
+
+    if (subevent_type == MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM) {
+        model_identifier = mesh_access_parser_get_sig_model_identifier(&parser);
+    } else {
+        model_identifier = mesh_access_parser_get_vendor_model_identifier(&parser);
+    }
+    uint8_t list_size = mesh_access_parser_available(&parser)/2;
+
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subevent_type;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = status;
+
+    little_endian_store_16(event, pos, address);
+    pos += 2;
+
+    event[pos++] = list_size;
+    uint8_t i;
+    for (i = 0; i < list_size; i++){
+        event[pos++] = i;
+        little_endian_store_16(event, pos, mesh_access_parser_get_u16(&parser));
+        (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos + 2);
+    }
+    mesh_access_message_processed(pdu);
+}
+
+static void mesh_configuration_client_sig_model_subscription_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_configuration_client_model_subscription_event(mesh_model, pdu, MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM);
+}
+
+static void mesh_configuration_client_vendor_model_subscription_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+        mesh_configuration_client_model_subscription_event(mesh_model, pdu, MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM);
+}
+
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
-    { MESH_FOUNDATION_OPERATION_BEACON_STATUS,              1, mesh_configuration_client_beacon_status_handler },
-    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,   10, mesh_configuration_client_composition_data_status_handler },
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,         1, mesh_configuration_client_default_ttl_handler },
-    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,          1, mesh_configuration_client_gatt_proxy_handler },
-    { MESH_FOUNDATION_OPERATION_RELAY_STATUS,               2, mesh_configuration_client_relay_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS,  12, mesh_configuration_client_model_publication_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS,  7, mesh_configuration_client_model_subscription_handler },
+    { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                  1, mesh_configuration_client_beacon_status_handler },
+    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,       10, mesh_configuration_client_composition_data_status_handler },
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,             1, mesh_configuration_client_default_ttl_handler },
+    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,              1, mesh_configuration_client_gatt_proxy_handler },
+    { MESH_FOUNDATION_OPERATION_RELAY_STATUS,                   2, mesh_configuration_client_relay_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS,      12, mesh_configuration_client_model_publication_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS,      7, mesh_configuration_client_model_subscription_handler },
+    { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST,    5, mesh_configuration_client_sig_model_subscription_handler},
+    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST, 7, mesh_configuration_client_vendor_model_subscription_handler},
     { 0, 0, NULL }
 };
 

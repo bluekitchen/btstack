@@ -393,7 +393,19 @@ uint8_t mesh_configuration_client_send_model_subscription_virtual_address_overwr
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_model_subscription_delete_all(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t address, uint32_t model_id);
- 
+
+/**
+ * @brief Get the list of subscription addresses of a SIG or vendor model within the element
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param vendor_model_id
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_model_subscription_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id);
+
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
