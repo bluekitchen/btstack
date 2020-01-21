@@ -1225,7 +1225,15 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             break;
         case BTP_GATT_OP_DISC_ALL_PRIM:
-            MESSAGE("BTP_GATT_OP_DISC_ALL_PRIM - NOP");
+            MESSAGE("BTP_GATT_OP_DISC_ALL_PRIM");
+            // initialize response
+            response_len = 0;
+            response_buffer[response_len++] = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                gatt_client_discover_primary_services(&gatt_client_packet_handler, remote_handle);
+            }
             break;
         case BTP_GATT_OP_DISC_PRIM_UUID:
             MESSAGE("BTP_GATT_OP_DISC_PRIM_UUID");
