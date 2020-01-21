@@ -22,3 +22,4 @@ TIInit_11.8.32.c
 initscripts_TIInit_6.7.16_bt_spec_4.1.c
 *.jdebug
 *.jdebug.user
+cmake-build-*
