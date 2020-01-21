@@ -323,6 +323,13 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                 }
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE: {
+                    // retry connect on 'connection failed to establish'
+                    uint8_t reason = hci_event_disconnection_complete_get_reason(packet);
+                    if (reason == ERROR_CODE_CONNECTION_FAILED_TO_BE_ESTABLISHED){
+                        MESSAGE("Auto-reconnect");
+                        gap_auto_connection_start(remote_addr_type, remote_addr);
+                        break;
+                    }
                     // assume remote device
                     printf("Disconnected\n");
                     uint8_t buffer[7];
