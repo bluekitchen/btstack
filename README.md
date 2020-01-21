@@ -33,8 +33,8 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **In Development:** BLE Mesh and more.
 
-It has been qualified with the Bluetooth SIG (QDID 110883) for GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP profiles and
-GATT, SM of the Bluetooth 5 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
+It has been qualified with the Bluetooth SIG (QDID 110883) for GAP 1.1, IOP, HFP 1.7, HSP 1.2, SPP 1.2, PAN 1.0, A2DP 1.3, AVRCP 1.6 profiles and
+GATT, SM of the Bluetooth Core 5.0 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
 ## Evaluation Platforms
 
