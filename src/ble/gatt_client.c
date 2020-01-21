@@ -2087,6 +2087,8 @@ void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_cli
     reverse_128(&packet[offset + 4], service->uuid128);
     if (uuid_has_bluetooth_prefix(service->uuid128)){
         service->uuid16 = big_endian_read_32(service->uuid128, 0);
+    } else {
+        service->uuid16 = 0;
     }
 }
 
@@ -2098,6 +2100,8 @@ void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, 
     reverse_128(&packet[offset+8], characteristic->uuid128);
     if (uuid_has_bluetooth_prefix(characteristic->uuid128)){
         characteristic->uuid16 = big_endian_read_32(characteristic->uuid128, 0);
+    } else {
+        characteristic->uuid16 = 0;
     }
 }
 
@@ -2106,6 +2110,8 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
     reverse_128(&packet[offset+2], descriptor->uuid128);
     if (uuid_has_bluetooth_prefix(descriptor->uuid128)){
         descriptor->uuid16 = big_endian_read_32(descriptor->uuid128, 0);
+    } else {
+        descriptor->uuid16 = 0;
     }
 }
 
