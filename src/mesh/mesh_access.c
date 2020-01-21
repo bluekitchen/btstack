@@ -583,6 +583,17 @@ uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * pa
     return mesh_model_get_model_identifier(vendor_id, model_id);
 }
 
+uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t * parser){
+    uint16_t model_id = mesh_access_parser_get_u16(parser);
+    return mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC, model_id);
+}
+
+uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser){
+    uint16_t vendor_id = mesh_access_parser_get_u16(parser);
+    uint16_t model_id  = mesh_access_parser_get_u16(parser);
+    return mesh_model_get_model_identifier(vendor_id, model_id);
+}
+
 // Mesh Access Message Builder
 
 // message builder
