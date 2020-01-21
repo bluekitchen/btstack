@@ -64,7 +64,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#define BTP_PAYLOAD_LEN_MAX 255
+#define BTP_PAYLOAD_LEN_MAX 1000
 #define BTP_HEADER_LEN 5
 
 #define LOG_BTP
