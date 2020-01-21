@@ -83,7 +83,7 @@ static uint8_t  response_op;
 static uint8_t  response_buffer[200];
 static uint16_t response_len;
 
-static uint8_t  value_buffer[100];
+static uint8_t  value_buffer[512];
 
 static char gap_name[249];
 static char gap_short_name[11];
@@ -514,6 +514,10 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                         // if we got here, the read failed
                         btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
                         btp_append_uint16(0);
+                        break;
+                    case BTP_GATT_OP_WRITE_LONG:
+                    case BTP_GATT_OP_WRITE:
+                        btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
                         break;
                     default:
                         break;
@@ -1210,7 +1214,12 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             MESSAGE("BTP_GATT_OP_SET_ENC_KEY_SIZE - NOP");
             btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             break;
-
+        case BTP_GATT_OP_EXCHANGE_MTU:
+            MESSAGE("BTP_GATT_OP_EXCHANGE_MTU - disable auto negotiation and exchange mtu handle %04x", remote_handle);
+            gatt_client_mtu_enable_auto_negotiation(0);
+            gatt_client_send_mtu_negotiation(gatt_client_packet_handler, remote_handle);
+            btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            break;
         case BTP_GATT_OP_START_SERVER:
             MESSAGE("BTP_GATT_OP_START_SERVER - NOP");
             btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
@@ -1386,10 +1395,30 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         case BTP_GATT_OP_WRITE:
-            MESSAGE("BTP_GATT_OP_WRITE - NOP");
+            MESSAGE("BTP_GATT_OP_WRITE");
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint16_t value_handle = little_endian_read_16(data, 7);
+                uint16_t value_length = little_endian_read_16(data, 9);
+                memcpy(value_buffer,  &data[11], value_length);
+                gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
+            }
             break;
         case BTP_GATT_OP_WRITE_LONG:
-            MESSAGE("BTP_GATT_OP_WRITE_LONG - NOP");
+            MESSAGE("BTP_GATT_OP_WRITE_LONG");
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint16_t value_handle = little_endian_read_16(data, 7);
+                uint16_t value_offset = little_endian_read_16(data, 9);
+                uint16_t value_length = little_endian_read_16(data, 11);
+                memcpy(value_buffer,  &data[13], value_length);
+                UNUSED(value_offset); // offset not supported by gatt client
+                gatt_client_write_long_value_of_characteristic(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
+            }
             break;
         case BTP_GATT_OP_CFG_NOTIFY:
             MESSAGE("BTP_GATT_OP_CFG_NOTIFY - NOP");
@@ -1484,6 +1513,7 @@ static void usage(void){
         case CONSOLE_STATE_GATT_CLIENT:
             printf("BTstack BTP Client for auto-pts framework: GATT Client console interface\n");
             printf("a - read attribute with handle 0009\n");
+            printf("l - write long attribute with handle 00ca\n");
             printf("x - Back to main\n");
             break;
         default:
@@ -1503,6 +1533,11 @@ static void stdin_process(char cmd){
     const uint8_t rpa_adv[]     = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
     const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
     const uint8_t gc_read_0009[] = { 0, 1,2,3,4,5,6, 0x09, 0x00};
+    const uint8_t gc_write_long_00ca[] = {
+        0x00, 0xEF, 0x32, 0x07, 0xDC, 0x1B, 0x00, 0xCA, 0x00, 0x00, 0x00, 0x23, 0x00, 0x12, 0x12, 0x12,
+        0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12,
+        0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12,
+    };
     uint8_t directed_advertisement_request[8];
     uint8_t connection_request[7];
     uint8_t conn_param_update[15];
@@ -1611,6 +1646,9 @@ static void stdin_process(char cmd){
             switch (cmd){
                 case 'a':
                     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_READ, 0, sizeof(gc_read_0009), gc_read_0009);
+                    break;
+                case 'l':
+                    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_WRITE_LONG, 0, sizeof(gc_write_long_00ca), gc_write_long_00ca);
                     break;
                 case 'x':
                     console_state = CONSOLE_STATE_MAIN;
