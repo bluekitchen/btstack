@@ -105,6 +105,8 @@ static uint8_t  gap_scan_response[31];
 static uint16_t gap_scan_response_len;
 static uint8_t gap_inquriy_scan_active;
 
+static bool gap_delete_bonding;
+
 static uint32_t current_settings;
 
 // GATT
@@ -209,6 +211,17 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                                 current_settings |= BTP_GAP_SETTING_POWERED;
                                 btp_send_gap_settings(BTP_GAP_OP_SET_POWERED);
                             }
+                            if (gap_delete_bonding){
+                                MESSAGE("Delete all bonding information");
+                                gap_delete_bonding = false;
+                                gap_delete_all_link_keys();
+                                uint16_t max_count = le_device_db_max_count();
+                                uint16_t i;
+                                for (i=0;i<max_count;i++){
+                                    le_device_db_remove(i);
+                                }
+                            }
+
                             // reset state and services
                             reset_gap();
                             reset_gatt();
@@ -688,7 +701,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             }
             break;
         case BTP_GAP_OP_SET_CONNECTABLE:
-            MESSAGE("BTP_GAP_OP_SET_CONNECTABLE - NOP");
+            MESSAGE("BTP_GAP_OP_SET_CONNECTABLE");
             if (controller_index == 0){
                 uint8_t connectable = data[0];
                 if (connectable) {
@@ -1727,6 +1740,9 @@ int btstack_main(int argc, const char * argv[])
 
     gap_cod = 0x007a020c;   // smartphone
     gap_set_class_of_device(gap_cod);
+
+    // delete all bonding information on start
+    gap_delete_bonding = true;
 
     // configure GAP LE
 
