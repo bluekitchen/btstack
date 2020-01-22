@@ -483,6 +483,7 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             btp_append_uint16(characteristic.start_handle);
             btp_append_uint16(characteristic.value_handle);
             btp_append_uint8(characteristic.properties);
+            btp_append_uuid(characteristic.uuid16, characteristic.uuid128);
             response_buffer[0]++;
             break;
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
