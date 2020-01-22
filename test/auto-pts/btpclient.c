@@ -432,16 +432,22 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     }
 }
 
+static void btp_append_assert(uint16_t num_bytes_to_append){
+    btstack_assert((response_len + num_bytes_to_append) <= sizeof(response_buffer));
+}
 static void btp_append_uint8(uint8_t uint){
+    btp_append_assert(1);
     response_buffer[response_len++] = uint;
 }
 
 static void btp_append_uint16(uint16_t uint){
+    btp_append_assert(2);
     little_endian_store_16(response_buffer, response_len, uint);
     response_len += 2;
 }
 
 static void btp_append_blob(uint16_t len, const uint8_t * data){
+    btp_append_assert(len);
     memcpy(&response_buffer[response_len], data, len);
     response_len += len;
 }
@@ -449,6 +455,7 @@ static void btp_append_blob(uint16_t len, const uint8_t * data){
 static void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128){
     if (uuid16 == 0){
         btp_append_uint8(16);
+        btp_append_assert(16);
         reverse_128(uuid128, &response_buffer[response_len]);
         response_len += 16;
     } else {

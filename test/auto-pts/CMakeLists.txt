@@ -62,6 +62,9 @@ set(SOURCES
 	${SOURCES_ZEPHYR}
 )
 
+add_compile_options( -fsanitize=address)
+add_link_options(    -fsanitize=address)
+
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
