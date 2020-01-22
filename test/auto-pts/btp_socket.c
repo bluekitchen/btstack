@@ -158,12 +158,12 @@ void btp_socket_process(btstack_data_source_t *socket_ds, btstack_data_source_ca
  * send BTP packet
  */
 void btp_socket_send_packet(uint16_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
-    if (socket_ds.source.fd == 0) return;
-
 #ifdef LOG_BTP
     log_info("btp_socket_send_packet: service_id %0x, opcode %02x, controller_index 0x%02x, length %u", service_id, opcode, controller_index, length);
     log_info_hexdump(data, length);
 #endif
+
+    if (socket_ds.source.fd == 0) return;
 
     uint8_t header[BTP_HEADER_LEN];
     header[0] = service_id;

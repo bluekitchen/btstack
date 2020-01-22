@@ -80,8 +80,8 @@ static btstack_timer_source_t gap_connection_timer;
 // Global response buffer
 static uint8_t  response_service_id;
 static uint8_t  response_op;
-static uint8_t  response_buffer[200];
 static uint16_t response_len;
+static uint8_t  response_buffer[512];
 
 static uint8_t  value_buffer[512];
 
@@ -448,11 +448,11 @@ static void btp_append_blob(uint16_t len, const uint8_t * data){
 
 static void btp_append_uuid(uint16_t uuid16, const uint8_t * uuid128){
     if (uuid16 == 0){
-        response_buffer[response_len++] = 16;
+        btp_append_uint8(16);
         reverse_128(uuid128, &response_buffer[response_len]);
         response_len += 16;
     } else {
-        response_buffer[response_len++] = 2;
+        btp_append_uint8(2);
         btp_append_uint16(uuid16);
     }
 }
@@ -505,9 +505,6 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 value_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
                 btp_append_uint16(value_len);
                 btp_append_blob(value_len, gatt_event_characteristic_value_query_result_get_value(packet));
-                uint8_t op = response_op;
-                response_op = 0;
-                btp_socket_send_packet(response_service_id, op, 0, response_len, response_buffer);
             } else {
                 MESSAGE("GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT but not op pending");
             }
@@ -518,10 +515,13 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 response_op = 0;
                 switch (op){
                     case BTP_GATT_OP_READ:
+                    case BTP_GATT_OP_READ_UUID:
                     case BTP_GATT_OP_READ_LONG:
-                        // if we got here, the read failed
-                        btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
-                        btp_append_uint16(0);
+                        if (response_len == 0){
+                            // if we got here, the read failed and we report the att status
+                            btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
+                            btp_append_uint16(0);
+                        }
                         break;
                     case BTP_GATT_OP_WRITE_LONG:
                     case BTP_GATT_OP_WRITE:
@@ -1529,6 +1529,7 @@ static void usage(void){
         case CONSOLE_STATE_GATT_CLIENT:
             printf("BTstack BTP Client for auto-pts framework: GATT Client console interface\n");
             printf("a - read attribute with handle 0009\n");
+            printf("a - discover characteristics with handle 0001-ffff\n");
             printf("l - write long attribute with handle 00ca\n");
             printf("x - Back to main\n");
             break;
@@ -1549,6 +1550,7 @@ static void stdin_process(char cmd){
     const uint8_t rpa_adv[]     = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x02, };
     const uint8_t non_rpa_adv[] = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x03, };
     const uint8_t gc_read_0009[] = { 0, 1,2,3,4,5,6, 0x09, 0x00};
+    const uint8_t gc_discover_characteristics_0000_ffff[] = { 0, 1,2,3,4,5,6, 0x01, 0x00, 0xff, 0xff};
     const uint8_t gc_write_long_00ca[] = {
         0x00, 0xEF, 0x32, 0x07, 0xDC, 0x1B, 0x00, 0xCA, 0x00, 0x00, 0x00, 0x23, 0x00, 0x12, 0x12, 0x12,
         0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12,
@@ -1662,6 +1664,9 @@ static void stdin_process(char cmd){
             switch (cmd){
                 case 'a':
                     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_READ, 0, sizeof(gc_read_0009), gc_read_0009);
+                    break;
+                case 'c':
+                    btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_DISC_ALL_CHRC, 0, sizeof(gc_discover_characteristics_0000_ffff), gc_discover_characteristics_0000_ffff);
                     break;
                 case 'l':
                     btp_packet_handler(BTP_SERVICE_ID_GATT, BTP_GATT_OP_WRITE_LONG, 0, sizeof(gc_write_long_00ca), gc_write_long_00ca);
