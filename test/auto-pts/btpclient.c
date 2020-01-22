@@ -110,6 +110,8 @@ static bool gap_delete_bonding;
 static uint32_t current_settings;
 
 // GATT
+static uint16_t gatt_read_multiple_handles[16];
+
 
 // debug
 static btstack_timer_source_t heartbeat;
@@ -537,6 +539,7 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                     case BTP_GATT_OP_READ:
                     case BTP_GATT_OP_READ_UUID:
                     case BTP_GATT_OP_READ_LONG:
+                    case BTP_GATT_OP_READ_MULTIPLE:
                         if (response_len == 0){
                             // if we got here, the read failed and we report the att status
                             btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
@@ -1408,7 +1411,19 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         case BTP_GATT_OP_READ_MULTIPLE:
-            MESSAGE("BTP_GATT_OP_READ_MULTIPLE - NOP");
+            MESSAGE("BTP_GATT_OP_READ_MULTIPLE");
+            // initialize response
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0) {
+                uint16_t handles_count = data[7];
+                uint16_t i;
+                for (i=0;i<handles_count;i++){
+                    gatt_read_multiple_handles[i] = little_endian_read_16(data, 8 + (i * 2));
+                }
+                gatt_client_read_multiple_characteristic_values(&gatt_client_packet_handler, remote_handle, handles_count, gatt_read_multiple_handles);
+            }
             break;
         case BTP_GATT_OP_WRITE_WITHOUT_RSP:
             MESSAGE("BTP_GATT_OP_WRITE_WITHOUT_RSP");
