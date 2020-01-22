@@ -1472,10 +1472,29 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             }
             break;
         case BTP_GATT_OP_CFG_NOTIFY:
-            MESSAGE("BTP_GATT_OP_CFG_NOTIFY - NOP");
+            MESSAGE("BTP_GATT_OP_CFG_NOTIFY");
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint8_t  enable = data[7];
+                uint16_t ccc_handle = little_endian_read_16(data, 8);
+                uint8_t data[2];
+                little_endian_store_16(data, 0, enable ? GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION : 0);
+                gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            }
             break;
         case BTP_GATT_OP_CFG_INDICATE:
-            MESSAGE("BTP_GATT_OP_CFG_INDICATE - NOP");
+            MESSAGE("BTP_GATT_OP_CFG_INDICATE");
+            if (controller_index == 0){
+                uint8_t  enable = data[7];
+                uint16_t ccc_handle = little_endian_read_16(data, 8);
+                uint8_t data[2];
+                little_endian_store_16(data, 0, enable ? GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION : 0);
+                gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
+            }
             break;
         default:
             btp_send_error_unknown_command(BTP_SERVICE_ID_GATT);
