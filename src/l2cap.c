@@ -3784,7 +3784,7 @@ static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel){
 
 static void l2cap_le_send_pdu(l2cap_channel_t *channel){
     btstack_assert(channel != NULL);
-    btstack_assert(channel->send_pdu_buffer != NULL);
+    btstack_assert(channel->send_sdu_buffer != NULL);
     btstack_assert(channel->credits_outgoing > 0);
 
     // send part of SDU
