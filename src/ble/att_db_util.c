@@ -127,7 +127,7 @@ static int att_db_util_assert_space(uint16_t size){
 #ifdef HAVE_MALLOC
     uint16_t new_size = att_db_max_size;
 	while (new_size < required_size){
-        new_size += ATT_DB_BUFFER_INCREMENT
+        new_size += ATT_DB_BUFFER_INCREMENT;
 	}
 	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
 	if (!new_db) {
