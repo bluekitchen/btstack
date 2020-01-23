@@ -8304,30 +8304,30 @@ static inline uint32_t mesh_subevent_configuration_sig_model_subscription_list_i
     return little_endian_read_32(event, 8);
 }
 /**
- * @brief Get field num_subscription_ddresses from event MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM
+ * @brief Get field num_subscription_addresses from event MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM
  * @param event packet
- * @return num_subscription_ddresses
+ * @return num_subscription_addresses
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_configuration_sig_model_subscription_list_item_get_num_subscription_ddresses(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_sig_model_subscription_list_item_get_num_subscription_addresses(const uint8_t * event){
     return event[12];
 }
 /**
- * @brief Get field subscription_address_index from event MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM
+ * @brief Get field subscription_address_pos from event MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM
  * @param event packet
- * @return subscription_address_index
+ * @return subscription_address_pos
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_configuration_sig_model_subscription_list_item_get_subscription_address_index(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_sig_model_subscription_list_item_get_subscription_address_pos(const uint8_t * event){
     return event[13];
 }
 /**
- * @brief Get field subscription_address from event MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM
+ * @brief Get field subscription_address_item from event MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM
  * @param event packet
- * @return subscription_address
+ * @return subscription_address_item
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_configuration_sig_model_subscription_list_item_get_subscription_address(const uint8_t * event){
+static inline uint16_t mesh_subevent_configuration_sig_model_subscription_list_item_get_subscription_address_item(const uint8_t * event){
     return little_endian_read_16(event, 14);
 }
 
@@ -8368,31 +8368,197 @@ static inline uint32_t mesh_subevent_configuration_vendor_model_subscription_lis
     return little_endian_read_32(event, 8);
 }
 /**
- * @brief Get field num_subscription_ddresses from event MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM
+ * @brief Get field num_subscription_addresses from event MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM
  * @param event packet
- * @return num_subscription_ddresses
+ * @return num_subscription_addresses
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_configuration_vendor_model_subscription_list_item_get_num_subscription_ddresses(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_vendor_model_subscription_list_item_get_num_subscription_addresses(const uint8_t * event){
     return event[12];
 }
 /**
- * @brief Get field subscription_address_index from event MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM
+ * @brief Get field subscription_address_pos from event MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM
  * @param event packet
- * @return subscription_address_index
+ * @return subscription_address_pos
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_configuration_vendor_model_subscription_list_item_get_subscription_address_index(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_vendor_model_subscription_list_item_get_subscription_address_pos(const uint8_t * event){
     return event[13];
 }
 /**
- * @brief Get field subscription_address from event MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM
+ * @brief Get field subscription_address_item from event MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM
  * @param event packet
- * @return subscription_address
+ * @return subscription_address_item
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_configuration_vendor_model_subscription_list_item_get_subscription_address(const uint8_t * event){
+static inline uint16_t mesh_subevent_configuration_vendor_model_subscription_list_item_get_subscription_address_item(const uint8_t * event){
     return little_endian_read_16(event, 14);
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_netkey_index_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_netkey_index_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_netkey_index_list_item_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_netkey_index_list_item_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field num_netkey_indexes from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return num_netkey_indexes
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_netkey_index_list_item_get_num_netkey_indexes(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field netkey_index_pos from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return netkey_index_pos
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_netkey_index_list_item_get_netkey_index_pos(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field netkey_index_item from event MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return netkey_index_item
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_netkey_index_list_item_get_netkey_index_item(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_appkey_index_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field netkey_index_item from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX
+ * @param event packet
+ * @return netkey_index_item
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_get_netkey_index_item(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field appkey_index_item from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX
+ * @param event packet
+ * @return appkey_index_item
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_get_appkey_index_item(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_appkey_index_list_item_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field netkey_index from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return netkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_netkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field num_appkey_indexes from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return num_appkey_indexes
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_appkey_index_list_item_get_num_appkey_indexes(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field appkey_index_pos from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return appkey_index_pos
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_appkey_index_list_item_get_appkey_index_pos(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field netkey_index_item from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return netkey_index_item
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_netkey_index_item(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field appkey_index_item from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @param event packet
+ * @return appkey_index_item
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_appkey_index_item(const uint8_t * event){
+    return little_endian_read_16(event, 12);
 }
 
 

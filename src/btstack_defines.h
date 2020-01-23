@@ -3010,9 +3010,9 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param address  
  * @param model_identifier
- * @param num_subscription_ddresses
- * @param subscription_address_index
- * @param subscription_address
+ * @param num_subscription_addresses
+ * @param subscription_address_pos
+ * @param subscription_address_item
  */
 #define MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM                 0x43   
 
@@ -3023,10 +3023,54 @@ typedef uint8_t sm_key_t[16];
  * @param foundation_status
  * @param address  
  * @param model_identifier
- * @param num_subscription_ddresses
- * @param subscription_address_index
- * @param subscription_address
+ * @param num_subscription_addresses
+ * @param subscription_address_pos
+ * @param subscription_address_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM                 0x43   
+#define MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM               0x44  
+
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ */
+#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX                                      0x45
+
+/**
+ * @format 121112
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param num_netkey_indexes
+ * @param netkey_index_pos
+ * @param netkey_index_item
+ */
+#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM                             0x46
+
+/**
+ * @format 12122
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param netkey_index_item
+ * @param appkey_index_item
+ */
+#define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX                                       0x47
+
+/**
+ * @format 12121122
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param netkey_index
+ * @param num_appkey_indexes
+ * @param appkey_index_pos
+ * @param netkey_index_item
+ * @param appkey_index_item
+ */
+ #define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM                            0x48
+
 
 #endif

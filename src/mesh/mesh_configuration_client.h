@@ -406,6 +406,99 @@ uint8_t mesh_configuration_client_send_model_subscription_delete_all(mesh_model_
 uint8_t mesh_configuration_client_send_model_subscription_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_id);
 
 
+/**
+ * @brief Add a NetKey to a NetKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param index
+ * @param netkey
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_netkey_add(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t index, uint8_t * netkey);
+
+/**
+ * @brief Update NetKey in a NetKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param index
+ * @param netkey
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_netkey_update(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t index, uint8_t * netkey);
+
+/**
+ * @brief Delete a NetKey from a NetKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_netkey_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t index);
+
+/**
+ * @brief Get NetKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_netkey_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+
+/**
+ * @brief Add a AppKey to a AppKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param netk_index
+ * @param appk_index
+ * @param appkey
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_appkey_add(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, uint16_t appk_index, uint8_t * appkey);
+
+/**
+ * @brief Update AppKey in a AppKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param netk_index
+ * @param appk_index
+ * @param appkey
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_appkey_update(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, uint16_t appk_index, uint8_t * appkey);
+
+/**
+ * @brief Delete a AppKey from a AppKey List on a node.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param netk_index
+ * @param appk_index
+ * @param index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_appkey_delete(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, uint16_t appk_index);
+
+/**
+ * @brief Get AppKey List on a node that is bound to the NetKey.
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param netk_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_appkey_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
