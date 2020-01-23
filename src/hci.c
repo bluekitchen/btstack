@@ -2085,7 +2085,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
             if (size < 3) return;
             uint16_t num_handles = packet[2];
-            if (size != (3 + num_handles * 2)) return;
+            if (size != (3 + num_handles * 4)) return;
             uint16_t offset = 3;
             for (i=0; i<num_handles;i++){
                 handle = little_endian_read_16(packet, offset) & 0x0fff;
