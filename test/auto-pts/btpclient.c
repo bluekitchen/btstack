@@ -545,20 +545,29 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             if (response_op != 0){
                 uint8_t op = response_op;
                 response_op = 0;
+                uint8_t att_status = gatt_event_query_complete_get_att_status(packet);
                 switch (op){
                     case BTP_GATT_OP_READ:
                     case BTP_GATT_OP_READ_UUID:
                     case BTP_GATT_OP_READ_LONG:
                     case BTP_GATT_OP_READ_MULTIPLE:
                         if (response_len == 0){
-                            // if we got here, the read failed and we report the att status
-                            btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
+                            // if we got here, the read failed
+
+                            // ignore timeout / auto-pts framework expects to get a socket read timeout
+                            if (att_status == ATT_ERROR_TIMEOUT) return;
+
+                            // otherwise, report the att status
+                            btp_append_uint8(att_status);
                             btp_append_uint16(0);
                         }
                         break;
                     case BTP_GATT_OP_WRITE_LONG:
                     case BTP_GATT_OP_WRITE:
-                        btp_append_uint8(gatt_event_query_complete_get_att_status(packet));
+                        // ignore timeout / auto-pts framework expects to get a socket read timeout
+                        if (att_status == ATT_ERROR_TIMEOUT) return;
+
+                        btp_append_uint8(att_status);
                         break;
                     default:
                         break;
@@ -1512,8 +1521,8 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 uint8_t data[2];
                 little_endian_store_16(data, 0, enable ? GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION : 0);
                 gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
-                gatt_client_characteristic_t characteristic;
                 // Assume value handle is just before ccc handle - never use for production!
+                gatt_client_characteristic_t characteristic;
                 characteristic.value_handle = ccc_handle - 1;
                 gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, remote_handle, &characteristic);
             }
@@ -1529,6 +1538,10 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 uint8_t data[2];
                 little_endian_store_16(data, 0, enable ? GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION : 0);
                 gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
+                // Assume value handle is just before ccc handle - never use for production!
+                gatt_client_characteristic_t characteristic;
+                characteristic.value_handle = ccc_handle - 1;
+                gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, remote_handle, &characteristic);
             }
             break;
         default:
