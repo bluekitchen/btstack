@@ -48,7 +48,10 @@
 #include "bluetooth.h"
 
 // ATT DB Storage
-#ifndef HAVE_MALLOC
+#ifdef HAVE_MALLOC
+// number of bytes that the att db buffer is increased on init / realloc
+#define ATT_DB_BUFFER_INCREMENT 128
+#else
 #ifdef MAX_ATT_DB_SIZE
 static uint8_t att_db_storage[MAX_ATT_DB_SIZE];
 #else
@@ -70,8 +73,8 @@ static void att_db_util_set_end_tag(void){
 
 void att_db_util_init(void){
 #ifdef HAVE_MALLOC
-	att_db = (uint8_t*) malloc(128);
-	att_db_max_size = 128;
+	att_db = (uint8_t*) malloc(ATT_DB_BUFFER_INCREMENT);
+	att_db_max_size = ATT_DB_BUFFER_INCREMENT;
 #else
 	att_db = att_db_storage;
 	att_db_max_size = sizeof(att_db_storage);
@@ -119,9 +122,13 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
  */
 static int att_db_util_assert_space(uint16_t size){
 	size += 2; // for end tag
-	if ((att_db_size + size) <= att_db_max_size) return 1;
+	uint16_t required_size = att_db_size + size;
+	if (required_size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
-	int new_size = att_db_size + att_db_size / 2;
+    uint16_t new_size = att_db_max_size;
+	while (new_size < required_size){
+        new_size += ATT_DB_BUFFER_INCREMENT
+	}
 	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
 	if (!new_db) {
 		log_error("att_db: realloc failed");
