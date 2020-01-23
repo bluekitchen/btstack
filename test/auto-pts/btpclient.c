@@ -485,6 +485,13 @@ static void btp_append_service(gatt_client_service_t * service){
     btp_append_uuid(service->uuid16, service->uuid128);
 }
 
+static void btp_append_remote_address(void) {
+    btp_append_uint8(remote_addr_type);
+    btp_append_assert(6);
+    reverse_bd_addr(remote_addr, &response_buffer[response_len]);
+    response_len += 6;
+}
+
 static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(channel);
     UNUSED(size);
@@ -557,6 +564,26 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             } else {
                 MESSAGE("GATT_EVENT_QUERY_COMPLETE but not op pending");
             }
+            break;
+        case GATT_EVENT_NOTIFICATION:
+            response_len = 0;
+            btp_append_remote_address();
+            btp_append_uint8(1);    // Notification
+            btp_append_uint16(gatt_event_notification_get_value_handle(packet));
+            btp_append_uint16(gatt_event_notification_get_value_length(packet));
+            btp_append_blob(gatt_event_notification_get_value_length(packet), gatt_event_notification_get_value(packet));
+            btp_socket_send_packet(BTP_SERVICE_ID_GATT, BTP_GATT_EV_NOTIFICATION, 0, response_len, response_buffer);
+            break;
+        case GATT_EVENT_INDICATION:
+            response_len = 0;
+            btp_append_remote_address();
+            btp_append_uint8(2);    // Indication
+            btp_append_uint16(gatt_event_indication_get_value_handle(packet));
+            btp_append_uint16(gatt_event_indication_get_value_length(packet));
+            btp_append_blob(gatt_event_indication_get_value_length(packet), gatt_event_indication_get_value(packet));
+            btp_socket_send_packet(BTP_SERVICE_ID_GATT, BTP_GATT_EV_NOTIFICATION, 0, response_len, response_buffer);
+            break;
+        default:
             break;
     }
 }
