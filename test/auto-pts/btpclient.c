@@ -111,6 +111,7 @@ static uint32_t current_settings;
 
 // GATT
 static uint16_t gatt_read_multiple_handles[16];
+static gatt_client_notification_t gatt_client_notification;
 
 
 // debug
@@ -351,6 +352,8 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     buffer[0] =  remote_addr_type;
                     reverse_bd_addr(remote_addr, &buffer[1]);
                     btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_DISCONNECTED, 0, sizeof(buffer), &buffer[0]);
+                    // also unregister
+                    gatt_client_stop_listening_for_characteristic_value_updates(&gatt_client_notification);
                     break;
                 }
 
@@ -1509,6 +1512,10 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 uint8_t data[2];
                 little_endian_store_16(data, 0, enable ? GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION : 0);
                 gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
+                gatt_client_characteristic_t characteristic;
+                // Assume value handle is just before ccc handle - never use for production!
+                characteristic.value_handle = ccc_handle - 1;
+                gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, remote_handle, &characteristic);
             }
             break;
         case BTP_GATT_OP_CFG_INDICATE:
