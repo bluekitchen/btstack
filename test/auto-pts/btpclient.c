@@ -1204,6 +1204,15 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, characteristic_id);
             }
             break;
+        case BTP_GATT_OP_ADD_INCLUDED_SERVICE:
+            MESSAGE("BTP_GATT_OP_ADD_INCLUDED_SERVICE - NOP");
+            if (controller_index == 0){
+                // TODO: look up service by service-id, find start/end group handle + UUID16 then add included service
+                // use hard-coded values from btstack/gatt.py, init_server_1
+                att_db_util_add_included_service_uuid16(0x0001, 0x0004, 0xaa50);
+                btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 2, data);
+            }
+            break;
         case BTP_GATT_OP_SET_VALUE:
             MESSAGE("BTP_GATT_OP_SET_VALUE");
             if (controller_index == 0){
