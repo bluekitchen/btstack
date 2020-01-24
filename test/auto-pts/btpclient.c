@@ -1025,6 +1025,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 gap_drop_link_key_for_bd_addr(command_addr);
                 uint16_t index;
                 for (index =0 ; index < le_device_db_max_count(); index++){
+#if 0
                     int addr_type;
                     bd_addr_t addr;
                     // sm_key_t irk;
@@ -1033,6 +1034,10 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                     if (bd_addr_cmp(command_addr, addr) == 0){
                         le_device_db_remove(index);
                     }
+#else
+                    // just remove all bondings
+                    le_device_db_remove(index);
+#endif
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
