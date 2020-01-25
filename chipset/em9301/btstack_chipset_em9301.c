@@ -53,23 +53,36 @@
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
-#define HCI_OPCODE_EM_WRITE_PATCH_START        (0xFC27)
-#define HCI_OPCODE_EM_WRITE_PATCH_CONTINUE     (0xFC28)
-#define HCI_OPCODE_EM_WRITE_PATCH_ABORT        (0xFC29)
-#define HCI_OPCODE_EM_CPU_RESET                (0xFC32)
+// general vendor opcodes
+#define HCI_OPCODE_EM_SET_PUBLIC_ADDRESS                0x02
+#define HCI_OPCODE_EM_SET_UART_BAUD_RATE                0x07
+#define HCI_OPCODE_EM_TRANSMITTER_TEST                  0x11
+#define HCI_OPCODE_EM_TRANSMITTER_TEST_END              0x12
+
+// EM9301 vendor opcodes
+#define HCI_OPCODE_EM_SET_OPERATING_STATE               0x03
+
+// EM9304 vendor opcodes
+#define HCI_OPCODE_EM_WRITE_PATCH_START                 0x27
+#define HCI_OPCODE_EM_WRITE_PATCH_CONTINUE              0x28
+#define HCI_OPCODE_EM_WRITE_PATCH_ABORT                 0x29
+#define HCI_OPCODE_EM_SET_MEMORY_MODE                   0x2B
+#define HCI_OPCODE_EM_SET_SLEEP_OPTIONS                 0x2D
+#define HCI_OPCODE_EM_CPU_RESET                         0x32
+#define HCI_OPCODE_EM_PATCH_QUERY                       0x34
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_vendor_em_set_public_address = {
-    0xFC02, "B"
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_PUBLIC_ADDRESS), "B"
 };
 
 /**
  * @param baud_rate_index
  */
 const hci_cmd_t hci_vendor_em_set_uart_baudrate = {
-    0xFC07, "1"
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_UART_BAUD_RATE), "1"
 };
 
 /**
@@ -79,20 +92,20 @@ const hci_cmd_t hci_vendor_em_set_uart_baudrate = {
  * @param packet_payload_type
  */
 const hci_cmd_t hci_vendor_em_transmitter_test = {
-    0xFC11, "1111"
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_TRANSMITTER_TEST), "1111"
 };
 
 /**
  */
 const hci_cmd_t hci_vendor_em_transmitter_test_end = {
-    0xFC12, ""
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_TRANSMITTER_TEST_END), ""
 };
 
 /**
  * @param patch_index
  */
 const hci_cmd_t hci_vendor_em_patch_query = {
-    0xFC34, "2"
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_PATCH_QUERY), "2"
 };
 
 /**
@@ -100,14 +113,21 @@ const hci_cmd_t hci_vendor_em_patch_query = {
  * @param memory_attribute
  */
 const hci_cmd_t hci_vendor_em_set_memory_mode = {
-    0xFC2B, "1"
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_MEMORY_MODE), "1"
 };
 
 /**
  * @param sleep_option_settings
  */
 const hci_cmd_t hci_vendor_em_set_sleep_options = {
-    0xFC2D, "1"
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_SLEEP_OPTIONS), "1"
+};
+
+/**
+ * @param operating_state_settings
+ */
+const hci_cmd_t hci_vendor_em_set_operating_state = {
+    OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_OPERATING_STATE), "1"
 };
 
 // baudrate to index for hci_vendor_em_set_uart_baudrate
@@ -167,7 +187,7 @@ static uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
 #endif
 
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
-    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
+    little_endian_store_16(hci_cmd_buffer, 0, hci_vendor_em_set_public_address.opcode);
     hci_cmd_buffer[2] = 0x06;
     reverse_bd_addr(addr, &hci_cmd_buffer[3]);
 }
@@ -186,7 +206,7 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
 		log_error("Baudrate %u not found in table", baudrate);
 		return;
 	}
-    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x07));
+    little_endian_store_16(hci_cmd_buffer, 0, hci_vendor_em_set_uart_baudrate.opcode);
     hci_cmd_buffer[2] = 0x01;
     hci_cmd_buffer[3] = i;
 }
@@ -205,7 +225,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     if (container_blob_offset >= container_blob_size) {
     	if (0 == em_cpu_reset_sent){
     		// send EM CPU Reset
-		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_CPU_RESET);
+		    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, HCI_OPCODE_EM_CPU_RESET));
 		    hci_cmd_buffer[2] = 0;
 		    em_cpu_reset_sent = 1;
 		    return BTSTACK_CHIPSET_VALID_COMMAND;
@@ -241,7 +261,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 				(int) little_endian_read_16(container_blob_data, container_blob_offset+14), 
 				(int) container_size);
 			// build command
-		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_START);
+		    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PATCH_START));
 		    hci_cmd_buffer[2] = 5 + bytes_to_upload;
 		    hci_cmd_buffer[3] = 0;	// upload to iRAM1
 		    little_endian_store_32(hci_cmd_buffer, 4, crc);
@@ -256,7 +276,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 			bytes_to_upload = btstack_min(58, container_end - container_blob_offset);
 			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
 			// build command
-		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_CONTINUE);
+		    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PATCH_CONTINUE));
 		    hci_cmd_buffer[2] = 6 + bytes_to_upload;
 		    little_endian_store_16(hci_cmd_buffer, 3, patch_sequence_number++);
 		    little_endian_store_32(hci_cmd_buffer, 5, crc);
