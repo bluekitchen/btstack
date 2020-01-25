@@ -738,7 +738,7 @@ static void hci_transport_h5_read_next_byte(void){
 
 // track time receiving SLIP frame
 static uint32_t hci_transport_h5_receive_start;
-static void hci_transport_h5_block_received(){
+static void hci_transport_h5_block_received(void){
     if (hci_transport_h5_active == 0) return;
 
     // track start time when receiving first byte // a bit hackish

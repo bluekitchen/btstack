@@ -145,7 +145,7 @@ static void btstack_em9304_spi_embedded_set_transfer_done_callback(void (*callba
 /**
  * @brief Poll READY state
  */
-static int btstack_em9304_spi_embedded_get_ready(){
+static int btstack_em9304_spi_embedded_get_ready(void){
     return hal_em9304_spi_get_ready();
 }
 
