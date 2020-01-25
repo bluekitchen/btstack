@@ -53,9 +53,6 @@
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
-// should go to some common place
-#define OPCODE(ogf, ocf) (ocf | ogf << 10)
-
 #define HCI_OPCODE_EM_WRITE_PATCH_START        (0xFC27)
 #define HCI_OPCODE_EM_WRITE_PATCH_CONTINUE     (0xFC28)
 #define HCI_OPCODE_EM_WRITE_PATCH_ABORT        (0xFC29)
