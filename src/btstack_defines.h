@@ -3004,30 +3004,16 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION                               0x42
 
 /**
- * @format 12124112
+ * @format 1214112
  * @param subevent_code
  * @param dest
  * @param foundation_status
- * @param address  
  * @param model_identifier
  * @param num_subscription_addresses
  * @param subscription_address_pos
  * @param subscription_address_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_SIG_MODEL_SUBSCRIPTION_LIST_ITEM                 0x43   
-
-/**
- * @format 12124112
- * @param subevent_code
- * @param dest
- * @param foundation_status
- * @param address  
- * @param model_identifier
- * @param num_subscription_addresses
- * @param subscription_address_pos
- * @param subscription_address_item
- */
-#define MESH_SUBEVENT_CONFIGURATION_VENDOR_MODEL_SUBSCRIPTION_LIST_ITEM               0x44  
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_SUBSCRIPTION_LIST_ITEM                     0x43   
 
 
 /**
@@ -3036,7 +3022,7 @@ typedef uint8_t sm_key_t[16];
  * @param dest
  * @param foundation_status
  */
-#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX                                      0x45
+#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX                                      0x44
 
 /**
  * @format 121112
@@ -3047,7 +3033,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_pos
  * @param netkey_index_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM                             0x46
+#define MESH_SUBEVENT_CONFIGURATION_NETKEY_INDEX_LIST_ITEM                             0x45
 
 /**
  * @format 12122
@@ -3057,7 +3043,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_item
  * @param appkey_index_item
  */
-#define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX                                       0x47
+#define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX                                       0x46
 
 /**
  * @format 12121122
@@ -3070,7 +3056,7 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_item
  * @param appkey_index_item
  */
- #define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM                            0x48
+ #define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM                            0x47
 
 /**
  * @format 12121
@@ -3080,17 +3066,29 @@ typedef uint8_t sm_key_t[16];
  * @param netkey_index_item
  * @param identity_status
  */
-#define MESH_SUBEVENT_CONFIGURATION_NODE_IDENTITY                                      0x49
+#define MESH_SUBEVENT_CONFIGURATION_NODE_IDENTITY                                      0x48
 
 /**
- * @format 121224
+ * @format 12124
  * @param subevent_code
  * @param dest
  * @param foundation_status
- * @param element_address
  * @param appkey_index
  * @param model_identifier
  */
-#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP                                           0x59
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP                                           0x49
+
+/**
+ * @format 1214112
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param model_id
+ * @param num_appkey_indexes
+ * @param appkey_index_pos
+ * @param appkey_index_item
+ */
+#define MESH_SUBEVENT_CONFIGURATION_MODEL_APP_LIST_ITEM                                 0x50
+
 
 #endif
