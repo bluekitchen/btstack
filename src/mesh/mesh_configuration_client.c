@@ -263,6 +263,14 @@ static const mesh_access_message_t mesh_configuration_client_node_identity_set =
         MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET, "21"
 };
 
+static const mesh_access_message_t mesh_configuration_client_model_app_bind = {
+        MESH_FOUNDATION_OPERATION_MODEL_APP_BIND, "22m"
+};
+static const mesh_access_message_t mesh_configuration_client_model_app_unbind = {
+        MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND, "22m"
+};
+
+
 static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -663,6 +671,27 @@ uint8_t mesh_configuration_client_send_node_identity_set(mesh_model_t * mesh_mod
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t mesh_configuration_client_send_model_app_bind_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t appk_index, uint32_t model_identifier){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_configuration_client_model_app_bind, dest, appk_index, model_identifier);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_model_app_unbind_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t appk_index, uint32_t model_identifier){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_configuration_client_model_app_unbind, dest, appk_index, model_identifier);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
 
 
 // Model Operations
@@ -912,7 +941,7 @@ static void mesh_configuration_client_netkey_handler(mesh_model_t *mesh_model, m
 static void mesh_configuration_client_netkey_list_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t  status = 0;
+    uint8_t status = 0;
     uint8_t list_size = mesh_access_parser_available(&parser)/2;
 
     uint8_t event[10];
@@ -993,7 +1022,7 @@ static void mesh_configuration_client_node_identity_handler(mesh_model_t *mesh_m
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t  status = mesh_access_parser_get_u8(&parser);
-    uint16_t netkey_index = mesh_access_parser_get_u8(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     uint8_t  identity_status = mesh_access_parser_get_u8(&parser);
 
     uint8_t event[9];
@@ -1013,6 +1042,42 @@ static void mesh_configuration_client_node_identity_handler(mesh_model_t *mesh_m
     mesh_access_message_processed(pdu);
 }
 
+static void mesh_configuration_client_model_app_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t  status = mesh_access_parser_get_u8(&parser);
+    uint16_t element_address = mesh_access_parser_get_u16(&parser);
+    uint16_t appkey_index = mesh_access_parser_get_u16(&parser);
+    uint32_t model_id = 0;
+
+    if (mesh_access_parser_available(&parser) == 4){
+        model_id = mesh_access_parser_get_u32(&parser);
+    } else {
+        model_id = mesh_access_parser_get_u16(&parser);
+    }
+
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_MODEL_APP;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = status;
+
+    little_endian_store_16(event, pos, element_address);
+    pos += 2;
+    little_endian_store_16(event, pos, appkey_index);
+    pos += 2;
+    little_endian_store_32(event, pos, model_id);
+    pos += 4;
+
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                  1, mesh_configuration_client_beacon_status_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,       10, mesh_configuration_client_composition_data_status_handler },
@@ -1028,6 +1093,7 @@ const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_APPKEY_STATUS,                  4, mesh_configuration_client_appkey_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_LIST,                    3, mesh_configuration_client_appkey_list_handler },
     { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_STATUS,           4, mesh_configuration_client_node_identity_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS,               7, mesh_configuration_client_model_app_handler },
     { 0, 0, NULL }
 };
 
