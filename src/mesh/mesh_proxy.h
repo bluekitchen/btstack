@@ -41,18 +41,12 @@
 #include <stdint.h>
 
 #include "mesh/adv_bearer.h"
+#include "mesh/mesh_node.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-
-typedef enum {
-    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
-    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
-    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
-} mesh_node_identity_state_t;
 
 /**
  * @brief Init Mesh Proxy

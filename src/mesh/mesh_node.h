@@ -64,6 +64,12 @@ typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_
 typedef mesh_pdu_t * (*mesh_publish_state_t)(struct mesh_model * mesh_model);
 
 typedef enum {
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
+} mesh_node_identity_state_t;
+
+typedef enum {
     MESH_MODEL_PUBLICATION_STATE_IDLE,
     MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS,
     MESH_MODEL_PUBLICATION_STATE_PUBLICATION_READY,
