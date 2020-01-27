@@ -8525,40 +8525,13 @@ static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_ne
     return little_endian_read_16(event, 6);
 }
 /**
- * @brief Get field num_appkey_indexes from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
+ * @brief Get field identity_status from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
  * @param event packet
- * @return num_appkey_indexes
+ * @return identity_status
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_configuration_appkey_index_list_item_get_num_appkey_indexes(const uint8_t * event){
+static inline uint8_t mesh_subevent_configuration_appkey_index_list_item_get_identity_status(const uint8_t * event){
     return event[8];
-}
-/**
- * @brief Get field appkey_index_pos from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
- * @param event packet
- * @return appkey_index_pos
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_configuration_appkey_index_list_item_get_appkey_index_pos(const uint8_t * event){
-    return event[9];
-}
-/**
- * @brief Get field netkey_index_item from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
- * @param event packet
- * @return netkey_index_item
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_netkey_index_item(const uint8_t * event){
-    return little_endian_read_16(event, 10);
-}
-/**
- * @brief Get field appkey_index_item from event MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM
- * @param event packet
- * @return appkey_index_item
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_configuration_appkey_index_list_item_get_appkey_index_item(const uint8_t * event){
-    return little_endian_read_16(event, 12);
 }
 
 

@@ -3072,5 +3072,13 @@ typedef uint8_t sm_key_t[16];
  */
  #define MESH_SUBEVENT_CONFIGURATION_APPKEY_INDEX_LIST_ITEM                            0x48
 
-
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param netkey_index_item
+ * @param identity_status
+ */
+#define MESH_SUBEVENT_CONFIGURATION_NODE_IDENTITY                                      0x49
 #endif
