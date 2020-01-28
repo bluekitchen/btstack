@@ -8654,6 +8654,52 @@ static inline uint16_t mesh_subevent_configuration_friend_get_dest(const uint8_t
 static inline uint8_t mesh_subevent_configuration_friend_get_foundation_status(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field friend_state from event MESH_SUBEVENT_CONFIGURATION_FRIEND
+ * @param event packet
+ * @return friend_state
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_friend_get_friend_state(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_key_refresh_phase_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_key_refresh_phase_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field netkey_index from event MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE
+ * @param event packet
+ * @return netkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_key_refresh_phase_get_netkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field phase from event MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE
+ * @param event packet
+ * @return phase
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_key_refresh_phase_get_phase(const uint8_t * event){
+    return event[8];
+}
 
 
 

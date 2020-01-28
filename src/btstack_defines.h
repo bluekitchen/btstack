@@ -3099,12 +3099,23 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_CONFIGURATION_NODE_RESET                                          0x51
 
 /**
- * @format 121
+ * @format 1211
  * @param subevent_code
  * @param dest
  * @param foundation_status
  * @param friend_state
  */
 #define MESH_SUBEVENT_CONFIGURATION_FRIEND                                              0x52
+
+/**
+ * @format 12121
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param netkey_index
+ * @param phase
+ */
+#define MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE                                   0x53
+
 
 #endif

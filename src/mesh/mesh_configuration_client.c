@@ -288,6 +288,13 @@ static const mesh_access_message_t mesh_configuration_client_friend_set = {
         MESH_FOUNDATION_OPERATION_FRIEND_SET, "1"
 };
 
+static const mesh_access_message_t mesh_configuration_client_key_refresh_phase_get = {
+        MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET, "2"
+};
+static const mesh_access_message_t mesh_configuration_client_key_refresh_phase_set = {
+        MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET, "21"
+};
+
 static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -761,6 +768,27 @@ uint8_t mesh_configuration_client_send_friend_set(mesh_model_t * mesh_model, uin
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t mesh_configuration_client_send_key_refresh_phase_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_key_refresh_phase_get, netk_index);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_key_refresh_phase_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, uint8_t transition){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_key_refresh_phase_set, netk_index, transition);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
 
 // Model Operations
 static void mesh_configuration_client_composition_data_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1239,6 +1267,31 @@ static void mesh_configuration_client_friend_handler(mesh_model_t *mesh_model, m
     mesh_access_message_processed(pdu);
 }
 
+static void mesh_configuration_client_key_refresh_phase_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t  status = mesh_access_parser_get_u8(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint8_t  phase = mesh_access_parser_get_u8(&parser);
+    
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = status;
+    little_endian_store_16(event, pos, netkey_index);
+    pos += 2;
+    event[pos++] = phase;
+
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                  1, mesh_configuration_client_beacon_status_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,       10, mesh_configuration_client_composition_data_status_handler },
@@ -1259,6 +1312,7 @@ const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST,          7, mesh_configuration_client_vendor_model_app_list_handler },
     { MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS,              0, mesh_configuration_client_node_reset_handler },
     { MESH_FOUNDATION_OPERATION_FRIEND_STATUS,                  1, mesh_configuration_client_friend_handler },
+    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS,       4, mesh_configuration_client_key_refresh_phase_handler },
     { 0, 0, NULL }
 };
 
