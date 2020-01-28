@@ -560,7 +560,7 @@ uint8_t mesh_configuration_client_send_model_app_unbind_set(mesh_model_t * mesh_
 uint8_t mesh_configuration_client_send_model_app_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint32_t model_identifier); 
 
 /**
- * @brief Report of all AppKeys bound to the Model.
+ * @brief Reset a node (other than a Provisioner) and remove it from the network.
  * @param mesh_model
  * @param dest         element_address
  * @param netkey_index
@@ -570,7 +570,7 @@ uint8_t mesh_configuration_client_send_model_app_get(mesh_model_t * mesh_model, 
 uint8_t mesh_configuration_client_send_node_reset(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
 /**
- * @brief Report of all AppKeys bound to the Model.
+ * @brief Get the current Friend state of a node.
  * @param mesh_model
  * @param dest         element_address
  * @param netkey_index
@@ -580,7 +580,7 @@ uint8_t mesh_configuration_client_send_node_reset(mesh_model_t * mesh_model, uin
 uint8_t mesh_configuration_client_send_friend_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
 /**
- * @brief Report of all AppKeys bound to the Model.
+ * @brief Set the current Friend state of a node.
  * @param mesh_model
  * @param dest         element_address
  * @param netkey_index
@@ -589,6 +589,28 @@ uint8_t mesh_configuration_client_send_friend_get(mesh_model_t * mesh_model, uin
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
 uint8_t mesh_configuration_client_send_friend_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_friend_state_t friend_state);
+
+/**
+ * @brief Get the current Key Refresh Phase state of the identified network key
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param netk_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_key_refresh_phase_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index);
+
+/**
+ * @brief Set the current Key Refresh Phase state of the identified network key
+ * @param mesh_model
+ * @param dest         element_address
+ * @param netkey_index
+ * @param appkey_index
+ * @param netk_index
+ * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
+ */
+uint8_t mesh_configuration_client_send_key_refresh_phase_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t netk_index, uint8_t transition);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
