@@ -38,7 +38,6 @@
 #define BTSTACK_FILE__ "att_db.c"
 
 #include <string.h>
-#include <auto-pts/btp.h>
 
 #include "ble/att_db.h"
 #include "ble/core.h"
