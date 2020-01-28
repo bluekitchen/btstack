@@ -1246,6 +1246,9 @@ void hci_disable_l2cap_timeout_check(void);
  */
 HCI_STATE hci_get_state(void);
 
+// setup test connections, used for fuzzing
+void hci_setup_test_connections_fuzz(void);
+
 // free all connections, used for fuzzing
 void hci_free_connections_fuzz(void);
 

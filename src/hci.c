@@ -5332,6 +5332,48 @@ void hci_halting_defer(void){
 }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void hci_setup_test_connections_fuzz(void){
+    hci_connection_t * conn;
+
+    // default address: 66:55:44:33:00:01
+    bd_addr_t addr = { 0x66, 0x55, 0x44, 0x33, 0x00, 0x00};
+
+    // setup incoming Classic ACL connection with con handle 0x0001, 66:55:44:33:22:01
+    addr[5] = 0x01;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = RECEIVED_CONNECTION_REQUEST;
+
+    // setup incoming Classic SCO connection with con handle 0x0002
+    addr[5] = 0x02;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = RECEIVED_CONNECTION_REQUEST;
+
+    // setup ready Classic ACL connection with con handle 0x0003
+    addr[5] = 0x03;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = OPEN;
+
+    // setup ready Classic SCO connection with con handle 0x0004
+    addr[5] = 0x04;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = OPEN;
+
+    // setup ready LE ACL connection with con handle 0x005 and public address
+    addr[5] = 0x05;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = OPEN;
+}
+
 void hci_free_connections_fuzz(void){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->connections);

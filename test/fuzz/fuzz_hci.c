@@ -70,12 +70,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         btstack_run_loop_init(btstack_run_loop_posix_get_instance());
     }
 
-    hci_init(&hci_transport_fuzz, NULL);
+    // prepare test data
     if (size < 3) return 0;
     uint8_t packet_type  = (data[0] & 3) + 1; // only 1-4
     size--;
     data++;
     uint8_t packet[1000];
+    uint16_t packet_len;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             packet[0] = data[0];
@@ -84,31 +85,39 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             if (size > 255) return 0;
             packet[1] = size;
             memcpy(&packet[2], data, size);
-            (*packet_handler)(packet_type, packet, size + 2);
+            packet_len = size + 2;
             break;
         case HCI_SCO_DATA_PACKET:
             packet[0] = data[0];
             packet[1] = data[1];
-            size-=2;
-            data+=2;
+            size -= 2;
+            data += 2;
             if (size > 255) return 0;
             packet[2] = size;
             memcpy(&packet[3], data, size);
-            (*packet_handler)(packet_type, packet, size + 3);
+            packet_len = size + 3;
             break;
         case HCI_ACL_DATA_PACKET:
             packet[0] = data[0];
             packet[1] = data[1];
-            size-=2;
-            data+=2;
+            size -= 2;
+            data += 2;
             if (size > (sizeof(packet) - 4)) return 0;
             little_endian_store_16(packet, 2, size);
             memcpy(&packet[4], data, size);
-            (*packet_handler)(packet_type, packet, size + 4);
+            packet_len = size + 4;
             break;
         default:
             return 0;
     }
+
+    // init hci
+    hci_init(&hci_transport_fuzz, NULL);
+    hci_setup_test_connections_fuzz();
+
+    // deliver test data
+    (*packet_handler)(packet_type, packet, packet_len);
+
     // teardown
     hci_free_connections_fuzz();
     return 0;
