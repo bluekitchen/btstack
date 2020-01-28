@@ -201,6 +201,21 @@ static void reset_gatt(void){
     att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_GAP_DEVICE_NAME, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE,  (uint8_t *) btp_name, 6);
 }
 
+static void le_device_delete_all(void){
+    uint16_t index;
+    uint16_t max_count = le_device_db_max_count();
+    for (index =0 ; index < max_count; index++){
+        int addr_type;
+        bd_addr_t addr;
+        memset(addr, 0, 6);
+        le_device_db_info(index, &addr_type, addr, NULL);
+        if (addr_type != BD_ADDR_TYPE_UNKNOWN){
+            log_info("Remove LE Device with index %u, addr type %x, addr %s", index, addr_type, bd_addr_to_str(addr));
+            le_device_db_remove(index);
+        }
+    }
+}
+
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     switch (packet_type) {
@@ -218,11 +233,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                                 MESSAGE("Delete all bonding information");
                                 gap_delete_bonding = false;
                                 gap_delete_all_link_keys();
-                                uint16_t max_count = le_device_db_max_count();
-                                uint16_t i;
-                                for (i=0;i<max_count;i++){
-                                    le_device_db_remove(i);
-                                }
+                                le_device_delete_all();
                             }
 
                             // reset state and services
@@ -1023,17 +1034,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
                 gap_drop_link_key_for_bd_addr(command_addr);
-                uint16_t index;
-                for (index =0 ; index < le_device_db_max_count(); index++){
-                    int addr_type;
-                    bd_addr_t addr;
-                    memset(addr, 0, 6);
-                    le_device_db_info(index, &addr_type, addr, NULL);
-                    if (addr_type != BD_ADDR_TYPE_UNKNOWN){
-                        log_info("Remove LE Device with index %u, addr type %x, addr %s", index, addr_type, bd_addr_to_str(addr));
-                        le_device_db_remove(index);
-                    }
-                }
+                le_device_delete_all();
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
             break;
@@ -1483,13 +1484,17 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             }
             break;
-        case BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP:
+            case BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP:
             MESSAGE("BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP");
             if (controller_index == 0){
                 uint16_t value_handle = little_endian_read_16(data, 7);
                 uint16_t value_length = little_endian_read_16(data, 9);
                 memcpy(value_buffer,  &data[11], value_length);
+#ifdef ENABLE_LE_SIGNED_WRITE
                 gatt_client_signed_write_without_response(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
+#else
+                MESSAGE("ENABLE_LE_SIGNED_WRITE not defined, not calling gatt_client_signed_write_without_response");
+#endif
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, 0, NULL);
             }
             break;
@@ -1635,6 +1640,7 @@ static void usage(void){
             printf("L - send L2CAP Conn Param Update Request\n");
             printf("t - disconnect\n");
             printf("b - start pairing\n");
+            printf("u - unpaird PTS\n");
             printf("x - Back to main\n");
             break;
         case CONSOLE_STATE_GATT_CLIENT:
@@ -1655,6 +1661,7 @@ static void stdin_process(char cmd){
     const uint8_t general_le_scan = BTP_GAP_DISCOVERY_FLAG_LE;
     const uint8_t general_discoverable = BTP_GAP_DISCOVERABLE_GENERAL;
     const uint8_t limited_discoverable = BTP_GAP_DISCOVERABLE_LIMITED;
+    const uint8_t unpair[] = { 0, 1,2,3,4,5,6};
     const uint8_t value_on  = 1;
     const uint8_t value_off = 0;
     const uint8_t public_adv[]  = { 0x08, 0x00, 0x08, 0x06, 'T', 'e', 's', 't', 'e', 'r', 0xff, 0xff, 0xff, 0xff, 0x00, };
@@ -1758,6 +1765,9 @@ static void stdin_process(char cmd){
                     break;
                 case 'b':
                       btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_PAIR, 0, 0, NULL);
+                    break;
+                case 'u':
+                    btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_UNPAIR, 0, sizeof(unpair), unpair);
                     break;
                 case 'B':
                       btp_packet_handler(BTP_SERVICE_ID_GAP, BTP_GAP_OP_SET_BONDABLE, 0, 1, &value_on);
