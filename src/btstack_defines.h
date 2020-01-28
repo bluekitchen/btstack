@@ -3090,5 +3090,21 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_CONFIGURATION_MODEL_APP_LIST_ITEM                                 0x50
 
+/**
+ * @format 121
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ */
+#define MESH_SUBEVENT_CONFIGURATION_NODE_RESET                                          0x51
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param friend_state
+ */
+#define MESH_SUBEVENT_CONFIGURATION_FRIEND                                              0x52
 
 #endif

@@ -277,6 +277,17 @@ static const mesh_access_message_t mesh_configuration_client_vendor_model_app_ge
         MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET, "2m"
 };
 
+static const mesh_access_message_t mesh_configuration_client_node_reset = {
+        MESH_FOUNDATION_OPERATION_NODE_RESET, ""
+};
+
+static const mesh_access_message_t mesh_configuration_client_friend_get = {
+        MESH_FOUNDATION_OPERATION_FRIEND_GET, ""
+};
+static const mesh_access_message_t mesh_configuration_client_friend_set = {
+        MESH_FOUNDATION_OPERATION_FRIEND_SET, "1"
+};
+
 static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -714,6 +725,39 @@ uint8_t mesh_configuration_client_send_model_app_get(mesh_model_t * mesh_model, 
     }
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, ack_opcode);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_node_reset(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_node_reset);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_friend_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_friend_get);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_FRIEND_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_friend_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_friend_state_t friend_state){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_friend_set, friend_state);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_FRIEND_STATUS);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1160,6 +1204,41 @@ static void mesh_configuration_client_vendor_model_app_list_handler(mesh_model_t
     mesh_configuration_client_model_app_list_handler(mesh_model, pdu, false);
 }
 
+static void mesh_configuration_client_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_NODE_RESET;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
+    
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+static void mesh_configuration_client_friend_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t friend_state = mesh_access_parser_get_u8(&parser);
+    
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_FRIEND;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
+    event[pos++] = friend_state;
+
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                  1, mesh_configuration_client_beacon_status_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,       10, mesh_configuration_client_composition_data_status_handler },
@@ -1178,6 +1257,8 @@ const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS,               7, mesh_configuration_client_model_app_handler },
     { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_LIST,             5, mesh_configuration_client_sig_model_app_list_handler },
     { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST,          7, mesh_configuration_client_vendor_model_app_list_handler },
+    { MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS,              0, mesh_configuration_client_node_reset_handler },
+    { MESH_FOUNDATION_OPERATION_FRIEND_STATUS,                  1, mesh_configuration_client_friend_handler },
     { 0, 0, NULL }
 };
 

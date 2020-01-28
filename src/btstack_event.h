@@ -8617,6 +8617,44 @@ static inline uint16_t mesh_subevent_configuration_model_app_list_item_get_appke
     return little_endian_read_16(event, 12);
 }
 
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_NODE_RESET
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_node_reset_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_NODE_RESET
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_node_reset_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_FRIEND
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_friend_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_FRIEND
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_friend_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+
 
 
 /* API_END */
