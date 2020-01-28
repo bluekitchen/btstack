@@ -72,7 +72,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     // prepare test data
     if (size < 3) return 0;
-    uint8_t packet_type  = (data[0] & 3) + 1; // only 1-4
+    uint8_t  packet_type  = (data[0] & 3) + 1;             // only 1-4
+    uint16_t connection_handle = ((data[0] >> 2) & 0x07); // 0x0000 - 0x0007
+    uint8_t  pb_or_ps = (data[0] >> 5) & 0x003;            // 0x00-0x03
     size--;
     data++;
     uint8_t packet[1000];
@@ -88,22 +90,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             packet_len = size + 2;
             break;
         case HCI_SCO_DATA_PACKET:
-            packet[0] = data[0];
-            packet[1] = data[1];
-            size -= 2;
-            data += 2;
+            little_endian_store_16(packet, 0, (pb_or_ps << 12) | connection_handle);
             if (size > 255) return 0;
             packet[2] = size;
             memcpy(&packet[3], data, size);
             packet_len = size + 3;
             break;
         case HCI_ACL_DATA_PACKET:
-            packet[0] = data[0];
-            packet[1] = data[1];
-            size -= 2;
-            data += 2;
-            if (size > (sizeof(packet) - 4)) return 0;
+            little_endian_store_16(packet, 0, (pb_or_ps << 12) | connection_handle);
             little_endian_store_16(packet, 2, size);
+            if (size > (sizeof(packet) - 4)) return 0;
             memcpy(&packet[4], data, size);
             packet_len = size + 4;
             break;
