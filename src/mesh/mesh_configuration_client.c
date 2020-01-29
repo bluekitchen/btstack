@@ -295,6 +295,20 @@ static const mesh_access_message_t mesh_configuration_client_key_refresh_phase_s
         MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET, "21"
 };
 
+static const mesh_access_message_t mesh_configuration_client_heartbeat_publication_get = {
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET, ""
+};
+static const mesh_access_message_t mesh_configuration_client_heartbeat_publication_set = {
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET, "11122"
+};
+
+static const mesh_access_message_t mesh_configuration_client_heartbeat_subscription_get = {
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET, ""
+};
+static const mesh_access_message_t mesh_configuration_client_heartbeat_subscription_set = {
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET, "21"
+};
+
 static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -789,6 +803,57 @@ uint8_t mesh_configuration_client_send_key_refresh_phase_set(mesh_model_t * mesh
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS);
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t mesh_configuration_client_send_heartbeat_publication_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_publication_get);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_heartbeat_publication_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_heartbeat_publication_state_t publication_state){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_publication_set, 
+        publication_state.count_log,
+        publication_state.period_log,
+        publication_state.ttl,
+        publication_state.features,
+        publication_state.netkey_index);
+
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_heartbeat_subscription_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_subscription_get);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t source, uint8_t period_log){
+        uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_subscription_set, source, period_log);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
+
 
 // Model Operations
 static void mesh_configuration_client_composition_data_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1291,6 +1356,75 @@ static void mesh_configuration_client_key_refresh_phase_handler(mesh_model_t *me
     mesh_access_message_processed(pdu);
 }
 
+static void mesh_configuration_client_heartbeat_publication_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t  status     = mesh_access_parser_get_u8(&parser);
+    uint16_t dest       = mesh_access_parser_get_u16(&parser);
+    uint8_t  count_log  = mesh_access_parser_get_u8(&parser);
+    uint8_t  period_log = mesh_access_parser_get_u8(&parser);
+    uint8_t  ttl        = mesh_access_parser_get_u8(&parser);
+    uint16_t features   = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    
+    if (dest != mesh_pdu_src(pdu)){
+        log_info("MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION event, destination differs from mesh_pdu_src");
+    }
+    uint8_t event[13];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = count_log;
+    event[pos++] = period_log;
+    event[pos++] = ttl;
+    little_endian_store_16(event, pos, features);
+    pos += 2;
+    little_endian_store_16(event, pos, netkey_index);
+    pos += 2;
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t  status     = mesh_access_parser_get_u8(&parser);
+    uint16_t source     = mesh_access_parser_get_u16(&parser);
+    uint16_t dest       = mesh_access_parser_get_u16(&parser);
+    uint8_t  period_log = mesh_access_parser_get_u8(&parser);
+    uint8_t  count_log  = mesh_access_parser_get_u8(&parser);
+    uint8_t  min_hops   = mesh_access_parser_get_u8(&parser);
+    uint8_t  max_hops   = mesh_access_parser_get_u8(&parser);
+    
+    if (dest != mesh_pdu_src(pdu)){
+        log_info("MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION event, destination differs from mesh_pdu_src");
+    }
+
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = status;
+
+    little_endian_store_16(event, pos, source);
+    pos += 2;
+    event[pos++] = count_log;
+    event[pos++] = period_log;
+    event[pos++] = min_hops;
+    event[pos++] = max_hops;
+
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
 
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                  1, mesh_configuration_client_beacon_status_handler },
@@ -1313,6 +1447,8 @@ const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS,              0, mesh_configuration_client_node_reset_handler },
     { MESH_FOUNDATION_OPERATION_FRIEND_STATUS,                  1, mesh_configuration_client_friend_handler },
     { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS,       4, mesh_configuration_client_key_refresh_phase_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS,  10, mesh_configuration_client_heartbeat_publication_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS,  9, mesh_configuration_client_heartbeat_subscription_handler },
     { 0, 0, NULL }
 };
 

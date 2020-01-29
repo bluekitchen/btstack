@@ -3117,5 +3117,30 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_CONFIGURATION_KEY_REFRESH_PHASE                                   0x53
 
+/**
+ * @format 12111122
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param count_log
+ * @param period_log
+ * @param ttl
+ * @param features
+ * @param netkey_index
+ */
+#define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION                               0x54
+
+/**
+ * @format 12121111
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param source
+ * @param count_log
+ * @param period_log
+ * @param min_hops
+ * @param max_hops
+ */
+#define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION                              0x55
 
 #endif

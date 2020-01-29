@@ -52,6 +52,11 @@ extern "C" {
 #define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
 #define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
 
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_RELAY      1
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_PROXY      2
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_FRIEND     4
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_LOW_POWER  8
+
 struct mesh_model;
 struct mesh_element;
 
@@ -98,6 +103,14 @@ typedef struct {
     uint8_t  ttl;
     uint8_t  retransmit;
 } mesh_publication_model_t;
+
+typedef struct {
+    uint8_t  count_log;  // Number of Heartbeat messages to be sent
+    uint8_t  period_log; // Period for sending Heartbeat messages
+    uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
+    uint16_t features;   // Bit field indicating features that trigger Heartbeat messages when changed
+    uint16_t netkey_index; 
+} mesh_heartbeat_publication_state_t;
 
 typedef struct {
     uint32_t opcode;
