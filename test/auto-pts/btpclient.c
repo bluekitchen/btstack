@@ -214,6 +214,7 @@ static void le_device_delete_all(void){
             le_device_db_remove(index);
         }
     }
+    le_device_db_dump();
 }
 
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
