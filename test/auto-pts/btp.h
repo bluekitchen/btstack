@@ -201,6 +201,7 @@ extern "C" {
 #define BTP_GATT_OP_SIGNED_WRITE_WITHOUT_RSP    0x16
 #define BTP_GATT_OP_WRITE                       0x17
 #define BTP_GATT_OP_WRITE_LONG                  0x18
+#define BTP_GATT_OP_WRITE_RELIABLE              0x19
 #define BTP_GATT_OP_CFG_NOTIFY                  0x1a
 #define BTP_GATT_OP_CFG_INDICATE                0x1b
 #define BTP_GATT_OP_GET_ATTRIBUTES              0x1c

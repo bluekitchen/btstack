@@ -573,8 +573,9 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                             btp_append_uint16(0);
                         }
                         break;
-                    case BTP_GATT_OP_WRITE_LONG:
                     case BTP_GATT_OP_WRITE:
+                    case BTP_GATT_OP_WRITE_LONG:
+                    case BTP_GATT_OP_WRITE_RELIABLE:
                         // ignore timeout / auto-pts framework expects to get a socket read timeout
                         if (att_status == ATT_ERROR_TIMEOUT) return;
 
@@ -1524,6 +1525,20 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 gatt_client_write_long_value_of_characteristic(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
             }
             break;
+        case BTP_GATT_OP_WRITE_RELIABLE:
+        MESSAGE("BTP_GATT_OP_WRITE_RELIABLE");
+            response_len = 0;
+            response_service_id = BTP_SERVICE_ID_GATT;
+            response_op = opcode;
+            if (controller_index == 0){
+                uint16_t value_handle = little_endian_read_16(data, 7);
+                uint16_t value_offset = little_endian_read_16(data, 9);
+                uint16_t value_length = little_endian_read_16(data, 11);
+                memcpy(value_buffer,  &data[13], value_length);
+                UNUSED(value_offset); // offset not supported by gatt client
+                gatt_client_reliable_write_long_value_of_characteristic(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
+            }
+
         case BTP_GATT_OP_CFG_NOTIFY:
             MESSAGE("BTP_GATT_OP_CFG_NOTIFY");
             response_len = 0;
