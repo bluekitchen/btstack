@@ -111,23 +111,32 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-            gap_local_bd_addr(local_addr);
-            if (using_static_address){
-                memcpy(local_addr, static_address, 6);
-            }
-            printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
-            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-            strcat(tlv_db_path, bd_addr_to_str(local_addr));
-            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
-            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
-            btstack_tlv_set_instance(tlv_impl, &tlv_context);
+            switch (btstack_event_state_get_state(packet)){
+                case HCI_STATE_WORKING:
+                    gap_local_bd_addr(local_addr);
+                    if (using_static_address){
+                        memcpy(local_addr, static_address, 6);
+                    }
+                    printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+                    strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+                    strcat(tlv_db_path, bd_addr_to_str(local_addr));
+                    strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+                    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+                    btstack_tlv_set_instance(tlv_impl, &tlv_context);
 #ifdef ENABLE_CLASSIC
-            hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-#endif    
-#ifdef ENABLE_BLE
-            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+                    hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
 #endif
+#ifdef ENABLE_BLE
+                    le_device_db_tlv_configure(tlv_impl, &tlv_context);
+#endif
+                    break;
+                case HCI_STATE_OFF:
+                    btstack_tlv_posix_deinit(&tlv_context);
+                    break;
+                default:
+                    break;
+            }
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
