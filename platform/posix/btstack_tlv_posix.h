@@ -61,6 +61,12 @@ typedef struct {
  */
 const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * context, const char * db_path);
 
+/**
+ * Free TLV entries
+ * @param self
+ */
+void btstack_tlv_posix_deinit(btstack_tlv_posix_t * self);
+
 #if defined __cplusplus
 }
 #endif
