@@ -1180,13 +1180,29 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                                 att_db_util_add_service_uuid128(uuid128);
                                 break;
                             default:
-                                MESSAGE("Invalid UUID len");
+                                MESSAGE("Invalid UUID len %u", uuid_len);
+                                btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
+                                break;
+                        }
+                        break;
+                    case BTP_GATT_SERVICE_TYPE_SECONDARY:
+                        switch (uuid_len){
+                            case 2:
+                                uuid16 = little_endian_read_16(data, 2);
+                                att_db_util_add_secondary_service_uuid16(uuid16);
+                                break;
+                            case 16:
+                                reverse_128(&data[2], uuid128);
+                                att_db_util_add_secondary_service_uuid128(uuid128);
+                                break;
+                            default:
+                                MESSAGE("Invalid UUID len %u", uuid_len);
                                 btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
                                 break;
                         }
                         break;
                     default:
-                        MESSAGE("Non-Primary Service not supported");
+                        MESSAGE("GATT Service type not supported");
                         btp_send_error(BTP_SERVICE_ID_GATT, 0x03);
                         break;
                 }
