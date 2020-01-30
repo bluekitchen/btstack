@@ -8866,6 +8866,43 @@ static inline uint32_t mesh_subevent_configuration_low_power_node_poll_timeout_g
     return little_endian_read_24(event, 8);
 }
 
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_network_transmit_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field foundation_status from event MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT
+ * @param event packet
+ * @return foundation_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_network_transmit_get_foundation_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field transmit_count from event MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT
+ * @param event packet
+ * @return transmit_count
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_configuration_network_transmit_get_transmit_count(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field transmit_interval_steps_ms from event MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT
+ * @param event packet
+ * @return transmit_interval_steps_ms
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_configuration_network_transmit_get_transmit_interval_steps_ms(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+
 
 
 /* API_END */

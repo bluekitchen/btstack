@@ -3153,5 +3153,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_CONFIGURATION_LOW_POWER_NODE_POLL_TIMEOUT                         0x56
 
+/**
+ * @format 12112
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param transmit_count
+ * @param transmit_interval_steps_ms
+ */
+#define MESH_SUBEVENT_CONFIGURATION_NETWORK_TRANSMIT                                    0x57
+
 
 #endif
