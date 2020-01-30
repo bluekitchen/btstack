@@ -94,6 +94,7 @@ static btstack_timer_source_t gap_limited_discovery_timer;
 static bd_addr_type_t   remote_addr_type;
 static bd_addr_t        remote_addr;
 static hci_con_handle_t remote_handle = HCI_CON_HANDLE_INVALID;
+static att_connection_t remote_att_connection;
 
 static uint8_t connection_role;
 
@@ -220,6 +221,8 @@ static void le_device_delete_all(void){
 
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
+    hci_con_handle_t con_handle;
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -338,6 +341,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     // assume remote device
                     remote_handle          = hci_event_connection_complete_get_connection_handle(packet);
                     remote_addr_type       = 0;
+                    memset(&remote_att_connection, 0, sizeof(att_connection_t));
                     hci_event_connection_complete_get_bd_addr(packet, remote_addr);
                     printf("Connected Classic to %s with con handle 0x%04x\n", bd_addr_to_str(remote_addr), remote_handle);
 
@@ -369,6 +373,16 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     gatt_client_stop_listening_for_characteristic_value_updates(&gatt_client_notification);
                     break;
                 }
+                case HCI_EVENT_ENCRYPTION_CHANGE:
+                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
+                    // update security params
+                    con_handle = little_endian_read_16(packet, 3);
+                    remote_att_connection.encryption_key_size = gap_encryption_key_size(con_handle);
+                    remote_att_connection.authenticated = gap_authenticated(con_handle);
+                    remote_att_connection.secure_connection = gap_secure_connection(con_handle);
+                    log_info("encrypted key size %u, authenticated %u, secure connection %u",
+                             remote_att_connection.encryption_key_size, remote_att_connection.authenticated, remote_att_connection.secure_connection);
+                    break;
 
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
@@ -1288,8 +1302,10 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
         case BTP_GATT_OP_GET_ATTRIBUTE_VALUE:
             MESSAGE("BTP_GATT_OP_GET_ATTRIBUTE_VALUE");
             if (controller_index == 0) {
+                att_connection_t att_connection;
+                memset(&att_connection, 0, sizeof(att_connection_t));
                 uint16_t attribute_handle = little_endian_read_16(data,7);
-                response_len= btp_att_get_attribute_value(attribute_handle, response_buffer, sizeof(response_buffer));
+                response_len= btp_att_get_attribute_value(&att_connection, attribute_handle, response_buffer, sizeof(response_buffer));
                 btp_send(BTP_SERVICE_ID_GATT, opcode, controller_index, response_len, response_buffer);
             }
             break;

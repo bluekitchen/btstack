@@ -1547,14 +1547,14 @@ uint16_t btp_att_get_attributes_by_uuid128(uint16_t start_handle, uint16_t end_h
     return pos;
 }
 
-uint16_t btp_att_get_attribute_value(uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size){
+uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size){
     att_iterator_t it;
     int ok = att_find_handle(&it, attribute_handle);
     if (!ok) return 0;
 
     uint16_t pos = 0;
-    // field: ATT_Response - unclear what is meant by that
-    response_buffer[pos++] = 0;
+    // field: ATT_Response - simulate READ operation on given connection
+    response_buffer[pos++] = att_validate_security(att_connection, ATT_READ, &it);
     // fetch len
     // assume: con handle not relevant here, else, it needs to get passed in
     // att_update_value_len(&it, HCI_CON_HANDLE_INVALID);
