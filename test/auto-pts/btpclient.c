@@ -1552,7 +1552,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
                 // Assume value handle is just before ccc handle - never use for production!
                 gatt_client_characteristic_t characteristic;
-                characteristic.value_handle = ccc_handle - 1;
+                characteristic.value_handle = 0;
                 gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, remote_handle, &characteristic);
             }
             break;
@@ -1569,7 +1569,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
                 // Assume value handle is just before ccc handle - never use for production!
                 gatt_client_characteristic_t characteristic;
-                characteristic.value_handle = ccc_handle - 1;
+                characteristic.value_handle = 0;
                 gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, remote_handle, &characteristic);
             }
             break;
