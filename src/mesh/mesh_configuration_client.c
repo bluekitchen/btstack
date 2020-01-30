@@ -309,6 +309,11 @@ static const mesh_access_message_t mesh_configuration_client_heartbeat_subscript
         MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET, "21"
 };
 
+static const mesh_access_message_t mesh_configuration_client_low_power_node_poll_timeout_get = {
+        MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET, ""
+};
+
+
 static void mesh_configuration_client_send_acknowledged(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -854,6 +859,16 @@ uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t *
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t mesh_configuration_client_send_low_power_node_poll_timeout_get(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+    uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
+    if (status != ERROR_CODE_SUCCESS) return status;
+
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_low_power_node_poll_timeout_get);
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS);
+    return ERROR_CODE_SUCCESS;
+}
 
 // Model Operations
 static void mesh_configuration_client_composition_data_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1426,29 +1441,54 @@ static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_
     mesh_access_message_processed(pdu);
 }
 
+static void mesh_configuration_client_low_power_node_poll_timeout_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint16_t lpn_address  = mesh_access_parser_get_u16(&parser);
+    uint32_t poll_timeout = mesh_access_parser_get_u24(&parser);
+    
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = MESH_SUBEVENT_CONFIGURATION_LOW_POWER_NODE_POLL_TIMEOUT;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
+
+    little_endian_store_24(event, pos, poll_timeout);
+    pos += 3;
+    
+    (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    mesh_access_message_processed(pdu);
+}
+
+
 const static mesh_operation_t mesh_configuration_client_model_operations[] = {
-    { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                  1, mesh_configuration_client_beacon_status_handler },
-    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,       10, mesh_configuration_client_composition_data_status_handler },
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,             1, mesh_configuration_client_default_ttl_handler },
-    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,              1, mesh_configuration_client_gatt_proxy_handler },
-    { MESH_FOUNDATION_OPERATION_RELAY_STATUS,                   2, mesh_configuration_client_relay_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS,      12, mesh_configuration_client_model_publication_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS,      7, mesh_configuration_client_model_subscription_handler },
-    { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST,    5, mesh_configuration_client_sig_model_subscription_handler},
-    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST, 7, mesh_configuration_client_vendor_model_subscription_handler},
-    { MESH_FOUNDATION_OPERATION_NETKEY_STATUS,                  3, mesh_configuration_client_netkey_handler },
-    { MESH_FOUNDATION_OPERATION_NETKEY_LIST,                    0, mesh_configuration_client_netkey_list_handler },
-    { MESH_FOUNDATION_OPERATION_APPKEY_STATUS,                  4, mesh_configuration_client_appkey_handler },
-    { MESH_FOUNDATION_OPERATION_APPKEY_LIST,                    3, mesh_configuration_client_appkey_list_handler },
-    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_STATUS,           4, mesh_configuration_client_node_identity_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS,               7, mesh_configuration_client_model_app_handler },
-    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_LIST,             5, mesh_configuration_client_sig_model_app_list_handler },
-    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST,          7, mesh_configuration_client_vendor_model_app_list_handler },
-    { MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS,              0, mesh_configuration_client_node_reset_handler },
-    { MESH_FOUNDATION_OPERATION_FRIEND_STATUS,                  1, mesh_configuration_client_friend_handler },
-    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS,       4, mesh_configuration_client_key_refresh_phase_handler },
-    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS,  10, mesh_configuration_client_heartbeat_publication_handler },
-    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS,  9, mesh_configuration_client_heartbeat_subscription_handler },
+    { MESH_FOUNDATION_OPERATION_BEACON_STATUS,                      1, mesh_configuration_client_beacon_status_handler },
+    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS,           10, mesh_configuration_client_composition_data_status_handler },
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS,                 1, mesh_configuration_client_default_ttl_handler },
+    { MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS,                  1, mesh_configuration_client_gatt_proxy_handler },
+    { MESH_FOUNDATION_OPERATION_RELAY_STATUS,                       2, mesh_configuration_client_relay_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS,          12, mesh_configuration_client_model_publication_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS,          7, mesh_configuration_client_model_subscription_handler },
+    { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST,        5, mesh_configuration_client_sig_model_subscription_handler},
+    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST,     7, mesh_configuration_client_vendor_model_subscription_handler},
+    { MESH_FOUNDATION_OPERATION_NETKEY_STATUS,                      3, mesh_configuration_client_netkey_handler },
+    { MESH_FOUNDATION_OPERATION_NETKEY_LIST,                        0, mesh_configuration_client_netkey_list_handler },
+    { MESH_FOUNDATION_OPERATION_APPKEY_STATUS,                      4, mesh_configuration_client_appkey_handler },
+    { MESH_FOUNDATION_OPERATION_APPKEY_LIST,                        3, mesh_configuration_client_appkey_list_handler },
+    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_STATUS,               4, mesh_configuration_client_node_identity_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS,                   7, mesh_configuration_client_model_app_handler },
+    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_LIST,                 5, mesh_configuration_client_sig_model_app_list_handler },
+    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST,              7, mesh_configuration_client_vendor_model_app_list_handler },
+    { MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS,                  0, mesh_configuration_client_node_reset_handler },
+    { MESH_FOUNDATION_OPERATION_FRIEND_STATUS,                      1, mesh_configuration_client_friend_handler },
+    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS,           4, mesh_configuration_client_key_refresh_phase_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS,      10, mesh_configuration_client_heartbeat_publication_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS,      9, mesh_configuration_client_heartbeat_subscription_handler },
+    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS, 5, mesh_configuration_client_low_power_node_poll_timeout_handler}, 
     { 0, 0, NULL }
 };
 

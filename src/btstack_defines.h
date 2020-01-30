@@ -3143,4 +3143,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION                              0x55
 
+/**
+ * @format 12123
+ * @param subevent_code
+ * @param dest
+ * @param foundation_status
+ * @param lpn_address
+ * @param poll_timeout
+ */
+#define MESH_SUBEVENT_CONFIGURATION_LOW_POWER_NODE_POLL_TIMEOUT                         0x56
+
+
 #endif
