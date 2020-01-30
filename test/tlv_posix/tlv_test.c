@@ -160,6 +160,28 @@ TEST(BSTACK_TLV, TestWriteResetRead){
     CHECK_EQUAL(buffer, data);
 }
 
+TEST(BSTACK_TLV, TestWriteDeleteResetReadDeleteRead){
+    uint32_t tag = TAG('a','b','c','d');
+    uint8_t  data = 7;
+    uint8_t  buffer = data;
+    int size;
+
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+    btstack_tlv_impl->delete_tag(&btstack_tlv_context, tag);
+
+    reopen_db();
+
+    size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+    CHECK_EQUAL(size, 0);
+
+    // assert that it's really gone and not just shadowed by delete tag
+    btstack_tlv_impl->delete_tag(&btstack_tlv_context, tag);
+
+    size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+    CHECK_EQUAL(size, 0);
+}
+
+
 int main (int argc, const char * argv[]){
 	hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
     return CommandLineTestRunner::RunAllTests(argc, argv);

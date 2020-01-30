@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP ERTM: avoid read-after-free on decline of incoming connection
 - GATT Client: set uuid16 to zero when deserializing uuid128 services, characteristics, and descriptors
 - att_db_util: fix realloc of att db buffer for large attributes
+- btstack_tlv_posix: only keep last value in memory, fix delete operation
 
 ### Added
 - att_db_util: provide GATT Database Hash via att_db_util_hash_calc
