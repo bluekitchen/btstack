@@ -1522,8 +1522,7 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 uint16_t value_offset = little_endian_read_16(data, 9);
                 uint16_t value_length = little_endian_read_16(data, 11);
                 memcpy(value_buffer,  &data[13], value_length);
-                UNUSED(value_offset); // offset not supported by gatt client
-                gatt_client_write_long_value_of_characteristic(&gatt_client_packet_handler, remote_handle, value_handle, value_length, value_buffer);
+                gatt_client_write_long_value_of_characteristic_with_offset(&gatt_client_packet_handler, remote_handle, value_handle, value_offset, value_length, value_buffer);
             }
             break;
         case BTP_GATT_OP_WRITE_RELIABLE:
