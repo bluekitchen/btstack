@@ -196,9 +196,10 @@ static void reset_gap(void){
 static void reset_gatt(void){
     static const char * btp_name = "tester";
     att_db_util_init();
-    // setup gap service with gap name characteristic "tester"
+    // setup gap service with gap name characteristic "tester" and user description "tester"
     att_db_util_add_service_uuid16(ORG_BLUETOOTH_SERVICE_GENERIC_ACCESS);
     att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_GAP_DEVICE_NAME, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE,  (uint8_t *) btp_name, 6);
+    att_db_util_add_descriptor_uuid16(GATT_CHARACTERISTIC_USER_DESCRIPTION, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE,  (uint8_t *) btp_name, 6);
 }
 
 static void le_device_delete_all(void){
