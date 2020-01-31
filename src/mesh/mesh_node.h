@@ -106,11 +106,11 @@ typedef struct {
 
 typedef struct {
     uint16_t destination;
-    uint8_t  count_log;  // Number of Heartbeat messages to be sent
-    uint8_t  period_log; // Period for sending Heartbeat messages
-    uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
+    uint16_t count_log;      // Number of Heartbeat messages to be sent
+    uint16_t period_log;   // Period for sending Heartbeat messages in seconds
     uint16_t features;   // Bit field indicating features that trigger Heartbeat messages when changed
     uint16_t netkey_index; 
+    uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
 } mesh_heartbeat_publication_state_t;
 
 typedef struct {
@@ -329,6 +329,12 @@ uint16_t mesh_node_get_product_id(void);
  * @returns product_version_id
  */
 uint16_t mesh_node_get_product_version_id(void);
+
+
+// Heartbeat (helper)
+uint16_t mesh_heartbeat_pwr2(uint8_t value);
+uint8_t mesh_heartbeat_count_log(uint16_t value);
+uint8_t mesh_heartbeat_period_log(uint16_t value);
 
 #if defined __cplusplus
 }
