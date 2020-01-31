@@ -299,14 +299,14 @@ static const mesh_access_message_t mesh_configuration_client_heartbeat_publicati
         MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET, ""
 };
 static const mesh_access_message_t mesh_configuration_client_heartbeat_publication_set = {
-        MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET, "11122"
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET, "211122"
 };
 
 static const mesh_access_message_t mesh_configuration_client_heartbeat_subscription_get = {
         MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET, ""
 };
 static const mesh_access_message_t mesh_configuration_client_heartbeat_subscription_set = {
-        MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET, "21"
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET, "221"
 };
 
 static const mesh_access_message_t mesh_configuration_client_low_power_node_poll_timeout_get = {
@@ -832,6 +832,7 @@ uint8_t mesh_configuration_client_send_heartbeat_publication_set(mesh_model_t * 
     if (status != ERROR_CODE_SUCCESS) return status;
 
     mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_publication_set, 
+        publication_state.destination,
         publication_state.count_log,
         publication_state.period_log,
         publication_state.ttl,
@@ -855,11 +856,11 @@ uint8_t mesh_configuration_client_send_heartbeat_subscription_get(mesh_model_t *
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t source, uint8_t period_log){
+uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t heartbeat_source, uint16_t heartbeat_destination, uint8_t period_log){
         uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_subscription_set, source, period_log);
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_subscription_set, heartbeat_source, heartbeat_destination, period_log);
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS);
@@ -892,7 +893,7 @@ uint8_t mesh_configuration_client_send_network_transmit_set(mesh_model_t * mesh_
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    uint8_t transmit_interval_steps_10ms = (uint8_t) transmit_interval_steps_ms/10;
+    uint8_t transmit_interval_steps_10ms = (uint8_t) (transmit_interval_steps_ms/10);
     if (transmit_interval_steps_10ms > 0){
         transmit_interval_steps_10ms -= 1;
     }
@@ -1416,10 +1417,7 @@ static void mesh_configuration_client_heartbeat_publication_handler(mesh_model_t
     uint16_t features   = mesh_access_parser_get_u16(&parser);
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     
-    if (dest != mesh_pdu_src(pdu)){
-        log_info("MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION event, destination differs from mesh_pdu_src");
-    }
-    uint8_t event[13];
+    uint8_t event[15];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
     event[pos++] = sizeof(event) - 2;
@@ -1428,6 +1426,8 @@ static void mesh_configuration_client_heartbeat_publication_handler(mesh_model_t
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = status;
+    little_endian_store_16(event, pos, dest);
+    pos += 2;
     event[pos++] = count_log;
     event[pos++] = period_log;
     event[pos++] = ttl;
@@ -1450,11 +1450,7 @@ static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_
     uint8_t  min_hops   = mesh_access_parser_get_u8(&parser);
     uint8_t  max_hops   = mesh_access_parser_get_u8(&parser);
     
-    if (dest != mesh_pdu_src(pdu)){
-        log_info("MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION event, destination differs from mesh_pdu_src");
-    }
-
-    uint8_t event[12];
+    uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
     event[pos++] = sizeof(event) - 2;
@@ -1463,7 +1459,8 @@ static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_
     little_endian_store_16(event, pos, mesh_pdu_src(pdu));
     pos += 2;
     event[pos++] = status;
-
+    little_endian_store_16(event, pos, dest);
+    pos += 2;
     little_endian_store_16(event, pos, source);
     pos += 2;
     event[pos++] = count_log;
@@ -1547,8 +1544,8 @@ const static mesh_operation_t mesh_configuration_client_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS,                  0, mesh_configuration_client_node_reset_handler },
     { MESH_FOUNDATION_OPERATION_FRIEND_STATUS,                      1, mesh_configuration_client_friend_handler },
     { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS,           4, mesh_configuration_client_key_refresh_phase_handler },
-    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS,      10, mesh_configuration_client_heartbeat_publication_handler },
-    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS,      9, mesh_configuration_client_heartbeat_subscription_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS,      12, mesh_configuration_client_heartbeat_publication_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS,     11, mesh_configuration_client_heartbeat_subscription_handler },
     { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS, 5, mesh_configuration_client_low_power_node_poll_timeout_handler}, 
     { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS,            1, mesh_configuration_client_network_transmit_handler}, 
     { 0, 0, NULL }

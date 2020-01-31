@@ -105,6 +105,7 @@ typedef struct {
 } mesh_publication_model_t;
 
 typedef struct {
+    uint16_t destination;
     uint8_t  count_log;  // Number of Heartbeat messages to be sent
     uint8_t  period_log; // Period for sending Heartbeat messages
     uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
