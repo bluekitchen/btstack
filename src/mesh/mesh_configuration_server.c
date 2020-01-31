@@ -86,29 +86,6 @@ static uint16_t                     configuration_server_hash;
 // for PTS testing
 static int config_netkey_list_max = 0;
 
-
-// Heartbeat (helper)
-static uint16_t heartbeat_pwr2(uint8_t value){
-    if (value == 0 )                    return 0x0000;
-    if (value == 0xff || value == 0x11) return 0xffff;
-    return 1 << (value-1);
-}
-
-static uint8_t heartbeat_count_log(uint16_t value){
-    if (value == 0)      return 0x00;
-    if (value == 0xffff) return 0xff;
-    // count leading zeros, supported by clang and gcc
-    // note: CountLog(8) == CountLog(7) = 3
-    return 33 - __builtin_clz(value - 1);
-}
-
-static uint8_t heartbeat_period_log(uint16_t value){
-    if (value == 0)      return 0x00;
-    // count leading zeros, supported by clang and gcc
-    // note: PeriodLog(8) == PeriodLog(7) = 3
-    return 33 - __builtin_clz(value - 1);
-}
-
 // TLV
 
 static int mesh_model_is_configuration_server(uint32_t model_identifier){
@@ -1809,7 +1786,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
     UNUSED(mesh_model);
 
     // setup message
-    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication->count);
+    uint8_t count_log = mesh_heartbeat_count_log(mesh_heartbeat_publication->count);
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_heartbeat_publication_status,
             status,
@@ -1838,7 +1815,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     // Destination address for Heartbeat messages
     requested_publication.destination = mesh_access_parser_get_u16(&parser);
     // Number of Heartbeat messages to be sent
-    requested_publication.count = heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
+    requested_publication.count = mesh_heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
     //  Period for sending Heartbeat messages
     requested_publication.period_log = mesh_access_parser_get_u8(&parser);
     //  TTL to be used when sending Heartbeat messages
@@ -1849,7 +1826,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     requested_publication.netkey_index = mesh_access_parser_get_u16(&parser);
 
     // store period as ms
-    requested_publication.period_ms = heartbeat_pwr2(requested_publication.period_log) * 1000;
+    requested_publication.period_ms = mesh_heartbeat_pwr2(requested_publication.period_log) * 1000;
 
     // store current features
     requested_publication.active_features = mesh_foundation_get_features();
@@ -1908,7 +1885,7 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
     UNUSED(mesh_model);
 
     // setup message
-    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_subscription->count);
+    uint8_t count_log = mesh_heartbeat_count_log(mesh_heartbeat_subscription->count);
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_heartbeat_subscription_status,
             status,
@@ -1962,7 +1939,7 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
 
     int subscription_enabled = config_heartbeat_subscription_enabled(&requested_subscription);
     printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s => enabled %u \n", requested_subscription.source,
-            requested_subscription.destination, heartbeat_pwr2(requested_subscription.period_log), subscription_enabled);
+            requested_subscription.destination, mesh_heartbeat_pwr2(requested_subscription.period_log), subscription_enabled);
 
     // ignore messages 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -2021,7 +1998,7 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
 static uint32_t config_heartbeat_subscription_get_period_remaining_s(mesh_heartbeat_subscription_t * heartbeat_subscription){
     // calculate period_log
     int32_t time_since_start_s = btstack_time_delta(btstack_run_loop_get_time_ms(), heartbeat_subscription->period_start_ms) / 1000;
-    int32_t period_s = heartbeat_pwr2(heartbeat_subscription->period_log);
+    int32_t period_s = mesh_heartbeat_pwr2(heartbeat_subscription->period_log);
     uint32_t period_remaining_s = 0;
     if (time_since_start_s < period_s){
         period_remaining_s = period_s - time_since_start_s;
@@ -2040,7 +2017,7 @@ static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, 
     } else {
         // calculate period_log
         uint32_t period_remaining_s = config_heartbeat_subscription_get_period_remaining_s(&subscription);
-        subscription.period_log = heartbeat_period_log(period_remaining_s);
+        subscription.period_log = mesh_heartbeat_period_log(period_remaining_s);
     }
     config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS, &subscription);
     mesh_access_message_processed(pdu);

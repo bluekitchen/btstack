@@ -106,8 +106,8 @@ typedef struct {
 
 typedef struct {
     uint16_t destination;
-    uint16_t count_log;      // Number of Heartbeat messages to be sent
-    uint16_t period_log;   // Period for sending Heartbeat messages in seconds
+    uint16_t count;      // Number of Heartbeat messages to be sent
+    uint16_t period_s;   // Period for sending Heartbeat messages in seconds
     uint16_t features;   // Bit field indicating features that trigger Heartbeat messages when changed
     uint16_t netkey_index; 
     uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
