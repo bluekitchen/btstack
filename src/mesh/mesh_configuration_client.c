@@ -833,8 +833,8 @@ uint8_t mesh_configuration_client_send_heartbeat_publication_set(mesh_model_t * 
 
     mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_publication_set, 
         publication_state.destination,
-        publication_state.count_log,
-        publication_state.period_log,
+        mesh_heartbeat_period_log(publication_state.count), 
+        mesh_heartbeat_period_log(publication_state.period_s), 
         publication_state.ttl,
         publication_state.features,
         publication_state.netkey_index);
@@ -856,11 +856,11 @@ uint8_t mesh_configuration_client_send_heartbeat_subscription_get(mesh_model_t *
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t heartbeat_source, uint16_t heartbeat_destination, uint8_t period_log){
+uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t heartbeat_source, uint16_t heartbeat_destination, uint16_t period_s){
         uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_subscription_set, heartbeat_source, heartbeat_destination, period_log);
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_configuration_client_heartbeat_subscription_set, heartbeat_source, heartbeat_destination, mesh_heartbeat_period_log(period_s));
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS);
@@ -1411,13 +1411,13 @@ static void mesh_configuration_client_heartbeat_publication_handler(mesh_model_t
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t  status     = mesh_access_parser_get_u8(&parser);
     uint16_t dest       = mesh_access_parser_get_u16(&parser);
-    uint8_t  count_log  = mesh_access_parser_get_u8(&parser);
-    uint8_t  period_log = mesh_access_parser_get_u8(&parser);
+    uint8_t  count      = mesh_heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
+    uint16_t period_s   = mesh_heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
     uint8_t  ttl        = mesh_access_parser_get_u8(&parser);
     uint16_t features   = mesh_access_parser_get_u16(&parser);
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     
-    uint8_t event[15];
+    uint8_t event[17];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
     event[pos++] = sizeof(event) - 2;
@@ -1428,8 +1428,10 @@ static void mesh_configuration_client_heartbeat_publication_handler(mesh_model_t
     event[pos++] = status;
     little_endian_store_16(event, pos, dest);
     pos += 2;
-    event[pos++] = count_log;
-    event[pos++] = period_log;
+    little_endian_store_16(event, pos, count);
+    pos += 2;
+    little_endian_store_16(event, pos, period_s);
+    pos += 2;
     event[pos++] = ttl;
     little_endian_store_16(event, pos, features);
     pos += 2;
@@ -1445,12 +1447,12 @@ static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_
     uint8_t  status     = mesh_access_parser_get_u8(&parser);
     uint16_t source     = mesh_access_parser_get_u16(&parser);
     uint16_t dest       = mesh_access_parser_get_u16(&parser);
-    uint8_t  period_log = mesh_access_parser_get_u8(&parser);
-    uint8_t  count_log  = mesh_access_parser_get_u8(&parser);
+    uint16_t period_s   = mesh_heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
+    uint16_t count      = mesh_heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
     uint8_t  min_hops   = mesh_access_parser_get_u8(&parser);
     uint8_t  max_hops   = mesh_access_parser_get_u8(&parser);
     
-    uint8_t event[14];
+    uint8_t event[16];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
     event[pos++] = sizeof(event) - 2;
@@ -1463,8 +1465,10 @@ static void mesh_configuration_client_heartbeat_subscription_handler(mesh_model_
     pos += 2;
     little_endian_store_16(event, pos, source);
     pos += 2;
-    event[pos++] = count_log;
-    event[pos++] = period_log;
+    little_endian_store_16(event, pos, count);
+    pos += 2;
+    little_endian_store_16(event, pos, period_s);
+    pos += 2;
     event[pos++] = min_hops;
     event[pos++] = max_hops;
 

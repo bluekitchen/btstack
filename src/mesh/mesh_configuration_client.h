@@ -651,10 +651,10 @@ uint8_t mesh_configuration_client_send_heartbeat_subscription_get(mesh_model_t *
  * @param appkey_index
  * @param heartbeat_source
  * @param heartbeat_destination
- * @param period_log
+ * @param period_s
  * @return status       ERROR_CODE_SUCCESS if successful, otherwise BTSTACK_MEMORY_ALLOC_FAILED or ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE
  */
-uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t heartbeat_source, uint16_t heartbeat_destination, uint8_t period_log);
+uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t heartbeat_source, uint16_t heartbeat_destination, uint16_t period_s);
 
 /**
  * @brief Get the current value of PollTimeout timer of the Low Power node within a Friend node.
