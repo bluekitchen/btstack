@@ -1458,16 +1458,16 @@ static uint8_t btp_permissions_for_flags(uint16_t flags){
         if (flags & ATT_PROPERTY_READ_PERMISSION_BIT_1) {
             read_security_level |= 2;
         }
-        if (read_security_level <= ATT_SECURITY_AUTHORIZED) {
+        if (read_security_level == ATT_SECURITY_AUTHORIZED) {
             permissions |= BTP_GATT_PERM_READ_AUTHZ;
         }
-        if (read_security_level <= ATT_SECURITY_AUTHENTICATED) {
+        if (read_security_level == ATT_SECURITY_AUTHENTICATED) {
             permissions |= BTP_GATT_PERM_READ_AUTHN;
         }
-        if (read_security_level <= ATT_SECURITY_ENCRYPTED) {
+        if (read_security_level == ATT_SECURITY_ENCRYPTED) {
             permissions |= BTP_GATT_PERM_READ_ENC;
         }
-        if (read_security_level <= ATT_SECURITY_NONE) {
+        if (read_security_level == ATT_SECURITY_NONE) {
             permissions |= BTP_GATT_PERM_READ;
         }
     }
@@ -1478,16 +1478,16 @@ static uint8_t btp_permissions_for_flags(uint16_t flags){
         if (flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_1) {
             write_security_level |= 2;
         }
-        if (write_security_level <= ATT_SECURITY_AUTHORIZED) {
+        if (write_security_level == ATT_SECURITY_AUTHORIZED) {
             permissions |= BTP_GATT_PERM_WRITE_AUTHZ;
         }
-        if (write_security_level <= ATT_SECURITY_AUTHENTICATED) {
+        if (write_security_level == ATT_SECURITY_AUTHENTICATED) {
             permissions |= BTP_GATT_PERM_WRITE_AUTHN;
         }
-        if (write_security_level <= ATT_SECURITY_ENCRYPTED) {
+        if (write_security_level == ATT_SECURITY_ENCRYPTED) {
             permissions |= BTP_GATT_PERM_WRITE_ENC;
         }
-        if (write_security_level <= ATT_SECURITY_NONE) {
+        if (write_security_level == ATT_SECURITY_NONE) {
             permissions |= BTP_GATT_PERM_WRITE;
         }
     }
