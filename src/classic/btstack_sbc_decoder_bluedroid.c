@@ -160,7 +160,7 @@ void OI_AssertFail(const char* file, int line, const char* reason){
 
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context){
     if (sbc_decoder_state_singleton && (sbc_decoder_state_singleton != state) ){
-        log_error("SBC decoder: different sbc decoder state is allready registered");
+        log_error("SBC decoder: different sbc decoder state already registered");
     } 
     OI_STATUS status = OI_STATUS_SUCCESS;
     switch (mode){
@@ -261,7 +261,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
             case OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA:
                 if (input_bytes_to_process > 0){
-                    // Should never occur: The SBC code claims there is not enough bytes in the frame_buffer,
+                    // Should never occur: The SBC codec claims there is not enough bytes in the frame_buffer,
                     // but the frame_buffer was full. (The frame_buffer is always full before decoding when input_bytes_to_process > 0.)
                     // Clear frame_buffer.
                     log_info("SBC decode: frame_buffer too small for frame");
@@ -491,7 +491,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 log_info("OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA");
                 break;
             case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
-                log_info("OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA");
+                log_debug("OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA");
                 break;
             case OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA:
                 log_info("OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA");
@@ -502,7 +502,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 
             case OI_CODEC_SBC_CHECKSUM_MISMATCH:
                 // The next frame is somehow corrupt.
-                log_info("OI_CODEC_SBC_CHECKSUM_MISMATCH");
+                log_debug("OI_CODEC_SBC_CHECKSUM_MISMATCH");
                 // Did the codec consume any bytes?
                 if (bytes_processed > 0){
                     // Good. Nothing to do.
