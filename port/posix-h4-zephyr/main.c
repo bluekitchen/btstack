@@ -53,11 +53,11 @@
 
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_link_key_db_fs.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
 #include "bluetooth_company_id.h"
+#include "ble/le_device_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
@@ -97,6 +97,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
+            le_device_db_tlv_configure(tlv_impl, &tlv_context);
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
@@ -156,9 +157,7 @@ int main(int argc, const char * argv[]){
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
-    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
 	hci_init(transport, (void*) &config);
-    hci_set_link_key_db(link_key_db);
     hci_set_chipset(btstack_chipset_zephyr_instance());
     
     // inform about BTstack state

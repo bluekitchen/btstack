@@ -111,12 +111,16 @@ extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;
 extern const hci_cmd_t hci_read_bd_addr;
 extern const hci_cmd_t hci_read_buffer_size;
+extern const hci_cmd_t hci_read_encryption_key_size;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
 extern const hci_cmd_t hci_read_local_extended_ob_data;
 extern const hci_cmd_t hci_read_local_extended_oob_data;
 extern const hci_cmd_t hci_read_local_name;
+extern const hci_cmd_t hci_read_page_timeout;
+extern const hci_cmd_t hci_read_page_scan_activity;
+extern const hci_cmd_t hci_read_pin_type;
 extern const hci_cmd_t hci_read_local_oob_data;
 extern const hci_cmd_t hci_read_local_supported_commands;
 extern const hci_cmd_t hci_read_local_supported_features;
@@ -125,6 +129,7 @@ extern const hci_cmd_t hci_read_loopback_mode;
 extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_read_remote_supported_features_command;
 extern const hci_cmd_t hci_read_remote_version_information;
+extern const hci_cmd_t hci_read_transmit_power_level;
 extern const hci_cmd_t hci_read_rssi;
 extern const hci_cmd_t hci_reject_connection_request;
 extern const hci_cmd_t hci_remote_name_request;
@@ -157,6 +162,8 @@ extern const hci_cmd_t hci_write_local_name;
 extern const hci_cmd_t hci_write_loopback_mode;
 extern const hci_cmd_t hci_write_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_write_page_timeout;
+extern const hci_cmd_t hci_write_pin_type;
+extern const hci_cmd_t hci_write_page_scan_activity;
 extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_secure_connections_test_mode;
 extern const hci_cmd_t hci_write_simple_pairing_debug_mode;
@@ -206,8 +213,9 @@ extern const hci_cmd_t hci_le_transmitter_test;
 extern const hci_cmd_t hci_le_write_suggested_default_data_length;
 
 // Broadcom / Cypress specific HCI commands
-extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
 extern const hci_cmd_t hci_bcm_set_sleep_mode;
+extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
+extern const hci_cmd_t hci_bcm_write_tx_power_table;
 
 /**
  * construct HCI Command based on template

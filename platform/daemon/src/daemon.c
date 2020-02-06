@@ -936,11 +936,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             } else if (!power_management_sleep) {
                 stop_power_off_timer();
 #ifdef HAVE_INTEL_USB
-                // before staring up the stack, load intel firmware
-                btstack_chipset_intel_download_firmware(transport, &btstack_server_intel_firmware_done);
-#else
+                if (!intel_firmware_loaded){
+                    // before staring up the stack, load intel firmware
+                    btstack_chipset_intel_download_firmware(transport, &btstack_server_intel_firmware_done);
+                    break;
+                }
+#endif
                 hci_power_control(HCI_POWER_ON);
-#endif                
             }
             break;
         case BTSTACK_GET_VERSION:
@@ -1759,8 +1761,16 @@ static void daemon_sigint_handler(int param){
     
     log_info(" <= SIGINT received, shutting down..\n");    
 
-    hci_power_control( HCI_POWER_OFF);
-    hci_close();
+    int send_power_off = 1;
+#ifdef HAVE_INTEL_USB
+    // power off and close only if hci was initialized before
+    send_power_off = intel_firmware_loaded;
+#endif
+
+    if (send_power_off){
+        hci_power_control( HCI_POWER_OFF);
+        hci_close();
+    }
     
     log_info("Good bye, see you.\n");    
     
@@ -2156,7 +2166,7 @@ int main (int argc,  char * const * argv){
         { 0,0,0,0 } // This is a filler for -1
     };
     
-    while (1) {
+    while (true) {
         int c;
         int option_index = -1;
         c = getopt_long(argc, argv, "h", long_options, &option_index);

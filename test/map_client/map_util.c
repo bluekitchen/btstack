@@ -130,7 +130,8 @@ void map_client_parse_folder_listing(btstack_packet_handler_t callback, uint16_t
     char name[MAP_MAX_VALUE_LEN];
     yxml_init(&xml_parser, xml_buffer, sizeof(xml_buffer));
     
-    while (data_len--){
+    while (data_len > 0){
+        data_len -= 1;
         yxml_ret_t r = yxml_parse(&xml_parser, *data++);
         switch (r){
             case YXML_ELEMSTART:
@@ -143,7 +144,7 @@ void map_client_parse_folder_listing(btstack_packet_handler_t callback, uint16_t
                 folder_found = 0;
                 break;
             case YXML_ATTRSTART:
-                if (!folder_found) break;
+                if (folder_found == 0) break;
                 if (strcmp("name", xml_parser.attr) == 0){
                     name_found = 1;
                     name[0]    = 0;
@@ -151,7 +152,7 @@ void map_client_parse_folder_listing(btstack_packet_handler_t callback, uint16_t
                 }
                 break;
             case YXML_ATTRVAL:
-                if (name_found) {
+                if (name_found == 1) {
                     // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
                     if (strlen(name) + 4 + 1 >= sizeof(name)) break;
                     strcat(name, xml_parser.data);
@@ -170,20 +171,23 @@ void map_client_parse_folder_listing(btstack_packet_handler_t callback, uint16_t
 
 void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_t cid, const uint8_t * data, uint16_t data_len){
     // now try parsing it
+    btstack_assert(data_len < 65535);
+
     int message_found = 0;
     int handle_found = 0;
     char handle[MAP_MESSAGE_HANDLE_SIZE * 2];
     map_message_handle_t msg_handle;
     yxml_init(&xml_parser, xml_buffer, sizeof(xml_buffer));
 
-    while (data_len--){
+    while (data_len > 0){
+        data_len -= 1;
         yxml_ret_t r = yxml_parse(&xml_parser, *data++);
         switch (r){
             case YXML_ELEMSTART:
                 message_found = strcmp("msg", xml_parser.elem) == 0;
                 break;
             case YXML_ELEMEND:
-                if (!message_found) break;
+                if (message_found == 0) break;
                 message_found = 0;
                 if (strlen(handle) != MAP_MESSAGE_HANDLE_SIZE * 2){
                     log_info("message handle string length != 16");
@@ -193,7 +197,7 @@ void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_
                 map_client_emit_message_listing_item_event(callback, cid, msg_handle);
                 break;
             case YXML_ATTRSTART:
-                if (!message_found) break;
+                if (message_found == 0) break;
                 if (strcmp("handle", xml_parser.attr) == 0){
                     handle_found = 1;
                     handle[0]    = 0;
@@ -201,8 +205,7 @@ void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_
                 }
                 break;
             case YXML_ATTRVAL:
-                if (handle_found) {
-
+                if (handle_found == 1) {
                     strcat(handle, xml_parser.data);
                     break;
                 }

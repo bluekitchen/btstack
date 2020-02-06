@@ -24,6 +24,7 @@
 
 #include "sbc_encoder.h"
 #include "sbc_enc_func_declare.h"
+#include <stddef.h>
 
 #if (SBC_ARM_ASM_OPT==TRUE)
 #define Mult32(s32In1,s32In2,s32OutLow)                                                 \
@@ -84,7 +85,7 @@ void EncPacking(SBC_ENC_PARAMS *pstrEncParams)
     pu8PacketPtr    = pstrEncParams->pu8NextPacket;    /*Initialize the ptr*/
     
     /* BK4BTSTACK_CHANGE START */
-    uint8_t * reserved_ptr = (uint8_t*) 0;
+    uint8_t * reserved_ptr = NULL;
     if (pstrEncParams->mSBCEnabled){
         *pu8PacketPtr++ = (UINT8)0xAD;  /*Sync word*/
         reserved_ptr = pu8PacketPtr;

@@ -39,15 +39,19 @@
 
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
 #include "classic/avdtp.h"
-#include "classic/avdtp_util.h"
 #include "classic/avdtp_acceptor.h"
 #include "classic/avdtp_initiator.h"
+#include "classic/avdtp_util.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
 
 #define CONFIGURATION_TIMEOUT_MS 300
 
@@ -67,7 +71,7 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 // } avdtp_sdp_query_context_t;
 
 static avdtp_context_t * sdp_query_context;
-static uint16_t avdtp_cid_counter = 0x55;
+static uint16_t avdtp_cid_counter = 0;
 
 static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -118,21 +122,41 @@ static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * con
     return context->initiator_transaction_id_counter;
 }
 
-static uint16_t avdtp_get_next_avdtp_cid(void){
-    avdtp_cid_counter++;
-    if (avdtp_cid_counter == 0){
-        avdtp_cid_counter = 1;
-    }
+static uint16_t avdtp_get_next_avdtp_cid(avdtp_context_t * context){
+    do {
+        if (avdtp_cid_counter == 0xffff) {
+            avdtp_cid_counter = 1;
+        } else {
+            avdtp_cid_counter++;
+        }
+    } while (avdtp_connection_for_avdtp_cid(avdtp_cid_counter, context) !=  NULL) ;
     return avdtp_cid_counter;
 }
 
-static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
-    context->stream_endpoints_id_counter++;
-    if (context->stream_endpoints_id_counter == 0){
-        context->stream_endpoints_id_counter = 1;
+static avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_id(avdtp_context_t * context, uint16_t stream_endpoint_id) {
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) context->stream_endpoints; it ; it = it->next){
+        avdtp_stream_endpoint_t * stream_endpoint = ((avdtp_stream_endpoint_t *) it);
+
+        if (stream_endpoint->sep.seid == stream_endpoint_id) {
+            return stream_endpoint;
+        };
     }
-    return context->stream_endpoints_id_counter;
+    return NULL;
 }
+
+static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
+    uint16_t stream_endpoint_id = context->stream_endpoints_id_counter;
+    do {
+        if (stream_endpoint_id == 0xffff) {
+            stream_endpoint_id = 1;
+        } else {
+            stream_endpoint_id++;
+        }
+    } while (avdtp_stream_endpoint_for_id(context, stream_endpoint_id) !=  NULL) ;
+    return stream_endpoint_id;
+}
+
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * avdtp_context, uint16_t * avdtp_cid){
     sdp_query_context = avdtp_context;
@@ -145,10 +169,10 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
         }
     }
     
-    *avdtp_cid = connection->avdtp_cid;
-    if (!avdtp_cid) {
-        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    if (avdtp_cid != NULL) {
+        *avdtp_cid = connection->avdtp_cid;
     }
+
     avdtp_context->avdtp_cid = connection->avdtp_cid;
             
     uint8_t err;
@@ -231,7 +255,9 @@ void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream
     uint16_t bitmap = store_bit16(stream_endpoint->sep.registered_service_categories, AVDTP_CONTENT_PROTECTION, 1);
     stream_endpoint->sep.registered_service_categories = bitmap;
     stream_endpoint->sep.capabilities.content_protection.cp_type = cp_type;
-    memcpy(stream_endpoint->sep.capabilities.content_protection.cp_type_value, cp_type_value, btstack_min(cp_type_value_len, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN));
+    (void)memcpy(stream_endpoint->sep.capabilities.content_protection.cp_type_value,
+                 cp_type_value,
+                 btstack_min(cp_type_value_len, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN));
     stream_endpoint->sep.capabilities.content_protection.cp_type_value_len = btstack_min(cp_type_value_len, AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN);
 }
 
@@ -287,7 +313,7 @@ void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_c
             while (btstack_linked_list_iterator_has_next(&it)){
                 avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
                 if (stream_endpoint->connection == connection){
-                    if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED && stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED){
+                    if ((stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED) && (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED)){
                         stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
                         avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                         l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
@@ -318,9 +344,9 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     }
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
-    connection->avdtp_cid = avdtp_get_next_avdtp_cid();
+    connection->avdtp_cid = avdtp_get_next_avdtp_cid(context);
     context->avdtp_cid = connection->avdtp_cid;
-    memcpy(connection->remote_addr, remote_addr, 6);
+    (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);
     return connection;
 }
@@ -616,7 +642,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     psm = l2cap_event_channel_opened_get_psm(packet); 
-                    if (psm != BLUETOOTH_PROTOCOL_AVDTP){
+                    if (psm != BLUETOOTH_PSM_AVDTP){
                         log_info("Unexpected PSM - Not implemented yet, avdtp sink: L2CAP_EVENT_CHANNEL_OPENED ");
                         return;
                     }
@@ -761,7 +787,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
 uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, context);
-    if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
     if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE){
         avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
         return ERROR_CODE_SUCCESS;
@@ -929,8 +955,8 @@ uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * co
         log_error("avdtp_discover_stream_endpoints: no connection for signaling cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED ||
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) ||
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -946,8 +972,8 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_co
         log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -964,8 +990,8 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdt
         log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -981,8 +1007,8 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_c
         log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
 
@@ -998,8 +1024,8 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
         log_error("No connection for AVDTP cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         log_error("connection in wrong state, %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
@@ -1028,7 +1054,8 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
     stream_endpoint->media_codec_type = configuration.media_codec.media_codec_type;
     if (configuration.media_codec.media_codec_type == AVDTP_CODEC_SBC){
         stream_endpoint->media_type = configuration.media_codec.media_type;
-        memcpy(stream_endpoint->media_codec_sbc_info, configuration.media_codec.media_codec_information, 4);
+        (void)memcpy(stream_endpoint->media_codec_sbc_info,
+                     configuration.media_codec.media_codec_information, 4);
     }
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
@@ -1040,8 +1067,8 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
     //TODO: if opened only app capabilities, enable reconfigure for not opened
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
-        connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+    if ((connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) || 
+        (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
    

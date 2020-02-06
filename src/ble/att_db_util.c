@@ -88,7 +88,7 @@ void att_db_util_init(void){
  */
 static int att_db_util_assert_space(uint16_t size){
 	size += 2; // for end tag
-	if (att_db_size + size <= att_db_max_size) return 1;
+	if ((att_db_size + size) <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
 	int new_size = att_db_size + att_db_size / 2;
 	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
@@ -122,7 +122,7 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 	att_db_next_handle++;
 	little_endian_store_16(att_db, att_db_size, uuid16);
 	att_db_size += 2;
-	memcpy(&att_db[att_db_size], data, data_len);
+	(void)memcpy(&att_db[att_db_size], data, data_len);
 	att_db_size += data_len;
 	att_db_util_set_end_tag();
 }
@@ -140,7 +140,7 @@ static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t 
 	att_db_next_handle++;
 	reverse_128(uuid128, &att_db[att_db_size]);
 	att_db_size += 16;
-	memcpy(&att_db[att_db_size], data, data_len);
+	(void)memcpy(&att_db[att_db_size], data, data_len);
 	att_db_size += data_len;
 	att_db_util_set_end_tag();
 }

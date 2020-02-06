@@ -194,6 +194,7 @@ void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
 #endif
 
 
+#ifdef ENABLE_CLASSIC
 
 // MARK: rfcomm_multiplexer_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_RFCOMM_MULTIPLEXERS)
@@ -755,6 +756,7 @@ void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *
 #endif
 
 
+#endif
 #ifdef ENABLE_BLE
 
 // MARK: gatt_client_t
@@ -896,6 +898,285 @@ void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
 
 
 #endif
+#ifdef ENABLE_MESH
+
+// MARK: mesh_network_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_NETWORK_PDUS)
+    #if defined(MAX_NO_MESH_NETWORK_PDUS)
+        #error "Deprecated MAX_NO_MESH_NETWORK_PDUS defined instead of MAX_NR_MESH_NETWORK_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_NETWORK_PDUS."
+    #else
+        #define MAX_NR_MESH_NETWORK_PDUS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_NETWORK_PDUS
+#if MAX_NR_MESH_NETWORK_PDUS > 0
+static mesh_network_pdu_t mesh_network_pdu_storage[MAX_NR_MESH_NETWORK_PDUS];
+static btstack_memory_pool_t mesh_network_pdu_pool;
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_network_pdu_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_pdu_t));
+    }
+    return (mesh_network_pdu_t *) buffer;
+}
+void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
+    btstack_memory_pool_free(&mesh_network_pdu_pool, mesh_network_pdu);
+}
+#else
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_network_pdu;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
+    void * buffer = malloc(sizeof(mesh_network_pdu_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_pdu_t));
+    }
+    return (mesh_network_pdu_t *) buffer;
+}
+void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
+    free(mesh_network_pdu);
+}
+#endif
+
+
+// MARK: mesh_transport_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_TRANSPORT_PDUS)
+    #if defined(MAX_NO_MESH_TRANSPORT_PDUS)
+        #error "Deprecated MAX_NO_MESH_TRANSPORT_PDUS defined instead of MAX_NR_MESH_TRANSPORT_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_TRANSPORT_PDUS."
+    #else
+        #define MAX_NR_MESH_TRANSPORT_PDUS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_TRANSPORT_PDUS
+#if MAX_NR_MESH_TRANSPORT_PDUS > 0
+static mesh_transport_pdu_t mesh_transport_pdu_storage[MAX_NR_MESH_TRANSPORT_PDUS];
+static btstack_memory_pool_t mesh_transport_pdu_pool;
+mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_transport_pdu_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_pdu_t));
+    }
+    return (mesh_transport_pdu_t *) buffer;
+}
+void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
+    btstack_memory_pool_free(&mesh_transport_pdu_pool, mesh_transport_pdu);
+}
+#else
+mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_transport_pdu;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
+    void * buffer = malloc(sizeof(mesh_transport_pdu_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_pdu_t));
+    }
+    return (mesh_transport_pdu_t *) buffer;
+}
+void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
+    free(mesh_transport_pdu);
+}
+#endif
+
+
+// MARK: mesh_network_key_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_NETWORK_KEYS)
+    #if defined(MAX_NO_MESH_NETWORK_KEYS)
+        #error "Deprecated MAX_NO_MESH_NETWORK_KEYS defined instead of MAX_NR_MESH_NETWORK_KEYS. Please update your btstack_config.h to use MAX_NR_MESH_NETWORK_KEYS."
+    #else
+        #define MAX_NR_MESH_NETWORK_KEYS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_NETWORK_KEYS
+#if MAX_NR_MESH_NETWORK_KEYS > 0
+static mesh_network_key_t mesh_network_key_storage[MAX_NR_MESH_NETWORK_KEYS];
+static btstack_memory_pool_t mesh_network_key_pool;
+mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_network_key_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_key_t));
+    }
+    return (mesh_network_key_t *) buffer;
+}
+void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
+    btstack_memory_pool_free(&mesh_network_key_pool, mesh_network_key);
+}
+#else
+mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_network_key;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
+    void * buffer = malloc(sizeof(mesh_network_key_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_key_t));
+    }
+    return (mesh_network_key_t *) buffer;
+}
+void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
+    free(mesh_network_key);
+}
+#endif
+
+
+// MARK: mesh_transport_key_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_TRANSPORT_KEYS)
+    #if defined(MAX_NO_MESH_TRANSPORT_KEYS)
+        #error "Deprecated MAX_NO_MESH_TRANSPORT_KEYS defined instead of MAX_NR_MESH_TRANSPORT_KEYS. Please update your btstack_config.h to use MAX_NR_MESH_TRANSPORT_KEYS."
+    #else
+        #define MAX_NR_MESH_TRANSPORT_KEYS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_TRANSPORT_KEYS
+#if MAX_NR_MESH_TRANSPORT_KEYS > 0
+static mesh_transport_key_t mesh_transport_key_storage[MAX_NR_MESH_TRANSPORT_KEYS];
+static btstack_memory_pool_t mesh_transport_key_pool;
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_transport_key_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_key_t));
+    }
+    return (mesh_transport_key_t *) buffer;
+}
+void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
+    btstack_memory_pool_free(&mesh_transport_key_pool, mesh_transport_key);
+}
+#else
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_transport_key;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
+    void * buffer = malloc(sizeof(mesh_transport_key_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_key_t));
+    }
+    return (mesh_transport_key_t *) buffer;
+}
+void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
+    free(mesh_transport_key);
+}
+#endif
+
+
+// MARK: mesh_virtual_address_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_VIRTUAL_ADDRESSS)
+    #if defined(MAX_NO_MESH_VIRTUAL_ADDRESSS)
+        #error "Deprecated MAX_NO_MESH_VIRTUAL_ADDRESSS defined instead of MAX_NR_MESH_VIRTUAL_ADDRESSS. Please update your btstack_config.h to use MAX_NR_MESH_VIRTUAL_ADDRESSS."
+    #else
+        #define MAX_NR_MESH_VIRTUAL_ADDRESSS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSS
+#if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
+static mesh_virtual_address_t mesh_virtual_address_storage[MAX_NR_MESH_VIRTUAL_ADDRESSS];
+static btstack_memory_pool_t mesh_virtual_address_pool;
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_virtual_address_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_virtual_address_t));
+    }
+    return (mesh_virtual_address_t *) buffer;
+}
+void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
+    btstack_memory_pool_free(&mesh_virtual_address_pool, mesh_virtual_address);
+}
+#else
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_virtual_address;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
+    void * buffer = malloc(sizeof(mesh_virtual_address_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_virtual_address_t));
+    }
+    return (mesh_virtual_address_t *) buffer;
+}
+void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
+    free(mesh_virtual_address);
+}
+#endif
+
+
+// MARK: mesh_subnet_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_SUBNETS)
+    #if defined(MAX_NO_MESH_SUBNETS)
+        #error "Deprecated MAX_NO_MESH_SUBNETS defined instead of MAX_NR_MESH_SUBNETS. Please update your btstack_config.h to use MAX_NR_MESH_SUBNETS."
+    #else
+        #define MAX_NR_MESH_SUBNETS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_SUBNETS
+#if MAX_NR_MESH_SUBNETS > 0
+static mesh_subnet_t mesh_subnet_storage[MAX_NR_MESH_SUBNETS];
+static btstack_memory_pool_t mesh_subnet_pool;
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_subnet_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_subnet_t));
+    }
+    return (mesh_subnet_t *) buffer;
+}
+void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
+    btstack_memory_pool_free(&mesh_subnet_pool, mesh_subnet);
+}
+#else
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_subnet;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
+    void * buffer = malloc(sizeof(mesh_subnet_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_subnet_t));
+    }
+    return (mesh_subnet_t *) buffer;
+}
+void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
+    free(mesh_subnet);
+}
+#endif
+
+
+#endif
 // init
 void btstack_memory_init(void){
 #if MAX_NR_HCI_CONNECTIONS > 0
@@ -907,6 +1188,7 @@ void btstack_memory_init(void){
 #if MAX_NR_L2CAP_CHANNELS > 0
     btstack_memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NR_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
 #endif
+#ifdef ENABLE_CLASSIC
 #if MAX_NR_RFCOMM_MULTIPLEXERS > 0
     btstack_memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NR_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
 #endif
@@ -943,6 +1225,7 @@ void btstack_memory_init(void){
 #if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
     btstack_memory_pool_create(&avrcp_browsing_connection_pool, avrcp_browsing_connection_storage, MAX_NR_AVRCP_BROWSING_CONNECTIONS, sizeof(avrcp_browsing_connection_t));
 #endif
+#endif
 #ifdef ENABLE_BLE
 #if MAX_NR_GATT_CLIENTS > 0
     btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
@@ -952,6 +1235,26 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_SM_LOOKUP_ENTRIES > 0
     btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
+#endif
+#endif
+#ifdef ENABLE_MESH
+#if MAX_NR_MESH_NETWORK_PDUS > 0
+    btstack_memory_pool_create(&mesh_network_pdu_pool, mesh_network_pdu_storage, MAX_NR_MESH_NETWORK_PDUS, sizeof(mesh_network_pdu_t));
+#endif
+#if MAX_NR_MESH_TRANSPORT_PDUS > 0
+    btstack_memory_pool_create(&mesh_transport_pdu_pool, mesh_transport_pdu_storage, MAX_NR_MESH_TRANSPORT_PDUS, sizeof(mesh_transport_pdu_t));
+#endif
+#if MAX_NR_MESH_NETWORK_KEYS > 0
+    btstack_memory_pool_create(&mesh_network_key_pool, mesh_network_key_storage, MAX_NR_MESH_NETWORK_KEYS, sizeof(mesh_network_key_t));
+#endif
+#if MAX_NR_MESH_TRANSPORT_KEYS > 0
+    btstack_memory_pool_create(&mesh_transport_key_pool, mesh_transport_key_storage, MAX_NR_MESH_TRANSPORT_KEYS, sizeof(mesh_transport_key_t));
+#endif
+#if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
+    btstack_memory_pool_create(&mesh_virtual_address_pool, mesh_virtual_address_storage, MAX_NR_MESH_VIRTUAL_ADDRESSS, sizeof(mesh_virtual_address_t));
+#endif
+#if MAX_NR_MESH_SUBNETS > 0
+    btstack_memory_pool_create(&mesh_subnet_pool, mesh_subnet_storage, MAX_NR_MESH_SUBNETS, sizeof(mesh_subnet_t));
 #endif
 #endif
 }

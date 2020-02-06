@@ -69,6 +69,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int main_argc;
 static const char ** main_argv;
 static const hci_transport_t * transport;
+static int intel_firmware_loaded;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -88,10 +89,11 @@ static void sigint_handler(int param){
     // reset anyway
     btstack_stdin_reset();
 
-    // power down
-    hci_power_control(HCI_POWER_OFF);
-    hci_close();
-    log_info("Good bye, see you.\n");    
+    // power off and close only if hci was initialized before
+    if (intel_firmware_loaded){
+        hci_power_control( HCI_POWER_OFF);
+        hci_close();
+    }
     exit(0);
 }
 
@@ -105,6 +107,8 @@ void hal_led_toggle(void){
 static void intel_firmware_done(int result){
 
     printf("Done %x\n", result);
+
+    intel_firmware_loaded = 1;
 
     // init HCI
     hci_init(transport, NULL);

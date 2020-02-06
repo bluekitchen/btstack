@@ -162,7 +162,7 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d,                     // The volume has been changed locally on the TG, see 6.13.3.
-    AVRCP_NOTIFICATION_EVENT_COUNT = 0x0d
+    AVRCP_NOTIFICATION_EVENT_MAX_VALUE = 0x0d
 } avrcp_notification_event_id_t;
 
 
@@ -436,7 +436,7 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
-    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_COUNT];
+    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE+1];
 
     avrcp_subunit_type_t unit_type;
     uint32_t company_id;
@@ -561,7 +561,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t ro
 avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_role_t role, uint16_t l2cap_cid);
 
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
-uint16_t avrcp_get_next_cid(void);
+uint16_t avrcp_get_next_cid(avrcp_role_t role);
 
 // SDP query
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

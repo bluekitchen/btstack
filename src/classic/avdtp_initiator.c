@@ -38,11 +38,13 @@
 #define BTSTACK_FILE__ "avdtp_initiator.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "l2cap.h"
 #include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_initiator.h"
@@ -109,7 +111,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     for (i = offset; i < size; i += 2){
                         sep.seid = packet[i] >> 2;
                         offset++;
-                        if (sep.seid < 0x01 || sep.seid > 0x3E){
+                        if ((sep.seid < 0x01) || (sep.seid > 0x3E)){
                             log_info("    invalid sep id");
                             // status = BAD_ACP_SEID;
                             break;
@@ -129,6 +131,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     avdtp_emit_capabilities(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, &sep.capabilities, sep.registered_service_categories);
                     break;
                 case AVDTP_SI_DELAYREPORT:
+                    avdtp_signaling_emit_delay(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, little_endian_read_16(packet, offset));
                     break;
                 case AVDTP_SI_GET_CONFIGURATION:
                     // sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
@@ -153,18 +156,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     // copy sbc media codec info
                     stream_endpoint->remote_sep.configured_service_categories |= stream_endpoint->remote_configuration_bitmap;
                     stream_endpoint->remote_sep.configuration = stream_endpoint->remote_configuration;
-                    memcpy(stream_endpoint->media_codec_sbc_info, stream_endpoint->remote_configuration.media_codec.media_codec_information, 4);
-                    stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_sbc_info;
-                    
-#if 0
-                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
-                    // TODO check if configuration is supported
-                    
-                    if (!is_avdtp_remote_seid_registered(stream_endpoint)){
-                        stream_endpoint->remote_sep = sep;
-                        log_info("INT: update seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
-                    } 
-#endif
+                    (void)memcpy(stream_endpoint->media_codec_sbc_info,
+                                 stream_endpoint->remote_configuration.media_codec.media_codec_information,
+                                 4);
+                    stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_sbc_info; 
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
 
@@ -208,7 +203,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->local_seid = stream_endpoint->sep.seid;
-                    l2cap_create_channel(context->packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, NULL);
+                    l2cap_create_channel(context->packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, 0xffff, NULL);
                     return;
                 case AVDTP_SI_START:
                     if (!stream_endpoint){
@@ -246,7 +241,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
-
                 default:
                     log_info("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->signaling_packet.signal_identifier);
                     break;
@@ -377,7 +371,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
         stream_endpoint->send_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
-            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, stream_endpoint->l2cap_media_cid, stream_endpoint->sep.seid, stream_endpoint->sequence_number);
+            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), stream_endpoint->sequence_number);
             return;
         }
     }
@@ -385,7 +379,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     switch (stream_endpoint_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{
-            if (stream_endpoint_state == AVDTP_INITIATOR_W2_SET_CONFIGURATION && !connection->is_initiator){
+            if ((stream_endpoint_state == AVDTP_INITIATOR_W2_SET_CONFIGURATION) && !connection->is_initiator){
                 log_info("initiator SM stop sending SET_CONFIGURATION cmd: current role is acceptor");
                 connection->is_configuration_initiated_locally = 0;
                 break;
@@ -407,7 +401,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->signaling_packet.packet_type != AVDTP_END_PACKET)){
                 stream_endpoint->initiator_config_state = AVDTP_INITIATOR_FRAGMENTATED_COMMAND;
                 log_info("INT: fragmented");
             }
@@ -418,7 +412,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
-            if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+            if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->signaling_packet.packet_type != AVDTP_END_PACKET)){
                 stream_endpoint->initiator_config_state = AVDTP_INITIATOR_FRAGMENTATED_COMMAND;
                 log_info("INT: fragmented");
             }
@@ -442,7 +436,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     }
 
     // check fragmentation
-    if (connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET && connection->signaling_packet.packet_type != AVDTP_END_PACKET){
+    if ((connection->signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->signaling_packet.packet_type != AVDTP_END_PACKET)){
         avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     }
 }

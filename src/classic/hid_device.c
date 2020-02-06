@@ -39,14 +39,15 @@
 
 #include <string.h>
 
+#include "bluetooth.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_hid_parser.h"
 #include "classic/hid_device.h"
 #include "classic/sdp_util.h"
-#include "bluetooth.h"
-#include "bluetooth_sdp.h"
 #include "l2cap.h"
-#include "btstack_event.h"
-#include "btstack_debug.h"
-#include "btstack_hid_parser.h"
 
 typedef enum {
     HID_DEVICE_IDLE,
@@ -126,7 +127,7 @@ static uint16_t hid_device_get_next_cid(void){
 
 // TODO: store hid device connection into list
 static hid_device_t * hid_device_get_instance_for_l2cap_cid(uint16_t cid){
-    if (_hid_device.control_cid == cid || _hid_device.interrupt_cid == cid){
+    if ((_hid_device.control_cid == cid) || (_hid_device.interrupt_cid == cid)){
         return &_hid_device;
     }
     return NULL;
@@ -141,7 +142,7 @@ static hid_device_t * hid_device_get_instance_for_hid_cid(uint16_t hid_cid){
 
 static hid_device_t * hid_device_provide_instance_for_bd_addr(bd_addr_t bd_addr){
     if (!_hid_device.cid){
-        memcpy(_hid_device.bd_addr, bd_addr, 6);
+        (void)memcpy(_hid_device.bd_addr, bd_addr, 6);
         _hid_device.cid = hid_device_get_next_cid();
         _hid_device.protocol_mode = HID_PROTOCOL_MODE_REPORT;
         _hid_device.con_handle = HCI_CON_HANDLE_INVALID;
@@ -184,7 +185,7 @@ void hid_create_sdp_record(
         uint8_t * l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_HID_CONTROL);
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_HID_CONTROL);
         }
         de_pop_sequence(attribute, l2cpProtocol);
 
@@ -214,7 +215,7 @@ void hid_create_sdp_record(
             uint8_t * l2cpProtocol = de_push_sequence(additionalDescriptorAttribute);
             {
                 de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-                de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_HID_INTERRUPT);
+                de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_HID_INTERRUPT);
             }
             de_pop_sequence(additionalDescriptorAttribute, l2cpProtocol);
 
@@ -369,7 +370,7 @@ static int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t 
         }
     } else {
         int size =  btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_len, hid_descriptor);
-        if (size == 0 || size != report_size) return 0;
+        if ((size == 0) || (size != report_size)) return 0;
     }
     return 1;
 }
@@ -503,7 +504,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device->expected_report_size = hid_get_report_size_for_id(device->cid, device->report_id, device->report_type, hid_descriptor_len, hid_descriptor); 
                     report_size =  device->expected_report_size + pos; // add 1 for header size and report id
                     
-                    if ((packet[0] & 0x08) && packet_size >= pos + 1){
+                    if ((packet[0] & 0x08) && (packet_size >= (pos + 1))){
                         device->report_size = btstack_min(btstack_min(little_endian_read_16(packet, pos), report_size), sizeof(report));
                     } else {
                         device->report_size = btstack_min(btstack_min(l2cap_max_mtu(), report_size), sizeof(report));
@@ -569,7 +570,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         break;
                     }
                     param = packet[0] & 0x01;
-                    if (param == HID_PROTOCOL_MODE_BOOT && !hid_boot_protocol_mode_supported){
+                    if ((param == HID_PROTOCOL_MODE_BOOT) && !hid_boot_protocol_mode_supported){
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
                     }
@@ -642,7 +643,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 l2cap_decline_connection(channel);
                                 break;
                             }
-                            if (device->con_handle == HCI_CON_HANDLE_INVALID || l2cap_event_incoming_connection_get_handle(packet) == device->con_handle){
+                            if ((device->con_handle == HCI_CON_HANDLE_INVALID) || (l2cap_event_incoming_connection_get_handle(packet) == device->con_handle)){
                                 device->con_handle = l2cap_event_incoming_connection_get_handle(packet);
                                 device->incoming = 1;
                                 l2cap_event_incoming_connection_get_address(packet, device->bd_addr);
@@ -703,7 +704,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
 
                     // connect HID Interrupt for outgoing
-                    if (device->incoming == 0 && psm == PSM_HID_CONTROL){
+                    if ((device->incoming == 0) && (psm == PSM_HID_CONTROL)){
                         // printf("Create outgoing HID Interrupt\n");
                         status = l2cap_create_channel(packet_handler, device->bd_addr, PSM_HID_INTERRUPT, 48, &device->interrupt_cid);
                         break;
@@ -941,7 +942,7 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     *hid_cid = hid_device_get_next_cid();
 
     // store address
-    memcpy(hid_device->bd_addr, addr, 6);
+    (void)memcpy(hid_device->bd_addr, addr, 6);
 
     // reset state
     hid_device->cid           = *hid_cid;

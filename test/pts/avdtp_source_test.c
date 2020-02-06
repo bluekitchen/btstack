@@ -92,7 +92,7 @@ typedef struct {
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         
-static const char * device_addr_string = "00:1B:DC:07:32:EF";
+static const char * device_addr_string = "00:1B:DC:08:E2:72";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
@@ -515,6 +515,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
             printf("CAPABILITY - DELAY_REPORTING supported on remote.\n");
             break;
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
+            printf("DELAY_REPORT received: %d.%0d ms, local seid %d\n", 
+                avdtp_subevent_signaling_delay_report_get_delay_100us(packet)/10, avdtp_subevent_signaling_delay_report_get_delay_100us(packet)%10,
+                avdtp_subevent_signaling_delay_report_get_local_seid(packet));
+            break;
         case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
             printf("CAPABILITY - HEADER_COMPRESSION supported on remote: \n");
             printf("    - back_ch   %d\n", avdtp_subevent_signaling_header_compression_capability_get_back_ch(packet));
@@ -778,6 +783,7 @@ int btstack_main(int argc, const char * argv[]){
     media_tracker.local_seid = avdtp_local_seid(sc.local_stream_endpoint);
     media_tracker.remote_seid = 1;
     
+    avdtp_source_register_delay_reporting_category(media_tracker.local_seid);
 
     // Initialize SDP 
     sdp_init();

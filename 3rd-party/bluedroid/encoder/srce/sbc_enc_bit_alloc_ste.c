@@ -113,20 +113,20 @@ void sbc_enc_bit_alloc_ste(SBC_ENC_PARAMS *pstrCodecParams)
         s32SliceCount = 0;
         ps16GenBufPtr = ps16BitNeed;
 
-        for (s32Sb = 0; s32Sb < 2*s32NumOfSubBands; s32Sb++)
+        for (s32Sb = 0; s32Sb < (2*s32NumOfSubBands); s32Sb++)
         {
-            if ( (*ps16GenBufPtr >= s32BitSlice + 1) && (*ps16GenBufPtr < s32BitSlice + 16) )
+            if ( (*ps16GenBufPtr >= (s32BitSlice + 1)) && (*ps16GenBufPtr < (s32BitSlice + 16)) )
             {
-                if (*(ps16GenBufPtr) == s32BitSlice+1)
+                if (*(ps16GenBufPtr) == (s32BitSlice+1))
                     s32SliceCount += 2;
                 else
                     s32SliceCount++;
             }
             ps16GenBufPtr++;
         }
-    } while (s32BitCount-s32SliceCount>0);
+    } while ((s32BitCount-s32SliceCount)>0);
 
-    if (s32BitCount-s32SliceCount == 0)
+    if ((s32BitCount-s32SliceCount) == 0)
     {
         s32BitCount -= s32SliceCount;
         s32BitSlice --;
@@ -139,7 +139,7 @@ void sbc_enc_bit_alloc_ste(SBC_ENC_PARAMS *pstrCodecParams)
     {
         for (s32Sb = 0; s32Sb < s32NumOfSubBands; s32Sb++)
         {
-            if (*ps16GenBufPtr < s32BitSlice+2)
+            if (*ps16GenBufPtr < (s32BitSlice+2))
                 *ps16GenArrPtr = 0;
             else
                 *ps16GenArrPtr = ((*(ps16GenBufPtr)-s32BitSlice) < 16) ?
@@ -162,7 +162,7 @@ void sbc_enc_bit_alloc_ste(SBC_ENC_PARAMS *pstrCodecParams)
             (*(ps16GenArrPtr))++;
             s32BitCount--;
         }
-        else if ((*ps16GenBufPtr == s32BitSlice+1) && (s32BitCount > 1))
+        else if ((*ps16GenBufPtr == (s32BitSlice+1)) && (s32BitCount > 1))
         {
             *(ps16GenArrPtr) = 2;
             s32BitCount -= 2;

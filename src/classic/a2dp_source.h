@@ -78,9 +78,8 @@ void a2dp_source_init(void);
  * @param codec_capabilities_len	Media codec capabilities length.
  * @param codec_configuration 		Default media codec configuration.
  * @param codec_configuration_len	Media codec configuration length. 
- * @param out_local_seid			Assigned stream endpoint ID used in further A2DP commands.
  *
- * @return status 					ERROR_CODE_SUCCESS if sucessful.
+ * @return local_stream_endpoint 				
  */
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
@@ -88,15 +87,21 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
 
 /**
  * @brief Register callback for the A2DP Source client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 
- * - A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED:		        Received when signaling connection with a remote is established .
- * - A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:				Received when signaling connection with a remote is released .
- * - A2DP_SUBEVENT_STREAM_ESTABLISHED:							Received when stream to a remote device is established.
- * - A2DP_SUBEVENT_STREAM_STARTED:								Received when stream is started.
- * - A2DP_SUBEVENT_STREAM_SUSPENDED:							Received when stream is paused.
- * - A2DP_SUBEVENT_STREAM_STOPED:							    received when stream is aborted or stopped.
- * - A2DP_SUBEVENT_STREAM_RELEASED:								Received when stream is released.
  * - A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:			Indicates that the next media packet can be sent.
  *
+ * - A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED             Received when signaling connection with a remote is established.
+ * - A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                Received when signaling connection with a remote is released
+ * - A2DP_SUBEVENT_STREAM_ESTABLISHED                           Received when stream to a remote device is established.
+ * - A2DP_SUBEVENT_STREAM_STARTED                               Received when stream is started.
+ * - A2DP_SUBEVENT_STREAM_SUSPENDED                             Received when stream is paused.
+ * - A2DP_SUBEVENT_STREAM_STOPED                                received when stream is aborted or stopped.
+ * - A2DP_SUBEVENT_STREAM_RELEASED                              Received when stream is released.
+ * - A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY         Currently the only capability that is passed to client
+ * - A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                  Signals that all capabilities are reported
+ * - A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                       Delay report
+ * - A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION      SBC configuration
+ * - A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW          Signals that a media packet can be sent
+ * - A2DP_SUBEVENT_COMMAND_REJECTED                             Command reject
  * @param callback
  */
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);

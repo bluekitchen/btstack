@@ -6,6 +6,7 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -25,3 +26,4 @@ test: all
 	
 clean:
 	rm -fr base64_decoder_test *.dSYM *.o
+	rm -f *.gcno *.gcda

@@ -54,18 +54,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_run_loop.h"
-#include "l2cap.h"
-#include "classic/rfcomm.h"
-#include "btstack_event.h"
 #include "bluetooth_sdp.h"
+#include "btstack_event.h"
+#include "btstack_run_loop.h"
 #include "classic/goep_client.h"
 #include "classic/obex.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_server.h"
+#include "classic/sdp_util.h"
+#include "l2cap.h"
 #include "map_client.h"
 #include "map_server.h"
-#include "classic/sdp_client.h"
-#include "classic/sdp_util.h"
-#include "classic/sdp_server.h"
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"

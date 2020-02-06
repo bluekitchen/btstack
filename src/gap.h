@@ -165,6 +165,12 @@ void gap_set_class_of_device(uint32_t class_of_device);
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
 
 /**
+ * @brief Set  link supervision timeout for outgoing classic ACL links
+ * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds
+ */
+void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */
@@ -175,6 +181,13 @@ void gap_set_bondable_mode(int enabled);
  * @return 1 if bondable
  */
 int gap_get_bondable_mode(void);
+
+/**
+ * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
+ */
+
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr));
+
 
 /* Configure Secure Simple Pairing */
 
@@ -197,6 +210,12 @@ void gap_ssp_set_authentication_requirement(int authentication_requirement);
  * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
  */
 void gap_ssp_set_auto_accept(int auto_accept);
+
+/**
+ * @brief Set required encryption key size for GAP Levels 1-3 on ccassic connections. Default: 16 bytes
+ * @param encryption_key_size in bytes. Valid 7..16
+ */
+void gap_set_required_encryption_key_size(uint8_t encryption_key_size);
 
 /**
  * @brief Start dedicated bonding with device. Disconnect after bonding.
@@ -539,6 +558,13 @@ int gap_inquiry_stop(void);
  * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
 int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
+
+/**
+ * @brief Read RSSI
+ * @param con_handle
+ * @events: GAP_EVENT_RSSI_MEASUREMENT
+ */
+int gap_read_rssi(hci_con_handle_t con_handle);
 
 /**
  * @brief Legacy Pairing Pin Code Response

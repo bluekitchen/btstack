@@ -106,6 +106,7 @@ static void btstack_tlv_posix_delete_tag(void * context, uint32_t tag){
 		tlv_entry_t * entry = (tlv_entry_t*) btstack_linked_list_iterator_next(&it);
 		if (entry->tag != tag) continue;
 		btstack_linked_list_iterator_remove(&it);
+		free(entry);
 		btstack_tlv_posix_append_tag(self, tag, NULL, 0);
 		return;
 	}
@@ -179,7 +180,7 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
 	    	if (memcmp(header, btstack_tlv_header_magic, strlen(btstack_tlv_header_magic)) == 0){
 		    	log_info("BTstack Magic Header found");
 		    	// read entries
-		    	while (1){
+		    	while (true){
 					uint8_t entry[8];
 					size_t 	entries_read = fread(entry, 1, sizeof(entry), self->file);
 					if (entries_read == 0){

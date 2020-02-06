@@ -45,11 +45,12 @@
 #include "btstack_run_loop_windows.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
+
 #include <Windows.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 static void btstack_run_loop_windows_dump_timer(void);
 
@@ -72,7 +73,7 @@ static void btstack_run_loop_windows_add_data_source(btstack_data_source_t *ds){
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_windows_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_windows_remove_data_source(btstack_data_source_t *ds){
     data_sources_modified = 1;
     // log_info("btstack_run_loop_windows_remove_data_source %x\n", (int) ds);
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
@@ -89,9 +90,10 @@ static void btstack_run_loop_windows_add_timer(btstack_timer_source_t *ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (next->timeout > ts->timeout) {
-            break;
-        }
+        // exit if list timeout is after new timeout
+        uint32_t list_timeout = ((btstack_timer_source_t *) it->next)->timeout;
+        int32_t delta = btstack_time_delta(ts->timeout, list_timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -102,7 +104,7 @@ static void btstack_run_loop_windows_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_windows_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_windows_remove_timer(btstack_timer_source_t *ts){
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // btstack_run_loop_windows_dump_timer();
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
@@ -150,7 +152,7 @@ static void btstack_run_loop_windows_execute(void) {
     btstack_timer_source_t *ts;
     btstack_linked_list_iterator_t it;
 
-    while (1) {
+    while (true) {
 
         // collect handles to wait for
         HANDLE handles[100];
@@ -171,7 +173,7 @@ static void btstack_run_loop_windows_execute(void) {
         if (timers) {
             ts = (btstack_timer_source_t *) timers;
             uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
-            timeout_ms = ts->timeout - now_ms;
+            timeout_ms = btstack_time_delta(ts->timeout, now_ms);
             if (timeout_ms < 0){
                 timeout_ms = 0;
             }

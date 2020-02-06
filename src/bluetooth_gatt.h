@@ -1,13 +1,14 @@
 
 /**
- * bluetooth_gatt.h generated from Bluetooth SIG website for BTstack on 2018-03-09 12:55:06.388357
+ * bluetooth_gatt.h generated from Bluetooth SIG website for BTstack tool/bluetooth_gatt.py
+ * 2018-11-13 12:39:09.525663
  */
 
 #ifndef BLUETOOTH_GATT_H
 #define BLUETOOTH_GATT_H
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/declarations
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/declarations
  */
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_CHARACTERISTIC_DECLARATION                          0x2803 // Characteristic Declaration
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_INCLUDE_DECLARATION                                 0x2802 // Include
@@ -15,7 +16,7 @@
 #define ORG_BLUETOOTH_ATTRIBUTE_GATT_SECONDARY_SERVICE_DECLARATION                       0x2801 // Secondary Service
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/services
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/services
  */
 #define ORG_BLUETOOTH_SERVICE_ALERT_NOTIFICATION                                         0x1811 // Alert Notification Service
 #define ORG_BLUETOOTH_SERVICE_AUTOMATION_IO                                              0x1815 // Automation IO
@@ -39,6 +40,7 @@
 #define ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE                                     0x1812 // Human Interface Device
 #define ORG_BLUETOOTH_SERVICE_IMMEDIATE_ALERT                                            0x1802 // Immediate Alert
 #define ORG_BLUETOOTH_SERVICE_INDOOR_POSITIONING                                         0x1821 // Indoor Positioning
+#define ORG_BLUETOOTH_SERVICE_INSULIN_DELIVERY                                           0x183A // Insulin Delivery
 #define ORG_BLUETOOTH_SERVICE_INTERNET_PROTOCOL_SUPPORT                                  0x1820 // Internet Protocol Support Service
 #define ORG_BLUETOOTH_SERVICE_LINK_LOSS                                                  0x1803 // Link Loss
 #define ORG_BLUETOOTH_SERVICE_LOCATION_AND_NAVIGATION                                    0x1819 // Location and Navigation
@@ -58,7 +60,7 @@
 #define ORG_BLUETOOTH_SERVICE_WEIGHT_SCALE                                               0x181D // Weight Scale
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/characteristics
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/characteristics
  */
 #define ORG_BLUETOOTH_CHARACTERISTIC_AEROBIC_HEART_RATE_LOWER_LIMIT                      0x2A7E // Aerobic Heart Rate Lower Limit
 #define ORG_BLUETOOTH_CHARACTERISTIC_AEROBIC_HEART_RATE_UPPER_LIMIT                      0x2A84 // Aerobic Heart Rate Upper Limit
@@ -110,6 +112,7 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_DATE_OF_BIRTH                                       0x2A85 // Date of Birth
 #define ORG_BLUETOOTH_CHARACTERISTIC_DATE_OF_THRESHOLD_ASSESSMENT                        0x2A86 // Date of Threshold Assessment
 #define ORG_BLUETOOTH_CHARACTERISTIC_DATE_TIME                                           0x2A08 // Date Time
+#define ORG_BLUETOOTH_CHARACTERISTIC_DATE_UTC                                            0x2AED // Date UTC
 #define ORG_BLUETOOTH_CHARACTERISTIC_DAY_DATE_TIME                                       0x2A0A // Day Date Time
 #define ORG_BLUETOOTH_CHARACTERISTIC_DAY_OF_WEEK                                         0x2A09 // Day of Week
 #define ORG_BLUETOOTH_CHARACTERISTIC_DESCRIPTOR_VALUE_CHANGED                            0x2A7D // Descriptor Value Changed
@@ -157,6 +160,15 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_HTTP_STATUS_CODE                                    0x2AB8 // HTTP Status Code
 #define ORG_BLUETOOTH_CHARACTERISTIC_HTTPS_SECURITY                                      0x2ABB // HTTPS Security
 #define ORG_BLUETOOTH_CHARACTERISTIC_HUMIDITY                                            0x2A6F // Humidity
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_ANNUNCIATION_STATUS                             0x2B22 // IDD Annunciation Status
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_COMMAND_CONTROL_POINT                           0x2B25 // IDD Command Control Point
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_COMMAND_DATA                                    0x2B26 // IDD Command Data
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_FEATURES                                        0x2B23 // IDD Features
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_HISTORY_DATA                                    0x2B28 // IDD History Data
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_RECORD_ACCESS_CONTROL_POINT                     0x2B27 // IDD Record Access Control Point
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_STATUS                                          0x2B21 // IDD Status
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_STATUS_CHANGED                                  0x2B20 // IDD Status Changed
+#define ORG_BLUETOOTH_CHARACTERISTIC_IDD_STATUS_READER_CONTROL_POINT                     0x2B24 // IDD Status Reader Control Point
 #define ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST 0x2A2A // IEEE 11073-20601 Regulatory Certification Data List
 #define ORG_BLUETOOTH_CHARACTERISTIC_INDOOR_BIKE_DATA                                    0x2AD2 // Indoor Bike Data
 #define ORG_BLUETOOTH_CHARACTERISTIC_INDOOR_POSITIONING_CONFIGURATION                    0x2AAD // Indoor Positioning Configuration
@@ -278,7 +290,7 @@
 #define ORG_BLUETOOTH_CHARACTERISTIC_WIND_CHILL                                          0x2A79 // Wind Chill
 
 /**
- * Assigned numbers from https://www.bluetooth.com/specifications/gatt/descriptors
+ * Assigned numbers from www.bluetooth.com/specifications/gatt/descriptors
  */
 #define ORG_BLUETOOTH_DESCRIPTOR_ES_CONFIGURATION                                        0x290B // Environmental Sensing Configuration
 #define ORG_BLUETOOTH_DESCRIPTOR_ES_MEASUREMENT                                          0x290C // Environmental Sensing Measurement
@@ -295,5 +307,11 @@
 #define ORG_BLUETOOTH_DESCRIPTOR_TIME_TRIGGER_SETTING                                    0x290E // Time Trigger Setting
 #define ORG_BLUETOOTH_DESCRIPTOR_VALID_RANGE                                             0x2906 // Valid Range
 #define ORG_BLUETOOTH_DESCRIPTOR_VALUE_TRIGGER_SETTING                                   0x290A // Value Trigger Setting
+// START(manualy added, missing on Bluetooth Website
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN                           0x2ADB // 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT                          0x2ADC // 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_IN                                  0x2ADD // 
+#define ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_OUT                                 0x2ADE // 
+// END(manualy added, missing on Bluetooth Website
 
 #endif

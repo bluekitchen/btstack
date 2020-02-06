@@ -21,6 +21,7 @@ meta_events = [
     'HSP',
     'LE',
     'MAP',
+    'MESH',
     'PBAP',
 ]
 
@@ -186,7 +187,7 @@ param_read = {
     '3' : 'return little_endian_read_24(event, {offset});',
     '4' : 'return little_endian_read_32(event, {offset});',
     'H' : 'return little_endian_read_16(event, {offset});',
-    'B' : 'reverse_bd_addr(&event[{offset}], {result_name});',
+    'B' : 'reverse_bytes(&event[{offset}], {result_name}, 6);',
     'R' : 'return &event[{offset}];',
     'N' : 'return (const char *) &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',

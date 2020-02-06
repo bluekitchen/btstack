@@ -1,6 +1,6 @@
 /**
  * bluetooth_sdp.h generated from Bluetooth SIG website for BTstack by tool/bluetooth_sdp.py
- * https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
+ * www.bluetooth.com/specifications/assigned-numbers/service-discovery
  */
 
 #ifndef BLUETOOTH_SDP_H

@@ -58,6 +58,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_linked_list.h"
+#include "btstack_util.h"
 #include "hal_tick.h"
 #include "hal_cpu.h"
 
@@ -76,8 +77,6 @@
 #if defined(HAVE_EMBEDDED_TICK) || defined(HAVE_EMBEDDED_TIME_MS)
 #define TIMER_SUPPORT
 #endif
-
-static const btstack_run_loop_t btstack_run_loop_embedded;
 
 // the run loop
 static btstack_linked_list_t data_sources;
@@ -102,7 +101,7 @@ static void btstack_run_loop_embedded_add_data_source(btstack_data_source_t *ds)
 /**
  * Remove data_source from run loop
  */
-static int btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
+static bool btstack_run_loop_embedded_remove_data_source(btstack_data_source_t *ds){
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -119,53 +118,24 @@ static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint
 #endif
 }
 
-// under the assumption that a tick value is +/- 2^30 away from now, calculate the upper bits of the tick value
-static int btstack_run_loop_embedded_reconstruct_higher_bits(uint32_t now, uint32_t ticks){
-    int32_t delta = ticks - now;
-    if (delta >= 0){
-        if (ticks >= now) {
-            return 0;
-        } else {
-            return 1;
-        }
-    } else {
-        if (ticks < now) {
-            return 0;
-        } else {
-            return -1;
-        }
-    }
-}
-
 /**
  * Add timer to run_loop (keep list sorted)
  */
 static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
-
-#ifdef HAVE_EMBEDDED_TICK
-    uint32_t now = system_ticks;
-#endif
-#ifdef HAVE_EMBEDDED_TIME_MS
-    uint32_t now = hal_time_ms();
-#endif
-
-    uint32_t new_low = ts->timeout;
-    int     new_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, new_low);
-
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((btstack_timer_source_t *) it->next == ts){
+        btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
+        if (next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        uint32_t next_low  = ((btstack_timer_source_t *) it->next)->timeout;
-        int      next_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, next_low);
-        if (new_high < next_high || ((new_high == next_high) && (new_low < next_low))){
-            break;
-        }
+        // exit if new timeout before list timeout
+        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        if (delta < 0) break;
     }
+
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
 #endif
@@ -174,7 +144,7 @@ static void btstack_run_loop_embedded_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_embedded_remove_timer(btstack_timer_source_t *ts){
 #ifdef TIMER_SUPPORT
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 #else
@@ -229,10 +199,10 @@ void btstack_run_loop_embedded_execute_once(void) {
 
     // process timers
     while (timers) {
-        btstack_timer_source_t *ts = (btstack_timer_source_t *) timers;
-        uint32_t timeout_low = ts->timeout;
-        int      timeout_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, timeout_low);
-        if (timeout_high > 0 || ((timeout_high == 0) && (timeout_low > now))) break;
+        btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
+        int32_t delta = btstack_time_delta(ts->timeout, now);
+        if (delta > 0) break;
+
         btstack_run_loop_embedded_remove_timer(ts);
         ts->process(ts);
     }
@@ -252,7 +222,7 @@ void btstack_run_loop_embedded_execute_once(void) {
  * Execute run_loop
  */
 static void btstack_run_loop_embedded_execute(void) {
-    while (1) {
+    while (true) {
         btstack_run_loop_embedded_execute_once();
     }
 }
@@ -307,9 +277,6 @@ static void btstack_run_loop_embedded_init(void){
 /**
  * Provide btstack_run_loop_embedded instance 
  */
-const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
-    return &btstack_run_loop_embedded;
-}
 
 static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_init,
@@ -324,3 +291,8 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
 };
+
+const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
+    return &btstack_run_loop_embedded;
+}
+

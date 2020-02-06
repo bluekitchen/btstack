@@ -9,12 +9,99 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- example/pan_lwip_http_server: use Network Access Point, CoD
+
+### Added
+
+### Changed
+- Updated CC256x initscript: CC256xC v1.3
+
+
+## Changes November 2019
+
+### Fixed
+- AVDTP Source: return correct `avdtp_cid` and `local_seid` in `AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW`
+- L2CAP: send LE Data Channel SDUs round robin with other data
+- L2CAP ERTM: send ERTM I-frames round robin with other data
+
+### Added
+- ATT Server: return error if request to send now for Notification or Indication already registered
+- Linked List: return if item was added for `btstack_linked_list_add[_tail]`
+- btstack_run_loop_remove: return bool true if timer/data source was removed
+- segger-rtt: allow to configure with `SEGGER_RTT_PACKETLOG_*` directives, update to v6.54
+- GAP: support setting Link Supervision Timetout for outgoing Classic connections using `gap_set_link_supervision_timeout`
+- lwip: add download test files to http server demo
+
+### Changed
+- Linked List: return bool true if item was removed
+
+
+## Changes October 2019
+
+### Fixed
+
+### Added
+- `btstack_bool.h`: provide boolean type 'bool' via `<stdbool.h>` or as backport
+- provide `btstack_assert(condition)`
+- H4 Transport: avoid calling `hci_transport_h4_trigger_next_read` when transport is closed
+
+### Changed
+- libusb and posix ports: store bonding information in TLV
+
+
+## Changes September 2019
+
+### Fixed
+- L2CAP ERTM: assert that packet can be stored in fragment buffers in ertm
+- L2CAP ERTM: reject incoming connection if ERTM is configured as mandatory but not supported by remote
+- GATT Client: allow Write Without Response independent of other requests
+
+### Added
+- GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter
+- GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits `GAP_EVENT_RSSI_MEASUREMENT`
+
+### Changed
+- Bluetooth and BTstack Error Codes and Events: collect status codes in bluetooth.h and events in btstack_defines.h
+- bluetooth.h: extract internal defintitions to respective protocol layers
+- Updated CC256x initscripts (CC256xB v1.8, CC256xC v1.2, CC256xC v1.2)
+
+
+## Changes August 2019
+
+### Fixed
+- POSIX, WICED, Windows, FreeRTOS run loops: handle time_ms overrun after 49 days
+- RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
+- RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (only revelvant for ERTM)
+- L2CAP ERTM: stop timers on disconnect
+- L2CAP ERTM: fix sending of segmented SDUs
+- L2CAP ERTM: handle unsupported Information Response
+- SM: generate local nonce for confirm value in JW+NC+PK in Secure Connections Responder role
+
+### Added
+- `btstack_run_loop_base`: portable implementation of timer and data source managment as base for platform specific implementations
+
+## Changed
+- FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
+- L2CAP ERTM: handle invalid Information Response (assume no extended features supported)
+- POSIX: use monotonic clock as timebase if available
+- HCI Transport H4/H5/EM9304 SPI: ignore block read/sent from UART driver when closed
+- HCI: Read Encryption Key Size after encryption was enabled
+- Errata 11838:
+  - GAP: gap_set_required_encryption_key_size allows to set the required key size, default = 16 (max)
+  - GAP: validate encryption key size to emit GAP Security Levels
+
+## Changes July 2019
+
+### Fixed
 - SM: Fixed regression introduced in f3582630
+- L2CAP: avoid reading l2cap signaling command len out of bounds
+- HCI Transport H4/H5/EM9304 SPI: fix payload size checks (also for 8/16-bit platforms)
 
 ### Changed
 - SM: Start encryption upon receiving slave securiy request if bonded
+- hci: use 2 as HCI_INCOMING_PRE_BUFFER_SIZE in LE-only configuration for GATT Client
 
-### Added
+---
 
 ## Changes June 2019
 
@@ -22,10 +109,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 - BNEP: add Connection Handle to BNEP_EVENT_CHANNEL_OPENED
 - Examples: renamed le_counter to gatt_counter and le_streamer to le_streamer_server to indicate suppport for GATT over BR/EDR
-- libusb: avoid use-after-free for SCO packets on disconnect
 
 ### Fixed
 - BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
+- libusb: avoid use-after-free for SCO packets on disconnect
 
 ### Added
 - example: pan_lwip_http_server using lwIP as network stack to implement PAN NAP service

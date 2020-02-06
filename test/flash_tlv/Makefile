@@ -26,6 +26,7 @@ CFLAGS  = \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/embedded \
 
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 TESTS = tlv_test tlv_le_test
@@ -34,6 +35,7 @@ all: ${TESTS}
 
 clean:
 	rm -rf *.o $(TESTS) *.dSYM *.pklg
+	rm -f *.gcno *.gcda
 
 tlv_test: ${COMMON_OBJ} btstack_link_key_db_tlv.o tlv_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@

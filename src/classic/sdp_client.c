@@ -40,9 +40,10 @@
 /*
  *  sdp_client.c
  */
-
-#include "bluetooth_sdp.h"
 #include "btstack_config.h"
+
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "classic/core.h"
@@ -242,7 +243,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             record_offset = 0;
             // log_debug("parser: List offset %u, list size %u", list_offset, list_size);
             
-            if (list_size > 0 && list_offset != list_size){
+            if ((list_size > 0) && (list_offset != list_size)){
                 record_counter++;
                 state = GET_RECORD_LENGTH;
                 log_debug("parser: END_OF_RECORD");
@@ -358,10 +359,10 @@ static void sdp_client_send_request(uint16_t channel){
 static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, uint16_t size){
 
     uint16_t offset = 3;
-    if (offset + 2 + 2 > size) return;  // parameterLength + attributeListByteCount
+    if ((offset + 2 + 2) > size) return;  // parameterLength + attributeListByteCount
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
-    if (offset + parameterLength > size) return;
+    if ((offset + parameterLength) > size) return;
 
     // AttributeListByteCount <= mtu
     uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
@@ -372,12 +373,12 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
     }
 
     // AttributeLists
-    if (offset + attributeListByteCount > size) return;
+    if ((offset + attributeListByteCount) > size) return;
     sdp_client_parse_attribute_lists(packet+offset, attributeListByteCount);
     offset+=attributeListByteCount;
 
     // continuation state len
-    if (offset + 1 > size) return;
+    if ((offset + 1) > size) return;
     continuationStateLen = packet[offset];
     offset++;
     if (continuationStateLen > 16){
@@ -387,8 +388,8 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, 
     }
 
     // continuation state
-    if (offset + continuationStateLen > size) return;
-    memcpy(continuationState, packet+offset, continuationStateLen);
+    if ((offset + continuationStateLen) > size) return;
+    (void)memcpy(continuationState, packet + offset, continuationStateLen);
     // offset+=continuationStateLen;
 }
 
@@ -470,7 +471,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 break;
             }
             log_info("SDP Client disconnected.");
-            uint8_t status = sdp_client_state == QUERY_COMPLETE ? 0 : SDP_QUERY_INCOMPLETE;
+            uint8_t status = (sdp_client_state == QUERY_COMPLETE) ? 0 : SDP_QUERY_INCOMPLETE;
             sdp_client_state = INIT;
             sdp_parser_handle_done(status);
             break;
@@ -497,7 +498,8 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
     // parameters: 
     //     Service_search_pattern - DES (min 1 UUID, max 12)
     uint16_t service_search_pattern_len = de_get_len(service_search_pattern);
-    memcpy(data + offset, service_search_pattern, service_search_pattern_len);
+    (void)memcpy(data + offset, service_search_pattern,
+                 service_search_pattern_len);
     offset += service_search_pattern_len;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
@@ -506,13 +508,13 @@ static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data
 
     //     AttibuteIDList  
     uint16_t attribute_id_list_len = de_get_len(attribute_id_list);
-    memcpy(data + offset, attribute_id_list, attribute_id_list_len);
+    (void)memcpy(data + offset, attribute_id_list, attribute_id_list_len);
     offset += attribute_id_list_len;
 
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
     data[offset++] = continuationStateLen;
     //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
+    (void)memcpy(data + offset, continuationState, continuationStateLen);
     offset += continuationStateLen;
 
     // uint16_t paramLength 
@@ -541,7 +543,8 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
     // parameters: 
     //     Service_search_pattern - DES (min 1 UUID, max 12)
     uint16_t service_search_pattern_len = de_get_len(service_search_pattern);
-    memcpy(data + offset, service_search_pattern, service_search_pattern_len);
+    (void)memcpy(data + offset, service_search_pattern,
+                 service_search_pattern_len);
     offset += service_search_pattern_len;
 
     //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
@@ -551,7 +554,7 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
     data[offset++] = continuationStateLen;
     //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
+    (void)memcpy(data + offset, continuationState, continuationStateLen);
     offset += continuationStateLen;
 
     // uint16_t paramLength 
@@ -585,13 +588,13 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
 
     //     AttibuteIDList  
     uint16_t attribute_id_list_len = de_get_len(attribute_id_list);
-    memcpy(data + offset, attribute_id_list, attribute_id_list_len);
+    (void)memcpy(data + offset, attribute_id_list, attribute_id_list_len);
     offset += attribute_id_list_len;
 
     //     ContinuationState - uint8_t number of cont. bytes N<=16 
     data[offset++] = continuationStateLen;
     //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
+    (void)memcpy(data + offset, continuationState, continuationStateLen);
     offset += continuationStateLen;
 
     // uint16_t paramLength 
@@ -632,7 +635,7 @@ static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t s
         return;
     }
     if (offset + continuationStateLen > size) return;
-    memcpy(continuationState, packet+offset, continuationStateLen);
+    (void)memcpy(continuationState, packet + offset, continuationStateLen);
     // offset+=continuationStateLen;
 }
 
@@ -667,7 +670,7 @@ static void sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_
         return;
     }
     if (offset + continuationStateLen > size) return;
-    memcpy(continuationState, packet+offset, continuationStateLen);
+    (void)memcpy(continuationState, packet + offset, continuationStateLen);
     // offset+=continuationStateLen;
 }
 #endif
@@ -693,7 +696,7 @@ uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, co
     PDU_ID = SDP_ServiceSearchAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    return l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
+    return l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PSM_SDP, l2cap_max_mtu(), NULL);
 }
 
 uint8_t sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
@@ -717,7 +720,7 @@ uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, b
     PDU_ID = SDP_ServiceAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
+    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PSM_SDP, l2cap_max_mtu(), NULL);
     return 0;
 }
 
@@ -731,7 +734,7 @@ uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t r
     PDU_ID = SDP_ServiceSearchResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
+    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PSM_SDP, l2cap_max_mtu(), NULL);
     return 0;
 }
 #endif

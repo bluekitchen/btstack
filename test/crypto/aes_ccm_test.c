@@ -35,7 +35,7 @@ static void message_24_upper_transport_encrypt(void){
 	DEFINE_KEY(app_key,    "63964771734fbd76e3b40519d1d94a48");
 
 	uint8_t app_nonce[13];
-	parse_hex(app_nonce, "010007080d1234973612345677");
+	parse_hex(app_nonce, "018007080d1234973612345677");
 	printf("%16s: ", "app_nonce"); printf_hexdump(app_nonce, 13);
 
 	uint8_t plaintext[8];
@@ -67,7 +67,7 @@ static void message_24_upper_transport_decrypt(void){
 	DEFINE_KEY(app_key,    "63964771734fbd76e3b40519d1d94a48");
 
 	uint8_t app_nonce[13];
-	parse_hex(app_nonce, "010007080d1234973612345677");
+	parse_hex(app_nonce, "018007080d1234973612345677");
 	printf("%16s: ", "app_nonce"); printf_hexdump(app_nonce, 13);
 
 

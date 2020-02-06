@@ -55,6 +55,7 @@
 #include "hci_cmd.h"
 #include "gap.h"
 #include "hci_transport.h"
+#include "btstack_run_loop.h"
 
 #ifdef ENABLE_BLE
 #include "ble/att_db.h"
@@ -132,21 +133,30 @@ extern "C" {
 #endif
 #endif
 
-// BNEP may uncompress the IP Header by 16 bytes
+// BNEP may uncompress the IP Header by 16 bytes, GATT Client requires two additional bytes for long characteristic reads
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
 #ifdef ENABLE_CLASSIC
 #define HCI_INCOMING_PRE_BUFFER_SIZE (16 - HCI_ACL_HEADER_SIZE - 4)
 #else
-#define HCI_INCOMING_PRE_BUFFER_SIZE 0
+#define HCI_INCOMING_PRE_BUFFER_SIZE 2
 #endif
 #endif
+
+// packet header sizes
+#define HCI_CMD_HEADER_SIZE          3
+#define HCI_ACL_HEADER_SIZE          4
+#define HCI_SCO_HEADER_SIZE          3
+#define HCI_EVENT_HEADER_SIZE        2
+
+#define HCI_EVENT_PAYLOAD_SIZE     255
+#define HCI_CMD_PAYLOAD_SIZE       255
 
 // 
-#define IS_COMMAND(packet, command) (little_endian_read_16(packet,0) == command.opcode)
+#define IS_COMMAND(packet, command) ( little_endian_read_16(packet,0) == command.opcode )
 
 // check if command complete event for given command
-#define HCI_EVENT_IS_COMMAND_COMPLETE(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && little_endian_read_16(event,3) == cmd.opcode)
-#define HCI_EVENT_IS_COMMAND_STATUS(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && little_endian_read_16(event,4) == cmd.opcode)
+#define HCI_EVENT_IS_COMMAND_COMPLETE(event,cmd) ( (event[0] == HCI_EVENT_COMMAND_COMPLETE) && (little_endian_read_16(event,3) == cmd.opcode) )
+#define HCI_EVENT_IS_COMMAND_STATUS(event,cmd)   ( (event[0] == HCI_EVENT_COMMAND_STATUS)   && (little_endian_read_16(event,4) == cmd.opcode) )
 
 // Code+Len=2, Pkts+Opcode=3; total=5
 #define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
@@ -197,6 +207,11 @@ typedef enum {
 
     // connection status
     CONNECTION_ENCRYPTED           = 0x8000,
+
+    // errands
+    READ_RSSI                      = 0x10000,
+    WRITE_SUPERVISION_TIMEOUT      = 0x20000,
+
 } hci_authentication_flags_t;
 
 /**
@@ -218,15 +233,16 @@ typedef enum {
 
 // bonding flags
 enum {
-    BONDING_REQUEST_REMOTE_FEATURES   = 0x01,
-    BONDING_RECEIVED_REMOTE_FEATURES  = 0x02,
-    BONDING_REMOTE_SUPPORTS_SSP       = 0x04,
-    BONDING_DISCONNECT_SECURITY_BLOCK = 0x08,
-    BONDING_DISCONNECT_DEDICATED_DONE = 0x10,
-    BONDING_SEND_AUTHENTICATE_REQUEST = 0x20,
-    BONDING_SEND_ENCRYPTION_REQUEST   = 0x40,
-    BONDING_DEDICATED                 = 0x80,
-    BONDING_EMIT_COMPLETE_ON_DISCONNECT = 0x100
+    BONDING_REQUEST_REMOTE_FEATURES       = 0x01,
+    BONDING_RECEIVED_REMOTE_FEATURES      = 0x02,
+    BONDING_REMOTE_SUPPORTS_SSP           = 0x04,
+    BONDING_DISCONNECT_SECURITY_BLOCK     = 0x08,
+    BONDING_DISCONNECT_DEDICATED_DONE     = 0x10,
+    BONDING_SEND_AUTHENTICATE_REQUEST     = 0x20,
+    BONDING_SEND_ENCRYPTION_REQUEST       = 0x40,
+    BONDING_SEND_READ_ENCRYPTION_KEY_SIZE = 0x80,
+    BONDING_DEDICATED                     = 0x100,
+    BONDING_EMIT_COMPLETE_ON_DISCONNECT   = 0x200
 };
 
 typedef enum {
@@ -331,10 +347,7 @@ typedef enum {
     SM_SC_RECEIVED_LTK_REQUEST,
     SM_SC_SEND_PUBLIC_KEY_COMMAND,
     SM_SC_W4_PUBLIC_KEY_COMMAND,
-    SM_SC_W2_GET_RANDOM_A,
-    SM_SC_W4_GET_RANDOM_A,
-    SM_SC_W2_GET_RANDOM_B,
-    SM_SC_W4_GET_RANDOM_B,
+    SM_SC_W4_LOCAL_NONCE,
     SM_SC_W2_CMAC_FOR_CONFIRMATION,
     SM_SC_W4_CMAC_FOR_CONFIRMATION,
     SM_SC_SEND_CONFIRMATION,
@@ -481,9 +494,12 @@ typedef struct {
     uint16_t bonding_flags;
     uint8_t  bonding_status;
 
+    // encryption key size (in octets)
+    uint8_t encryption_key_size;
+
     // requested security level
     gap_security_level_t requested_security_level;
-
+    
     // 
     link_key_type_t link_key_type;
 
@@ -511,11 +527,11 @@ typedef struct {
     btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
-    // errands
+    // authentication and other errands
     uint32_t authentication_flags;
 
     btstack_timer_source_t timeout;
-    
+
     // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
     uint32_t timestamp;
 
@@ -729,6 +745,11 @@ typedef struct {
     /* callbacks for events */
     btstack_linked_list_t event_handlers;
 
+#ifdef ENABLE_CLASSIC
+    /* callback for reject classic connection */
+    int (*gap_classic_accept_callback)(bd_addr_t addr);
+#endif
+
     // hardware error callback
     void (*hardware_error_callback)(uint8_t error);
 
@@ -743,6 +764,11 @@ typedef struct {
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
     inquiry_mode_t     inquiry_mode;
+#ifdef ENABLE_CLASSIC
+    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
+    uint8_t            gap_required_encyrption_key_size;
+    uint16_t           link_supervision_timeout;
+#endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
@@ -905,7 +931,6 @@ typedef struct {
     // address and address_type of active create connection command (ACL, SCO, LE)
     bd_addr_t      outgoing_addr;
     bd_addr_type_t outgoing_addr_type;
-
 } hci_stack_t;
 
 

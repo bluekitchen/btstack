@@ -25,8 +25,8 @@ COMMON += \
 	rfcomm.c                    \
 	hci_transport_h2_libusb.c 	\
 	btstack_run_loop_posix.c 	\
-	btstack_link_key_db_fs.c 	\
-	le_device_db_fs.c 			\
+	btstack_link_key_db_tlv.c 	\
+	le_device_db_tlv.c 			\
 	wav_util.c 					\
 	sdp_util.c	                \
 	sdp_server.c		        \
@@ -35,6 +35,7 @@ COMMON += \
 	sm.c 						\
 	uECC.c 					    \
 	spp_server.c 				\
+	btstack_chipset_zephyr.c    \
 
 ATT	+= \
 	att_dispatch.c       	    \
@@ -90,6 +91,7 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/eCC
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
+CFLAGS += -I${BTSTACK_ROOT}/chipset/zephyr
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
@@ -106,6 +108,7 @@ VPATH += ${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)

@@ -1,9 +1,9 @@
 /*********************************************************************
-*               SEGGER MICROCONTROLLER GmbH & Co. KG                 *
-*       Solutions for real time microcontroller applications         *
+*                    SEGGER Microcontroller GmbH                     *
+*                        The Embedded Experts                        *
 **********************************************************************
 *                                                                    *
-*       (c) 2014 - 2017  SEGGER Microcontroller GmbH & Co. KG        *
+*            (c) 1995 - 2019 SEGGER Microcontroller GmbH             *
 *                                                                    *
 *       www.segger.com     Support: support@segger.com               *
 *                                                                    *
@@ -31,7 +31,7 @@
 *   disclaimer in the documentation and/or other materials provided  *
 *   with the distribution.                                           *
 *                                                                    *
-* o Neither the name of SEGGER Microcontroller GmbH & Co. KG         *
+* o Neither the name of SEGGER Microcontroller GmbH                  *
 *   nor the names of its contributors may be used to endorse or      *
 *   promote products derived from this software without specific     *
 *   prior written permission.                                        *
@@ -56,7 +56,7 @@ File    : SEGGER_RTT.c
 Purpose : Implementation of SEGGER real-time transfer (RTT) which
           allows real-time communication on targets which support
           debugger memory accesses while the CPU is running.
-Revision: $Rev: 6852 $
+Revision: $Rev: 14765 $
 
 Additional information:
           Type "int" is assumed to be 32-bits in size
@@ -252,7 +252,7 @@ SEGGER_RTT_PUT_CB_SECTION(SEGGER_RTT_CB_ALIGN(SEGGER_RTT_CB _SEGGER_RTT));
 SEGGER_RTT_PUT_BUFFER_SECTION(SEGGER_RTT_BUFFER_ALIGN(static char _acUpBuffer  [BUFFER_SIZE_UP]));
 SEGGER_RTT_PUT_BUFFER_SECTION(SEGGER_RTT_BUFFER_ALIGN(static char _acDownBuffer[BUFFER_SIZE_DOWN]));
 
-static char _ActiveTerminal;
+static unsigned char _ActiveTerminal;
 
 /*********************************************************************
 *
@@ -457,11 +457,11 @@ static void _WriteNoCheck(SEGGER_RTT_BUFFER_UP* pRing, const char* pData, unsign
 *    TerminalId   Terminal ID to switch to.
 */
 static void _PostTerminalSwitch(SEGGER_RTT_BUFFER_UP* pRing, unsigned char TerminalId) {
-  char ac[2];
+  unsigned char ac[2];
 
   ac[0] = 0xFFu;
   ac[1] = _aTerminalId[TerminalId];  // Caller made already sure that TerminalId does not exceed our terminal limit
-  _WriteBlocking(pRing, ac, 2u);
+  _WriteBlocking(pRing, (const char*)ac, 2u);
 }
 
 /*********************************************************************
@@ -734,9 +734,12 @@ void SEGGER_RTT_WriteWithOverwriteNoLock(unsigned BufferIndex, const void* pBuff
 *    BufferIndex  Index of "Up"-buffer to be used (e.g. 0 for "Terminal").
 *    pBuffer      Pointer to character array. Does not need to point to a \0 terminated string.
 *    NumBytes     Number of bytes to be stored in the SEGGER RTT control block.
+*                 MUST be > 0!!!
+*                 This is done for performance reasons, so no initial check has do be done.
 *
 *  Return value
-*    Number of bytes which have been stored in the "Up"-buffer.
+*    1: Data has been copied
+*    0: No space, data has not been copied
 *
 *  Notes
 *    (1) If there is not enough space in the "Up"-buffer, all data is dropped.
@@ -744,6 +747,7 @@ void SEGGER_RTT_WriteWithOverwriteNoLock(unsigned BufferIndex, const void* pBuff
 *        and may only be called after RTT has been initialized.
 *        Either by calling SEGGER_RTT_Init() or calling another RTT API function first.
 */
+#if (RTT_USE_ASM == 0)
 unsigned SEGGER_RTT_WriteSkipNoLock(unsigned BufferIndex, const void* pBuffer, unsigned NumBytes) {
   const char*           pData;
   SEGGER_RTT_BUFFER_UP* pRing;
@@ -751,119 +755,54 @@ unsigned SEGGER_RTT_WriteSkipNoLock(unsigned BufferIndex, const void* pBuffer, u
   unsigned              RdOff;
   unsigned              WrOff;
   unsigned              Rem;
-#if SEGGER_RTT_MEMCPY_USE_BYTELOOP
-  char*                 pDst;
-#endif
-
+  //
+  // Cases:
+  //   1) RdOff <= WrOff => Space until wrap-around is sufficient
+  //   2) RdOff <= WrOff => Space after wrap-around needed (copy in 2 chunks)
+  //   3) RdOff <  WrOff => No space in buf
+  //   4) RdOff >  WrOff => Space is sufficient
+  //   5) RdOff >  WrOff => No space in buf
+  //
+  // 1) is the most common case for large buffers and assuming that J-Link reads the data fast enough
+  //
   pData = (const char *)pBuffer;
-  //
-  // Get "to-host" ring buffer and copy some elements into local variables.
-  //
   pRing = &_SEGGER_RTT.aUp[BufferIndex];
   RdOff = pRing->RdOff;
   WrOff = pRing->WrOff;
-  //
-  // Handle the most common cases fastest.
-  // Which is:
-  //    RdOff <= WrOff -> Space until wrap around is free.
-  //  AND
-  //    WrOff + NumBytes < SizeOfBuffer -> No Wrap around necessary.
-  //
-  //  OR
-  //
-  //    RdOff > WrOff -> Space until RdOff - 1 is free.
-  //  AND
-  //    WrOff + NumBytes < RdOff -> Data fits into buffer
-  //
-  if (RdOff <= WrOff) {
-    //
-    // Get space until WrOff will be at wrap around.
-    //
-    Avail = pRing->SizeOfBuffer - 1u - WrOff ;
-    if (Avail >= NumBytes) {
-#if SEGGER_RTT_MEMCPY_USE_BYTELOOP
-      pDst = pRing->pBuffer + WrOff;
-      WrOff += NumBytes;
-      while (NumBytes--) {
-        *pDst++ = *pData++;
-      };
-      pRing->WrOff = WrOff;
-#else
-      SEGGER_RTT_MEMCPY(pRing->pBuffer + WrOff, pData, NumBytes);
+  if (RdOff <= WrOff) {                                 // Case 1), 2) or 3)
+    Avail = pRing->SizeOfBuffer - WrOff - 1u;           // Space until wrap-around (assume 1 byte not usable for case that RdOff == 0)
+    if (Avail >= NumBytes) {                            // Case 1)?
+CopyStraight:
+      memcpy(pRing->pBuffer + WrOff, pData, NumBytes);
       pRing->WrOff = WrOff + NumBytes;
-#endif
       return 1;
     }
-    //
-    // If data did not fit into space until wrap around calculate complete space in buffer.
-    //
-    Avail += RdOff;
-    //
-    // If there is still no space for the whole of this output, don't bother.
-    //
-    if (Avail >= NumBytes) {
+    Avail += RdOff;                                     // Space incl. wrap-around
+    if (Avail >= NumBytes) {                            // Case 2? => If not, we have case 3) (does not fit)
+      Rem = pRing->SizeOfBuffer - WrOff;                // Space until end of buffer
+      memcpy(pRing->pBuffer + WrOff, pData, Rem);       // Copy 1st chunk
+      NumBytes -= Rem;
       //
-      //  OK, we have enough space in buffer. Copy in one or 2 chunks
+      // Special case: First check that assumed RdOff == 0 calculated that last element before wrap-around could not be used
+      // But 2nd check (considering space until wrap-around and until RdOff) revealed that RdOff is not 0, so we can use the last element
+      // In this case, we may use a copy straight until buffer end anyway without needing to copy 2 chunks
+      // Therefore, check if 2nd memcpy is necessary at all
       //
-      Rem = pRing->SizeOfBuffer - WrOff;      // Space until end of buffer
-      if (Rem > NumBytes) {
-#if SEGGER_RTT_MEMCPY_USE_BYTELOOP
-        pDst = pRing->pBuffer + WrOff;
-        WrOff += NumBytes;
-        while (NumBytes--) {
-          *pDst++ = *pData++;
-        };
-        pRing->WrOff = WrOff;
-#else
-        SEGGER_RTT_MEMCPY(pRing->pBuffer + WrOff, pData, NumBytes);
-        pRing->WrOff = WrOff + NumBytes;
-#endif
-      } else {
-        //
-        // We reach the end of the buffer, so need to wrap around
-        //
-#if SEGGER_RTT_MEMCPY_USE_BYTELOOP
-        pDst = pRing->pBuffer + WrOff;
-        NumBytes -= Rem;
-        WrOff = NumBytes;
-        do {
-          *pDst++ = *pData++;
-        } while (--Rem);
-        pDst = pRing->pBuffer;
-        do {
-          *pDst++ = *pData++;
-        } while (--NumBytes);
-        pRing->WrOff = WrOff;
-#else
-        SEGGER_RTT_MEMCPY(pRing->pBuffer + WrOff, pData, Rem);
-        SEGGER_RTT_MEMCPY(pRing->pBuffer, pData + Rem, NumBytes - Rem);
-        pRing->WrOff = NumBytes - Rem;
-#endif
+      if (NumBytes) {
+        memcpy(pRing->pBuffer, pData + Rem, NumBytes);
       }
+      pRing->WrOff = NumBytes;
       return 1;
     }
-  } else {
+  } else {                                             // Potential case 4)
     Avail = RdOff - WrOff - 1u;
-    if (Avail >= NumBytes) {
-#if SEGGER_RTT_MEMCPY_USE_BYTELOOP
-      pDst = pRing->pBuffer + WrOff;
-      WrOff += NumBytes;
-      while (NumBytes--) {
-        *pDst++ = *pData++;
-      };
-      pRing->WrOff = WrOff;
-#else
-      SEGGER_RTT_MEMCPY(pRing->pBuffer + WrOff, pData, NumBytes);
-      pRing->WrOff = WrOff + NumBytes;
-#endif
-      return 1;
+    if (Avail >= NumBytes) {                           // Case 4)? => If not, we have case 5) (does not fit)
+      goto CopyStraight;
     }
   }
-  //
-  // If we reach this point no data has been written
-  //
-  return 0;
+  return 0;     // No space in buffer
 }
+#endif
 
 /*********************************************************************
 *
@@ -1278,6 +1217,27 @@ unsigned SEGGER_RTT_HasData(unsigned BufferIndex) {
 
 /*********************************************************************
 *
+*       SEGGER_RTT_HasDataUp
+*
+*  Function description
+*    Check if there is data remaining to be sent in the given buffer.
+*
+*  Return value:
+*  ==0:  No data
+*  !=0:  Data in buffer
+*
+*/
+unsigned SEGGER_RTT_HasDataUp(unsigned BufferIndex) {
+  SEGGER_RTT_BUFFER_UP* pRing;
+  unsigned                v;
+
+  pRing = &_SEGGER_RTT.aUp[BufferIndex];
+  v = pRing->RdOff;
+  return pRing->WrOff - v;
+}
+
+/*********************************************************************
+*
 *       SEGGER_RTT_AllocDownBuffer
 *
 *  Function description
@@ -1611,8 +1571,8 @@ void SEGGER_RTT_Init (void) {
 *    >= 0  O.K.
 *     < 0  Error (e.g. if RTT is configured for non-blocking mode and there was no space in the buffer to set the new terminal Id)
 */
-int SEGGER_RTT_SetTerminal (char TerminalId) {
-  char                  ac[2];
+int SEGGER_RTT_SetTerminal (unsigned char TerminalId) {
+  unsigned char         ac[2];
   SEGGER_RTT_BUFFER_UP* pRing;
   unsigned Avail;
   int r;
@@ -1620,19 +1580,19 @@ int SEGGER_RTT_SetTerminal (char TerminalId) {
   INIT();
   //
   r = 0;
-  ac[0] = 0xFFU;
-  if ((unsigned char)TerminalId < (unsigned char)sizeof(_aTerminalId)) { // We only support a certain number of channels
-    ac[1] = _aTerminalId[(unsigned char)TerminalId];
+  ac[0] = 0xFFu;
+  if (TerminalId < sizeof(_aTerminalId)) { // We only support a certain number of channels
+    ac[1] = _aTerminalId[TerminalId];
     pRing = &_SEGGER_RTT.aUp[0];    // Buffer 0 is always reserved for terminal I/O, so we can use index 0 here, fixed
     SEGGER_RTT_LOCK();    // Lock to make sure that no other task is writing into buffer, while we are and number of free bytes in buffer does not change downwards after checking and before writing
     if ((pRing->Flags & SEGGER_RTT_MODE_MASK) == SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL) {
       _ActiveTerminal = TerminalId;
-      _WriteBlocking(pRing, ac, 2u);
+      _WriteBlocking(pRing, (const char*)ac, 2u);
     } else {                                                                            // Skipping mode or trim mode? => We cannot trim this command so handling is the same for both modes
       Avail = _GetAvailWriteSpace(pRing);
       if (Avail >= 2) {
         _ActiveTerminal = TerminalId;    // Only change active terminal in case of success
-        _WriteNoCheck(pRing, ac, 2u);
+        _WriteNoCheck(pRing, (const char*)ac, 2u);
       } else {
         r = -1;
       }
@@ -1661,7 +1621,7 @@ int SEGGER_RTT_SetTerminal (char TerminalId) {
 *     < 0 - Error.
 *
 */
-int SEGGER_RTT_TerminalOut (char TerminalId, const char* s) {
+int SEGGER_RTT_TerminalOut (unsigned char TerminalId, const char* s) {
   int                   Status;
   unsigned              FragLen;
   unsigned              Avail;
@@ -1734,6 +1694,23 @@ int SEGGER_RTT_TerminalOut (char TerminalId, const char* s) {
     Status = -1;
   }
   return Status;
+}
+
+/*********************************************************************
+*
+*       SEGGER_RTT_GetAvailWriteSpace
+*    Returns the number of bytes that can be written to the ring
+*    buffer without blocking.
+*
+*  Parameters
+*    BufferIndex  Index of the buffer.
+*
+*  Return value
+*    Number of bytes that are free in the buffer.
+*/
+
+unsigned SEGGER_RTT_GetAvailWriteSpace (unsigned BufferIndex){
+  return _GetAvailWriteSpace(&_SEGGER_RTT.aUp[BufferIndex]);
 }
 
 

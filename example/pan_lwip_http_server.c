@@ -58,6 +58,7 @@
  // *****************************************************************************
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "btstack_config.h"
 #include "bnep_lwip.h"
@@ -66,8 +67,16 @@
 #include "lwip/init.h"
 #include "lwip/opt.h"
 #include "lwip/tcpip.h"
+#include "lwip/apps/fs.h"
 #include "lwip/apps/httpd.h"
 #include "dhserver.h"
+
+#if !LWIP_HTTPD_CUSTOM_FILES
+#error This needs LWIP_HTTPD_CUSTOM_FILES
+#endif
+#if !LWIP_HTTPD_DYNAMIC_HEADERS
+#error This needs LWIP_HTTPD_DYNAMIC_HEADERS
+#endif
 
 // network types
 #define NETWORK_TYPE_IPv4       0x0800
@@ -157,6 +166,9 @@ static void pan_bnep_setup(void){
     gap_set_local_name("PAN HTTP 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
+    // Major: Networking Device, Minor: Networ Access Point
+    gap_set_class_of_device(0x20300);
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -216,6 +228,87 @@ static dhcp_config_t dhcp_config =
 };
 /* LISTING_END */
 
+
+/* @section Large File Download
+ *
+ * @text Listing LargeFile Shows how a configurable test file for performance tests is generated on the fly.
+ *       The filename is the number of bytes to generate, e.g. /1048576.txt results in a 1MB file.
+ */
+
+/* LISTING_START(LargeFile): Provide large file. */
+
+int fs_open_custom(struct fs_file *file, const char *name);
+int fs_open_custom(struct fs_file *file, const char *name){
+    if (*name != '/') return 0;
+    uint32_t file_size = btstack_atoi(&name[1]);
+    if (file_size > 0) {
+        printf("Serving '%s' with %u bytes\n", name, file_size);
+        /* initialize fs_file correctly */
+        memset(file, 0, sizeof(struct fs_file));
+        file->len = file_size;
+        file->index = 0;
+        file->flags = FS_FILE_FLAGS_HEADER_PERSISTENT;
+        return 1;
+    }
+    return 0;
+}
+
+static uint16_t cgi_buffer_fill(char * cgi_buffer, uint16_t cgi_buffer_size, uint32_t start_pos){
+    // fill buffer with dots
+    memset(cgi_buffer, (uint8_t) '.', cgi_buffer_size);
+    uint16_t cursor = 10;
+    uint16_t pos = 0;
+    const uint16_t line_length = 64;
+
+    while  ((pos + line_length ) < cgi_buffer_size){
+        // write position
+        sprintf((char *) &cgi_buffer[pos], "%08"PRIx32, start_pos + pos);
+        cgi_buffer[pos + 8] = '-';
+        // cursor
+        cgi_buffer[pos+cursor] = '+';
+        cursor++;
+        // new line
+        cgi_buffer[pos+line_length-1] = '\n';
+        pos += line_length;
+    }
+
+    // handle last incomplete line
+    if (pos == 0){
+        const char * last_line_text = "Thank you for evaluating BTstack!";
+        uint16_t bytes_to_copy = btstack_min(strlen(last_line_text), cgi_buffer_size);
+        memcpy(cgi_buffer, last_line_text, bytes_to_copy);
+        pos = cgi_buffer_size;
+    }
+
+    return pos;
+}
+
+int fs_read_custom(struct fs_file *file, char *buffer, int count);
+int fs_read_custom(struct fs_file *file, char *buffer, int count)
+{
+    uint32_t remaining_data = file->len - file->index;
+    if (remaining_data == 0) {
+        // all bytes already read
+        return FS_READ_EOF;
+    }
+
+    uint32_t bytes_to_fill = remaining_data;
+    if (bytes_to_fill > (uint32_t) count){
+        bytes_to_fill = count;
+    }
+
+    uint32_t bytes_written = cgi_buffer_fill(buffer, bytes_to_fill, file->index);
+    file->index += bytes_written;
+
+    return bytes_written;
+}
+
+void fs_close_custom(struct fs_file *file);
+void fs_close_custom(struct fs_file *file){
+    UNUSED(file);
+}
+
+/* LISTING_END */
 
 /* @section DHCP Server Setup
  *

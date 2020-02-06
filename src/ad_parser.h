@@ -45,6 +45,8 @@
 #define AD_PARSER_H
 
 #include "btstack_config.h"
+#include "btstack_bool.h"
+
 #include <stdint.h>
 
 #if defined __cplusplus
@@ -61,7 +63,7 @@ typedef struct ad_context {
 
 // Advertising or Scan Response data iterator
 void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_data);
-int  ad_iterator_has_more(const ad_context_t * context);
+bool ad_iterator_has_more(const ad_context_t * context);
 void ad_iterator_next(ad_context_t * context);
 
 // Access functions
@@ -70,8 +72,8 @@ uint8_t         ad_iterator_get_data_len(const ad_context_t * context);
 const uint8_t * ad_iterator_get_data(const ad_context_t * context);
 
 // convenience function on complete advertisements
-int ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid);
-int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint8_t * uuid128);
+bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid16);
+bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint8_t * uuid128);
 
 /* API_END */
 

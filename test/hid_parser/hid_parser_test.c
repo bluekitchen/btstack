@@ -240,7 +240,7 @@ TEST_GROUP(HID){
 
 TEST(HID, MouseWithoutReportID){
     static btstack_hid_parser_t hid_parser;
-    btstack_hid_parser_init(&hid_parser, mouse_descriptor_without_report_id, sizeof(mouse_descriptor_without_report_id), BTSTACK_HID_REPORT_TYPE_INPUT, mouse_report_without_id_positive_xy, sizeof(mouse_report_without_id_positive_xy));
+    btstack_hid_parser_init(&hid_parser, mouse_descriptor_without_report_id, sizeof(mouse_descriptor_without_report_id), HID_REPORT_TYPE_INPUT, mouse_report_without_id_positive_xy, sizeof(mouse_report_without_id_positive_xy));
     expect_field(&hid_parser, 9, 1, 1);
     expect_field(&hid_parser, 9, 2, 1);
     expect_field(&hid_parser, 9, 3, 0);
@@ -252,7 +252,7 @@ TEST(HID, MouseWithoutReportID){
 
 TEST(HID, MouseWithoutReportIDSigned){
     static btstack_hid_parser_t hid_parser;
-    btstack_hid_parser_init(&hid_parser, mouse_descriptor_without_report_id, sizeof(mouse_descriptor_without_report_id), BTSTACK_HID_REPORT_TYPE_INPUT, mouse_report_without_id_negative_xy, sizeof(mouse_report_without_id_negative_xy));
+    btstack_hid_parser_init(&hid_parser, mouse_descriptor_without_report_id, sizeof(mouse_descriptor_without_report_id), HID_REPORT_TYPE_INPUT, mouse_report_without_id_negative_xy, sizeof(mouse_report_without_id_negative_xy));
     expect_field(&hid_parser, 9, 1, 1);
     expect_field(&hid_parser, 9, 2, 1);
     expect_field(&hid_parser, 9, 3, 0);
@@ -264,7 +264,7 @@ TEST(HID, MouseWithoutReportIDSigned){
 
 TEST(HID, MouseWithReportID){
     static btstack_hid_parser_t hid_parser;
-    btstack_hid_parser_init(&hid_parser, mouse_descriptor_with_report_id, sizeof(mouse_descriptor_with_report_id), BTSTACK_HID_REPORT_TYPE_INPUT, mouse_report_with_id_1, sizeof(mouse_report_with_id_1));
+    btstack_hid_parser_init(&hid_parser, mouse_descriptor_with_report_id, sizeof(mouse_descriptor_with_report_id), HID_REPORT_TYPE_INPUT, mouse_report_with_id_1, sizeof(mouse_report_with_id_1));
     expect_field(&hid_parser, 9, 1, 1);
     expect_field(&hid_parser, 9, 2, 1);
     expect_field(&hid_parser, 9, 3, 0);
@@ -276,7 +276,7 @@ TEST(HID, MouseWithReportID){
 
 TEST(HID, BootKeyboard){
     static btstack_hid_parser_t hid_parser;
-    btstack_hid_parser_init(&hid_parser, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), BTSTACK_HID_REPORT_TYPE_INPUT, keyboard_report1, sizeof(keyboard_report1));
+    btstack_hid_parser_init(&hid_parser, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), HID_REPORT_TYPE_INPUT, keyboard_report1, sizeof(keyboard_report1));
     expect_field(&hid_parser, 7, 0xe0, 1);
     expect_field(&hid_parser, 7, 0xe1, 0);
     expect_field(&hid_parser, 7, 0xe2, 0);
@@ -297,7 +297,7 @@ TEST(HID, BootKeyboard){
 
 TEST(HID, Combo1){
     static btstack_hid_parser_t hid_parser;
-    btstack_hid_parser_init(&hid_parser, combo_descriptor_with_report_ids, sizeof(combo_descriptor_with_report_ids), BTSTACK_HID_REPORT_TYPE_INPUT, combo_report1, sizeof(combo_report1));
+    btstack_hid_parser_init(&hid_parser, combo_descriptor_with_report_ids, sizeof(combo_descriptor_with_report_ids), HID_REPORT_TYPE_INPUT, combo_report1, sizeof(combo_report1));
     expect_field(&hid_parser, 9, 1, 1);
     expect_field(&hid_parser, 9, 2, 1);
     expect_field(&hid_parser, 9, 3, 0);
@@ -309,7 +309,7 @@ TEST(HID, Combo1){
 
 TEST(HID, Combo2){
     static btstack_hid_parser_t hid_parser;
-    btstack_hid_parser_init(&hid_parser, combo_descriptor_with_report_ids, sizeof(combo_descriptor_with_report_ids), BTSTACK_HID_REPORT_TYPE_INPUT, combo_report2, sizeof(combo_report2));
+    btstack_hid_parser_init(&hid_parser, combo_descriptor_with_report_ids, sizeof(combo_descriptor_with_report_ids), HID_REPORT_TYPE_INPUT, combo_report2, sizeof(combo_report2));
     expect_field(&hid_parser, 7, 0xe0, 1);
     expect_field(&hid_parser, 7, 0xe1, 0);
     expect_field(&hid_parser, 7, 0xe2, 0);
@@ -332,14 +332,14 @@ TEST(HID, GetReportSize){
     int report_size = 0;
     const uint8_t * hid_descriptor =  combo_descriptor_with_report_ids;
     uint16_t hid_descriptor_len = sizeof(combo_descriptor_with_report_ids);
-    report_size = btstack_hid_get_report_size_for_id(1, BTSTACK_HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(1, HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
     CHECK_EQUAL(3, report_size);
 
     hid_descriptor = hid_descriptor_keyboard_boot_mode;
     hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);
-    report_size = btstack_hid_get_report_size_for_id(0, BTSTACK_HID_REPORT_TYPE_OUTPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(0, HID_REPORT_TYPE_OUTPUT, hid_descriptor_len, hid_descriptor);
     CHECK_EQUAL(1, report_size);
-    report_size = btstack_hid_get_report_size_for_id(0, BTSTACK_HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    report_size = btstack_hid_get_report_size_for_id(0, HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
     CHECK_EQUAL(8, report_size);
 }
 

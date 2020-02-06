@@ -45,6 +45,7 @@
 #include <string.h>
 
 #include "bluetooth.h"
+#include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -52,8 +53,8 @@
 #include "classic/core.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
-#include "hci_dump.h"
 #include "hci.h"
+#include "hci_dump.h"
 #include "l2cap.h"
 
 // max number of incoming l2cap connections that can be queued instead of getting rejected
@@ -86,7 +87,7 @@ static int      l2cap_waiting_list_count;
 
 void sdp_init(void){
     // register with l2cap psm sevices - max MTU
-    l2cap_register_service(sdp_packet_handler, BLUETOOTH_PROTOCOL_SDP, 0xffff, LEVEL_0);
+    l2cap_register_service(sdp_packet_handler, BLUETOOTH_PSM_SDP, 0xffff, LEVEL_0);
     l2cap_waiting_list_count = 0;
 }
 
@@ -112,7 +113,7 @@ static service_record_item_t * sdp_get_record_item_for_handle(uint32_t handle){
 
 uint8_t * sdp_get_record_for_handle(uint32_t handle){
     service_record_item_t * record_item =  sdp_get_record_item_for_handle(handle);
-    if (!record_item) return 0;
+    if (!record_item) return NULL;
     return record_item->service_record;
 }
 
@@ -194,7 +195,7 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
     // assert continuation state is contained in param_len
-    if (1 + continuationState[0] > param_len) return 0;
+    if ((1 + continuationState[0]) > param_len) return 0;
 
     // calc maximumServiceRecordCount based on remote MTU
     uint16_t maxNrServiceRecordsPerResponse = (remote_mtu - (9+3))/4;
@@ -282,7 +283,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[11+attributeIDListLen];
     // assert continuation state is contained in param_len
-    if (1 + continuationState[0] > param_len) return 0;
+    if ((1 + continuationState[0]) > param_len) return 0;
     
     // calc maximumAttributeByteCount based on remote MTU
     uint16_t maximumAttributeByteCount2 = remote_mtu - (7+3);
@@ -382,7 +383,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
     // assert continuation state is contained in param_len
-    if (1 + continuationState[0] > param_len) return 0;
+    if ((1 + continuationState[0]) > param_len) return 0;
 
     // calc maximumAttributeByteCount based on remote MTU, SDP header and reserved Continuation block
     uint16_t maximumAttributeByteCount2 = remote_mtu - 12;
@@ -405,7 +406,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint16_t pos = 7;
     
     // add DES with total size for first request
-    if (continuation_service_index == 0 && continuation_offset == 0){
+    if ((continuation_service_index == 0) && (continuation_offset == 0)){
         uint16_t total_response_size = sdp_get_size_for_service_search_attribute_response(serviceSearchPattern, attributeIDList);
         de_store_descriptor_with_len(&sdp_response_buffer[pos], DE_DES, DE_SIZE_VAR_16, total_response_size);
         // log_info("total response size %u", total_response_size);
@@ -430,7 +431,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
             uint16_t filtered_attributes_size = spd_get_filtered_size(item->service_record, attributeIDList);
             
             // stop if complete record doesn't fits into response but we already have a partial response
-            if ((filtered_attributes_size + 3 > maximumAttributeByteCount) && !first_answer) {
+            if (((filtered_attributes_size + 3) > maximumAttributeByteCount) && !first_answer) {
                 continuation = 1;
                 break;
             }
@@ -526,7 +527,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 remote_mtu = SDP_RESPONSE_BUFFER_SIZE;
             }
             // validate parm_len against packet size
-            if (param_len + 5 > size) {
+            if ((param_len + 5) > size) {
                 // just clear pdu_id
                 pdu_id = SDP_ErrorResponse;
             }

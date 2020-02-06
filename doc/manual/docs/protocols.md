@@ -150,7 +150,7 @@ device name with the HCI Write Local Name command.
 
 ~~~~ {#lst:HCIcmdExampleLocalName .c caption="{Sending HCI command example.}"}
 
-    if (hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
+    if (hci_can_send_command_packet_now()){
         hci_send_cmd(&hci_write_local_name, "BTstack Demo");
     }  
 ~~~~ 

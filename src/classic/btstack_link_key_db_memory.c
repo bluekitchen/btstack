@@ -78,7 +78,7 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
     
     if (!item) return 0;
     
-    memcpy(link_key, item->link_key, LINK_KEY_LEN);
+    (void)memcpy(link_key, item->link_key, LINK_KEY_LEN);
     if (link_key_type) {
         *link_key_type = item->link_key_type;
     }
@@ -121,8 +121,8 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
         
     if (!record) return;
     
-    memcpy(record->bd_addr, bd_addr, sizeof(bd_addr_t));
-    memcpy(record->link_key, link_key, LINK_KEY_LEN);
+    (void)memcpy(record->bd_addr, bd_addr, sizeof(bd_addr_t));
+    (void)memcpy(record->link_key, link_key, LINK_KEY_LEN);
     record->link_key_type = link_key_type;
     btstack_linked_list_add(&db_mem_link_keys, (btstack_linked_item_t *) record);
 }
@@ -137,8 +137,8 @@ static int  iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_add
     if (item == NULL) return 0;
 
     // fetch values
-    memcpy(bd_addr,  item->bd_addr, 6);
-    memcpy(link_key, item->link_key, 16);
+    (void)memcpy(bd_addr, item->bd_addr, 6);
+    (void)memcpy(link_key, item->link_key, 16);
     *link_key_type = item->link_key_type;
 
     // next

@@ -54,9 +54,7 @@
 // SCO Data     0 0 0x03 Isochronous (Out)
 
 #include <stdio.h>
-#include <strings.h>
 #include <string.h>
-#include <unistd.h>   /* UNIX standard function definitions */
 #include <sys/types.h>
 #include <inttypes.h>   // to print long long int (aka 64 bit ints)
 

@@ -136,6 +136,8 @@ void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t att
 int sm_le_device_index(uint16_t handle ){
 	return -1;
 }
+void sm_send_security_request(hci_con_handle_t con_handle){
+}
 
 irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
 	return IRK_LOOKUP_SUCCEEDED;

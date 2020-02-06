@@ -12,7 +12,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 all: sqrt_test
 
-btstack_linked_list_test: ${COMMON_OBJ} sqrt_test.c
+sqrt_test: ${COMMON_OBJ} sqrt_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

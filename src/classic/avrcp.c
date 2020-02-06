@@ -38,16 +38,17 @@
 #define BTSTACK_FILE__ "avrcp.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
-
-#define PSM_AVCTP                       BLUETOOTH_PROTOCOL_AVCTP
-#define PSM_AVCTP_BROWSING              0x001b
 
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -76,7 +77,7 @@ static const char * avrcp_subunit_type_name[] = {
 
 const char * avrcp_subunit2str(uint16_t index){
     if (index <= 11) return avrcp_subunit_type_name[index];
-    if (index >= 0x1C && index <= 0x1F) return avrcp_subunit_type_name[index - 0x10];
+    if ((index >= 0x1C) && (index <= 0x1F)) return avrcp_subunit_type_name[index - 0x10];
     return avrcp_subunit_type_name[16];
 }
 
@@ -99,7 +100,7 @@ static const char * avrcp_operation_name[] = {
     "REWIND", "FAST_FORWARD", "NOT SUPPORTED", "FORWARD", "BACKWARD" // 0x4C
 };
 const char * avrcp_operation2str(uint8_t index){
-    if (index >= 0x3B && index <= 0x4C) return avrcp_operation_name[index - 0x3B];
+    if ((index >= 0x3B) && (index <= 0x4C)) return avrcp_operation_name[index - 0x3B];
     return avrcp_operation_name[0];
 }
 
@@ -107,7 +108,7 @@ static const char * avrcp_media_attribute_id_name[] = {
     "NONE", "TITLE", "ARTIST", "ALBUM", "TRACK", "TOTAL TRACKS", "GENRE", "SONG LENGTH"
 };
 const char * avrcp_attribute2str(uint8_t index){
-    if (index >= 1 && index <= 7) return avrcp_media_attribute_id_name[index];
+    if ((index >= 1) && (index <= 7)) return avrcp_media_attribute_id_name[index];
     return avrcp_media_attribute_id_name[0];
 }
 
@@ -116,7 +117,7 @@ static const char * avrcp_play_status_name[] = {
     "ERROR" // 0xFF
 };
 const char * avrcp_play_status2str(uint8_t index){
-    if (index >= 1 && index <= 4) return avrcp_play_status_name[index];
+    if ((index >= 1) && (index <= 4)) return avrcp_play_status_name[index];
     return avrcp_play_status_name[5];
 }
 
@@ -152,7 +153,7 @@ static const char * avrcp_shuffle_mode_name[] = {
 };
 
 const char * avrcp_shuffle2str(uint8_t index){
-    if (index >= 1 && index <= 3) return avrcp_shuffle_mode_name[index-1];
+    if ((index >= 1) && (index <= 3)) return avrcp_shuffle_mode_name[index-1];
     return "NONE";
 }
 
@@ -164,7 +165,7 @@ static const char * avrcp_repeat_mode_name[] = {
 };
 
 const char * avrcp_repeat2str(uint8_t index){
-    if (index >= 1 && index <= 4) return avrcp_repeat_mode_name[index-1];
+    if ((index >= 1) && (index <= 4)) return avrcp_repeat_mode_name[index-1];
     return "NONE";
 }
 
@@ -203,7 +204,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVCTP);  
         }
         de_pop_sequence(attribute, l2cpProtocol);
         
@@ -247,7 +248,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
                 uint8_t* browsing_l2cpProtocol = de_push_sequence(des);
                 {
                     de_add_number(browsing_l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-                    de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVCTP_BROWSING);  
+                    de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVCTP_BROWSING);  
                 }
                 de_pop_sequence(des, browsing_l2cpProtocol);
                 
@@ -347,7 +348,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t ro
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->role != role) continue;
-        if (connection->browsing_connection &&  connection->browsing_connection->l2cap_browsing_cid != browsing_l2cap_cid) continue;
+        if (connection->browsing_connection &&  (connection->browsing_connection->l2cap_browsing_cid != browsing_l2cap_cid)) continue;
         return connection;
     }
     return NULL;
@@ -359,7 +360,7 @@ avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->role != role) continue;
-        if (connection->browsing_connection && connection->browsing_connection->l2cap_browsing_cid != l2cap_cid) continue;
+        if (connection->browsing_connection && (connection->browsing_connection->l2cap_browsing_cid != l2cap_cid)) continue;
         return connection->browsing_connection;
     }
     return NULL;
@@ -372,13 +373,17 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 }
 
 
-uint16_t avrcp_get_next_cid(void){
-    avrcp_cid_counter++;
-    if (avrcp_cid_counter == 0){
-        avrcp_cid_counter = 1;
-    }
+uint16_t avrcp_get_next_cid(avrcp_role_t role){
+    do {
+        if (avrcp_cid_counter == 0xffff) {
+            avrcp_cid_counter = 1;
+        } else {
+            avrcp_cid_counter++;
+        }
+    } while (get_avrcp_connection_for_avrcp_cid(role, avrcp_cid_counter) !=  NULL) ;
     return avrcp_cid_counter;
 }
+
 
 static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t remote_addr){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
@@ -391,9 +396,9 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->role = role;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;
-    connection->avrcp_cid = avrcp_get_next_cid();
+    connection->avrcp_cid = avrcp_get_next_cid(role);
     log_info("avrcp_create_connection, role %d, avrcp cid 0x%02x", role, connection->avrcp_cid);
-    memcpy(connection->remote_addr, remote_addr, 6);
+    (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
     return connection;
 }
@@ -793,7 +798,7 @@ void avrcp_init(void){
     connections = NULL;
     if (l2cap_service_registered) return;
 
-    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_2);
+    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, LEVEL_2);
     if (status != ERROR_CODE_SUCCESS) return;
     l2cap_service_registered = 1;
 }

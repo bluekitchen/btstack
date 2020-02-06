@@ -98,8 +98,8 @@ ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow 
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
 ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
-
-
+ENABLE_CONTROLLER_WARM_BOOT      | Enable stack startup without power cycle (if supported/possible)
+ENABLE_SEGGER_RTT                | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)
 Notes:
 
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
@@ -187,11 +187,24 @@ If implemented, bonding information is stored in Non-volatile memory. For Classi
 <!-- a name "lst:nvmDefines"></a-->
 <!-- -->
 
-\#define                   | Description
+\#define                  | Description
 --------------------------|------------
 NVM_NUM_LINK_KEYS         | Max number of Classic Link Keys that can be stored 
 NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored
 NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' values that can be stored by GATT Server
+
+
+### SEGGER Real Time Transfer (RTT) directives {#sec:rttConfiguration}
+
+[SEGGER RTT](https://www.segger.com/products/debug-probes/j-link/technology/about-real-time-transfer/) replaces use of an UART for debugging with higher throughput and less overhead. In addition, it allows for direct logging in PacketLogger/BlueZ format via the provided JLinkRTTLogger tool.
+
+When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_open` was called with either `HCI_DUMP_BLUEZ` or `HCI_DUMP_PACKETLOGGER`, the following directives are used to configure the up channel:
+
+\#define                         | Default                        | Description
+---------------------------------|--------------------------------|------------------------
+SEGGER_RTT_PACKETLOG_MODE        | SEGGER_RTT_MODE_NO_BLOCK_SKIP  | SEGGER_RTT_MODE_NO_BLOCK_SKIP to skip messages if buffer is full, or, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL to block 
+SEGGER_RTT_PACKETLOG_CHANNEL     | 1                              | Channel to use for packet log. Channel 0 is used for terminal
+SEGGER_RTT_PACKETLOG_BUFFER_SIZE | 1024                           | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings
 
 ## Source tree structure {#sec:sourceTreeHowTo}
 
@@ -199,7 +212,7 @@ The source tree has been organized to easily setup new projects.
 
 Path                | Description
 --------------------|---------------
-chipset             | Support for individual Bluetooth chipsets
+chipset             | Support for individual Bluetooth Controller chipsets
 doc                 | Sources for BTstack documentation
 example             | Example applications available for all ports
 platform            | Support for special OSs and/or MCU architectures
@@ -246,12 +259,13 @@ tick hardware abstraction.
 BTstack provides different run loop implementations that implement the *btstack_run_loop_t* interface:
 
 - Embedded: the main implementation for embedded systems, especially without an RTOS.
+- FreeRTOS: implementation to run BTstack on a dedicated FreeRTOS thread
 - POSIX: implementation for POSIX systems based on the select() call.
 - CoreFoundation: implementation for iOS and OS X applications
 - WICED: implementation for the Broadcom WICED SDK RTOS abstraction that wraps FreeRTOS or ThreadX.
 - Windows: implementation for Windows based on Event objects and WaitForMultipleObjects() call.
 
-Depending on the platform, data sources are either polled (embedded), or the platform provides a way
+Depending on the platform, data sources are either polled (embedded, FreeRTOS), or the platform provides a way
 to wait for a data source to become ready for read or write (POSIX, CoreFoundation, Windows), or,
 are not used as the HCI transport driver and the run loop is implemented in a different way (WICED).
 In any case, the callbacks must be to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
@@ -293,6 +307,22 @@ entering sleep mode causing another run loop cycle.
 
 To enable the use of timers, make sure that you defined HAVE_EMBEDDED_TICK or HAVE_EMBEDDED_TIME_MS in the
 config file.
+
+### Run loop FreeRTOS
+
+The FreeRTOS run loop is used on a dedicated FreeRTOS thread and it uses a FreeRTOS queue to schedule callbacks on the run loop.
+In each iteration:
+
+- all data sources are polled
+- all scheduled callbacks are executed
+- all expired timers are called
+- finally, it gets the next timeout. It then waits for a 'trigger' or the next timeout, if set.
+
+To trigger the run loop, *btstack_run_loop_freertos_trigger* and *btstack_run_loop_freertos_trigger_from_isr* can be called.
+This causes the data sources to get polled.
+
+Alternatively. *btstack_run_loop_freertos_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
+Please note that the queue is finite (see *RUN_LOOP_QUEUE_LENGTH* in btstack_run_loop_embedded).
 
 ### Run loop POSIX
 

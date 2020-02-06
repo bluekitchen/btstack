@@ -51,6 +51,7 @@
 #include "btstack_client.h"
 #include "hci_cmd.h"
 #include "classic/sdp_util.h"
+#include "bluetooth_psm.h"
 
 #ifdef _WIN32
 #include "btstack_run_loop_windows.h"
@@ -107,7 +108,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					if (status) {
 						l2cap_reg_fail = 1;
 					} else {
-						if (psm == PSM_HID_INTERRUPT && !l2cap_reg_fail) { // The second of the two
+						if (psm == BLUETOOTH_PSM_HID_INTERRUPT && !l2cap_reg_fail) { // The second of the two
 							bt_send_cmd(&btstack_set_discoverable, 1);
 							printf("Both PSMs registered.\n");
 						}
@@ -164,10 +165,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
 						   bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
 					
-					if (psm == PSM_HID_CONTROL){
+					if (psm == BLUETOOTH_PSM_HID_CONTROL){
 						hid_control = local_cid;
 					}
-					if (psm == PSM_HID_INTERRUPT){
+					if (psm == BLUETOOTH_PSM_HID_INTERRUPT){
 						hid_interrupt = local_cid;
 					}
 					if (hid_control && hid_interrupt){
@@ -217,8 +218,8 @@ int main (int argc, const char * argv[]){
 		return err;
 	}
 	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&l2cap_register_service_cmd, PSM_HID_CONTROL, 250);
-	bt_send_cmd(&l2cap_register_service_cmd, PSM_HID_INTERRUPT, 250);
+	bt_send_cmd(&l2cap_register_service_cmd, BLUETOOTH_PSM_HID_CONTROL, 250);
+	bt_send_cmd(&l2cap_register_service_cmd, BLUETOOTH_PSM_HID_INTERRUPT, 250);
 	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	btstack_run_loop_execute();

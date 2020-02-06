@@ -106,13 +106,14 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP          = 1 << 3,
     L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ          = 1 << 4,
     L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP          = 1 << 5,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU      = 1 << 6,   // in CONF RSP, add MTU field
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT     = 1 << 7,   // in CONF RSP, set CONTINUE flag
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED = 1 << 9,   // in CONF RSP, send Unacceptable Parameters (ERTM)
-    L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   = 1 << 10,  // set when ERTM was requested but we want only Basic mode (ERM)
-    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN   = 1 << 11,  // send CMD_REJ with reason unknown
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    = 1 << 12,  // send Connection Respond with pending
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU      = 1 << 6,   // in CONF RSP, add MTU option
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM     = 1 << 7,   // in CONF RSP, add Retransmission and Flowcontrol option
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT     = 1 << 8,   // in CONF RSP, set CONTINUE flag
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  = 1 << 9,   // in CONF RSP, send UNKNOWN OPTIONS
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED = 1 << 10,  // in CONF RSP, send Unacceptable Parameters (ERTM)
+    L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   = 1 << 11,  // set when ERTM was requested but we want only Basic mode (ERM)
+    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN   = 1 << 12,  // send CMD_REJ with reason unknown
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    = 1 << 13,  // send Connection Respond with pending
     L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
@@ -122,6 +123,17 @@ typedef enum {
     L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, // LE
     L2CAP_CHANNEL_TYPE_LE_FIXED,        // LE ATT + SM
 } l2cap_channel_type_t;
+
+
+/*
+ * @brief L2CAP Segmentation And Reassembly packet type in I-Frames
+ */
+typedef enum {
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU = 0,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU
+} l2cap_segmentation_and_reassembly_t;
 
 typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
@@ -417,6 +429,18 @@ void l2cap_require_security_level_2_for_outgoing_sdp(void);
 int  l2cap_can_send_prepared_packet_now(uint16_t local_cid);
 
 /* API_START */
+
+//
+// PSM numbers from https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control 
+//
+#define PSM_SDP           BLUETOOTH_PROTOCOL_SDP
+#define PSM_RFCOMM        BLUETOOTH_PROTOCOL_RFCOMM
+#define PSM_BNEP          BLUETOOTH_PROTOCOL_BNEP
+// @TODO: scrape PSMs Bluetooth SIG site and put in bluetooth_psm.h or bluetooth_l2cap.h
+#define PSM_HID_CONTROL   0x11
+#define PSM_HID_INTERRUPT 0x13
+#define PSM_ATT           0x1f
+#define PSM_IPSP          0x23
 
 /** 
  * @brief Set up L2CAP and register L2CAP with HCI layer.

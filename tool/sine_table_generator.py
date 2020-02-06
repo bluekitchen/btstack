@@ -15,7 +15,7 @@ sine_frequency = 441
 
 if __name__ == "__main__":
     usage = '''
-    Usage: ./sine_table.py sine_frequency sine_sample_rate
+    Usage: ./sine_table_generator.py sine_frequency sine_sample_rate
     '''
 
     if (len(sys.argv) < 3):

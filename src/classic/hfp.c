@@ -184,7 +184,7 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs){
 
     // mSBC requires support for eSCO connections
-    if (codec == HFP_CODEC_MSBC && !hci_extended_sco_link_supported()) return 0;
+    if ((codec == HFP_CODEC_MSBC) && !hci_extended_sco_link_supported()) return 0;
 
     int i;
     for (i = 0; i < codecs_nr; i++){
@@ -204,7 +204,7 @@ void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_n
         tmp_codecs[tmp_codec_nr++] = codecs[i];
     }
     *codecs_nr = tmp_codec_nr;
-    memcpy(codecs, tmp_codecs, tmp_codec_nr);
+    (void)memcpy(codecs, tmp_codecs, tmp_codec_nr);
 }
 
 // UTILS
@@ -222,10 +222,10 @@ int store_bit(uint32_t bitmap, int position, uint8_t value){
 }
 
 int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
-    if (buffer_size < values_nr * 3) return 0;
+    if (buffer_size < (values_nr * 3)) return 0;
     int i;
     int offset = 0;
-    for (i = 0; i < values_nr-1; i++) {
+    for (i = 0; i < (values_nr-1); i++) {
       offset += snprintf(buffer+offset, buffer_size-offset, "%d,", values[i]); // puts string into buffer
     }
     if (i<values_nr){
@@ -235,11 +235,11 @@ int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
 }
 
 int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
-    if (buffer_size < values_nr * 3) return 0;
+    if (buffer_size < (values_nr * 3)) return 0;
 
     int i;
     int offset = 0;
-    for (i = 0; i < values_nr-1; i++) {
+    for (i = 0; i < (values_nr-1); i++) {
       offset += snprintf(buffer+offset, buffer_size-offset, "%d,", get_bit(values,i)); // puts string into buffer
     }
     
@@ -316,7 +316,7 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    int size = ( strlen(value) < sizeof(event) - 4) ? (int) strlen(value) : (int) sizeof(event) - 4;
+    uint16_t size = btstack_min(strlen(value), sizeof(event) - 4);
     strncpy((char*)&event[3], value, size);
     event[3 + size] = 0;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
@@ -343,7 +343,7 @@ hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0 && hfp_connection->local_role == hfp_role) {
+        if ((memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0) && (hfp_connection->local_role == hfp_role)) {
             return hfp_connection;
         }
     }
@@ -355,7 +355,7 @@ hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hf
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->sco_handle == handle && hfp_connection->local_role == hfp_role){
+        if ((hfp_connection->sco_handle == handle) && (hfp_connection->local_role == hfp_role)){
             return hfp_connection;
         }
     }
@@ -367,7 +367,7 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->acl_handle == handle && hfp_connection->local_role == hfp_role){
+        if ((hfp_connection->acl_handle == handle) && (hfp_connection->local_role == hfp_role)){
             return hfp_connection;
         }
     }
@@ -427,7 +427,7 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
-    memcpy(hfp_connection->remote_addr, bd_addr, 6);
+    (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
     hfp_connection->local_role = local_role;
     log_info("Create HFP context %p: role %u, addr %s", hfp_connection, local_role, bd_addr_to_str(bd_addr));
 
@@ -574,7 +574,7 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     }
     log_info("(e)SCO Connection failed status 0x%02x", status);
     // invalid params / unspecified error
-    if (status != 0x11 && status != 0x1f && status != 0x0D) return 0;
+    if ((status != 0x11) && (status != 0x1f) && (status != 0x0D)) return 0;
                 
     switch (sco_establishment_active->link_setting){
         case HFP_LINK_SETTINGS_D0:
@@ -782,7 +782,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             status = rfcomm_event_channel_opened_get_status(packet);          
             
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-            if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
+            if (!hfp_connection || (hfp_connection->state != HFP_W4_RFCOMM_CONNECTED)) return;
 
             if (status) {
                 hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
@@ -894,7 +894,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_RING;
     }
 
-    if (isHandsFree && strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
+    if (isHandsFree && (strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0)){
         return HFP_CMD_OK;
     }
 
@@ -987,11 +987,11 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
     } 
 
-    if (isHandsFree && strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+    if (isHandsFree && (strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
         return HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
     }
 
-    if (!isHandsFree && strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+    if (!isHandsFree && (strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
         return HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
     }
 
@@ -1035,19 +1035,19 @@ static int hfp_parser_is_buffer_empty(hfp_connection_t * hfp_connection){
 }
 
 static int hfp_parser_is_end_of_line(uint8_t byte){
-    return byte == '\n' || byte == '\r';
+    return (byte == '\n') || (byte == '\r');
 }
 
 static int hfp_parser_is_end_of_header(uint8_t byte){
-    return hfp_parser_is_end_of_line(byte) || byte == ':' || byte == '?';
+    return hfp_parser_is_end_of_line(byte) || (byte == ':') || (byte == '?');
 }
 
 static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t byte){
     if (hfp_connection->keep_byte == 1) return 1;
 
-    int found_separator =   byte == ',' || byte == '\n'|| byte == '\r'||
-                            byte == ')' || byte == '(' || byte == ':' || 
-                            byte == '-' || byte == '"' ||  byte == '?'|| byte == '=';
+    int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
+                            (byte == ')') || (byte == '(') || (byte == ':') || 
+                            (byte == '-') || (byte == '"') ||  (byte == '?')|| (byte == '=');
     return found_separator;
 }
 static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1099,7 +1099,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     // handle ATD<dial_string>;
     if (strncmp((const char*)hfp_connection->line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
         // check for end-of-line or ';'
-        if (byte == ';' || hfp_parser_is_end_of_line(byte)){
+        if ((byte == ';') || hfp_parser_is_end_of_line(byte)){
             hfp_connection->line_buffer[hfp_connection->line_size] = 0;
             hfp_connection->line_size = 0;
             hfp_connection->command = HFP_CMD_CALL_PHONE_NUMBER;
@@ -1110,9 +1110,9 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
 
     // TODO: handle space inside word        
-    if (byte == ' ' && hfp_connection->parser_state > HFP_PARSER_CMD_HEADER) return;
+    if ((byte == ' ') && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
     
-    if (byte == ',' && hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE){
+    if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
         if (hfp_connection->line_size == 0){
             hfp_connection->line_buffer[0] = 0;
             hfp_connection->ignore_value = 1;
@@ -1152,7 +1152,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
             }
 
             // printf(" parse header 2 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
-            if (hfp_parser_is_end_of_header(byte) || hfp_connection->keep_byte == 1){
+            if (hfp_parser_is_end_of_header(byte) || (hfp_connection->keep_byte == 1)){
                 // printf(" parse header 3 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
                 char * line_buffer = (char *)hfp_connection->line_buffer;
                 hfp_connection->command = parse_command(line_buffer, isHandsFree);
@@ -1240,7 +1240,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
     hfp_parser_next_state(hfp_connection, byte);
 
-    if (hfp_connection->resolve_byte && hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE){
+    if (hfp_connection->resolve_byte && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
         hfp_connection->resolve_byte = 0;
         hfp_connection->ignore_value = 1;
         parse_sequence(hfp_connection);
@@ -1483,7 +1483,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART;
             return;
         case HFP_IDLE:
-            memcpy(hfp_connection->remote_addr, bd_addr, 6);
+            (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
             hfp_connection->state = HFP_W4_SDP_QUERY_COMPLETE;
             connection_doing_sdp_query = hfp_connection;
             hfp_connection->service_uuid = service_uuid;
@@ -1607,9 +1607,9 @@ void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LOG_INFO
     // encode \n\r
     char printable[HFP_HF_RX_DEBUG_PRINT_LINE+2];
-    int i;
+    int i = 0;
     int pos;
-    for (i=0,pos=0;(pos < size) && (i < (HFP_HF_RX_DEBUG_PRINT_LINE - 3)); pos++){
+    for (pos=0 ; (pos < size) && (i < (HFP_HF_RX_DEBUG_PRINT_LINE - 3)) ; pos++){
         switch (packet[pos]){
             case '\n':
                 printable[i++] = '\\';

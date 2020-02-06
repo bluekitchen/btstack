@@ -100,7 +100,8 @@ static const tHTTPHeader g_psHTTPHeaders[] = {
   { "xml",  HTTP_HDR_XML},
   { "xsl",  HTTP_HDR_XML},
   { "pdf",  HTTP_HDR_PDF},
-  { "json", HTTP_HDR_JSON}
+  { "json", HTTP_HDR_JSON},
+  { "svg",  HTTP_HDR_SVG}
 #ifdef HTTPD_ADDITIONAL_CONTENT_TYPES
   /* If you need to add content types not listed here:
    * #define HTTPD_ADDITIONAL_CONTENT_TYPES {"ct1", HTTP_CONTENT_TYPE("text/ct1")}, {"exe", HTTP_CONTENT_TYPE("application/exe")}

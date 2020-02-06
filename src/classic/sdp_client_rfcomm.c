@@ -95,7 +95,7 @@ static void sdp_rfcomm_query_emit_service(void){
     event[0] = SDP_EVENT_QUERY_RFCOMM_SERVICE;
     event[1] = sdp_service_name_len + 1;
     event[2] = sdp_rfcomm_channel_nr;
-    memcpy(&event[3], sdp_service_name, sdp_service_name_len);
+    (void)memcpy(&event[3], sdp_service_name, sdp_service_name_len);
     event[3+sdp_service_name_len] = 0;
     (*sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
     sdp_rfcomm_channel_nr = 0;
@@ -239,7 +239,7 @@ static void sdp_client_query_rfcomm_handle_service_name_data(uint32_t attribute_
     }
 
     // notify on last char
-    if (data_offset == attribute_value_length - 1 && sdp_rfcomm_channel_nr!=0){
+    if ((data_offset == (attribute_value_length - 1)) && (sdp_rfcomm_channel_nr!=0)){
         sdp_rfcomm_query_emit_service();
     }
 }

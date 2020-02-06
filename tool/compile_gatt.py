@@ -115,6 +115,7 @@ current_service_start_handle = 0
 current_characteristic_uuid_string = ""
 defines_for_characteristics = []
 defines_for_services = []
+include_paths = []
 
 handle = 1
 total_size = 0
@@ -883,19 +884,18 @@ def listHandles(fout):
         fout.write('\n')
 
 def getFile( fileName ):
-    inc = args.I
-    for d in inc:
-        fullFile = d[0] + fileName
-        print("test %s" % fullFile)
+    for d in include_paths:
+        fullFile = os.path.normpath(d + os.sep + fileName) # because Windows exists
+        # print("test %s" % fullFile)
         if os.path.isfile( fullFile ) == True:
             return fullFile
     print ("'{0}' not found".format( fileName ))
-    print ("Include paths: %s" % ", ".join(inc))
+    print ("Include paths: %s" % ", ".join(include_paths))
     exit(-1)
 
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
-default_includes = [ btstack_root + '/src/', btstack_root + '/src/ble/gatt-service/'] 
+default_includes = [os.path.normpath(path) for path in [ btstack_root + '/src/', btstack_root + '/src/ble/gatt-service/']]
 
 parser = argparse.ArgumentParser(description='BLE GATT configuration generator for use with BTstack')
 
@@ -908,11 +908,13 @@ parser.add_argument('hfile', metavar='hfile', type=str,
 
 args = parser.parse_args()
 
+# add include path arguments
+if args.I != None:
+    for d in args.I:
+        include_paths.append(os.path.normpath(d[0]))
+
 # append default include paths
-if args.I == None:
-    args.I = []
-for d in default_includes:
-    args.I.append([d])
+include_paths.extend(default_includes)
 
 try:
     # read defines from bluetooth_gatt.h

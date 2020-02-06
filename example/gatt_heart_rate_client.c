@@ -184,7 +184,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_ENABLE_NOTIFICATIONS_COMPLETE:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
+                    printf("Notifications enabled, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
 
                     state = TC_W4_SENSOR_LOCATION_CHARACTERISTIC;
                     printf("Search for Sensor Location characteristic.\n");
@@ -207,6 +207,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         state = TC_CONNECTED;
                         break;  
                     } 
+                    if (body_sensor_location_characteristic.value_handle == 0){
+                        printf("Sensor Location characteristic not available.\n");
+                        state = TC_CONNECTED;
+                        break;
+                    }
                     state = TC_W4_HEART_RATE_MEASUREMENT_CHARACTERISTIC;
                     printf("Read Body Sensor Location.\n");
                     state = TC_W4_SENSOR_LOCATION;
@@ -223,6 +228,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
                     body_sensor_location = gatt_event_characteristic_value_query_result_get_value(packet)[0];
                     printf("Sensor Location: %u\n", body_sensor_location);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
                     state = TC_CONNECTED;
                     break;
                 default:

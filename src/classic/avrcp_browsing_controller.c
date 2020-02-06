@@ -96,7 +96,7 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
     avrcp_browsing_connection_t * connection = btstack_memory_avrcp_browsing_connection_get();
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
-    avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid();
+    avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid(avrcp_connection->role);
     avrcp_connection->browsing_connection = connection;
     return connection;
 }
@@ -129,7 +129,8 @@ static uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buff
     connection->ertm_buffer_size = size;
     avrcp_connection->browsing_connection = connection;
     avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    memcpy(&connection->ertm_config, ertm_config, sizeof(l2cap_ertm_config_t));
+    (void)memcpy(&connection->ertm_config, ertm_config,
+                 sizeof(l2cap_ertm_config_t));
 
     return l2cap_create_ertm_channel(avrcp_browsing_controller_packet_handler, remote_addr, avrcp_connection->browsing_l2cap_psm, 
                     &connection->ertm_config, connection->ertm_buffer, connection->ertm_buffer_size, NULL);
@@ -248,7 +249,7 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
             attributes_to_copy = attribute_count;
             break;
     }
-    big_endian_store_16(command, pos, 9 + 1 + attribute_count*4);
+    big_endian_store_16(command, pos, 9 + 1 + (attribute_count*4));
     pos += 2;
     
     command[pos++] = connection->scope;
@@ -296,11 +297,11 @@ static int avrcp_browsing_controller_send_get_item_attributes_cmd(uint16_t cid, 
             break;
     }
     
-    big_endian_store_16(command, pos, 12 + attribute_count*4);
+    big_endian_store_16(command, pos, 12 + (attribute_count*4));
     pos += 2;
 
     command[pos++] = connection->scope;
-    memcpy(command+pos, connection->folder_uid, 8);
+    (void)memcpy(command + pos, connection->folder_uid, 8);
     pos += 8;
     big_endian_store_16(command, pos, connection->uid_counter);
     pos += 2;
@@ -335,7 +336,7 @@ static int avrcp_browsing_controller_send_change_path_cmd(uint16_t cid, avrcp_br
     pos += 2;
     pos += 2;
     command[pos++] = connection->direction;
-    memcpy(command+pos, connection->folder_uid, 8);
+    (void)memcpy(command + pos, connection->folder_uid, 8);
     pos += 8;
     return l2cap_send(cid, command, pos);
 }
@@ -359,7 +360,8 @@ static int avrcp_browsing_controller_send_search_cmd(uint16_t cid, avrcp_browsin
     big_endian_store_16(command, pos, connection->search_str_len);
     pos += 2;
 
-    memcpy(command+pos,connection->search_str, connection->search_str_len);
+    (void)memcpy(command + pos, connection->search_str,
+                 connection->search_str_len);
     pos += connection->search_str_len;
     return l2cap_send(cid, command, pos);
 }
@@ -490,7 +492,7 @@ static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_conn
         }
         case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
             connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = byte;
-            if (connection->parsed_attribute_value_offset < connection->parsed_attribute_value_len + prepended_header_size){
+            if (connection->parsed_attribute_value_offset < (connection->parsed_attribute_value_len + prepended_header_size)){
                 break;
             }
             if (connection->parsed_attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 1)){
@@ -511,7 +513,7 @@ static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_conn
         }
         case AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE:
             connection->parsed_attribute_value_offset++;
-            if (connection->parsed_attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 1) + prepended_header_size){
+            if (connection->parsed_attribute_value_offset < (big_endian_read_16(connection->parser_attribute_header, 1) + prepended_header_size)){
                 break;
             }
             connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
@@ -567,7 +569,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     if (avctp_packet_type == AVRCP_START_PACKET){
                         browsing_connection->num_packets = packet[pos++];
                     } 
-                    if (pos + 4 > size){
+                    if ((pos + 4) > size){
                         browsing_connection->state = AVCTP_CONNECTION_OPENED;
                         avrcp_browsing_controller_emit_failed(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
                         return;  
@@ -739,7 +741,8 @@ uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_b
     avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     avrcp_connection->browsing_connection->ertm_buffer = ertm_buffer;
     avrcp_connection->browsing_connection->ertm_buffer_size = size;
-    memcpy(&avrcp_connection->browsing_connection->ertm_config, ertm_config, sizeof(l2cap_ertm_config_t));
+    (void)memcpy(&avrcp_connection->browsing_connection->ertm_config,
+                 ertm_config, sizeof(l2cap_ertm_config_t));
     l2cap_accept_ertm_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid, &avrcp_connection->browsing_connection->ertm_config, avrcp_connection->browsing_connection->ertm_buffer, avrcp_connection->browsing_connection->ertm_buffer_size);
     return ERROR_CODE_SUCCESS;
 }
@@ -774,7 +777,7 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
 
     connection->get_item_attributes = 1;
     connection->scope = scope;
-    memcpy(connection->folder_uid, uid, 8);
+    (void)memcpy(connection->folder_uid, uid, 8);
     connection->uid_counter = uid_counter;
     connection->attr_bitmap = attr_bitmap;
 
@@ -864,7 +867,7 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
@@ -877,7 +880,7 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     connection->direction = direction;
     memset(connection->folder_uid, 0, 8);
     if (folder_uid){
-        memcpy(connection->folder_uid, folder_uid, 8);
+        (void)memcpy(connection->folder_uid, folder_uid, 8);
     }
     
     avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
@@ -901,7 +904,7 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
@@ -910,7 +913,7 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
         log_error("avrcp_browsing_controller_change_path: no browsed player set.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    if (!search_str || search_str_len == 0){
+    if (!search_str || (search_str_len == 0)){
         return AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND;
     }
 
@@ -918,7 +921,8 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
   
     connection->search_str_len = btstack_min(search_str_len, sizeof(connection->search_str)-1);
     memset(connection->search_str, 0, sizeof(connection->search_str));
-    memcpy(connection->search_str, search_str, connection->search_str_len);
+    (void)memcpy(connection->search_str, search_str,
+                 connection->search_str_len);
     avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -932,7 +936,7 @@ uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_br
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+    if ((connection == NULL) || (connection->state != AVCTP_CONNECTION_OPENED)){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 

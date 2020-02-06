@@ -46,12 +46,14 @@
 
 #include "wiced.h"
 
-#include <stddef.h> // NULL
+#include "btstack_run_loop_wiced.h"
 
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_wiced.h"
+
+#include <stddef.h> // NULL
  
 typedef struct function_call {
     wiced_result_t (*fn)(void * arg);
@@ -83,13 +85,14 @@ static void btstack_run_loop_wiced_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((btstack_timer_source_t *) it->next == ts){
+        btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
+        if (next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
-            break;
-        }
+        // exit if new timeout before list timeout
+        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -98,7 +101,7 @@ static void btstack_run_loop_wiced_add_timer(btstack_timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-static int btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
+static bool btstack_run_loop_wiced_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
 }
 
@@ -125,20 +128,20 @@ void btstack_run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(voi
  * Execute run_loop
  */
 static void btstack_run_loop_wiced_execute(void) {
-    while (1) {
+    while (true) {
         // get next timeout
         uint32_t timeout_ms = WICED_NEVER_TIMEOUT;
         if (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
             uint32_t now = btstack_run_loop_wiced_get_time_ms();
-            if (ts->timeout < now){
+            int32_t delta_ms = btstack_time_delta(ts->timeout, now);
+            if (delta_ms <= 0){
                 // remove timer before processing it to allow handler to re-register with run loop
                 btstack_run_loop_wiced_remove_timer(ts);
-                // printf("RL: timer %p\n", ts->process);
                 ts->process(ts);
                 continue;
             }
-            timeout_ms = ts->timeout - now;
+            timeout_ms = delta_ms;
         }
                 
         // pop function call
@@ -146,7 +149,6 @@ static void btstack_run_loop_wiced_execute(void) {
         wiced_rtos_pop_from_queue( &btstack_run_loop_queue, &message, timeout_ms);
         if (message.fn){
             // execute code on run loop
-            // printf("RL: execute %p\n", message.fn);
             message.fn(message.arg);
         }
     }
