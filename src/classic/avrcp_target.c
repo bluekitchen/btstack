@@ -1199,7 +1199,8 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     
                     if (connection->playback_status_changed){
                         connection->playback_status_changed = 0;
-                        avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, &connection->playback_status_changed, 1);
+                        uint8_t playback_status = (uint8_t) connection->playback_status;
+                        avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, &playback_status, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                         break;

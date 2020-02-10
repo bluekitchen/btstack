@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - att_db_util: fix realloc of att db buffer for large attributes
 - btstack_tlv_posix: only keep last value in memory, fix delete operation
 - l2cap_signaling: use packet boundary flags 0x00 for LE signaling packets (ignoring hci_non_flushable_packet_boundary_flag_supported())
+- AVRCP Target: fix reporting of PLAYBACK_STATUS_CHANGED
 
 ### Added
 - att_db_util: provide GATT Database Hash via att_db_util_hash_calc
