@@ -65,6 +65,9 @@ extern const hci_cmd_t hci_vendor_em_set_memory_mode;
 extern const hci_cmd_t hci_vendor_em_set_sleep_options;
 extern const hci_cmd_t hci_vendor_em_set_operating_state;
 
+#define HCI_SUBEVENT_EM_STANDBY_STATE                0x01
+#define HCI_SUBEVENT_EM_BLE_IDLE_ENTERED             0x02
+
 #if defined __cplusplus
 }
 #endif
