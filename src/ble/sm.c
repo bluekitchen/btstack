@@ -257,7 +257,6 @@ static btstack_crypto_random_t   sm_crypto_random_request;
 static btstack_crypto_aes128_t   sm_crypto_aes128_request;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static btstack_crypto_ecc_p256_t sm_crypto_ecc_p256_request;
-static btstack_crypto_random_t   sm_crypto_random_oob_request;
 #endif
 
 // temp storage for random data
