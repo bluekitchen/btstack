@@ -62,6 +62,11 @@ extern "C" {
 void hal_uart_dma_init(void);
 
 /**
+ * @brief Deinit and close device
+ */
+void hal_uart_dma_deinit(void);
+
+/**
  * @brief Set callback for block received - can be called from ISR context
  * @param callback
  */

@@ -126,9 +126,11 @@ static int btstack_uart_block_freertos_open(void){
 } 
 
 static int btstack_uart_block_freertos_close(void){
-
     // close device
     // ...
+#ifdef HAL_UART_DMA_DEINIT
+    hal_uart_dma_deinit();
+#endif
     return 0;
 }
 
