@@ -101,8 +101,8 @@ set(SOURCES
         )
 list(SORT SOURCES)
 
-add_compile_options( -fsanitize=fuzzer,address -fprofile-instr-generate -fcoverage-mapping)
-add_link_options(    -fsanitize=fuzzer,address -fprofile-instr-generate -fcoverage-mapping)
+add_compile_options( -g -fsanitize=fuzzer,address -fprofile-instr-generate -fcoverage-mapping)
+add_link_options(       -fsanitize=fuzzer,address -fprofile-instr-generate -fcoverage-mapping)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
