@@ -380,7 +380,7 @@ typedef enum {
 #define OGF_LE_CONTROLLER 0x08
 #define OGF_VENDOR  0x3f
 
-#define OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
+#define HCI_CMD_OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
 
 
 /** 
