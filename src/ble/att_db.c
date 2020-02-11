@@ -1104,6 +1104,10 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 
     if (request_len < 2) return setup_error_invalid_pdu(response_buffer, request_type);
 
+    if (att_write_callback == NULL) {
+        return setup_error_write_not_permitted(response_buffer, request_type, 0);
+    }
+
     if (request_buffer[1]) {
         // validate queued write
         if (att_prepare_write_error_code == 0){
