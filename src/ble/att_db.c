@@ -993,7 +993,7 @@ static uint16_t handle_read_by_group_type_request(att_connection_t * att_connect
 static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                               uint8_t * response_buffer, uint16_t response_buffer_size){
 
-    UNUSED(response_buffer_size);
+    if (request_len < 3) return setup_error_invalid_pdu(response_buffer, ATT_WRITE_REQUEST);
 
     uint8_t request_type = ATT_WRITE_REQUEST;
 
