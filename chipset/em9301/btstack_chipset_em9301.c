@@ -296,14 +296,139 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 }
 #endif
 
+#ifdef HAVE_EM9301_PATCH_CONTAINER
+
+/*  Number of ROW in patch file [0-63] */
+#define NUMBER_OF_ROWS			64
+
+/* Number of Bytes Per ROW in patch file [0-63] */
+#define ROW_SIZE				48
+
+/* Number of Sectors [0-17] in patch file [0-63] */
+#define NUMBER_OF_SECTORS		2
+
+extern const uint8_t   EMPatchArray[];
+extern const uint32_t  EMPatchArray_size;
+
+signed char currentRow;
+signed char currentSector;
+
+uint8_t patchLoadingState;
+
+#define PATCH_LOAD_STATE_NOTSTARTED             0x00u
+#define PATCH_LOAD_STATE_ENTERINGISPMODE        0x01u
+#define PATCH_LOAD_STATE_LOADING                0x02u
+#define PATCH_LOAD_STATE_EXITINGISPMODE         0x04u
+#define PATCH_LOAD_STATE_DONE                   0x08u
+
+
+void em9301_hardware_error(uint8_t error){
+	//TODO: Stack is freezing, wait how to continue
+	if (patchLoadingState == PATCH_LOAD_STATE_LOADING && error == 0x80) {
+		return; // everything ok
+	}
+	//TODO: something is wrong
+}
+
+static void chipset_init(const void * config){
+	UNUSED(config);
+
+	currentRow = NUMBER_OF_ROWS - 1;
+	currentSector = NUMBER_OF_SECTORS - 1;
+
+	patchLoadingState = PATCH_LOAD_STATE_NOTSTARTED;
+
+	hci_set_hardware_error_callback(&em9301_hardware_error);
+}
+
+static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
+	log_info("current row %d, current sector %d, blob size %u", currentRow, currentSector, EMPatchArray_size);
+
+	switch (patchLoadingState)
+	{
+	case PATCH_LOAD_STATE_NOTSTARTED:
+		/* we have not yet loading the patch, start the
+		 loading procedure now
+		 try to enter in ISP mode by sending  HCI command
+		 HCI_EM_Write_Data with parameters (address=0x1FFE, data=0x0000).*/
+		patchLoadingState = PATCH_LOAD_STATE_ENTERINGISPMODE;
+
+	    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_DATA));
+	    hci_cmd_buffer[2] = 4;
+	    little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
+	    little_endian_store_16(hci_cmd_buffer, 5, 0x0000);
+	    log_debug("PATCH_LOAD_STATE_ENTERINGISPMODE");
+
+	    return BTSTACK_CHIPSET_VALID_COMMAND;
+
+	case PATCH_LOAD_STATE_ENTERINGISPMODE:
+		patchLoadingState = PATCH_LOAD_STATE_LOADING;
+		// send EM CPU Reset
+	    little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
+	    hci_cmd_buffer[2] = 0;
+	    log_debug("PATCH_LOAD_STATE_LOADING");
+
+	    return BTSTACK_CHIPSET_VALID_COMMAND;
+
+	case PATCH_LOAD_STATE_LOADING:
+
+		if (currentSector < 0) {
+			/* We have now finish to load the patch it is now time to exiting ISP mode
+			 try to exit in ISP mode by sending HCI command HCI_EM_Write_Data with parameters (address=0x1FFE, data=0x55AA).*/
+			patchLoadingState = PATCH_LOAD_STATE_EXITINGISPMODE;
+
+		    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_DATA));
+		    hci_cmd_buffer[2] = 4;
+		    little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
+		    little_endian_store_16(hci_cmd_buffer, 5, 0x55AA);
+
+		    return BTSTACK_CHIPSET_VALID_COMMAND;
+		}
+
+	    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PROGRAM));
+	    hci_cmd_buffer[2] = ROW_SIZE + 2;
+	    hci_cmd_buffer[3] = currentRow;
+	    hci_cmd_buffer[4] = currentSector;
+	    memcpy(&hci_cmd_buffer[5], &EMPatchArray[(ROW_SIZE * currentRow) + (NUMBER_OF_ROWS * ROW_SIZE * currentSector)], ROW_SIZE);
+
+	    if (currentRow == 0) {
+			currentRow = NUMBER_OF_ROWS - 1;
+			currentSector--;
+		} else {
+			currentRow--;
+		}
+
+	    return BTSTACK_CHIPSET_VALID_COMMAND;
+
+	case PATCH_LOAD_STATE_EXITINGISPMODE:
+		patchLoadingState = PATCH_LOAD_STATE_DONE;
+		// send EM CPU Reset
+	    little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
+	    hci_cmd_buffer[2] = 0;
+
+	    return BTSTACK_CHIPSET_VALID_COMMAND;
+
+	case PATCH_LOAD_STATE_DONE:
+		return BTSTACK_CHIPSET_DONE;
+	}
+	return BTSTACK_CHIPSET_DONE;
+}
+
+#endif
+
 static const btstack_chipset_t btstack_chipset_em9301 = {
     "EM9301",
 #ifdef HAVE_EM9304_PATCH_CONTAINER
     chipset_init,
     chipset_next_command,
 #else
+#ifdef HAVE_EM9301_PATCH_CONTAINER
+    chipset_init,
+    chipset_next_command,
+#else
     NULL,
     NULL,
+#endif
 #endif
     chipset_set_baudrate_command,
     chipset_set_bd_addr_command,
