@@ -79,14 +79,14 @@
  * @param bd_addr
  */
 const hci_cmd_t hci_vendor_em_set_public_address = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_PUBLIC_ADDRESS), "B"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_PUBLIC_ADDRESS), "B"
 };
 
 /**
  * @param baud_rate_index
  */
 const hci_cmd_t hci_vendor_em_set_uart_baudrate = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_UART_BAUD_RATE), "1"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_UART_BAUD_RATE), "1"
 };
 
 /**
@@ -96,20 +96,20 @@ const hci_cmd_t hci_vendor_em_set_uart_baudrate = {
  * @param packet_payload_type
  */
 const hci_cmd_t hci_vendor_em_transmitter_test = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_TRANSMITTER_TEST), "1111"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_TRANSMITTER_TEST), "1111"
 };
 
 /**
  */
 const hci_cmd_t hci_vendor_em_transmitter_test_end = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_TRANSMITTER_TEST_END), ""
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_TRANSMITTER_TEST_END), ""
 };
 
 /**
  * @param patch_index
  */
 const hci_cmd_t hci_vendor_em_patch_query = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_PATCH_QUERY), "2"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_PATCH_QUERY), "2"
 };
 
 /**
@@ -117,40 +117,40 @@ const hci_cmd_t hci_vendor_em_patch_query = {
  * @param memory_attribute
  */
 const hci_cmd_t hci_vendor_em_set_memory_mode = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_MEMORY_MODE), "1"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_MEMORY_MODE), "1"
 };
 
 /**
  * @param sleep_option_settings
  */
 const hci_cmd_t hci_vendor_em_set_sleep_options = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_SLEEP_OPTIONS), "1"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_SLEEP_OPTIONS), "1"
 };
 
 /**
  * @param operating_state_settings
  */
 const hci_cmd_t hci_vendor_em_set_operating_state = {
-	HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_OPERATING_STATE), "1"
+    HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_SET_OPERATING_STATE), "1"
 };
 
 // baudrate to index for hci_vendor_em_set_uart_baudrate
 static const uint32_t baudrates[] = {
-	      0, 
-	      0,
-	      0, 
-	   9600,
-	  14400,
-	  19200,
-	  28800,
-	  38400,
-	  57600,
-	  76800,
-	 115200,
-	 230400,
-	 460800,
-	 921600,
-	1843200,
+          0, 
+          0,
+          0, 
+       9600,
+      14400,
+      19200,
+      28800,
+      38400,
+      57600,
+      76800,
+     115200,
+     230400,
+     460800,
+     921600,
+    1843200,
 };
 
 #ifdef HAVE_EM9304_PATCH_CONTAINER
@@ -159,33 +159,33 @@ extern const uint8_t   container_blob_data[];
 extern const uint32_t  container_blob_size;
 
 static uint32_t container_blob_offset  = 0;
-static uint32_t container_end;	// current container
+static uint32_t container_end;  // current container
 static uint16_t patch_sequence_number;
 static int      em_cpu_reset_sent;
 
 static enum {
-	UPLOAD_IDLE,
-	UPLOAD_ACTIVE,
+    UPLOAD_IDLE,
+    UPLOAD_ACTIVE,
 } upload_state;
 
 
 // CRC32 implementation using 4-bit lookup table created by pycrc v0.9.1, https://pycrc.org
 // ./pycrc.py --model crc-32 --algorithm table-driven --table-idx-width=4 --generate c
 static const uint32_t crc32_table[16] = { 
-	0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
-	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
+    0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+    0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
 };
 
 static uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
-	uint16_t pos;
-	uint32_t crc = 0xffffffff;
-	for (pos=0 ; pos<size ; pos++){
+    uint16_t pos;
+    uint32_t crc = 0xffffffff;
+    for (pos=0 ; pos<size ; pos++){
         int tbl_idx = crc ^ buf[pos];
         crc = crc32_table[tbl_idx & 0x0f] ^ (crc >> 4);
         tbl_idx = crc ^ (buf[pos] >> 4);
         crc = crc32_table[tbl_idx & 0x0f] ^ (crc >> 4);
     }
-	return ~crc;
+    return ~crc;
 }
 
 #endif
@@ -197,19 +197,19 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
 }
 
 static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
-	// lookup baudrates
-	int i;
-	int found = 0;
-	for (i=0 ; i < sizeof(baudrates)/sizeof(uint32_t) ; i++){
-		if (baudrates[i] == baudrate){
-			found = i;
-			break;		
-		}
-	}
-	if (!found){
-		log_error("Baudrate %u not found in table", baudrate);
-		return;
-	}
+    // lookup baudrates
+    int i;
+    int found = 0;
+    for (i=0 ; i < sizeof(baudrates)/sizeof(uint32_t) ; i++){
+        if (baudrates[i] == baudrate){
+            found = i;
+            break;      
+        }
+    }
+    if (!found){
+        log_error("Baudrate %u not found in table", baudrate);
+        return;
+    }
     little_endian_store_16(hci_cmd_buffer, 0, hci_vendor_em_set_uart_baudrate.opcode);
     hci_cmd_buffer[2] = 0x01;
     hci_cmd_buffer[3] = i;
@@ -217,25 +217,25 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
 
 #ifdef HAVE_EM9304_PATCH_CONTAINER
 static void chipset_em9304_init(const void * config){
-	UNUSED(config);
-	container_blob_offset = 0;
-	em_cpu_reset_sent = 0;
-	upload_state = UPLOAD_IDLE;
+    UNUSED(config);
+    container_blob_offset = 0;
+    em_cpu_reset_sent = 0;
+    upload_state = UPLOAD_IDLE;
 }
 
 static btstack_chipset_result_t chipset_em9304_next_command(uint8_t * hci_cmd_buffer){
-	log_info("pos %u, container end %u, blob size %u", container_blob_offset, container_end, container_blob_size);
+    log_info("pos %u, container end %u, blob size %u", container_blob_offset, container_end, container_blob_size);
 
     if (container_blob_offset >= container_blob_size) {
-    	if (0 == em_cpu_reset_sent){
-    		// send EM CPU Reset
-		    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_CPU_RESET));
-		    hci_cmd_buffer[2] = 0;
-		    em_cpu_reset_sent = 1;
-		    return BTSTACK_CHIPSET_VALID_COMMAND;
-    	} else {
-	        return BTSTACK_CHIPSET_DONE;
-    	}
+        if (0 == em_cpu_reset_sent){
+            // send EM CPU Reset
+            little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_CPU_RESET));
+            hci_cmd_buffer[2] = 0;
+            em_cpu_reset_sent = 1;
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+        } else {
+            return BTSTACK_CHIPSET_DONE;
+        }
     }
 
     uint32_t tag;
@@ -243,69 +243,69 @@ static btstack_chipset_result_t chipset_em9304_next_command(uint8_t * hci_cmd_bu
     uint32_t crc;
     uint32_t container_size;
 
-	switch (upload_state){
-		case UPLOAD_IDLE:
-			// check for 'em93' tag
-			tag = little_endian_read_32(container_blob_data, container_blob_offset);
-			if (0x656d3933 != tag) {
-				log_error("Expected 0x656d3933 ('em934') but got %08x", (int) tag);
-				return BTSTACK_CHIPSET_DONE;
-			}
-			// fetch info for current container
-			container_size = little_endian_read_32(container_blob_data, container_blob_offset + 4);
-			container_end = container_blob_offset + container_size;
-			// start uploading (<= 59 bytes)
-			patch_sequence_number = 1;
-			bytes_to_upload = btstack_min(59, container_end - container_blob_offset);
-			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
-			log_info("Container type 0x%02x, id %u, build nr %u, user build nr %u, size %u", 
-				(int) container_blob_data[container_blob_offset+9], 
-				(int) container_blob_data[container_blob_offset+10], 
-				(int) little_endian_read_16(container_blob_data, container_blob_offset+12), 
-				(int) little_endian_read_16(container_blob_data, container_blob_offset+14), 
-				(int) container_size);
-			// build command
-		    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PATCH_START));
-		    hci_cmd_buffer[2] = 5 + bytes_to_upload;
-		    hci_cmd_buffer[3] = 0;	// upload to iRAM1
-		    little_endian_store_32(hci_cmd_buffer, 4, crc);
-		    memcpy(&hci_cmd_buffer[8], &container_blob_data[container_blob_offset], bytes_to_upload);
-		    container_blob_offset += bytes_to_upload;
-		    if (container_blob_offset < container_end){
-		    	upload_state = UPLOAD_ACTIVE;
-		    }
-		    return BTSTACK_CHIPSET_VALID_COMMAND;
-		case UPLOAD_ACTIVE:
-			// Upload next segement
-			bytes_to_upload = btstack_min(58, container_end - container_blob_offset);
-			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
-			// build command
-			little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PATCH_CONTINUE));
-		    hci_cmd_buffer[2] = 6 + bytes_to_upload;
-		    little_endian_store_16(hci_cmd_buffer, 3, patch_sequence_number++);
-		    little_endian_store_32(hci_cmd_buffer, 5, crc);
-		    memcpy(&hci_cmd_buffer[9], &container_blob_data[container_blob_offset], bytes_to_upload);
-		    container_blob_offset += bytes_to_upload;
-		    if (container_blob_offset >= container_end){
-		    	log_info("container done maybe another one");
-		    	upload_state = UPLOAD_IDLE;
-		    }
-		    return BTSTACK_CHIPSET_VALID_COMMAND;
-	}
-	return BTSTACK_CHIPSET_DONE;
+    switch (upload_state){
+        case UPLOAD_IDLE:
+            // check for 'em93' tag
+            tag = little_endian_read_32(container_blob_data, container_blob_offset);
+            if (0x656d3933 != tag) {
+                log_error("Expected 0x656d3933 ('em934') but got %08x", (int) tag);
+                return BTSTACK_CHIPSET_DONE;
+            }
+            // fetch info for current container
+            container_size = little_endian_read_32(container_blob_data, container_blob_offset + 4);
+            container_end = container_blob_offset + container_size;
+            // start uploading (<= 59 bytes)
+            patch_sequence_number = 1;
+            bytes_to_upload = btstack_min(59, container_end - container_blob_offset);
+            crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+            log_info("Container type 0x%02x, id %u, build nr %u, user build nr %u, size %u", 
+                (int) container_blob_data[container_blob_offset+9], 
+                (int) container_blob_data[container_blob_offset+10], 
+                (int) little_endian_read_16(container_blob_data, container_blob_offset+12), 
+                (int) little_endian_read_16(container_blob_data, container_blob_offset+14), 
+                (int) container_size);
+            // build command
+            little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PATCH_START));
+            hci_cmd_buffer[2] = 5 + bytes_to_upload;
+            hci_cmd_buffer[3] = 0;  // upload to iRAM1
+            little_endian_store_32(hci_cmd_buffer, 4, crc);
+            memcpy(&hci_cmd_buffer[8], &container_blob_data[container_blob_offset], bytes_to_upload);
+            container_blob_offset += bytes_to_upload;
+            if (container_blob_offset < container_end){
+                upload_state = UPLOAD_ACTIVE;
+            }
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+        case UPLOAD_ACTIVE:
+            // Upload next segement
+            bytes_to_upload = btstack_min(58, container_end - container_blob_offset);
+            crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+            // build command
+            little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PATCH_CONTINUE));
+            hci_cmd_buffer[2] = 6 + bytes_to_upload;
+            little_endian_store_16(hci_cmd_buffer, 3, patch_sequence_number++);
+            little_endian_store_32(hci_cmd_buffer, 5, crc);
+            memcpy(&hci_cmd_buffer[9], &container_blob_data[container_blob_offset], bytes_to_upload);
+            container_blob_offset += bytes_to_upload;
+            if (container_blob_offset >= container_end){
+                log_info("container done maybe another one");
+                upload_state = UPLOAD_IDLE;
+            }
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+    }
+    return BTSTACK_CHIPSET_DONE;
 }
 #endif
 
 #ifdef HAVE_EM9301_PATCH_CONTAINER
 
 /*  Number of ROW in patch file [0-63] */
-#define NUMBER_OF_ROWS			64
+#define NUMBER_OF_ROWS          64
 
 /* Number of Bytes Per ROW in patch file [0-63] */
-#define ROW_SIZE				48
+#define ROW_SIZE                48
 
 /* Number of Sectors [0-17] in patch file [0-63] */
-#define NUMBER_OF_SECTORS		2
+#define NUMBER_OF_SECTORS       2
 
 extern const uint8_t   EMPatchArray[];
 extern const uint32_t  EMPatchArray_size;
@@ -323,95 +323,95 @@ uint8_t patchLoadingState;
 
 
 void em9301_hardware_error(uint8_t error){
-	//TODO: Stack is freezing, wait how to continue
-	if (patchLoadingState == PATCH_LOAD_STATE_LOADING && error == 0x80) {
-		return; // everything ok
-	}
-	//TODO: something is wrong
+    //TODO: Stack is freezing, wait how to continue
+    if (patchLoadingState == PATCH_LOAD_STATE_LOADING && error == 0x80) {
+        return; // everything ok
+    }
+    //TODO: something is wrong
 }
 
 static void chipset_em9301_init(const void * config){
-	UNUSED(config);
+    UNUSED(config);
 
-	currentRow = NUMBER_OF_ROWS - 1;
-	currentSector = NUMBER_OF_SECTORS - 1;
+    currentRow = NUMBER_OF_ROWS - 1;
+    currentSector = NUMBER_OF_SECTORS - 1;
 
-	patchLoadingState = PATCH_LOAD_STATE_NOTSTARTED;
+    patchLoadingState = PATCH_LOAD_STATE_NOTSTARTED;
 
-	hci_set_hardware_error_callback(&em9301_hardware_error);
+    hci_set_hardware_error_callback(&em9301_hardware_error);
 }
 
 static btstack_chipset_result_t chipset_em9301_next_command(uint8_t * hci_cmd_buffer){
-	log_info("current row %d, current sector %d, blob size %u", currentRow, currentSector, EMPatchArray_size);
+    log_info("current row %d, current sector %d, blob size %u", currentRow, currentSector, EMPatchArray_size);
 
-	switch (patchLoadingState)
-	{
-	case PATCH_LOAD_STATE_NOTSTARTED:
-		/* we have not yet loading the patch, start the
-		 loading procedure now
-		 try to enter in ISP mode by sending  HCI command
-		 HCI_EM_Write_Data with parameters (address=0x1FFE, data=0x0000).*/
-		patchLoadingState = PATCH_LOAD_STATE_ENTERINGISPMODE;
+    switch (patchLoadingState)
+    {
+    case PATCH_LOAD_STATE_NOTSTARTED:
+        /* we have not yet loading the patch, start the
+         loading procedure now
+         try to enter in ISP mode by sending  HCI command
+         HCI_EM_Write_Data with parameters (address=0x1FFE, data=0x0000).*/
+        patchLoadingState = PATCH_LOAD_STATE_ENTERINGISPMODE;
 
-	    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_DATA));
-	    hci_cmd_buffer[2] = 4;
-	    little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
-	    little_endian_store_16(hci_cmd_buffer, 5, 0x0000);
-	    log_debug("PATCH_LOAD_STATE_ENTERINGISPMODE");
+        little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_DATA));
+        hci_cmd_buffer[2] = 4;
+        little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
+        little_endian_store_16(hci_cmd_buffer, 5, 0x0000);
+        log_debug("PATCH_LOAD_STATE_ENTERINGISPMODE");
 
-	    return BTSTACK_CHIPSET_VALID_COMMAND;
+        return BTSTACK_CHIPSET_VALID_COMMAND;
 
-	case PATCH_LOAD_STATE_ENTERINGISPMODE:
-		patchLoadingState = PATCH_LOAD_STATE_LOADING;
-		// send EM CPU Reset
-	    little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
-	    hci_cmd_buffer[2] = 0;
-	    log_debug("PATCH_LOAD_STATE_LOADING");
+    case PATCH_LOAD_STATE_ENTERINGISPMODE:
+        patchLoadingState = PATCH_LOAD_STATE_LOADING;
+        // send EM CPU Reset
+        little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
+        hci_cmd_buffer[2] = 0;
+        log_debug("PATCH_LOAD_STATE_LOADING");
 
-	    return BTSTACK_CHIPSET_VALID_COMMAND;
+        return BTSTACK_CHIPSET_VALID_COMMAND;
 
-	case PATCH_LOAD_STATE_LOADING:
+    case PATCH_LOAD_STATE_LOADING:
 
-		if (currentSector < 0) {
-			/* We have now finish to load the patch it is now time to exiting ISP mode
-			 try to exit in ISP mode by sending HCI command HCI_EM_Write_Data with parameters (address=0x1FFE, data=0x55AA).*/
-			patchLoadingState = PATCH_LOAD_STATE_EXITINGISPMODE;
+        if (currentSector < 0) {
+            /* We have now finish to load the patch it is now time to exiting ISP mode
+             try to exit in ISP mode by sending HCI command HCI_EM_Write_Data with parameters (address=0x1FFE, data=0x55AA).*/
+            patchLoadingState = PATCH_LOAD_STATE_EXITINGISPMODE;
 
-		    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_DATA));
-		    hci_cmd_buffer[2] = 4;
-		    little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
-		    little_endian_store_16(hci_cmd_buffer, 5, 0x55AA);
+            little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_DATA));
+            hci_cmd_buffer[2] = 4;
+            little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
+            little_endian_store_16(hci_cmd_buffer, 5, 0x55AA);
 
-		    return BTSTACK_CHIPSET_VALID_COMMAND;
-		}
+            return BTSTACK_CHIPSET_VALID_COMMAND;
+        }
 
-	    little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PROGRAM));
-	    hci_cmd_buffer[2] = ROW_SIZE + 2;
-	    hci_cmd_buffer[3] = currentRow;
-	    hci_cmd_buffer[4] = currentSector;
-	    memcpy(&hci_cmd_buffer[5], &EMPatchArray[(ROW_SIZE * currentRow) + (NUMBER_OF_ROWS * ROW_SIZE * currentSector)], ROW_SIZE);
+        little_endian_store_16(hci_cmd_buffer, 0, HCI_CMD_OPCODE(OGF_VENDOR, HCI_OPCODE_EM_WRITE_PROGRAM));
+        hci_cmd_buffer[2] = ROW_SIZE + 2;
+        hci_cmd_buffer[3] = currentRow;
+        hci_cmd_buffer[4] = currentSector;
+        memcpy(&hci_cmd_buffer[5], &EMPatchArray[(ROW_SIZE * currentRow) + (NUMBER_OF_ROWS * ROW_SIZE * currentSector)], ROW_SIZE);
 
-	    if (currentRow == 0) {
-			currentRow = NUMBER_OF_ROWS - 1;
-			currentSector--;
-		} else {
-			currentRow--;
-		}
+        if (currentRow == 0) {
+            currentRow = NUMBER_OF_ROWS - 1;
+            currentSector--;
+        } else {
+            currentRow--;
+        }
 
-	    return BTSTACK_CHIPSET_VALID_COMMAND;
+        return BTSTACK_CHIPSET_VALID_COMMAND;
 
-	case PATCH_LOAD_STATE_EXITINGISPMODE:
-		patchLoadingState = PATCH_LOAD_STATE_DONE;
-		// send EM CPU Reset
-	    little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
-	    hci_cmd_buffer[2] = 0;
+    case PATCH_LOAD_STATE_EXITINGISPMODE:
+        patchLoadingState = PATCH_LOAD_STATE_DONE;
+        // send EM CPU Reset
+        little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
+        hci_cmd_buffer[2] = 0;
 
-	    return BTSTACK_CHIPSET_VALID_COMMAND;
+        return BTSTACK_CHIPSET_VALID_COMMAND;
 
-	case PATCH_LOAD_STATE_DONE:
-		return BTSTACK_CHIPSET_DONE;
-	}
-	return BTSTACK_CHIPSET_DONE;
+    case PATCH_LOAD_STATE_DONE:
+        return BTSTACK_CHIPSET_DONE;
+    }
+    return BTSTACK_CHIPSET_DONE;
 }
 
 #endif
