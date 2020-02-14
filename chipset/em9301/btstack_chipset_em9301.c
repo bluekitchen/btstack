@@ -216,14 +216,14 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
 }
 
 #ifdef HAVE_EM9304_PATCH_CONTAINER
-static void chipset_init(const void * config){
+static void chipset_em9304_init(const void * config){
 	UNUSED(config);
 	container_blob_offset = 0;
 	em_cpu_reset_sent = 0;
 	upload_state = UPLOAD_IDLE;
 }
 
-static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
+static btstack_chipset_result_t chipset_em9304_next_command(uint8_t * hci_cmd_buffer){
 	log_info("pos %u, container end %u, blob size %u", container_blob_offset, container_end, container_blob_size);
 
     if (container_blob_offset >= container_blob_size) {
@@ -330,7 +330,7 @@ void em9301_hardware_error(uint8_t error){
 	//TODO: something is wrong
 }
 
-static void chipset_init(const void * config){
+static void chipset_em9301_init(const void * config){
 	UNUSED(config);
 
 	currentRow = NUMBER_OF_ROWS - 1;
@@ -341,7 +341,7 @@ static void chipset_init(const void * config){
 	hci_set_hardware_error_callback(&em9301_hardware_error);
 }
 
-static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
+static btstack_chipset_result_t chipset_em9301_next_command(uint8_t * hci_cmd_buffer){
 	log_info("current row %d, current sector %d, blob size %u", currentRow, currentSector, EMPatchArray_size);
 
 	switch (patchLoadingState)
@@ -419,12 +419,12 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 static const btstack_chipset_t btstack_chipset_em9301 = {
     "EM9301",
 #ifdef HAVE_EM9304_PATCH_CONTAINER
-    chipset_init,
-    chipset_next_command,
+    chipset_em9304_init,
+    chipset_em9304_next_command,
 #else
 #ifdef HAVE_EM9301_PATCH_CONTAINER
-    chipset_init,
-    chipset_next_command,
+    chipset_em9301_init,
+    chipset_em9301_next_command,
 #else
     NULL,
     NULL,
