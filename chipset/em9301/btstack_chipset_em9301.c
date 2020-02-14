@@ -60,7 +60,11 @@
 #define HCI_OPCODE_EM_TRANSMITTER_TEST_END              0x12
 
 // EM9301 vendor opcodes
+#define HCI_OPCODE_EM_WRITE_DATA                        0x00
+#define HCI_OPCODE_EM_READ_DATA                         0x01
 #define HCI_OPCODE_EM_SET_OPERATING_STATE               0x03
+#define HCI_OPCODE_EM_WRITE_PROGRAM                     0x80  // only in IPS mode available
+#define HCI_OPCODE_EM_CALC_CRC_CODE                     0x81  // only in IPS mode available
 
 // EM9304 vendor opcodes
 #define HCI_OPCODE_EM_WRITE_PATCH_START                 0x27
