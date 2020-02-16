@@ -976,6 +976,8 @@ static uint16_t handle_read_by_group_type_request(att_connection_t * att_connect
 static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                               uint8_t * response_buffer, uint16_t response_buffer_size){
 
+    UNUSED(response_buffer_size);
+
     if (request_len < 3) return setup_error_invalid_pdu(response_buffer, ATT_WRITE_REQUEST);
 
     uint8_t request_type = ATT_WRITE_REQUEST;
@@ -1018,8 +1020,6 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
 // MARK: ATT_PREPARE_WRITE_REQUEST 0x16
 static uint16_t handle_prepare_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
-
-    UNUSED(response_buffer_size);
 
     uint8_t request_type = ATT_PREPARE_WRITE_REQUEST;
 
@@ -1064,7 +1064,8 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     }
 
     // response: echo request
-    (void)memcpy(response_buffer, request_buffer, request_len);
+    uint16_t bytes_to_echo = btstack_min(request_len, response_buffer_size);
+    (void)memcpy(response_buffer, request_buffer, bytes_to_echo);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
     return request_len;
 }
