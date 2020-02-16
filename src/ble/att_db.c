@@ -364,12 +364,10 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
 
     uint16_t client_rx_mtu = little_endian_read_16(request_buffer, 1);
     
-    // find min(local max mtu, remote mtu) and use as mtu for this connection
-    if (client_rx_mtu < att_connection->max_mtu){
-        att_connection->mtu = client_rx_mtu;
-    } else {
-        att_connection->mtu = att_connection->max_mtu;
-    }
+    // find min(local max mtu, remote mtu) >= ATT_DEFAULT_MTU and use as mtu for this connection
+    uint16_t min_mtu = btstack_min(client_rx_mtu, att_connection->max_mtu);
+    uint16_t new_mtu = btstack_max(ATT_DEFAULT_MTU, min_mtu);
+    att_connection->mtu = new_mtu;
 
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;
     little_endian_store_16(response_buffer, 1, att_connection->mtu);
