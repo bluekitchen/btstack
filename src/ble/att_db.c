@@ -693,14 +693,9 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
-    uint16_t offset   = 1;
-    // limit data
-    if ((offset + it.value_len) > response_buffer_size) {
-        it.value_len = response_buffer_size - 1;
-    }
-    
     // store
-    uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
+    uint16_t offset   = 1;
+    uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
     offset += bytes_copied;
     
     response_buffer[0] = ATT_READ_RESPONSE;
@@ -750,14 +745,9 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
         return setup_error_invalid_offset(response_buffer, request_type, handle);
     }
     
-    // limit data
-    uint16_t offset   = 1;
-    if ((offset + it.value_len - value_offset) > response_buffer_size) {
-        it.value_len = response_buffer_size - 1 + value_offset;
-    }
-    
     // store
-    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, it.value_len - value_offset, att_connection->con_handle);
+    uint16_t offset   = 1;
+    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
     offset += bytes_copied;
     
     response_buffer[0] = ATT_READ_BLOB_RESPONSE;
@@ -829,13 +819,8 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         if (read_request_pending) continue;
 #endif
 
-        // limit data
-        if ((offset + it.value_len) > response_buffer_size) {
-            it.value_len = response_buffer_size - 1;
-        }
-        
         // store
-        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
+        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
         offset += bytes_copied;
     }
 
