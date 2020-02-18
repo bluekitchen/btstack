@@ -408,10 +408,12 @@ static btstack_chipset_result_t chipset_em9301_next_command(uint8_t * hci_cmd_bu
 
         return BTSTACK_CHIPSET_VALID_COMMAND;
 
+        // TODO: for future use to reset stack
+        /*
     case PATCH_LOAD_STATE_FINISHED:
-        patchLoadingState = PATCH_LOAD_STATE_FINISHED;
+        patchLoadingState = PATCH_LOAD_STATE_DONE;
         return BTSTACK_CHIPSET_VALID_COMMAND;
-
+*/
     case PATCH_LOAD_STATE_DONE:
         return BTSTACK_CHIPSET_DONE;
     }
