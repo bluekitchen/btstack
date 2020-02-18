@@ -310,17 +310,16 @@ static btstack_chipset_result_t chipset_em9304_next_command(uint8_t * hci_cmd_bu
 extern const uint8_t   EMPatchArray[];
 extern const uint32_t  EMPatchArray_size;
 
-signed char currentRow;
-signed char currentSector;
+static signed char currentRow;
+static signed char currentSector;
 
-uint8_t patchLoadingState;
+static uint8_t patchLoadingState;
 
 #define PATCH_LOAD_STATE_NOTSTARTED             0x00u
 #define PATCH_LOAD_STATE_ENTERINGISPMODE        0x01u
 #define PATCH_LOAD_STATE_LOADING                0x02u
 #define PATCH_LOAD_STATE_EXITINGISPMODE         0x04u
 #define PATCH_LOAD_STATE_DONE                   0x08u
-
 
 void em9301_hardware_error(uint8_t error){
     //TODO: Stack is freezing, wait how to continue
@@ -357,7 +356,6 @@ static btstack_chipset_result_t chipset_em9301_next_command(uint8_t * hci_cmd_bu
         hci_cmd_buffer[2] = 4;
         little_endian_store_16(hci_cmd_buffer, 3, 0x1FFE);
         little_endian_store_16(hci_cmd_buffer, 5, 0x0000);
-        log_debug("PATCH_LOAD_STATE_ENTERINGISPMODE");
 
         return BTSTACK_CHIPSET_VALID_COMMAND;
 
@@ -366,7 +364,6 @@ static btstack_chipset_result_t chipset_em9301_next_command(uint8_t * hci_cmd_bu
         // send EM CPU Reset
         little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
         hci_cmd_buffer[2] = 0;
-        log_debug("PATCH_LOAD_STATE_LOADING");
 
         return BTSTACK_CHIPSET_VALID_COMMAND;
 
