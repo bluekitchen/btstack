@@ -318,7 +318,6 @@ typedef enum {
 	PATCH_LOAD_STATE_ENTERINGISPMODE,
 	PATCH_LOAD_STATE_LOADING,
 	PATCH_LOAD_STATE_EXITINGISPMODE,
-	PATCH_LOAD_STATE_FINISHED,
 	PATCH_LOAD_STATE_DONE
 } EM9301_PATCH_STATE;
 
@@ -405,15 +404,8 @@ static btstack_chipset_result_t chipset_em9301_next_command(uint8_t * hci_cmd_bu
         // send EM CPU Reset
         little_endian_store_16(hci_cmd_buffer, 0, hci_reset.opcode);
         hci_cmd_buffer[2] = 0;
+        return BTSTACK_CHIPSET_WARMSTART_REQUIRED;
 
-        return BTSTACK_CHIPSET_VALID_COMMAND;
-
-        // TODO: for future use to reset stack
-        /*
-    case PATCH_LOAD_STATE_FINISHED:
-        patchLoadingState = PATCH_LOAD_STATE_DONE;
-        return BTSTACK_CHIPSET_VALID_COMMAND;
-*/
     case PATCH_LOAD_STATE_DONE:
         return BTSTACK_CHIPSET_DONE;
     }
