@@ -1232,7 +1232,7 @@ void cycling_power_service_server_packet_handler(btstack_packet_handler_t callba
 void cycling_power_server_calibration_done(cycling_power_sensor_measurement_context_t measurement_type, uint16_t calibrated_value){
     cycling_power_t * instance = &cycling_power;
     if (instance->response_value != CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE){
-        printf("cycling_power_server_calibration_done : CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE con_handle 0x%02x\n", instance->con_handle);
+        // printf("cycling_power_server_calibration_done : CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE con_handle 0x%02x\n", instance->con_handle);
         return;
     } 
     instance->response_value = CP_RESPONSE_VALUE_SUCCESS;

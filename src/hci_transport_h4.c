@@ -136,8 +136,6 @@ static uint8_t * ehcill_tx_data;
 static uint16_t  ehcill_tx_len;   // 0 == no outgoing packet
 #endif
 
-static uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
@@ -189,9 +187,42 @@ static void hci_transport_h4_trigger_next_read(void){
     btstack_uart->receive_block(&hci_packet[read_pos], bytes_to_read);  
 }
 
-static void hci_transport_h4_block_read(void){
+static void hci_transport_h4_packet_complete(void){
+#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+    if (baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_IDLE
+            && memcmp(hci_packet, local_version_event_prefix, sizeof(local_version_event_prefix)) == 0){
+#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+                if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
+                    // detect TI CC256x controller based on manufacturer
+                    log_info("Detected CC256x controller");
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED;
+                } else {
+                    // work around not needed
+                    log_info("Bluetooth controller not by TI");
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
+                }
+#endif
+#ifdef ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+                if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR){
+                    // detect Cypress controller based on manufacturer
+                    log_info("Detected Cypress controller");
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED;
+                } else {
+                    // work around not needed
+                    log_info("Bluetooth controller not by Cypress");
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
+                }
+#endif
+            }
+#endif
+    uint16_t packet_len = read_pos-1;
 
-    uint16_t packet_len;
+    // reset state machine before delivering packet to stack as it might close the transport
+    hci_transport_h4_reset_statemachine();
+    packet_handler(hci_packet[0], &hci_packet[1], packet_len);
+}
+
+static void hci_transport_h4_block_read(void){
 
     read_pos += bytes_to_read;
 
@@ -260,38 +291,7 @@ static void hci_transport_h4_block_read(void){
             break;
 
         case H4_W4_PAYLOAD:
-#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-            if (baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_IDLE
-            && memcmp(hci_packet, local_version_event_prefix, sizeof(local_version_event_prefix)) == 0){
-#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-                if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
-                    // detect TI CC256x controller based on manufacturer
-                    log_info("Detected CC256x controller");
-                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED;
-                } else {
-                    // work around not needed
-                    log_info("Bluetooth controller not by TI");
-                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
-                }
-#endif
-#ifdef ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-                if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR){
-                    // detect Cypress controller based on manufacturer
-                    log_info("Detected Cypress controller");
-                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED;
-                } else {
-                    // work around not needed
-                    log_info("Bluetooth controller not by Cypress");
-                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
-                }
-#endif
-            }
-#endif
-            packet_len = read_pos-1;
-
-            // reset state machine before delivering packet to stack as it might close the transport
-            hci_transport_h4_reset_statemachine();
-            packet_handler(hci_packet[0], &hci_packet[1], packet_len);
+            hci_transport_h4_packet_complete();
             break;
 
         case H4_OFF:
@@ -308,12 +308,20 @@ static void hci_transport_h4_block_read(void){
     }
 #endif
 
+    // forward packet if payload size == 0
+    if (h4_state == H4_W4_PAYLOAD && bytes_to_read == 0) {
+        hci_transport_h4_packet_complete();
+    }
+
     if (h4_state != H4_OFF) {
         hci_transport_h4_trigger_next_read();
     }
 }
 
 static void hci_transport_h4_block_sent(void){
+
+    static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+
     switch (tx_state){
         case TX_W4_PACKET_SENT:
             // packet fully sent, reset state
@@ -327,7 +335,7 @@ static void hci_transport_h4_block_sent(void){
             hci_transport_h4_ehcill_handle_packet_sent();
 #endif
             // notify upper stack that it can send again
-            packet_handler(HCI_EVENT_PACKET, &packet_sent_event[0], sizeof(packet_sent_event));
+            packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
             break;
 
 #ifdef ENABLE_EHCILL        
@@ -715,21 +723,23 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
 #endif
 // --- end of eHCILL implementation ---------
 
-static const hci_transport_t hci_transport_h4 = {
-    /* const char * name; */                                        "H4",
-    /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
-    /* int    (*open)(void); */                                     &hci_transport_h4_open,
-    /* int    (*close)(void); */                                    &hci_transport_h4_close,
-    /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
-    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
-    /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
-    /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
-    /* void   (*reset_link)(void); */                               NULL,
-    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
-};
 
 // configure and return h4 singleton
 const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
+
+    static const hci_transport_t hci_transport_h4 = {
+            /* const char * name; */                                        "H4",
+            /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
+            /* int    (*open)(void); */                                     &hci_transport_h4_open,
+            /* int    (*close)(void); */                                    &hci_transport_h4_close,
+            /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
+            /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
+            /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
+            /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
+            /* void   (*reset_link)(void); */                               NULL,
+            /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
+    };
+
     btstack_uart = uart_driver;
     return &hci_transport_h4;
 }

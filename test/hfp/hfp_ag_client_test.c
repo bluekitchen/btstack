@@ -351,10 +351,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
     if (event[0] != HCI_EVENT_HFP_META) return;
 
-    if (event[3]
-        && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
-        && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-        && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
+    if ((event_size > 3)
+        && (event[3] != 0)
+        && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER)
+        && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG)
+        && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_TRANSMIT_DTMF_CODES)){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }

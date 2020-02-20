@@ -435,6 +435,131 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * connection , uint8_t *packet){
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
+
+    // Handle new SDP record
+    if (sdp_event_query_attribute_byte_get_record_id(packet) != sdp_query_context->record_id) {
+        sdp_query_context->record_id = sdp_event_query_attribute_byte_get_record_id(packet);
+        sdp_query_context->parse_sdp_record = 0;
+        // log_info("SDP Record: Nr: %d", record_id);
+    }
+
+    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
+        attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+
+        if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
+            switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
+                    if (de_get_element_type(attribute_value) != DE_DES) break;
+                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t * element = des_iterator_get_element(&des_list_it);
+                        if (de_get_element_type(element) != DE_UUID) continue;
+                        uint32_t uuid = de_get_uuid32(element);
+                        switch (uuid){
+                            case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_TARGET:
+                                if (sdp_query_context->role == AVRCP_CONTROLLER) {
+                                    sdp_query_context->parse_sdp_record = 1;
+                                    break;
+                                }
+                                break;
+                            case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL:
+                            case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_CONTROLLER:
+                                if (sdp_query_context->role == AVRCP_TARGET) {
+                                    sdp_query_context->parse_sdp_record = 1;
+                                    break;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
+                    if (!sdp_query_context->parse_sdp_record) break;
+                    // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        switch (uuid){
+                            case BLUETOOTH_PROTOCOL_L2CAP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avrcp_l2cap_psm);
+                                break;
+                            case BLUETOOTH_PROTOCOL_AVCTP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avrcp_version);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                    break;
+                case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS: {
+                    // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                    if (!sdp_query_context->parse_sdp_record) break;
+                    if (de_get_element_type(attribute_value) != DE_DES) break;
+
+                    des_iterator_t des_list_0_it;
+                    uint8_t       *element_0;
+
+                    des_iterator_init(&des_list_0_it, attribute_value);
+                    element_0 = des_iterator_get_element(&des_list_0_it);
+
+                    for (des_iterator_init(&des_list_it, element_0); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        switch (uuid){
+                            case BLUETOOTH_PROTOCOL_L2CAP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_l2cap_psm);
+                                break;
+                            case BLUETOOTH_PROTOCOL_AVCTP:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_version);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                    break;
+                default:
+                    break;
+            }
+        }
+    } else {
+        log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+    }
+}
+
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(sdp_query_context->role, sdp_query_context->avrcp_cid);
     if (!connection) return;
@@ -443,132 +568,12 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
+
     uint8_t status;
-    des_iterator_t des_list_it;
-    des_iterator_t prot_it;
-    // uint32_t avdtp_remote_uuid    = 0;
-    
+
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            // Handle new SDP record 
-            if (sdp_event_query_attribute_byte_get_record_id(packet) != sdp_query_context->record_id) {
-                sdp_query_context->record_id = sdp_event_query_attribute_byte_get_record_id(packet);
-                sdp_query_context->parse_sdp_record = 0;
-                // log_info("SDP Record: Nr: %d", record_id);
-            }
-
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
-                attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
-                
-                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
-                        case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
-                            if (de_get_element_type(attribute_value) != DE_DES) break;
-                            for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
-                                uint8_t * element = des_iterator_get_element(&des_list_it);
-                                if (de_get_element_type(element) != DE_UUID) continue;
-                                uint32_t uuid = de_get_uuid32(element);
-                                switch (uuid){
-                                    case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_TARGET:
-                                        if (sdp_query_context->role == AVRCP_CONTROLLER) {
-                                            sdp_query_context->parse_sdp_record = 1;
-                                            break;
-                                        }
-                                        break;
-                                    case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL:
-                                    case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_CONTROLLER:
-                                        if (sdp_query_context->role == AVRCP_TARGET) {
-                                            sdp_query_context->parse_sdp_record = 1;
-                                            break;
-                                        }
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                            break;
-                        
-                        case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
-                                if (!sdp_query_context->parse_sdp_record) break;
-                                // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-                                for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
-                                    uint8_t       *des_element;
-                                    uint8_t       *element;
-                                    uint32_t       uuid;
-
-                                    if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
-
-                                    des_element = des_iterator_get_element(&des_list_it);
-                                    des_iterator_init(&prot_it, des_element);
-                                    element = des_iterator_get_element(&prot_it);
-                                    
-                                    if (de_get_element_type(element) != DE_UUID) continue;
-                                    
-                                    uuid = de_get_uuid32(element);
-                                    des_iterator_next(&prot_it);
-                                    switch (uuid){
-                                        case BLUETOOTH_PROTOCOL_L2CAP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avrcp_l2cap_psm);
-                                            break;
-                                        case BLUETOOTH_PROTOCOL_AVCTP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avrcp_version);
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS: {
-                                // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-                                if (!sdp_query_context->parse_sdp_record) break;
-                                if (de_get_element_type(attribute_value) != DE_DES) break;
-
-                                des_iterator_t des_list_0_it;
-                                uint8_t       *element_0; 
-
-                                des_iterator_init(&des_list_0_it, attribute_value);
-                                element_0 = des_iterator_get_element(&des_list_0_it);
-
-                                for (des_iterator_init(&des_list_it, element_0); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
-                                    uint8_t       *des_element;
-                                    uint8_t       *element;
-                                    uint32_t       uuid;
-
-                                    if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
-
-                                    des_element = des_iterator_get_element(&des_list_it);
-                                    des_iterator_init(&prot_it, des_element);
-                                    element = des_iterator_get_element(&prot_it);
-
-                                    if (de_get_element_type(element) != DE_UUID) continue;
-                                    
-                                    uuid = de_get_uuid32(element);
-                                    des_iterator_next(&prot_it);
-                                    switch (uuid){
-                                        case BLUETOOTH_PROTOCOL_L2CAP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_l2cap_psm);
-                                            break;
-                                        case BLUETOOTH_PROTOCOL_AVCTP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_version);
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            } else {
-                log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
-            }
+            avrcp_handle_sdp_client_query_attribute_value(connection, packet);
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:{

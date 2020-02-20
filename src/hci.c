@@ -137,7 +137,7 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 static void hci_connection_timeout_handler(btstack_timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
 static void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
-static void gap_inquiry_explode(uint8_t * packet);
+static void gap_inquiry_explode(uint8_t *packet, uint16_t size);
 #endif
 
 static int  hci_power_control_on(void);
@@ -1155,7 +1155,9 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
             if (hci_stack->hci_transport->reset_link){
                 hci_stack->hci_transport->reset_link();
             }
-            // no break - explicit fallthrough to HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT
+
+            /* fall through */
+
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
             log_info("Resend HCI Reset - CSR Warm Boot");
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
@@ -1792,19 +1794,22 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // skip write synchronous flow control if not supported
             if (hci_stack->local_supported_commands[0] & 0x04) break;
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
-            // explicit fall through to reduce repetitions
+
+            /* fall through */
 
         case HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             // skip write default erroneous data reporting if not supported
             if (hci_stack->local_supported_commands[0] & 0x08) break;
             hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
-            // explicit fall through to reduce repetitions
+
+            /* fall through */
 
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             // skip bcm set sco pcm config on non-Broadcom chipsets
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) break;
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
-            // explicit fall through to reduce repetitions
+
+            /* fall through */
 
         case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
             if (!hci_le_supported()){
@@ -2078,8 +2083,11 @@ static void event_handler(uint8_t *packet, int size){
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
-            int offset = 3;
-            for (i=0; i<packet[2];i++){
+            if (size < 3) return;
+            uint16_t num_handles = packet[2];
+            if (size != (3 + num_handles * 4)) return;
+            uint16_t offset = 3;
+            for (i=0; i<num_handles;i++){
                 handle = little_endian_read_16(packet, offset) & 0x0fff;
                 offset += 2;
                 uint16_t num_packets = little_endian_read_16(packet, offset);
@@ -2429,7 +2437,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_INQUIRY_RESULT:
         case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
         case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
-            gap_inquiry_explode(packet);
+            gap_inquiry_explode(packet, size);
             break;
 #endif
 
@@ -3826,7 +3834,7 @@ static void hci_run(void){
                         break;
                     }
 
-                    /* explicit fall-through */
+                    /* fall through */
 
                 case HCI_HALTING_CLOSE:
                     log_info("HCI_STATE_HALTING, calling off");
@@ -3886,7 +3894,8 @@ static void hci_run(void){
                         hci_stack->substate = HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE;
                         break;
                     }
-                    // no break - fall through for ble-only chips
+
+                    /* fall through */
 
                 case HCI_FALLING_ASLEEP_COMPLETE:
                     log_info("HCI_STATE_HALTING, calling sleep");
@@ -4155,7 +4164,7 @@ static void hci_notify_if_sco_can_send_now(void){
 }
 
 // parsing end emitting has been merged to reduce code size
-static void gap_inquiry_explode(uint8_t * packet){
+static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
     uint8_t event[19+GAP_INQUIRY_MAX_NAME_LEN];
 
     uint8_t * eir_data;
@@ -4163,9 +4172,24 @@ static void gap_inquiry_explode(uint8_t * packet){
     const uint8_t * name;
     uint8_t         name_len;
 
+    if (size < 3) return;
+
     int event_type = hci_event_packet_get_type(packet);
     int num_reserved_fields = (event_type == HCI_EVENT_INQUIRY_RESULT) ? 2 : 1;    // 2 for old event, 1 otherwise
     int num_responses       = hci_event_inquiry_result_get_num_responses(packet);
+
+    switch (event_type){
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+            if (size != (3 + (num_responses * 14))) return;
+            break;
+        case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
+            if (size != 257) return;
+            if (num_responses != 1) return;
+            break;
+        default:
+            return;
+    }
 
     // event[1] is set at the end
     int i;
@@ -4207,7 +4231,7 @@ static void gap_inquiry_explode(uint8_t * packet){
                     switch (data_type){
                         case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
                             if (name) continue;
-                            /* explicit fall-through */
+                            /* fall through */
                         case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
                             name = data;
                             name_len = data_size;
@@ -4710,7 +4734,8 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
     connection->le_conn_latency = conn_latency;
     connection->le_supervision_timeout = supervision_timeout;
     connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_REQUEST;
-    hci_run();
+    uint8_t l2cap_trigger_run_event[2] = { L2CAP_EVENT_TRIGGER_RUN, 0};
+    hci_emit_event(l2cap_trigger_run_event, sizeof(l2cap_trigger_run_event), 0);
     return 0;
 }
 
@@ -5305,3 +5330,57 @@ void hci_halting_defer(void){
             break;
     }
 }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void hci_setup_test_connections_fuzz(void){
+    hci_connection_t * conn;
+
+    // default address: 66:55:44:33:00:01
+    bd_addr_t addr = { 0x66, 0x55, 0x44, 0x33, 0x00, 0x00};
+
+    // setup incoming Classic ACL connection with con handle 0x0001, 66:55:44:33:22:01
+    addr[5] = 0x01;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = RECEIVED_CONNECTION_REQUEST;
+
+    // setup incoming Classic SCO connection with con handle 0x0002
+    addr[5] = 0x02;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = RECEIVED_CONNECTION_REQUEST;
+
+    // setup ready Classic ACL connection with con handle 0x0003
+    addr[5] = 0x03;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = OPEN;
+
+    // setup ready Classic SCO connection with con handle 0x0004
+    addr[5] = 0x04;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = OPEN;
+
+    // setup ready LE ACL connection with con handle 0x005 and public address
+    addr[5] = 0x05;
+    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_LE_PUBLIC);
+    conn->con_handle = addr[5];
+    conn->role  = HCI_ROLE_SLAVE;
+    conn->state = OPEN;
+}
+
+void hci_free_connections_fuzz(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
+        btstack_linked_list_iterator_remove(&it);
+        btstack_memory_hci_connection_free(con);
+    }
+}
+#endif

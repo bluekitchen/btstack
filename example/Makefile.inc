@@ -138,9 +138,11 @@ MESH = \
 	gatt_bearer.c \
 	mesh.c \
 	mesh_access.c \
+	mesh_configuration_client.c \
 	mesh_configuration_server.c \
 	mesh_crypto.c \
 	mesh_foundation.c \
+	mesh_generic_default_transition_time_client.c \
 	mesh_generic_default_transition_time_server.c \
 	mesh_generic_level_client.c \
 	mesh_generic_level_server.c \

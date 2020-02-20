@@ -583,6 +583,17 @@ uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * pa
     return mesh_model_get_model_identifier(vendor_id, model_id);
 }
 
+uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t * parser){
+    uint16_t model_id = mesh_access_parser_get_u16(parser);
+    return mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC, model_id);
+}
+
+uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser){
+    uint16_t vendor_id = mesh_access_parser_get_u16(parser);
+    uint16_t model_id  = mesh_access_parser_get_u16(parser);
+    return mesh_model_get_model_identifier(vendor_id, model_id);
+}
+
 // Mesh Access Message Builder
 
 // message builder
@@ -628,6 +639,12 @@ void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value
     little_endian_store_32(pdu->data, pdu->len, value);
     pdu->len += 4;
 }
+
+void mesh_access_transport_add_label_uuid(mesh_transport_pdu_t * pdu, uint8_t * value){
+    (void)memcpy(value, pdu->data, 16);
+    pdu->len += 16;
+}
+
 void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier){
     if (!mesh_model_is_bluetooth_sig(model_identifier)){
         mesh_access_transport_add_uint16( pdu, mesh_model_get_vendor_id(model_identifier) );
@@ -729,6 +746,7 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
     const char * format = message_template->format;
     uint16_t word;
     uint32_t longword;
+    uint8_t * ptr;
     while (*format){
         switch (*format++){
             case '1':
@@ -746,6 +764,10 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
             case '4':
                 longword = va_arg(argptr, uint32_t);
                 mesh_access_transport_add_uint32( transport_pdu, longword);
+                break;
+            case 'P': // 16 byte, eg LabelUUID, in network endianess
+                ptr = va_arg(argptr, uint8_t *);
+                mesh_access_transport_add_label_uuid( transport_pdu, ptr);
                 break;
             case 'm':
                 longword = va_arg(argptr, uint32_t);

@@ -1331,3 +1331,40 @@ OPCODE(0x3f, 0x1C9), "11"
 const hci_cmd_t hci_bcm_set_tx_pwr = {
 OPCODE(0x3f, 0x1A5), "11H"
 };
+
+/**
+ *
+ *
+ * @brief This command tests the RF transceiver in continuous transmission mode.
+ *        The transmitter is activated by configuring the transmission parameters such as pattern, 
+ *        modulation, and frequency. 
+ * @see   processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Tester_Con_TX.280xFD84.29
+ * @param modulation
+ * @param test_patern
+ * @param frequency
+ * @param power_level
+ * @param reserved1
+ * @param reserved2
+ */
+const hci_cmd_t hci_ti_drpb_tester_con_tx = {
+    0xFD84, "111144"
+};
+
+/**
+ * @brief This command starts sending/receiving packets using packet transmission parameters such as 
+ *        frequency channel, packet type, and packet length. It is used for Packet TX/RX.
+ * @see   processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Tester_Packet_TX_RX_.280xFD85.29
+ * @param frequency_mode
+ * @param tx_single_frequency
+ * @param rx_single_frequency
+ * @param acl_packet_type
+ * @paarm acl_packet_data_pattern
+ * @param reserved
+ * @param power_level
+ * @param disable_whitening
+ * @param prbs9_initialization_value
+ */
+const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
+    0xFD85, "1111112112"
+};
+

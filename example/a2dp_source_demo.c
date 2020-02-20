@@ -88,6 +88,7 @@ typedef enum {
 typedef struct {
     uint16_t a2dp_cid;
     uint8_t  local_seid;
+    uint8_t  remote_seid;
     uint8_t  stream_opened;
     uint16_t avrcp_cid;
 
@@ -167,6 +168,7 @@ static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 // Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
 // Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
+// BeatsX:          static const char * device_addr_string = "DC:D3:A2:89:57:FB";
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
@@ -275,6 +277,9 @@ static void a2dp_demo_reconfigure_sample_rate(int new_sample_rate){
 }
 
 static int a2dp_source_and_avrcp_services_init(void){
+
+    // request role change on reconnecting headset to always use them in slave mode
+    hci_set_master_slave_policy(0);
 
     l2cap_init();
     // Initialize  A2DP Source.
@@ -543,6 +548,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
          case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             cid  = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
             if (cid != media_tracker.a2dp_cid) return;
+            media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet);
             
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
@@ -554,10 +560,11 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
-            printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, initiator seid %d, acceptor seid %d .\n", 
+            printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, local seid %d (expected %d), remote seid %d .\n", 
                 sbc_configuration.sampling_frequency, cid,
                 a2dp_subevent_signaling_media_codec_sbc_configuration_get_int_seid(packet),
-                a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet));
+                media_tracker.local_seid,
+                media_tracker.remote_seid);
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method -= 1;
@@ -588,10 +595,12 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
         }  
 
         case A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
-            printf("A2DP Source: remote supports delay report\n");
+            printf("A2DP Source: remote supports delay report, remote seid %d\n", 
+                avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(packet));
             break;
         case A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
-            printf("A2DP Source: All capabilities reported\n");
+            printf("A2DP Source: All capabilities reported, remote seid %d\n", 
+                avdtp_subevent_signaling_capabilities_done_get_remote_seid(packet));
             break;
 
         case A2DP_SUBEVENT_SIGNALING_DELAY_REPORT:
@@ -610,7 +619,10 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             
             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            printf("A2DP_SUBEVENT_STREAM_ESTABLISHED:  a2dp_cid [expected 0x%02x, received 0x%02x], local_seid [expected %d, received %d]\n", media_tracker.a2dp_cid, cid, media_tracker.local_seid, local_seid);
+            printf("A2DP_SUBEVENT_STREAM_ESTABLISHED:  a2dp_cid [expected 0x%02x, received 0x%02x], local_seid %d (expected %d), remote_seid %d (expected %d)\n",
+                     media_tracker.a2dp_cid, cid, 
+                     local_seid, media_tracker.local_seid, 
+                     a2dp_subevent_stream_established_get_remote_seid(packet), media_tracker.remote_seid);
             
             if (local_seid != media_tracker.local_seid){
                 printf("A2DP Source: Stream failed, wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);

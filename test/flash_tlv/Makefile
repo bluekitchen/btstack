@@ -26,7 +26,7 @@ CFLAGS  = \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/embedded \
 
-CFLAGS += -fprofile-arcs -ftest-coverage
+CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 TESTS = tlv_test tlv_le_test

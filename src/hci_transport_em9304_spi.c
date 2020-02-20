@@ -378,8 +378,6 @@ typedef enum {
 // write state
 static TX_STATE tx_state;         
 
-static uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
@@ -420,6 +418,11 @@ static void hci_transport_em9304_spi_process_data(void){
     }
 }
 
+static void hci_transport_em9304_spi_packet_complete(void){
+    packet_handler(hci_packet[0], &hci_packet[1], hci_transport_em9304_spi_read_pos-1);
+    hci_transport_em9304_spi_reset_statemachine();
+}
+
 static void hci_transport_em9304_spi_block_read(void){
     switch (hci_transport_em9304_h4_state) {
         case H4_W4_PACKET_TYPE:
@@ -447,6 +450,10 @@ static void hci_transport_em9304_spi_block_read(void){
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
             }
+            if (hci_transport_em9304_spi_bytes_to_read == 0){
+                hci_transport_em9304_spi_packet_complete();
+                break;
+            }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
             
@@ -458,12 +465,15 @@ static void hci_transport_em9304_spi_block_read(void){
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
             }
+            if (hci_transport_em9304_spi_bytes_to_read == 0){
+                hci_transport_em9304_spi_packet_complete();
+                break;
+            }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
             
         case H4_W4_PAYLOAD:
-            packet_handler(hci_packet[0], &hci_packet[1], hci_transport_em9304_spi_read_pos-1);
-            hci_transport_em9304_spi_reset_statemachine();
+            hci_transport_em9304_spi_packet_complete();
             break;
         default:
             break;
@@ -471,12 +481,15 @@ static void hci_transport_em9304_spi_block_read(void){
 }
 
 static void hci_transport_em9304_spi_block_sent(void){
+
+    static const uint8_t packet_sent_event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+
     switch (tx_state){
         case TX_W4_PACKET_SENT:
             // packet fully sent, reset state
             tx_state = TX_IDLE;
             // notify upper stack that it can send again
-            packet_handler(HCI_EVENT_PACKET, &packet_sent_event[0], sizeof(packet_sent_event));
+            packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
             break;
         default:
             break;
@@ -535,21 +548,22 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 // --- end of eHCILL implementation ---------
 
-static const hci_transport_t hci_transport_em9304_spi = {
-    /* const char * name; */                                        "H4",
-    /* void   (*init) (const void *transport_config); */            &hci_transport_em9304_spi_init,
-    /* int    (*open)(void); */                                     &hci_transport_em9304_spi_open,
-    /* int    (*close)(void); */                                    &hci_transport_em9304_spi_close,
-    /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_em9304_spi_register_packet_handler,
-    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_em9304_spi_can_send_now,
-    /* int    (*send_packet)(...); */                               &hci_transport_em9304_spi_send_packet,
-    /* int    (*set_baudrate)(uint32_t baudrate); */                NULL,
-    /* void   (*reset_link)(void); */                               NULL,
-    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
-};
-
 // configure and return h4 singleton
 const hci_transport_t * hci_transport_em9304_spi_instance(const btstack_em9304_spi_t * em9304_spi_driver) {
+
+    static const hci_transport_t hci_transport_em9304_spi = {
+            /* const char * name; */                                        "H4",
+            /* void   (*init) (const void *transport_config); */            &hci_transport_em9304_spi_init,
+            /* int    (*open)(void); */                                     &hci_transport_em9304_spi_open,
+            /* int    (*close)(void); */                                    &hci_transport_em9304_spi_close,
+            /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_em9304_spi_register_packet_handler,
+            /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_em9304_spi_can_send_now,
+            /* int    (*send_packet)(...); */                               &hci_transport_em9304_spi_send_packet,
+            /* int    (*set_baudrate)(uint32_t baudrate); */                NULL,
+            /* void   (*reset_link)(void); */                               NULL,
+            /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
+    };
+
     btstack_em9304_spi = em9304_spi_driver;
     return &hci_transport_em9304_spi;
 }

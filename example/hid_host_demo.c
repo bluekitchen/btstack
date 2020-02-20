@@ -145,6 +145,9 @@ static void hid_host_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // Allow sniff mode requests by HID device
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE);
+
     // Disable stdout buffering
     setbuf(stdout, NULL);
 }

@@ -174,9 +174,11 @@ int32_t btstack_time_delta(uint32_t time_a, uint32_t time_b){
     return (int32_t)(time_a - time_b);
 }
 
-static const char * char_to_nibble = "0123456789ABCDEF";
 
 char char_for_nibble(int nibble){
+
+    static const char * char_to_nibble = "0123456789ABCDEF";
+
     if (nibble < 16){
         return char_to_nibble[nibble];
     } else {

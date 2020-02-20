@@ -9,13 +9,47 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+
+### Added
+
+### Changed
+
+## Changes Februar 2020
+
+### Fixed
+- AVRCP Target: fix reporting of PLAYBACK_STATUS_CHANGED
+
+### Changed
+- hid_host_mode: allow sniff mode
+
+## Changes January 2020
+
+### Fixed
+- L2CAP ERTM: avoid read-after-free on decline of incoming connection
+- GATT Client: set uuid16 to zero when deserializing uuid128 services, characteristics, and descriptors
+- att_db_util: fix realloc of att db buffer for large attributes
+- btstack_tlv_posix: only keep last value in memory, fix delete operation
+- l2cap_signaling: use packet boundary flags 0x00 for LE signaling packets (ignoring hci_non_flushable_packet_boundary_flag_supported())
+
+### Added
+- att_db_util: provide GATT Database Hash via att_db_util_hash_calc
+- GATT Compiler: provide GATT Database Hash via GATT_DATABASE_HASH Characteristic
+- ATT Server: validate request pdu length
+
+### Changed
+- btstack_crypto: update AES-CMAC implementation to access all message bytes sequentially
+
+## Changes December 2019
+
+### Fixed
 - example/pan_lwip_http_server: use Network Access Point, CoD
+- sm: emit pairing complete in master role when no keys are distributed / bonding disabled
 
 ### Added
 
 ### Changed
 - Updated CC256x initscript: CC256xC v1.3
-
+- ESP32: add CMake project files
 
 ## Changes November 2019
 

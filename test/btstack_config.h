@@ -7,6 +7,7 @@
 
 // Port related features
 #define HAVE_MALLOC
+#define HAVE_ASSERT
 #define HAVE_POSIX_TIME
 #define HAVE_POSIX_FILE_IO
 #define HAVE_BTSTACK_STDIN

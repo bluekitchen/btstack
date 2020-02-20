@@ -34,7 +34,7 @@ COMPONENT_SRCDIRS := \
 	3rd-party/bluedroid/encoder/srce \
 	3rd-party/hxcmod-player \
 	3rd-party/hxcmod-player/mods \
-	../lwip/lwip/src/apps/httpd \
+	../lwip/lwip/src/apps/http \
 	3rd-party/lwip/dhcp-server \
 	3rd-party/micro-ecc \
 	3rd-party/md5 \

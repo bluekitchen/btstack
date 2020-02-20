@@ -98,10 +98,7 @@ typedef enum {
 static const uint8_t link_control_sync[] =   { 0x01, 0x7e};
 static const uint8_t link_control_sync_response[] = { 0x02, 0x7d};
 static const uint8_t link_control_config[] = { 0x03, 0xfc, LINK_CONFIG_FIELD};
-static const uint8_t link_control_config_prefix_len  = 2;
-static const uint8_t link_control_config_response_empty[] = { 0x04, 0x7b};
 static const uint8_t link_control_config_response[] = { 0x04, 0x7b, LINK_CONFIG_FIELD};
-static const uint8_t link_control_config_response_prefix_len  = 2;
 static const uint8_t link_control_wakeup[] = { 0x05, 0xfa};
 static const uint8_t link_control_woken[] =  { 0x06, 0xf9};
 static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
@@ -159,14 +156,16 @@ static void hci_transport_slip_init(void);
 // -----------------------------
 // CRC16-CCITT Calculation - compromise: use 32 byte table - 512 byte table would be faster, but that's too large
 
-static const uint16_t crc16_ccitt_table[] ={
-    0x0000, 0x1081, 0x2102, 0x3183,
-    0x4204, 0x5285, 0x6306, 0x7387,
-    0x8408, 0x9489, 0xa50a, 0xb58b,
-    0xc60c, 0xd68d, 0xe70e, 0xf78f
-};
 
 static uint16_t crc16_ccitt_update (uint16_t crc, uint8_t ch){
+
+    static const uint16_t crc16_ccitt_table[] ={
+            0x0000, 0x1081, 0x2102, 0x3183,
+            0x4204, 0x5285, 0x6306, 0x7387,
+            0x8408, 0x9489, 0xa50a, 0xb58b,
+            0xc60c, 0xd68d, 0xe70e, 0xf78f
+    };
+
     crc = (crc >> 4) ^ crc16_ccitt_table[(crc ^ ch) & 0x000f];
     crc = (crc >> 4) ^ crc16_ccitt_table[(crc ^ (ch >> 4)) & 0x000f];
     return crc;
@@ -330,6 +329,7 @@ static void hci_transport_link_send_config_response(void){
 
 static void hci_transport_link_send_config_response_empty(void){
     log_debug("link send config response empty");
+    static const uint8_t link_control_config_response_empty[] = { 0x04, 0x7b};
     hci_transport_link_send_control(link_control_config_response_empty, sizeof(link_control_config_response_empty));
 }
 
@@ -517,6 +517,9 @@ static void hci_transport_h5_emit_sleep_state(int sleep_active){
 }
 
 static void hci_transport_h5_process_frame(uint16_t frame_size){
+
+    static const uint8_t link_control_config_prefix_len  = 2;
+    static const uint8_t link_control_config_response_prefix_len  = 2;
 
     if (frame_size < 4) return;
 
@@ -920,21 +923,22 @@ static void hci_transport_h5_reset_link(void){
     hci_transport_link_init();
 }
 
-static const hci_transport_t hci_transport_h5 = {
-    /* const char * name; */                                        "H5",
-    /* void   (*init) (const void *transport_config); */            &hci_transport_h5_init,
-    /* int    (*open)(void); */                                     &hci_transport_h5_open,
-    /* int    (*close)(void); */                                    &hci_transport_h5_close,
-    /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h5_register_packet_handler,
-    /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h5_can_send_packet_now,
-    /* int    (*send_packet)(...); */                               &hci_transport_h5_send_packet,
-    /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h5_set_baudrate,
-    /* void   (*reset_link)(void); */                               &hci_transport_h5_reset_link,
-    /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL, 
-};
-
 // configure and return h5 singleton
 const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver) {
+
+    static const hci_transport_t hci_transport_h5 = {
+            /* const char * name; */                                        "H5",
+            /* void   (*init) (const void *transport_config); */            &hci_transport_h5_init,
+            /* int    (*open)(void); */                                     &hci_transport_h5_open,
+            /* int    (*close)(void); */                                    &hci_transport_h5_close,
+            /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h5_register_packet_handler,
+            /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h5_can_send_packet_now,
+            /* int    (*send_packet)(...); */                               &hci_transport_h5_send_packet,
+            /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h5_set_baudrate,
+            /* void   (*reset_link)(void); */                               &hci_transport_h5_reset_link,
+            /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
+    };
+
     btstack_uart = uart_driver;
     return &hci_transport_h5;
 }

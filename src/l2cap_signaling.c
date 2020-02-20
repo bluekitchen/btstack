@@ -50,37 +50,36 @@
 
 #include <string.h>
 
-static const char *l2cap_signaling_commands_format[] = {
-"2D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
-"22",    // 0x02 connection request: PSM, Source CID
-"2222",  // 0x03 connection response: Dest CID, Source CID, Result, Status
-"22D",   // 0x04 config request: Dest CID, Flags, Configuration options
-"222D",  // 0x05 config response: Source CID, Flags, Result, Configuration options
-"22",    // 0x06 disconection request: Dest CID, Source CID
-"22",    // 0x07 disconection response: Dest CID, Source CID
-"D",     // 0x08 echo request: Data
-"D",     // 0x09 echo response: Data
-"2",     // 0x0a information request: InfoType {1=Connectionless MTU, 2=Extended features supported}
-"22D",   // 0x0b information response: InfoType, Result, Data
+static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, bool is_classic, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+
+    static const char *l2cap_signaling_commands_format[] = {
+            "2D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
+            "22",    // 0x02 connection request: PSM, Source CID
+            "2222",  // 0x03 connection response: Dest CID, Source CID, Result, Status
+            "22D",   // 0x04 config request: Dest CID, Flags, Configuration options
+            "222D",  // 0x05 config response: Source CID, Flags, Result, Configuration options
+            "22",    // 0x06 disconection request: Dest CID, Source CID
+            "22",    // 0x07 disconection response: Dest CID, Source CID
+            "D",     // 0x08 echo request: Data
+            "D",     // 0x09 echo response: Data
+            "2",     // 0x0a information request: InfoType {1=Connectionless MTU, 2=Extended features supported}
+            "22D",   // 0x0b information response: InfoType, Result, Data
 #ifdef ENABLE_BLE
-NULL,    // 0x0c non-supported AMP command
-NULL,    // 0x0d non-supported AMP command
-NULL,    // 0x0e non-supported AMP command
-NULL,    // 0x0f non-supported AMP command
-NULL,    // 0x10 non-supported AMP command
-NULL,    // 0x11 non-supported AMP command
-"2222",  // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multipler
-"2",     // 0x13 connection parameter update response: result
-"22222", // 0X14 le credit based connection request: le psm, source cid, mtu, mps, initial credits
-"22222", // 0x15 le credit based connection respone: dest cid, mtu, mps, initial credits, result
-"22",    // 0x16 le flow control credit: source cid, credits
+            NULL,    // 0x0c non-supported AMP command
+            NULL,    // 0x0d non-supported AMP command
+            NULL,    // 0x0e non-supported AMP command
+            NULL,    // 0x0f non-supported AMP command
+            NULL,    // 0x10 non-supported AMP command
+            NULL,    // 0x11 non-supported AMP command
+            "2222",  // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multipler
+            "2",     // 0x13 connection parameter update response: result
+            "22222", // 0X14 le credit based connection request: le psm, source cid, mtu, mps, initial credits
+            "22222", // 0x15 le credit based connection respone: dest cid, mtu, mps, initial credits, result
+            "22",    // 0x16 le flow control credit: source cid, credits
 #endif
-};
+    };
+    static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
-static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
-
-static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    
     const char *format = NULL;
     if ((cmd > 0) && (cmd <= num_l2cap_commands)) {
         format = l2cap_signaling_commands_format[cmd-1];
@@ -90,7 +89,12 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
         return 0;
     }
 
-    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+    int pb = 0x00;  // First non-automatically-flushable packet of a higher layer message 
+#ifdef ENABLE_CLASSIC
+    if (is_classic){
+        pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+    }
+#endif
 
     // 0 - Connection handle : PB=pb : BC=00 
     little_endian_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
@@ -143,11 +147,11 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
 }
 
 uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    return l2cap_create_signaling_internal(acl_buffer, handle, 1, cmd, identifier, argptr);
+    return l2cap_create_signaling_internal(acl_buffer, handle, true, 1, cmd, identifier, argptr);
 }
 
 #ifdef ENABLE_BLE
 uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
-    return l2cap_create_signaling_internal(acl_buffer, handle, 5, cmd, identifier, argptr);
+    return l2cap_create_signaling_internal(acl_buffer, handle, false, 5, cmd, identifier, argptr);
 }
 #endif

@@ -55,11 +55,11 @@ typedef enum {
     ATT_WRITE,
 } att_operation_t;
 
-// Buetooth Base UUID 00000000-0000-1000-8000-00805F9B34FB in little endian
-static const uint8_t bluetooth_base_uuid[] = { 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
 
 static int is_Bluetooth_Base_UUID(uint8_t const *uuid){
+    // Bluetooth Base UUID 00000000-0000-1000-8000-00805F9B34FB in little endian
+    static const uint8_t bluetooth_base_uuid[] = { 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
     if (memcmp(&uuid[0],  &bluetooth_base_uuid[0], 12) != 0) return false;
     if (memcmp(&uuid[14], &bluetooth_base_uuid[14], 2) != 0) return false;
     return true;
@@ -290,6 +290,10 @@ static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uin
     return setup_error(response_buffer, request, handle, ATT_ERROR_INVALID_OFFSET);
 }
 
+static inline uint16_t setup_error_invalid_pdu(uint8_t *response_buffer, uint16_t request) {
+    return setup_error(response_buffer, request, 0, ATT_ERROR_INVALID_PDU);
+}
+
 static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
     int required_security_level = 0;
     int requires_secure_connection = 0;
@@ -330,12 +334,12 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
             if ((att_connection->authorized == 0) || sc_missing){
                 return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
             }
-            /* explicit fall through */
+            /* fall through */
         case ATT_SECURITY_AUTHENTICATED:
             if ((att_connection->authenticated == 0) || sc_missing){
                 return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
             }
-            /* explicit fall through */
+            /* fall through */
         case ATT_SECURITY_ENCRYPTED:
             if ((required_encryption_size > 0) && ((att_connection->encryption_key_size == 0) || sc_missing)){
                 return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
@@ -356,16 +360,14 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
 static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                          uint8_t * response_buffer){
 
-    UNUSED(request_len);
+    if (request_len != 3) return setup_error_invalid_pdu(response_buffer, ATT_EXCHANGE_MTU_REQUEST);
 
     uint16_t client_rx_mtu = little_endian_read_16(request_buffer, 1);
     
-    // find min(local max mtu, remote mtu) and use as mtu for this connection
-    if (client_rx_mtu < att_connection->max_mtu){
-        att_connection->mtu = client_rx_mtu;
-    } else {
-        att_connection->mtu = att_connection->max_mtu;
-    }
+    // find min(local max mtu, remote mtu) >= ATT_DEFAULT_MTU and use as mtu for this connection
+    uint16_t min_mtu = btstack_min(client_rx_mtu, att_connection->max_mtu);
+    uint16_t new_mtu = btstack_max(ATT_DEFAULT_MTU, min_mtu);
+    att_connection->mtu = new_mtu;
 
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;
     little_endian_store_16(response_buffer, 1, att_connection->mtu);
@@ -441,8 +443,12 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
 
 static uint16_t handle_find_information_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                          uint8_t * response_buffer, uint16_t response_buffer_size){
-    UNUSED(request_len);
-    return handle_find_information_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1), little_endian_read_16(request_buffer, 3));
+
+    if (request_len != 5) return setup_error_invalid_pdu(response_buffer, ATT_FIND_INFORMATION_REQUEST);
+
+    uint16_t start_handle = little_endian_read_16(request_buffer, 1);
+    uint16_t end_handle = little_endian_read_16(request_buffer, 3);
+    return handle_find_information_request2(att_connection, response_buffer, response_buffer_size, start_handle, end_handle);
 }
 
 //
@@ -456,12 +462,19 @@ static uint16_t handle_find_information_request(att_connection_t * att_connectio
 //
 // NOTE: doesn't handle DYNAMIC values
 // NOTE: only supports 16 bit UUIDs
-// 
-static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size,
-                                           uint16_t start_handle, uint16_t end_handle,
-                                           uint16_t attribute_type, uint16_t attribute_len, uint8_t* attribute_value){
-    
+//
+static uint16_t handle_find_by_type_value_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
+                                           uint8_t * response_buffer, uint16_t response_buffer_size){
     UNUSED(att_connection);
+
+    if (request_len < 7) return setup_error_invalid_pdu(response_buffer, ATT_FIND_BY_TYPE_VALUE_REQUEST);
+
+    // parse request
+    uint16_t start_handle = little_endian_read_16(request_buffer, 1);
+    uint16_t end_handle = little_endian_read_16(request_buffer, 3);
+    uint16_t attribute_type = little_endian_read_16(request_buffer, 5);
+    const uint8_t *attribute_value = &request_buffer[7];
+    uint16_t attribute_len = request_len - 7;
 
     log_info("ATT_FIND_BY_TYPE_VALUE_REQUEST: from %04X to %04X, type %04X, value: ", start_handle, end_handle, attribute_type);
     log_info_hexdump(attribute_value, attribute_len);
@@ -474,33 +487,33 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
     uint16_t offset      = 1;
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
-    
+
     att_iterator_t it;
     att_iterator_init(&it);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
-        
+
         if (it.handle && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
-        
+
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
             ((it.handle == 0) || att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID))){
-            
+
             log_info("End of group, handle 0x%04x", prev_handle);
             little_endian_store_16(response_buffer, offset, prev_handle);
             offset += 2;
             in_group = 0;
-            
+
             // check if space for another handle pair available
             if ((offset + 4) > response_buffer_size){
                 break;
             }
         }
-        
+
         // keep track of previous handle
         prev_handle = it.handle;
-        
+
         // does current attribute match
         if (it.handle && att_iterator_match_uuid16(&it, attribute_type) && (attribute_len == it.value_len) && (memcmp(attribute_value, it.value, it.value_len) == 0)){
             log_info("Begin of group, handle 0x%04x", it.handle);
@@ -509,20 +522,13 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
             in_group = 1;
         }
     }
-    
+
     if (offset == 1){
         return setup_error_atribute_not_found(response_buffer, request_type, start_handle);
     }
-    
+
     response_buffer[0] = ATT_FIND_BY_TYPE_VALUE_RESPONSE;
     return offset;
-}
-                                         
-static uint16_t handle_find_by_type_value_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
-                                           uint8_t * response_buffer, uint16_t response_buffer_size){
-    int attribute_len = request_len - 7;
-    return handle_find_by_type_value_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1),
-                                              little_endian_read_16(request_buffer, 3), little_endian_read_16(request_buffer, 5), attribute_len, &request_buffer[7]);
 }
 
 //
@@ -638,13 +644,22 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
 
 static uint16_t handle_read_by_type_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                      uint8_t * response_buffer, uint16_t response_buffer_size){
-    int attribute_type_len;
-    if (request_len <= 7){
-        attribute_type_len = 2;
-    } else {
-        attribute_type_len = 16;
+
+    uint16_t attribute_type_len;
+    switch (request_len){
+        case 7:
+            attribute_type_len = 2;
+            break;
+        case 21:
+            attribute_type_len = 16;
+            break;
+        default:
+            return setup_error_invalid_pdu(response_buffer, ATT_READ_BY_TYPE_REQUEST);
     }
-    return handle_read_by_type_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1), little_endian_read_16(request_buffer, 3), attribute_type_len, &request_buffer[5]);
+
+    uint16_t start_handle = little_endian_read_16(request_buffer, 1);
+    uint16_t end_handle = little_endian_read_16(request_buffer, 3);
+    return handle_read_by_type_request2(att_connection, response_buffer, response_buffer_size, start_handle, end_handle, attribute_type_len, &request_buffer[5]);
 }
 
 //
@@ -678,14 +693,9 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
-    uint16_t offset   = 1;
-    // limit data
-    if ((offset + it.value_len) > response_buffer_size) {
-        it.value_len = response_buffer_size - 1;
-    }
-    
     // store
-    uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
+    uint16_t offset   = 1;
+    uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
     offset += bytes_copied;
     
     response_buffer[0] = ATT_READ_RESPONSE;
@@ -694,11 +704,14 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
 
 static uint16_t handle_read_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                              uint8_t * response_buffer, uint16_t response_buffer_size){
-    UNUSED(request_len);
-    return handle_read_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1));
+
+    if (request_len != 3) return setup_error_invalid_pdu(response_buffer, ATT_READ_REQUEST);
+
+    uint16_t handle = little_endian_read_16(request_buffer, 1);
+    return handle_read_request2(att_connection, response_buffer, response_buffer_size, handle);
 }
 
-//
+//s
 // MARK: ATT_READ_BLOB_REQUEST 0x0c
 //
 static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t handle, uint16_t value_offset){
@@ -732,14 +745,9 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
         return setup_error_invalid_offset(response_buffer, request_type, handle);
     }
     
-    // limit data
-    uint16_t offset   = 1;
-    if ((offset + it.value_len - value_offset) > response_buffer_size) {
-        it.value_len = response_buffer_size - 1 + value_offset;
-    }
-    
     // store
-    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, it.value_len - value_offset, att_connection->con_handle);
+    uint16_t offset   = 1;
+    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
     offset += bytes_copied;
     
     response_buffer[0] = ATT_READ_BLOB_RESPONSE;
@@ -748,8 +756,12 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
 static uint16_t handle_read_blob_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                   uint8_t * response_buffer, uint16_t response_buffer_size){
-    UNUSED(request_len);
-    return handle_read_blob_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1), little_endian_read_16(request_buffer, 3));
+
+    if (request_len != 5) return setup_error_invalid_pdu(response_buffer, ATT_READ_BLOB_REQUEST);
+
+    uint16_t handle = little_endian_read_16(request_buffer, 1);
+    uint16_t value_offset = little_endian_read_16(request_buffer, 3);
+    return handle_read_blob_request2(att_connection, response_buffer, response_buffer_size, handle, value_offset);
 }
 
 //
@@ -807,13 +819,8 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         if (read_request_pending) continue;
 #endif
 
-        // limit data
-        if ((offset + it.value_len) > response_buffer_size) {
-            it.value_len = response_buffer_size - 1;
-        }
-        
         // store
-        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
+        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
         offset += bytes_copied;
     }
 
@@ -826,6 +833,11 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 }
 static uint16_t handle_read_multiple_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
+
+    // 1 byte opcode + two or more attribute handles (2 bytes each)
+    if ( (request_len < 5) || ((request_len & 1) == 0) ) return setup_error_invalid_pdu(response_buffer,
+                                                                                        ATT_READ_MULTIPLE_REQUEST);
+
     int num_handles = (request_len - 1) >> 1;
     return handle_read_multiple_request2(att_connection, response_buffer, response_buffer_size, num_handles, &request_buffer[1]);
 }
@@ -942,13 +954,21 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
 }
 static uint16_t handle_read_by_group_type_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                            uint8_t * response_buffer, uint16_t response_buffer_size){
-    int attribute_type_len;
-    if (request_len <= 7){
-        attribute_type_len = 2;
-    } else {
-        attribute_type_len = 16;
+    uint16_t attribute_type_len;
+    switch (request_len){
+        case 7:
+            attribute_type_len = 2;
+            break;
+        case 21:
+            attribute_type_len = 16;
+            break;
+        default:
+            return setup_error_invalid_pdu(response_buffer, ATT_READ_BY_GROUP_TYPE_REQUEST);
     }
-    return handle_read_by_group_type_request2(att_connection, response_buffer, response_buffer_size, little_endian_read_16(request_buffer, 1), little_endian_read_16(request_buffer, 3), attribute_type_len, &request_buffer[5]);
+
+    uint16_t start_handle = little_endian_read_16(request_buffer, 1);
+    uint16_t end_handle = little_endian_read_16(request_buffer, 3);
+    return handle_read_by_group_type_request2(att_connection, response_buffer, response_buffer_size, start_handle, end_handle, attribute_type_len, &request_buffer[5]);
 }
 
 //
@@ -957,6 +977,8 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
                               uint8_t * response_buffer, uint16_t response_buffer_size){
 
     UNUSED(response_buffer_size);
+
+    if (request_len < 3) return setup_error_invalid_pdu(response_buffer, ATT_WRITE_REQUEST);
 
     uint8_t request_type = ATT_WRITE_REQUEST;
 
@@ -999,9 +1021,9 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
 static uint16_t handle_prepare_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
 
-    UNUSED(response_buffer_size);
-
     uint8_t request_type = ATT_PREPARE_WRITE_REQUEST;
+
+    if (request_len < 5) return setup_error_invalid_pdu(response_buffer, request_type);
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     uint16_t offset = little_endian_read_16(request_buffer, 3);
@@ -1042,7 +1064,8 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     }
 
     // response: echo request
-    (void)memcpy(response_buffer, request_buffer, request_len);
+    uint16_t bytes_to_echo = btstack_min(request_len, response_buffer_size);
+    (void)memcpy(response_buffer, request_buffer, bytes_to_echo);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
     return request_len;
 }
@@ -1059,10 +1082,16 @@ void att_clear_transaction_queue(att_connection_t * att_connection){
 static uint16_t handle_execute_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
 
-    UNUSED(request_len);
     UNUSED(response_buffer_size);
-    
+
     uint8_t request_type = ATT_EXECUTE_WRITE_REQUEST;
+
+    if (request_len < 2) return setup_error_invalid_pdu(response_buffer, request_type);
+
+    if (att_write_callback == NULL) {
+        return setup_error_write_not_permitted(response_buffer, request_type, 0);
+    }
+
     if (request_buffer[1]) {
         // validate queued write
         if (att_prepare_write_error_code == 0){
@@ -1091,6 +1120,8 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 // Core 4.0, vol 3, part F, 3.4.5.3
 // "No Error Response or Write Response shall be sent in response to this command"
 static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len, uint16_t required_flags){
+
+    if (request_len < 3) return;
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     if (att_write_callback == NULL) return;

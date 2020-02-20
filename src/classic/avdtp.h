@@ -379,6 +379,13 @@ typedef struct {
     avdtp_packet_type_t         packet_type;
 } avdtp_signaling_packet_t;
 
+typedef enum {
+    AVDTP_CONFIGURATION_STATE_IDLE,
+    AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED,
+    AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED,
+    AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED,
+    AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED,
+} avtdp_configuration_state_t;
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -392,14 +399,15 @@ typedef struct {
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
     
-    // used for fragmentation
-    // avdtp_signaling_packet_header_t signaling_header;
-    avdtp_signaling_packet_t signaling_packet;
+    avdtp_signaling_packet_t acceptor_signaling_packet;
+    avdtp_signaling_packet_t initiator_signaling_packet;
 
     uint8_t disconnect;
 
-    uint8_t local_seid;
-    uint8_t remote_seid;
+    uint8_t initiator_local_seid;
+    uint8_t initiator_remote_seid;
+
+    uint8_t acceptor_local_seid;
 
     uint16_t delay_ms;
 
@@ -419,18 +427,15 @@ typedef struct {
     avdtp_signal_identifier_t reject_signal_identifier;
     uint8_t error_code;
 
-    // store configurations with remote seps
-    // avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
-    // uint8_t remote_seps_num;
+    // configuration state machine
+    avtdp_configuration_state_t configuration_state;
 
-    // store current role
-    uint8_t is_initiator;
-    uint8_t is_configuration_initiated_locally;
     btstack_timer_source_t configuration_timer;
 } avdtp_connection_t;
 
 typedef enum {
     A2DP_IDLE,
+    A2DP_W4_CONNECTED,
     A2DP_CONNECTED,
     A2DP_W2_DISCOVER_SEPS,
     A2DP_W2_GET_CAPABILITIES,
@@ -465,8 +470,8 @@ typedef struct avdtp_stream_endpoint {
     a2dp_state_t a2dp_state;
     // active connection
     avdtp_connection_t * connection;
+    
     // currently active remote seid
-    // uint8_t remote_sep_index;
     avdtp_capabilities_t remote_capabilities;
     uint16_t remote_capabilities_bitmap;
     
@@ -498,7 +503,8 @@ typedef struct avdtp_stream_endpoint {
 typedef struct {
 // to app
     bd_addr_t remote_addr;
-    
+    uint16_t avdtp_cid;
+
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // msstream
     uint32_t acc_num_missed_samples;
@@ -581,12 +587,7 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value);
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
-
-
 uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
-void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer);
-void avdtp_configuration_timer_start(avdtp_connection_t * connection);
-void avdtp_configuration_timer_stop(avdtp_connection_t * connection);
 
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 #if defined __cplusplus

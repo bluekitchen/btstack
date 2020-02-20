@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 #
 # BLE GATT configuration generator for use with BTstack
-# Copyright 2018 BlueKitchen GmbH
+# Copyright 2019 BlueKitchen GmbH
 #
 # Format of input file:
 # PRIMARY_SERVICE, SERVICE_UUID
 # CHARACTERISTIC, ATTRIBUTE_TYPE_UUID, [READ | WRITE | DYNAMIC], VALUE
+
+# dependencies:
+# - pip3 install pycryptodomex
 
 import codecs
 import csv
@@ -15,6 +18,17 @@ import re
 import string
 import sys
 import argparse
+import tempfile
+
+# try to import Cryptodome
+try:
+    from Cryptodome.Cipher import AES
+    from Cryptodome.Hash import CMAC
+    have_crypto = True
+except ImportError:
+    have_crypto = False
+    print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using dummy hash value 00..00)")
+    print("[!] Please install PyCryptodome, e.g. 'pip install pycryptodomex'\n")
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -47,6 +61,7 @@ assigned_uuids = {
     'GAP_RECONNECTION_ADDRESS'    : 0x2A03,
     'GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS' : 0x2A04,
     'GATT_SERVICE_CHANGED' : 0x2a05,
+    'GATT_DATABASE_HASH' : 0x2b2a
 }
 
 security_permsission = ['ANYBODY','ENCRYPTED', 'AUTHENTICATED', 'AUTHORIZED', 'AUTHENTICATED_SC']
@@ -116,9 +131,19 @@ current_characteristic_uuid_string = ""
 defines_for_characteristics = []
 defines_for_services = []
 include_paths = []
+database_hash_message = bytearray()
 
 handle = 1
 total_size = 0
+
+def aes_cmac(key, n):
+    if have_crypto:
+        cobj = CMAC.new(key, ciphermod=AES)
+        cobj.update(n)
+        return cobj.digest()
+    else:
+        # return dummy value
+        return b'\x00' * 16
 
 def read_defines(infile):
     defines = dict()
@@ -262,7 +287,7 @@ def write_8(fout, value):
 def write_16(fout, value):
     fout.write('0x%02x, 0x%02x, ' % (value & 0xff, (value >> 8) & 0xff))
 
-def write_uuid(uuid):
+def write_uuid(fout, uuid):
     for byte in uuid:
         fout.write( "0x%02x, " % byte)
 
@@ -274,6 +299,9 @@ def write_sequence(fout, text):
     parts = text.split()
     for part in parts:
         fout.write("0x%s, " % (part.strip()))
+
+def write_database_hash(fout):
+    fout.write("THE-DATABASE-HASH")
 
 def write_indent(fout):
     fout.write("    ")
@@ -345,6 +373,20 @@ def dump_flags(fout, flags):
         fout.write('ENCRYPTION_KEY_SIZE=%u' % encryption_key_size)
     fout.write('\n')
 
+def database_hash_append_uint8(value):
+    global database_hash_message
+    database_hash_message.append(value)
+
+def database_hash_append_uint16(value):
+    global database_hash_message
+    database_hash_append_uint8(value & 0xff)
+    database_hash_append_uint8((value >> 8) & 0xff)
+
+def database_hash_append_value(value):
+    global database_hash_message
+    for byte in value:
+        database_hash_append_uint8(byte)
+
 def parseService(fout, parts, service_type):
     global handle
     global total_size
@@ -371,8 +413,12 @@ def parseService(fout, parts, service_type):
     write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, service_type)
-    write_uuid(uuid)
+    write_uuid(fout, uuid)
     fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(service_type)
+    database_hash_append_value(uuid)
 
     current_service_uuid_string = c_string_for_uuid(parts[1])
     current_service_start_handle = handle
@@ -412,8 +458,15 @@ def parseIncludeService(fout, parts):
     write_16(fout, services[keyUUID][0])
     write_16(fout, services[keyUUID][1])
     if uuid_size > 0:
-        write_uuid(uuid)
+        write_uuid(fout, uuid)
     fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(0x2802)
+    database_hash_append_uint16(services[keyUUID][0])
+    database_hash_append_uint16(services[keyUUID][1])
+    if uuid_size > 0:
+        database_hash_append_value(uuid)
 
     handle = handle + 1
     total_size = total_size + size
@@ -460,16 +513,27 @@ def parseCharacteristic(fout, parts):
     write_16(fout, 0x2803)
     write_8(fout, characteristic_properties)
     write_16(fout, handle+1)
-    write_uuid(uuid)
+    write_uuid(fout, uuid)
     fout.write("\n")
     handle = handle + 1
     total_size = total_size + size
 
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(0x2803)
+    database_hash_append_uint8(characteristic_properties)
+    database_hash_append_uint16(handle+1)
+    database_hash_append_value(uuid)
+
+    uuid_is_database_hash = len(uuid) == 2 and uuid[0] == 0x2a and uuid[1] == 0x2b
+
     size = 2 + 2 + 2 + uuid_size
-    if is_string(value):
-        size = size + len(value)
+    if uuid_is_database_hash:
+        size +=  16
     else:
-        size = size + len(value.split())
+        if is_string(value):
+            size = size + len(value)
+        else:
+            size = size + len(value.split())
 
     value_flags = att_flags(properties)
 
@@ -486,11 +550,14 @@ def parseCharacteristic(fout, parts):
     write_16(fout, size)
     write_16(fout, value_flags)
     write_16(fout, handle)
-    write_uuid(uuid)
-    if is_string(value):
-        write_string(fout, value)
+    write_uuid(fout, uuid)
+    if uuid_is_database_hash:
+        write_database_hash(fout)
     else:
-        write_sequence(fout,value)
+        if is_string(value):
+            write_string(fout, value)
+        else:
+            write_sequence(fout,value)
 
     fout.write("\n")
     defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
@@ -517,8 +584,13 @@ def parseCharacteristic(fout, parts):
         write_16(fout, 0x2902)
         write_16(fout, 0)
         fout.write("\n")
+
+        database_hash_append_uint16(handle)
+        database_hash_append_uint16(0x2902)
+
         defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_CLIENT_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
         handle = handle + 1
+
 
     if properties & property_flags['RELIABLE_WRITE']:
         size = 2 + 2 + 2 + 2 + 2
@@ -531,6 +603,11 @@ def parseCharacteristic(fout, parts):
         write_16(fout, 0x2900)
         write_16(fout, 1)   # Reliable Write
         fout.write("\n")
+
+        database_hash_append_uint16(handle)
+        database_hash_append_uint16(0x2900)
+        database_hash_append_uint16(1)
+
         handle = handle + 1
 
 def parseCharacteristicUserDescription(fout, parts):
@@ -567,6 +644,10 @@ def parseCharacteristicUserDescription(fout, parts):
     else:
         write_sequence(fout,value)
     fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(0x2901)
+
     defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_USER_DESCRIPTION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
@@ -595,6 +676,10 @@ def parseServerCharacteristicConfiguration(fout, parts):
     write_16(fout, handle)
     write_16(fout, 0x2903)
     fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(0x2903)
+
     defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_SERVER_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
@@ -625,10 +710,14 @@ def parseCharacteristicFormat(fout, parts):
     write_16(fout, 0x2904)
     write_sequence(fout, format)
     write_sequence(fout, exponent)
-    write_uuid(unit)
+    write_uuid(fout, unit)
     write_sequence(fout, name_space)
-    write_uuid(description)
+    write_uuid(fout, description)
     fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(0x2904)
+
     handle = handle + 1
 
 
@@ -653,6 +742,10 @@ def parseCharacteristicAggregateFormat(fout, parts):
             sys.exit(1)
         write_16(fout, format_handle)
     fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(0x2905)
+
     handle = handle + 1
 
 def parseReportReference(fout, parts):
@@ -923,10 +1016,35 @@ try:
 
     filename = args.hfile
     fin  = codecs.open (args.gattfile, encoding='utf-8')
+
+    # pass 1: create temp .h file
+    ftemp = tempfile.TemporaryFile()
+    parse(args.gattfile, fin, filename, sys.argv[0], ftemp)
+    listHandles(ftemp)
+
+    # calc GATT Database Hash
+    db_hash = aes_cmac(bytearray(16), database_hash_message)
+    if isinstance(db_hash, str):
+        # python2
+        db_hash_sequence = [('0x%02x' % ord(i)) for i in db_hash]
+    elif isinstance(db_hash, bytes):
+        # python3
+        db_hash_sequence = [('0x%02x' % i) for i in db_hash]
+    else:
+        print("AES CMAC returns unexpected type %s, abort" % type(db_hash))
+        sys.exit(1)
+    # reverse hash to get little endian
+    db_hash_sequence.reverse()
+    db_hash_string = ', '.join(db_hash_sequence) + ', '
+
+    # pass 2: insert GATT Database Hash
     fout = open (filename, 'w')
-    parse(args.gattfile, fin, filename, sys.argv[0], fout)
-    listHandles(fout)    
+    ftemp.seek(0)
+    for line in ftemp:
+        fout.write(line.replace('THE-DATABASE-HASH', db_hash_string))
     fout.close()
+    ftemp.close()
+
     print('Created %s' % filename)
 
 except IOError as e:

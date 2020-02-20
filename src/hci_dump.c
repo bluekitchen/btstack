@@ -110,10 +110,6 @@ pktlog_hdr;
 
 static int dump_file = -1;
 static int dump_format;
-static union {
-    uint8_t header_bluez[HCIDUMP_HDR_SIZE];
-    uint8_t header_packetlogger[PKTLOG_HDR_SIZE];
-} header;
 #ifdef HAVE_POSIX_FILE_IO
 static char time_string[40];
 static int  max_nr_packets = -1;
@@ -266,7 +262,12 @@ static void printf_timestamp(void){
 #endif
 }
 
-void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {    
+void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
+
+    static union {
+        uint8_t header_bluez[HCIDUMP_HDR_SIZE];
+        uint8_t header_packetlogger[PKTLOG_HDR_SIZE];
+    } header;
 
     if (dump_file < 0) return; // not activated yet
 

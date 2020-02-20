@@ -188,26 +188,38 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
 						file_valid = 1;
 						break;
 					}
-					if (entries_read == sizeof(entry)){
-						uint32_t tag = big_endian_read_32(entry, 0);
-						uint32_t len = big_endian_read_32(entry, 4);
-						// arbitrary safetly check: values < 1000 bytes each
-						if (len > 1000) break;
-						tlv_entry_t * new_entry = (tlv_entry_t *) malloc(sizeof(tlv_entry_t) - DUMMY_SIZE + len);
-						if (!new_entry) return 0;
-						new_entry->tag = tag;
-						new_entry->len = len;
-						// read 
-						size_t 	value_read = fread(&new_entry->value[0], 1, len, self->file);
-						if (value_read == len){
-							// append new entry
-							btstack_linked_list_add(&self->entry_list, (btstack_linked_item_t *) new_entry);
-						} else {
-							// fail
-							free(new_entry);
-							break;
-						}
-					}	    		
+					if (entries_read != sizeof(entry)) break;
+
+                    uint32_t tag = big_endian_read_32(entry, 0);
+                    uint32_t len = big_endian_read_32(entry, 4);
+
+                    // arbitrary safety check: values < 1000 bytes each
+                    if (len > 1000) break;
+
+                    // create new entry for regular tag
+                    tlv_entry_t * new_entry = NULL;
+                    if (len > 0) {
+                        new_entry = (tlv_entry_t *) malloc(sizeof(tlv_entry_t) - DUMMY_SIZE + len);
+                        if (!new_entry) return 0;
+                        new_entry->tag = tag;
+                        new_entry->len = len;
+
+                        // read
+                        size_t value_read = fread(&new_entry->value[0], 1, len, self->file);
+                        if (value_read != len) break;
+                    }
+
+                    // remove old entry
+                    tlv_entry_t * old_entry = btstack_tlv_posix_find_entry(self, tag);
+                    if (old_entry){
+                        btstack_linked_list_remove(&self->entry_list, (btstack_linked_item_t *) old_entry);
+                        free(old_entry);
+                    }
+
+                    // append new entry
+                    if (new_entry){
+	                    btstack_linked_list_add(&self->entry_list, (btstack_linked_item_t *) new_entry);
+                    }
 		    	}
 	    	}
 	    }

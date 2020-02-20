@@ -28,6 +28,7 @@
 #define ENABLE_LOG_INFO 
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
+#define ENABLE_SOFTWARE_AES128
 // #define ENABLE_EHCILL
 
 // BTstack configuration. buffers, sizes, ...

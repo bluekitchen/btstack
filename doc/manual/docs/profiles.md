@@ -563,3 +563,29 @@ In addition to the attribute value handle, the handle for the Client Characteris
 Finally, in order to send Notifications and Indications independently from the main application, *att_server_register_can_send_now_callback* can be used to request a callback when it's possible to send a Notification or Indication.
 
 To see how this works together, please check out the Battery Service Server in *src/ble/battery_service_server.c*.
+
+### GATT Database Hash
+
+When a GATT Client connects to a GATT Server, it cannot know if the GATT Database has changed 
+and has to discover the provided GATT Services and Characteristics after each connect.
+ 
+To speed this up, the Bluetooth
+specification defines a GATT Service Changed Characteristic, with the idea that a GATT Server would notify
+a bonded GATT Client if its database changed. However, this is quite fragile and it is not clear how it can be implemented
+in a robust way.
+
+The Bluetooth Core Spec 5.1 introduced the GATT Database Hash Characteristic, which allows for a simple 
+robust mechanism to cache a remote GATT Database. The GATT Database Hash is a 16-byte value that is calculated
+over the list of Services and Characteristics. If there is any change to the database, the hash will change as well.
+
+To support this on the GATT Server, you only need to add a GATT Service with the GATT Database Characteristic to your .gatt file.
+The hash value is then calculated by the GATT compiler. 
+
+
+    PRIMARY_SERVICE, GATT_SERVICE
+    CHARACTERISTIC, GATT_DATABASE_HASH, READ,
+
+Note: make sure to install the PyCryptodome python package as the hash is calculated using AES-CMAC,
+e.g. with:
+
+    pip install pycryptodomex

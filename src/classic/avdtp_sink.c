@@ -222,8 +222,8 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT;
     connection->delay_ms = delay_100us;
-    connection->local_seid = local_seid;
-    connection->remote_seid = stream_endpoint->remote_sep.seid;
+    connection->initiator_local_seid = local_seid;
+    connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }

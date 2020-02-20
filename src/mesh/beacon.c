@@ -209,7 +209,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                 // send new beacon
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;
 
-                /** Explict Fall-through */
+                /* fall through */
 
             case MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE:
                 if (mesh_secure_network_beacon_active){
@@ -231,7 +231,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
 #endif
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_ADV_SENT;
 
-                /** Explict Fall-through */
+                /* fall through */
 
             case MESH_SECURE_NETWORK_BEACON_ADV_SENT:
 
@@ -244,7 +244,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
 #endif 
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
 
-                /** Explict Fall-through */
+                /* fall through */
 
             case MESH_SECURE_NETWORK_BEACON_GATT_SENT:
                 // now, start listening for beacons

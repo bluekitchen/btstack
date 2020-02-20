@@ -230,18 +230,13 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
         remaining_time_gdtt = mesh_access_parser_get_u8(&parser);
     }
 
-    uint8_t event[16];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MESH_META;
-    // reserve for size
-    pos++;
-    event[pos++] = MESH_SUBEVENT_GENERIC_LEVEL_STATUS;
-
-    // element index
-    event[pos++] = mesh_model->element->element_index; 
-    // model_id
-    little_endian_store_32(event, pos, mesh_model->model_identifier);
-    pos += 4;
+    uint8_t event[14] = {HCI_EVENT_MESH_META, 12, MESH_SUBEVENT_GENERIC_LEVEL};
+    
+    int pos = 3;
+    // dest
+    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    pos += 2;
+    event[pos++] = ERROR_CODE_SUCCESS;
     
     little_endian_store_16(event, pos, present_value);
     pos += 2;
@@ -250,8 +245,7 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     
     little_endian_store_32(event, pos, (uint32_t) mesh_access_time_gdtt2ms(remaining_time_gdtt));
     pos += 4;
-    event[1] = pos - 2;
-
+    
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     mesh_access_message_processed(pdu);
 }

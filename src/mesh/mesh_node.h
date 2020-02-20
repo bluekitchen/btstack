@@ -52,6 +52,11 @@ extern "C" {
 #define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
 #define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
 
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_RELAY      1
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_PROXY      2
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_FRIEND     4
+#define MESH_HEARTBEAT_PUBLICATION_FEATURE_LOW_POWER  8
+
 struct mesh_model;
 struct mesh_element;
 
@@ -62,6 +67,18 @@ typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_
 // @param mesh_model to publish
 // @returns mesh_pdu with status message
 typedef mesh_pdu_t * (*mesh_publish_state_t)(struct mesh_model * mesh_model);
+
+typedef enum {
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
+} mesh_node_identity_state_t;
+
+typedef enum {
+    MESH_FRIEND_STATE_DISABLED = 0,
+    MESH_FRIEND_STATE_ENABLED,
+    MESH_FRIEND_STATE_NOT_SUPPORTED
+} mesh_friend_state_t;
 
 typedef enum {
     MESH_MODEL_PUBLICATION_STATE_IDLE,
@@ -86,6 +103,15 @@ typedef struct {
     uint8_t  ttl;
     uint8_t  retransmit;
 } mesh_publication_model_t;
+
+typedef struct {
+    uint16_t destination;
+    uint16_t count;      // Number of Heartbeat messages to be sent
+    uint16_t period_s;   // Period for sending Heartbeat messages in seconds
+    uint16_t features;   // Bit field indicating features that trigger Heartbeat messages when changed
+    uint16_t netkey_index; 
+    uint8_t  ttl;        // TTL to be used when sending Heartbeat messages
+} mesh_heartbeat_publication_state_t;
 
 typedef struct {
     uint32_t opcode;
@@ -303,6 +329,12 @@ uint16_t mesh_node_get_product_id(void);
  * @returns product_version_id
  */
 uint16_t mesh_node_get_product_version_id(void);
+
+
+// Heartbeat (helper)
+uint16_t mesh_heartbeat_pwr2(uint8_t value);
+uint8_t mesh_heartbeat_count_log(uint16_t value);
+uint8_t mesh_heartbeat_period_log(uint16_t value);
 
 #if defined __cplusplus
 }

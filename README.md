@@ -33,8 +33,8 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **In Development:** BLE Mesh and more.
 
-It has been qualified with the Bluetooth SIG (QDID 110883) for GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP profiles and
-GATT, SM of the Bluetooth 5 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
+It has been qualified with the Bluetooth SIG (QDID 110883) for GAP 1.1, IOP, HFP 1.7, HSP 1.2, SPP 1.2, PAN 1.0, A2DP 1.3, AVRCP 1.6 profiles and
+GATT, SM of the Bluetooth Core 5.0 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
 ## Evaluation Platforms
 
@@ -50,6 +50,7 @@ Build Status               | Port | Platform
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-stm32-f103rb-nucleo-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-stm32-f103rb-nucleo-master)       | [stm32-f103rb-nucleo](https://github.com/bluekitchen/btstack/tree/master/port/stm32-f103rb-nucleo) | [STM32 Nucleo development board NUCLEO-F103RB](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF259875) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-stm32-f4discovery-cc256x-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-stm32-f4discovery-cc256x-master) | [stm32-f4discovery-cc2564b](https://github.com/bluekitchen/btstack/tree/master/port/stm32-f4discovery-cc256x) | [STM32 F4 Discovery Board](http://www.st.com/en/evaluation-tools/stm32f4discovery.html) with [CC256xEM Bluetooth Adapter Kit for ST](https://store.ti.com/CC256XEM-STADAPT-CC256xEM-Bluetooth-Adapter-Kit-P45158.aspx) and [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-stm32-l073rz-nucleo-em9304-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-stm32-l073rz-nucleo-em9304)  | [stm32-l073rz-nucleo-em9304](https://github.com/bluekitchen/btstack/tree/master/port/stm32-l073rz-nucleo-em9304) | EM9304 DVK: [STM32 Nucleo development board NUCELO-L73RZ](https://www.st.com/en/evaluation-tools/nucleo-l073rz.html) with [EM9304  Bluetooth Controller](http://www.emmicroelectronic.com/products/wireless-rf/standard-protocols/em9304)
+No build server | [stm32-wb55xx-nucleo-freertos](https://github.com/bluekitchen/btstack/tree/master/port/stm32-wb55xx-nucleo-freertos) | [P-NUCLEO-WB55 kit](https://www.st.com/en/evaluation-tools/p-nucleo-wb55.html)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-pic32-harmony-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-pic32-harmony-master)                |  [pic32-harmony](https://github.com/bluekitchen/btstack/tree/master/port/pic32-harmony)  | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-wiced-h4-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-wiced-h4-master)                           | [wiced-h4](https://github.com/bluekitchen/btstack/tree/master/port/wiced-h4) | Broadcom/Cypress platforms that support the WICED SDK via H4 UART, e.g. [RedBear Duo](https://redbear.cc/product/wifi-ble/redbear-duo.html) (BCM43438 A1), [Inventek Systems ISM4334x](https://www.inventeksys.com/wifi/wifi-modules/ism4343-wmb-l151/) (BCM43438 A1), [Inventek Systems ISM4343](https://www.inventeksys.com/products-page/wifi-modules/serial-wifi/ism43341-m4g-l44-cu-embedded-serial-to-wifi-ble-nfc-module/) (BCM43340)
 No build server | [wiced-h5](https://github.com/bluekitchen/btstack/tree/master/port/wiced-h5) | Broadcom platforms that support the WICED SDK via H5 UART, see wiced-h4
@@ -93,6 +94,7 @@ EM 9301, 9304                | LE        | SPI             | n.a.             | 
 Intel Dual Wireless 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
+STM32-WB5x                   | LE        | VHCI            | n.a.             |                | SoC with multi-protocol Radio co-processor
 Toshiba TC35661              | Dual mode | H4              | No               | tc3566         |
 TI CC256x, WL183x            | Dual mode | H4, H5, eHCILL  | Yes              | cc256x         | Also WL185x, WL187x, and WL189x
 

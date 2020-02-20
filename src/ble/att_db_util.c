@@ -48,7 +48,10 @@
 #include "bluetooth.h"
 
 // ATT DB Storage
-#ifndef HAVE_MALLOC
+#ifdef HAVE_MALLOC
+// number of bytes that the att db buffer is increased on init / realloc
+#define ATT_DB_BUFFER_INCREMENT 128
+#else
 #ifdef MAX_ATT_DB_SIZE
 static uint8_t att_db_storage[MAX_ATT_DB_SIZE];
 #else
@@ -60,6 +63,7 @@ static uint8_t * att_db;
 static uint16_t  att_db_size;
 static uint16_t  att_db_max_size;
 static uint16_t  att_db_next_handle;
+static uint16_t  att_db_hash_len;
 
 static void att_db_util_set_end_tag(void){
 	// end tag
@@ -69,8 +73,8 @@ static void att_db_util_set_end_tag(void){
 
 void att_db_util_init(void){
 #ifdef HAVE_MALLOC
-	att_db = (uint8_t*) malloc(128);
-	att_db_max_size = 128;
+	att_db = (uint8_t*) malloc(ATT_DB_BUFFER_INCREMENT);
+	att_db_max_size = ATT_DB_BUFFER_INCREMENT;
 #else
 	att_db = att_db_storage;
 	att_db_max_size = sizeof(att_db_storage);
@@ -79,7 +83,37 @@ void att_db_util_init(void){
 	att_db[0] = ATT_DB_VERSION;
 	att_db_size = 1;
 	att_db_next_handle = 1;
+	att_db_hash_len = 0;
 	att_db_util_set_end_tag();
+}
+
+static bool att_db_util_hash_include_with_value(uint16_t uuid16){
+    /* «Primary Service», «Secondary Service», «Included Service», «Characteristic», or «Characteristic Extended Properties» */
+    switch (uuid16){
+        case GATT_PRIMARY_SERVICE_UUID:
+        case GATT_SECONDARY_SERVICE_UUID:
+        case GATT_INCLUDE_SERVICE_UUID:
+        case GATT_CHARACTERISTICS_UUID:
+        case GATT_CHARACTERISTIC_EXTENDED_PROPERTIES:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool att_db_util_hash_include_without_value(uint16_t uuid16){
+    /*  «Characteristic User Description», «Client Characteristic Configuration», «Server Characteristic Configuration»,
+     * «Characteristic Aggregate Format», «Characteristic Format» */
+    switch (uuid16){
+        case GATT_CHARACTERISTIC_USER_DESCRIPTION:
+        case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
+        case GATT_SERVER_CHARACTERISTICS_CONFIGURATION:
+        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+            return true;
+        default:
+            return false;
+    }
 }
 
 /**
@@ -88,9 +122,13 @@ void att_db_util_init(void){
  */
 static int att_db_util_assert_space(uint16_t size){
 	size += 2; // for end tag
-	if ((att_db_size + size) <= att_db_max_size) return 1;
+	uint16_t required_size = att_db_size + size;
+	if (required_size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
-	int new_size = att_db_size + att_db_size / 2;
+    uint16_t new_size = att_db_max_size;
+	while (new_size < required_size){
+        new_size += ATT_DB_BUFFER_INCREMENT;
+	}
 	uint8_t * new_db = (uint8_t*) realloc(att_db, new_size);
 	if (!new_db) {
 		log_error("att_db: realloc failed");
@@ -125,6 +163,12 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 	(void)memcpy(&att_db[att_db_size], data, data_len);
 	att_db_size += data_len;
 	att_db_util_set_end_tag();
+
+	if (att_db_util_hash_include_with_value(uuid16)){
+	    att_db_hash_len += 4 + data_len;
+	} else if (att_db_util_hash_include_without_value(uuid16)){
+        att_db_hash_len += 4;
+	}
 }
 
 static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
@@ -159,6 +203,32 @@ uint16_t att_db_util_add_service_uuid128(const uint8_t * uuid128){
 	uint16_t service_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(GATT_PRIMARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, 16);
 	return service_handle;
+}
+
+uint16_t att_db_util_add_secondary_service_uuid16(uint16_t uuid16){
+    uint8_t buffer[2];
+    little_endian_store_16(buffer, 0, uuid16);
+    uint16_t service_handle = att_db_next_handle;
+    att_db_util_add_attribute_uuid16(GATT_SECONDARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, 2);
+    return service_handle;
+}
+
+uint16_t att_db_util_add_secondary_service_uuid128(const uint8_t * uuid128){
+    uint8_t buffer[16];
+    reverse_128(uuid128, buffer);
+    uint16_t service_handle = att_db_next_handle;
+    att_db_util_add_attribute_uuid16(GATT_SECONDARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, 16);
+    return service_handle;
+}
+
+uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, uint16_t  end_group_handle, uint16_t uuid16){
+    uint8_t buffer[6];
+    little_endian_store_16(buffer, 0, start_group_handle);
+    little_endian_store_16(buffer, 2, end_group_handle);
+    little_endian_store_16(buffer, 4, uuid16);
+    uint16_t service_handle = att_db_next_handle;
+    att_db_util_add_attribute_uuid16(GATT_INCLUDE_SERVICE_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
+    return service_handle;
 }
 
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
@@ -251,4 +321,69 @@ uint8_t * att_db_util_get_address(void){
 
 uint16_t att_db_util_get_size(void){
 	return att_db_size + 2;	// end tag 
+}
+
+static uint8_t * att_db_util_hash_att_ptr;
+static uint16_t att_db_util_hash_offset;
+static uint16_t att_db_util_hash_bytes_available;
+
+static void att_db_util_hash_fetch_next_attribute(void){
+    while (1){
+        uint16_t size = little_endian_read_16(att_db_util_hash_att_ptr, 0);
+        btstack_assert(size != 0);
+        UNUSED(size);
+        uint16_t flags = little_endian_read_16(att_db_util_hash_att_ptr, 2);
+        if ((flags & ATT_PROPERTY_UUID128) == 0) {
+            uint16_t uuid16 = little_endian_read_16(att_db_util_hash_att_ptr, 6);
+            if (att_db_util_hash_include_with_value(uuid16)){
+                att_db_util_hash_offset = 4;
+                att_db_util_hash_bytes_available = size - 4;
+                return;
+            } else if (att_db_util_hash_include_without_value(uuid16)){
+                att_db_util_hash_offset = 4;
+                att_db_util_hash_bytes_available = 4;
+                return;
+            }
+        }
+        att_db_util_hash_att_ptr += size;
+    }
+}
+
+uint16_t att_db_util_hash_len(void){
+    return att_db_hash_len;
+}
+
+void att_db_util_hash_init(void){
+    // skip version info
+    att_db_util_hash_att_ptr = &att_db[1];
+    att_db_util_hash_bytes_available = 0;
+}
+
+uint8_t att_db_util_hash_get_next(void){
+    // find next hashable data blob
+    if (att_db_util_hash_bytes_available == 0){
+        att_db_util_hash_fetch_next_attribute();
+    }
+
+    // get next byte
+    uint8_t next = att_db_util_hash_att_ptr[att_db_util_hash_offset++];
+    att_db_util_hash_bytes_available--;
+
+    // go to next attribute if blob used up
+    if (att_db_util_hash_bytes_available == 0){
+        uint16_t size = little_endian_read_16(att_db_util_hash_att_ptr, 0);
+        att_db_util_hash_att_ptr += size;
+    }
+    return next;
+}
+
+static uint8_t att_db_util_hash_get(uint16_t offset){
+    UNUSED(offset);
+    return att_db_util_hash_get_next();
+}
+
+void att_db_util_hash_calc(btstack_crypto_aes128_cmac_t * request, uint8_t * db_hash, void (* callback)(void * arg), void * callback_arg){
+    static const uint8_t zero_key[16] = { 0 };
+    att_db_util_hash_init();
+    btstack_crypto_aes128_cmac_generator(request, zero_key, att_db_hash_len, &att_db_util_hash_get, db_hash, callback, callback_arg);
 }
