@@ -61,19 +61,15 @@ file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BT
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 
 set(SOURCES_POSIX
-    # Adding btstac_uart_block.c causes weird link error, skip for now. QSerialPort might be used in btstack_uart_block_qt.cpp
+    # Adding btstack_uart_block.c causes weird link error, skip for now. QSerialPort might be used in btstack_uart_block_qt.cpp
     # ${BTSTACK_ROOT}/platform/posix/btstack_uart_block.c
 
     ${BTSTACK_ROOT}/platform/posix/btstack_audio_portaudio.c
     ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c
-    ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c
     ${BTSTACK_ROOT}/platform/posix/btstack_tlv_posix.c
     ${BTSTACK_ROOT}/platform/posix/wav_util.c
 )
 
-set(SOURCES_LIBUSB
-    ${BTSTACK_ROOT}/platform/libusb/hci_transport_h2_libusb.c
-)
 
 set(LWIP_CORE_SRC
         ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
@@ -120,13 +116,27 @@ set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTT
 file(GLOB SOURCES_BLE_OFF   "${BTSTACK_ROOT}/src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE ${SOURCES_BLE_OFF})
 
+
+# select POSIX vs Windows versions
+IF (WIN32)
+    message("Building for Windows")
+    message(FATAL_ERROR "Windows USB not supported yet")
+    set(SOURCES_HCI_USB ${BTSTACK_ROOT}/platform/windows/hci_transport_h2_winusb.c)
+    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/windows/btstack_stdin_windows.c)
+ELSE()
+    message("Building for POSIX")
+    set(SOURCES_HCI_USB ${BTSTACK_ROOT}/platform/libusb/hci_transport_h2_libusb.c)
+    set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c)
+ENDIF()
+
 set(SOURCES
         ${SOURCES_MD5}
         ${SOURCES_YXML}
         ${SOURCES_BLUEDROID}
         ${SOURCES_POSIX}
         ${SOURCES_RIJNDAEL}
-        ${SOURCES_LIBUSB}
+        ${SOURCES_HCI_USB}
+        ${SOURCES_STDIN}
         ${SOURCES_SRC}
         ${SOURCES_BLE}
         ${SOURCES_GATT}
