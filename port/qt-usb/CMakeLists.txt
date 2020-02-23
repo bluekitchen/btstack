@@ -14,18 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message("${Qt5_DIR}")
 
 find_package(Qt5Core)
+include(FindPythonInterp)
 
 # BTstack Root
 set(BTSTACK_ROOT "../..")
 message("BTSTACK_ROOT: ${BTSTACK_ROOT}")
-
-# add libusb
-find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
-find_library(LIBUSB_LIBRARY NAMES usb-1.0 PATH_SUFFIXES "lib" "lib32" "lib64" "dylib")
-get_filename_component(LIBUSB_LIBRARY_PATH ${LIBUSB_LIBRARY} DIRECTORY)
-include_directories( ${LIBUSB_INCLUDE_DIR} )
-link_directories( ${LIBUSB_LIBRARY_PATH} )
-link_libraries( usb-1.0 )
 
 # BTstack include
 include_directories(${BTSTACK_ROOT}/3rd-party/micro-ecc)
@@ -65,7 +58,6 @@ set(SOURCES_POSIX
     # ${BTSTACK_ROOT}/platform/posix/btstack_uart_block.c
 
     ${BTSTACK_ROOT}/platform/posix/btstack_audio_portaudio.c
-    ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c
     ${BTSTACK_ROOT}/platform/posix/btstack_tlv_posix.c
     ${BTSTACK_ROOT}/platform/posix/wav_util.c
 )
@@ -119,14 +111,25 @@ list(REMOVE_ITEM SOURCES_BLE ${SOURCES_BLE_OFF})
 
 # select POSIX vs Windows versions
 IF (WIN32)
-    message("Building for Windows")
-    message(FATAL_ERROR "Windows USB not supported yet")
+    message("Building for Windows using WinUSB")
     set(SOURCES_HCI_USB ${BTSTACK_ROOT}/platform/windows/hci_transport_h2_winusb.c)
     set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/windows/btstack_stdin_windows.c)
+    link_libraries( winusb setupapi)
 ELSE()
-    message("Building for POSIX")
+    message("Building for POSIX using libusb")
+
+    # add libusb
+    find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
+    find_library(LIBUSB_LIBRARY NAMES usb-1.0 PATH_SUFFIXES "lib" "lib32" "lib64" "dylib")
+    get_filename_component(LIBUSB_LIBRARY_PATH ${LIBUSB_LIBRARY} DIRECTORY)
+    include_directories( ${LIBUSB_INCLUDE_DIR} )
+    link_directories( ${LIBUSB_LIBRARY_PATH} )
+    link_libraries( usb-1.0 )
+
     set(SOURCES_HCI_USB ${BTSTACK_ROOT}/platform/libusb/hci_transport_h2_libusb.c)
     set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c)
+
+    list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c)
 ENDIF()
 
 set(SOURCES
@@ -156,7 +159,7 @@ list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "${BTSTACK_ROOT}/example/*.gatt")
 
 # remove some
-file(GLOB EXAMPLES_OFF  "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/example/ant_test.c" "${BTSTACK_ROOT}/example/avrcp_browsing_client.c")
+file(GLOB EXAMPLES_OFF  "${BTSTACK_ROOT}/example/panu_demo.c" "${BTSTACK_ROOT}/example/sco_demo_util.c" "${BTSTACK_ROOT}/example/ant_test.c" "${BTSTACK_ROOT}/example/avrcp_browsing_client.c")
 list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
@@ -181,8 +184,8 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
                 message("example ${EXAMPLE} -- with GATT DB")
                 add_custom_command(
                     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-                        COMMAND ${BTSTACK_ROOT}/tool/compile_gatt.py
-                        ARGS ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+                        COMMAND  ${PYTHON_EXECUTABLE}
+                        ARGS ${BTSTACK_ROOT}/tool/compile_gatt.py ${BTSTACK_ROOT}/example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
                 )
                 list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 

@@ -164,6 +164,7 @@ int btstack_main(int argc, const char * argv[]);
 
 int main(int argc, char * argv[]){
 
+#ifndef __WIN32
     uint8_t usb_path[USB_MAX_PATH_LEN];
     int usb_path_len = 0;
     const char * usb_path_string = NULL;
@@ -185,6 +186,7 @@ int main(int argc, char * argv[]){
         argc -= 2;
         memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
+#endif
 
     QCoreApplication a(argc, argv);
 
@@ -192,18 +194,24 @@ int main(int argc, char * argv[]){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_qt_get_instance());
 
+#ifndef __WIN32
     if (usb_path_len){
         hci_transport_usb_set_path(usb_path_len, usb_path);
     }
+#endif
 
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
 
     char pklg_path[100];
+#ifdef __WIN32
+    strcpy(pklg_path, "hci_dump");
+#else
     strcpy(pklg_path, "/tmp/hci_dump");
     if (usb_path_len){
         strcat(pklg_path, "_");
         strcat(pklg_path, usb_path_string);
     }
+#endif
     strcat(pklg_path, ".pklg");
     printf("Packet Log: %s\n", pklg_path);
     hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
