@@ -1018,7 +1018,7 @@ try:
     fin  = codecs.open (args.gattfile, encoding='utf-8')
 
     # pass 1: create temp .h file
-    ftemp = tempfile.TemporaryFile()
+    ftemp = tempfile.TemporaryFile(mode='w+t')
     parse(args.gattfile, fin, filename, sys.argv[0], ftemp)
     listHandles(ftemp)
 
