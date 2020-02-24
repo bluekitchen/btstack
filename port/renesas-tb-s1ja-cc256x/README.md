@@ -40,7 +40,7 @@ J2 PIN | S1JA PORT | S1JA Signal | Boosterpack
 
 Generate example projects
 
-    $ ./create_examples.py
+    $ python create_examples.py
 
 This will generate an e2 Studio project for each example.
 
@@ -65,9 +65,9 @@ Also, the full packet log can be enabled in src/port.c The console output can th
 
 
 ## GATT Database
-In BTstack, the GATT Database is defined via the .gatt file in the example folder. The Makefile contains rules to update the .h file when the .gatt was modified.
+In BTstack, the GATT Database is defined via the .gatt file in the example folder. The create_examples.py script converts the .gatt files into a corresponding .h for the project. After updating a .gatt file, the .h can be updated manually by running the provided update_gatt_db.sh or update_gatt_db.bat scripts. 
 
-Note: In theory, this can be integrated into the Eclipse project, in fact, it's easy to configure it as an Eclipse Builder, but it got tricky to get it working with templates.
+Note: In theory, this can be integrated into the e2 Studio/Eclipse project.
 
 
 ## ToDo
@@ -80,4 +80,3 @@ Note: In theory, this can be integrated into the Eclipse project, in fact, it's 
 
 ## Nice to have
 - Allow compilation using Makefile/CMake on macOS
-
