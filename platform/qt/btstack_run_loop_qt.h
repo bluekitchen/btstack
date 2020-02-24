@@ -49,10 +49,17 @@
 #if defined __cplusplus
 #include <QObject>
 #include <QTimer>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <QWinEventNotifier>
+#endif
 class BTstackRunLoopQt : public QObject {
     Q_OBJECT
 public slots:
     void processTimers(void);
+#ifdef Q_OS_WIN
+    void processDataSource(HANDLE handle);
+#endif
 };
 #endif
 

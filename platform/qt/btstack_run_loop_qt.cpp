@@ -54,7 +54,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
@@ -71,6 +70,58 @@ static struct timeval init_tv;
 #endif
 
 static BTstackRunLoopQt * btstack_run_loop_object;
+
+#ifdef Q_OS_WIN
+#include <QHash>
+// associate each data source with QWinEventNotifier
+static QHash<btstack_data_source_t *, QWinEventNotifier *> win_event_notifiers;
+#endif
+
+void btstack_run_loop_qt_add_data_source(btstack_data_source_t *ds){
+#ifdef Q_OS_WIN
+    QWinEventNotifier * win_notifier = new QWinEventNotifier(ds->source.handle);
+    win_event_notifiers.insert(ds, win_notifier);
+    QObject::connect(win_notifier, SIGNAL(activated(HANDLE)),
+                     btstack_run_loop_object, SLOT(processDataSource(HANDLE)));
+    bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
+    win_notifier->setEnabled(enabled);
+    log_debug("add data source %p with handle %p", ds, ds->source.handle);
+#endif
+    btstack_run_loop_base_add_data_source(ds);
+}
+
+bool btstack_run_loop_qt_remove_data_source(btstack_data_source_t *ds){
+#ifdef Q_OS_WIN
+    QWinEventNotifier * win_notifier = win_event_notifiers.value(ds, NULL);
+    if (win_notifier){
+        win_event_notifiers.remove(ds);
+        free(win_notifier);
+    }
+#endif
+    return btstack_run_loop_base_remove_data_source(ds);
+}
+
+void btstack_run_loop_qt_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    btstack_run_loop_base_enable_data_source_callbacks(ds, callback_types);
+#ifdef Q_OS_WIN
+    QWinEventNotifier * win_notifier = win_event_notifiers.value(ds, NULL);
+    if (win_notifier){
+        bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
+        win_notifier->setEnabled(enabled);
+    }
+#endif
+}
+
+void btstack_run_loop_qt_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+    btstack_run_loop_base_disable_data_source_callbacks(ds, callback_types);
+#ifdef Q_OS_WIN
+    QWinEventNotifier * win_notifier = win_event_notifiers.value(ds, NULL);
+    if (win_notifier){
+        bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
+        win_notifier->setEnabled(enabled);
+    }
+#endif
+}
 
 #ifdef _POSIX_MONOTONIC_CLOCK
 /**
@@ -161,6 +212,27 @@ void BTstackRunLoopQt::processTimers(){
         QTimer::singleShot((uint32_t)next_timeout_after, this, SLOT(processTimers()));
     }
 }
+#ifdef Q_OS_WIN
+void BTstackRunLoopQt::processDataSource(HANDLE handle){
+    log_debug("lookup data source for handle %p, sender %p", handle, QObject::sender());
+    // find ds
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &btstack_run_loop_base_data_sources);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
+        if (handle == ds->source.handle){
+            if (ds->flags & DATA_SOURCE_CALLBACK_READ){
+                log_debug("process read ds %p with handle %p", ds, ds->source.handle);
+                ds->process(ds, DATA_SOURCE_CALLBACK_READ);
+            } else if (ds->flags & DATA_SOURCE_CALLBACK_WRITE){
+                log_debug("process write ds %p with handle %p", ds, ds->source.handle);
+                ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
+            }
+            break;
+        }
+    }
+}
+#endif
 
 static void btstack_run_loop_qt_init(void){
 
@@ -189,10 +261,10 @@ static void btstack_run_loop_qt_dump_timer(void){
 
 static const btstack_run_loop_t btstack_run_loop_qt = {
     &btstack_run_loop_qt_init,
-    &btstack_run_loop_base_add_data_source,
-    &btstack_run_loop_base_remove_data_source,
-    &btstack_run_loop_base_enable_data_source_callbacks,
-    &btstack_run_loop_base_disable_data_source_callbacks,
+    &btstack_run_loop_qt_add_data_source,
+    &btstack_run_loop_qt_remove_data_source,
+    &btstack_run_loop_qt_enable_data_source_callbacks,
+    &btstack_run_loop_qt_disable_data_source_callbacks,
     &btstack_run_loop_qt_set_timer,
     &btstack_run_loop_qt_add_timer,
     &btstack_run_loop_base_remove_timer,
