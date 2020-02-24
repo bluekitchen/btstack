@@ -195,7 +195,6 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 #include "btstack_run_loop_embedded.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"
-#include "hal_flash_bank_memory.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
@@ -203,6 +202,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 #include "btstack_memory.h"
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_tlv.h"
+#include "hal_flash_bank_synergy.h"
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(size);
@@ -242,6 +242,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
+static hal_flash_bank_synergy_t  hal_flash_bank_context;
+#define HAL_FLASH_BANK_SIZE     ( 10224 )
+#define HAL_FLASH_BANK_0_ADDR   ( 0x40100000 )
+#define HAL_FLASH_BANK_1_ADDR   ( 0x40100400 )
+
 static const hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
@@ -256,11 +261,10 @@ void hal_entry(void) {
     // init hal
     g_hal_init();
 
-    // open uart
+    // open uart, timer, flash
     g_uart0.p_api->open(g_uart0.p_ctrl, g_uart0.p_cfg);
-
-    // open timer
     g_timer0.p_api->open(g_timer0.p_ctrl, g_timer0.p_cfg);
+    g_flash0.p_api->open(g_flash0.p_ctrl, g_flash0.p_cfg);
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
@@ -272,21 +276,12 @@ void hal_entry(void) {
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
-#if 0
     // setup TLV Flash Sector implementation
-    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_synergy_init_instance(
             &hal_flash_bank_context,
             HAL_FLASH_BANK_SIZE,
-            HAL_FLASH_BANK_0_SECTOR,
-            HAL_FLASH_BANK_1_SECTOR,
             HAL_FLASH_BANK_0_ADDR,
             HAL_FLASH_BANK_1_ADDR);
-#else
-    // setup dummy flash bank implementation
-    static hal_flash_bank_memory_t hal_flash_bank_context;
-    static uint8_t hal_flash_bank_storage[512];
-    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_memory_init_instance(&hal_flash_bank_context, hal_flash_bank_storage, sizeof(hal_flash_bank_storage));
-#endif
 
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
             &btstack_tlv_flash_bank_context,

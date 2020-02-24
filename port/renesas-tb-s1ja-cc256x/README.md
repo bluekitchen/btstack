@@ -70,10 +70,6 @@ In BTstack, the GATT Database is defined via the .gatt file in the example folde
 Note: In theory, this can be integrated into the e2 Studio/Eclipse project.
 
 
-## ToDo
-- Implement hal_flash_bank_renesas_ssp
-
-
 ## Notes
 - HCI UART is set to 2 mbps. Using 3 or 4 mbps causes hang during startup
 
