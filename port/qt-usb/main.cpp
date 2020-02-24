@@ -68,7 +68,12 @@
 #include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
 
+#ifdef Q_OS_WIN
+#define TLV_DB_PATH_PREFIX "btstack"
+#else
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
+#endif
+
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
@@ -111,7 +116,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
             strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+#ifndef Q_OS_WIN
+            // bd_addr_to_str use ":" which is not allowed in windows file names
             strcat(tlv_db_path, bd_addr_to_str(local_addr));
+#endif
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);

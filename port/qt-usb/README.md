@@ -1,16 +1,32 @@
-# BTstack Port for QT with libusb Library (Mac/Linux)
+# BTstack Port for QT with USB Bluetooth Dongle
 
-Windows or Embedded (bare metal) platforms not supported yet.
+Uses libusb Library on macOS and Linux and WinUSB on Windows.
+Windows is supported with the MinGW Kit.
+
+Windows with MSVC or Embedded (bare metal) platforms not supported yet.
 
 ## Compilation
 
-You'll need Qt and [libusb-1.0](http://libusb.info) or higher to be
-installed.
+On all platforms, you'll need Qt Python 3 installed.
+On macOS/Linux [libusb-1.0](http://libusb.info) or higher is required, too.
 
 When everything is ready, you can open the provided CMakelists.txt project in Qt Creator and run any of the provided examples.
 See Qt documentation on how to compile on the command line or with other IDEs
 
 ## Environment Setup
+
+## Windows
+
+To allow WinUSB to access an USB Bluetooth dongle, you need to install a special device driver to make it accessible to user space processes.
+
+It works like this:
+
+-  Download [Zadig](http://zadig.akeo.ie)
+-  Start Zadig
+-  Select Options -> “List all devices”
+-  Select USB Bluetooth dongle in the big pull down list
+-  Select WinUSB in the right pull down list
+-  Select “Replace Driver”
 
 ### Linux
 
