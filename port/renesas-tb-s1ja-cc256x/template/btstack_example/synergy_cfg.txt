@@ -174,6 +174,10 @@ Synergy Configuration
   Module "Timer Driver on r_gpt"
     Parameter Checking: Default (BSP)
     
+  Module "Flash Driver on r_flash_lp"
+    Parameter Checking: Default (BSP)
+    Code Flash Programming Enable: Disabled
+    
   HAL
     Instance "g_elc ELC Driver on r_elc"
       Name [Fixed]: g_elc
@@ -263,5 +267,11 @@ Synergy Configuration
       GTIOCB Stop Level: Pin Level Low
       Callback: timer_1ms
       Overflow Interrupt Priority: Priority 3 (lowest - not valid if using ThreadX)
+      
+    Instance "g_flash0 Flash Driver on r_flash_lp"
+      Name: g_flash0
+      Data Flash Background Operation: Disabled
+      Callback: NULL
+      Flash Ready Interrupt Priority: Disabled
       
   Messaging

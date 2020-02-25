@@ -187,9 +187,9 @@
   <v1:configSetting configurationId="p304.gpio_mode" altId="p304.gpio_mode.gpio_mode_in"/>
   <v1:configSetting configurationId="p303.gpio_mode" altId="p303.gpio_mode.gpio_mode_out.high"/>
   <v1:configSetting configurationId="p304" altId="p304.input"/>
-  <v1:configSetting configurationId="p303" altId="p303.output.high"></v1:configSetting>
+  <v1:configSetting configurationId="p303" altId="p303.output.high"/>
   <v1:configSetting configurationId="sci0.sck" altId="sci0.sck.none"/>
-  <v1:configSetting configurationId="sci0.cts" altId="sci0.cts.none"></v1:configSetting>
+  <v1:configSetting configurationId="sci0.cts" altId="sci0.cts.none"/>
   <v1:configSetting configurationId="p112.gpio_mode" altId="p112.gpio_mode.gpio_mode_out.low"/>
   <v1:configSetting configurationId="p112" altId="p112.output.low"/>
   <v1:propertySetting propertyId="p112.symbolic_name" value="nShutdown"/>

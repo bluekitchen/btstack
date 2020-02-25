@@ -154,6 +154,10 @@
       <description>General Purpose Timer: Provides=[Timer ,GPT]</description>
       <originalPack>Renesas.Synergy.1.7.5.pack</originalPack>
     </component>
+    <component apiversion="" class="HAL Drivers" condition="" group="all" subgroup="r_flash_lp" variant="" vendor="Renesas" version="1.7.5">
+      <description>Flash Memory: Provides=[Flash]</description>
+      <originalPack>Renesas.Synergy.1.7.5.pack</originalPack>
+    </component>
   </synergyComponentSelection>
   <synergyIcuConfiguration/>
   <synergyMessagingConfiguration/>
@@ -247,6 +251,12 @@
       <property id="module.driver.timer.p_callback" value="timer_1ms"/>
       <property id="module.driver.timer.irq_ipl" value="board.icu.common.irq.priority3"/>
     </module>
+    <module id="module.driver.flash_on_flash_lp.182111309">
+      <property id="module.driver.flash.name" value="g_flash0"/>
+      <property id="module.driver.flash.data_flash_bgo" value="module.driver.flash.data_flash_bgo.disabled"/>
+      <property id="module.driver.flash.p_callback" value="NULL"/>
+      <property id="module.driver.flash.irq_ipl" value="board.icu.common.irq.disabled"/>
+    </module>
     <context id="_hal.0">
       <stack module="module.driver.elc_on_elc.0"/>
       <stack module="module.driver.cgc_on_cgc.0"/>
@@ -257,6 +267,7 @@
         <stack module="module.driver.transfer_on_dtc.1089663038" requires="module.driver.uart_on_sci_uart.requires.transfer_rx"/>
       </stack>
       <stack module="module.driver.timer_on_gpt.445970172"/>
+      <stack module="module.driver.flash_on_flash_lp.182111309"/>
     </context>
     <config id="config.driver.cgc">
       <property id="config.driver.cgc.param_checking_enable" value="config.driver.cgc.param_checking_enable.bsp"/>
@@ -268,6 +279,10 @@
     </config>
     <config id="config.driver.ioport">
       <property id="config.driver.ioport.checking" value="config.driver.ioport.checking.system"/>
+    </config>
+    <config id="config.driver.flash_lp">
+      <property id="config.driver.flash_lp.param_checking_enable" value="config.driver.flash_lp.param_checking_enable.bsp"/>
+      <property id="config.driver.flash_lp.param_code_flash_programming_enable" value="config.driver.flash_lp.param_code_flash_programming_enable.disabled"/>
     </config>
     <config id="config.driver.sci_uart">
       <property id="config.driver.sci_uart.external_rts_operation" value="config.driver.sci_uart.external_rts_operation.disabled"/>
