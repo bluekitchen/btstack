@@ -109,7 +109,7 @@ bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t u
         switch (data_type){
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0; i<data_len; i+=2){
+                for (i=0; (i+2) <= data_len; i+=2){
                     uint16_t uuid = little_endian_read_16(data, i);
                     if ( uuid == uuid16 ) return true;
                 }
@@ -118,8 +118,7 @@ bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t u
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
                 uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
                 reverse_128(ad_uuid128, uuid128_bt);
-            
-                for (i=0; i<data_len; i+=16){
+                for (i=0; (i+16) <= data_len; i+=16){
                     if (memcmp(uuid128_bt, &data[i], 16) == 0) return true;
                 }
                 break;
@@ -145,11 +144,10 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
         int i;
         uint8_t ad_uuid128[16];
 
-
         switch (data_type){
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0; i<data_len; i+=2){
+                for (i=0; (i+2) <= data_len; i+=2){
                     uint16_t uuid16 = little_endian_read_16(data, i);
                     uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
                     
@@ -159,7 +157,7 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
                 break;
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0; i<data_len; i+=16){
+                for (i=0; (i+16) <= data_len; i+=16){
                     if (memcmp(uuid128_le, &data[i], 16) == 0) return true;
                 }
                 break;
