@@ -67,6 +67,7 @@
 #include "btstack_stdin.h"
 #include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_uart_block.h"
 
 #ifdef Q_OS_WIN
 #define TLV_DB_PATH_PREFIX "btstack"
@@ -225,7 +226,25 @@ int main(int argc, char * argv[]){
     hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
+#if 1
+    // USB
     hci_init(hci_transport_usb_instance(), NULL);
+#else
+    // H4
+    static hci_transport_config_uart_t config = {
+        HCI_TRANSPORT_CONFIG_UART,
+        115200,
+        0,  // main baudrate
+        1,  // flow control
+        NULL,
+    };
+    config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
+
+    // init HCI
+    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
+    const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    hci_init(transport, (void*) &config);
+#endif
 
 #ifdef HAVE_PORTAUDIO
     btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());

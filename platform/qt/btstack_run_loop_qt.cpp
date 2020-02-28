@@ -71,21 +71,52 @@ static struct timeval init_tv;
 
 static BTstackRunLoopQt * btstack_run_loop_object;
 
-#ifdef Q_OS_WIN
 #include <QHash>
+#ifdef Q_OS_WIN
 // associate each data source with QWinEventNotifier
 static QHash<btstack_data_source_t *, QWinEventNotifier *> win_event_notifiers;
+#else
+static QHash<btstack_data_source_t *, QSocketNotifier *> read_notifiers;
+static QHash<btstack_data_source_t *, QSocketNotifier *> write_notifiers;
 #endif
+
+static void btstack_run_loop_qt_update_data_source(btstack_data_source_t * ds){
+#ifdef Q_OS_WIN
+    QWinEventNotifier * win_notifier = win_event_notifiers.value(ds, NULL);
+    if (win_notifier){
+        bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
+        win_notifier->setEnabled(enabled);
+    }
+#else
+    QSocketNotifier * read_notifier = read_notifiers.value(ds, NULL);
+    if (read_notifier){
+        bool read_enabled = (ds->flags & DATA_SOURCE_CALLBACK_READ)   != 0;
+        read_notifier->setEnabled(read_enabled);
+    }
+    QSocketNotifier * write_notifier = write_notifiers.value(ds, NULL);
+    if (write_notifier){
+        bool write_enabled = (ds->flags & DATA_SOURCE_CALLBACK_WRITE) != 0;
+        write_notifier->setEnabled(write_enabled);
+    }
+#endif
+}
 
 void btstack_run_loop_qt_add_data_source(btstack_data_source_t *ds){
 #ifdef Q_OS_WIN
     QWinEventNotifier * win_notifier = new QWinEventNotifier(ds->source.handle);
     win_event_notifiers.insert(ds, win_notifier);
-    QObject::connect(win_notifier, SIGNAL(activated(HANDLE)),
-                     btstack_run_loop_object, SLOT(processDataSource(HANDLE)));
-    bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
-    win_notifier->setEnabled(enabled);
+    btstack_run_loop_qt_update_data_source(ds);
+    QObject::connect(win_notifier, SIGNAL(activated(HANDLE)), btstack_run_loop_object, SLOT(processDataSource(HANDLE)));
     log_debug("add data source %p with handle %p", ds, ds->source.handle);
+#else
+    // POSIX Systems: macOS, Linux, ..
+    QSocketNotifier * read_notifier = new QSocketNotifier(ds->source.fd, QSocketNotifier::Read);
+    QSocketNotifier * write_notifier = new QSocketNotifier(ds->source.fd, QSocketNotifier::Write);
+    read_notifiers.insert(ds, read_notifier);
+    write_notifiers.insert(ds, write_notifier);
+    btstack_run_loop_qt_update_data_source(ds);
+    QObject::connect(read_notifier, SIGNAL(activated(int)),  btstack_run_loop_object, SLOT(processDataSourceRead(int)));
+    QObject::connect(write_notifier, SIGNAL(activated(int)), btstack_run_loop_object, SLOT(processDataSourceWrite(int)));
 #endif
     btstack_run_loop_base_add_data_source(ds);
 }
@@ -97,30 +128,29 @@ bool btstack_run_loop_qt_remove_data_source(btstack_data_source_t *ds){
         win_event_notifiers.remove(ds);
         free(win_notifier);
     }
+#else
+    QSocketNotifier * read_notifier = read_notifiers.value(ds, NULL);
+    if (read_notifier){
+        read_notifiers.remove(ds);
+        free(read_notifier);
+    }
+    QSocketNotifier * write_notifier = write_notifiers.value(ds, NULL);
+    if (write_notifier){
+        write_notifiers.remove(ds);
+        free(write_notifier);
+    }
 #endif
     return btstack_run_loop_base_remove_data_source(ds);
 }
 
 void btstack_run_loop_qt_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
     btstack_run_loop_base_enable_data_source_callbacks(ds, callback_types);
-#ifdef Q_OS_WIN
-    QWinEventNotifier * win_notifier = win_event_notifiers.value(ds, NULL);
-    if (win_notifier){
-        bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
-        win_notifier->setEnabled(enabled);
-    }
-#endif
+    btstack_run_loop_qt_update_data_source(ds);
 }
 
 void btstack_run_loop_qt_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
     btstack_run_loop_base_disable_data_source_callbacks(ds, callback_types);
-#ifdef Q_OS_WIN
-    QWinEventNotifier * win_notifier = win_event_notifiers.value(ds, NULL);
-    if (win_notifier){
-        bool enabled = (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)) != 0;
-        win_notifier->setEnabled(enabled);
-    }
-#endif
+    btstack_run_loop_qt_update_data_source(ds);
 }
 
 #ifdef _POSIX_MONOTONIC_CLOCK
@@ -231,6 +261,38 @@ void BTstackRunLoopQt::processDataSource(HANDLE handle){
             break;
         }
     }
+}
+#else
+
+static void btstack_run_loop_qt_process_data_source(int fd, uint16_t callback_types){
+    // find ds
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &btstack_run_loop_base_data_sources);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
+        if (fd == ds->source.fd){
+            if ((callback_types & DATA_SOURCE_CALLBACK_READ) != 0){
+                if ((ds->flags & DATA_SOURCE_CALLBACK_READ)  != 0){
+                    ds->process(ds, DATA_SOURCE_CALLBACK_READ);
+                }
+            }
+            if ((callback_types & DATA_SOURCE_CALLBACK_WRITE) != 0){
+                if ((ds->flags & DATA_SOURCE_CALLBACK_WRITE)  != 0){
+                    ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
+                }
+            }
+            break;
+        }
+    }
+}
+
+void BTstackRunLoopQt::processDataSourceRead(int fd){
+    log_debug("read - lookup data source for handle %p, sender %p", fd, QObject::sender());
+    btstack_run_loop_qt_process_data_source(fd, DATA_SOURCE_CALLBACK_READ);
+}
+void BTstackRunLoopQt::processDataSourceWrite(int fd){
+    log_debug("write - lookup data source for handle %p, sender %p", fd, QObject::sender());
+    btstack_run_loop_qt_process_data_source(fd, DATA_SOURCE_CALLBACK_WRITE);
 }
 #endif
 

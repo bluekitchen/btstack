@@ -54,9 +54,6 @@ file(GLOB SOURCES_HXCMOD    "${BTSTACK_ROOT}/3rd-party/hxcmod-player/*.c"  "${BT
 file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 
 set(SOURCES_POSIX
-    # Adding btstack_uart_block.c causes weird link error, skip for now. QSerialPort might be used in btstack_uart_block_qt.cpp
-    # ${BTSTACK_ROOT}/platform/posix/btstack_uart_block.c
-
     ${BTSTACK_ROOT}/platform/posix/btstack_audio_portaudio.c
     ${BTSTACK_ROOT}/platform/posix/btstack_tlv_posix.c
     ${BTSTACK_ROOT}/platform/posix/wav_util.c
@@ -130,6 +127,7 @@ ELSE()
     set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c)
 
     list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c)
+    list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_uart_block_posix.c)
 ENDIF()
 
 set(SOURCES

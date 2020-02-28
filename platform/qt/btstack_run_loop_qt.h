@@ -52,6 +52,8 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <QWinEventNotifier>
+#else
+#include <QSocketNotifier>
 #endif
 class BTstackRunLoopQt : public QObject {
     Q_OBJECT
@@ -59,6 +61,9 @@ public slots:
     void processTimers(void);
 #ifdef Q_OS_WIN
     void processDataSource(HANDLE handle);
+#else
+    void processDataSourceRead(int fd);
+    void processDataSourceWrite(int fd);
 #endif
 };
 #endif
