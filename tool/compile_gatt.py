@@ -27,7 +27,7 @@ try:
     have_crypto = True
 except ImportError:
     have_crypto = False
-    print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using dummy hash value 00..00)")
+    print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
     print("[!] Please install PyCryptodome, e.g. 'pip install pycryptodomex'\n")
 
 header = '''
@@ -142,8 +142,8 @@ def aes_cmac(key, n):
         cobj.update(n)
         return cobj.digest()
     else:
-        # return dummy value
-        return b'\x00' * 16
+        # return random value
+        return os.urandom(16)
 
 def read_defines(infile):
     defines = dict()
