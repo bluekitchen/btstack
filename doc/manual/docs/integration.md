@@ -35,7 +35,7 @@ Currently, we have two examples for this:
     managed in a linked list. Then, the *select* function is used to wait
     for the next file descriptor to become ready or timer to expire.
 
--   *btstack_run_loop_cocoa.c* is an implementation for the CoreFoundation
+-   *btstack_run_loop_cocoa.c* is an integration for the CoreFoundation
     Framework used in OS X and iOS. All run loop functions are
     implemented in terms of CoreFoundation calls, data sources and
     timers are modeled as CFSockets and CFRunLoopTimer respectively.
@@ -44,6 +44,11 @@ Currently, we have two examples for this:
     The data sources are modeled with Event objects and managed in a linked list.
     Then, the *WaitForMultipleObjects* is used to wait for the next Event to
     becomre ready or timer to expire.
+
+-   *btstack_run_loop_qt* is an integration for the Qt run loop.
+    The data sources on Windows systems use Event objects via Qt's QEventNotifier adapter,
+    while a QSocketNotifier is used for Mac/Linux to handle file descriptors.
+    With these in place, the Windows/POSIX implemenations for HCI USB/H2 and HCI H4 can be used.
 
 ## Adapting BTstack for Multi-Threaded Environments {#sec:multithreadingIntegration}
 
