@@ -69,6 +69,7 @@ No build server | [posix-h4-da14581](https://github.com/bluekitchen/btstack/tree
 No build server | [posix-h4-da14585](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4-da14585) | Unix-based system connected to Dialog Semiconductor DA14585 via H4 over serial port   
 No build server | [posix-h5](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Bluetooth module via H5 over serial port   
 No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port
+No build server | [qt-usb](https://github.com/bluekitchen/btstack/tree/develop/port/qt-h4) | Unix- or Win32-based [Qt application](https://qt.io) connected to Bluetooth module via H4 over serial port 
 No build server | [qt-usb](https://github.com/bluekitchen/btstack/tree/develop/port/qt-usb) | Unix- or Win32-based [Qt application](https://qt.io) with dedicated USB Bluetooth dongle
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/develop/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
 No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/develop/port/windows-winusb) | Win32-based system with dedicated USB Bluetooth dongle
