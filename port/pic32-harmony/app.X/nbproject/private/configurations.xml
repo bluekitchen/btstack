@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="62">
+<configurationDescriptor version="65">
   <projectmakefile>Makefile</projectmakefile>
   <defaultConf>0</defaultConf>
   <confs>
     <conf name="default" type="2">
-      <platformToolSN></platformToolSN>
-      <languageToolchainDir>/Applications/microchip/xc32/v1.40/bin</languageToolchainDir>
+      <platformToolSN>noToolString</platformToolSN>
+      <languageToolchainDir>/Applications/microchip/xc32/v2.40/bin</languageToolchainDir>
       <mdbdebugger version="1">
         <placeholder1>place holder 1</placeholder1>
         <placeholder2>place holder 2</placeholder2>

@@ -92,12 +92,12 @@ for file in os.listdir(examples_embedded):
         if file == "private":
             shutil.copytree(src, dst)
             continue
-        # replace app.X and spp_and_le_counter.c
+        # replace app.X and spp_counter.c
         with open(src, 'r') as fin:
             template = fin.read()
         with open(dst, 'wt') as fout:
             # template = template.replace('app', example)
-            template = template.replace("<itemPath>../../../example/spp_and_le_counter.c", "<itemPath>../../../../framework/btstack/example/" + example + ".c")
+            template = template.replace("<itemPath>../../../example/spp_counter.c", "<itemPath>../../../../framework/btstack/example/" + example + ".c")
             template = template.replace(">../../../../driver", ">../../../../framework/driver")
             template = template.replace(">../../../../system", ">../../../../framework/system")
             template = template.replace(">../../../../../bin/framework/peripheral", ">../../../../bin/framework/peripheral")
@@ -133,5 +133,5 @@ for file in os.listdir(examples_embedded):
             template = template.replace("../src/btstack_port.c",    "../../../../framework/btstack/port/pic32-harmony/src/btstack_port.c")
             template = template.replace("../src/main.c",            "../../../../framework/btstack/port/pic32-harmony/src/main.c")
             template = template.replace("../src/system_config",     "../../../../framework/btstack/port/pic32-harmony/src/system_config")
-            template = template.replace("../../../example/spp_and_le_counter.c", "../../../../framework/btstack/example/" + example + ".c")
+            template = template.replace("../../../example/spp_counter.c", "../../../../framework/btstack/example/" + example + ".c")
             fout.write(template)

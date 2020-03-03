@@ -12,6 +12,27 @@
             <asminc-extensions>inc</asminc-extensions>
             <sourceEncoding>ISO-8859-1</sourceEncoding>
             <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>../src</sourceRootElem>
+                <sourceRootElem>../../../../system</sourceRootElem>
+                <sourceRootElem>../../../../driver</sourceRootElem>
+                <sourceRootElem>../../../include</sourceRootElem>
+                <sourceRootElem>../../../src</sourceRootElem>
+                <sourceRootElem>../../../ble</sourceRootElem>
+                <sourceRootElem>../../../chipset/csr</sourceRootElem>
+                <sourceRootElem>../../../example</sourceRootElem>
+                <sourceRootElem>../../../platform/embedded</sourceRootElem>
+                <sourceRootElem>../../../3rd-party</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>default</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
         </data>
     </configuration>
 </project>
