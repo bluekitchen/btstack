@@ -491,7 +491,11 @@ static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, 
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
     notification->callback = packet_handler;
     notification->con_handle = con_handle;
-    notification->attribute_handle = characteristic->value_handle;
+    if (characteristic == NULL){
+        notification->attribute_handle = GATT_CLIENT_ANY_VALUE_HANDLE;
+    } else {
+        notification->attribute_handle = characteristic->value_handle;
+    }
     btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
@@ -504,8 +508,8 @@ static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint
     btstack_linked_list_iterator_init(&it, &gatt_client_value_listeners);
     while (btstack_linked_list_iterator_has_next(&it)){
         gatt_client_notification_t * notification = (gatt_client_notification_t*) btstack_linked_list_iterator_next(&it);
-        if (notification->con_handle != con_handle) continue;
-        if (notification->attribute_handle != attribute_handle) continue;
+        if ((notification->con_handle       != GATT_CLIENT_ANY_CONNECTION)   && (notification->con_handle       != con_handle)) continue;
+        if ((notification->attribute_handle != GATT_CLIENT_ANY_VALUE_HANDLE) && (notification->attribute_handle != attribute_handle)) continue;
         (*notification->callback)(HCI_EVENT_PACKET, 0, packet, size);
     } 
 }

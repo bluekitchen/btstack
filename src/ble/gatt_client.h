@@ -691,8 +691,8 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
  * @brief Register for notifications and indications of a characteristic enabled by gatt_client_write_client_characteristic_configuration
  * @param notification struct used to store registration
  * @param callback
- * @param con_handle
- * @param characteristic
+ * @param con_handle or GATT_CLIENT_ANY_CONNECTION to receive updates from all connected devices
+ * @param characteristic or NULL to receive updates for all characteristics
  */
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
 

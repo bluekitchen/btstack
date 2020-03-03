@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+## Changes March 2020
+
+### Added
+GATT Client: allow to register for any notification/indication and/or any connection
+
 ## Changes Februar 2020
 
 ### Fixed
