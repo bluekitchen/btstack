@@ -250,10 +250,10 @@ int main(int argc, char * argv[]){
     // init HCI
 #ifdef Q_OS_WIN
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
-    config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
+    config.device_name = "\\\\.\\COM7";
 #else
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-    config.device_name = "\\\\.\\COM7";
+    config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
 #endif
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &config);
