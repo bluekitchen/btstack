@@ -369,8 +369,6 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                     buffer[0] =  remote_addr_type;
                     reverse_bd_addr(remote_addr, &buffer[1]);
                     btp_send(BTP_SERVICE_ID_GAP, BTP_GAP_EV_DEVICE_DISCONNECTED, 0, sizeof(buffer), &buffer[0]);
-                    // also unregister
-                    gatt_client_stop_listening_for_characteristic_value_updates(&gatt_client_notification);
                     break;
                 }
                 case HCI_EVENT_ENCRYPTION_CHANGE:
@@ -1583,10 +1581,6 @@ static void btp_gatt_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
                 uint8_t data[2];
                 little_endian_store_16(data, 0, enable ? GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION : 0);
                 gatt_client_write_value_of_characteristic(&gatt_client_packet_handler, remote_handle, ccc_handle, sizeof(data), data);
-                // Assume value handle is just before ccc handle - never use for production!
-                gatt_client_characteristic_t characteristic;
-                characteristic.value_handle = 0;
-                gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, remote_handle, &characteristic);
             }
             break;
         case BTP_GATT_OP_CFG_INDICATE:
@@ -1908,6 +1902,7 @@ int btstack_main(int argc, const char * argv[])
 
     // GATT Client
     gatt_client_init();
+    gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &gatt_client_packet_handler, GATT_CLIENT_ANY_CONNECTION, NULL);
 
     MESSAGE("auto-pts iut-btp-client started");
 
