@@ -228,7 +228,7 @@ static void mesh_upper_transport_process_unsegmented_message_done(mesh_network_p
 static void mesh_upper_transport_process_segmented_message_done(mesh_transport_pdu_t *transport_pdu){
     crypto_active = 0;
     if (mesh_transport_ctl(transport_pdu)) {
-        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)transport_pdu);
+        btstack_assert(0);
     } else {
         mesh_transport_pdu_free(transport_pdu);
         mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)incoming_transport_pdu_raw);
