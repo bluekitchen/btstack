@@ -76,6 +76,14 @@ static void mesh_message_pdu_free(mesh_message_pdu_t * message_pdu){
     btstack_memory_mesh_message_pdu_free(message_pdu);
 }
 
+static void mesh_lower_transport_report_segments_as_processed(mesh_message_pdu_t * message_pdu) {
+    while (message_pdu->segments){
+        mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
+        mesh_network_message_processed_by_higher_layer(segment);
+    }
+}
+
+
 // Transport PDU Getter
 uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu){
     return transport_pdu->network_header[0] & 0x7f;
@@ -117,6 +125,9 @@ void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest
     big_endian_store_16(transport_pdu->network_header, 7, dest);
 }
 
+uint16_t mesh_message_ctl(mesh_message_pdu_t * message_pdu){
+    return message_pdu->network_header[1] >> 7;
+}
 static uint16_t mesh_message_ttl(mesh_message_pdu_t * message_pdu){
     return message_pdu->network_header[1] & 0x7f;
 }
@@ -327,10 +338,7 @@ static void mesh_lower_transport_rx_segmented_message_complete(mesh_message_pdu_
         peer->message_pdu = NULL;
     }
     // free segments
-    while (message_pdu->segments){
-        mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
-        mesh_network_message_processed_by_higher_layer(segment);
-    }
+    mesh_lower_transport_report_segments_as_processed(message_pdu);
 }
 
 static void mesh_lower_transport_rx_ack_timeout(btstack_timer_source_t *ts){
@@ -603,6 +611,10 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
             break;
         case MESH_PDU_TYPE_TRANSPORT:
             mesh_transport_pdu_free((mesh_transport_pdu_t *) pdu);
+            break;
+        case MESH_PDU_TYPE_MESSAGE:
+            mesh_lower_transport_report_segments_as_processed((mesh_message_pdu_t *) pdu);
+            mesh_message_pdu_free((mesh_message_pdu_t *) pdu);
             break;
         default:
             break;
