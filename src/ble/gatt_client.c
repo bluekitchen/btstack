@@ -677,6 +677,10 @@ static void report_gatt_included_service_uuid128(gatt_client_t * peripheral, uin
 // @note assume that value is part of an l2cap buffer - overwrite HCI + L2CAP packet headers
 static const int characteristic_value_event_header_size = 8;
 static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // avoid using pre ATT headers.
+    return NULL;
+#endif
     // before the value inside the ATT PDU
     uint8_t * packet = value - characteristic_value_event_header_size;
     packet[0] = type;
@@ -691,6 +695,10 @@ static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static const int long_characteristic_value_event_header_size = 10;
 static uint8_t * setup_long_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * value, uint16_t length){
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // avoid using pre ATT headers.
+    return NULL;
+#endif
 #if defined(HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 10 - 8) // L2CAP Header (4) - ACL Header (4)
     // before the value inside the ATT PDU
     uint8_t * packet = value - long_characteristic_value_event_header_size;
@@ -747,7 +755,7 @@ static void report_gatt_long_characteristic_descriptor(gatt_client_t * periphera
 
 static void report_gatt_all_characteristic_descriptors(gatt_client_t * peripheral, uint8_t * packet, uint16_t size, uint16_t pair_size){
     int i;
-    for (i = 0; i<size; i+=pair_size){
+    for (i = 0; (i + pair_size) <= size; i += pair_size){
         uint16_t descriptor_handle = little_endian_read_16(packet,i);
         uint8_t uuid128[16];
         uint16_t uuid16 = 0;
@@ -1158,8 +1166,8 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
 }
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-
     gatt_client_t * peripheral;
+    if (size < 1) return;
 
     if (packet_type == HCI_EVENT_PACKET) {
         switch (packet[0]){
@@ -1168,6 +1176,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 break;
             // att_server has negotiated the mtu for this connection, cache if context exists
             case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                if (size < 6) break;
                 peripheral = get_gatt_client_context_for_handle(handle);
                 if (peripheral == NULL) break;
                 peripheral->mtu = little_endian_read_16(packet, 4);
@@ -1183,6 +1192,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     // special cases: notifications don't need a context while indications motivate creating one
     switch (packet[0]){
         case ATT_HANDLE_VALUE_NOTIFICATION:
+            if (size < 3) return;
             report_gatt_notification(handle, little_endian_read_16(packet,1), &packet[3], size-3);
             return;                
         case ATT_HANDLE_VALUE_INDICATION:
@@ -1198,6 +1208,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     switch (packet[0]){
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
+            if (size < 3) break;
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
             peripheral->mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
@@ -1217,6 +1228,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             }
             break;
         case ATT_HANDLE_VALUE_INDICATION:
+            if (size < 3) break;
             report_gatt_indication(handle, little_endian_read_16(packet,1), &packet[3], size-3);
             peripheral->send_confirmation = 1;
             break;
@@ -1235,10 +1247,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
                 case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                 {
+                    if (size < 2) break;
                     uint16_t uuid16 = 0;
                     uint16_t pair_size = packet[1];
                     
                     if (pair_size < 7){
+                        if (size < 8) break;
                         // UUIDs not available, query first included service
                         peripheral->start_group_handle = little_endian_read_16(packet, 2); // ready for next query
                         peripheral->query_start_handle = little_endian_read_16(packet, 4);
@@ -1248,7 +1262,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     }
 
                     uint16_t offset;
-                    for (offset = 2; offset < size; offset += pair_size){
+                    for (offset = 2; (offset + 8) < size; offset += pair_size){
                         uint16_t include_handle = little_endian_read_16(packet, offset);
                         peripheral->query_start_handle = little_endian_read_16(packet,offset+2);
                         peripheral->query_end_handle = little_endian_read_16(packet,offset+4);
@@ -1315,7 +1329,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             int i;
             uint16_t start_group_handle;
             uint16_t   end_group_handle= 0xffff; // asserts GATT_EVENT_QUERY_COMPLETE is emitted if no results 
-            for (i = 1; i<size; i+=pair_size){
+            for (i = 1; (i + pair_size) <= size; i += pair_size){
                 start_group_handle = little_endian_read_16(packet,i);
                 end_group_handle = little_endian_read_16(packet,i+2);
                 emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, peripheral->uuid128);
@@ -1326,10 +1340,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         }
         case ATT_FIND_INFORMATION_REPLY:
         {
+            if (size < 2) break;
+
             uint8_t pair_size = 4;
             if (packet[1] == 2){
                 pair_size = 18;
             }
+            uint16_t offset = 2;
+
+            if (size < (pair_size + offset)) break;
             uint16_t last_descriptor_handle = little_endian_read_16(packet, size - pair_size);
 
 #ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
@@ -1337,8 +1356,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             if (peripheral->gatt_client_state == P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT){
                 // iterate over descriptors looking for CCC
                 if (pair_size == 4){
-                    int offset = 2;
-                    while (offset < size){
+                    while ((offset + 4) <= size){
                         uint16_t uuid16 = little_endian_read_16(packet, offset + 2);
                         if (uuid16 == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION){
                             peripheral->client_characteristic_configuration_handle = little_endian_read_16(packet, offset);
@@ -1479,7 +1497,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
 
         case ATT_ERROR_RESPONSE:
-
+            if (size < 5) return;
             switch (packet[4]){
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
                     switch(peripheral->gatt_client_state){
@@ -2137,3 +2155,9 @@ uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_hand
     att_dispatch_client_request_can_send_now_event(context->con_handle);
     return ERROR_CODE_SUCCESS;
 }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+    gatt_client_att_packet_handler(packet_type, handle, packet, size);
+}
+#endif
