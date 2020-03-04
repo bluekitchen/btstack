@@ -1,7 +1,14 @@
+CMakeCache.txt
+CMakeFiles
+crash-*
+default.profraw
 build
 Makefile
 cmake-build-debug
 cmake_install.cmake
 fuzz_hci
 fuzz_hci_transport_h4
+fuzz_ad_parser
+fuzz_att_db
+fuzz_gatt_client
 libbtstack.a
