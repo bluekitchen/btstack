@@ -551,45 +551,6 @@ static void mesh_lower_transport_process_segment( mesh_message_pdu_t * message_p
         if ( (message_pdu->block_ack & (1<<i)) == 0) return;
     }
 
-#if 1
-    // flatten segmented message into mesh_transport_pdu_t
-
-    // TODO: reserve buffer for this
-    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
-    if (transport_pdu == NULL){
-        mesh_lower_transport_rx_segmented_message_complete(message_pdu);
-        return;
-    }
-
-    // assemble payload
-    while (message_pdu->segments){
-        mesh_network_pdu_t * segment  = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
-        // get segment n
-        uint8_t * lower_transport_pdu = mesh_network_pdu_data(segment);
-        uint8_t   seg_o               =  ( big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
-        uint8_t * segment_data = &lower_transport_pdu[4];
-        (void)memcpy(&transport_pdu->data[seg_o * 12], segment_data, 12);
-    }
-
-#ifdef LOG_LOWER_TRANSPORT
-    mesh_print_hex("Assembled payload", transport_pdu->data, transport_pdu->len);
-#endif
-
-    // copy meta data
-    transport_pdu->len =  message_pdu->len;
-    transport_pdu->netkey_index =  message_pdu->netkey_index;
-    transport_pdu->transmic_len =  message_pdu->transmic_len;
-    transport_pdu->akf_aid_control =  message_pdu->akf_aid_control;
-    transport_pdu->flags =  message_pdu->flags;
-    transport_pdu->message_complete =  message_pdu->message_complete;
-    transport_pdu->seq_zero = message_pdu->seq_zero;
-    (void)memcpy(transport_pdu->network_header, message_pdu->network_header, 9);
-
-#endif
-
-    // mark as done
-    mesh_lower_transport_rx_segmented_message_complete(message_pdu);
-
     // store block ack in peer info
     mesh_peer_t * peer = mesh_peer_for_addr(mesh_message_src(message_pdu));
     // TODO: check if NULL check can be removed
@@ -601,7 +562,10 @@ static void mesh_lower_transport_process_segment( mesh_message_pdu_t * message_p
     mesh_lower_transport_send_ack_for_transport_pdu(message_pdu);
 
     // forward to upper transport
-    higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t*) transport_pdu);
+    higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t*) message_pdu);
+
+    // mark as done
+    mesh_lower_transport_rx_segmented_message_complete(message_pdu);
 }
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
