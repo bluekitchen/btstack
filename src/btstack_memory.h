@@ -153,11 +153,13 @@ sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
 #endif
 #ifdef ENABLE_MESH
-// mesh_network_pdu, mesh_transport_pdu, mesh_network_key, mesh_transport_key, mesh_virtual_address, mesh_subnet
+// mesh_network_pdu, mesh_transport_pdu, mesh_message_pdu, mesh_network_key, mesh_transport_key, mesh_virtual_address, mesh_subnet
 mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void);
 void   btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu);
 mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void);
 void   btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu);
+mesh_message_pdu_t * btstack_memory_mesh_message_pdu_get(void);
+void   btstack_memory_mesh_message_pdu_free(mesh_message_pdu_t *mesh_message_pdu);
 mesh_network_key_t * btstack_memory_mesh_network_key_get(void);
 void   btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key);
 mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void);

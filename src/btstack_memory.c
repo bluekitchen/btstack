@@ -35,11 +35,11 @@
  *
  */
 
+
 #define BTSTACK_FILE__ "btstack_memory.c"
 
-
 /*
- *  btstack_memory.h
+ *  btstack_memory.c
  *
  *  @brief BTstack memory management via configurable memory pools
  *
@@ -992,6 +992,52 @@ void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport
 #endif
 
 
+// MARK: mesh_message_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_MESSAGE_PDUS)
+    #if defined(MAX_NO_MESH_MESSAGE_PDUS)
+        #error "Deprecated MAX_NO_MESH_MESSAGE_PDUS defined instead of MAX_NR_MESH_MESSAGE_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_MESSAGE_PDUS."
+    #else
+        #define MAX_NR_MESH_MESSAGE_PDUS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_MESSAGE_PDUS
+#if MAX_NR_MESH_MESSAGE_PDUS > 0
+static mesh_message_pdu_t mesh_message_pdu_storage[MAX_NR_MESH_MESSAGE_PDUS];
+static btstack_memory_pool_t mesh_message_pdu_pool;
+mesh_message_pdu_t * btstack_memory_mesh_message_pdu_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_message_pdu_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_message_pdu_t));
+    }
+    return (mesh_message_pdu_t *) buffer;
+}
+void btstack_memory_mesh_message_pdu_free(mesh_message_pdu_t *mesh_message_pdu){
+    btstack_memory_pool_free(&mesh_message_pdu_pool, mesh_message_pdu);
+}
+#else
+mesh_message_pdu_t * btstack_memory_mesh_message_pdu_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_message_pdu_free(mesh_message_pdu_t *mesh_message_pdu){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_message_pdu;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_message_pdu_t * btstack_memory_mesh_message_pdu_get(void){
+    void * buffer = malloc(sizeof(mesh_message_pdu_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_message_pdu_t));
+    }
+    return (mesh_message_pdu_t *) buffer;
+}
+void btstack_memory_mesh_message_pdu_free(mesh_message_pdu_t *mesh_message_pdu){
+    free(mesh_message_pdu);
+}
+#endif
+
+
 // MARK: mesh_network_key_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_NETWORK_KEYS)
     #if defined(MAX_NO_MESH_NETWORK_KEYS)
@@ -1243,6 +1289,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_MESH_TRANSPORT_PDUS > 0
     btstack_memory_pool_create(&mesh_transport_pdu_pool, mesh_transport_pdu_storage, MAX_NR_MESH_TRANSPORT_PDUS, sizeof(mesh_transport_pdu_t));
+#endif
+#if MAX_NR_MESH_MESSAGE_PDUS > 0
+    btstack_memory_pool_create(&mesh_message_pdu_pool, mesh_message_pdu_storage, MAX_NR_MESH_MESSAGE_PDUS, sizeof(mesh_message_pdu_t));
 #endif
 #if MAX_NR_MESH_NETWORK_KEYS > 0
     btstack_memory_pool_create(&mesh_network_key_pool, mesh_network_key_storage, MAX_NR_MESH_NETWORK_KEYS, sizeof(mesh_network_key_t));

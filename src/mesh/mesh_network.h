@@ -68,6 +68,7 @@ typedef enum {
 typedef enum {
     MESH_PDU_TYPE_NETWORK = 0,
     MESH_PDU_TYPE_TRANSPORT,
+    MESH_PDU_TYPE_MESSAGE,
 } mesh_pdu_type_t;
 
 typedef struct mesh_pdu {
@@ -141,6 +142,40 @@ typedef struct {
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
 } mesh_transport_pdu_t;
+
+typedef struct {
+    mesh_pdu_t pdu_header;
+
+    // rx/tx: acknowledgement timer / segment transmission timer
+    btstack_timer_source_t acknowledgement_timer;
+    // rx: incomplete timer / tx: resend timer
+    btstack_timer_source_t incomplete_timer;
+    // block access
+    uint32_t              block_ack;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // transmic size
+    uint8_t               transmic_len;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // network pdu header
+    uint8_t               network_header[9];
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // acknowledgement timer active
+    uint8_t               acknowledgement_timer_active;
+    // incomplete timer active
+    uint8_t               incomplete_timer_active;
+    // message complete
+    uint8_t               message_complete;
+    // seq_zero for segmented messages
+    uint16_t              seq_zero;
+    // pdu segments
+    uint16_t              len;
+    btstack_linked_list_t segments;
+} mesh_message_pdu_t;
 
 typedef enum {
     MESH_KEY_REFRESH_NOT_ACTIVE = 0,
