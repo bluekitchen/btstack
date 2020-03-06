@@ -1251,7 +1251,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     uint16_t uuid16 = 0;
                     uint16_t pair_size = packet[1];
                     
-                    if (pair_size < 7){
+                    if (pair_size == 6){
                         if (size < 8) break;
                         // UUIDs not available, query first included service
                         peripheral->start_group_handle = little_endian_read_16(packet, 2); // ready for next query
@@ -1261,8 +1261,11 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         break;
                     }
 
+                    if (pair_size != 8) break;
+
+                    // UUIDs included, report all of them
                     uint16_t offset;
-                    for (offset = 2; (offset + 8) < size; offset += pair_size){
+                    for (offset = 2; (offset + 8) <= size; offset += pair_size){
                         uint16_t include_handle = little_endian_read_16(packet, offset);
                         peripheral->query_start_handle = little_endian_read_16(packet,offset+2);
                         peripheral->query_end_handle = little_endian_read_16(packet,offset+4);
