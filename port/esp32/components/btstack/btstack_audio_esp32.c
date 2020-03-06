@@ -51,6 +51,7 @@
 #include "hal_audio.h"
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 #include "driver/i2s.h"
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
