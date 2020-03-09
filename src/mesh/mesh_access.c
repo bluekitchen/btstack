@@ -688,11 +688,72 @@ void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t
     }
 }
 
-// access message template
+// mesh_message_t builder
+mesh_message_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
+    btstack_assert(num_segments > 0);
+    btstack_assert(segmented || (num_segments == 1));
 
-mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *message_template, ...){
-    mesh_network_pdu_t * network_pdu = mesh_access_network_init(message_template->opcode);
-    if (!network_pdu) return NULL;
+    mesh_message_pdu_t * pdu = mesh_message_pdu_get();
+    if (!pdu) return NULL;
+
+    // TODO: handle segmented messages
+    btstack_assert(segmented == false);
+
+    // use mesh_network_t as before
+    mesh_network_pdu_t * segment = mesh_network_pdu_get();
+    if (segment == NULL){
+        mesh_message_pdu_free(pdu);
+        return NULL;
+    }
+    btstack_linked_list_add(&pdu->segments, (btstack_linked_item_t *) segment);
+
+    pdu->len = mesh_access_setup_opcode(&segment->data[10], opcode) + 10;
+    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
+    return pdu;
+}
+
+void mesh_access_message_add_uint8(mesh_message_pdu_t * pdu, uint8_t value){
+    // TODO: handle segmented messages
+    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
+    segment->data[pdu->len++] = value;
+}
+
+void mesh_access_message_add_uint16(mesh_message_pdu_t * pdu, uint16_t value){
+    // TODO: handle segmented messages
+    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
+    little_endian_store_16(segment->data, pdu->len, value);
+    pdu->len += 2;
+}
+
+void mesh_access_message_add_uint24(mesh_message_pdu_t * pdu, uint16_t value){
+    // TODO: handle segmented messages
+    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
+    little_endian_store_24(segment->data, pdu->len, value);
+    pdu->len += 3;
+}
+
+void mesh_access_message_add_uint32(mesh_message_pdu_t * pdu, uint16_t value){
+    // TODO: handle segmented messages
+    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
+    little_endian_store_32(segment->data, pdu->len, value);
+    pdu->len += 4;
+}
+
+void mesh_access_message_add_model_identifier(mesh_message_pdu_t * pdu, uint32_t model_identifier){
+    if (mesh_model_is_bluetooth_sig(model_identifier)){
+        mesh_access_message_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
+    } else {
+        mesh_access_message_add_uint32( pdu, model_identifier );
+    }
+}
+
+// access message template
+mesh_message_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...){
+    btstack_assert(segmented == false);
+
+    // TODO: handle segmented messages
+    mesh_message_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode, segmented, 1);
+    if (!message_pdu) return NULL;
 
     va_list argptr;
     va_start(argptr, message_template);
@@ -705,23 +766,24 @@ mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_mes
         switch (*format){
             case '1':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_network_add_uint8( network_pdu, word);
+                mesh_access_message_add_uint8( message_pdu, word);
                 break;
             case '2':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_network_add_uint16( network_pdu, word);
+                mesh_access_message_add_uint16( message_pdu, word);
                 break;
             case '3':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_network_add_uint24( network_pdu, longword);
+                mesh_access_message_add_uint24( message_pdu, longword);
                 break;
             case '4':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_network_add_uint32( network_pdu, longword);
+                mesh_access_message_add_uint32( message_pdu, longword);
+                mesh_access_message_add_uint32( message_pdu, longword);
                 break;
             case 'm':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_network_add_model_identifier( network_pdu, longword);
+                mesh_access_message_add_model_identifier( message_pdu, longword);
                 break;
             default:
                 log_error("Unsupported mesh message format specifier '%c", *format);
@@ -732,7 +794,7 @@ mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_mes
 
     va_end(argptr);
 
-    return network_pdu;
+    return message_pdu;
 }
 
 mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...){
@@ -782,6 +844,7 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
 
     return transport_pdu;
 }
+
 
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode){
     // find opcode in table

@@ -556,7 +556,7 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
             break;
         case MESH_PDU_TYPE_MESSAGE:
             message_pdu = (mesh_message_pdu_t *) pdu;
-            mesh_message_pdu_free(pdu);
+            mesh_message_pdu_free(message_pdu);
         default:
             break;
     }

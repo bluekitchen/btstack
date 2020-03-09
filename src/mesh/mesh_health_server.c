@@ -108,14 +108,14 @@ const mesh_access_message_t mesh_foundation_health_attention_status = {
 static mesh_pdu_t * health_period_status(mesh_model_t * mesh_model){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     // setup message
-    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_foundation_health_period_status, state->fast_period_divisor);
-    return (mesh_pdu_t *) transport_pdu;
+    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_period_status, state->fast_period_divisor);
+    return (mesh_pdu_t *) message_pdu;
 }
 
 static mesh_pdu_t * health_attention_status(void){
     // setup message
-    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_foundation_health_attention_status, mesh_attention_timer_get());
-    return (mesh_pdu_t *) transport_pdu;
+    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_attention_status, mesh_attention_timer_get());
+    return (mesh_pdu_t *) message_pdu;
 }
 
 // report fault status - used for both current as well as registered faults, see registered_faults param

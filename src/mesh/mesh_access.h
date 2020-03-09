@@ -264,9 +264,16 @@ void mesh_access_network_add_uint24(mesh_network_pdu_t * pdu, uint16_t value);
 void mesh_access_network_add_uint32(mesh_network_pdu_t * pdu, uint16_t value);
 void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t model_identifier);
 
+mesh_message_pdu_t mesh_access_pdu_init(uint32_t opcode, bool segmented, uint8_t num_segments);
+void mesh_access_message_add_uint8(mesh_message_pdu_t * pdu, uint8_t value);
+void mesh_access_message_add_uint16(mesh_message_pdu_t * pdu, uint16_t value);
+void mesh_access_message_add_uint24(mesh_message_pdu_t * pdu, uint16_t value);
+void mesh_access_message_add_uint32(mesh_message_pdu_t * pdu, uint16_t value);
+void mesh_access_message_add_model_identifier(mesh_message_pdu_t * pdu, uint32_t model_identifier);
+
 // message builder using template
-mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *message_template, ...);
 mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...);
+mesh_message_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
