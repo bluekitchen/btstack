@@ -166,6 +166,9 @@ static btstack_linked_list_t lower_transport_outgoing;
 static mesh_transport_pdu_t * lower_transport_outgoing_pdu;
 static mesh_network_pdu_t   * lower_transport_outgoing_segment;
 static uint16_t               lower_transport_outgoing_seg_o;
+
+static mesh_message_pdu_t   * lower_transport_outgoing_message;
+
 // segment at network layer
 static int                    lower_transport_outgoing_segment_queued;
 // transmission timeout occured (while outgoing segment queued at network layer)
@@ -749,30 +752,41 @@ static void mesh_lower_transport_segment_transmission_fired(void){
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu){
     // figure out what pdu was sent
 
-    // single segment of segmented message?
+    // single segment?
     if (lower_transport_outgoing_segment == network_pdu){
 
+        if (lower_transport_outgoing_message != NULL){
+            // of unsegmented message
+            mesh_message_pdu_t * message_pdu = lower_transport_outgoing_message;
+            lower_transport_outgoing_message = NULL;
+            lower_transport_outgoing_segment = NULL;
+            higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) message_pdu);
+            return;
+
+        } else {
+            // of segmented message
 #ifdef LOG_LOWER_TRANSPORT
-        printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), network_pdu);
+            printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), network_pdu);
 #endif
 
-        lower_transport_outgoing_segment_queued = 0;
-        if (lower_transport_outgoing_trasnmission_complete){
-            // handle complete
-            lower_transport_outgoing_trasnmission_complete = 0;
-            lower_transport_outgoing_transmission_timeout  = 0;
-            mesh_lower_transport_outgoing_complete();
-            return;
-        }
-        if (lower_transport_outgoing_transmission_timeout){
-            // handle timeout
-            lower_transport_outgoing_transmission_timeout = 0;
-            mesh_lower_transport_segment_transmission_fired();
-            return;
-        }
+            lower_transport_outgoing_segment_queued = 0;
+            if (lower_transport_outgoing_trasnmission_complete){
+                // handle complete
+                lower_transport_outgoing_trasnmission_complete = 0;
+                lower_transport_outgoing_transmission_timeout  = 0;
+                mesh_lower_transport_outgoing_complete();
+                return;
+            }
+            if (lower_transport_outgoing_transmission_timeout){
+                // handle timeout
+                lower_transport_outgoing_transmission_timeout = 0;
+                mesh_lower_transport_segment_transmission_fired();
+                return;
+            }
 
-        // send next segment
-        mesh_lower_transport_send_next_segment();
+            // send next segment
+            mesh_lower_transport_send_next_segment();
+        }
         return;
     }
 
@@ -859,15 +873,24 @@ static void mesh_lower_transport_run(void){
 
     // check if outgoing segmented pdu is active
     if (lower_transport_outgoing_pdu) return;
+    if (lower_transport_outgoing_message) return;
 
     while(!btstack_linked_list_empty(&lower_transport_outgoing)) {
         // get next message
         mesh_transport_pdu_t * transport_pdu;
         mesh_network_pdu_t   * network_pdu;
+        mesh_message_pdu_t   * message_pdu;
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&lower_transport_outgoing);
         switch (pdu->pdu_type) {
             case MESH_PDU_TYPE_NETWORK:
                 network_pdu = (mesh_network_pdu_t *) pdu;
+                mesh_network_send_pdu(network_pdu);
+                break;
+            case MESH_PDU_TYPE_MESSAGE:
+                message_pdu = (mesh_message_pdu_t *) pdu;
+                network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
+                lower_transport_outgoing_message = message_pdu;
+                lower_transport_outgoing_segment = network_pdu;
                 mesh_network_send_pdu(network_pdu);
                 break;
             case MESH_PDU_TYPE_TRANSPORT:
