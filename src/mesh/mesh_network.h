@@ -77,11 +77,6 @@ typedef struct mesh_pdu {
     // type
     mesh_pdu_type_t pdu_type;
 
-    // access acknowledged message
-    uint16_t retransmit_count;
-    uint32_t retransmit_timeout_ms;
-    uint32_t ack_opcode;
-
 } mesh_pdu_t;
 
 // 
@@ -111,6 +106,11 @@ typedef struct mesh_network_pdu {
 
 typedef struct {
     mesh_pdu_t pdu_header;
+
+    // access acknowledged message
+    uint16_t retransmit_count;
+    uint32_t retransmit_timeout_ms;
+    uint32_t ack_opcode;
 
     // rx/tx: acknowledgement timer / segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
@@ -145,6 +145,11 @@ typedef struct {
 
 typedef struct {
     mesh_pdu_t pdu_header;
+
+    // access acknowledged message
+    uint16_t retransmit_count;
+    uint32_t retransmit_timeout_ms;
+    uint32_t ack_opcode;
 
     // rx/tx: acknowledgement timer / segment transmission timer
     btstack_timer_source_t acknowledgement_timer;

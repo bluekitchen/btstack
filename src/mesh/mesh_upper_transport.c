@@ -1120,7 +1120,6 @@ void mesh_upper_transport_init(){
 #define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
-    btstack_assert(pdu->ack_opcode != MESH_ACCESS_OPCODE_NOT_SET);
     btstack_assert(pdu->pdu_type != MESH_PDU_TYPE_NETWORK);
 
     btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);

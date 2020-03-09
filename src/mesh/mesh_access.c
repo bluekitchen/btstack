@@ -120,14 +120,92 @@ uint32_t mesh_access_acknowledged_message_timeout_ms(void){
 #define MESH_ACCESS_OPCODE_INVALID 0xFFFFFFFFu
 #define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
 
+static uint32_t mesh_access_message_ack_opcode(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t *)pdu)->ack_opcode;
+        case MESH_PDU_TYPE_MESSAGE:
+            return ((mesh_message_pdu_t *)pdu)->ack_opcode;
+        default:
+            btstack_assert(0);
+            return MESH_ACCESS_OPCODE_INVALID;
+    }
+}
+
+static void mesh_access_message_set_ack_opcode(mesh_pdu_t * pdu, uint32_t ack_opcode){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            ((mesh_transport_pdu_t *)pdu)->ack_opcode = ack_opcode;
+            break;
+        case MESH_PDU_TYPE_MESSAGE:
+            ((mesh_message_pdu_t *)pdu)->ack_opcode = ack_opcode;
+            break;
+        default:
+            btstack_assert(0);
+            break;
+    }
+}
+
+static uint8_t mesh_access_message_retransmit_count(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t *)pdu)->retransmit_count;
+        case MESH_PDU_TYPE_MESSAGE:
+            return ((mesh_message_pdu_t *)pdu)->retransmit_count;
+        default:
+            btstack_assert(0);
+            return 0;
+    }
+}
+
+static void mesh_access_message_set_retransmit_count(mesh_pdu_t * pdu, uint8_t retransmit_count){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            ((mesh_transport_pdu_t *)pdu)->retransmit_count = retransmit_count;
+            break;
+        case MESH_PDU_TYPE_MESSAGE:
+            ((mesh_message_pdu_t *)pdu)->retransmit_count = retransmit_count;
+            break;
+        default:
+            btstack_assert(0);
+            break;
+    }
+}
+
+static uint32_t mesh_access_message_retransmit_timeout_ms(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t *)pdu)->retransmit_timeout_ms;
+        case MESH_PDU_TYPE_MESSAGE:
+            return ((mesh_message_pdu_t *)pdu)->retransmit_timeout_ms;
+        default:
+            btstack_assert(0);
+            return 0;
+    }
+}
+
+static void mesh_access_message_set_retransmit_timeout_ms(mesh_pdu_t * pdu, uint32_t retransmit_timeout_ms){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            ((mesh_transport_pdu_t *)pdu)->retransmit_timeout_ms = retransmit_timeout_ms;
+            break;
+        case MESH_PDU_TYPE_MESSAGE:
+            ((mesh_message_pdu_t *)pdu)->retransmit_timeout_ms = retransmit_timeout_ms;
+            break;
+        default:
+            btstack_assert(0);
+            break;
+    }
+}
+
 void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu){
-    pdu->ack_opcode = MESH_ACCESS_OPCODE_INVALID;
+    mesh_access_message_set_ack_opcode(pdu, MESH_ACCESS_OPCODE_INVALID);
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
 void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode){
-    pdu->retransmit_count = retransmissions;
-    pdu->ack_opcode = ack_opcode;
+    mesh_access_message_set_retransmit_count(pdu, retransmissions);
+    mesh_access_message_set_ack_opcode(pdu, ack_opcode);
 
     mesh_upper_transport_send_access_pdu(pdu);
 }
@@ -144,12 +222,14 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
     while (btstack_linked_list_iterator_has_next(&ack_it)){
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
-        if (btstack_time_delta(now, pdu->retransmit_timeout_ms) >= 0) {
+        uint32_t retransmit_timeout_ms = mesh_access_message_retransmit_timeout_ms(pdu);
+        if (btstack_time_delta(now, retransmit_timeout_ms) >= 0) {
             // remove from list
             btstack_linked_list_remove(&mesh_access_acknowledged_messages, (btstack_linked_item_t*) pdu);
             // retransmit or report failure
-            if (pdu->retransmit_count){
-                pdu->retransmit_count--;
+            uint8_t retransmit_count = mesh_access_message_retransmit_count(pdu);
+            if (retransmit_count){
+                mesh_access_message_set_retransmit_count(pdu, retransmit_count - 1);
                 mesh_upper_transport_send_access_pdu(pdu);
             } else {
                 // find correct model and emit error
@@ -163,7 +243,8 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
                     while (mesh_model_iterator_has_next(&model_it)){
                         mesh_model_t * model = mesh_model_iterator_next(&model_it);
                         // find opcode in table
-                        const mesh_operation_t * operation = mesh_model_lookup_operation_by_opcode(model, pdu->ack_opcode);
+                        uint32_t ack_opcode = mesh_access_message_ack_opcode(pdu);
+                        const mesh_operation_t * operation = mesh_model_lookup_operation_by_opcode(model, ack_opcode);
                         if (operation == NULL) continue;
                         if (model->model_packet_handler == NULL) continue;
                         // emit event
@@ -172,7 +253,7 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
                         event[1] = sizeof(event) - 2;
                         event[2] = element->element_index;
                         little_endian_store_32(event, 3, model->model_identifier);
-                        little_endian_store_32(event, 7, pdu->ack_opcode);
+                        little_endian_store_32(event, 7, ack_opcode);
                         little_endian_store_16(event, 11, dst);
                         (*model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                     }
@@ -191,7 +272,8 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     int32_t next_timeout_ms = 0;
     while (btstack_linked_list_iterator_has_next(&ack_it)){
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
-        int32_t timeout_delta_ms = btstack_time_delta(pdu->retransmit_timeout_ms, now);
+        uint32_t retransmit_timeout_ms = mesh_access_message_retransmit_timeout_ms(pdu);
+        int32_t timeout_delta_ms = btstack_time_delta(retransmit_timeout_ms, now);
         if (next_timeout_ms == 0 || timeout_delta_ms < next_timeout_ms){
             next_timeout_ms = timeout_delta_ms;
         }
@@ -216,7 +298,7 @@ static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
         mesh_pdu_t * tx_pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
         uint16_t tx_dest = mesh_pdu_dst(tx_pdu);
         if (tx_dest != rx_src) continue;
-        if (tx_pdu->ack_opcode != opcode) continue;
+        if (mesh_access_message_ack_opcode(tx_pdu) != opcode) continue;
         // got expected response from dest, remove from outgoing messages
         mesh_upper_transport_pdu_free(tx_pdu);
         return;
@@ -228,12 +310,12 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
     switch (callback_type){
         case MESH_TRANSPORT_PDU_SENT:
             // unacknowledged -> free
-            if (pdu->ack_opcode == MESH_ACCESS_OPCODE_INVALID){
+            if (mesh_access_message_ack_opcode(pdu) == MESH_ACCESS_OPCODE_INVALID){
                 mesh_upper_transport_pdu_free(pdu);
                 break;
             }
             // setup timeout
-            pdu->retransmit_timeout_ms = btstack_run_loop_get_time_ms() + mesh_access_acknowledged_message_timeout_ms();
+            mesh_access_message_set_retransmit_timeout_ms(pdu, btstack_run_loop_get_time_ms() + mesh_access_acknowledged_message_timeout_ms());
             // add to mesh_access_acknowledged_messages
             btstack_linked_list_add(&mesh_access_acknowledged_messages, (btstack_linked_item_t *) pdu);
             // update timer
@@ -617,7 +699,7 @@ mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
     if (!pdu) return NULL;
 
     pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
-    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
+    pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
@@ -657,7 +739,6 @@ mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode){
     if (!pdu) return NULL;
 
     pdu->len  = mesh_access_setup_opcode(&pdu->data[10], opcode) + 10;
-    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
@@ -708,7 +789,7 @@ mesh_message_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, u
     btstack_linked_list_add(&pdu->segments, (btstack_linked_item_t *) segment);
 
     pdu->len = mesh_access_setup_opcode(&segment->data[10], opcode) + 10;
-    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
+    pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
