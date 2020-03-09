@@ -734,41 +734,6 @@ void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint
     mesh_access_transport_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
 }
 
-mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode){
-    mesh_network_pdu_t * pdu = mesh_network_pdu_get();
-    if (!pdu) return NULL;
-
-    pdu->len  = mesh_access_setup_opcode(&pdu->data[10], opcode) + 10;
-    return pdu;
-}
-
-void mesh_access_network_add_uint8(mesh_network_pdu_t * pdu, uint8_t value){
-    pdu->data[pdu->len++] = value;
-}
-
-void mesh_access_network_add_uint16(mesh_network_pdu_t * pdu, uint16_t value){
-    little_endian_store_16(pdu->data, pdu->len, value);
-    pdu->len += 2;
-}
-
-void mesh_access_network_add_uint24(mesh_network_pdu_t * pdu, uint16_t value){
-    little_endian_store_24(pdu->data, pdu->len, value);
-    pdu->len += 3;
-}
-
-void mesh_access_network_add_uint32(mesh_network_pdu_t * pdu, uint16_t value){
-    little_endian_store_32(pdu->data, pdu->len, value);
-    pdu->len += 4;
-}
-
-void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t model_identifier){
-    if (mesh_model_is_bluetooth_sig(model_identifier)){
-        mesh_access_network_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
-    } else {
-        mesh_access_network_add_uint32( pdu, model_identifier );
-    }
-}
-
 // mesh_message_t builder
 mesh_message_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
     btstack_assert(num_segments > 0);

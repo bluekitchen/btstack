@@ -120,29 +120,29 @@ static mesh_pdu_t * health_attention_status(void){
 
 // report fault status - used for both current as well as registered faults, see registered_faults param
 static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id, bool registered_faults){
-    mesh_network_pdu_t * transport_pdu = mesh_access_network_init(opcode);
-    if (!transport_pdu) return NULL;
+    mesh_message_pdu_t * message_pdu = mesh_access_message_init(opcode, false, 1);
+    if (!message_pdu) return NULL;
 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     if (fault == NULL){
         // no fault state with company_id found
-        mesh_access_network_add_uint8(transport_pdu, 0);
-        mesh_access_network_add_uint16(transport_pdu, company_id);
+        mesh_access_message_add_uint8(message_pdu, 0);
+        mesh_access_message_add_uint16(message_pdu, company_id);
     } else {
-        mesh_access_network_add_uint8(transport_pdu, fault->test_id);
-        mesh_access_network_add_uint16(transport_pdu, fault->company_id);
+        mesh_access_message_add_uint8(message_pdu, fault->test_id);
+        mesh_access_message_add_uint16(message_pdu, fault->company_id);
         int i;
         if (registered_faults){
             for (i = 0; i < fault->num_registered_faults; i++){
-                 mesh_access_network_add_uint8(transport_pdu, fault->registered_faults[i]);
+                 mesh_access_message_add_uint8(message_pdu, fault->registered_faults[i]);
             }
         }  else {
             for (i = 0; i < fault->num_current_faults; i++){
-                 mesh_access_network_add_uint8(transport_pdu, fault->current_faults[i]);
+                 mesh_access_message_add_uint8(message_pdu, fault->current_faults[i]);
             }
         }
     }
-    return (mesh_pdu_t *) transport_pdu;
+    return (mesh_pdu_t *) message_pdu;
 }
 
 static void health_fault_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
