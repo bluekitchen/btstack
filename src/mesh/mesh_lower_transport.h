@@ -79,6 +79,9 @@ typedef enum {
 mesh_transport_pdu_t * mesh_transport_pdu_get(void);
 void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
 
+mesh_message_pdu_t * mesh_message_pdu_get(void);
+void mesh_message_pdu_free(mesh_message_pdu_t * message_pdu);
+
 // transport getter/setter
 uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu);
 uint16_t mesh_transport_ctl(mesh_transport_pdu_t * transport_pdu);

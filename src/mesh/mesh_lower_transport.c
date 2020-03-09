@@ -64,7 +64,7 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 
 // utility
 
-static mesh_message_pdu_t * mesh_message_pdu_get(void){
+mesh_message_pdu_t * mesh_message_pdu_get(void){
     mesh_message_pdu_t * message_pdu = btstack_memory_mesh_message_pdu_get();
     if (message_pdu){
         message_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_MESSAGE;
@@ -72,7 +72,11 @@ static mesh_message_pdu_t * mesh_message_pdu_get(void){
     return message_pdu;
 }
 
-static void mesh_message_pdu_free(mesh_message_pdu_t * message_pdu){
+void mesh_message_pdu_free(mesh_message_pdu_t * message_pdu){
+    while (message_pdu->segments){
+        mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
+        mesh_network_pdu_free(segment);
+    }
     btstack_memory_mesh_message_pdu_free(message_pdu);
 }
 
