@@ -5338,12 +5338,17 @@ void hci_setup_test_connections_fuzz(void){
     // default address: 66:55:44:33:00:01
     bd_addr_t addr = { 0x66, 0x55, 0x44, 0x33, 0x00, 0x00};
 
+    // setup Controller info
+    hci_stack->num_cmd_packets = 255;
+    hci_stack->acl_packets_total_num = 255;
+
     // setup incoming Classic ACL connection with con handle 0x0001, 66:55:44:33:22:01
     addr[5] = 0x01;
     conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = RECEIVED_CONNECTION_REQUEST;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup incoming Classic SCO connection with con handle 0x0002
     addr[5] = 0x02;
@@ -5351,6 +5356,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = RECEIVED_CONNECTION_REQUEST;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready Classic ACL connection with con handle 0x0003
     addr[5] = 0x03;
@@ -5358,6 +5364,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready Classic SCO connection with con handle 0x0004
     addr[5] = 0x04;
@@ -5365,6 +5372,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready LE ACL connection with con handle 0x005 and public address
     addr[5] = 0x05;
@@ -5372,6 +5380,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 }
 
 void hci_free_connections_fuzz(void){
