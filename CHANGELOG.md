@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 GATT Client: allow to register for any notification/indication and/or any connection
 
+### Changed
+- AVRCP Target: volume in avrcp_target_volume_changed is reported as current value in interim response to register for volume change notifications
+
+
 ## Changes Februar 2020
 
 ### Fixed
