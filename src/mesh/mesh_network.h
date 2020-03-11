@@ -62,6 +62,7 @@ extern "C" {
 typedef enum {
     MESH_NETWORK_PDU_RECEIVED,
     MESH_NETWORK_PDU_SENT,
+    MESH_NETWORK_PDU_ENCRYPTED,
     MESH_NETWORK_CAN_SEND_NOW,
 } mesh_network_callback_type_t;
 
@@ -86,9 +87,6 @@ typedef struct mesh_pdu {
 
 typedef struct mesh_network_pdu {
     mesh_pdu_t pdu_header;
-
-    // callback
-    void (*callback)(struct mesh_network_pdu * network_pdu);
 
     // meta data network layer
     uint16_t              netkey_index;
@@ -427,7 +425,7 @@ void mesh_network_pdu_set_seq(mesh_network_pdu_t * network_pdu, uint32_t seq);
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);
 void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len);
-void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback));
+void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu);
 void mesh_network_dump(void);
 void mesh_network_reset(void);
 

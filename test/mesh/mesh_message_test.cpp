@@ -242,12 +242,16 @@ static void test_lower_transport_callback_handler(mesh_network_callback_type_t c
 static void test_proxy_server_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
-        printf("test MESH_PROXY_PDU_RECEIVED\n");
+            printf("test MESH_PROXY_PDU_RECEIVED\n");
             received_proxy_pdu = network_pdu;
             break;
         case MESH_NETWORK_PDU_SENT:
             // printf("test MESH_PROXY_PDU_SENT\n");
             // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
+            break;
+        case MESH_NETWORK_PDU_ENCRYPTED:
+            printf("test MESH_NETWORK_PDU_ENCRYPTED\n");
+            received_proxy_pdu = network_pdu;
             break;
         default:
             break;
@@ -1089,10 +1093,6 @@ TEST(MessageTest, ProxyConfigReceive){
     received_proxy_pdu = NULL;
 }
 
-static void test_proxy_callback_handler(mesh_network_pdu_t * network_pdu){
-    received_proxy_pdu = network_pdu;
-}
-
 
 TEST(MessageTest, ProxyConfigSend){
     uint16_t netkey_index = 0;
@@ -1107,7 +1107,7 @@ TEST(MessageTest, ProxyConfigSend){
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     uint8_t data[] = { 0 , 0 };
     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
-    mesh_network_encrypt_proxy_configuration_message(network_pdu, &test_proxy_callback_handler);
+    mesh_network_encrypt_proxy_configuration_message(network_pdu);
     while (received_proxy_pdu == NULL) {
         mock_process_hci_cmd();
     }

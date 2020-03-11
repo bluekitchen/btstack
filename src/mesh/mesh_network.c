@@ -307,7 +307,23 @@ static void mesh_network_send_c(void *arg){
     // done
     mesh_network_pdu_t * network_pdu = outgoing_pdu;
     outgoing_pdu = NULL;
-    (network_pdu->callback)(network_pdu);
+
+    if ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION) != 0){
+        // encryption requested by mesh_network_encrypt_proxy_configuration_message
+        (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_ENCRYPTED, network_pdu);
+        return;
+    }
+
+#ifdef LOG_NETWORK
+    printf("TX-D-NetworkPDU (%p): ", network_pdu);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
+
+    // add to queue
+    btstack_linked_list_add_tail(&network_pdus_outgoing_gatt, (btstack_linked_item_t *) network_pdu);
+
+    // go
+    mesh_network_run();
 }
 
 static void mesh_network_send_b(void *arg){
@@ -410,7 +426,6 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
     network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
 
     // queue up
-    network_pdu->callback = &mesh_network_send_d;
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
 }
 #endif
@@ -433,7 +448,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
 
 #ifdef ENABLE_MESH_RELAY
             if (mesh_foundation_relay_get() != 0){
-                // - to ADV bearer, if Relay supported and enabled
+                // - to ADV bearer, if Relay supported and enabledx
                 mesh_network_relay_message(network_pdu);
                 mesh_network_run();
                 return;
@@ -1057,7 +1072,6 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     btstack_assert(network_pdu->len >= 9);
 
     // setup callback
-    network_pdu->callback = &mesh_network_send_d;
     network_pdu->flags    = 0;
 
     // queue up
@@ -1069,13 +1083,15 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     // go
     mesh_network_run();
 }
+static void mesh_network_encrypt_proxy_configuration_encrypted(mesh_network_pdu_t * network_pdu){
+    (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_ENCRYPTED, network_pdu);
+}
 
-void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback)){
+void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu){
     printf("ProxyPDU(unencrypted): ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
     // setup callback
-    network_pdu->callback = callback;
     network_pdu->flags    = MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION;
 
     // queue up
