@@ -684,11 +684,12 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_mes
     // lookup network by netkey_index
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
-    
+
+    message_pdu->appkey_index = appkey_index;
+
     network_pdu->data[9] = akf_aid;
     // setup network_pdu
     mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, 0, src, dest);
-    network_pdu->appkey_index = appkey_index;
     return 0;
 }
 
@@ -855,7 +856,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu(mesh_message_pdu_t 
     mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
         
     // setup nonce
-    uint16_t appkey_index = network_pdu->appkey_index;
+    uint16_t appkey_index = message_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         transport_unsegmented_setup_device_nonce(application_nonce, network_pdu);
     } else {
