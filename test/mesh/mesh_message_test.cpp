@@ -5,6 +5,7 @@
 
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "btstack_util.h"
 #include "mesh/adv_bearer.h"
@@ -256,6 +257,7 @@ static void test_proxy_server_callback_handler(mesh_network_callback_type_t call
 static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu;
     mesh_network_pdu_t   * network_pdu;
+    mesh_message_pdu_t   * message_pdu;
     switch(pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             transport_pdu = (mesh_transport_pdu_t *) pdu;
@@ -265,8 +267,12 @@ static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         case MESH_PDU_TYPE_NETWORK:
-            network_pdu = (mesh_network_pdu_t *) pdu;
-            printf("test MESH_ACCESS_NETWORK_PDU_RECEIVED\n");
+            btstack_assert(0);
+            break;
+        case MESH_PDU_TYPE_MESSAGE:
+            message_pdu = (mesh_message_pdu_t *) pdu;
+            printf("test MESH_PDU_TYPE_MESSAGE\n");
+            network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
