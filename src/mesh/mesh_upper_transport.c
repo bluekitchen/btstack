@@ -446,7 +446,6 @@ static void mesh_upper_transport_validate_unsegmented_message(void){
 
     // store application / device key index
     mesh_print_hex("AppOrDevKey", message_key->key, 16);
-    incoming_network_pdu_decoded->appkey_index = message_key->appkey_index;
     incoming_message_pdu_singleton.appkey_index = message_key->appkey_index;
 
     // unsegmented message have TransMIC of 32 bit

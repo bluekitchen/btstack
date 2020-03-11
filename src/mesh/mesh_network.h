@@ -92,8 +92,6 @@ typedef struct mesh_network_pdu {
 
     // meta data network layer
     uint16_t              netkey_index;
-    // meta data transport layer
-    uint16_t              appkey_index;
     // MESH_NETWORK_PDU_FLAGS
     uint16_t              flags;
 
