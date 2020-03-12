@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 GATT Client: allow to register for any notification/indication and/or any connection
+hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity
 
 ### Changed
 - AVRCP Target: volume in avrcp_target_volume_changed is reported as current value in interim response to register for volume change notifications

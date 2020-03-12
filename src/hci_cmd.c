@@ -646,6 +646,13 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
 };
 
 /**
+ * @param scan_enable (no, inq, page, inq+page)
+ */
+const hci_cmd_t hci_write_scan_enable = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
+};
+
+/**
  */ 
 const hci_cmd_t hci_read_page_scan_activity = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x1B), ""
@@ -660,10 +667,17 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x1C), "22"
 };
 
 /**
- * @param scan_enable (no, inq, page, inq+page)
- */
-const hci_cmd_t hci_write_scan_enable = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
+ */ 
+const hci_cmd_t hci_read_inquiry_scan_activity = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x1D), ""
+};
+
+/**
+ * @param inquiry_scan_interval (* 0.625 ms)
+ * @param inquiry_scan_window (* 0.625 ms, must be <= inquiry_scan_interval)
+ */ 
+const hci_cmd_t hci_write_inquiry_scan_activity = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x1E), "22"
 };
 
 /**
