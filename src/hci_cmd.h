@@ -172,14 +172,6 @@ extern const hci_cmd_t hci_write_simple_pairing_debug_mode;
 extern const hci_cmd_t hci_write_simple_pairing_mode;
 extern const hci_cmd_t hci_write_synchronous_flow_control_enable;
 
-
-/**
- * @param inquiry_scan_interval (* 0.625 ms)
- * @param inquiry_scan_window (* 0.625 ms, must be <= inquiry_scan_interval)
- */ 
-const hci_cmd_t hci_write_inquiry_scan_activity = {
-
-
 extern const hci_cmd_t hci_le_add_device_to_white_list;
 extern const hci_cmd_t hci_le_clear_white_list;
 extern const hci_cmd_t hci_le_connection_update;
