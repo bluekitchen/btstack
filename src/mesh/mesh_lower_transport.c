@@ -228,6 +228,9 @@ static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_ne
         }
     }
 }
+static void mesh_lower_transport_deliver_to_higher_layer(mesh_pdu_t * pdu){
+    higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
+}
 
 static void mesh_lower_transport_process_unsegmented_control_message(mesh_network_pdu_t *network_pdu){
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
@@ -243,7 +246,7 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
             mesh_network_message_processed_by_higher_layer(network_pdu);
             break;
         default:
-            higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
+            mesh_lower_transport_deliver_to_higher_layer((mesh_pdu_t*)network_pdu);
             break;
     }
 }
@@ -569,7 +572,7 @@ static void mesh_lower_transport_process_segment( mesh_message_pdu_t * message_p
     mesh_lower_transport_send_ack_for_transport_pdu(message_pdu);
 
     // forward to upper transport
-    higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t*) message_pdu);
+    mesh_lower_transport_deliver_to_higher_layer((mesh_pdu_t*) message_pdu);
 
     // mark as done
     mesh_lower_transport_rx_segmented_message_complete(message_pdu);
@@ -866,7 +869,7 @@ static void mesh_lower_transport_run(void){
                 mesh_lower_transport_process_unsegmented_control_message(network_pdu);
             } else {
                 // unsegmented access message (encrypted)
-                higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
+                mesh_lower_transport_deliver_to_higher_layer((mesh_pdu_t*) network_pdu);
             }
         }
     }
