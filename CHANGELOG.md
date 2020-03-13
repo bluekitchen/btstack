@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Changes March 2020
 
+### Fixed
+- GAP: fixed gap_set_scan_parameters() if issued right before gap_start_scan() 
+
 ### Added
 GATT Client: allow to register for any notification/indication and/or any connection
 hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity

@@ -3413,17 +3413,22 @@ static void hci_run(void){
     && ((hci_stack->le_own_addr_type == BD_ADDR_TYPE_LE_PUBLIC) || hci_stack->le_random_address_set)){
 
 #ifdef ENABLE_LE_CENTRAL
-        // handle le scan
-        if ((hci_stack->le_scanning_enabled != hci_stack->le_scanning_active)){
-            hci_stack->le_scanning_active = hci_stack->le_scanning_enabled;
-            hci_send_cmd(&hci_le_set_scan_enable, hci_stack->le_scanning_enabled, 0);
+        // parameter change requires scanning to be stopped first
+        if (hci_stack->le_scan_type != 0xff) {
+            if (hci_stack->le_scanning_active){
+                hci_stack->le_scanning_active = 0;
+                hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+            } else {
+                int scan_type = (int) hci_stack->le_scan_type;
+                hci_stack->le_scan_type = 0xff;
+                hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
+            }
             return;
         }
-        if (hci_stack->le_scan_type != 0xff){
-            // defaults: active scanning, accept all advertisement packets
-            int scan_type = hci_stack->le_scan_type;
-            hci_stack->le_scan_type = 0xff;
-            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
+        // finally, we can enable/disable le scan
+        if ((hci_stack->le_scanning_enabled && !hci_stack->le_scanning_active)){
+            hci_stack->le_scanning_active = hci_stack->le_scanning_enabled;
+            hci_send_cmd(&hci_le_set_scan_enable, hci_stack->le_scanning_enabled, 0);
             return;
         }
 #endif
