@@ -157,9 +157,6 @@ static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_sour
 // state
 static int                    lower_transport_retry_count;
 
-// lower transport incoming
-static btstack_linked_list_t  lower_transport_incoming;
-
 // lower transport ougoing
 static btstack_linked_list_t lower_transport_outgoing;
 
@@ -578,6 +575,34 @@ static void mesh_lower_transport_process_segment( mesh_message_pdu_t * message_p
     mesh_lower_transport_rx_segmented_message_complete(message_pdu);
 }
 
+static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network_pdu) {// segmented?
+    if (mesh_network_segmented(network_pdu)){
+        mesh_message_pdu_t * message_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
+        if (message_pdu) {
+            // start acknowledgment timer if inactive
+            if (message_pdu->acknowledgement_timer_active == 0){
+                // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
+                uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
+                mesh_lower_transport_start_rx_acknowledgment_timer(message_pdu, timeout);
+            }
+            // restart incomplete timer
+            mesh_lower_transport_incoming_restart_incomplete_timer(message_pdu, 10000, &mesh_lower_transport_rx_incomplete_timeout);
+            mesh_lower_transport_process_segment(message_pdu, network_pdu);
+        } else {
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+        }
+    } else {
+        // control?
+        if (mesh_network_control(network_pdu)){
+            // unsegmented control message (not encrypted)
+            mesh_lower_transport_process_unsegmented_control_message(network_pdu);
+        } else {
+            // unsegmented access message (encrypted)
+            mesh_lower_transport_deliver_to_higher_layer((mesh_pdu_t*) network_pdu);
+        }
+    }
+}
+
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_NETWORK:
@@ -611,8 +636,8 @@ void mesh_lower_transport_received_message(mesh_network_callback_type_t callback
             if (peer && seq > peer->seq){
                 // track seq
                 peer->seq = seq;
-                // add to list and go
-                btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
+                // process
+                mesh_lower_transport_process_network_pdu(network_pdu);
                 mesh_lower_transport_run();
             } else {
                 // drop packet
@@ -843,36 +868,6 @@ static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_sour
 }
 
 static void mesh_lower_transport_run(void){
-    while(!btstack_linked_list_empty(&lower_transport_incoming)){
-        // get next message
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&lower_transport_incoming);
-        // segmented?
-        if (mesh_network_segmented(network_pdu)){
-            mesh_message_pdu_t * message_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
-            if (message_pdu) {
-                // start acknowledgment timer if inactive
-                if (message_pdu->acknowledgement_timer_active == 0){
-                    // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
-                    uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
-                    mesh_lower_transport_start_rx_acknowledgment_timer(message_pdu, timeout);
-                }
-                // restart incomplete timer
-                mesh_lower_transport_incoming_restart_incomplete_timer(message_pdu, 10000, &mesh_lower_transport_rx_incomplete_timeout);
-                mesh_lower_transport_process_segment(message_pdu, network_pdu);
-            } else {
-                mesh_network_message_processed_by_higher_layer(network_pdu);
-            }
-        } else {
-            // control?
-            if (mesh_network_control(network_pdu)){
-                // unsegmented control message (not encrypted)
-                mesh_lower_transport_process_unsegmented_control_message(network_pdu);
-            } else {
-                // unsegmented access message (encrypted)
-                mesh_lower_transport_deliver_to_higher_layer((mesh_pdu_t*) network_pdu);
-            }
-        }
-    }
 
     // check if outgoing segmented pdu is active
     if (lower_transport_outgoing_pdu) return;
@@ -940,11 +935,9 @@ void mesh_lower_transport_reserve_slot(void){
 }
 
 void mesh_lower_transport_dump(void){
-    mesh_lower_transport_dump_network_pdus("lower_transport_incoming", &lower_transport_incoming);
 }
 
 void mesh_lower_transport_reset(void){
-    mesh_lower_transport_reset_network_pdus(&lower_transport_incoming);
     if (lower_transport_outgoing_pdu){
         mesh_transport_pdu_free(lower_transport_outgoing_pdu);
         lower_transport_outgoing_pdu = NULL;
