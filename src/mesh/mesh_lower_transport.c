@@ -358,8 +358,6 @@ static void mesh_lower_transport_rx_segmented_message_complete(mesh_message_pdu_
     if (peer){
         peer->message_pdu = NULL;
     }
-    // free segments
-    mesh_lower_transport_report_segments_as_processed(message_pdu);
 }
 
 static void mesh_lower_transport_rx_ack_timeout(btstack_timer_source_t *ts){
@@ -377,6 +375,8 @@ static void mesh_lower_transport_rx_incomplete_timeout(btstack_timer_source_t *t
     printf("mesh_transport_rx_incomplete_timeout for %p - give up\n", message_pdu);
 #endif
     mesh_lower_transport_rx_segmented_message_complete(message_pdu);
+    // free segments
+    mesh_lower_transport_report_segments_as_processed(message_pdu);
     // free message
     btstack_memory_mesh_message_pdu_free(message_pdu);
 }
@@ -628,6 +628,7 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
             mesh_transport_pdu_free((mesh_transport_pdu_t *) pdu);
             break;
         case MESH_PDU_TYPE_MESSAGE:
+            // free segments
             mesh_lower_transport_report_segments_as_processed((mesh_message_pdu_t *) pdu);
             mesh_message_pdu_free((mesh_message_pdu_t *) pdu);
             break;
