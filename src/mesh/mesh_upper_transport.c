@@ -257,15 +257,16 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_t
     mesh_print_hex("DeviceNonce", nonce, 13);
 }
 
-static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu){
-    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
-    uint8_t  opcode = lower_transport_pdu[0];
+static void mesh_upper_unsegmented_control_message_received(mesh_unsegmented_incoming_pdu_t * unsegmented_incoming_pdu){
     if (mesh_control_message_handler){
-        mesh_control_message_handler((mesh_pdu_t*) network_pdu);
+        mesh_control_message_handler((mesh_pdu_t*) unsegmented_incoming_pdu);
     } else {
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_incoming_pdu->segments);
+        uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
+        uint8_t  opcode = lower_transport_pdu[0];
         printf("[!] Unhandled Control message with opcode %02x\n", opcode);
         // done
-        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu);
+        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t*) unsegmented_incoming_pdu);
     }
 }
 
@@ -285,18 +286,21 @@ static void mesh_upper_transport_process_message_done(mesh_message_pdu_t *messag
     mesh_upper_transport_run();
 }
 
-static void mesh_upper_transport_process_unsegmented_message_done(mesh_network_pdu_t *network_pdu){
+static void mesh_upper_transport_process_unsegmented_message_done(mesh_pdu_t * pdu){
+    btstack_assert(pdu != NULL);
+    btstack_assert(pdu->pdu_type == MESH_PDU_TYPE_UNSEGMENTED_INCOMING);
+
+    mesh_unsegmented_incoming_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
+    btstack_assert(unsegmented_incoming_pdu == incoming_unsegmented_pdu_raw);
+
     crypto_active = 0;
-    if (mesh_network_control(network_pdu)) {
-        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu);
-    } else {
-        btstack_assert(network_pdu != NULL);
+    incoming_unsegmented_pdu_raw = NULL;
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_incoming_pdu->segments);
+    if (!mesh_network_control(network_pdu)) {
         mesh_network_pdu_free(network_pdu);
-        mesh_pdu_t * pdu = (mesh_pdu_t *) incoming_unsegmented_pdu_raw;
-        incoming_unsegmented_pdu_raw = NULL;
-        incoming_unsegmented_pdu_raw = NULL;
-        mesh_lower_transport_message_processed_by_higher_layer(pdu);
     }
+
+    mesh_lower_transport_message_processed_by_higher_layer(pdu);
     mesh_upper_transport_run();
 }
 
@@ -346,7 +350,7 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
         } else {
             printf("[!] Unhandled Unsegmented Access message\n");
             // done
-            mesh_upper_transport_process_unsegmented_message_done(incoming_network_pdu_decoded);
+            mesh_upper_transport_process_unsegmented_message_done((mesh_pdu_t*) incoming_unsegmented_pdu_raw);
         }
         
         printf("\n");
@@ -358,7 +362,7 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
         } else {
             printf("TransMIC does not match device key, done\n");
             // done
-            mesh_upper_transport_process_unsegmented_message_done(incoming_network_pdu_decoded);
+            mesh_upper_transport_process_unsegmented_message_done((mesh_pdu_t*) incoming_unsegmented_pdu_raw);
         }
     }
 }
@@ -436,7 +440,7 @@ static void mesh_upper_transport_validate_unsegmented_message(void){
 
     if (!mesh_transport_key_and_virtual_address_iterator_has_more(&mesh_transport_key_it)){
         printf("No valid transport key found\n");
-        mesh_upper_transport_process_unsegmented_message_done(incoming_network_pdu_decoded);
+        mesh_upper_transport_process_unsegmented_message_done((mesh_pdu_t*) incoming_unsegmented_pdu_raw);
         return;
     }
     mesh_transport_key_and_virtual_address_iterator_next(&mesh_transport_key_it);
@@ -999,32 +1003,21 @@ static void mesh_upper_transport_run(void){
         mesh_message_pdu_t   * message_pdu;
         mesh_unsegmented_incoming_pdu_t * unsegmented_pdu;
         switch (pdu->pdu_type){
-            case MESH_PDU_TYPE_NETWORK:
-                network_pdu = (mesh_network_pdu_t *) pdu;
-                // control?
-                if (mesh_network_control(network_pdu)) {
-                    (void) btstack_linked_list_pop(&upper_transport_incoming);
-                    mesh_upper_unsegmented_control_message_received(network_pdu);
-                } else {
-                    btstack_assert(0);
-                    break;
-                }
-                break;
             case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
                 unsegmented_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
                 network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_pdu->segments);
                 btstack_assert(network_pdu != NULL);
+                incoming_unsegmented_pdu_raw = unsegmented_pdu;
                 // control?
                 if (mesh_network_control(network_pdu)) {
-                    // TODO: handle unsegmented control message
-                    btstack_assert(0);
+                    (void) btstack_linked_list_pop(&upper_transport_incoming);
+                    mesh_upper_unsegmented_control_message_received(unsegmented_pdu);
                     break;
                 } else {
                     incoming_network_pdu_decoded = mesh_network_pdu_get();
                     if (!incoming_network_pdu_decoded) return;
 
                     (void) btstack_linked_list_pop(&upper_transport_incoming);
-                    incoming_unsegmented_pdu_raw = unsegmented_pdu;
 
                     // use pre-allocated message pdu
                     incoming_message_pdu_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_MESSAGE;
@@ -1081,6 +1074,7 @@ static void mesh_upper_transport_run(void){
                 }
                 break;
             default:
+                btstack_assert(0);
                 break;
         }
     }
@@ -1150,16 +1144,17 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
 void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
     crypto_active = 0;
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_NETWORK:
-            mesh_upper_transport_process_unsegmented_message_done((mesh_network_pdu_t *) pdu);
-            break;
         case MESH_PDU_TYPE_TRANSPORT:
             mesh_upper_transport_process_segmented_message_done((mesh_transport_pdu_t *) pdu);
             break;
         case MESH_PDU_TYPE_MESSAGE:
             mesh_upper_transport_process_message_done((mesh_message_pdu_t *) pdu);
             break;
+        case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
+            mesh_upper_transport_process_unsegmented_message_done(pdu);
+            break;
         default:
+            btstack_assert(0);
             break;
     }
 }
