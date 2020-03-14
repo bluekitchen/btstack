@@ -137,7 +137,7 @@ static void mesh_upper_transport_validate_segmented_message(void);
 static void mesh_upper_transport_run(void);
 
 static int crypto_active;
-static mesh_access_incoming_pdu_t * incoming_unsegmented_pdu_raw;
+static mesh_unsegmented_incoming_pdu_t * incoming_unsegmented_pdu_raw;
 static mesh_network_pdu_t   * incoming_network_pdu_decoded;
 static mesh_transport_pdu_t   incoming_transport_pdu_singleton;
 static mesh_transport_pdu_t * incoming_transport_pdu_raw;
@@ -1015,7 +1015,7 @@ static void mesh_upper_transport_run(void){
         mesh_network_pdu_t   * network_pdu;
         mesh_transport_pdu_t * transport_pdu;
         mesh_message_pdu_t   * message_pdu;
-        mesh_access_incoming_pdu_t * unsegmented_pdu;
+        mesh_unsegmented_incoming_pdu_t * unsegmented_pdu;
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_NETWORK:
                 network_pdu = (mesh_network_pdu_t *) pdu;
@@ -1028,8 +1028,8 @@ static void mesh_upper_transport_run(void){
                     break;
                 }
                 break;
-            case MESH_PDU_TYPE_ACCESS_INCOMING:
-                unsegmented_pdu = (mesh_access_incoming_pdu_t *) pdu;
+            case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
+                unsegmented_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
                 network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_pdu->segments);
                 btstack_assert(network_pdu != NULL);
                 // control?

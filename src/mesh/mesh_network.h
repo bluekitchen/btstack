@@ -70,7 +70,7 @@ typedef enum {
     MESH_PDU_TYPE_NETWORK = 0,
     MESH_PDU_TYPE_TRANSPORT,
     MESH_PDU_TYPE_MESSAGE,
-    MESH_PDU_TYPE_ACCESS_INCOMING,
+    MESH_PDU_TYPE_UNSEGMENTED_INCOMING,
 } mesh_pdu_type_t;
 
 typedef struct mesh_pdu {
@@ -190,7 +190,7 @@ typedef struct {
     // pdu segments
     uint16_t              len;
     btstack_linked_list_t segments;
-} mesh_access_incoming_pdu_t;
+} mesh_unsegmented_incoming_pdu_t;
 
 typedef enum {
     MESH_KEY_REFRESH_NOT_ACTIVE = 0,
