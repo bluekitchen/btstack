@@ -187,9 +187,8 @@ typedef struct {
     uint16_t              appkey_index;
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
-    // pdu segments
-    uint16_t              len;
-    btstack_linked_list_t segments;
+    // pdu segment
+    mesh_network_pdu_t  * segment;
 } mesh_unsegmented_incoming_pdu_t;
 
 typedef enum {

@@ -201,8 +201,9 @@ void mesh_upper_transport_dump(void){
 void mesh_upper_transport_reset(void){
     crypto_active = 0;
     if (incoming_unsegmented_pdu_raw){
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&incoming_unsegmented_pdu_raw->segments);
+        mesh_network_pdu_t * network_pdu = incoming_unsegmented_pdu_raw->segment;
         btstack_assert(network_pdu != NULL);
+        incoming_unsegmented_pdu_raw->segment = NULL;
         mesh_network_pdu_free(network_pdu);
         incoming_unsegmented_pdu_raw = NULL;
     }
@@ -261,7 +262,7 @@ static void mesh_upper_unsegmented_control_message_received(mesh_unsegmented_inc
     if (mesh_control_message_handler){
         mesh_control_message_handler((mesh_pdu_t*) unsegmented_incoming_pdu);
     } else {
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_incoming_pdu->segments);
+        mesh_network_pdu_t * network_pdu =unsegmented_incoming_pdu->segment;
         uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
         uint8_t  opcode = lower_transport_pdu[0];
         printf("[!] Unhandled Control message with opcode %02x\n", opcode);
@@ -295,7 +296,7 @@ static void mesh_upper_transport_process_unsegmented_message_done(mesh_pdu_t * p
 
     crypto_active = 0;
     incoming_unsegmented_pdu_raw = NULL;
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_incoming_pdu->segments);
+    mesh_network_pdu_t * network_pdu = unsegmented_incoming_pdu->segment;
     if (!mesh_network_control(network_pdu)) {
         mesh_network_pdu_free(network_pdu);
     }
@@ -427,7 +428,7 @@ static void mesh_upper_transport_validate_segmented_message_digest(void * arg){
 
 static void mesh_upper_transport_validate_unsegmented_message_digest(void * arg){
     UNUSED(arg);
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&incoming_unsegmented_pdu_raw->segments);
+    mesh_network_pdu_t * network_pdu = incoming_unsegmented_pdu_raw->segment;
     uint8_t   trans_mic_len = 4;
     uint8_t   lower_transport_pdu_len      = network_pdu->len - 9;
     uint8_t * upper_transport_pdu_data_in  = &network_pdu->data[10];
@@ -446,7 +447,7 @@ static void mesh_upper_transport_validate_unsegmented_message(void){
     mesh_transport_key_and_virtual_address_iterator_next(&mesh_transport_key_it);
     const mesh_transport_key_t * message_key = mesh_transport_key_it.key;
 
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&incoming_unsegmented_pdu_raw->segments);
+    mesh_network_pdu_t * network_pdu = incoming_unsegmented_pdu_raw->segment;
     if (message_key->akf){
         transport_unsegmented_setup_application_nonce(application_nonce, network_pdu);
     } else {
@@ -522,7 +523,7 @@ static void mesh_upper_transport_validate_segmented_message(void){
 
 static void mesh_upper_transport_process_unsegmented_access_message(void){
     // copy original pdu
-    mesh_network_pdu_t * raw_network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&incoming_unsegmented_pdu_raw->segments);
+    mesh_network_pdu_t * raw_network_pdu = incoming_unsegmented_pdu_raw->segment;
     incoming_network_pdu_decoded->len = raw_network_pdu->len;
     (void)memcpy(incoming_network_pdu_decoded->data,
                  raw_network_pdu->data,
@@ -1005,7 +1006,7 @@ static void mesh_upper_transport_run(void){
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
                 unsegmented_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
-                network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&unsegmented_pdu->segments);
+                network_pdu = unsegmented_pdu->segment;
                 btstack_assert(network_pdu != NULL);
                 incoming_unsegmented_pdu_raw = unsegmented_pdu;
                 // control?
