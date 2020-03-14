@@ -177,6 +177,7 @@ static int                    lower_transport_outgoing_trasnmission_complete;
 // deliver to higher layer
 static mesh_pdu_t * mesh_lower_transport_higher_layer_pdu;
 static btstack_linked_list_t mesh_lower_transport_queued_for_higher_layer;
+static mesh_access_incoming_pdu_t lower_transport_access_incoming_singleton;
 
 static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
     if (lower_transport_outgoing_pdu == NULL) return;
@@ -233,7 +234,27 @@ static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_ne
 
 static void mesh_lower_transport_deliver_to_higher_layer(void){
     if (mesh_lower_transport_higher_layer_pdu == NULL && !btstack_linked_list_empty(&mesh_lower_transport_queued_for_higher_layer)){
-        mesh_lower_transport_higher_layer_pdu = (mesh_pdu_t *) btstack_linked_list_pop(&mesh_lower_transport_queued_for_higher_layer);
+        mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&mesh_lower_transport_queued_for_higher_layer);
+
+        mesh_network_pdu_t * network_pdu;
+        switch (pdu->pdu_type){
+            case MESH_MSG_TYPE_NETWORK_PDU:
+                network_pdu = (mesh_network_pdu_t *) pdu;
+                if (mesh_network_control(network_pdu) != 0){
+                    // unsegmented control pdu
+                    mesh_lower_transport_higher_layer_pdu = pdu;
+                } else {
+                    // unsegmented access pdu
+                    mesh_lower_transport_higher_layer_pdu = (mesh_pdu_t *) &lower_transport_access_incoming_singleton;
+                    lower_transport_access_incoming_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS_INCOMING;
+                    btstack_linked_list_add(&lower_transport_access_incoming_singleton.segments, (btstack_linked_item_t*) network_pdu);
+                }
+                break;
+            default:
+                // segmented control or access pdu
+                mesh_lower_transport_higher_layer_pdu = pdu;
+                break;
+        }
         higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, mesh_lower_transport_higher_layer_pdu);
     }
 }
@@ -631,6 +652,9 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
             // free segments
             mesh_lower_transport_report_segments_as_processed((mesh_message_pdu_t *) pdu);
             mesh_message_pdu_free((mesh_message_pdu_t *) pdu);
+            break;
+        case MESH_PDU_TYPE_ACCESS_INCOMING:
+            mesh_network_message_processed_by_higher_layer((mesh_network_pdu_t *) btstack_linked_list_pop(&lower_transport_access_incoming_singleton.segments));
             break;
         default:
             break;
