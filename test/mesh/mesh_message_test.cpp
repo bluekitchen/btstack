@@ -259,29 +259,27 @@ static void test_proxy_server_callback_handler(mesh_network_callback_type_t call
 }
 
 static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu;
+    mesh_access_pdu_t    * access_pdu;
     mesh_network_pdu_t   * network_pdu;
     mesh_message_pdu_t   * message_pdu;
     switch(pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            transport_pdu = (mesh_transport_pdu_t *) pdu;
-            printf("test MESH_ACCESS_TRANSPORT_PDU_RECEIVED\n");
-            recv_upper_transport_pdu_len = transport_pdu->len;
-            memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
+        case MESH_PDU_TYPE_ACCESS:
+            access_pdu = (mesh_access_pdu_t *) pdu;
+            printf("test access handler MESH_PDU_TYPE_ACCESS received\n");
+            recv_upper_transport_pdu_len = access_pdu->len;
+            memcpy(recv_upper_transport_pdu_data, access_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            btstack_assert(0);
             break;
         case MESH_PDU_TYPE_MESSAGE:
             message_pdu = (mesh_message_pdu_t *) pdu;
-            printf("test MESH_PDU_TYPE_MESSAGE\n");
+            printf("test access handler MESH_PDU_TYPE_MESSAGE received\n");
             network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
+            btstack_assert(0);
             break;
     }
 }
@@ -298,9 +296,6 @@ static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
-        case MESH_PDU_TYPE_NETWORK:
-            btstack_assert(0);
-            break;
         case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
             unsegmented_incoming_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
             network_pdu = unsegmented_incoming_pdu->segment;
@@ -310,6 +305,7 @@ static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
+            btstack_assert(0);
             break;
     }
 }
