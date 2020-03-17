@@ -92,6 +92,8 @@ static mesh_access_pdu_t      incoming_access_pdu_decrypted_singleton;
 
 static mesh_message_pdu_t     outgoing_segmented_message_singleton;
 
+static mesh_transport_pdu_t * outgoing_segmented_pdu;
+
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
 static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
@@ -603,6 +605,8 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
             mesh_upper_transport_message_received(pdu);
             break;
         case MESH_TRANSPORT_PDU_SENT:
+            // clear flag
+            outgoing_segmented_pdu = NULL;
             // notify upper layer (or just free pdu)
             if (higher_layer_handler){
                 higher_layer_handler(callback_type, status, pdu);
@@ -635,6 +639,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
 }
 
 static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
+    outgoing_segmented_pdu = transport_pdu;
     mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
 }
 
@@ -1113,6 +1118,8 @@ static void mesh_upper_transport_run(void){
     while (!btstack_linked_list_empty(&upper_transport_outgoing)){
 
         if (crypto_active) break;
+
+        if (outgoing_segmented_pdu != NULL) break;
 
         mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_outgoing);
         if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
