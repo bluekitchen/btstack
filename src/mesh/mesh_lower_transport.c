@@ -171,6 +171,8 @@ static mesh_message_pdu_t     lower_transport_outgoing_segmented_message_singlet
 
 static mesh_message_pdu_t   * lower_transport_outgoing_message;
 
+static mesh_unsegmented_pdu_t  * lower_transport_outgoing_unsegmented_pdu;
+
 // segment at network layer
 static int                    lower_transport_outgoing_segment_queued;
 // transmission timeout occured (while outgoing segment queued at network layer)
@@ -886,6 +888,14 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
         return;
     }
 
+    // Unsegmented message
+    if (lower_transport_outgoing_unsegmented_pdu != NULL){
+        mesh_unsegmented_pdu_t * unsegmented_pdu = lower_transport_outgoing_unsegmented_pdu;
+        lower_transport_outgoing_unsegmented_pdu = NULL;
+        higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) unsegmented_pdu);
+        return;
+    }
+
     // other
     higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
 }
@@ -938,6 +948,11 @@ static void mesh_lower_transport_run(void){
         switch (pdu->pdu_type) {
             case MESH_PDU_TYPE_NETWORK:
                 network_pdu = (mesh_network_pdu_t *) pdu;
+                mesh_network_send_pdu(network_pdu);
+                break;
+            case MESH_PDU_TYPE_UNSEGMENTED:
+                lower_transport_outgoing_unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
+                network_pdu = lower_transport_outgoing_unsegmented_pdu->segment;
                 mesh_network_send_pdu(network_pdu);
                 break;
             case MESH_PDU_TYPE_MESSAGE:

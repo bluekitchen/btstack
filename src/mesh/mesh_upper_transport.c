@@ -91,8 +91,8 @@ static mesh_access_pdu_t      incoming_access_pdu_encrypted_singleton;
 static mesh_access_pdu_t      incoming_access_pdu_decrypted_singleton;
 
 static mesh_message_pdu_t     outgoing_segmented_message_singleton;
-
 static mesh_transport_pdu_t * outgoing_segmented_pdu;
+static mesh_unsegmented_pdu_t outgoing_unsegmented_pdu;
 
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
@@ -601,23 +601,41 @@ static void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
 
 static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu;
+    mesh_network_pdu_t * network_pdu;
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
             mesh_upper_transport_message_received(pdu);
             break;
         case MESH_TRANSPORT_PDU_SENT:
-            // free chunks
-            while (!btstack_linked_list_empty(&outgoing_segmented_message_singleton.segments)){
-                mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&outgoing_segmented_message_singleton.segments);
-                mesh_network_pdu_free(network_pdu);
-            }
-            // notify upper layer but use transport pdu
-            transport_pdu = outgoing_segmented_pdu;
-            outgoing_segmented_pdu = NULL;
-            if (higher_layer_handler){
-                higher_layer_handler(callback_type, status, (mesh_pdu_t*) transport_pdu);
-            } else {
-                mesh_transport_pdu_free(transport_pdu);
+            switch (pdu->pdu_type){
+                case MESH_PDU_TYPE_MESSAGE:
+                    // free chunks
+                    while (!btstack_linked_list_empty(&outgoing_segmented_message_singleton.segments)){
+                        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&outgoing_segmented_message_singleton.segments);
+                        mesh_network_pdu_free(network_pdu);
+                    }
+                    // notify upper layer but use transport pdu
+                    transport_pdu = (mesh_transport_pdu_t *) outgoing_segmented_pdu;
+                    outgoing_segmented_pdu = NULL;
+                    if (higher_layer_handler){
+                        higher_layer_handler(callback_type, status, (mesh_pdu_t*) transport_pdu);
+                    } else {
+                        mesh_transport_pdu_free(transport_pdu);
+                    }
+                    break;
+                case MESH_PDU_TYPE_UNSEGMENTED:
+                    // notify upper layer but use network pdu
+                    network_pdu = outgoing_unsegmented_pdu.segment;
+                    outgoing_unsegmented_pdu.segment = NULL;
+                    if (higher_layer_handler){
+                        higher_layer_handler(callback_type, status, (mesh_pdu_t*) network_pdu);
+                    } else {
+                        mesh_transport_pdu_free(transport_pdu);
+                    }
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             mesh_upper_transport_run();
             break;
@@ -1040,8 +1058,12 @@ static void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t
     uint8_t opcode = network_pdu->data[9];
     printf("[+] Upper transport, send unsegmented Control PDU %p - seq %06x opcode %02x\n", network_pdu, seq, opcode);
     mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
+    // wrap into mesh-unsegmented-pdu
+    outgoing_unsegmented_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
+    outgoing_unsegmented_pdu.segment = network_pdu;
+
     // send
-    mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
+    mesh_lower_transport_send_pdu((mesh_pdu_t *) &outgoing_unsegmented_pdu);
 }
 
 static void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu){
