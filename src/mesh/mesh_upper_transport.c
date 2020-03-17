@@ -600,18 +600,24 @@ static void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
 
 
 static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    mesh_transport_pdu_t * transport_pdu;
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
             mesh_upper_transport_message_received(pdu);
             break;
         case MESH_TRANSPORT_PDU_SENT:
-            // clear flag
+            // free chunks
+            while (!btstack_linked_list_empty(&outgoing_segmented_message_singleton.segments)){
+                mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&outgoing_segmented_message_singleton.segments);
+                mesh_network_pdu_free(network_pdu);
+            }
+            // notify upper layer but use transport pdu
+            transport_pdu = outgoing_segmented_pdu;
             outgoing_segmented_pdu = NULL;
-            // notify upper layer (or just free pdu)
             if (higher_layer_handler){
-                higher_layer_handler(callback_type, status, pdu);
+                higher_layer_handler(callback_type, status, (mesh_pdu_t*) transport_pdu);
             } else {
-                mesh_upper_transport_pdu_free(pdu);
+                mesh_transport_pdu_free(transport_pdu);
             }
             mesh_upper_transport_run();
             break;
@@ -640,7 +646,36 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
 
 static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
     outgoing_segmented_pdu = transport_pdu;
-    mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
+    mesh_message_pdu_t * message_pdu   = &outgoing_segmented_message_singleton;
+    message_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_MESSAGE;
+    message_pdu->segmented = true;
+
+    // convert mesh_transport_pdu_t into mesh_message_pdu_t
+    uint16_t message_offset = 0;
+    uint16_t bytes_current_segment = 0;
+    mesh_network_pdu_t * network_pdu = NULL;
+    while (message_offset < transport_pdu->len){
+        if (bytes_current_segment == 0){
+            network_pdu = mesh_network_pdu_get();
+            btstack_assert(network_pdu != NULL);
+            btstack_linked_list_add_tail(&message_pdu->segments, (btstack_linked_item_t *) network_pdu);
+            bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX;
+        }
+        uint16_t bytes_to_copy = btstack_max(bytes_current_segment, transport_pdu->len - message_offset);
+        (void) memcpy(&network_pdu->data[network_pdu->len], &transport_pdu->data[message_offset], bytes_to_copy);
+        bytes_current_segment -= bytes_to_copy;
+        network_pdu->len += bytes_to_copy;
+        message_offset += bytes_to_copy;
+    }
+    // copy meta
+    message_pdu->len = transport_pdu->len;
+    message_pdu->netkey_index = transport_pdu->netkey_index;
+    message_pdu->transmic_len = transport_pdu->transmic_len;
+    message_pdu->akf_aid_control = transport_pdu->akf_aid_control;
+    message_pdu->flags = transport_pdu->flags;
+    (void)memcpy(message_pdu->network_header, transport_pdu->network_header, 9);
+
+    mesh_lower_transport_send_pdu((mesh_pdu_t*) message_pdu);
 }
 
 static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
