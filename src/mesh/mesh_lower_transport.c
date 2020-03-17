@@ -925,6 +925,7 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
             break;
         default:
             btstack_assert(false);
+            break;
     }
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_lower_transport_run();
@@ -974,6 +975,7 @@ static void mesh_lower_transport_run(void){
                     mesh_lower_transport_setup_sending_segmented_pdus();
                     mesh_lower_transport_send_next_segment();
                 } else {
+                    btstack_assert(false);
                     network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
                     lower_transport_outgoing_message = message_pdu;
                     lower_transport_outgoing_segment = network_pdu;
