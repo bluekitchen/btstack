@@ -102,9 +102,6 @@ uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu){
 uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu){
     return big_endian_read_24(transport_pdu->network_header, 2);
 }
-uint32_t mesh_transport_seq_zero(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->seq_zero;
-}
 uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
     return big_endian_read_16(transport_pdu->network_header, 5);
 }

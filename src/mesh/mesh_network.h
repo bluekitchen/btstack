@@ -111,12 +111,6 @@ typedef struct {
     uint32_t retransmit_timeout_ms;
     uint32_t ack_opcode;
 
-    // rx/tx: acknowledgement timer / segment transmission timer
-    btstack_timer_source_t acknowledgement_timer;
-    // rx: incomplete timer / tx: resend timer
-    btstack_timer_source_t incomplete_timer;
-    // block access
-    uint32_t              block_ack;
     // meta data network layer
     uint16_t              netkey_index;
     // meta data transport layer
@@ -129,14 +123,6 @@ typedef struct {
     uint8_t               network_header[9];
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
-    // acknowledgement timer active
-    uint8_t               acknowledgement_timer_active;
-    // incomplete timer active
-    uint8_t               incomplete_timer_active;
-    // message complete
-    uint8_t               message_complete;
-    // seq_zero for segmented messages
-    uint16_t              seq_zero;
     // pdu
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
