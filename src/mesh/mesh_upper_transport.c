@@ -79,7 +79,7 @@ static void mesh_upper_transport_run(void);
 
 static int crypto_active;
 
-static mesh_unsegmented_incoming_pdu_t * incoming_unsegmented_pdu_raw;
+static mesh_unsegmented_pdu_t * incoming_unsegmented_pdu_raw;
 static mesh_network_pdu_t   * incoming_network_pdu_decoded;
 
 static mesh_message_pdu_t     incoming_message_pdu_singleton;
@@ -293,7 +293,7 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_p
     mesh_print_hex("DeviceNonce", nonce, 13);
 }
 
-static void mesh_upper_unsegmented_control_message_received(mesh_unsegmented_incoming_pdu_t * unsegmented_incoming_pdu){
+static void mesh_upper_unsegmented_control_message_received(mesh_unsegmented_pdu_t * unsegmented_incoming_pdu){
     if (mesh_control_message_handler){
         mesh_control_message_handler((mesh_pdu_t*) unsegmented_incoming_pdu);
     } else {
@@ -324,9 +324,9 @@ static void mesh_upper_transport_process_message_done(mesh_message_pdu_t *messag
 
 static void mesh_upper_transport_process_unsegmented_message_done(mesh_pdu_t * pdu){
     btstack_assert(pdu != NULL);
-    btstack_assert(pdu->pdu_type == MESH_PDU_TYPE_UNSEGMENTED_INCOMING);
+    btstack_assert(pdu->pdu_type == MESH_PDU_TYPE_UNSEGMENTED);
 
-    mesh_unsegmented_incoming_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
+    mesh_unsegmented_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;
     btstack_assert(unsegmented_incoming_pdu == incoming_unsegmented_pdu_raw);
 
     crypto_active = 0;
@@ -1070,10 +1070,10 @@ static void mesh_upper_transport_run(void){
         mesh_network_pdu_t   * network_pdu;
         mesh_transport_pdu_t * transport_pdu;
         mesh_message_pdu_t   * message_pdu;
-        mesh_unsegmented_incoming_pdu_t * unsegmented_pdu;
+        mesh_unsegmented_pdu_t * unsegmented_pdu;
         switch (pdu->pdu_type){
-            case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
-                unsegmented_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
+            case MESH_PDU_TYPE_UNSEGMENTED:
+                unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
                 network_pdu = unsegmented_pdu->segment;
                 btstack_assert(network_pdu != NULL);
                 incoming_unsegmented_pdu_raw = unsegmented_pdu;
@@ -1223,7 +1223,7 @@ void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_MESSAGE:
             mesh_upper_transport_process_message_done((mesh_message_pdu_t *) pdu);
             break;
-        case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
+        case MESH_PDU_TYPE_UNSEGMENTED:
             mesh_upper_transport_process_unsegmented_message_done(pdu);
             break;
         default:

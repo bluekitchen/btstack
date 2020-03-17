@@ -287,7 +287,7 @@ static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
 static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu;
     mesh_network_pdu_t   * network_pdu;
-    mesh_unsegmented_incoming_pdu_t * unsegmented_incoming_pdu;
+    mesh_unsegmented_pdu_t * unsegmented_incoming_pdu;
     switch(pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             transport_pdu = (mesh_transport_pdu_t *) pdu;
@@ -296,10 +296,10 @@ static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
-        case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
-            unsegmented_incoming_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
+        case MESH_PDU_TYPE_UNSEGMENTED:
+            unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;
             network_pdu = unsegmented_incoming_pdu->segment;
-            printf("test MESH_PDU_TYPE_UNSEGMENTED_INCOMING\n");
+            printf("test MESH_PDU_TYPE_UNSEGMENTED\n");
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu);
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu), recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);

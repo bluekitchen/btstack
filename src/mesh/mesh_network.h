@@ -70,7 +70,7 @@ typedef enum {
     MESH_PDU_TYPE_NETWORK = 0,
     MESH_PDU_TYPE_TRANSPORT,
     MESH_PDU_TYPE_MESSAGE,
-    MESH_PDU_TYPE_UNSEGMENTED_INCOMING,
+    MESH_PDU_TYPE_UNSEGMENTED,
     MESH_PDU_TYPE_ACCESS,
 } mesh_pdu_type_t;
 
@@ -178,7 +178,7 @@ typedef struct {
     uint16_t              flags;
     // pdu segment
     mesh_network_pdu_t  * segment;
-} mesh_unsegmented_incoming_pdu_t;
+} mesh_unsegmented_pdu_t;
 
 typedef struct {
     // generic pdu header

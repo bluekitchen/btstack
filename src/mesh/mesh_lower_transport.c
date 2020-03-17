@@ -181,7 +181,7 @@ static int                    lower_transport_outgoing_trasnmission_complete;
 // deliver to higher layer
 static mesh_pdu_t * mesh_lower_transport_higher_layer_pdu;
 static btstack_linked_list_t mesh_lower_transport_queued_for_higher_layer;
-static mesh_unsegmented_incoming_pdu_t lower_transport_access_incoming_singleton;
+static mesh_unsegmented_pdu_t lower_transport_access_incoming_singleton;
 
 static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
     if (lower_transport_outgoing_message == NULL) return;
@@ -244,7 +244,7 @@ static void mesh_lower_transport_deliver_to_higher_layer(void){
             case MESH_MSG_TYPE_NETWORK_PDU:
                 // unsegmented pdu
                 mesh_lower_transport_higher_layer_pdu = (mesh_pdu_t *) &lower_transport_access_incoming_singleton;
-                lower_transport_access_incoming_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED_INCOMING;
+                lower_transport_access_incoming_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
                 lower_transport_access_incoming_singleton.segment = (mesh_network_pdu_t*) pdu;
                 break;
             default:
@@ -642,7 +642,7 @@ static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
     btstack_assert(pdu == mesh_lower_transport_higher_layer_pdu);
     mesh_lower_transport_higher_layer_pdu = NULL;
-    mesh_unsegmented_incoming_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_incoming_pdu_t *) pdu;
+    mesh_unsegmented_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;
     mesh_network_pdu_t * network_pdu;
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_MESSAGE:
@@ -650,7 +650,7 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
             mesh_lower_transport_report_segments_as_processed((mesh_message_pdu_t *) pdu);
             mesh_message_pdu_free((mesh_message_pdu_t *) pdu);
             break;
-        case MESH_PDU_TYPE_UNSEGMENTED_INCOMING:
+        case MESH_PDU_TYPE_UNSEGMENTED:
             network_pdu = unsegmented_incoming_pdu->segment;
             unsegmented_incoming_pdu->segment = NULL;
             mesh_network_message_processed_by_higher_layer(network_pdu);
