@@ -439,6 +439,7 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
     if (count == 1 ){
         // send as unsegmented access pdu
         mesh_message_pdu_t * message_pdu = mesh_message_pdu_get();
+        message_pdu->segmented = false;
         mesh_network_pdu_t * segment     = mesh_network_pdu_get();
         btstack_linked_list_add(&message_pdu->segments, (btstack_linked_item_t *) segment);
         pdu = (mesh_pdu_t*) message_pdu;

@@ -66,7 +66,7 @@
 #define MESH_NETWORK_CACHE_SIZE 2
 
 // debug config
-// #define LOG_NETWORK
+#define LOG_NETWORK
 
 static void mesh_network_dump_network_pdus(const char * name, btstack_linked_list_t * list);
 

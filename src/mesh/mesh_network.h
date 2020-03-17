@@ -150,6 +150,8 @@ typedef struct {
     uint32_t retransmit_timeout_ms;
     uint32_t ack_opcode;
 
+    bool     segmented;
+
     // rx/tx: acknowledgement timer / segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
     // rx: incomplete timer / tx: resend timer
