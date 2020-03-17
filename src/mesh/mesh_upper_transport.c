@@ -90,6 +90,8 @@ static mesh_access_pdu_t    * incoming_access_pdu_decrypted;
 static mesh_access_pdu_t      incoming_access_pdu_encrypted_singleton;
 static mesh_access_pdu_t      incoming_access_pdu_decrypted_singleton;
 
+static mesh_message_pdu_t     outgoing_segmented_message_singleton;
+
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
 static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
@@ -632,6 +634,10 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     mesh_lower_transport_send_pdu((mesh_pdu_t*) message_pdu);
 }
 
+static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
+    mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
+}
+
 static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
     crypto_active = 0;
 
@@ -642,7 +648,7 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
     mesh_print_hex("TransMIC", &transport_pdu->data[transport_pdu->len], transport_pdu->transmic_len);
     transport_pdu->len += transport_pdu->transmic_len;
     mesh_print_hex("UpperTransportPDU", transport_pdu->data, transport_pdu->len);
-    mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
+    mesh_upper_transport_send_segmented_pdu(transport_pdu);
 }
 
 static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
@@ -1010,7 +1016,7 @@ static void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t
     printf("[+] Upper transport, send segmented Control PDU %p - seq %06x opcode %02x\n", transport_pdu, seq, opcode);
     mesh_print_hex("Access Payload", &transport_pdu->data[1], transport_pdu->len - 1);
     // send
-    mesh_lower_transport_send_pdu((mesh_pdu_t *) transport_pdu);
+    mesh_upper_transport_send_segmented_pdu(transport_pdu);
 }
 
 static void mesh_upper_transport_run(void){
