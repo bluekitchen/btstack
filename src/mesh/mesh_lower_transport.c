@@ -913,9 +913,18 @@ static void mesh_lower_transport_setup_block_ack(mesh_message_pdu_t *message_pdu
 }
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
-    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) pdu;
-        btstack_assert(network_pdu->len >= 9);
+    mesh_unsegmented_pdu_t * unsegmented_pdu;
+    mesh_network_pdu_t * network_pdu;
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_UNSEGMENTED:
+            unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
+            network_pdu = unsegmented_pdu->segment;
+            btstack_assert(network_pdu->len >= 9);
+            break;
+        case MESH_PDU_TYPE_MESSAGE:
+            break;
+        default:
+            btstack_assert(false);
     }
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_lower_transport_run();
@@ -946,10 +955,6 @@ static void mesh_lower_transport_run(void){
         mesh_message_pdu_t   * message_pdu;
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&lower_transport_outgoing);
         switch (pdu->pdu_type) {
-            case MESH_PDU_TYPE_NETWORK:
-                network_pdu = (mesh_network_pdu_t *) pdu;
-                mesh_network_send_pdu(network_pdu);
-                break;
             case MESH_PDU_TYPE_UNSEGMENTED:
                 lower_transport_outgoing_unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
                 network_pdu = lower_transport_outgoing_unsegmented_pdu->segment;
