@@ -630,7 +630,7 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                     if (higher_layer_handler){
                         higher_layer_handler(callback_type, status, (mesh_pdu_t*) network_pdu);
                     } else {
-                        mesh_transport_pdu_free(transport_pdu);
+                        mesh_network_pdu_free(network_pdu);
                     }
                     break;
                 default:
@@ -666,7 +666,6 @@ static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * trans
     outgoing_segmented_pdu = transport_pdu;
     mesh_message_pdu_t * message_pdu   = &outgoing_segmented_message_singleton;
     message_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_MESSAGE;
-    message_pdu->segmented = true;
 
     // convert mesh_transport_pdu_t into mesh_message_pdu_t
     uint16_t message_offset = 0;

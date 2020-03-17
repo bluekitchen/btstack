@@ -847,38 +847,28 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
     if (lower_transport_outgoing_segment == network_pdu){
         btstack_assert(lower_transport_outgoing_message != NULL);
 
-        if (lower_transport_outgoing_message->segmented == false){
-            // of unsegmented message
-            mesh_message_pdu_t * message_pdu = lower_transport_outgoing_message;
-            lower_transport_outgoing_message = NULL;
-            lower_transport_outgoing_segment = NULL;
-            higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) message_pdu);
-            return;
-
-        } else {
-            // of segmented message
+        // of segmented message
 #ifdef LOG_LOWER_TRANSPORT
-            printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_message, mesh_message_seq(lower_transport_outgoing_message), network_pdu);
+        printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_message, mesh_message_seq(lower_transport_outgoing_message), network_pdu);
 #endif
 
-            lower_transport_outgoing_segment_queued = 0;
-            if (lower_transport_outgoing_trasnmission_complete){
-                // handle complete
-                lower_transport_outgoing_trasnmission_complete = 0;
-                lower_transport_outgoing_transmission_timeout  = 0;
-                mesh_lower_transport_outgoing_complete();
-                return;
-            }
-            if (lower_transport_outgoing_transmission_timeout){
-                // handle timeout
-                lower_transport_outgoing_transmission_timeout = 0;
-                mesh_lower_transport_segment_transmission_fired();
-                return;
-            }
-
-            // send next segment
-            mesh_lower_transport_send_next_segment();
+        lower_transport_outgoing_segment_queued = 0;
+        if (lower_transport_outgoing_trasnmission_complete){
+            // handle complete
+            lower_transport_outgoing_trasnmission_complete = 0;
+            lower_transport_outgoing_transmission_timeout  = 0;
+            mesh_lower_transport_outgoing_complete();
+            return;
         }
+        if (lower_transport_outgoing_transmission_timeout){
+            // handle timeout
+            lower_transport_outgoing_transmission_timeout = 0;
+            mesh_lower_transport_segment_transmission_fired();
+            return;
+        }
+
+        // send next segment
+        mesh_lower_transport_send_next_segment();
         return;
     }
 
@@ -963,24 +953,16 @@ static void mesh_lower_transport_run(void){
                 break;
             case MESH_PDU_TYPE_MESSAGE:
                 message_pdu = (mesh_message_pdu_t *) pdu;
-                if (message_pdu->segmented){
-                    //
-                    printf("[+] Lower transport, segmented pdu %p, seq %06x: run start sending now\n", message_pdu, mesh_message_seq(message_pdu));
-                    // start sending segmented pdu
-                    lower_transport_retry_count = 3;
-                    lower_transport_outgoing_message = message_pdu;
-                    lower_transport_outgoing_transmission_timeout  = 0;
-                    lower_transport_outgoing_trasnmission_complete = 0;
-                    mesh_lower_transport_setup_block_ack(message_pdu);
-                    mesh_lower_transport_setup_sending_segmented_pdus();
-                    mesh_lower_transport_send_next_segment();
-                } else {
-                    btstack_assert(false);
-                    network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
-                    lower_transport_outgoing_message = message_pdu;
-                    lower_transport_outgoing_segment = network_pdu;
-                    mesh_network_send_pdu(network_pdu);
-                }
+                //
+                printf("[+] Lower transport, segmented pdu %p, seq %06x: run start sending now\n", message_pdu, mesh_message_seq(message_pdu));
+                // start sending segmented pdu
+                lower_transport_retry_count = 3;
+                lower_transport_outgoing_message = message_pdu;
+                lower_transport_outgoing_transmission_timeout  = 0;
+                lower_transport_outgoing_trasnmission_complete = 0;
+                mesh_lower_transport_setup_block_ack(message_pdu);
+                mesh_lower_transport_setup_sending_segmented_pdus();
+                mesh_lower_transport_send_next_segment();
                 break;
             default:
                 btstack_assert(false);
