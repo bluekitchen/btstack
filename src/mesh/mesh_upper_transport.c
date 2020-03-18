@@ -570,7 +570,7 @@ static void mesh_upper_transport_process_unsegmented_access_message(void){
     uint8_t * lower_transport_pdu     = &raw_network_pdu->data[9];
     uint8_t   lower_transport_pdu_len = raw_network_pdu->len - 9;
 
-    mesh_print_hex("Lower Transport network pdu", &raw_network_pdu->data[9], lower_transport_pdu_len);
+    mesh_print_hex("Lower Transport network pdu", lower_transport_pdu, lower_transport_pdu_len);
 
     uint8_t aid =  lower_transport_pdu[0] & 0x3f;
     uint8_t akf = (lower_transport_pdu[0] & 0x40) >> 6;
@@ -582,7 +582,7 @@ static void mesh_upper_transport_process_unsegmented_access_message(void){
     mesh_upper_transport_validate_unsegmented_message();
 }
 
-static void mesh_upper_transport_process_message(void){
+static void mesh_upper_transport_process_segmented_message(void){
     // copy original pdu
     (void)memcpy(incoming_access_pdu_decrypted, incoming_access_pdu_encrypted,
                  sizeof(mesh_transport_pdu_t));
@@ -1134,6 +1134,7 @@ static void mesh_upper_transport_run(void){
 
                     incoming_access_pdu_encrypted = &incoming_access_pdu_encrypted_singleton;
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
+                    incoming_access_pdu_decrypted = &incoming_access_pdu_decrypted_singleton;
 
                     // flatten segmented message into mesh_transport_pdu_t
 
@@ -1156,21 +1157,12 @@ static void mesh_upper_transport_run(void){
 
                     mesh_print_hex("Assembled payload", incoming_access_pdu_encrypted->data, incoming_access_pdu_encrypted->len);
 
-                    // copy meta data into decrypted pdu buffer
-                    incoming_access_pdu_decrypted = &incoming_access_pdu_decrypted_singleton;
-                    incoming_access_pdu_decrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
-                    incoming_access_pdu_decrypted->len =  message_pdu->len;
-                    incoming_access_pdu_decrypted->netkey_index =  message_pdu->netkey_index;
-                    incoming_access_pdu_decrypted->transmic_len =  message_pdu->transmic_len;
-                    incoming_access_pdu_decrypted->akf_aid_control =  message_pdu->akf_aid_control;
-                    (void)memcpy(incoming_access_pdu_decrypted->network_header, message_pdu->network_header, 9);
-
                     // free mesh message
                     mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)message_pdu);
 
                     // get encoded transport pdu and start processing
                     (void) btstack_linked_list_pop(&upper_transport_incoming);
-                    mesh_upper_transport_process_message();
+                    mesh_upper_transport_process_segmented_message();
                 }
                 break;
             default:
