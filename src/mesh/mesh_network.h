@@ -111,9 +111,6 @@ typedef struct {
     uint32_t retransmit_timeout_ms;
     uint32_t ack_opcode;
 
-    // seq_zero for segmented messages
-    uint16_t              dummy;
-
     // meta data network layer
     uint16_t              netkey_index;
     // meta data transport layer

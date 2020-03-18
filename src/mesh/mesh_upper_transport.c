@@ -113,7 +113,14 @@ static btstack_linked_list_t upper_transport_outgoing;
 #define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
-    btstack_assert(pdu->pdu_type != MESH_PDU_TYPE_NETWORK);
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_UNSEGMENTED:
+        case MESH_PDU_TYPE_TRANSPORT:
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
 
     btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_upper_transport_run();
@@ -225,6 +232,10 @@ void mesh_upper_transport_reset(void){
         incoming_unsegmented_pdu_raw->segment = NULL;
         mesh_network_pdu_free(network_pdu);
         incoming_unsegmented_pdu_raw = NULL;
+    }
+    if (outgoing_segmented_pdu != NULL){
+        mesh_transport_pdu_free(outgoing_segmented_pdu);
+        outgoing_segmented_pdu = NULL;
     }
     mesh_upper_transport_reset_pdus(&upper_transport_incoming);
 }
