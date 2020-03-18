@@ -25,7 +25,7 @@ hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activit
 
 ### Changed
 - AVRCP Target: volume in avrcp_target_volume_changed is reported as current value in interim response to register for volume change notifications
-
+- SDP Client: query attributes 0x0000..0xffff instead of 0x0001..0xffff to match other stacks / improve compatibility with bad sdp server implementations
 
 ## Changes Februar 2020
 
