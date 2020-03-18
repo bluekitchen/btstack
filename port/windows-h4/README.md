@@ -25,6 +25,9 @@ With mingw64-w64 installed, just go to the port/windows-winusb directory and run
     $ cd btstack/port/windows-winusb
     $ make
 
+Note: When compiling with msys2-32 bit and/or the 32-bit toolchain, compilation fails
+as `conio.h` seems to be mission. Please use msys2-64 bit with the 64-bit toolchain for now.
+
 ## Console Output
 
 When running the examples in the MSYS2 shell, the console input (via btstack_stdin_support) doesn't work. It works in the older MSYS and also the regular CMD.exe environment. Another option is to install WinPTY and then start the example via WinPTY like this:
