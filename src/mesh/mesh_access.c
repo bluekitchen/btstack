@@ -124,8 +124,8 @@ static uint32_t mesh_access_message_ack_opcode(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t *)pdu)->ack_opcode;
-        case MESH_PDU_TYPE_MESSAGE:
-            return ((mesh_message_pdu_t *)pdu)->ack_opcode;
+        case MESH_PDU_TYPE_SEGMENTED:
+            return ((mesh_segmented_pdu_t *)pdu)->ack_opcode;
         default:
             btstack_assert(0);
             return MESH_ACCESS_OPCODE_INVALID;
@@ -137,8 +137,8 @@ static void mesh_access_message_set_ack_opcode(mesh_pdu_t * pdu, uint32_t ack_op
         case MESH_PDU_TYPE_TRANSPORT:
             ((mesh_transport_pdu_t *)pdu)->ack_opcode = ack_opcode;
             break;
-        case MESH_PDU_TYPE_MESSAGE:
-            ((mesh_message_pdu_t *)pdu)->ack_opcode = ack_opcode;
+        case MESH_PDU_TYPE_SEGMENTED:
+            ((mesh_segmented_pdu_t *)pdu)->ack_opcode = ack_opcode;
             break;
         default:
             btstack_assert(0);
@@ -150,8 +150,8 @@ static uint8_t mesh_access_message_retransmit_count(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t *)pdu)->retransmit_count;
-        case MESH_PDU_TYPE_MESSAGE:
-            return ((mesh_message_pdu_t *)pdu)->retransmit_count;
+        case MESH_PDU_TYPE_SEGMENTED:
+            return ((mesh_segmented_pdu_t *)pdu)->retransmit_count;
         default:
             btstack_assert(0);
             return 0;
@@ -163,8 +163,8 @@ static void mesh_access_message_set_retransmit_count(mesh_pdu_t * pdu, uint8_t r
         case MESH_PDU_TYPE_TRANSPORT:
             ((mesh_transport_pdu_t *)pdu)->retransmit_count = retransmit_count;
             break;
-        case MESH_PDU_TYPE_MESSAGE:
-            ((mesh_message_pdu_t *)pdu)->retransmit_count = retransmit_count;
+        case MESH_PDU_TYPE_SEGMENTED:
+            ((mesh_segmented_pdu_t *)pdu)->retransmit_count = retransmit_count;
             break;
         default:
             btstack_assert(0);
@@ -176,8 +176,8 @@ static uint32_t mesh_access_message_retransmit_timeout_ms(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t *)pdu)->retransmit_timeout_ms;
-        case MESH_PDU_TYPE_MESSAGE:
-            return ((mesh_message_pdu_t *)pdu)->retransmit_timeout_ms;
+        case MESH_PDU_TYPE_SEGMENTED:
+            return ((mesh_segmented_pdu_t *)pdu)->retransmit_timeout_ms;
         default:
             btstack_assert(0);
             return 0;
@@ -189,8 +189,8 @@ static void mesh_access_message_set_retransmit_timeout_ms(mesh_pdu_t * pdu, uint
         case MESH_PDU_TYPE_TRANSPORT:
             ((mesh_transport_pdu_t *)pdu)->retransmit_timeout_ms = retransmit_timeout_ms;
             break;
-        case MESH_PDU_TYPE_MESSAGE:
-            ((mesh_message_pdu_t *)pdu)->retransmit_timeout_ms = retransmit_timeout_ms;
+        case MESH_PDU_TYPE_SEGMENTED:
+            ((mesh_segmented_pdu_t *)pdu)->retransmit_timeout_ms = retransmit_timeout_ms;
             break;
         default:
             btstack_assert(0);
@@ -735,11 +735,11 @@ void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint
 }
 
 // mesh_message_t builder
-mesh_message_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
+mesh_segmented_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
     btstack_assert(num_segments > 0);
     btstack_assert(segmented || (num_segments == 1));
 
-    mesh_message_pdu_t * pdu = mesh_message_pdu_get();
+    mesh_segmented_pdu_t * pdu = mesh_message_pdu_get();
     if (!pdu) return NULL;
 
     // TODO: handle segmented messages
@@ -758,34 +758,34 @@ mesh_message_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, u
     return pdu;
 }
 
-void mesh_access_message_add_uint8(mesh_message_pdu_t * pdu, uint8_t value){
+void mesh_access_message_add_uint8(mesh_segmented_pdu_t * pdu, uint8_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     segment->data[pdu->len++] = value;
 }
 
-void mesh_access_message_add_uint16(mesh_message_pdu_t * pdu, uint16_t value){
+void mesh_access_message_add_uint16(mesh_segmented_pdu_t * pdu, uint16_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     little_endian_store_16(segment->data, pdu->len, value);
     pdu->len += 2;
 }
 
-void mesh_access_message_add_uint24(mesh_message_pdu_t * pdu, uint16_t value){
+void mesh_access_message_add_uint24(mesh_segmented_pdu_t * pdu, uint16_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     little_endian_store_24(segment->data, pdu->len, value);
     pdu->len += 3;
 }
 
-void mesh_access_message_add_uint32(mesh_message_pdu_t * pdu, uint16_t value){
+void mesh_access_message_add_uint32(mesh_segmented_pdu_t * pdu, uint16_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     little_endian_store_32(segment->data, pdu->len, value);
     pdu->len += 4;
 }
 
-void mesh_access_message_add_model_identifier(mesh_message_pdu_t * pdu, uint32_t model_identifier){
+void mesh_access_message_add_model_identifier(mesh_segmented_pdu_t * pdu, uint32_t model_identifier){
     if (mesh_model_is_bluetooth_sig(model_identifier)){
         mesh_access_message_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
     } else {
@@ -794,11 +794,11 @@ void mesh_access_message_add_model_identifier(mesh_message_pdu_t * pdu, uint32_t
 }
 
 // access message template
-mesh_message_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...){
+mesh_segmented_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...){
     btstack_assert(segmented == false);
 
     // TODO: handle segmented messages
-    mesh_message_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode, segmented, 1);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode, segmented, 1);
     if (!message_pdu) return NULL;
 
     va_list argptr;

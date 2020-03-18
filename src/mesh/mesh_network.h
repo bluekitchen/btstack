@@ -69,7 +69,7 @@ typedef enum {
 typedef enum {
     MESH_PDU_TYPE_NETWORK = 0,
     MESH_PDU_TYPE_TRANSPORT,
-    MESH_PDU_TYPE_MESSAGE,
+    MESH_PDU_TYPE_SEGMENTED,
     MESH_PDU_TYPE_UNSEGMENTED,
     MESH_PDU_TYPE_ACCESS,
 } mesh_pdu_type_t;
@@ -132,6 +132,17 @@ typedef struct {
 } mesh_transport_pdu_t;
 
 typedef struct {
+    // generic pdu header
+    mesh_pdu_t            pdu_header;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // pdu segment
+    mesh_network_pdu_t  * segment;
+} mesh_unsegmented_pdu_t;
+
+typedef struct {
     mesh_pdu_t pdu_header;
 
     // access acknowledged message
@@ -168,18 +179,7 @@ typedef struct {
     // pdu segments
     uint16_t              len;
     btstack_linked_list_t segments;
-} mesh_message_pdu_t;
-
-typedef struct {
-    // generic pdu header
-    mesh_pdu_t            pdu_header;
-    // meta data transport layer
-    uint16_t              appkey_index;
-    // MESH_TRANSPORT_FLAG
-    uint16_t              flags;
-    // pdu segment
-    mesh_network_pdu_t  * segment;
-} mesh_unsegmented_pdu_t;
+} mesh_segmented_pdu_t;
 
 typedef struct {
     // generic pdu header

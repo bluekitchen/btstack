@@ -342,7 +342,7 @@ uint8_t mesh_configuration_client_send_beacon_get(mesh_model_t * mesh_model, uin
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_beacon_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_beacon_get);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_BEACON_STATUS);
@@ -355,7 +355,7 @@ uint8_t mesh_configuration_client_send_beacon_set(mesh_model_t * mesh_model, uin
 
     if (beacon > 1) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_beacon_set, beacon);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_beacon_set, beacon);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_BEACON_STATUS);
@@ -366,7 +366,7 @@ uint8_t mesh_configuration_client_send_composition_data_get(mesh_model_t * mesh_
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_composition_data_get, page);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_composition_data_get, page);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
@@ -377,7 +377,7 @@ uint8_t mesh_configuration_client_send_default_ttl_get(mesh_model_t * mesh_model
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_default_ttl_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_default_ttl_get);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS);
@@ -390,7 +390,7 @@ uint8_t mesh_configuration_client_send_default_ttl_set(mesh_model_t * mesh_model
 
     if (ttl == 0x01 || ttl >= 0x80) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_default_ttl_set, ttl);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_default_ttl_set, ttl);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS);
@@ -401,7 +401,7 @@ uint8_t mesh_configuration_client_send_gatt_proxy_get(mesh_model_t * mesh_model,
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_gatt_proxy_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_gatt_proxy_get);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS);
@@ -414,7 +414,7 @@ uint8_t mesh_configuration_client_send_gatt_proxy_set(mesh_model_t * mesh_model,
 
     if (gatt_proxy_state > 2) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_gatt_proxy_set, gatt_proxy_state);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_gatt_proxy_set, gatt_proxy_state);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS);
@@ -425,7 +425,7 @@ uint8_t mesh_configuration_client_send_relay_get(mesh_model_t * mesh_model, uint
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_relay_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_relay_get);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_RELAY_STATUS);
@@ -439,7 +439,7 @@ uint8_t mesh_configuration_client_send_relay_set(mesh_model_t * mesh_model, uint
     if (relay_retransmit_count > 0x07) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     if (relay_retransmit_interval_steps > 0x1F) return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_relay_set, relay, (relay_retransmit_count << 5) | relay_retransmit_interval_steps);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_relay_set, relay, (relay_retransmit_count << 5) | relay_retransmit_interval_steps);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_RELAY_SET);
@@ -450,7 +450,7 @@ uint8_t mesh_configuration_client_send_model_publication_get(mesh_model_t * mesh
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_publication_get, dest, model_id);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_publication_get, dest, model_id);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS);
@@ -475,14 +475,14 @@ uint8_t mesh_configuration_client_send_model_publication_set(mesh_model_t * mesh
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
     
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_publication_set,
-        dest, 
-        publication_config->publish_address_unicast,
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_publication_set,
+                                                                   dest,
+                                                                   publication_config->publish_address_unicast,
         (publication_config->credential_flag << 12) | publication_config->appkey_index,
-        publication_config->publish_ttl,
-        publication_config->publish_period,
+                                                                   publication_config->publish_ttl,
+                                                                   publication_config->publish_period,
         (publication_config->publish_retransmit_interval_steps << 3) | publication_config->publish_retransmit_count,
-        model_id);
+                                                                   model_id);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS);
@@ -518,7 +518,7 @@ uint8_t mesh_configuration_client_send_model_subscription_add(mesh_model_t * mes
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_add, dest, address, model_id);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_add, dest, address, model_id);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS);
@@ -540,7 +540,7 @@ uint8_t mesh_configuration_client_send_model_subscription_delete(mesh_model_t * 
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_delete, dest, address, model_id);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_delete, dest, address, model_id);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS);
@@ -562,7 +562,7 @@ uint8_t mesh_configuration_client_send_model_subscription_overwrite(mesh_model_t
         uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_overwrite, dest, address, model_id);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_overwrite, dest, address, model_id);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS);
@@ -584,7 +584,7 @@ uint8_t mesh_configuration_client_send_model_subscription_delete_all(mesh_model_
         uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_delete_all, dest, address, model_id);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_subscription_delete_all, dest, address, model_id);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS);
@@ -595,7 +595,7 @@ uint8_t mesh_configuration_client_send_model_subscription_get(mesh_model_t * mes
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = NULL;
+    mesh_segmented_pdu_t * message_pdu = NULL;
     uint32_t ack_opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST;
 
     if (mesh_model_is_bluetooth_sig(model_id)){
@@ -736,7 +736,7 @@ uint8_t mesh_configuration_client_send_model_app_unbind_set(mesh_model_t * mesh_
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_app_unbind, dest, appk_index, model_identifier);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_model_app_unbind, dest, appk_index, model_identifier);
     if (!message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS);
@@ -747,7 +747,7 @@ uint8_t mesh_configuration_client_send_model_app_get(mesh_model_t * mesh_model, 
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu;
+    mesh_segmented_pdu_t * message_pdu;
     uint32_t ack_opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_LIST;
 
     if (mesh_model_is_bluetooth_sig(model_identifier)){
@@ -765,7 +765,7 @@ uint8_t mesh_configuration_client_send_node_reset(mesh_model_t * mesh_model, uin
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_node_reset);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_node_reset);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS);
@@ -776,7 +776,7 @@ uint8_t mesh_configuration_client_send_friend_get(mesh_model_t * mesh_model, uin
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_friend_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_friend_get);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_FRIEND_STATUS);
@@ -787,7 +787,7 @@ uint8_t mesh_configuration_client_send_friend_set(mesh_model_t * mesh_model, uin
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_friend_set, friend_state);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_friend_set, friend_state);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_FRIEND_STATUS);
@@ -798,7 +798,7 @@ uint8_t mesh_configuration_client_send_key_refresh_phase_get(mesh_model_t * mesh
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_key_refresh_phase_get, netk_index);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_key_refresh_phase_get, netk_index);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS);
@@ -809,7 +809,7 @@ uint8_t mesh_configuration_client_send_key_refresh_phase_set(mesh_model_t * mesh
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_key_refresh_phase_set, netk_index, transition);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_key_refresh_phase_set, netk_index, transition);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS);
@@ -820,7 +820,7 @@ uint8_t mesh_configuration_client_send_heartbeat_publication_get(mesh_model_t * 
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_publication_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_publication_get);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS);
@@ -831,13 +831,13 @@ uint8_t mesh_configuration_client_send_heartbeat_publication_set(mesh_model_t * 
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_publication_set,
-        publication_state.destination,
-        mesh_heartbeat_period_log(publication_state.count), 
-        mesh_heartbeat_period_log(publication_state.period_s), 
-        publication_state.ttl,
-        publication_state.features,
-        publication_state.netkey_index);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_publication_set,
+                                                                   publication_state.destination,
+                                                                   mesh_heartbeat_period_log(publication_state.count),
+                                                                   mesh_heartbeat_period_log(publication_state.period_s),
+                                                                   publication_state.ttl,
+                                                                   publication_state.features,
+                                                                   publication_state.netkey_index);
 
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
@@ -849,7 +849,7 @@ uint8_t mesh_configuration_client_send_heartbeat_subscription_get(mesh_model_t *
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_subscription_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_subscription_get);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS);
@@ -860,7 +860,7 @@ uint8_t mesh_configuration_client_send_heartbeat_subscription_set(mesh_model_t *
         uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_subscription_set, heartbeat_source, heartbeat_destination, mesh_heartbeat_period_log(period_s));
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_heartbeat_subscription_set, heartbeat_source, heartbeat_destination, mesh_heartbeat_period_log(period_s));
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS);
@@ -871,7 +871,7 @@ uint8_t mesh_configuration_client_send_low_power_node_poll_timeout_get(mesh_mode
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_low_power_node_poll_timeout_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_client_low_power_node_poll_timeout_get);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS);
@@ -882,7 +882,7 @@ uint8_t mesh_configuration_client_send_network_transmit_get(mesh_model_t * mesh_
     uint8_t status = mesh_access_validate_envelop_params(mesh_model, dest, netkey_index, appkey_index);
     if (status != ERROR_CODE_SUCCESS) return status;
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_network_transmit_get);
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_network_transmit_get);
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS);
@@ -898,7 +898,7 @@ uint8_t mesh_configuration_client_send_network_transmit_set(mesh_model_t * mesh_
         transmit_interval_steps_10ms -= 1;
     }
 
-    mesh_message_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_network_transmit_set, (transmit_count << 5) | (transmit_interval_steps_10ms & 0x1F));
+    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_configuration_network_transmit_set, (transmit_count << 5) | (transmit_interval_steps_10ms & 0x1F));
     if (message_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     mesh_configuration_client_send_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) message_pdu, MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS);

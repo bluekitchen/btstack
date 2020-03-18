@@ -82,7 +82,7 @@ static int crypto_active;
 static mesh_unsegmented_pdu_t * incoming_unsegmented_pdu_raw;
 static mesh_network_pdu_t   * incoming_network_pdu_decoded;
 
-static mesh_message_pdu_t     incoming_message_pdu_singleton;
+static mesh_segmented_pdu_t     incoming_message_pdu_singleton;
 
 static mesh_access_pdu_t    * incoming_access_pdu_encrypted;
 static mesh_access_pdu_t    * incoming_access_pdu_decrypted;
@@ -90,7 +90,7 @@ static mesh_access_pdu_t    * incoming_access_pdu_decrypted;
 static mesh_access_pdu_t      incoming_access_pdu_encrypted_singleton;
 static mesh_access_pdu_t      incoming_access_pdu_decrypted_singleton;
 
-static mesh_message_pdu_t     outgoing_segmented_message_singleton;
+static mesh_segmented_pdu_t     outgoing_segmented_message_singleton;
 static mesh_transport_pdu_t * outgoing_segmented_pdu;
 static mesh_unsegmented_pdu_t outgoing_unsegmented_pdu;
 
@@ -306,7 +306,7 @@ static void mesh_upper_unsegmented_control_message_received(mesh_unsegmented_pdu
     }
 }
 
-static void mesh_upper_transport_process_message_done(mesh_message_pdu_t *message_pdu){
+static void mesh_upper_transport_process_message_done(mesh_segmented_pdu_t *message_pdu){
     crypto_active = 0;
     btstack_assert(message_pdu == &incoming_message_pdu_singleton);
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&incoming_message_pdu_singleton.segments);
@@ -608,7 +608,7 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
             break;
         case MESH_TRANSPORT_PDU_SENT:
             switch (pdu->pdu_type){
-                case MESH_PDU_TYPE_MESSAGE:
+                case MESH_PDU_TYPE_SEGMENTED:
                     // free chunks
                     while (!btstack_linked_list_empty(&outgoing_segmented_message_singleton.segments)){
                         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&outgoing_segmented_message_singleton.segments);
@@ -664,10 +664,10 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
 
 static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
     outgoing_segmented_pdu = transport_pdu;
-    mesh_message_pdu_t * message_pdu   = &outgoing_segmented_message_singleton;
-    message_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_MESSAGE;
+    mesh_segmented_pdu_t * message_pdu   = &outgoing_segmented_message_singleton;
+    message_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
 
-    // convert mesh_transport_pdu_t into mesh_message_pdu_t
+    // convert mesh_transport_pdu_t into mesh_segmented_pdu_t
     uint16_t message_offset = 0;
     uint16_t bytes_current_segment = 0;
     mesh_network_pdu_t * network_pdu = NULL;
@@ -755,7 +755,7 @@ uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey
             return mesh_upper_transport_setup_unsegmented_control_pdu((mesh_network_pdu_t *) pdu, netkey_index, ttl, src, dest, opcode, control_pdu_data, control_pdu_len);
         case MESH_PDU_TYPE_TRANSPORT:
             return mesh_upper_transport_setup_segmented_control_pdu((mesh_transport_pdu_t *) pdu, netkey_index, ttl, src, dest, opcode, control_pdu_data, control_pdu_len);
-        case MESH_PDU_TYPE_MESSAGE:
+        case MESH_PDU_TYPE_SEGMENTED:
             btstack_assert(0);
             break;
         default:
@@ -1087,7 +1087,7 @@ static void mesh_upper_transport_run(void){
         mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_incoming);
         mesh_network_pdu_t   * network_pdu;
         mesh_transport_pdu_t * transport_pdu;
-        mesh_message_pdu_t   * message_pdu;
+        mesh_segmented_pdu_t   * message_pdu;
         mesh_unsegmented_pdu_t * unsegmented_pdu;
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UNSEGMENTED:
@@ -1107,13 +1107,13 @@ static void mesh_upper_transport_run(void){
                     (void) btstack_linked_list_pop(&upper_transport_incoming);
 
                     // use pre-allocated message pdu
-                    incoming_message_pdu_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_MESSAGE;
+                    incoming_message_pdu_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
                     btstack_linked_list_add(&incoming_message_pdu_singleton.segments, (btstack_linked_item_t *) incoming_network_pdu_decoded);
                     mesh_upper_transport_process_unsegmented_access_message();
                 }
                 break;
-            case MESH_PDU_TYPE_MESSAGE:
-                message_pdu = (mesh_message_pdu_t *) pdu;
+            case MESH_PDU_TYPE_SEGMENTED:
+                message_pdu = (mesh_segmented_pdu_t *) pdu;
                 uint8_t ctl = mesh_message_ctl(message_pdu);
                 if (ctl){
                     printf("Ignoring Segmented Control Message\n");
@@ -1184,7 +1184,7 @@ static void mesh_upper_transport_run(void){
                 case MESH_PDU_TYPE_NETWORK:
                     mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
                     break;
-                case MESH_PDU_TYPE_MESSAGE:
+                case MESH_PDU_TYPE_SEGMENTED:
                     btstack_assert(0);
                     break;
                 case MESH_PDU_TYPE_TRANSPORT:
@@ -1214,7 +1214,7 @@ static void mesh_upper_transport_run(void){
 void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
     mesh_network_pdu_t   * network_pdu;
     mesh_transport_pdu_t * transport_pdu;
-    mesh_message_pdu_t   * message_pdu;
+    mesh_segmented_pdu_t   * message_pdu;
     switch (pdu->pdu_type) {
         case MESH_PDU_TYPE_NETWORK:
             network_pdu = (mesh_network_pdu_t *) pdu;
@@ -1224,8 +1224,8 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
             transport_pdu = (mesh_transport_pdu_t *) pdu;
             mesh_transport_pdu_free(transport_pdu);
             break;
-        case MESH_PDU_TYPE_MESSAGE:
-            message_pdu = (mesh_message_pdu_t *) pdu;
+        case MESH_PDU_TYPE_SEGMENTED:
+            message_pdu = (mesh_segmented_pdu_t *) pdu;
             mesh_message_pdu_free(message_pdu);
         default:
             break;
@@ -1238,8 +1238,8 @@ void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_ACCESS:
             mesh_upper_transport_process_segmented_access_message_done((mesh_access_pdu_t *) pdu);
             break;
-        case MESH_PDU_TYPE_MESSAGE:
-            mesh_upper_transport_process_message_done((mesh_message_pdu_t *) pdu);
+        case MESH_PDU_TYPE_SEGMENTED:
+            mesh_upper_transport_process_message_done((mesh_segmented_pdu_t *) pdu);
             break;
         case MESH_PDU_TYPE_UNSEGMENTED:
             mesh_upper_transport_process_unsegmented_message_done(pdu);
