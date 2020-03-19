@@ -452,6 +452,14 @@ void mesh_access_transitions_abort_transaction(mesh_transition_t * base_transiti
     btstack_run_loop_add_timer(&base_transition->timer);
 }
 
+static uint16_t mesh_access_src(mesh_access_pdu_t * access_pdu){
+    return big_endian_read_16(access_pdu->network_header, 5);
+}
+
+static uint16_t mesh_access_dst(mesh_access_pdu_t * access_pdu){
+    return big_endian_read_16(access_pdu->network_header, 7);
+}
+
 uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
@@ -459,6 +467,7 @@ uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
         default:
+            btstack_assert(false);
             return 0;
     }
 }
@@ -470,72 +479,89 @@ uint16_t mesh_pdu_ttl(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_ttl((mesh_network_pdu_t *) pdu);
         default:
+            btstack_assert(false);
             return 0;
     }
 }
 
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_ACCESS:
+            return mesh_access_src((mesh_access_pdu_t *) pdu);
         case MESH_PDU_TYPE_TRANSPORT:
             return mesh_transport_src((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_src((mesh_network_pdu_t *) pdu);
         default:
+            btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;
     }
 }
 
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_ACCESS:
+            return mesh_access_dst((mesh_access_pdu_t *) pdu);
         case MESH_PDU_TYPE_TRANSPORT:
             return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
         default:
+            btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;
     }
 }
 
 uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_ACCESS:
+            return ((mesh_access_pdu_t*) pdu)->netkey_index;
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t*) pdu)->netkey_index;
         case MESH_PDU_TYPE_NETWORK:
             return ((mesh_network_pdu_t *) pdu)->netkey_index;
         default:
+            btstack_assert(false);
             return 0;
     }
 }
 
 uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_ACCESS:
+            return ((mesh_access_pdu_t*) pdu)->appkey_index;
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t*) pdu)->appkey_index;
-        case MESH_PDU_TYPE_NETWORK:
-            return ((mesh_network_pdu_t *) pdu)->appkey_index;
         default:
+            btstack_assert(false);
             return 0;
     }
 }
 
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_ACCESS:
+            return ((mesh_access_pdu_t*) pdu)->len;
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t*) pdu)->len;
         case MESH_PDU_TYPE_NETWORK:
             return ((mesh_network_pdu_t *) pdu)->len - 10;
         default:
+            btstack_assert(false);
             return 0;
     }
 }
 
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_ACCESS:
+            return ((mesh_access_pdu_t*) pdu)->data;
         case MESH_PDU_TYPE_TRANSPORT:
             return ((mesh_transport_pdu_t*) pdu)->data;
         case MESH_PDU_TYPE_NETWORK:
             return &((mesh_network_pdu_t *) pdu)->data[10];
         default:
+            btstack_assert(false);
             return NULL;
     }
 }
@@ -547,6 +573,7 @@ uint8_t mesh_pdu_control_opcode(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control_opcode((mesh_network_pdu_t *) pdu);
         default:
+            btstack_assert(false);
             return 0xff;
     }
 }
@@ -576,24 +603,10 @@ static int mesh_access_get_opcode(uint8_t * buffer, uint16_t buffer_size, uint32
     }
 }
 
-static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu, uint32_t * opcode, uint16_t * opcode_size){
-    return mesh_access_get_opcode(transport_pdu->data, transport_pdu->len, opcode, opcode_size);
-}
-
-static int mesh_access_network_get_opcode(mesh_network_pdu_t * network_pdu, uint32_t * opcode, uint16_t * opcode_size){
-    // TransMIC already removed by mesh_upper_transport_validate_unsegmented_message_ccm
-    return mesh_access_get_opcode(&network_pdu->data[10], network_pdu->len - 10, opcode, opcode_size);
-}
-
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size){
-    switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_access_transport_get_opcode((mesh_transport_pdu_t*) pdu, opcode, opcode_size);
-        case MESH_PDU_TYPE_NETWORK:
-            return mesh_access_network_get_opcode((mesh_network_pdu_t *) pdu, opcode, opcode_size);
-        default:
-            return 0;
-    }
+    btstack_assert(pdu->pdu_type == MESH_PDU_TYPE_ACCESS);
+    return mesh_access_get_opcode(((mesh_access_pdu_t *) pdu)->data, ((mesh_access_pdu_t *) pdu)->len, opcode,
+                                  opcode_size);
 }
 
 void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip){
@@ -602,6 +615,7 @@ void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_
 }
 
 int mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu){
+    btstack_assert(pdu->pdu_type == MESH_PDU_TYPE_ACCESS);
     state->data = mesh_pdu_data(pdu);
     state->len  = mesh_pdu_len(pdu);
 
