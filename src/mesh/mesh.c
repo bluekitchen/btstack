@@ -1163,7 +1163,7 @@ static int mesh_node_startup_from_tlv(void){
     return prov_data_valid;
 }
 
-static void mesh_control_message_handler(mesh_pdu_t * pdu){
+static void mesh_control_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     // get opcode 
     uint8_t opcode = mesh_pdu_control_opcode(pdu);
     printf("Opcode: 0x%02x\n", opcode);

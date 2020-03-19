@@ -56,7 +56,7 @@ void mesh_upper_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_tra
 
 // Control PDUs
 
-void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_pdu_t * pdu));
+void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
 uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey_index,
         uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
@@ -66,7 +66,7 @@ void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu);
 // Access PDUs
 
 
-void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_pdu_t * pdu));
+void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
 uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
                                                                uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic);

@@ -258,7 +258,7 @@ static void test_proxy_server_callback_handler(mesh_network_callback_type_t call
     }
 }
 
-static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
+static void test_upper_transport_access_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     mesh_access_pdu_t    * access_pdu;
     mesh_network_pdu_t   * network_pdu;
     mesh_segmented_pdu_t   * message_pdu;
@@ -284,7 +284,7 @@ static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
     }
 }
 
-static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
+static void test_upper_transport_control_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu;
     mesh_network_pdu_t   * network_pdu;
     mesh_unsegmented_pdu_t * unsegmented_incoming_pdu;
