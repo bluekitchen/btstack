@@ -109,7 +109,10 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
             return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
+        case MESH_PDU_TYPE_UNSEGMENTED:
+            return mesh_network_dst(((mesh_unsegmented_pdu_t *) pdu)->segment);
         default:
+            btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;
     }
 }
@@ -120,6 +123,7 @@ uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
         default:
+            btstack_assert(false);
             return 0;
     }
 }
@@ -259,9 +263,15 @@ static void test_proxy_server_callback_handler(mesh_network_callback_type_t call
 }
 
 static void test_upper_transport_access_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+
+    // ignore pdu sent
+    if (callback_type == MESH_TRANSPORT_PDU_SENT) return;
+
+    // process pdu received
     mesh_access_pdu_t    * access_pdu;
     mesh_network_pdu_t   * network_pdu;
     mesh_segmented_pdu_t   * message_pdu;
+
     switch(pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             access_pdu = (mesh_access_pdu_t *) pdu;
@@ -285,6 +295,10 @@ static void test_upper_transport_access_message_handler(mesh_transport_callback_
 }
 
 static void test_upper_transport_control_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    // ignore pdu sent
+    if (callback_type == MESH_TRANSPORT_PDU_SENT) return;
+
+    // process pdu received
     mesh_transport_pdu_t * transport_pdu;
     mesh_network_pdu_t   * network_pdu;
     mesh_unsegmented_pdu_t * unsegmented_incoming_pdu;
@@ -442,6 +456,7 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         unsegmented_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
         mesh_network_pdu_t * segment     = mesh_network_pdu_get();
         unsegmented_pdu.segment = segment;
+        unsegmented_pdu.flags = 0;
         pdu = (mesh_pdu_t*) &unsegmented_pdu;
     } else {
         // send as segmented access pdu

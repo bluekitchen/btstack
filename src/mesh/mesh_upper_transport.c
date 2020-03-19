@@ -98,7 +98,6 @@ static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 // upper transport callbacks - in access layer
 static void (*mesh_access_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 static void (*mesh_control_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
-static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
 // incoming unsegmented (network) and segmented (transport) control and access messages
 static btstack_linked_list_t upper_transport_incoming;
@@ -886,6 +885,7 @@ static void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t
     // wrap into mesh-unsegmented-pdu
     outgoing_unsegmented_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
     outgoing_unsegmented_pdu.segment = network_pdu;
+    outgoing_unsegmented_pdu.flags = MESH_TRANSPORT_FLAG_CONTROL;
 
     // send
     mesh_lower_transport_send_pdu((mesh_pdu_t *) &outgoing_unsegmented_pdu);
@@ -1016,34 +1016,29 @@ static void mesh_upper_transport_run(void){
 
         (void) btstack_linked_list_pop(&upper_transport_outgoing);
 
-        if (mesh_pdu_ctl(pdu)){
-            switch (pdu->pdu_type){
-                case MESH_PDU_TYPE_NETWORK:
-                    mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
-                    break;
-                case MESH_PDU_TYPE_SEGMENTED:
-                    btstack_assert(0);
-                    break;
-                case MESH_PDU_TYPE_TRANSPORT:
+        mesh_unsegmented_pdu_t * unsegmented_pdu;
+        mesh_transport_pdu_t   * transport_pdu;
+
+        switch (pdu->pdu_type){
+            case MESH_PDU_TYPE_NETWORK:
+                btstack_assert(mesh_pdu_ctl(pdu) != 0);
+                mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
+                break;
+            case MESH_PDU_TYPE_UNSEGMENTED:
+                unsegmented_pdu = ( mesh_unsegmented_pdu_t *) pdu;
+                btstack_assert((unsegmented_pdu->flags & MESH_TRANSPORT_FLAG_CONTROL) == 0);
+                mesh_upper_transport_send_unsegmented_access_pdu(unsegmented_pdu);
+                break;
+            case MESH_PDU_TYPE_TRANSPORT:
+                if (mesh_pdu_ctl(pdu) != 0){
                     mesh_upper_transport_send_segmented_control_pdu((mesh_transport_pdu_t *) pdu);
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            switch (pdu->pdu_type){
-                case MESH_PDU_TYPE_NETWORK:
-                    btstack_assert(0);
-                    break;
-                case MESH_PDU_TYPE_UNSEGMENTED:
-                    mesh_upper_transport_send_unsegmented_access_pdu((mesh_unsegmented_pdu_t *) pdu);
-                    break;
-                case MESH_PDU_TYPE_TRANSPORT:
+                } else {
                     mesh_upper_transport_send_segmented_access_pdu((mesh_transport_pdu_t *) pdu);
-                    break;
-                default:
-                    break;
-            }
+                }
+                break;
+            default:
+                btstack_assert(false);
+                break;
         }
     }
 }
@@ -1051,8 +1046,8 @@ static void mesh_upper_transport_run(void){
 
 
 static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu;
-    mesh_network_pdu_t * network_pdu;
+    mesh_pdu_t * pdu_to_report;
+    mesh_unsegmented_pdu_t * unsegmented_pdu;
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
             mesh_upper_transport_message_received(pdu);
@@ -1066,22 +1061,25 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                         mesh_network_pdu_free(network_pdu);
                     }
                     // notify upper layer but use transport pdu
-                    transport_pdu = (mesh_transport_pdu_t *) outgoing_segmented_pdu;
+                    pdu_to_report = (mesh_pdu_t *) outgoing_segmented_pdu;
                     outgoing_segmented_pdu = NULL;
-                    if (higher_layer_handler){
-                        higher_layer_handler(callback_type, status, (mesh_pdu_t*) transport_pdu);
+                    if (mesh_pdu_ctl(pdu_to_report)){
+                        mesh_control_message_handler(callback_type, status, pdu_to_report);
                     } else {
-                        mesh_transport_pdu_free(transport_pdu);
+                        mesh_access_message_handler(callback_type, status, pdu_to_report);
                     }
                     break;
                 case MESH_PDU_TYPE_UNSEGMENTED:
-                    // notify upper layer but use network pdu
-                    network_pdu = outgoing_unsegmented_pdu.segment;
-                    outgoing_unsegmented_pdu.segment = NULL;
-                    if (higher_layer_handler){
-                        higher_layer_handler(callback_type, status, (mesh_pdu_t*) network_pdu);
+                    unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
+                    if (unsegmented_pdu == &outgoing_unsegmented_pdu){
+                        // notify upper layer but use network pdu (control pdu)
+                        btstack_assert((unsegmented_pdu->flags & MESH_TRANSPORT_FLAG_CONTROL) != 0);
+                        mesh_network_pdu_t * network_pdu = outgoing_unsegmented_pdu.segment;
+                        outgoing_unsegmented_pdu.segment = NULL;
+                        mesh_control_message_handler(callback_type, status, (mesh_pdu_t *) network_pdu);
                     } else {
-                        mesh_network_pdu_free(network_pdu);
+                        btstack_assert((unsegmented_pdu->flags & MESH_TRANSPORT_FLAG_CONTROL) == 0);
+                        mesh_access_message_handler(callback_type, status, pdu);
                     }
                     break;
                 default:
@@ -1140,10 +1138,6 @@ void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_
 
 void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu)){
     mesh_control_message_handler = callback;
-}
-
-void mesh_upper_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu)){
-    higher_layer_handler = pdu_handler;
 }
 
 void mesh_upper_transport_init(){

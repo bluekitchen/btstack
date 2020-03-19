@@ -101,7 +101,7 @@ typedef struct mesh_network_pdu {
 } mesh_network_pdu_t;
 
 #define MESH_TRANSPORT_FLAG_SEQ_RESERVED    1
-#define MESH_TRANSPORT_FLAG_SEGMENTED       2
+#define MESH_TRANSPORT_FLAG_CONTROL         2
 
 typedef struct {
     mesh_pdu_t pdu_header;

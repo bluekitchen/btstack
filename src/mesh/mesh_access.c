@@ -74,8 +74,7 @@ static uint8_t mesh_transaction_id_counter = 0;
 
 void mesh_access_init(void){
     // register with upper transport
-    mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
-    mesh_upper_transport_set_higher_layer_handler(&mesh_access_upper_transport_handler);
+    mesh_upper_transport_register_access_message_handler(&mesh_access_upper_transport_handler);
 }
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
@@ -308,6 +307,9 @@ static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     UNUSED(status);
     switch (callback_type){
+        case MESH_TRANSPORT_PDU_RECEIVED:
+            mesh_access_message_process_handler(pdu);
+            break;
         case MESH_TRANSPORT_PDU_SENT:
             // unacknowledged -> free
             if (mesh_access_message_ack_opcode(pdu) == MESH_ACCESS_OPCODE_INVALID){
