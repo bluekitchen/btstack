@@ -111,6 +111,8 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
         case MESH_PDU_TYPE_UNSEGMENTED:
             return mesh_network_dst(((mesh_unsegmented_pdu_t *) pdu)->segment);
+        case MESH_PDU_TYPE_ACCESS:
+            return mesh_access_dst((mesh_access_pdu_t *) pdu);
         default:
             btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;
@@ -122,6 +124,8 @@ uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
             return mesh_transport_ctl((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
+        case MESH_PDU_TYPE_ACCESS:
+            return mesh_access_ctl((mesh_access_pdu_t *) pdu);
         default:
             btstack_assert(false);
             return 0;
@@ -460,8 +464,11 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         pdu = (mesh_pdu_t*) &unsegmented_pdu;
     } else {
         // send as segmented access pdu
-        pdu = (mesh_pdu_t*) mesh_transport_pdu_get();
-    } 
+        static mesh_access_pdu_t segmented_pdu;
+        segmented_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
+        segmented_pdu.flags = 0;
+        pdu = (mesh_pdu_t *) &segmented_pdu;
+    }
     mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
     mesh_upper_transport_send_access_pdu(pdu);
 
