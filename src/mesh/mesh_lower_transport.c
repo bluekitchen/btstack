@@ -88,45 +88,6 @@ static void mesh_lower_transport_report_segments_as_processed(mesh_segmented_pdu
     }
 }
 
-
-// Transport PDU Getter
-uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->network_header[0] & 0x7f;
-}
-uint16_t mesh_transport_ctl(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->network_header[1] >> 7;
-}
-uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->network_header[1] & 0x7f;
-}
-uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_24(transport_pdu->network_header, 2);
-}
-uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_16(transport_pdu->network_header, 5);
-}
-uint16_t mesh_transport_dst(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_16(transport_pdu->network_header, 7);
-}
-uint8_t  mesh_transport_control_opcode(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->akf_aid_control & 0x7f;
-}
-void mesh_transport_set_nid_ivi(mesh_transport_pdu_t * transport_pdu, uint8_t nid_ivi){
-    transport_pdu->network_header[0] = nid_ivi;
-}
-void mesh_transport_set_ctl_ttl(mesh_transport_pdu_t * transport_pdu, uint8_t ctl_ttl){
-    transport_pdu->network_header[1] = ctl_ttl;
-}
-void mesh_transport_set_seq(mesh_transport_pdu_t * transport_pdu, uint32_t seq){
-    big_endian_store_24(transport_pdu->network_header, 2, seq);
-}
-void mesh_transport_set_src(mesh_transport_pdu_t * transport_pdu, uint16_t src){
-    big_endian_store_16(transport_pdu->network_header, 5, src);
-}
-void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest){
-    big_endian_store_16(transport_pdu->network_header, 7, dest);
-}
-
 uint16_t mesh_message_nid(mesh_segmented_pdu_t * message_pdu){
     return message_pdu->network_header[0] & 0x7f;
 }

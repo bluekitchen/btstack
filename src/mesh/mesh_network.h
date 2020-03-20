@@ -103,30 +103,6 @@ typedef struct mesh_network_pdu {
 #define MESH_TRANSPORT_FLAG_SEQ_RESERVED    1
 #define MESH_TRANSPORT_FLAG_CONTROL         2
 
-typedef struct {
-    mesh_pdu_t pdu_header;
-
-    // access acknowledged message
-    uint16_t retransmit_count;
-    uint32_t retransmit_timeout_ms;
-    uint32_t ack_opcode;
-
-    // meta data network layer
-    uint16_t              netkey_index;
-    // meta data transport layer
-    uint16_t              appkey_index;
-    // transmic size
-    uint8_t               transmic_len;
-    // akf - aid for access, opcode for control
-    uint8_t               akf_aid_control;
-    // network pdu header
-    uint8_t               network_header[9];
-    // MESH_TRANSPORT_FLAG
-    uint16_t              flags;
-    // pdu
-    uint16_t              len;
-    uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
-} mesh_transport_pdu_t;
 
 typedef struct {
     // generic pdu header
@@ -177,6 +153,31 @@ typedef struct {
     uint16_t              len;
     btstack_linked_list_t segments;
 } mesh_segmented_pdu_t;
+
+typedef struct {
+    mesh_pdu_t pdu_header;
+
+    // access acknowledged message
+    uint16_t retransmit_count;
+    uint32_t retransmit_timeout_ms;
+    uint32_t ack_opcode;
+
+    // meta data network layer
+    uint16_t              netkey_index;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // transmic size
+    uint8_t               transmic_len;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // network pdu header
+    uint8_t               network_header[9];
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // pdu
+    uint16_t              len;
+    uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
+} mesh_transport_pdu_t;
 
 typedef struct {
     // generic pdu header

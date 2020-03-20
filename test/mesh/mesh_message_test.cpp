@@ -105,8 +105,6 @@ static void gatt_bearer_emit_connected(void){
 // copy from mesh_message.c for now
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
         case MESH_PDU_TYPE_UNSEGMENTED:
@@ -120,8 +118,6 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
 }
 uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_ctl((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
         case MESH_PDU_TYPE_ACCESS:
@@ -303,16 +299,18 @@ static void test_upper_transport_control_message_handler(mesh_transport_callback
     if (callback_type == MESH_TRANSPORT_PDU_SENT) return;
 
     // process pdu received
-    mesh_transport_pdu_t * transport_pdu;
     mesh_network_pdu_t   * network_pdu;
     mesh_unsegmented_pdu_t * unsegmented_incoming_pdu;
     switch(pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
+            btstack_assert(false);
+#if 0
             transport_pdu = (mesh_transport_pdu_t *) pdu;
             printf("test MESH_CONTROL_TRANSPORT_PDU_RECEIVED\n");
             recv_upper_transport_pdu_len = transport_pdu->len;
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
+#endif
             break;
         case MESH_PDU_TYPE_UNSEGMENTED:
             unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;

@@ -460,10 +460,11 @@ static void send_pts_segmented_access_messsage_virtual(void){
     uint16_t appkey_index = 0;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
-    int status = mesh_upper_transport_setup_access_pdu((mesh_pdu_t*) transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    static mesh_access_pdu_t segemented_access_pdu;
+    mesh_pdu_t * pdu = (mesh_pdu_t *) &segemented_access_pdu;
+    int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
-    mesh_access_send_unacknowledged_pdu((mesh_pdu_t*) transport_pdu);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void show_usage(void){

@@ -82,22 +82,6 @@ void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
 mesh_segmented_pdu_t * mesh_message_pdu_get(void);
 void mesh_message_pdu_free(mesh_segmented_pdu_t * message_pdu);
 
-// transport getter/setter
-uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_ctl(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu);
-uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu);
-uint32_t mesh_transport_seq_zero(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_dst(mesh_transport_pdu_t * transport_pdu);
-uint8_t  mesh_transport_control_opcode(mesh_transport_pdu_t * transport_pdu);
-
-void mesh_transport_set_nid_ivi(mesh_transport_pdu_t * transport_pdu, uint8_t nid_ivi);
-void mesh_transport_set_ctl_ttl(mesh_transport_pdu_t * transport_pdu, uint8_t ctl_ttl);
-void mesh_transport_set_seq(mesh_transport_pdu_t * transport_pdu, uint32_t seq);
-void mesh_transport_set_src(mesh_transport_pdu_t * transport_pdu, uint16_t src);
-void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest);
-
 uint16_t mesh_message_ctl(mesh_segmented_pdu_t * message_pdu);
 
 void mesh_lower_transport_init(void);
