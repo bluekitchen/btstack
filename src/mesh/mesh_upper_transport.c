@@ -920,6 +920,21 @@ static void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t
 }
 #endif
 
+static void mesh_segmented_pdu_flatten(btstack_linked_list_t * segments, uint8_t segment_len, uint8_t * buffer) {
+    // assemble payload
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, segments);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        mesh_network_pdu_t *segment = (mesh_network_pdu_t *) btstack_linked_list_iterator_next(&it);
+        btstack_assert(segment->pdu_header.pdu_type == MESH_PDU_TYPE_NETWORK);
+        // get segment n
+        uint8_t *lower_transport_pdu = mesh_network_pdu_data(segment);
+        uint8_t seg_o = (big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
+        uint8_t *segment_data = &lower_transport_pdu[4];
+        (void) memcpy(&buffer[seg_o * segment_len], segment_data, segment_len);
+    }
+}
+
 static void mesh_upper_transport_run(void){
 
     while(!btstack_linked_list_empty(&upper_transport_incoming)){
@@ -977,15 +992,8 @@ static void mesh_upper_transport_run(void){
                     incoming_control_pdu=  &incoming_control_pdu_singleton;
                     incoming_control_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_CONTROL;
 
-                    // assemble payload
-                    while (message_pdu->segments){
-                        mesh_network_pdu_t * segment  = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
-                        // get segment n
-                        uint8_t * lower_transport_pdu = mesh_network_pdu_data(segment);
-                        uint8_t   seg_o               =  ( big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
-                        uint8_t * segment_data = &lower_transport_pdu[4];
-                        (void)memcpy(&incoming_control_pdu->data[seg_o * 8], segment_data, 8);
-                    }
+                    // flatten
+                    mesh_segmented_pdu_flatten(&message_pdu->segments, 8, incoming_control_pdu->data);
 
                     // copy meta data into encrypted pdu buffer
                     incoming_control_pdu->len =  message_pdu->len;
@@ -1009,17 +1017,8 @@ static void mesh_upper_transport_run(void){
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
                     incoming_access_pdu_decrypted = &incoming_access_pdu_decrypted_singleton;
 
-                    // flatten segmented message into mesh_access_pdu_t
-
-                    // assemble payload
-                    while (message_pdu->segments){
-                        mesh_network_pdu_t * segment  = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
-                        // get segment n
-                        uint8_t * lower_transport_pdu = mesh_network_pdu_data(segment);
-                        uint8_t   seg_o               =  ( big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
-                        uint8_t * segment_data = &lower_transport_pdu[4];
-                        (void)memcpy(&incoming_access_pdu_encrypted->data[seg_o * 12], segment_data, 12);
-                    }
+                    // flatten
+                    mesh_segmented_pdu_flatten(&message_pdu->segments, 12, incoming_access_pdu_encrypted->data);
 
                     // copy meta data into encrypted pdu buffer
                     incoming_access_pdu_encrypted->len =  message_pdu->len;
