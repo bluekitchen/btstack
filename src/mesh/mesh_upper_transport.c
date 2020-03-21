@@ -86,10 +86,14 @@ static mesh_access_pdu_t *      incoming_access_pdu_decrypted;
 static mesh_access_pdu_t        incoming_access_pdu_encrypted_singleton;
 static mesh_access_pdu_t        incoming_access_pdu_decrypted_singleton;
 
+static mesh_control_pdu_t       incoming_control_pdu_singleton;
+static mesh_control_pdu_t *     incoming_control_pdu;
+
 static mesh_segmented_pdu_t     outgoing_segmented_message_singleton;
 static mesh_access_pdu_t *      outgoing_segmented_access_pdu;
 
 static mesh_unsegmented_pdu_t   outgoing_unsegmented_pdu;
+
 
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
@@ -970,16 +974,42 @@ static void mesh_upper_transport_run(void){
                 message_pdu = (mesh_segmented_pdu_t *) pdu;
                 uint8_t ctl = mesh_message_ctl(message_pdu);
                 if (ctl){
-                    printf("Ignoring Segmented Control Message\n");
-                    (void) btstack_linked_list_pop(&upper_transport_incoming);
-                    mesh_lower_transport_message_processed_by_higher_layer(pdu);
+                    incoming_control_pdu=  &incoming_control_pdu_singleton;
+                    incoming_control_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_CONTROL;
+
+                    // assemble payload
+                    while (message_pdu->segments){
+                        mesh_network_pdu_t * segment  = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
+                        // get segment n
+                        uint8_t * lower_transport_pdu = mesh_network_pdu_data(segment);
+                        uint8_t   seg_o               =  ( big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
+                        uint8_t * segment_data = &lower_transport_pdu[4];
+                        (void)memcpy(&incoming_control_pdu->data[seg_o * 8], segment_data, 8);
+                    }
+
+                    // copy meta data into encrypted pdu buffer
+                    incoming_control_pdu->len =  message_pdu->len;
+                    incoming_control_pdu->netkey_index =  message_pdu->netkey_index;
+                    incoming_control_pdu->akf_aid_control =  message_pdu->akf_aid_control;
+                    incoming_control_pdu->flags = 0;
+                    (void)memcpy(incoming_control_pdu->network_header, message_pdu->network_header, 9);
+
+                    mesh_print_hex("Assembled payload", incoming_control_pdu->data, incoming_control_pdu->len);
+
+                    // free mesh message
+                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)message_pdu);
+
+                    btstack_assert(mesh_control_message_handler != NULL);
+                    mesh_pdu_t * pdu = (mesh_pdu_t*) incoming_control_pdu;
+                    mesh_access_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
+
                 } else {
 
                     incoming_access_pdu_encrypted = &incoming_access_pdu_encrypted_singleton;
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
                     incoming_access_pdu_decrypted = &incoming_access_pdu_decrypted_singleton;
 
-                    // flatten segmented message into mesh_transport_pdu_t
+                    // flatten segmented message into mesh_access_pdu_t
 
                     // assemble payload
                     while (message_pdu->segments){

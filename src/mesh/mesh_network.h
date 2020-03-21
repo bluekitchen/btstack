@@ -52,6 +52,7 @@ extern "C" {
 
 #define MESH_NETWORK_PAYLOAD_MAX      29
 #define MESH_ACCESS_PAYLOAD_MAX      384
+#define MESH_CONTROL_PAYLOAD_MAX     256
 
 #define MESH_ADDRESS_UNSASSIGNED     0x0000u
 #define MESH_ADDRESS_ALL_PROXIES     0xFFFCu
@@ -72,6 +73,7 @@ typedef enum {
     MESH_PDU_TYPE_SEGMENTED,
     MESH_PDU_TYPE_UNSEGMENTED,
     MESH_PDU_TYPE_ACCESS,
+    MESH_PDU_TYPE_CONTROL,
 } mesh_pdu_type_t;
 
 typedef struct mesh_pdu {
@@ -198,6 +200,22 @@ typedef struct {
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
 } mesh_access_pdu_t;
+
+typedef struct {
+    // generic pdu header
+    mesh_pdu_t            pdu_header;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // network pdu header
+    uint8_t               network_header[9];
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // payload
+    uint16_t              len;
+    uint8_t               data[MESH_CONTROL_PAYLOAD_MAX];
+} mesh_control_pdu_t;
 
 typedef enum {
     MESH_KEY_REFRESH_NOT_ACTIVE = 0,
