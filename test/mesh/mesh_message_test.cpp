@@ -299,25 +299,14 @@ static void test_upper_transport_control_message_handler(mesh_transport_callback
     if (callback_type == MESH_TRANSPORT_PDU_SENT) return;
 
     // process pdu received
-    mesh_network_pdu_t   * network_pdu;
-    mesh_unsegmented_pdu_t * unsegmented_incoming_pdu;
+    mesh_control_pdu_t     * control_pdu;
     switch(pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            btstack_assert(false);
-#if 0
-            transport_pdu = (mesh_transport_pdu_t *) pdu;
-            printf("test MESH_CONTROL_TRANSPORT_PDU_RECEIVED\n");
-            recv_upper_transport_pdu_len = transport_pdu->len;
-            memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
-            mesh_upper_transport_message_processed_by_higher_layer(pdu);
-#endif
-            break;
-        case MESH_PDU_TYPE_UNSEGMENTED:
-            unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;
-            network_pdu = unsegmented_incoming_pdu->segment;
-            printf("test MESH_PDU_TYPE_UNSEGMENTED\n");
-            recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu);
-            memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu), recv_upper_transport_pdu_len);
+        case MESH_PDU_TYPE_CONTROL:
+            control_pdu = (mesh_control_pdu_t *) pdu;
+            printf("test MESH_PDU_TYPE_CONTROL\n");
+            recv_upper_transport_pdu_len = control_pdu->len + 1;
+            recv_upper_transport_pdu_data[0] = control_pdu->akf_aid_control;
+            memcpy(&recv_upper_transport_pdu_data[1], control_pdu->data, control_pdu->len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
