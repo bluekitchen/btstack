@@ -120,11 +120,6 @@ typedef struct {
 typedef struct {
     mesh_pdu_t pdu_header;
 
-    // access acknowledged message
-    uint16_t retransmit_count;
-    uint32_t retransmit_timeout_ms;
-    uint32_t ack_opcode;
-
     // rx/tx: acknowledgement timer / segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
     // rx: incomplete timer / tx: resend timer
@@ -158,11 +153,6 @@ typedef struct {
 
 typedef struct {
     mesh_pdu_t pdu_header;
-
-    // access acknowledged message
-    uint16_t retransmit_count;
-    uint32_t retransmit_timeout_ms;
-    uint32_t ack_opcode;
 
     // meta data network layer
     uint16_t              netkey_index;
@@ -199,7 +189,39 @@ typedef struct {
     // payload
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
+
 } mesh_access_pdu_t;
+
+// for unsegmented + segmented access + segmented control pdus
+typedef struct {
+    // generic pdu header
+    mesh_pdu_t            pdu_header;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // transmic size
+    uint8_t               transmic_len;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // network pdu header
+    uint8_t               network_header[9];
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // pdu segments
+    uint16_t              len;
+    btstack_linked_list_t segments;
+
+    // lower transport pdu
+    mesh_pdu_t * lower_pdu;
+
+    // access acknowledged message
+    uint16_t retransmit_count;
+    uint32_t retransmit_timeout_ms;
+    uint32_t ack_opcode;
+
+} mesh_upper_transport_pdu_t;
+
 
 typedef struct {
     // generic pdu header
