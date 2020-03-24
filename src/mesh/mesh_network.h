@@ -74,6 +74,10 @@ typedef enum {
     MESH_PDU_TYPE_UNSEGMENTED,
     MESH_PDU_TYPE_ACCESS,
     MESH_PDU_TYPE_CONTROL,
+    MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS,
+    MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS,
+    MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL,
+    MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL,
 } mesh_pdu_type_t;
 
 typedef struct mesh_pdu {
@@ -196,32 +200,34 @@ typedef struct {
 typedef struct {
     // generic pdu header
     mesh_pdu_t            pdu_header;
+    // src
+    uint16_t              src;
+    // dst
+    uint16_t              dst;
     // meta data network layer
     uint16_t              netkey_index;
     // meta data transport layer
     uint16_t              appkey_index;
-    // transmic size
     uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
-    // network pdu header
-    uint8_t               network_header[9];
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
-    // pdu segments
+    // payload, single segmented or list of them
     uint16_t              len;
-    btstack_linked_list_t segments;
-
-    // lower transport pdu
-    mesh_pdu_t * lower_pdu;
+    union {
+        btstack_linked_list_t     segments;
+        struct mesh_network_pdu * segment;
+    } payload;
 
     // access acknowledged message
     uint16_t retransmit_count;
     uint32_t retransmit_timeout_ms;
     uint32_t ack_opcode;
 
+    // associated lower transport pdu
+    mesh_pdu_t *          lower_pdu;
 } mesh_upper_transport_pdu_t;
-
 
 typedef struct {
     // generic pdu header
