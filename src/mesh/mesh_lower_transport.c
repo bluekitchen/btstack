@@ -132,7 +132,6 @@ static mesh_segmented_pdu_t     lower_transport_outgoing_segmented_message_singl
 
 static mesh_segmented_pdu_t   * lower_transport_outgoing_message;
 
-static mesh_unsegmented_pdu_t  * lower_transport_outgoing_unsegmented_pdu;
 static mesh_network_pdu_t *   lower_transport_outgoing_network_pdu;
 
 // segment at network layer
@@ -145,7 +144,6 @@ static int                    lower_transport_outgoing_trasnmission_complete;
 // deliver to higher layer
 static mesh_pdu_t * mesh_lower_transport_higher_layer_pdu;
 static btstack_linked_list_t mesh_lower_transport_queued_for_higher_layer;
-static mesh_unsegmented_pdu_t lower_transport_access_incoming_singleton;
 
 static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
     if (lower_transport_outgoing_message == NULL) return;
@@ -207,9 +205,11 @@ static void mesh_lower_transport_deliver_to_higher_layer(void){
         switch (pdu->pdu_type){
             case MESH_MSG_TYPE_NETWORK_PDU:
                 // unsegmented pdu
-                mesh_lower_transport_higher_layer_pdu = (mesh_pdu_t *) &lower_transport_access_incoming_singleton;
-                lower_transport_access_incoming_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
-                lower_transport_access_incoming_singleton.segment = (mesh_network_pdu_t*) pdu;
+                mesh_lower_transport_higher_layer_pdu = (mesh_pdu_t *) pdu;
+                pdu->pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
+                // mesh_lower_transport_higher_layer_pdu = (mesh_pdu_t *) &lower_transport_access_incoming_singleton;
+                // lower_transport_access_incoming_singleton.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
+                // lower_transport_access_incoming_singleton.segment = (mesh_network_pdu_t*) pdu;
                 break;
             default:
                 // segmented control or access pdu
@@ -606,7 +606,6 @@ static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
     btstack_assert(pdu == mesh_lower_transport_higher_layer_pdu);
     mesh_lower_transport_higher_layer_pdu = NULL;
-    mesh_unsegmented_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;
     mesh_network_pdu_t * network_pdu;
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_SEGMENTED:
@@ -615,8 +614,7 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
             mesh_message_pdu_free((mesh_segmented_pdu_t *) pdu);
             break;
         case MESH_PDU_TYPE_UNSEGMENTED:
-            network_pdu = unsegmented_incoming_pdu->segment;
-            unsegmented_incoming_pdu->segment = NULL;
+            network_pdu = (mesh_network_pdu_t *) pdu;
             mesh_network_message_processed_by_higher_layer(network_pdu);
             break;
         default:
@@ -840,14 +838,6 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
         return;
     }
 
-    // Unsegmented message
-    if (lower_transport_outgoing_unsegmented_pdu != NULL){
-        mesh_unsegmented_pdu_t * unsegmented_pdu = lower_transport_outgoing_unsegmented_pdu;
-        lower_transport_outgoing_unsegmented_pdu = NULL;
-        higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) unsegmented_pdu);
-        return;
-    }
-
     // other
     higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
 }
@@ -865,7 +855,6 @@ static void mesh_lower_transport_setup_block_ack(mesh_segmented_pdu_t *message_p
 }
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
-    mesh_unsegmented_pdu_t * unsegmented_pdu;
     mesh_network_pdu_t * network_pdu;
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:

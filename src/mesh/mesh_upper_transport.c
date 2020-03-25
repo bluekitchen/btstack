@@ -76,10 +76,6 @@ static void mesh_upper_transport_run(void);
 
 static int crypto_active;
 
-static mesh_unsegmented_pdu_t * incoming_unsegmented_pdu_raw;
-
-static mesh_segmented_pdu_t     incoming_message_pdu_singleton;
-
 static mesh_access_pdu_t *      incoming_access_pdu_encrypted;
 static mesh_access_pdu_t *      incoming_access_pdu_decrypted;
 
@@ -266,19 +262,11 @@ static void mesh_upper_transport_reset_pdus(btstack_linked_list_t *list){
 }
 
 void mesh_upper_transport_dump(void){
-    printf("incoming_unsegmented_pdu_raw: %p\n", incoming_unsegmented_pdu_raw);
     mesh_upper_transport_dump_pdus("upper_transport_incoming", &upper_transport_incoming);
 }
 
 void mesh_upper_transport_reset(void){
     crypto_active = 0;
-    if (incoming_unsegmented_pdu_raw){
-        mesh_network_pdu_t * network_pdu = incoming_unsegmented_pdu_raw->segment;
-        btstack_assert(network_pdu != NULL);
-        incoming_unsegmented_pdu_raw->segment = NULL;
-        mesh_network_pdu_free(network_pdu);
-        incoming_unsegmented_pdu_raw = NULL;
-    }
     outgoing_upper_transport_pdu = NULL;
     mesh_upper_transport_reset_pdus(&upper_transport_incoming);
 }
@@ -367,40 +355,6 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_p
     nonce[0] = 0x02;
     transport_segmented_setup_nonce(nonce, pdu);
     mesh_print_hex("DeviceNonce", nonce, 13);
-}
-
-static void mesh_upper_transport_process_message_done(mesh_segmented_pdu_t *message_pdu){
-    crypto_active = 0;
-    btstack_assert(message_pdu == &incoming_message_pdu_singleton);
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&incoming_message_pdu_singleton.segments);
-    if (mesh_network_control(network_pdu)) {
-        btstack_assert(0);
-    } else {
-        btstack_assert(network_pdu != NULL);
-        mesh_network_pdu_free(network_pdu);
-        mesh_pdu_t * pdu = (mesh_pdu_t *) incoming_unsegmented_pdu_raw;
-        incoming_unsegmented_pdu_raw = NULL;
-        mesh_lower_transport_message_processed_by_higher_layer(pdu);
-    }
-    mesh_upper_transport_run();
-}
-
-static void mesh_upper_transport_process_unsegmented_message_done(mesh_pdu_t * pdu){
-    btstack_assert(pdu != NULL);
-    btstack_assert(pdu->pdu_type == MESH_PDU_TYPE_UNSEGMENTED);
-
-    mesh_unsegmented_pdu_t * unsegmented_incoming_pdu = (mesh_unsegmented_pdu_t *) pdu;
-    btstack_assert(unsegmented_incoming_pdu == incoming_unsegmented_pdu_raw);
-
-    crypto_active = 0;
-    incoming_unsegmented_pdu_raw = NULL;
-    mesh_network_pdu_t * network_pdu = unsegmented_incoming_pdu->segment;
-    if (!mesh_network_control(network_pdu)) {
-        mesh_network_pdu_free(network_pdu);
-    }
-
-    mesh_lower_transport_message_processed_by_higher_layer(pdu);
-    mesh_upper_transport_run();
 }
 
 static void mesh_upper_transport_process_access_message_done(mesh_access_pdu_t *access_pdu){
@@ -752,12 +706,9 @@ static void mesh_upper_transport_run(void){
         mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_pop(&upper_transport_incoming);
         mesh_network_pdu_t   * network_pdu;
         mesh_segmented_pdu_t   * message_pdu;
-        mesh_unsegmented_pdu_t * unsegmented_pdu;
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UNSEGMENTED:
-                unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
-                network_pdu = unsegmented_pdu->segment;
-                btstack_assert(network_pdu != NULL);
+                network_pdu = (mesh_network_pdu_t *) pdu;
                 // control?
                 if (mesh_network_control(network_pdu)) {
 
@@ -1056,32 +1007,6 @@ uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey
     }
 }
 
-static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_unsegmented_pdu_t * unsegmented_pdu, uint16_t netkey_index,
-                                                                        uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest){
-
-    mesh_network_pdu_t * network_pdu = unsegmented_pdu->segment;
-
-    // get app or device key
-    const mesh_transport_key_t * appkey;
-    appkey = mesh_transport_key_get(appkey_index);
-    if (appkey == NULL){
-        printf("appkey_index %x unknown\n", appkey_index);
-        return 1;
-    }
-    uint8_t akf_aid = (appkey->akf << 6) | appkey->aid;
-
-    // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 1;
-
-    unsegmented_pdu->appkey_index = appkey_index;
-
-    network_pdu->data[9] = akf_aid;
-    // setup network_pdu
-    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, 0, src, dest);
-    return 0;
-}
-
 static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_access_pdu_t * access_pdu, uint16_t netkey_index,
                                                                       uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic){
 
@@ -1168,8 +1093,6 @@ uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t 
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return mesh_upper_transport_setup_segmented_access_pdu_header((mesh_access_pdu_t *) pdu, netkey_index, appkey_index, ttl, src, dest, szmic);
-        case MESH_PDU_TYPE_UNSEGMENTED:
-            return mesh_upper_transport_setup_unsegmented_access_pdu_header((mesh_unsegmented_pdu_t *) pdu, netkey_index, appkey_index, ttl, src, dest);
         default:
             btstack_assert(false);
             return 1;

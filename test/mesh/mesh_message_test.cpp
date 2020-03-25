@@ -105,11 +105,10 @@ static void gatt_bearer_emit_connected(void){
 // copy from mesh_message.c for now
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_UNSEGMENTED:
         case MESH_PDU_TYPE_NETWORK:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
-        case MESH_PDU_TYPE_UNSEGMENTED:
-            return mesh_network_dst(((mesh_unsegmented_pdu_t *) pdu)->segment);
         case MESH_PDU_TYPE_ACCESS:
             return mesh_access_dst((mesh_access_pdu_t *) pdu);
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
