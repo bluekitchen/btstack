@@ -221,10 +221,7 @@ typedef struct {
     uint16_t              flags;
     // payload, single segmented or list of them
     uint16_t              len;
-    union {
-        btstack_linked_list_t     segments;
-        struct mesh_network_pdu * segment;
-    } payload;
+    btstack_linked_list_t segments;
 
     // access acknowledged message
     uint16_t retransmit_count;
