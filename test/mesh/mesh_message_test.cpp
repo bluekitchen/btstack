@@ -496,7 +496,8 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         pdu->pdu_type = MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL;
     } else {
         // send as segmented control pdu
-        pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
+        pdu = (mesh_pdu_t *) &upper_pdu;
+        upper_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL;
     }
     mesh_upper_transport_setup_control_pdu(pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
     mesh_upper_transport_send_control_pdu(pdu);
