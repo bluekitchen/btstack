@@ -133,6 +133,7 @@ static mesh_segmented_pdu_t     lower_transport_outgoing_segmented_message_singl
 static mesh_segmented_pdu_t   * lower_transport_outgoing_message;
 
 static mesh_unsegmented_pdu_t  * lower_transport_outgoing_unsegmented_pdu;
+static mesh_network_pdu_t *   lower_transport_outgoing_network_pdu;
 
 // segment at network layer
 static int                    lower_transport_outgoing_segment_queued;
@@ -867,9 +868,9 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     mesh_unsegmented_pdu_t * unsegmented_pdu;
     mesh_network_pdu_t * network_pdu;
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_UNSEGMENTED:
-            unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
-            network_pdu = unsegmented_pdu->segment;
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
+            network_pdu = (mesh_network_pdu_t *) pdu;
             btstack_assert(network_pdu->len >= 9);
             break;
         case MESH_PDU_TYPE_SEGMENTED:
@@ -907,10 +908,12 @@ static void mesh_lower_transport_run(void){
         mesh_segmented_pdu_t   * message_pdu;
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&lower_transport_outgoing);
         switch (pdu->pdu_type) {
-            case MESH_PDU_TYPE_UNSEGMENTED:
-                lower_transport_outgoing_unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
-                network_pdu = lower_transport_outgoing_unsegmented_pdu->segment;
-                mesh_network_send_pdu(network_pdu);
+            case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+            case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
+                // lower_transport_outgoing_unsegmented_pdu = (mesh_unsegmented_pdu_t *) pdu;
+                // network_pdu = lower_transport_outgoing_unsegmented_pdu->segment;
+                lower_transport_outgoing_network_pdu = (mesh_network_pdu_t *) pdu;
+                mesh_network_send_pdu(lower_transport_outgoing_network_pdu);
                 break;
             case MESH_PDU_TYPE_SEGMENTED:
                 message_pdu = (mesh_segmented_pdu_t *) pdu;
