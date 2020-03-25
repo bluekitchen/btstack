@@ -200,10 +200,16 @@ typedef struct {
 typedef struct {
     // generic pdu header
     mesh_pdu_t            pdu_header;
+    // ivi_nid
+    uint8_t               ivi_nid;
+    // ctl_ttl
+    uint8_t               ctl_ttl;
     // src
     uint16_t              src;
     // dst
     uint16_t              dst;
+    // seq
+    uint32_t              seq;
     // meta data network layer
     uint16_t              netkey_index;
     // meta data transport layer

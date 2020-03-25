@@ -111,6 +111,8 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
             return mesh_network_dst(((mesh_unsegmented_pdu_t *) pdu)->segment);
         case MESH_PDU_TYPE_ACCESS:
             return mesh_access_dst((mesh_access_pdu_t *) pdu);
+        case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
+            return ((mesh_upper_transport_pdu_t *) pdu)->dst;
         default:
             btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;
@@ -441,9 +443,10 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
 
     mesh_pdu_t * pdu;
+    static mesh_unsegmented_pdu_t unsegmented_pdu = { 0 };
+    static mesh_upper_transport_pdu_t segmented_access_pdu = { 0 };
     if (count == 1 ){
         // send as unsegmented access pdu
-        static mesh_unsegmented_pdu_t unsegmented_pdu;
         unsegmented_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
         mesh_network_pdu_t * segment     = mesh_network_pdu_get();
         unsegmented_pdu.segment = segment;
@@ -451,10 +454,9 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         pdu = (mesh_pdu_t*) &unsegmented_pdu;
     } else {
         // send as segmented access pdu
-        static mesh_access_pdu_t segmented_pdu;
-        segmented_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
-        segmented_pdu.flags = 0;
-        pdu = (mesh_pdu_t *) &segmented_pdu;
+        segmented_access_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
+        segmented_access_pdu.flags = 0;
+        pdu = (mesh_pdu_t *) &segmented_access_pdu;
     }
     mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
     mesh_upper_transport_send_access_pdu(pdu);
@@ -473,6 +475,16 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
 #ifdef ENABLE_MESH_ADV_BEARER
         expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
+    }
+    // free segments
+    if (count == 1){
+        mesh_network_pdu_free(unsegmented_pdu.segment);
+        unsegmented_pdu.segment = NULL;
+    } else {
+        while (btstack_linked_list_empty(&segmented_access_pdu.payload.segments) == false){
+            mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&segmented_access_pdu.payload.segments);
+            mesh_network_pdu_free(network_pdu);
+        }
     }
 }
 
