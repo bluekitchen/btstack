@@ -1110,10 +1110,10 @@ void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * netwo
  * @param dest
  */
 void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
-    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
     // set netkey_index
     network_pdu->netkey_index = netkey_index;
     // setup header
+    network_pdu->len = 0;
     network_pdu->data[network_pdu->len++] = (mesh_get_iv_index_for_tx() << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
     network_pdu->data[network_pdu->len++] = ctl_ttl;
@@ -1126,6 +1126,8 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
     (void)memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data,
                  transport_pdu_len);
     network_pdu->len += transport_pdu_len;
+    // zero rest of packet
+    memset(&network_pdu->data[network_pdu->len], 0, MESH_NETWORK_PAYLOAD_MAX - transport_pdu_len);
 }
 
 /*

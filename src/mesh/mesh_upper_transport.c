@@ -116,8 +116,6 @@ static btstack_linked_list_t upper_transport_outgoing;
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_UNSEGMENTED:
-        case MESH_PDU_TYPE_ACCESS:
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
             break;
@@ -131,8 +129,15 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
 }
 
 void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu){
-    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
-        btstack_assert( ((mesh_network_pdu_t *) pdu)->len >= 9);
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
+            break;
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
+            btstack_assert( ((mesh_network_pdu_t *) pdu)->len >= 9);
+            break;
+        default:
+            btstack_assert(false);
+            break;
     }
 
     btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);
@@ -589,7 +594,7 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_p
 uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey_index,
                                                uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_NETWORK:
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
             return mesh_upper_transport_setup_unsegmented_control_pdu((mesh_network_pdu_t *) pdu, netkey_index, ttl, src, dest, opcode, control_pdu_data, control_pdu_len);
         default:
             btstack_assert(0);
@@ -1105,7 +1110,7 @@ static void mesh_upper_transport_run(void){
         mesh_unsegmented_pdu_t * unsegmented_pdu;
 
         switch (pdu->pdu_type){
-            case MESH_PDU_TYPE_NETWORK:
+            case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
                 btstack_assert(mesh_pdu_ctl(pdu) != 0);
                 mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
                 break;
