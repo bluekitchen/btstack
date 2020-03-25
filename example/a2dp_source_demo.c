@@ -53,6 +53,10 @@
  * set the device_addr_string to the Bluetooth address of your 
  * remote device in the code, and use the UI to connect and start playback. 
  * Tap SPACE on the console to show the available commands.
+ * 
+ * For more info on BTstack audio, see our blog post 
+ * [A2DP Sink and Source on STM32 F4 Discovery Board](http://bluekitchen-gmbh.com/a2dp-sink-and-source-on-stm32-f4-discovery-board/).
+ * 
  */
 // *****************************************************************************
 
