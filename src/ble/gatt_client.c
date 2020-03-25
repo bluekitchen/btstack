@@ -621,8 +621,10 @@ static void characteristic_start_found(gatt_client_t * peripheral, uint16_t star
     if (uuid_length == 2){
         uuid16 = little_endian_read_16(uuid, 0);
         uuid_add_bluetooth_prefix((uint8_t*) uuid128, uuid16);
-    } else {
+    } else if (uuid_length == 16){
         reverse_128(uuid, uuid128);
+    } else {
+        return;
     }
     
     if (peripheral->filter_with_uuid && (memcmp(peripheral->uuid128, uuid128, 16) != 0)) return;
@@ -649,10 +651,12 @@ static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_ha
 }
 
 static void report_gatt_characteristics(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
+    if (size < 2) return;
     uint8_t attr_length = packet[1];
+    if ((attr_length != 7) && (attr_length != 21)) return;
     uint8_t uuid_length = attr_length - 5;
     int i;
-    for (i = 2; i < size; i += attr_length){
+    for (i = 2; (i + attr_length) <= size; i += attr_length){
         uint16_t start_handle = little_endian_read_16(packet, i);
         uint8_t  properties = packet[i+2];
         uint16_t value_handle = little_endian_read_16(packet, i+3);
