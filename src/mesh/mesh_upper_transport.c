@@ -83,18 +83,20 @@ static void (*mesh_control_message_handler)( mesh_transport_callback_type_t call
 static int crypto_active;
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
-static uint8_t crypto_buffer[MESH_ACCESS_PAYLOAD_MAX];
 
 static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 
 static mesh_access_pdu_t *   incoming_access_pdu_encrypted;
 static mesh_access_pdu_t *   incoming_access_pdu_decrypted;
 
-static mesh_access_pdu_t     incoming_access_pdu_encrypted_singleton;
-static mesh_access_pdu_t     incoming_access_pdu_decrypted_singleton;
-
-static mesh_control_pdu_t    incoming_control_pdu_singleton;
 static mesh_control_pdu_t *  incoming_control_pdu;
+
+static mesh_access_pdu_t     incoming_access_pdu_encrypted_singleton;
+
+static union {
+    mesh_control_pdu_t    control;
+    mesh_access_pdu_t     access;
+} incoming_pdu_singleton;
 
 // incoming unsegmented (network) and segmented (transport) control and access messages
 static btstack_linked_list_t upper_transport_incoming;
@@ -505,7 +507,7 @@ static void mesh_upper_transport_send_access_segmented(mesh_upper_transport_pdu_
     // convert mesh_access_pdu_t into mesh_segmented_pdu_t
     btstack_linked_list_t free_segments = segmented_pdu->segments;
     segmented_pdu->segments = NULL;
-    mesh_segmented_store_payload(crypto_buffer, upper_pdu->len, &free_segments, &segmented_pdu->segments);
+    mesh_segmented_store_payload(incoming_pdu_singleton.access.data, upper_pdu->len, &free_segments, &segmented_pdu->segments);
 
     // copy meta
     segmented_pdu->len = upper_pdu->len;
@@ -547,7 +549,7 @@ static void mesh_upper_transport_send_access_unsegmented(mesh_upper_transport_pd
     // setup access message
     network_pdu->data[9] = upper_pdu->akf_aid_control;
     btstack_assert(upper_pdu->len < 15);
-    (void)memcpy(&network_pdu->data[10], crypto_buffer, upper_pdu->len);
+    (void)memcpy(&network_pdu->data[10], &incoming_pdu_singleton.access.data, upper_pdu->len);
     network_pdu->len = 10 + upper_pdu->len;
     network_pdu->flags = 0;
 
@@ -561,12 +563,12 @@ static void mesh_upper_transport_send_access_ccm(void * arg){
     crypto_active = 0;
 
     mesh_upper_transport_pdu_t * upper_pdu = (mesh_upper_transport_pdu_t *) arg;
-    mesh_print_hex("EncAccessPayload", crypto_buffer, upper_pdu->len);
+    mesh_print_hex("EncAccessPayload", incoming_pdu_singleton.access.data, upper_pdu->len);
     // store TransMIC
-    btstack_crypto_ccm_get_authentication_value(&ccm, &crypto_buffer[upper_pdu->len]);
-    mesh_print_hex("TransMIC", &crypto_buffer[upper_pdu->len], upper_pdu->transmic_len);
+    btstack_crypto_ccm_get_authentication_value(&ccm, &incoming_pdu_singleton.access.data[upper_pdu->len]);
+    mesh_print_hex("TransMIC", &incoming_pdu_singleton.access.data[upper_pdu->len], upper_pdu->transmic_len);
     upper_pdu->len += upper_pdu->transmic_len;
-    mesh_print_hex("UpperTransportPDU", crypto_buffer, upper_pdu->len);
+    mesh_print_hex("UpperTransportPDU", incoming_pdu_singleton.access.data, upper_pdu->len);
     switch (upper_pdu->pdu_header.pdu_type){
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
             mesh_upper_transport_send_access_unsegmented(upper_pdu);
@@ -582,7 +584,7 @@ static void mesh_upper_transport_send_access_ccm(void * arg){
 static void mesh_upper_transport_send_access_digest(void *arg){
     mesh_upper_transport_pdu_t * upper_pdu = (mesh_upper_transport_pdu_t *) arg;
     uint16_t  access_pdu_len  = upper_pdu->len;
-    btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, crypto_buffer, crypto_buffer,
+    btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, incoming_pdu_singleton.access.data, incoming_pdu_singleton.access.data,
                                      &mesh_upper_transport_send_access_ccm, upper_pdu);
 }
 
@@ -625,12 +627,12 @@ static void mesh_upper_transport_send_access(mesh_upper_transport_pdu_t * upper_
     crypto_active = 1;
 
     // flatten segmented pdu into crypto buffer
-    uint16_t payload_len = mesh_upper_pdu_flatten(upper_pdu, crypto_buffer, sizeof(crypto_buffer));
+    uint16_t payload_len = mesh_upper_pdu_flatten(upper_pdu, incoming_pdu_singleton.access.data, sizeof(incoming_pdu_singleton.access.data));
     btstack_assert(payload_len == upper_pdu->len);
 
     // Dump PDU
     printf("[+] Upper transport, send upper (un)segmented Access PDU - dest %04x, seq %06x\n", upper_pdu->dst, upper_pdu->seq);
-    mesh_print_hex("Access Payload", crypto_buffer, upper_pdu->len);
+    mesh_print_hex("Access Payload", incoming_pdu_singleton.access.data, upper_pdu->len);
 
     // setup nonce - uses dst, so after pseudo address translation
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -727,7 +729,7 @@ static void mesh_upper_transport_run(void){
                 // control?
                 if (mesh_network_control(network_pdu)) {
 
-                    incoming_control_pdu =  &incoming_control_pdu_singleton;
+                    incoming_control_pdu =  &incoming_pdu_singleton.control;
                     incoming_control_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_CONTROL;
                     incoming_control_pdu->len =  network_pdu->len;
                     incoming_control_pdu->netkey_index =  network_pdu->netkey_index;
@@ -754,7 +756,7 @@ static void mesh_upper_transport_run(void){
 
                     incoming_access_pdu_encrypted = &incoming_access_pdu_encrypted_singleton;
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
-                    incoming_access_pdu_decrypted = &incoming_access_pdu_decrypted_singleton;
+                    incoming_access_pdu_decrypted = &incoming_pdu_singleton.access;
 
                     incoming_access_pdu_encrypted->netkey_index = network_pdu->netkey_index;
                     incoming_access_pdu_encrypted->transmic_len = 4;
@@ -781,7 +783,7 @@ static void mesh_upper_transport_run(void){
                 message_pdu = (mesh_segmented_pdu_t *) pdu;
                 uint8_t ctl = mesh_message_ctl(message_pdu);
                 if (ctl){
-                    incoming_control_pdu=  &incoming_control_pdu_singleton;
+                    incoming_control_pdu=  &incoming_pdu_singleton.control;
                     incoming_control_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_CONTROL;
 
                     // flatten
@@ -807,7 +809,7 @@ static void mesh_upper_transport_run(void){
 
                     incoming_access_pdu_encrypted = &incoming_access_pdu_encrypted_singleton;
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
-                    incoming_access_pdu_decrypted = &incoming_access_pdu_decrypted_singleton;
+                    incoming_access_pdu_decrypted = &incoming_pdu_singleton.access;
 
                     // flatten
                     mesh_segmented_pdu_flatten(&message_pdu->segments, 12, incoming_access_pdu_encrypted->data);
