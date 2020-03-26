@@ -93,6 +93,8 @@ static mesh_control_pdu_t *  incoming_control_pdu;
 
 static mesh_access_pdu_t     incoming_access_pdu_encrypted_singleton;
 
+static mesh_pdu_t *          incoming_access_encrypted;
+
 static union {
     mesh_control_pdu_t    control;
     mesh_access_pdu_t     access;
@@ -372,6 +374,8 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_p
 static void mesh_upper_transport_process_access_message_done(mesh_access_pdu_t *access_pdu){
     crypto_active = 0;
     btstack_assert(mesh_access_ctl(access_pdu) == 0);
+    mesh_lower_transport_message_processed_by_higher_layer(incoming_access_encrypted);
+    incoming_access_encrypted = NULL;
     incoming_access_pdu_encrypted = NULL;
     mesh_upper_transport_run();
 }
@@ -754,6 +758,8 @@ static void mesh_upper_transport_run(void){
 
                 } else {
 
+                    incoming_access_encrypted = (mesh_pdu_t *) network_pdu;
+
                     incoming_access_pdu_encrypted = &incoming_access_pdu_encrypted_singleton;
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
                     incoming_access_pdu_decrypted = &incoming_pdu_singleton.access;
@@ -771,9 +777,6 @@ static void mesh_upper_transport_run(void){
                     (void)memcpy(incoming_access_pdu_encrypted->network_header, network_pdu->data, 9);
 
                     mesh_print_hex("Assembled payload", incoming_access_pdu_encrypted->data, incoming_access_pdu_encrypted->len);
-
-                    // free mesh message
-                    mesh_lower_transport_message_processed_by_higher_layer(pdu);
 
                     // get encoded transport pdu and start processing
                     mesh_upper_transport_process_segmented_message();
@@ -807,6 +810,8 @@ static void mesh_upper_transport_run(void){
 
                 } else {
 
+                    incoming_access_encrypted = (mesh_pdu_t *) message_pdu;
+
                     incoming_access_pdu_encrypted = &incoming_access_pdu_encrypted_singleton;
                     incoming_access_pdu_encrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
                     incoming_access_pdu_decrypted = &incoming_pdu_singleton.access;
@@ -822,9 +827,6 @@ static void mesh_upper_transport_run(void){
                     (void)memcpy(incoming_access_pdu_encrypted->network_header, message_pdu->network_header, 9);
 
                     mesh_print_hex("Assembled payload", incoming_access_pdu_encrypted->data, incoming_access_pdu_encrypted->len);
-
-                    // free mesh message
-                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)message_pdu);
 
                     // get encoded transport pdu and start processing
                     mesh_upper_transport_process_segmented_message();
