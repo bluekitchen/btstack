@@ -46,6 +46,7 @@
 #include "btstack_util.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"
+#include "btstack_bool.h"
 
 #include "mesh/beacon.h"
 #include "mesh/mesh_iv_index_seq_number.h"
@@ -86,14 +87,14 @@ static uint8_t crypto_buffer[MESH_ACCESS_PAYLOAD_MAX];
 
 static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 
-static mesh_access_pdu_t *      incoming_access_pdu_encrypted;
-static mesh_access_pdu_t *      incoming_access_pdu_decrypted;
+static mesh_access_pdu_t *   incoming_access_pdu_encrypted;
+static mesh_access_pdu_t *   incoming_access_pdu_decrypted;
 
-static mesh_access_pdu_t        incoming_access_pdu_encrypted_singleton;
-static mesh_access_pdu_t        incoming_access_pdu_decrypted_singleton;
+static mesh_access_pdu_t     incoming_access_pdu_encrypted_singleton;
+static mesh_access_pdu_t     incoming_access_pdu_decrypted_singleton;
 
-static mesh_control_pdu_t       incoming_control_pdu_singleton;
-static mesh_control_pdu_t *     incoming_control_pdu;
+static mesh_control_pdu_t    incoming_control_pdu_singleton;
+static mesh_control_pdu_t *  incoming_control_pdu;
 
 // incoming unsegmented (network) and segmented (transport) control and access messages
 static btstack_linked_list_t upper_transport_incoming;
@@ -220,18 +221,16 @@ static uint16_t mesh_upper_pdu_flatten(mesh_upper_transport_pdu_t * upper_pdu, u
     return offset;
 }
 
-static void mesh_segmented_append_payload(const uint8_t * payload, uint16_t payload_len, btstack_linked_list_t * segments){
+// store payload in provided list of network pdus
+static void mesh_segmented_store_payload(const uint8_t * payload, uint16_t payload_len, btstack_linked_list_t * in_segments, btstack_linked_list_t * out_segments){
     uint16_t payload_offset = 0;
     uint16_t bytes_current_segment = 0;
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_last_item(segments);
-    if (network_pdu){
-        bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX - network_pdu->len;
-    }
+    mesh_network_pdu_t * network_pdu = NULL;
     while (payload_offset < payload_len){
         if (bytes_current_segment == 0){
-            network_pdu = mesh_network_pdu_get();
+            network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(in_segments);
             btstack_assert(network_pdu != NULL);
-            btstack_linked_list_add_tail(segments, (btstack_linked_item_t *) network_pdu);
+            btstack_linked_list_add_tail(out_segments, (btstack_linked_item_t *) network_pdu);
             bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX;
         }
         uint16_t bytes_to_copy = btstack_min(bytes_current_segment, payload_len - payload_offset);
@@ -240,6 +239,18 @@ static void mesh_segmented_append_payload(const uint8_t * payload, uint16_t payl
         network_pdu->len += bytes_to_copy;
         payload_offset += bytes_to_copy;
     }
+}
+
+// tries allocate and add enough segments to store payload of given size
+static bool mesh_segmented_allocate_segments(btstack_linked_list_t * segments, uint16_t payload_len){
+    uint16_t storage_size = btstack_linked_list_count(segments) * MESH_NETWORK_PAYLOAD_MAX;
+    while (storage_size < payload_len){
+        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+        if (network_pdu == NULL) break;
+        storage_size += MESH_NETWORK_PAYLOAD_MAX;
+        btstack_linked_list_add(segments, (btstack_linked_item_t *) network_pdu);
+    }
+    return (storage_size >= payload_len);
 }
 
 // stub lower transport
@@ -492,7 +503,9 @@ static void mesh_upper_transport_send_access_segmented(mesh_upper_transport_pdu_
     segmented_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
 
     // convert mesh_access_pdu_t into mesh_segmented_pdu_t
-    mesh_segmented_append_payload(crypto_buffer, upper_pdu->len, &segmented_pdu->segments);
+    btstack_linked_list_t free_segments = segmented_pdu->segments;
+    segmented_pdu->segments = NULL;
+    mesh_segmented_store_payload(crypto_buffer, upper_pdu->len, &free_segments, &segmented_pdu->segments);
 
     // copy meta
     segmented_pdu->len = upper_pdu->len;
@@ -829,6 +842,8 @@ static void mesh_upper_transport_run(void){
         if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
 
         mesh_upper_transport_pdu_t * upper_pdu;
+        mesh_segmented_pdu_t * segmented_pdu;
+        bool ok;
 
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
@@ -847,12 +862,15 @@ static void mesh_upper_transport_run(void){
                 // segmented access pdus required a mesh-segmented-pdu
                 upper_pdu = (mesh_upper_transport_pdu_t *) pdu;
                 if (upper_pdu->lower_pdu == NULL){
-                    upper_pdu->lower_pdu = (mesh_pdu_t *) btstack_memory_mesh_segmented_pdu_get();
+                    segmented_pdu = btstack_memory_mesh_segmented_pdu_get();
                 }
-                if (upper_pdu->lower_pdu == NULL) break;
-                upper_pdu->lower_pdu->pdu_type = MESH_PDU_TYPE_SEGMENTED;
-                // and a mesh-network-pdu for each segments
-                // TODO: reserve segments
+                if (segmented_pdu == NULL) break;
+                upper_pdu->lower_pdu = (mesh_pdu_t *) segmented_pdu;
+                segmented_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
+                // and a mesh-network-pdu for each segment in upper pdu
+                ok = mesh_segmented_allocate_segments(&segmented_pdu->segments, upper_pdu->len + upper_pdu->transmic_len);
+                if (!ok) break;
+                // all buffers available, get started
                 (void) btstack_linked_list_pop(&upper_transport_outgoing);
                 mesh_upper_transport_send_access(upper_pdu);
                 break;
@@ -1053,7 +1071,12 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_upper_trans
     upper_pdu->netkey_index = netkey_index;
     upper_pdu->akf_aid_control = opcode;
 
-    mesh_segmented_append_payload(control_pdu_data, control_pdu_len, &upper_pdu->segments);
+    // allocate segments
+    btstack_linked_list_t free_segments = NULL;
+    bool ok = mesh_segmented_allocate_segments( &free_segments, control_pdu_len);
+    if (!ok) return 1;
+    // store control pdu
+    mesh_segmented_store_payload(control_pdu_data, control_pdu_len, &free_segments, &upper_pdu->segments);
     upper_pdu->len = control_pdu_len;
     return 0;
 }
@@ -1145,8 +1168,12 @@ static uint8_t mesh_upper_transport_setup_upper_access_pdu(mesh_upper_transport_
                                                                     dest, szmic);
     if (status) return status;
 
-    // store in transport pdu
-    mesh_segmented_append_payload(access_pdu_data, access_pdu_len, &upper_pdu->segments);
+    // allocate segments
+    btstack_linked_list_t free_segments = NULL;
+    bool ok = mesh_segmented_allocate_segments( &free_segments, access_pdu_len);
+    if (!ok) return 1;
+    // store control pdu
+    mesh_segmented_store_payload(access_pdu_data, access_pdu_len, &free_segments, &upper_pdu->segments);
     upper_pdu->len = access_pdu_len;
     return 0;
 }
