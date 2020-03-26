@@ -74,7 +74,17 @@ typedef struct {
 static void mesh_upper_transport_validate_segmented_message(void);
 static void mesh_upper_transport_run(void);
 
+// upper transport callbacks - in access layer
+static void (*mesh_access_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
+static void (*mesh_control_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
+
+//
 static int crypto_active;
+static uint8_t application_nonce[13];
+static btstack_crypto_ccm_t ccm;
+static uint8_t crypto_buffer[MESH_ACCESS_PAYLOAD_MAX];
+
+static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 
 static mesh_access_pdu_t *      incoming_access_pdu_encrypted;
 static mesh_access_pdu_t *      incoming_access_pdu_decrypted;
@@ -85,17 +95,9 @@ static mesh_access_pdu_t        incoming_access_pdu_decrypted_singleton;
 static mesh_control_pdu_t       incoming_control_pdu_singleton;
 static mesh_control_pdu_t *     incoming_control_pdu;
 
-static mesh_segmented_pdu_t         outgoing_segmented_pdu_singleton;
+static mesh_segmented_pdu_t     outgoing_segmented_pdu_singleton;
 
-
-static uint8_t application_nonce[13];
-static btstack_crypto_ccm_t ccm;
-static uint8_t crypto_buffer[MESH_ACCESS_PAYLOAD_MAX];
-static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
-
-// upper transport callbacks - in access layer
-static void (*mesh_access_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
-static void (*mesh_control_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
+static mesh_segmented_pdu_t *   upper_transport_outgoing_segmented;
 
 // incoming unsegmented (network) and segmented (transport) control and access messages
 static btstack_linked_list_t upper_transport_incoming;
@@ -522,8 +524,7 @@ static void mesh_upper_transport_send_access_segmented(mesh_upper_transport_pdu_
 static void mesh_upper_transport_send_access_unsegmented(mesh_upper_transport_pdu_t * upper_pdu){
 
     // provide segment
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-    btstack_assert(network_pdu);
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) upper_pdu->lower_pdu;
 
     // setup network pdu
     network_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS;
@@ -542,7 +543,6 @@ static void mesh_upper_transport_send_access_unsegmented(mesh_upper_transport_pd
     network_pdu->flags = 0;
 
     // queue up
-    upper_pdu->lower_pdu = (mesh_pdu_t *) network_pdu;
     btstack_linked_list_add(&upper_transport_outgoing_active, (btstack_linked_item_t *) upper_pdu);
 
     mesh_lower_transport_send_pdu((mesh_pdu_t*) network_pdu);
@@ -832,19 +832,41 @@ static void mesh_upper_transport_run(void){
         mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_outgoing);
         if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
 
-        (void) btstack_linked_list_pop(&upper_transport_outgoing);
-
+        mesh_upper_transport_pdu_t * upper_pdu;
 
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
+                // control pdus can go through directly
                 btstack_assert(mesh_pdu_ctl(pdu) != 0);
+                (void) btstack_linked_list_pop(&upper_transport_outgoing);
                 mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
                 break;
             case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
+                // control pdus can go through directly
+                btstack_assert(mesh_pdu_ctl(pdu) != 0);
+                (void) btstack_linked_list_pop(&upper_transport_outgoing);
                 mesh_upper_transport_send_segmented_control_pdu((mesh_upper_transport_pdu_t *) pdu);
                 break;
             case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
+                // segmented access pdus required a mesh-segmented-pdu
+                if (upper_transport_outgoing_segmented == NULL){
+                    upper_transport_outgoing_segmented = btstack_memory_mesh_segmented_pdu_get();
+                }
+                if (upper_transport_outgoing_segmented == NULL) break;
+                upper_transport_outgoing_segmented->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
+                // and a mesh-network-pdu for each segments
+                // TODO: reserve segments
+                (void) btstack_linked_list_pop(&upper_transport_outgoing);
+                mesh_upper_transport_send_access((mesh_upper_transport_pdu_t *) pdu);
+                break;
             case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+                // unsegmented access pdus require a single mesh-network-dpu
+                upper_pdu = (mesh_upper_transport_pdu_t *) pdu;
+                if (upper_pdu->lower_pdu == NULL){
+                    upper_pdu->lower_pdu = (mesh_pdu_t *) mesh_network_pdu_get();
+                }
+                if (upper_pdu->lower_pdu == NULL) break;
+                (void) btstack_linked_list_pop(&upper_transport_outgoing);
                 mesh_upper_transport_send_access((mesh_upper_transport_pdu_t *) pdu);
                 break;
             default:
@@ -898,6 +920,7 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                         mesh_network_pdu_free(network_pdu);
                     }
                     // TODO: free segmented_pdu
+                    upper_pdu->lower_pdu = NULL;
                     switch (upper_pdu->pdu_header.pdu_type){
                         case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
                             mesh_control_message_handler(callback_type, status, (mesh_pdu_t *) upper_pdu);
@@ -911,11 +934,12 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                     }
                     break;
                 case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
-                    // try to find in outgoing active
+                    // find corresponding upper transport pdu and free single segment
                     upper_pdu = mesh_upper_transport_find_pdu_for_lower(pdu);
                     btstack_assert(upper_pdu != NULL);
-                    network_pdu = (mesh_network_pdu_t *) pdu;
-                    mesh_network_pdu_free(network_pdu);
+                    btstack_assert(upper_pdu->lower_pdu == (mesh_pdu_t *) pdu);
+                    mesh_network_pdu_free((mesh_network_pdu_t *) pdu);
+                    upper_pdu->lower_pdu = NULL;
                     mesh_access_message_handler(callback_type, status, (mesh_pdu_t*) upper_pdu);
                     break;
                 case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
@@ -972,6 +996,8 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
             btstack_assert(false);
             break;
     }
+
+    btstack_assert(((mesh_upper_transport_pdu_t *) pdu)->lower_pdu == NULL);
 
     btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_upper_transport_run();

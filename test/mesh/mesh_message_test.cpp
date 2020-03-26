@@ -440,8 +440,9 @@ static void expect_adv_network_pdu(const uint8_t * data, uint16_t len){
 }
 
 static mesh_upper_transport_pdu_t upper_pdu = { 0 };
-
 void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
+
+    upper_pdu.lower_pdu = NULL;
 
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
