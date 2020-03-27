@@ -536,8 +536,9 @@ uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
 
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_ACCESS:
-            return mesh_access_dst((mesh_access_pdu_t *) pdu);
+        case MESH_PDU_TYPE_ACCESS: {
+            return ((mesh_access_pdu_t *) pdu)->dst;
+        }
         case MESH_PDU_TYPE_TRANSPORT:
             return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:

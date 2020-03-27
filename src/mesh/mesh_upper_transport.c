@@ -167,34 +167,6 @@ static void mesh_transport_key_and_virtual_address_iterator_next(mesh_transport_
 
 // UPPER TRANSPORT
 
-uint16_t mesh_access_dst(mesh_access_pdu_t * access_pdu){
-    return access_pdu->dst;
-}
-
-uint16_t mesh_access_ctl(mesh_access_pdu_t * access_pdu){
-    return access_pdu->ctl_ttl >> 7;
-}
-
-uint32_t mesh_access_seq(mesh_access_pdu_t * access_pdu){
-    return access_pdu->seq;
-}
-
-void mesh_access_set_ivi_nid(mesh_access_pdu_t * access_pdu, uint8_t ivi_nid){
-    access_pdu->ivi_nid = ivi_nid;
-}
-void mesh_access_set_ctl_ttl(mesh_access_pdu_t * access_pdu, uint8_t ctl_ttl){
-    access_pdu->ctl_ttl = ctl_ttl;
-}
-void mesh_access_set_seq(mesh_access_pdu_t * access_pdu, uint32_t seq){
-    access_pdu->seq = seq;
-}
-void mesh_access_set_src(mesh_access_pdu_t * access_pdu, uint16_t src){
-    access_pdu->src = src;
-}
-void mesh_access_set_dest(mesh_access_pdu_t * access_pdu, uint16_t dst){
-    access_pdu->dst = dst;
-}
-
 static void mesh_segmented_pdu_flatten(btstack_linked_list_t * segments, uint8_t segment_len, uint8_t * buffer) {
     // assemble payload
     btstack_linked_list_iterator_t it;
@@ -375,7 +347,7 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_p
 
 static void mesh_upper_transport_process_access_message_done(mesh_access_pdu_t *access_pdu){
     crypto_active = 0;
-    btstack_assert(mesh_access_ctl(access_pdu) == 0);
+    btstack_assert((access_pdu->ctl_ttl & 0x80) == 0);
     mesh_lower_transport_message_processed_by_higher_layer(incoming_access_encrypted);
     incoming_access_encrypted = NULL;
     incoming_access_decrypted = NULL;
@@ -408,7 +380,7 @@ static void mesh_upper_transport_validate_access_message_ccm(void * arg){
         incoming_access_decrypted->len -= incoming_access_decrypted->transmic_len;
 
         // if virtual address, update dst to pseudo_dst
-        if (mesh_network_address_virtual(mesh_access_dst(incoming_access_decrypted))){
+        if (mesh_network_address_virtual(incoming_access_decrypted->dst)){
             incoming_access_decrypted->dst = mesh_transport_key_it.address->pseudo_dst;
         }
 
@@ -487,7 +459,7 @@ static void mesh_upper_transport_validate_access_message(void){
     // decrypt ccm
     crypto_active = 1;
     uint16_t aad_len  = 0;
-    if (mesh_network_address_virtual(mesh_access_dst(incoming_access_decrypted))){
+    if (mesh_network_address_virtual(incoming_access_decrypted->dst)){
         aad_len  = 16;
     }
     btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, incoming_access_decrypted->transmic_len);
@@ -511,7 +483,7 @@ static void mesh_upper_transport_process_access_message(void){
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_access_dst(incoming_access_decrypted),
+    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, incoming_access_decrypted->dst,
                                                          incoming_access_decrypted->netkey_index, akf, aid);
     mesh_upper_transport_validate_access_message();
 }
@@ -1140,10 +1112,11 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_acces
     access_pdu->netkey_index = netkey_index;
     access_pdu->appkey_index = appkey_index;
     access_pdu->akf_aid_control = akf_aid;
-    mesh_access_set_ivi_nid(access_pdu, network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7));
-    mesh_access_set_src(access_pdu, src);
-    mesh_access_set_dest(access_pdu, dest);
-    mesh_access_set_ctl_ttl(access_pdu, ttl);
+    uint8_t iviNid = network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7);
+    access_pdu->ivi_nid = iviNid;
+    access_pdu->src = src;
+    access_pdu->dst = dest;
+    access_pdu->ctl_ttl = ttl;
     return 0;
 }
 

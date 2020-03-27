@@ -81,10 +81,6 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
 void mesh_upper_transport_dump(void);
 void mesh_upper_transport_reset(void);
 
-// tmp
-uint16_t mesh_access_dst(mesh_access_pdu_t * access_pdu);
-uint16_t mesh_access_ctl(mesh_access_pdu_t * access_pdu);
-
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

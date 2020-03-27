@@ -109,8 +109,9 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_NETWORK:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
-        case MESH_PDU_TYPE_ACCESS:
-            return mesh_access_dst((mesh_access_pdu_t *) pdu);
+        case MESH_PDU_TYPE_ACCESS: {
+            return ((mesh_access_pdu_t *) pdu)->dst;
+        }
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
             return ((mesh_upper_transport_pdu_t *) pdu)->dst;
@@ -124,8 +125,9 @@ uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_NETWORK:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
-        case MESH_PDU_TYPE_ACCESS:
-            return mesh_access_ctl((mesh_access_pdu_t *) pdu);
+        case MESH_PDU_TYPE_ACCESS: {
+            return ((mesh_access_pdu_t *) pdu)->ctl_ttl >> 7;
+        }
         default:
             btstack_assert(false);
             return 0;
