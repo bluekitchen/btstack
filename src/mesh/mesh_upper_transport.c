@@ -541,11 +541,11 @@ static void mesh_upper_transport_send_access_segmented(mesh_upper_transport_pdu_
     // setup segmented_pdu header
     // (void)memcpy(segmented_pdu->network_header, upper_pdu->network_header, 9);
     // TODO: use fields in mesh_segmented_pdu_t and setup network header in lower transport
-    segmented_pdu->network_header[0] = upper_pdu->ivi_nid;
-    segmented_pdu->network_header[1] = upper_pdu->ctl_ttl;
-    big_endian_store_24(segmented_pdu->network_header, 2, upper_pdu->seq);
-    big_endian_store_16(segmented_pdu->network_header, 5, upper_pdu->src);
-    big_endian_store_16(segmented_pdu->network_header, 7, upper_pdu->dst);
+    segmented_pdu->ivi_nid = upper_pdu->ivi_nid;
+    segmented_pdu->ctl_ttl = upper_pdu->ctl_ttl;
+    segmented_pdu->seq = upper_pdu->seq;
+    segmented_pdu->src = upper_pdu->src;
+    segmented_pdu->dst = upper_pdu->dst;
 
     // queue up
     upper_pdu->lower_pdu = (mesh_pdu_t *) segmented_pdu;
@@ -722,11 +722,11 @@ static void mesh_upper_transport_send_segmented_control_pdu(mesh_upper_transport
 
     // setup segmented_pdu header
     // TODO: use fields in mesh_segmented_pdu_t and setup network header in lower transport
-    segmented_pdu->network_header[0] = upper_pdu->ivi_nid;
-    segmented_pdu->network_header[1] = upper_pdu->ctl_ttl;
-    big_endian_store_24(segmented_pdu->network_header, 2, upper_pdu->seq);
-    big_endian_store_16(segmented_pdu->network_header, 5, upper_pdu->src);
-    big_endian_store_16(segmented_pdu->network_header, 7, upper_pdu->dst);
+    segmented_pdu->ivi_nid = upper_pdu->ivi_nid;
+    segmented_pdu->ctl_ttl = upper_pdu->ctl_ttl;
+    segmented_pdu->seq = upper_pdu->seq;
+    segmented_pdu->src = upper_pdu->src;
+    segmented_pdu->dst = upper_pdu->dst;
 
     // queue up
     upper_pdu->lower_pdu = (mesh_pdu_t *) segmented_pdu;
@@ -813,11 +813,11 @@ static void mesh_upper_transport_run(void){
                     incoming_control_pdu->len =  message_pdu->len;
                     incoming_control_pdu->netkey_index =  message_pdu->netkey_index;
                     incoming_control_pdu->akf_aid_control = message_pdu->akf_aid_control;
-                    incoming_access_decrypted->ivi_nid = message_pdu->network_header[0];
-                    incoming_access_decrypted->ctl_ttl = message_pdu->network_header[1];
-                    incoming_access_decrypted->seq = big_endian_read_24(message_pdu->network_header, 2);
-                    incoming_access_decrypted->src = big_endian_read_16(message_pdu->network_header, 5);
-                    incoming_access_decrypted->dst = big_endian_read_16(message_pdu->network_header, 7);
+                    incoming_access_decrypted->ivi_nid = message_pdu->ivi_nid;
+                    incoming_access_decrypted->ctl_ttl = message_pdu->ctl_ttl;
+                    incoming_access_decrypted->seq = message_pdu->seq;
+                    incoming_access_decrypted->src = message_pdu->src;
+                    incoming_access_decrypted->dst = message_pdu->dst;
 
                     mesh_print_hex("Assembled payload", incoming_control_pdu->data, incoming_control_pdu->len);
 
@@ -838,11 +838,11 @@ static void mesh_upper_transport_run(void){
                     incoming_access_decrypted->netkey_index =  message_pdu->netkey_index;
                     incoming_access_decrypted->transmic_len =  message_pdu->transmic_len;
                     incoming_access_decrypted->akf_aid_control =  message_pdu->akf_aid_control;
-                    incoming_access_decrypted->ivi_nid = message_pdu->network_header[0];
-                    incoming_access_decrypted->ctl_ttl = message_pdu->network_header[1];
-                    incoming_access_decrypted->seq = big_endian_read_24(message_pdu->network_header, 2);
-                    incoming_access_decrypted->src = big_endian_read_16(message_pdu->network_header, 5);
-                    incoming_access_decrypted->dst = big_endian_read_16(message_pdu->network_header, 7);
+                    incoming_access_decrypted->ivi_nid = message_pdu->ivi_nid;
+                    incoming_access_decrypted->ctl_ttl = message_pdu->ctl_ttl;
+                    incoming_access_decrypted->seq = message_pdu->seq;
+                    incoming_access_decrypted->src = message_pdu->src;
+                    incoming_access_decrypted->dst = message_pdu->dst;
 
                     mesh_upper_transport_process_access_message();
                 }

@@ -89,22 +89,22 @@ static void mesh_lower_transport_report_segments_as_processed(mesh_segmented_pdu
 }
 
 uint16_t mesh_message_nid(mesh_segmented_pdu_t * message_pdu){
-    return message_pdu->network_header[0] & 0x7f;
+    return message_pdu->ivi_nid & 0x7f;
 }
 uint16_t mesh_message_ctl(mesh_segmented_pdu_t * message_pdu){
-    return message_pdu->network_header[1] >> 7;
+    return message_pdu->ctl_ttl >> 7;
 }
 static uint16_t mesh_message_ttl(mesh_segmented_pdu_t * message_pdu){
-    return message_pdu->network_header[1] & 0x7f;
+    return message_pdu->ctl_ttl & 0x7f;
 }
 static uint32_t mesh_message_seq(mesh_segmented_pdu_t * message_pdu){
-    return big_endian_read_24(message_pdu->network_header, 2);
+    return message_pdu->seq;
 }
 static uint16_t mesh_message_src(mesh_segmented_pdu_t * message_pdu){
-    return big_endian_read_16(message_pdu->network_header, 5);
+    return message_pdu->src;
 }
 static uint16_t mesh_message_dest(mesh_segmented_pdu_t * message_pdu){
-    return big_endian_read_16(message_pdu->network_header, 7);
+    return message_pdu->dst;
 }
 static uint32_t mesh_message_seq_zero(mesh_segmented_pdu_t * message_pdu){
     return message_pdu->seq_zero;
@@ -479,9 +479,12 @@ static mesh_segmented_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
         if (!pdu) return NULL;
 
         // cache network pdu header
-        (void)memcpy(pdu->network_header, network_pdu->data, 9);
+        pdu->ivi_nid = network_pdu->data[0];
+        pdu->ctl_ttl = network_pdu->data[1];
+        pdu->src = big_endian_read_16(network_pdu->data, 5);
+        pdu->dst = big_endian_read_16(network_pdu->data, 7);
         // store lower 24 bit of SeqAuth for App / Device Nonce
-        big_endian_store_24(pdu->network_header, 2, seq_auth);
+        pdu->seq = seq_auth;
 
         // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;

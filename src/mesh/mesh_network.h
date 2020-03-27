@@ -110,18 +110,13 @@ typedef struct mesh_network_pdu {
 #define MESH_TRANSPORT_FLAG_CONTROL         2
 
 typedef struct {
-    // generic pdu header
-    mesh_pdu_t            pdu_header;
-    // meta data transport layer
-    uint16_t              appkey_index;
-    // MESH_TRANSPORT_FLAG
-    uint16_t              flags;
-    // pdu segment
-    mesh_network_pdu_t  * segment;
-} mesh_unsegmented_pdu_t;
-
-typedef struct {
     mesh_pdu_t pdu_header;
+    // network header
+    uint8_t               ivi_nid;
+    uint8_t               ctl_ttl;
+    uint16_t              src;
+    uint16_t              dst;
+    uint32_t              seq;
 
     // rx/tx: acknowledgement timer / segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
@@ -137,8 +132,6 @@ typedef struct {
     uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
-    // network pdu header
-    uint8_t               network_header[9];
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
     // acknowledgement timer active
@@ -203,15 +196,11 @@ typedef struct {
 typedef struct {
     // generic pdu header
     mesh_pdu_t            pdu_header;
-    // ivi_nid
+    // network header
     uint8_t               ivi_nid;
-    // ctl_ttl
     uint8_t               ctl_ttl;
-    // src
     uint16_t              src;
-    // dst
     uint16_t              dst;
-    // seq
     uint32_t              seq;
     // meta data network layer
     uint16_t              netkey_index;
