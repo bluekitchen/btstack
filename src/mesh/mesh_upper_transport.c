@@ -763,7 +763,11 @@ static void mesh_upper_transport_run(void){
                     (void)memcpy(incoming_control_pdu->data, &lower_transport_pdu[1], incoming_control_pdu->len);
 
                     // copy meta data into encrypted pdu buffer
-                    (void)memcpy(incoming_control_pdu->network_header, network_pdu->data, 9);
+                    incoming_control_pdu->ivi_nid = network_pdu->data[0];
+                    incoming_control_pdu->ctl_ttl = network_pdu->data[1];
+                    incoming_control_pdu->seq = big_endian_read_24(network_pdu->data, 2);
+                    incoming_control_pdu->src = big_endian_read_16(network_pdu->data, 5);
+                    incoming_control_pdu->dst = big_endian_read_16(network_pdu->data, 7);
 
                     mesh_print_hex("Assembled payload", incoming_control_pdu->data, incoming_control_pdu->len);
 
@@ -805,11 +809,15 @@ static void mesh_upper_transport_run(void){
                     mesh_segmented_pdu_flatten(&message_pdu->segments, 8, incoming_control_pdu->data);
 
                     // copy meta data into encrypted pdu buffer
-                    incoming_control_pdu->len =  message_pdu->len;
-                    incoming_access_decrypted->netkey_index =  message_pdu->netkey_index;
-                    incoming_control_pdu->akf_aid_control =  message_pdu->akf_aid_control;
                     incoming_control_pdu->flags = 0;
-                    (void)memcpy(incoming_control_pdu->network_header, message_pdu->network_header, 9);
+                    incoming_control_pdu->len =  message_pdu->len;
+                    incoming_control_pdu->netkey_index =  message_pdu->netkey_index;
+                    incoming_control_pdu->akf_aid_control = message_pdu->akf_aid_control;
+                    incoming_access_decrypted->ivi_nid = message_pdu->network_header[0];
+                    incoming_access_decrypted->ctl_ttl = message_pdu->network_header[1];
+                    incoming_access_decrypted->seq = big_endian_read_24(message_pdu->network_header, 2);
+                    incoming_access_decrypted->src = big_endian_read_16(message_pdu->network_header, 5);
+                    incoming_access_decrypted->dst = big_endian_read_16(message_pdu->network_header, 7);
 
                     mesh_print_hex("Assembled payload", incoming_control_pdu->data, incoming_control_pdu->len);
 
@@ -835,7 +843,6 @@ static void mesh_upper_transport_run(void){
                     incoming_access_decrypted->seq = big_endian_read_24(message_pdu->network_header, 2);
                     incoming_access_decrypted->src = big_endian_read_16(message_pdu->network_header, 5);
                     incoming_access_decrypted->dst = big_endian_read_16(message_pdu->network_header, 7);
-//                    (void)memcpy(incoming_access_decrypted->network_header, message_pdu->network_header, 9);
 
                     mesh_upper_transport_process_access_message();
                 }
