@@ -40,7 +40,7 @@
 /*
  *  btstack_chipset_da14581.c
  *
- *  Adapter to use da14581-based chipsets with BTstack
+ *  Adapter to use da1458x-based chipsets with BTstack
  *  
  */
 
@@ -75,8 +75,7 @@ static const btstack_uart_block_t * the_uart_driver;
 
 static int     download_count;
 static uint8_t response_buffer[1];
-static uint8_t download_command[3];
-static const uint8_t final_ack = ACK;
+static uint8_t command_buffer[3];
 static const uint8_t * fw_data;
 static uint16_t  fw_size;
 
@@ -93,10 +92,10 @@ static void da14581_w4_stx(void){
         case STX:
             log_info("da14581_w4_stx: send download command");
             // setup download config message
-            download_command[0] = SOH;
-            little_endian_store_16(download_command, 1, fw_size);
+            command_buffer[0] = SOH;
+            little_endian_store_16(command_buffer, 1, fw_size);
             the_uart_driver->set_block_sent(da14581_w4_command_sent);        
-            the_uart_driver->send_block(download_command, sizeof(download_command));
+            the_uart_driver->send_block(command_buffer, 3);
             break;
         default:
             // read again
@@ -166,8 +165,9 @@ static void da14581_w4_crc(void){
     }
 
     // everything's fine, send final ack
+    command_buffer[0] = ACK;
     the_uart_driver->set_block_sent(&da14581_w4_final_ack_sent);
-    the_uart_driver->send_block(&final_ack, sizeof(final_ack));
+    the_uart_driver->send_block(command_buffer, 1);
 }
 
 static void da14581_w4_final_ack_sent(void){
