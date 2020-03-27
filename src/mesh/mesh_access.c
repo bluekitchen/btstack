@@ -455,14 +455,8 @@ void mesh_access_transitions_abort_transaction(mesh_transition_t * base_transiti
 }
 
 static uint16_t mesh_access_src(mesh_access_pdu_t * access_pdu){
-    return big_endian_read_16(access_pdu->network_header, 5);
+    return access_pdu->src;
 }
-
-#if 0
-static uint16_t mesh_access_dst(mesh_access_pdu_t * access_pdu){
-    return big_endian_read_16(access_pdu->network_header, 7);
-}
-#endif
 
 // Transport PDU Getter
 uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu){

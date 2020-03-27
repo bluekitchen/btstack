@@ -168,31 +168,31 @@ static void mesh_transport_key_and_virtual_address_iterator_next(mesh_transport_
 // UPPER TRANSPORT
 
 uint16_t mesh_access_dst(mesh_access_pdu_t * access_pdu){
-    return big_endian_read_16(access_pdu->network_header, 7);
+    return access_pdu->dst;
 }
 
 uint16_t mesh_access_ctl(mesh_access_pdu_t * access_pdu){
-    return access_pdu->network_header[1] >> 7;
+    return access_pdu->ctl_ttl >> 7;
 }
 
 uint32_t mesh_access_seq(mesh_access_pdu_t * access_pdu){
-    return big_endian_read_24(access_pdu->network_header, 2);
+    return access_pdu->seq;
 }
 
-void mesh_access_set_nid_ivi(mesh_access_pdu_t * access_pdu, uint8_t nid_ivi){
-    access_pdu->network_header[0] = nid_ivi;
+void mesh_access_set_ivi_nid(mesh_access_pdu_t * access_pdu, uint8_t ivi_nid){
+    access_pdu->ivi_nid = ivi_nid;
 }
 void mesh_access_set_ctl_ttl(mesh_access_pdu_t * access_pdu, uint8_t ctl_ttl){
-    access_pdu->network_header[1] = ctl_ttl;
+    access_pdu->ctl_ttl = ctl_ttl;
 }
 void mesh_access_set_seq(mesh_access_pdu_t * access_pdu, uint32_t seq){
-    big_endian_store_24(access_pdu->network_header, 2, seq);
+    access_pdu->seq = seq;
 }
 void mesh_access_set_src(mesh_access_pdu_t * access_pdu, uint16_t src){
-    big_endian_store_16(access_pdu->network_header, 5, src);
+    access_pdu->src = src;
 }
-void mesh_access_set_dest(mesh_access_pdu_t * access_pdu, uint16_t dest){
-    big_endian_store_16(access_pdu->network_header, 7, dest);
+void mesh_access_set_dest(mesh_access_pdu_t * access_pdu, uint16_t dst){
+    access_pdu->dst = dst;
 }
 
 static void mesh_segmented_pdu_flatten(btstack_linked_list_t * segments, uint8_t segment_len, uint8_t * buffer) {
@@ -340,8 +340,10 @@ static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_pdu_t * 
         case MESH_PDU_TYPE_ACCESS:
             access_pdu = (mesh_access_pdu_t *) pdu;
             nonce[1] = access_pdu->transmic_len == 8 ? 0x80 : 0x00;
-            (void)memcpy(&nonce[2], &access_pdu->network_header[2], 7);
-            big_endian_store_32(nonce, 9, iv_index_for_ivi_nid(access_pdu->network_header[0]));
+            big_endian_store_24(nonce, 2, access_pdu->seq);
+            big_endian_store_16(nonce, 5, access_pdu->src);
+            big_endian_store_16(nonce, 7, access_pdu->dst);
+            big_endian_store_32(nonce, 9, iv_index_for_ivi_nid(access_pdu->ivi_nid));
             break;
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
@@ -407,7 +409,7 @@ static void mesh_upper_transport_validate_access_message_ccm(void * arg){
 
         // if virtual address, update dst to pseudo_dst
         if (mesh_network_address_virtual(mesh_access_dst(incoming_access_decrypted))){
-            big_endian_store_16(incoming_access_decrypted->network_header, 7, mesh_transport_key_it.address->pseudo_dst);
+            incoming_access_decrypted->dst = mesh_transport_key_it.address->pseudo_dst;
         }
 
         // pass to upper layer
@@ -782,7 +784,12 @@ static void mesh_upper_transport_run(void){
                     incoming_access_decrypted->transmic_len = 4;
                     incoming_access_decrypted->akf_aid_control = network_pdu->data[9];
                     incoming_access_decrypted->len = network_pdu->len - 10; // 9 header + 1 AID
-                    (void)memcpy(incoming_access_decrypted->network_header, network_pdu->data, 9);
+                    incoming_access_decrypted->ivi_nid = network_pdu->data[0];
+                    incoming_access_decrypted->ctl_ttl = network_pdu->data[1];
+                    incoming_access_decrypted->seq = big_endian_read_24(network_pdu->data, 2);
+                    incoming_access_decrypted->src = big_endian_read_16(network_pdu->data, 5);
+                    incoming_access_decrypted->dst = big_endian_read_16(network_pdu->data, 7);
+                    //  (void)memcpy(incoming_access_decrypted->network_header, network_pdu->data, 9);
 
                     mesh_upper_transport_process_access_message();
                 }
@@ -823,7 +830,12 @@ static void mesh_upper_transport_run(void){
                     incoming_access_decrypted->netkey_index =  message_pdu->netkey_index;
                     incoming_access_decrypted->transmic_len =  message_pdu->transmic_len;
                     incoming_access_decrypted->akf_aid_control =  message_pdu->akf_aid_control;
-                    (void)memcpy(incoming_access_decrypted->network_header, message_pdu->network_header, 9);
+                    incoming_access_decrypted->ivi_nid = message_pdu->network_header[0];
+                    incoming_access_decrypted->ctl_ttl = message_pdu->network_header[1];
+                    incoming_access_decrypted->seq = big_endian_read_24(message_pdu->network_header, 2);
+                    incoming_access_decrypted->src = big_endian_read_16(message_pdu->network_header, 5);
+                    incoming_access_decrypted->dst = big_endian_read_16(message_pdu->network_header, 7);
+//                    (void)memcpy(incoming_access_decrypted->network_header, message_pdu->network_header, 9);
 
                     mesh_upper_transport_process_access_message();
                 }
@@ -1121,7 +1133,7 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_acces
     access_pdu->netkey_index = netkey_index;
     access_pdu->appkey_index = appkey_index;
     access_pdu->akf_aid_control = akf_aid;
-    mesh_access_set_nid_ivi(access_pdu, network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7));
+    mesh_access_set_ivi_nid(access_pdu, network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7));
     mesh_access_set_src(access_pdu, src);
     mesh_access_set_dest(access_pdu, dest);
     mesh_access_set_ctl_ttl(access_pdu, ttl);

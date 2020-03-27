@@ -177,6 +177,12 @@ typedef struct {
 typedef struct {
     // generic pdu header
     mesh_pdu_t            pdu_header;
+    // network header
+    uint8_t               ivi_nid;
+    uint8_t               ctl_ttl;
+    uint16_t              src;
+    uint16_t              dst;
+    uint32_t              seq;
     // meta data network layer
     uint16_t              netkey_index;
     // meta data transport layer
@@ -185,8 +191,6 @@ typedef struct {
     uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
-    // network pdu header
-    uint8_t               network_header[9];
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
     // payload
