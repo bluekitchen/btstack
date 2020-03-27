@@ -800,7 +800,7 @@ static void mesh_upper_transport_run(void){
                 break;
             case MESH_PDU_TYPE_SEGMENTED:
                 message_pdu = (mesh_segmented_pdu_t *) pdu;
-                uint8_t ctl = mesh_message_ctl(message_pdu);
+                uint8_t ctl = message_pdu->ctl_ttl >> 7;
                 if (ctl){
                     incoming_control_pdu=  &incoming_pdu_singleton.control;
                     incoming_control_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_CONTROL;

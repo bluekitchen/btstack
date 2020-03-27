@@ -82,8 +82,6 @@ void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
 mesh_segmented_pdu_t * mesh_message_pdu_get(void);
 void mesh_message_pdu_free(mesh_segmented_pdu_t * message_pdu);
 
-uint16_t mesh_message_ctl(mesh_segmented_pdu_t * message_pdu);
-
 void mesh_lower_transport_init(void);
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
