@@ -148,26 +148,6 @@ typedef struct {
 } mesh_segmented_pdu_t;
 
 typedef struct {
-    mesh_pdu_t pdu_header;
-
-    // meta data network layer
-    uint16_t              netkey_index;
-    // meta data transport layer
-    uint16_t              appkey_index;
-    // transmic size
-    uint8_t               transmic_len;
-    // akf - aid for access, opcode for control
-    uint8_t               akf_aid_control;
-    // network pdu header
-    uint8_t               network_header[9];
-    // MESH_TRANSPORT_FLAG
-    uint16_t              flags;
-    // pdu
-    uint16_t              len;
-    uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
-} mesh_transport_pdu_t;
-
-typedef struct {
     // generic pdu header
     mesh_pdu_t            pdu_header;
     // network header

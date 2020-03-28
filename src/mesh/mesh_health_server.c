@@ -108,19 +108,19 @@ const mesh_access_message_t mesh_foundation_health_attention_status = {
 static mesh_pdu_t * health_period_status(mesh_model_t * mesh_model){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     // setup message
-    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_period_status, state->fast_period_divisor);
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_period_status, state->fast_period_divisor);
     return (mesh_pdu_t *) message_pdu;
 }
 
 static mesh_pdu_t * health_attention_status(void){
     // setup message
-    mesh_segmented_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_attention_status, mesh_attention_timer_get());
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_attention_status, mesh_attention_timer_get());
     return (mesh_pdu_t *) message_pdu;
 }
 
 // report fault status - used for both current as well as registered faults, see registered_faults param
 static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id, bool registered_faults){
-    mesh_segmented_pdu_t * message_pdu = mesh_access_message_init(opcode, false, 1);
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(opcode, false, 1);
     if (!message_pdu) return NULL;
 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
@@ -150,7 +150,7 @@ static void health_fault_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t company_id = mesh_access_parser_get_u16(&parser);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, true);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, true);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -172,7 +172,7 @@ static uint16_t process_message_fault_clear(mesh_model_t *mesh_model, mesh_pdu_t
 static void health_fault_clear_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
     uint16_t company_id = process_message_fault_clear(mesh_model, pdu);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, true);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, true);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -240,7 +240,7 @@ static void health_fault_test_unacknowledged_handler(mesh_model_t * mesh_model, 
 }
 
 static void health_period_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_period_status(mesh_model);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -260,7 +260,7 @@ static void process_message_period_set(mesh_model_t *mesh_model, mesh_pdu_t * pd
 static void health_period_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     process_message_period_set(mesh_model, pdu);
     
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_period_status(mesh_model);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -272,7 +272,7 @@ static void health_period_set_unacknowledged_handler(mesh_model_t *mesh_model, m
 }
 
 static void health_attention_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_attention_status();
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_attention_status();
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -302,7 +302,7 @@ static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t *
 static void health_attention_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     process_message_attention_set(mesh_model, pdu);
     
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_attention_status();
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_attention_status();
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -434,7 +434,7 @@ void mesh_health_server_report_test_done(uint16_t dest, uint16_t netkey_index, u
 
     // response for acknowledged health fault test
     if (acknowledged){
-        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
+        mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
         if (!transport_pdu) return;
         health_server_send_message(mesh_node_get_primary_element_address(), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
     }

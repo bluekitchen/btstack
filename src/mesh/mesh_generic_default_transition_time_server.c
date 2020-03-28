@@ -71,7 +71,7 @@ static mesh_pdu_t * mesh_generic_default_transition_time_status_message(mesh_mod
 
     mesh_generic_default_transition_time_state_t * state = (mesh_generic_default_transition_time_state_t *) generic_default_transition_time_server_model->model_data;
     // setup message
-    mesh_transport_pdu_t * transport_pdu = NULL; 
+    mesh_upper_transport_pdu_t * transport_pdu = NULL;
 
     log_info("Default transition time status: value %u", state->value);
     transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_default_transition_time_status, state->value);
@@ -80,7 +80,7 @@ static mesh_pdu_t * mesh_generic_default_transition_time_status_message(mesh_mod
 }
 
 static void generic_default_transition_time_get_handler(mesh_model_t *generic_default_transition_time_server_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_default_transition_time_status_message(generic_default_transition_time_server_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_default_transition_time_status_message(generic_default_transition_time_server_model);
     if (!transport_pdu) return;
     generic_server_send_message(mesh_access_get_element_address(generic_default_transition_time_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -107,7 +107,7 @@ static bool generic_default_transition_time_handle_set_message(mesh_model_t *mes
 static void generic_default_transition_time_set_handler(mesh_model_t *generic_default_transition_time_server_model, mesh_pdu_t * pdu){
     bool send_status = generic_default_transition_time_handle_set_message(generic_default_transition_time_server_model, pdu);
     if (send_status){
-        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_default_transition_time_status_message(generic_default_transition_time_server_model);
+        mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_default_transition_time_status_message(generic_default_transition_time_server_model);
         if (transport_pdu) {
             generic_server_send_message(mesh_access_get_element_address(generic_default_transition_time_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
         }

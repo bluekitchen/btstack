@@ -248,24 +248,24 @@ uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t 
 uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser);
 
 // message builder transport
-mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode);
-void mesh_access_transport_add_uint8(mesh_transport_pdu_t * pdu, uint8_t value);
-void mesh_access_transport_add_uint16(mesh_transport_pdu_t * pdu, uint16_t value);
-void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint32_t value);
-void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value);
-void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier);
-void mesh_access_transport_add_label_uuid(mesh_transport_pdu_t * pdu, uint8_t * value);
+mesh_upper_transport_pdu_t * mesh_access_transport_init(uint32_t opcode);
+void mesh_access_transport_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value);
+void mesh_access_transport_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value);
+void mesh_access_transport_add_uint24(mesh_upper_transport_pdu_t * pdu, uint32_t value);
+void mesh_access_transport_add_uint32(mesh_upper_transport_pdu_t * pdu, uint32_t value);
+void mesh_access_transport_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier);
+void mesh_access_transport_add_label_uuid(mesh_upper_transport_pdu_t * pdu, uint8_t * value);
 
-mesh_segmented_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments);
-void mesh_access_message_add_uint8(mesh_segmented_pdu_t * pdu, uint8_t value);
-void mesh_access_message_add_uint16(mesh_segmented_pdu_t * pdu, uint16_t value);
-void mesh_access_message_add_uint24(mesh_segmented_pdu_t * pdu, uint16_t value);
-void mesh_access_message_add_uint32(mesh_segmented_pdu_t * pdu, uint16_t value);
-void mesh_access_message_add_model_identifier(mesh_segmented_pdu_t * pdu, uint32_t model_identifier);
+mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments);
+void mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value);
+void mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value);
+void mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value);
+void mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value);
+void mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier);
 
 // message builder using template
-mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...);
-mesh_segmented_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...);
+mesh_upper_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...);
+mesh_upper_transport_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

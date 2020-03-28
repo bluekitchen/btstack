@@ -75,10 +75,6 @@ typedef enum {
     MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE,
 } mesh_transport_status_t;
 
-// allocator
-mesh_transport_pdu_t * mesh_transport_pdu_get(void);
-void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
-
 mesh_segmented_pdu_t * mesh_message_pdu_get(void);
 void mesh_message_pdu_free(mesh_segmented_pdu_t * message_pdu);
 

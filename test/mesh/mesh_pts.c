@@ -418,7 +418,7 @@ static void send_pts_segmented_access_messsage_unicast(void){
     uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as segmented access pdu
-    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
+    mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_memory_mesh_upper_transport_pdu_get();
     int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
     mesh_access_send_unacknowledged_pdu(pdu);
@@ -439,7 +439,7 @@ static void send_pts_segmented_access_messsage_group(void){
     uint16_t appkey_index = 0;
 
     // send as segmented access pdu
-    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
+    mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_memory_mesh_upper_transport_pdu_get();
     int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
     mesh_access_send_unacknowledged_pdu(pdu);

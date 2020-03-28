@@ -384,48 +384,8 @@ static uint16_t mesh_access_src(mesh_access_pdu_t * access_pdu){
     return access_pdu->src;
 }
 
-// Transport PDU Getter
-uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->network_header[0] & 0x7f;
-}
-uint16_t mesh_transport_ctl(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->network_header[1] >> 7;
-}
-uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->network_header[1] & 0x7f;
-}
-uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_24(transport_pdu->network_header, 2);
-}
-uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_16(transport_pdu->network_header, 5);
-}
-uint16_t mesh_transport_dst(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_16(transport_pdu->network_header, 7);
-}
-uint8_t  mesh_transport_control_opcode(mesh_transport_pdu_t * transport_pdu){
-    return transport_pdu->akf_aid_control & 0x7f;
-}
-void mesh_transport_set_nid_ivi(mesh_transport_pdu_t * transport_pdu, uint8_t nid_ivi){
-    transport_pdu->network_header[0] = nid_ivi;
-}
-void mesh_transport_set_ctl_ttl(mesh_transport_pdu_t * transport_pdu, uint8_t ctl_ttl){
-    transport_pdu->network_header[1] = ctl_ttl;
-}
-void mesh_transport_set_seq(mesh_transport_pdu_t * transport_pdu, uint32_t seq){
-    big_endian_store_24(transport_pdu->network_header, 2, seq);
-}
-void mesh_transport_set_src(mesh_transport_pdu_t * transport_pdu, uint16_t src){
-    big_endian_store_16(transport_pdu->network_header, 5, src);
-}
-void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest){
-    big_endian_store_16(transport_pdu->network_header, 7, dest);
-}
-
 uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_ctl((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
         default:
@@ -436,8 +396,6 @@ uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
 
 uint16_t mesh_pdu_ttl(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_ttl((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_ttl((mesh_network_pdu_t *) pdu);
         default:
@@ -450,8 +408,6 @@ uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return mesh_access_src((mesh_access_pdu_t *) pdu);
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_src((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_src((mesh_network_pdu_t *) pdu);
         default:
@@ -465,8 +421,6 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_ACCESS: {
             return ((mesh_access_pdu_t *) pdu)->dst;
         }
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
         default:
@@ -479,8 +433,6 @@ uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return ((mesh_access_pdu_t*) pdu)->netkey_index;
-        case MESH_PDU_TYPE_TRANSPORT:
-            return ((mesh_transport_pdu_t*) pdu)->netkey_index;
         case MESH_PDU_TYPE_NETWORK:
             return ((mesh_network_pdu_t *) pdu)->netkey_index;
         default:
@@ -493,8 +445,6 @@ uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return ((mesh_access_pdu_t*) pdu)->appkey_index;
-        case MESH_PDU_TYPE_TRANSPORT:
-            return ((mesh_transport_pdu_t*) pdu)->appkey_index;
         default:
             btstack_assert(false);
             return 0;
@@ -505,8 +455,6 @@ uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return ((mesh_access_pdu_t*) pdu)->len;
-        case MESH_PDU_TYPE_TRANSPORT:
-            return ((mesh_transport_pdu_t*) pdu)->len;
         case MESH_PDU_TYPE_NETWORK:
             return ((mesh_network_pdu_t *) pdu)->len - 10;
         default:
@@ -519,8 +467,6 @@ uint8_t * mesh_pdu_data(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return ((mesh_access_pdu_t*) pdu)->data;
-        case MESH_PDU_TYPE_TRANSPORT:
-            return ((mesh_transport_pdu_t*) pdu)->data;
         case MESH_PDU_TYPE_NETWORK:
             return &((mesh_network_pdu_t *) pdu)->data[10];
         default:
@@ -531,8 +477,6 @@ uint8_t * mesh_pdu_data(mesh_pdu_t * pdu){
 
 uint8_t mesh_pdu_control_opcode(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_control_opcode((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control_opcode((mesh_network_pdu_t *) pdu);
         default:
@@ -671,41 +615,48 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
     return 3;
 }
 
-mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
-    mesh_transport_pdu_t * pdu = mesh_transport_pdu_get();
+mesh_upper_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
+    mesh_upper_transport_pdu_t * pdu = btstack_memory_mesh_upper_transport_pdu_get();
     if (!pdu) return NULL;
 
+    btstack_assert(false);
+
     // TODO: new types
-    pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
+    // pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
     // pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
-void mesh_access_transport_add_uint8(mesh_transport_pdu_t * pdu, uint8_t value){
-    pdu->data[pdu->len++] = value;
+void mesh_access_transport_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
+    btstack_assert(false);
+    //  pdu->data[pdu->len++] = value;
 }
 
-void mesh_access_transport_add_uint16(mesh_transport_pdu_t * pdu, uint16_t value){
-    little_endian_store_16(pdu->data, pdu->len, value);
-    pdu->len += 2;
+void mesh_access_transport_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+    btstack_assert(false);
+//    little_endian_store_16(pdu->data, pdu->len, value);
+//    pdu->len += 2;
 }
 
-void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint32_t value){
-    little_endian_store_24(pdu->data, pdu->len, value);
-    pdu->len += 3;
+void mesh_access_transport_add_uint24(mesh_upper_transport_pdu_t * pdu, uint32_t value){
+    btstack_assert(false);
+//    little_endian_store_24(pdu->data, pdu->len, value);
+//    pdu->len += 3;
 }
 
-void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value){
-    little_endian_store_32(pdu->data, pdu->len, value);
-    pdu->len += 4;
+void mesh_access_transport_add_uint32(mesh_upper_transport_pdu_t * pdu, uint32_t value){
+    btstack_assert(false);
+//    little_endian_store_32(pdu->data, pdu->len, value);
+//    pdu->len += 4;
 }
 
-void mesh_access_transport_add_label_uuid(mesh_transport_pdu_t * pdu, uint8_t * value){
-    (void)memcpy(value, pdu->data, 16);
-    pdu->len += 16;
+void mesh_access_transport_add_label_uuid(mesh_upper_transport_pdu_t * pdu, uint8_t * value){
+    btstack_assert(false);
+//    (void)memcpy(value, pdu->data, 16);
+//    pdu->len += 16;
 }
 
-void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier){
+void mesh_access_transport_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier){
     if (!mesh_model_is_bluetooth_sig(model_identifier)){
         mesh_access_transport_add_uint16( pdu, mesh_model_get_vendor_id(model_identifier) );
     }
@@ -713,20 +664,23 @@ void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint
 }
 
 // mesh_message_t builder
-mesh_segmented_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
+mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
     btstack_assert(num_segments > 0);
     btstack_assert(segmented || (num_segments == 1));
 
-    mesh_segmented_pdu_t * pdu = mesh_message_pdu_get();
+    mesh_upper_transport_pdu_t * pdu = btstack_memory_mesh_upper_transport_pdu_get();
     if (!pdu) return NULL;
 
+    btstack_assert(false);
+
+    pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
     // TODO: handle segmented messages
     btstack_assert(segmented == false);
 
     // use mesh_network_t as before
     mesh_network_pdu_t * segment = mesh_network_pdu_get();
     if (segment == NULL){
-        mesh_message_pdu_free(pdu);
+        btstack_memory_mesh_upper_transport_pdu_free(pdu);
         return NULL;
     }
     btstack_linked_list_add(&pdu->segments, (btstack_linked_item_t *) segment);
@@ -737,34 +691,34 @@ mesh_segmented_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented,
     return pdu;
 }
 
-void mesh_access_message_add_uint8(mesh_segmented_pdu_t * pdu, uint8_t value){
+void mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     segment->data[pdu->len++] = value;
 }
 
-void mesh_access_message_add_uint16(mesh_segmented_pdu_t * pdu, uint16_t value){
+void mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     little_endian_store_16(segment->data, pdu->len, value);
     pdu->len += 2;
 }
 
-void mesh_access_message_add_uint24(mesh_segmented_pdu_t * pdu, uint16_t value){
+void mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     little_endian_store_24(segment->data, pdu->len, value);
     pdu->len += 3;
 }
 
-void mesh_access_message_add_uint32(mesh_segmented_pdu_t * pdu, uint16_t value){
+void mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value){
     // TODO: handle segmented messages
     mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
     little_endian_store_32(segment->data, pdu->len, value);
     pdu->len += 4;
 }
 
-void mesh_access_message_add_model_identifier(mesh_segmented_pdu_t * pdu, uint32_t model_identifier){
+void mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier){
     if (mesh_model_is_bluetooth_sig(model_identifier)){
         mesh_access_message_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
     } else {
@@ -773,11 +727,11 @@ void mesh_access_message_add_model_identifier(mesh_segmented_pdu_t * pdu, uint32
 }
 
 // access message template
-mesh_segmented_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...){
+mesh_upper_transport_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...){
     btstack_assert(segmented == false);
 
     // TODO: handle segmented messages
-    mesh_segmented_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode, segmented, 1);
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode, segmented, 1);
     if (!message_pdu) return NULL;
 
     va_list argptr;
@@ -822,8 +776,8 @@ mesh_segmented_pdu_t * mesh_access_setup_message(bool segmented, const mesh_acce
     return message_pdu;
 }
 
-mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...){
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(message_template->opcode);
+mesh_upper_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...){
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_transport_init(message_template->opcode);
     if (!transport_pdu) return NULL;
 
     va_list argptr;
