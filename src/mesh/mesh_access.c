@@ -675,8 +675,9 @@ mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
     mesh_transport_pdu_t * pdu = mesh_transport_pdu_get();
     if (!pdu) return NULL;
 
+    // TODO: new types
     pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
-    pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
+    // pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
@@ -730,8 +731,9 @@ mesh_segmented_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented,
     }
     btstack_linked_list_add(&pdu->segments, (btstack_linked_item_t *) segment);
 
+    // TODO: new types
     pdu->len = mesh_access_setup_opcode(&segment->data[10], opcode) + 10;
-    pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
+    // pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
