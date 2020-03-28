@@ -133,9 +133,9 @@ static inline uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_mo
     
     mesh_upper_transport_pdu_t * transport_pdu;
     if (transition_time_gdtt != 0) {
-        transport_pdu = mesh_access_setup_segmented_message(message_template_with_transition, value, transaction_id, transition_time_gdtt, delay_time_gdtt);
+        transport_pdu = mesh_access_setup_message(true, message_template_with_transition, value, transaction_id, transition_time_gdtt, delay_time_gdtt);
     } else {
-        transport_pdu = mesh_access_setup_segmented_message(message_template_instantaneous, value, transaction_id);
+        transport_pdu = mesh_access_setup_message(true, message_template_instantaneous, value, transaction_id);
     }
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
@@ -151,7 +151,7 @@ static inline uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_mo
 
 uint8_t mesh_generic_level_client_level_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_level_get);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true, &mesh_generic_level_get);
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
     // send as segmented access pdu
     generic_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_GENERIC_LEVEL_STATUS);

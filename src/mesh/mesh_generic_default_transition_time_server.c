@@ -74,7 +74,7 @@ static mesh_pdu_t * mesh_generic_default_transition_time_status_message(mesh_mod
     mesh_upper_transport_pdu_t * transport_pdu = NULL;
 
     log_info("Default transition time status: value %u", state->value);
-    transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_default_transition_time_status, state->value);
+    transport_pdu = mesh_access_setup_message(true, &mesh_generic_default_transition_time_status, state->value);
 
     return (mesh_pdu_t *) transport_pdu;
 }

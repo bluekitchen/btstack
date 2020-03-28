@@ -615,54 +615,6 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
     return 3;
 }
 
-mesh_upper_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
-    mesh_upper_transport_pdu_t * pdu = btstack_memory_mesh_upper_transport_pdu_get();
-    if (!pdu) return NULL;
-
-    btstack_assert(false);
-
-    // TODO: new types
-    // pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
-    // pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
-    return pdu;
-}
-
-void mesh_access_transport_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
-    btstack_assert(false);
-    //  pdu->data[pdu->len++] = value;
-}
-
-void mesh_access_transport_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    btstack_assert(false);
-//    little_endian_store_16(pdu->data, pdu->len, value);
-//    pdu->len += 2;
-}
-
-void mesh_access_transport_add_uint24(mesh_upper_transport_pdu_t * pdu, uint32_t value){
-    btstack_assert(false);
-//    little_endian_store_24(pdu->data, pdu->len, value);
-//    pdu->len += 3;
-}
-
-void mesh_access_transport_add_uint32(mesh_upper_transport_pdu_t * pdu, uint32_t value){
-    btstack_assert(false);
-//    little_endian_store_32(pdu->data, pdu->len, value);
-//    pdu->len += 4;
-}
-
-void mesh_access_transport_add_label_uuid(mesh_upper_transport_pdu_t * pdu, uint8_t * value){
-    btstack_assert(false);
-//    (void)memcpy(value, pdu->data, 16);
-//    pdu->len += 16;
-}
-
-void mesh_access_transport_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier){
-    if (!mesh_model_is_bluetooth_sig(model_identifier)){
-        mesh_access_transport_add_uint16( pdu, mesh_model_get_vendor_id(model_identifier) );
-    }
-    mesh_access_transport_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
-}
-
 // mesh_message_t builder
 mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
     btstack_assert(num_segments > 0);
@@ -775,55 +727,6 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(bool segmented, const mes
 
     return message_pdu;
 }
-
-mesh_upper_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...){
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_transport_init(message_template->opcode);
-    if (!transport_pdu) return NULL;
-
-    va_list argptr;
-    va_start(argptr, message_template);
-
-    // add params
-    const char * format = message_template->format;
-    uint16_t word;
-    uint32_t longword;
-    uint8_t * ptr;
-    while (*format){
-        switch (*format++){
-            case '1':
-                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_transport_add_uint8( transport_pdu, word);
-                break;
-            case '2':
-                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_transport_add_uint16( transport_pdu, word);
-                break;
-            case '3':
-                longword = va_arg(argptr, uint32_t);
-                mesh_access_transport_add_uint24( transport_pdu, longword);
-                break;
-            case '4':
-                longword = va_arg(argptr, uint32_t);
-                mesh_access_transport_add_uint32( transport_pdu, longword);
-                break;
-            case 'P': // 16 byte, eg LabelUUID, in network endianess
-                ptr = va_arg(argptr, uint8_t *);
-                mesh_access_transport_add_label_uuid( transport_pdu, ptr);
-                break;
-            case 'm':
-                longword = va_arg(argptr, uint32_t);
-                mesh_access_transport_add_model_identifier( transport_pdu, longword);
-                break;
-            default:
-                break;
-        }
-    }
-
-    va_end(argptr);
-
-    return transport_pdu;
-}
-
 
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode){
     // find opcode in table
