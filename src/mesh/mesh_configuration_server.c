@@ -245,9 +245,6 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
 
     printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
 
-    btstack_assert(false);
-
-    // TODO: figure out num segments
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(
             MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
     if (!upper_pdu) return;
@@ -303,7 +300,11 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
         }
     }
 
-    mesh_access_message_finalize(upper_pdu );
+    bool ok = mesh_access_message_finalize(upper_pdu);
+    if (!ok){
+        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
+        return;
+    }
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
@@ -569,9 +570,6 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
     UNUSED(mesh_model);
 
-    btstack_assert(false);
-    // TODO: find num segments
-
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
     if (!upper_pdu) return;
 
@@ -583,7 +581,11 @@ static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
         mesh_access_message_add_uint16(upper_pdu, network_key->netkey_index);
     }
 
-    mesh_access_message_finalize(upper_pdu );
+    bool ok = mesh_access_message_finalize(upper_pdu);
+    if (!ok){
+        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
+        return;
+    }
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
@@ -811,9 +813,6 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_index_of_list){
     UNUSED(mesh_model);
 
-    btstack_assert(false);
-    // TODO: find num segments
-
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST);
     if (!upper_pdu) return;
 
@@ -836,7 +835,11 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
         mesh_access_message_add_uint16(upper_pdu, transport_key->appkey_index);
     }
 
-    mesh_access_message_finalize(upper_pdu );
+    bool ok = mesh_access_message_finalize(upper_pdu);
+    if (!ok){
+        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
+        return;
+    }
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
@@ -1050,9 +1053,6 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
         opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST;
     }
 
-    btstack_assert(false);
-    // TODO: find num segments
-
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(opcode);
     if (!upper_pdu) return;
 
@@ -1075,7 +1075,11 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
         }
     }
 
-    mesh_access_message_finalize(upper_pdu );
+    bool ok = mesh_access_message_finalize(upper_pdu);
+    if (!ok){
+        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
+        return;
+    }
 
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
@@ -1367,9 +1371,6 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
         opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST;
     }
 
-    btstack_assert(false);
-    // TODO: find num segments
-
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(opcode);
     if (!upper_pdu) return;
 
@@ -1391,7 +1392,11 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
         }
     }
 
-    mesh_access_message_finalize(upper_pdu );
+    bool ok = mesh_access_message_finalize(upper_pdu);
+    if (!ok){
+        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
+        return;
+    }
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);

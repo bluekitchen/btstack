@@ -68,8 +68,8 @@ typedef enum {
 } mesh_network_callback_type_t;
 
 typedef enum {
-    MESH_PDU_TYPE_NETWORK = 0,
-    MESH_PDU_TYPE_TRANSPORT,
+    MESH_PDU_TYPE_INVALID,
+    MESH_PDU_TYPE_NETWORK,
     MESH_PDU_TYPE_SEGMENTED,
     MESH_PDU_TYPE_UNSEGMENTED,
     MESH_PDU_TYPE_ACCESS,

@@ -1243,7 +1243,9 @@ mesh_upper_transport_pdu_t * mesh_upper_transport_message_init(mesh_pdu_type_t p
 }
 
 
-bool mesh_upper_transport_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len){
+void mesh_upper_transport_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len){
+    if (pdu->pdu_header.pdu_type == MESH_PDU_TYPE_INVALID) return;
+
     uint16_t bytes_current_segment = 0;
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_last_item(&pdu->segments);
     if (network_pdu){
@@ -1252,7 +1254,10 @@ bool mesh_upper_transport_message_add_data(mesh_upper_transport_pdu_t * pdu, con
     while (data_len > 0){
         if (bytes_current_segment == 0){
             network_pdu = (mesh_network_pdu_t *) mesh_network_pdu_get();
-            if (network_pdu == NULL) return false;
+            if (network_pdu == NULL) {
+                pdu->pdu_header.pdu_type = MESH_PDU_TYPE_INVALID;
+                return;
+            }
             btstack_linked_list_add_tail(&pdu->segments, (btstack_linked_item_t *) network_pdu);
             bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX;
         }
@@ -1263,30 +1268,30 @@ bool mesh_upper_transport_message_add_data(mesh_upper_transport_pdu_t * pdu, con
         data                  += bytes_to_copy;
         data_len              -= bytes_to_copy;
     }
-    return true;
 }
 
-bool mesh_upper_transport_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
-    return mesh_upper_transport_message_add_data(pdu, &value, 1);
+void mesh_upper_transport_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
+    mesh_upper_transport_message_add_data(pdu, &value, 1);
 }
 
-bool mesh_upper_transport_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+void mesh_upper_transport_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
     uint8_t buffer[2];
     little_endian_store_16(buffer, 0, value);
-    return mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
+    mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
 }
 
-bool mesh_upper_transport_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+void mesh_upper_transport_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value){
     uint8_t buffer[3];
     little_endian_store_24(buffer, 0, value);
-    return mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
+    mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
 }
 
-bool mesh_upper_transport_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+void mesh_upper_transport_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value){
     uint8_t buffer[4];
     little_endian_store_32(buffer, 0, value);
-    return mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
+    mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
 }
 
-void mesh_upper_transport_message_finalize(mesh_upper_transport_pdu_t * pdu){
+bool mesh_upper_transport_message_finalize(mesh_upper_transport_pdu_t * pdu){
+    return pdu->pdu_header.pdu_type != MESH_PDU_TYPE_INVALID;
 }

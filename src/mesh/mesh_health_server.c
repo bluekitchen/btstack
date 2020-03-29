@@ -143,7 +143,11 @@ static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opco
         }
     }
 
-    mesh_access_message_finalize(upper_pdu );
+    bool ok = mesh_access_message_finalize(upper_pdu);
+    if (!ok){
+        mesh_upper_transport_pdu_free((mesh_pdu_t*)upper_pdu);
+        return NULL;
+    }
 
     return (mesh_pdu_t *) upper_pdu;
 }
