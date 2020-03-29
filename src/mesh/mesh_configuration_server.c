@@ -247,7 +247,8 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
 
     btstack_assert(false);
     // TODO: figure out num segments
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS, true, 1);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(
+            MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
     if (!transport_pdu) return;
 
     // page 0
@@ -315,7 +316,7 @@ static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_p
 static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_config_beacon_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_beacon_status,
                                                                                mesh_foundation_beacon_get());
     if (!transport_pdu) return;
 
@@ -351,7 +352,7 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void config_model_default_ttl_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_default_ttl_status, mesh_foundation_default_ttl_get());
     if (!transport_pdu) return;
 
@@ -389,7 +390,7 @@ static void config_friend_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_friend_status, mesh_foundation_friend_get());
     if (!transport_pdu) return;
 
@@ -428,7 +429,7 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
     if (!transport_pdu) return;
 
     // send as segmented access pdu
@@ -467,7 +468,7 @@ static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_config_relay_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_relay_status,
                                                                                mesh_foundation_relay_get(),
                                                                                mesh_foundation_relay_retransmit_get());
     if (!transport_pdu) return;
@@ -514,7 +515,7 @@ static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_network_transmit_status, mesh_foundation_network_transmit_get());
     if (!transport_pdu) return;
 
@@ -554,7 +555,7 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_netkey_status, status, new_netkey_index);
     if (!transport_pdu) return;
 
@@ -568,7 +569,7 @@ static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     btstack_assert(false);
     // TODO: find num segments
 
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST, true, 1);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
     if (!transport_pdu) return;
 
     // add list of netkey indexes
@@ -794,7 +795,7 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_config_appkey_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_appkey_status,
                                                                                status, netkey_and_appkey_index);
     if (!transport_pdu) return;
 
@@ -808,7 +809,7 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     btstack_assert(false);
     // TODO: find num segments
 
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST, true, 1);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST);
     if (!transport_pdu) return;
 
     // check netkey_index is valid
@@ -1045,7 +1046,7 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
     btstack_assert(false);
     // TODO: find num segments
 
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(opcode, true, 1);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(opcode);
     if (!transport_pdu) return;
 
     // setup segmented message
@@ -1087,7 +1088,7 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_config_model_subscription_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_model_subscription_status,
                                                                                 status, element_address, address, model_identifier);
     if (!transport_pdu) return;
     // send as segmented access pdu
@@ -1338,7 +1339,7 @@ static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_i
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_config_model_app_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_model_app_status,
                                                             status, element_address, appkey_index, model_identifier);
     if (!transport_pdu) return;
 
@@ -1359,7 +1360,7 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
     btstack_assert(false);
     // TODO: find num segments
 
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(opcode, true, 1);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_message_init(opcode);
     if (!transport_pdu) return;
 
     mesh_access_message_add_uint8(transport_pdu, status);
@@ -1526,7 +1527,7 @@ config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index,
         }
     }
 
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_model_publication_status, status, element_address, publish_address,
             app_key_index_and_credential_flag, ttl, period, retransmit, model_identifier);
     if (!transport_pdu) return;
@@ -1802,7 +1803,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 
     // setup message
     uint8_t count_log = mesh_heartbeat_count_log(mesh_heartbeat_publication->count);
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_heartbeat_publication_status,
             status,
             mesh_heartbeat_publication->destination,
@@ -1901,7 +1902,7 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
 
     // setup message
     uint8_t count_log = mesh_heartbeat_count_log(mesh_heartbeat_subscription->count);
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_heartbeat_subscription_status,
             status,
             mesh_heartbeat_subscription->source,
@@ -2045,7 +2046,7 @@ static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t n
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
         &mesh_key_refresh_phase_status,
         status,
         netkey_index,
@@ -2124,7 +2125,7 @@ static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_i
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,&mesh_foundation_node_reset_status);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_node_reset_status);
     if (!transport_pdu) return;
 
     // send as segmented access pdu
@@ -2140,7 +2141,7 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void low_power_node_poll_timeout_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status){
     UNUSED(mesh_model);
 
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
         &mesh_foundation_low_power_node_poll_timeout_status,
         status,
         0,  // The unicast address of the Low Power node
@@ -2165,7 +2166,7 @@ static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netke
     UNUSED(mesh_model);
 
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
         &mesh_foundation_node_identity_status,
         status,
         netkey_index,

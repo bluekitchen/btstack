@@ -125,11 +125,11 @@ static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_
     mesh_upper_transport_pdu_t * transport_pdu = NULL; 
     if (state->transition_data.base_transition.num_steps > 0) {
         uint8_t remaining_time = (((uint8_t)state->transition_data.base_transition.step_resolution) << 6) | (state->transition_data.base_transition.num_steps);
-        transport_pdu = mesh_access_setup_message(true, &mesh_generic_on_off_status_transition, state->transition_data.current_value,
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value,
             state->transition_data.target_value, remaining_time);
     } else {
         log_info("On/Off Status: value %u, no transition active", state->transition_data.current_value);
-        transport_pdu = mesh_access_setup_message(true, &mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
     }
     return (mesh_pdu_t *) transport_pdu;
 }

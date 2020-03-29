@@ -85,7 +85,7 @@ static void generic_client_send_message_acknowledged(uint16_t src, uint16_t dest
 
 uint8_t mesh_generic_default_transition_time_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     // setup message
-    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(true, &mesh_generic_default_transition_time_get);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_generic_default_transition_time_get);
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
     // send as segmented access pdu
     generic_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_GENERIC_DEFAULT_TRANSITION_TIME_STATUS);
@@ -97,7 +97,7 @@ uint8_t mesh_generic_default_transition_time_client_set(mesh_model_t * mesh_mode
     
     mesh_upper_transport_pdu_t *  transport_pdu;
     
-    transport_pdu = mesh_access_setup_message(true, &mesh_generic_default_transition_time_set, transition_time_gdtt);
+    transport_pdu = mesh_access_setup_message(&mesh_generic_default_transition_time_set, transition_time_gdtt);
     
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
@@ -108,7 +108,7 @@ uint8_t mesh_generic_default_transition_time_client_set(mesh_model_t * mesh_mode
 uint8_t mesh_generic_default_transition_time_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
     uint8_t transition_time_gdtt){
     mesh_upper_transport_pdu_t *  transport_pdu;
-    transport_pdu = mesh_access_setup_message(true, &mesh_generic_default_transition_time_set_unacknowledged, transition_time_gdtt);
+    transport_pdu = mesh_access_setup_message(&mesh_generic_default_transition_time_set_unacknowledged, transition_time_gdtt);
 
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
     generic_client_send_message_unacknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);

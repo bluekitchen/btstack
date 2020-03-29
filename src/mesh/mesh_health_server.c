@@ -108,19 +108,19 @@ const mesh_access_message_t mesh_foundation_health_attention_status = {
 static mesh_pdu_t * health_period_status(mesh_model_t * mesh_model){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     // setup message
-    mesh_upper_transport_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_period_status, state->fast_period_divisor);
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_setup_message(&mesh_foundation_health_period_status, state->fast_period_divisor);
     return (mesh_pdu_t *) message_pdu;
 }
 
 static mesh_pdu_t * health_attention_status(void){
     // setup message
-    mesh_upper_transport_pdu_t * message_pdu = mesh_access_setup_message(false, &mesh_foundation_health_attention_status, mesh_attention_timer_get());
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_setup_message(&mesh_foundation_health_attention_status, mesh_attention_timer_get());
     return (mesh_pdu_t *) message_pdu;
 }
 
 // report fault status - used for both current as well as registered faults, see registered_faults param
 static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id, bool registered_faults){
-    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(opcode, false, 1);
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(opcode);
     if (!message_pdu) return NULL;
 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);

@@ -616,9 +616,7 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
 }
 
 // mesh_message_t builder
-mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode, bool segmented, uint8_t num_segments){
-    btstack_assert(num_segments > 0);
-    btstack_assert(segmented || (num_segments == 1));
+mesh_upper_transport_pdu_t *mesh_access_message_init(uint32_t opcode) {
 
     mesh_upper_transport_pdu_t * pdu = btstack_memory_mesh_upper_transport_pdu_get();
     if (!pdu) return NULL;
@@ -627,7 +625,6 @@ mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode, bool segm
 
     pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
     // TODO: handle segmented messages
-    btstack_assert(segmented == false);
 
     // use mesh_network_t as before
     mesh_network_pdu_t * segment = mesh_network_pdu_get();
@@ -679,11 +676,10 @@ void mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, 
 }
 
 // access message template
-mesh_upper_transport_pdu_t * mesh_access_setup_message(bool segmented, const mesh_access_message_t *message_template, ...){
-    btstack_assert(segmented == false);
+mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message_t *message_template, ...){
 
     // TODO: handle segmented messages
-    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode, segmented, 1);
+    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode);
     if (!message_pdu) return NULL;
 
     va_list argptr;
