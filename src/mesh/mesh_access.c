@@ -616,71 +616,104 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
 }
 
 // mesh_message_t builder
-mesh_upper_transport_pdu_t *mesh_access_message_init(uint32_t opcode) {
+
+void mesh_access_message_free(mesh_upper_transport_pdu_t * upper) {
+    btstack_assert(upper != NULL);
+    while (upper->segments) {
+        mesh_network_pdu_t *segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&upper->segments);
+        mesh_network_pdu_free(segment);
+    }
+    btstack_memory_mesh_upper_transport_pdu_free(upper);
+}
+
+// returns true if successful
+bool mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len){
+    uint16_t bytes_current_segment = 0;
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_last_item(&pdu->segments);
+    if (network_pdu){
+        bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX - network_pdu->len;
+    }
+    while (data_len > 0){
+        if (bytes_current_segment == 0){
+            network_pdu = (mesh_network_pdu_t *) mesh_network_pdu_get();
+            if (network_pdu == NULL) return false;
+            btstack_linked_list_add_tail(&pdu->segments, (btstack_linked_item_t *) network_pdu);
+            bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX;
+        }
+        uint16_t bytes_to_copy = btstack_min(bytes_current_segment, data_len);
+        (void) memcpy(&network_pdu->data[network_pdu->len], data, bytes_to_copy);
+        bytes_current_segment -= bytes_to_copy;
+        network_pdu->len      += bytes_to_copy;
+        data                  += bytes_to_copy;
+        data_len              -= bytes_to_copy;
+    }
+
+    // upgrade to segmented if needed
+    if (pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
+        if ((pdu->transmic_len == 8 ) || (pdu->len > 11)){
+            pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
+        }
+    }
+
+    return true;
+}
+
+mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode) {
 
     mesh_upper_transport_pdu_t * pdu = btstack_memory_mesh_upper_transport_pdu_get();
     if (!pdu) return NULL;
 
-    btstack_assert(false);
-
     pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
-    // TODO: handle segmented messages
+    pdu->transmic_len = 4;
+    pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
 
-    // use mesh_network_t as before
-    mesh_network_pdu_t * segment = mesh_network_pdu_get();
-    if (segment == NULL){
+    // add opcode
+    uint8_t opcode_buffer[3];
+    uint8_t opcode_len = mesh_access_setup_opcode(opcode_buffer, opcode);
+    bool ok = mesh_access_message_add_data(pdu, opcode_buffer, opcode_len);
+    if (!ok){
         btstack_memory_mesh_upper_transport_pdu_free(pdu);
-        return NULL;
+        pdu = NULL;
     }
-    btstack_linked_list_add(&pdu->segments, (btstack_linked_item_t *) segment);
-
-    // TODO: new types
-    pdu->len = mesh_access_setup_opcode(&segment->data[10], opcode) + 10;
-    // pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
-void mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
-    // TODO: handle segmented messages
-    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
-    segment->data[pdu->len++] = value;
+
+bool mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
+    return mesh_access_message_add_data(pdu, &value, 1);
 }
 
-void mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    // TODO: handle segmented messages
-    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
-    little_endian_store_16(segment->data, pdu->len, value);
-    pdu->len += 2;
+bool mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+    uint8_t buffer[2];
+    little_endian_store_16(buffer, 0, value);
+    return mesh_access_message_add_data(pdu, buffer, sizeof(buffer));
 }
 
-void mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    // TODO: handle segmented messages
-    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
-    little_endian_store_24(segment->data, pdu->len, value);
-    pdu->len += 3;
+bool mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+    uint8_t buffer[3];
+    little_endian_store_24(buffer, 0, value);
+    return mesh_access_message_add_data(pdu, buffer, sizeof(buffer));
 }
 
-void mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    // TODO: handle segmented messages
-    mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&pdu->segments);
-    little_endian_store_32(segment->data, pdu->len, value);
-    pdu->len += 4;
+bool mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value){
+    uint8_t buffer[4];
+    little_endian_store_32(buffer, 0, value);
+    return mesh_access_message_add_data(pdu, buffer, sizeof(buffer));
 }
 
-void mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier){
+bool mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier){
     if (mesh_model_is_bluetooth_sig(model_identifier)){
-        mesh_access_message_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
+        return mesh_access_message_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
     } else {
-        mesh_access_message_add_uint32( pdu, model_identifier );
+        return mesh_access_message_add_uint32( pdu, model_identifier );
     }
 }
 
 // access message template
 mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message_t *message_template, ...){
 
-    // TODO: handle segmented messages
-    mesh_upper_transport_pdu_t * message_pdu = mesh_access_message_init(message_template->opcode);
-    if (!message_pdu) return NULL;
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(message_template->opcode);
+    if (!upper_pdu) return NULL;
 
     va_list argptr;
     va_start(argptr, message_template);
@@ -689,31 +722,34 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message
     const char * format = message_template->format;
     uint16_t word;
     uint32_t longword;
-    while (*format){
+    bool ok = true;
+    while (ok && *format){
         switch (*format){
             case '1':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_message_add_uint8( message_pdu, word);
+                ok = mesh_access_message_add_uint8(upper_pdu, word);
                 break;
             case '2':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_message_add_uint16( message_pdu, word);
+                ok = mesh_access_message_add_uint16(upper_pdu, word);
                 break;
             case '3':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_message_add_uint24( message_pdu, longword);
+                ok = mesh_access_message_add_uint24(upper_pdu, longword);
                 break;
             case '4':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_message_add_uint32( message_pdu, longword);
-                mesh_access_message_add_uint32( message_pdu, longword);
+                ok = mesh_access_message_add_uint32(upper_pdu, longword);
+                if (ok == false) break;
+                ok = mesh_access_message_add_uint32(upper_pdu, longword);
                 break;
             case 'm':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_message_add_model_identifier( message_pdu, longword);
+                ok = mesh_access_message_add_model_identifier(upper_pdu, longword);
                 break;
             default:
-                log_error("Unsupported mesh message format specifier '%c", *format);
+                ok = false;
+                btstack_assert(false);
                 break;
         }
         format++;
@@ -721,7 +757,13 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message
 
     va_end(argptr);
 
-    return message_pdu;
+    if (ok == false){
+        // memory alloc failed
+        mesh_access_message_free(upper_pdu);
+        upper_pdu = NULL;
+    }
+
+    return upper_pdu;
 }
 
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode){
