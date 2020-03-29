@@ -158,17 +158,17 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
     
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int16_t level_value = (int16_t)mesh_access_parser_get_u16(&parser);
+    int16_t level_value = (int16_t) mesh_access_parser_get_uint16(&parser);
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
     
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
 
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
@@ -197,18 +197,18 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int32_t delta_value = mesh_access_parser_get_u32(&parser);
+    int32_t delta_value = mesh_access_parser_get_uint32(&parser);
 
     // The TID field is a transaction identifier indicating whether the message is
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser);
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
 
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
             
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
@@ -249,18 +249,18 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int32_t delta_value = (int32_t) mesh_access_parser_get_u16(&parser);
+    int32_t delta_value = (int32_t) mesh_access_parser_get_uint16(&parser);
     
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
     
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     } else {
         // transition speed is delta / num steps, without num steps, and without a default transition time, we cannot do this
         return;

@@ -538,31 +538,31 @@ uint16_t mesh_access_parser_available(mesh_access_parser_state_t * state){
     return state->len;
 }
 
-uint8_t mesh_access_parser_get_u8(mesh_access_parser_state_t * state){
+uint8_t mesh_access_parser_get_uint8(mesh_access_parser_state_t * state){
     uint8_t value = *state->data;
     mesh_access_parser_skip(state, 1);
     return value;
 }
 
-uint16_t mesh_access_parser_get_u16(mesh_access_parser_state_t * state){
+uint16_t mesh_access_parser_get_uint16(mesh_access_parser_state_t * state){
     uint16_t value = little_endian_read_16(state->data, 0);
     mesh_access_parser_skip(state, 2);
     return value;
 }
 
-uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state){
+uint32_t mesh_access_parser_get_uint24(mesh_access_parser_state_t * state){
     uint32_t value = little_endian_read_24(state->data, 0);
     mesh_access_parser_skip(state, 3);
     return value;
 }
 
-uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state){
+uint32_t mesh_access_parser_get_uint32(mesh_access_parser_state_t * state){
     uint32_t value = little_endian_read_32(state->data, 0);
     mesh_access_parser_skip(state, 4);
     return value;
 }
 
-void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * dest){
+void mesh_access_parser_get_uint128(mesh_access_parser_state_t * state, uint8_t * dest){
     reverse_128( state->data, dest);
     mesh_access_parser_skip(state, 16);
 }
@@ -580,20 +580,20 @@ void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * de
 uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser){
     uint16_t vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
     if (mesh_access_parser_available(parser) == 4){
-        vendor_id = mesh_access_parser_get_u16(parser);
+        vendor_id = mesh_access_parser_get_uint16(parser);
     }
-    uint16_t model_id = mesh_access_parser_get_u16(parser);
+    uint16_t model_id = mesh_access_parser_get_uint16(parser);
     return mesh_model_get_model_identifier(vendor_id, model_id);
 }
 
 uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t * parser){
-    uint16_t model_id = mesh_access_parser_get_u16(parser);
+    uint16_t model_id = mesh_access_parser_get_uint16(parser);
     return mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC, model_id);
 }
 
 uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser){
-    uint16_t vendor_id = mesh_access_parser_get_u16(parser);
-    uint16_t model_id  = mesh_access_parser_get_u16(parser);
+    uint16_t vendor_id = mesh_access_parser_get_uint16(parser);
+    uint16_t model_id  = mesh_access_parser_get_uint16(parser);
     return mesh_model_get_model_identifier(vendor_id, model_id);
 }
 

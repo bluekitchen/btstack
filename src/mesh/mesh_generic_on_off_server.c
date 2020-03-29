@@ -148,7 +148,7 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
+    uint8_t on_off_value = mesh_access_parser_get_uint8(&parser);
 
     // check for valid value
     if (on_off_value > 1) return false;
@@ -156,7 +156,7 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
-    uint8_t tid = mesh_access_parser_get_u8(&parser);
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
             
@@ -171,8 +171,8 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
             
             if (mesh_access_parser_available(&parser) == 2){
                 //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
-                transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-                delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+                transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+                delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
             } 
             mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt);
             mesh_access_state_changed(mesh_model);

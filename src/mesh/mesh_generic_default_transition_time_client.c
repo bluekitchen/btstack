@@ -125,7 +125,7 @@ static void generic_default_transition_time_status_handler(mesh_model_t *mesh_mo
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint8_t transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+    uint8_t transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
 
     uint8_t event[7] = {HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_GENERIC_DEFAULT_TRANSITION_TIME};
     int pos = 3;

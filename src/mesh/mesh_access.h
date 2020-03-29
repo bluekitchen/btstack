@@ -236,17 +236,16 @@ int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * o
 int  mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu);
 void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip);
 uint16_t mesh_access_parser_available(mesh_access_parser_state_t * state);
-uint8_t  mesh_access_parser_get_u8(mesh_access_parser_state_t * state);
-uint16_t mesh_access_parser_get_u16(mesh_access_parser_state_t * state);
-uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state);
-uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state);
-void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * dest);
+uint8_t  mesh_access_parser_get_uint8(mesh_access_parser_state_t * state);
+uint16_t mesh_access_parser_get_uint16(mesh_access_parser_state_t * state);
+uint32_t mesh_access_parser_get_uint24(mesh_access_parser_state_t * state);
+uint32_t mesh_access_parser_get_uint32(mesh_access_parser_state_t * state);
+void mesh_access_parser_get_uint128(mesh_access_parser_state_t * state, uint8_t * dest);
 void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest);
 void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest);
-uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
-
 uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t * parser);
 uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser);
+uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
 
 // message builder
 void mesh_access_message_free(mesh_upper_transport_pdu_t * upper);

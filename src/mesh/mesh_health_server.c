@@ -148,7 +148,7 @@ static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opco
 static void health_fault_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t company_id = mesh_access_parser_get_u16(&parser);
+    uint16_t company_id = mesh_access_parser_get_uint16(&parser);
 
     mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, true);
     if (!transport_pdu) return;
@@ -159,7 +159,7 @@ static void health_fault_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 static uint16_t process_message_fault_clear(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t company_id = mesh_access_parser_get_u16(&parser);
+    uint16_t company_id = mesh_access_parser_get_uint16(&parser);
 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     if (fault != NULL){
@@ -187,8 +187,8 @@ static void health_fault_clear_unacknowledged_handler(mesh_model_t *mesh_model, 
 static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu, bool acknowledged){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t  test_id    = mesh_access_parser_get_u8(&parser);
-    uint16_t company_id = mesh_access_parser_get_u16(&parser);
+    uint8_t  test_id    = mesh_access_parser_get_uint8(&parser);
+    uint16_t company_id = mesh_access_parser_get_uint16(&parser);
     
     uint16_t dest = mesh_pdu_src(pdu);
     uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
@@ -249,7 +249,7 @@ static void health_period_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void process_message_period_set(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t fast_period_divisor = mesh_access_parser_get_u8(&parser);
+    uint8_t fast_period_divisor = mesh_access_parser_get_uint8(&parser);
 
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     state->fast_period_divisor = fast_period_divisor;
@@ -281,7 +281,7 @@ static void health_attention_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
 static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t timer_s = mesh_access_parser_get_u8(&parser);
+    uint8_t timer_s = mesh_access_parser_get_uint8(&parser);
     mesh_attention_timer_set(timer_s);
     
     if (mesh_model->model_packet_handler == NULL) return;

@@ -93,7 +93,7 @@ static bool generic_default_transition_time_handle_set_message(mesh_model_t *mes
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t time_gdtt = mesh_access_parser_get_u8(&parser);
+    uint8_t time_gdtt = mesh_access_parser_get_uint8(&parser);
 
     uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(time_gdtt);
     // check for valid value

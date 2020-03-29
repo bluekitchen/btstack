@@ -221,13 +221,13 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     
-    uint8_t present_value = mesh_access_parser_get_u8(&parser);
+    uint8_t present_value = mesh_access_parser_get_uint8(&parser);
     uint8_t target_value = 0;
     uint8_t remaining_time_gdtt = 0;
 
     if (mesh_access_parser_available(&parser) == 2){
-        target_value = mesh_access_parser_get_u8(&parser);
-        remaining_time_gdtt = mesh_access_parser_get_u8(&parser);
+        target_value = mesh_access_parser_get_uint8(&parser);
+        remaining_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
 
     uint8_t event[14] = {HCI_EVENT_MESH_META, 12, MESH_SUBEVENT_GENERIC_LEVEL};
