@@ -247,8 +247,6 @@ uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t 
 uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser);
 uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
 
-// message builder
-void mesh_access_message_free(mesh_upper_transport_pdu_t * upper);
 mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode);
 bool mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len);
 bool mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value);

@@ -965,9 +965,12 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
 }
 
 void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
+    btstack_assert(pdu != NULL);
     mesh_network_pdu_t   * network_pdu;
     mesh_segmented_pdu_t   * message_pdu;
+    mesh_upper_transport_pdu_t * upper_pdu;
     switch (pdu->pdu_type) {
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
         case MESH_PDU_TYPE_NETWORK:
             network_pdu = (mesh_network_pdu_t *) pdu;
             mesh_network_pdu_free(network_pdu);
@@ -975,6 +978,16 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_SEGMENTED:
             message_pdu = (mesh_segmented_pdu_t *) pdu;
             mesh_message_pdu_free(message_pdu);
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+        case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
+        case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
+            upper_pdu = (mesh_upper_transport_pdu_t *) pdu;
+            while (upper_pdu->segments) {
+                mesh_network_pdu_t *segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&upper_pdu->segments);
+                mesh_network_pdu_free(segment);
+            }
+            btstack_memory_mesh_upper_transport_pdu_free(upper_pdu);
+            break;
         default:
             btstack_assert(false);
             break;

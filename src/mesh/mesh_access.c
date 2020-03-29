@@ -617,15 +617,6 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
 
 // mesh_message_t builder
 
-void mesh_access_message_free(mesh_upper_transport_pdu_t * upper) {
-    btstack_assert(upper != NULL);
-    while (upper->segments) {
-        mesh_network_pdu_t *segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&upper->segments);
-        mesh_network_pdu_free(segment);
-    }
-    btstack_memory_mesh_upper_transport_pdu_free(upper);
-}
-
 // returns true if successful
 bool mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len){
     uint16_t bytes_current_segment = 0;
@@ -759,7 +750,7 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message
 
     if (ok == false){
         // memory alloc failed
-        mesh_access_message_free(upper_pdu);
+        mesh_upper_transport_pdu_free((mesh_pdu_t *) upper_pdu);
         upper_pdu = NULL;
     }
 
