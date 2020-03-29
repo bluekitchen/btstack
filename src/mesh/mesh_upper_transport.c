@@ -1287,3 +1287,6 @@ bool mesh_upper_transport_message_add_uint32(mesh_upper_transport_pdu_t * pdu, u
     little_endian_store_32(buffer, 0, value);
     return mesh_upper_transport_message_add_data(pdu, buffer, sizeof(buffer));
 }
+
+void mesh_upper_transport_message_finalize(mesh_upper_transport_pdu_t * pdu){
+}

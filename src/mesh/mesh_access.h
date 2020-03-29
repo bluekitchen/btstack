@@ -254,6 +254,7 @@ bool mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t v
 bool mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value);
 bool mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value);
 bool mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier);
+void mesh_access_message_finalize(mesh_upper_transport_pdu_t * pdu);
 
 // message builder using template
 mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message_t *message_template, ...);

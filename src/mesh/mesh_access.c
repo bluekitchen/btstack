@@ -622,13 +622,6 @@ bool mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_
     bool ok = mesh_upper_transport_message_add_data(pdu, data, data_len);
     if (!ok) return false;
 
-    // upgrade to segmented if needed
-    if (pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
-        if ((pdu->transmic_len == 8 ) || (pdu->len > 11)){
-            pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
-        }
-    }
-
     return true;
 }
 
@@ -646,7 +639,6 @@ mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode) {
     }
     return pdu;
 }
-
 
 bool mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
     return mesh_access_message_add_data(pdu, &value, 1);
@@ -676,6 +668,17 @@ bool mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, 
     } else {
         return mesh_access_message_add_uint32( pdu, model_identifier );
     }
+}
+
+void mesh_access_message_finalize(mesh_upper_transport_pdu_t * pdu){
+    // upgrade to segmented if needed
+    if (pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
+        if ((pdu->transmic_len == 8 ) || (pdu->len > 11)){
+            pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
+        }
+    }
+
+    mesh_upper_transport_message_finalize(pdu);
 }
 
 // access message template
@@ -726,7 +729,10 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message
 
     va_end(argptr);
 
-    if (ok == false){
+    if (ok){
+        // finalize
+        mesh_access_message_finalize(upper_pdu);
+    } else {
         // memory alloc failed
         mesh_upper_transport_pdu_free((mesh_pdu_t *) upper_pdu);
         upper_pdu = NULL;
