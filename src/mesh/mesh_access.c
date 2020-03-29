@@ -54,6 +54,7 @@
 #include "mesh/mesh_proxy.h"
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/mesh.h"
+#include "mesh_upper_transport.h"
 
 #define MEST_TRANSACTION_TIMEOUT_MS  6000
 
@@ -616,28 +617,10 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
 }
 
 // mesh_message_t builder
-
-// returns true if successful
 bool mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len){
-    uint16_t bytes_current_segment = 0;
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_last_item(&pdu->segments);
-    if (network_pdu){
-        bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX - network_pdu->len;
-    }
-    while (data_len > 0){
-        if (bytes_current_segment == 0){
-            network_pdu = (mesh_network_pdu_t *) mesh_network_pdu_get();
-            if (network_pdu == NULL) return false;
-            btstack_linked_list_add_tail(&pdu->segments, (btstack_linked_item_t *) network_pdu);
-            bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX;
-        }
-        uint16_t bytes_to_copy = btstack_min(bytes_current_segment, data_len);
-        (void) memcpy(&network_pdu->data[network_pdu->len], data, bytes_to_copy);
-        bytes_current_segment -= bytes_to_copy;
-        network_pdu->len      += bytes_to_copy;
-        data                  += bytes_to_copy;
-        data_len              -= bytes_to_copy;
-    }
+
+    bool ok = mesh_upper_transport_message_add_data(pdu, data, data_len);
+    if (!ok) return false;
 
     // upgrade to segmented if needed
     if (pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
@@ -650,13 +633,8 @@ bool mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_
 }
 
 mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode) {
-
-    mesh_upper_transport_pdu_t * pdu = btstack_memory_mesh_upper_transport_pdu_get();
+    mesh_upper_transport_pdu_t * pdu = mesh_upper_transport_message_init(MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
     if (!pdu) return NULL;
-
-    pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UNSEGMENTED;
-    pdu->transmic_len = 4;
-    pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
 
     // add opcode
     uint8_t opcode_buffer[3];
