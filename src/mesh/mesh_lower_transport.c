@@ -529,7 +529,8 @@ static void mesh_lower_transport_process_segment(mesh_segmented_pdu_t * message_
 
     // last segment -> store len
     if (seg_o == seg_n){
-        message_pdu->len = (seg_n * 12) + segment_len;
+        uint8_t max_segment_len = mesh_network_control(network_pdu) ? 8 : 12;
+        message_pdu->len = (seg_n * max_segment_len) + segment_len;
 #ifdef LOG_LOWER_TRANSPORT
         printf("Assembled payload len %u\n", message_pdu->len);
 #endif
