@@ -48,6 +48,20 @@ extern "C"
 {
 #endif
 
+// upper transport message builder
+typedef struct {
+    mesh_upper_transport_pdu_t  * pdu;
+} mesh_upper_transport_builder_t;
+
+void mesh_upper_transport_message_init(mesh_upper_transport_builder_t * builder, mesh_pdu_type_t pdu_type);
+void mesh_upper_transport_message_add_data(mesh_upper_transport_builder_t * builder, const uint8_t * data, uint16_t data_len);
+void mesh_upper_transport_message_add_uint8(mesh_upper_transport_builder_t * builder, uint8_t value);
+void mesh_upper_transport_message_add_uint16(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_upper_transport_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_upper_transport_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value);
+mesh_upper_transport_pdu_t * mesh_upper_transport_message_finalize(mesh_upper_transport_builder_t * builder);
+
+
 void mesh_upper_transport_init(void);
 
 void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
@@ -76,15 +90,6 @@ uint8_t mesh_upper_transport_setup_access_pdu(mesh_pdu_t * pdu, uint16_t netkey_
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 
 void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
-
-// upper transport message builder
-mesh_upper_transport_pdu_t * mesh_upper_transport_message_init(mesh_pdu_type_t pdu_type);
-void mesh_upper_transport_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len);
-void mesh_upper_transport_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value);
-void mesh_upper_transport_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value);
-void mesh_upper_transport_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value);
-void mesh_upper_transport_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value);
-bool mesh_upper_transport_message_finalize(mesh_upper_transport_pdu_t * pdu);
 
 // test
 void mesh_upper_transport_dump(void);

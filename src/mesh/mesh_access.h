@@ -48,6 +48,7 @@
 #include "mesh/mesh_lower_transport.h"
 #include "mesh/mesh_keys.h"
 #include "mesh/mesh_node.h"
+#include "mesh_upper_transport.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -247,14 +248,14 @@ uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t 
 uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser);
 uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
 
-mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode);
-void mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len);
-void mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value);
-void mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value);
-void mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value);
-void mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value);
-void mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier);
-bool mesh_access_message_finalize(mesh_upper_transport_pdu_t * pdu);
+void mesh_access_message_init(mesh_upper_transport_builder_t * builder, uint32_t opcode);
+void mesh_access_message_add_data(mesh_upper_transport_builder_t * builder, const uint8_t * data, uint16_t data_len);
+void mesh_access_message_add_uint8(mesh_upper_transport_builder_t * builder, uint8_t value);
+void mesh_access_message_add_uint16(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_access_message_add_model_identifier(mesh_upper_transport_builder_t * builder, uint32_t model_identifier);
+mesh_upper_transport_pdu_t * mesh_access_message_finalize(mesh_upper_transport_builder_t * builder);
 
 // message builder using template
 mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message_t *message_template, ...);

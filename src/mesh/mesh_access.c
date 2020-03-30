@@ -617,61 +617,62 @@ static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
 }
 
 // mesh_message_t builder
-void mesh_access_message_add_data(mesh_upper_transport_pdu_t * pdu, const uint8_t * data, uint16_t data_len){
-    mesh_upper_transport_message_add_data(pdu, data, data_len);
-}
 
-mesh_upper_transport_pdu_t * mesh_access_message_init(uint32_t opcode) {
-    mesh_upper_transport_pdu_t * pdu = mesh_upper_transport_message_init(MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
-    if (!pdu) return NULL;
+void mesh_access_message_init(mesh_upper_transport_builder_t * builder, uint32_t opcode) {
+    mesh_upper_transport_message_init(builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
 
     // add opcode
     uint8_t opcode_buffer[3];
     uint8_t opcode_len = mesh_access_setup_opcode(opcode_buffer, opcode);
-    mesh_access_message_add_data(pdu, opcode_buffer, opcode_len);
-    return pdu;
+    mesh_access_message_add_data(builder, opcode_buffer, opcode_len);
 }
 
-void mesh_access_message_add_uint8(mesh_upper_transport_pdu_t * pdu, uint8_t value){
-    mesh_upper_transport_message_add_uint8(pdu, value);
+void mesh_access_message_add_data(mesh_upper_transport_builder_t * pdu, const uint8_t * data, uint16_t data_len){
+    mesh_upper_transport_message_add_data(pdu, data, data_len);
 }
 
-void mesh_access_message_add_uint16(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    mesh_upper_transport_message_add_uint16(pdu, value);
+void mesh_access_message_add_uint8(mesh_upper_transport_builder_t * builder, uint8_t value){
+    mesh_upper_transport_message_add_uint8(builder, value);
 }
 
-void mesh_access_message_add_uint24(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    mesh_upper_transport_message_add_uint24(pdu, value);
+void mesh_access_message_add_uint16(mesh_upper_transport_builder_t * builder, uint16_t value){
+    mesh_upper_transport_message_add_uint16(builder, value);
 }
 
-void mesh_access_message_add_uint32(mesh_upper_transport_pdu_t * pdu, uint16_t value){
-    mesh_upper_transport_message_add_uint32(pdu, value);
+void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value){
+    mesh_upper_transport_message_add_uint24(builder, value);
 }
 
-void mesh_access_message_add_model_identifier(mesh_upper_transport_pdu_t * pdu, uint32_t model_identifier){
+void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value){
+    mesh_upper_transport_message_add_uint32(builder, value);
+}
+
+void mesh_access_message_add_model_identifier(mesh_upper_transport_builder_t * builder, uint32_t model_identifier){
     if (mesh_model_is_bluetooth_sig(model_identifier)){
-        return mesh_access_message_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
+        return mesh_access_message_add_uint16(builder, mesh_model_get_model_id(model_identifier) );
     } else {
-        return mesh_access_message_add_uint32( pdu, model_identifier );
+        return mesh_access_message_add_uint32(builder, model_identifier );
     }
 }
 
-bool mesh_access_message_finalize(mesh_upper_transport_pdu_t * pdu){
+mesh_upper_transport_pdu_t * mesh_access_message_finalize(mesh_upper_transport_builder_t * builder){
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_upper_transport_message_finalize(builder);
+    if (upper_pdu == NULL) return NULL;
+
     // upgrade to segmented if needed
-    if (pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
-        if ((pdu->transmic_len == 8 ) || (pdu->len > 11)){
-            pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
+    if (upper_pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
+        if ((upper_pdu->transmic_len == 8 ) || (upper_pdu->len > 11)){
+            upper_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
         }
     }
-
-    return mesh_upper_transport_message_finalize(pdu);
+    return upper_pdu;
 }
 
 // access message template
 mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message_t *message_template, ...){
 
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(message_template->opcode);
-    if (!upper_pdu) return NULL;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, message_template->opcode);
 
     va_list argptr;
     va_start(argptr, message_template);
@@ -684,23 +685,23 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message
         switch (*format){
             case '1':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_message_add_uint8(upper_pdu, word);
+                mesh_access_message_add_uint8(&builder, word);
                 break;
             case '2':
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                mesh_access_message_add_uint16(upper_pdu, word);
+                mesh_access_message_add_uint16(&builder, word);
                 break;
             case '3':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_message_add_uint24(upper_pdu, longword);
+                mesh_access_message_add_uint24(&builder, longword);
                 break;
             case '4':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_message_add_uint32(upper_pdu, longword);
+                mesh_access_message_add_uint32(&builder, longword);
                 break;
             case 'm':
                 longword = va_arg(argptr, uint32_t);
-                mesh_access_message_add_model_identifier(upper_pdu, longword);
+                mesh_access_message_add_model_identifier(&builder, longword);
                 break;
             default:
                 btstack_assert(false);
@@ -711,15 +712,7 @@ mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message
 
     va_end(argptr);
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-
-    if (!ok){
-        // memory alloc failed
-        mesh_upper_transport_pdu_free((mesh_pdu_t *) upper_pdu);
-        upper_pdu = NULL;
-    }
-
-    return upper_pdu;
+    return mesh_access_message_finalize(&builder);
 }
 
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode){

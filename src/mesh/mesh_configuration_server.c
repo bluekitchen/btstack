@@ -245,21 +245,20 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
 
     printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
 
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(
-            MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
-    if (!upper_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
 
     // page 0
-    mesh_access_message_add_uint8(upper_pdu, 0);
+    mesh_access_message_add_uint8(&builder, 0);
 
     // CID
-    mesh_access_message_add_uint16(upper_pdu, mesh_node_get_company_id());
+    mesh_access_message_add_uint16(&builder, mesh_node_get_company_id());
     // PID
-    mesh_access_message_add_uint16(upper_pdu, mesh_node_get_product_id());
+    mesh_access_message_add_uint16(&builder, mesh_node_get_product_id());
     // VID
-    mesh_access_message_add_uint16(upper_pdu, mesh_node_get_product_version_id());
+    mesh_access_message_add_uint16(&builder, mesh_node_get_product_version_id());
     // CRPL - number of protection list entries
-    mesh_access_message_add_uint16(upper_pdu, 1);
+    mesh_access_message_add_uint16(&builder, 1);
     // Features - Relay, Proxy, Friend, Lower Power, ...
     uint16_t features = 0;
 #ifdef ENABLE_MESH_RELAY
@@ -268,7 +267,7 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
 #ifdef ENABLE_MESH_PROXY_SERVER
     features |= 2;
 #endif
-    mesh_access_message_add_uint16(upper_pdu, features);
+    mesh_access_message_add_uint16(&builder, features);
 
     mesh_element_iterator_t element_it;
     mesh_element_iterator_init(&element_it);
@@ -276,11 +275,11 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
         mesh_element_t * element = mesh_element_iterator_next(&element_it);
 
         // Loc
-        mesh_access_message_add_uint16(upper_pdu, element->loc);
+        mesh_access_message_add_uint16(&builder, element->loc);
         // NumS
-        mesh_access_message_add_uint8(upper_pdu, element->models_count_sig);
+        mesh_access_message_add_uint8(&builder, element->models_count_sig);
         // NumV
-        mesh_access_message_add_uint8(upper_pdu, element->models_count_vendor);
+        mesh_access_message_add_uint8(&builder, element->models_count_vendor);
 
         mesh_model_iterator_t model_it;
 
@@ -289,22 +288,18 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_message_add_model_identifier(upper_pdu, model->model_identifier);
+            mesh_access_message_add_model_identifier(&builder, model->model_identifier);
         }
         // Vendor Models
         mesh_model_iterator_init(&model_it, element);
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_message_add_model_identifier(upper_pdu, model->model_identifier);
+            mesh_access_message_add_model_identifier(&builder, model->model_identifier);
         }
     }
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-    if (!ok){
-        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
-        return;
-    }
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
@@ -570,22 +565,18 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
     UNUSED(mesh_model);
 
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
-    if (!upper_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, MESH_FOUNDATION_OPERATION_NETKEY_LIST);
 
     // add list of netkey indexes
     mesh_network_key_iterator_t it;
     mesh_network_key_iterator_init(&it);
     while (mesh_network_key_iterator_has_more(&it)){
         mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
-        mesh_access_message_add_uint16(upper_pdu, network_key->netkey_index);
+        mesh_access_message_add_uint16(&builder, network_key->netkey_index);
     }
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-    if (!ok){
-        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
-        return;
-    }
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
@@ -813,8 +804,8 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_index_of_list){
     UNUSED(mesh_model);
 
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST);
-    if (!upper_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, MESH_FOUNDATION_OPERATION_APPKEY_LIST);
 
     // check netkey_index is valid
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index_of_list);
@@ -824,25 +815,21 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     } else {
         status = MESH_FOUNDATION_STATUS_SUCCESS;
     }
-    mesh_access_message_add_uint8(upper_pdu, status);
-    mesh_access_message_add_uint16(upper_pdu, netkey_index_of_list);
+    mesh_access_message_add_uint8(&builder, status);
+    mesh_access_message_add_uint16(&builder, netkey_index_of_list);
 
     // add list of appkey indexes
     mesh_transport_key_iterator_t it;
     mesh_transport_key_iterator_init(&it, netkey_index_of_list);
     while (mesh_transport_key_iterator_has_more(&it)){
         mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
-        mesh_access_message_add_uint16(upper_pdu, transport_key->appkey_index);
+        mesh_access_message_add_uint16(&builder, transport_key->appkey_index);
     }
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-    if (!ok){
-        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
-        return;
-    }
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
     // send as segmented access pdu
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) &builder);
 }
 
 static void config_appkey_add_or_update_aid(void *arg){
@@ -1053,13 +1040,13 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
         opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST;
     }
 
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(opcode);
-    if (!upper_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, opcode);
 
     // setup segmented message
-    mesh_access_message_add_uint8(upper_pdu, status);
-    mesh_access_message_add_uint16(upper_pdu, element_address);
-    mesh_access_message_add_model_identifier(upper_pdu, model_identifier);
+    mesh_access_message_add_uint8(&builder, status);
+    mesh_access_message_add_uint16(&builder, element_address);
+    mesh_access_message_add_model_identifier(&builder, model_identifier);
 
     if (target_model != NULL){
         uint16_t i;
@@ -1071,17 +1058,13 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
                 if (virtual_address == NULL) continue;
                 address = virtual_address->hash;
             }
-            mesh_access_message_add_uint16(upper_pdu, address);
+            mesh_access_message_add_uint16(&builder, address);
         }
     }
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-    if (!ok){
-        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
-        return;
-    }
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) &builder);
 }
 
 static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1371,15 +1354,15 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
         opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST;
     }
 
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(opcode);
-    if (!upper_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, opcode);
 
-    mesh_access_message_add_uint8(upper_pdu, status);
-    mesh_access_message_add_uint16(upper_pdu, element_address);
+    mesh_access_message_add_uint8(&builder, status);
+    mesh_access_message_add_uint16(&builder, element_address);
     if (mesh_model_is_bluetooth_sig(model_identifier)) {
-        mesh_access_message_add_uint16(upper_pdu, mesh_model_get_model_id(model_identifier));
+        mesh_access_message_add_uint16(&builder, mesh_model_get_model_id(model_identifier));
     } else {
-        mesh_access_message_add_uint32(upper_pdu, model_identifier);
+        mesh_access_message_add_uint32(&builder, model_identifier);
     }
     
     // add list of appkey indexes
@@ -1388,15 +1371,11 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
         for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
             uint16_t appkey_index = mesh_model->appkey_indices[i];
             if (appkey_index == MESH_APPKEY_INVALID) continue;
-            mesh_access_message_add_uint16(upper_pdu, appkey_index);
+            mesh_access_message_add_uint16(&builder, appkey_index);
         }
     }
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-    if (!ok){
-        mesh_upper_transport_pdu_free((mesh_pdu_t*) upper_pdu);
-        return;
-    }
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);

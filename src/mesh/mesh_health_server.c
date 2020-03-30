@@ -120,34 +120,30 @@ static mesh_pdu_t * health_attention_status(void){
 
 // report fault status - used for both current as well as registered faults, see registered_faults param
 static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id, bool registered_faults){
-    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_init(opcode);
-    if (!upper_pdu) return NULL;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, opcode);
 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     if (fault == NULL){
         // no fault state with company_id found
-        mesh_access_message_add_uint8(upper_pdu, 0);
-        mesh_access_message_add_uint16(upper_pdu, company_id);
+        mesh_access_message_add_uint8(&builder, 0);
+        mesh_access_message_add_uint16(&builder, company_id);
     } else {
-        mesh_access_message_add_uint8(upper_pdu, fault->test_id);
-        mesh_access_message_add_uint16(upper_pdu, fault->company_id);
+        mesh_access_message_add_uint8(&builder, fault->test_id);
+        mesh_access_message_add_uint16(&builder, fault->company_id);
         int i;
         if (registered_faults){
             for (i = 0; i < fault->num_registered_faults; i++){
-                 mesh_access_message_add_uint8(upper_pdu, fault->registered_faults[i]);
+                 mesh_access_message_add_uint8(&builder, fault->registered_faults[i]);
             }
         }  else {
             for (i = 0; i < fault->num_current_faults; i++){
-                 mesh_access_message_add_uint8(upper_pdu, fault->current_faults[i]);
+                 mesh_access_message_add_uint8(&builder, fault->current_faults[i]);
             }
         }
     }
 
-    bool ok = mesh_access_message_finalize(upper_pdu);
-    if (!ok){
-        mesh_upper_transport_pdu_free((mesh_pdu_t*)upper_pdu);
-        return NULL;
-    }
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
     return (mesh_pdu_t *) upper_pdu;
 }
