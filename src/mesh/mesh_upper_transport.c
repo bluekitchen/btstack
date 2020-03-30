@@ -1237,6 +1237,7 @@ void mesh_upper_transport_message_init(mesh_upper_transport_builder_t * builder,
     builder->pdu = btstack_memory_mesh_upper_transport_pdu_get();
     if (!builder->pdu) return;
 
+    builder->segment = NULL;
     builder->pdu->pdu_header.pdu_type = pdu_type;
     builder->pdu->transmic_len = 4;
     builder->pdu->ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
@@ -1249,25 +1250,24 @@ void mesh_upper_transport_message_add_data(mesh_upper_transport_builder_t * buil
     if (builder->pdu == NULL) return;
 
     uint16_t bytes_current_segment = 0;
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_last_item(&builder->pdu->segments);
-    if (network_pdu){
-        bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX - network_pdu->len;
+    if (builder->segment){
+        bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX - builder->segment->len;
     }
     while (data_len > 0){
         if (bytes_current_segment == 0){
-            network_pdu = (mesh_network_pdu_t *) mesh_network_pdu_get();
-            if (network_pdu == NULL) {
+            builder->segment = (mesh_network_pdu_t *) mesh_network_pdu_get();
+            if (builder->segment == NULL) {
                 mesh_upper_transport_pdu_free((mesh_pdu_t *) builder->pdu);
                 builder->pdu = NULL;
                 return;
             }
-            btstack_linked_list_add_tail(&builder->pdu->segments, (btstack_linked_item_t *) network_pdu);
+            btstack_linked_list_add_tail(&builder->pdu->segments, (btstack_linked_item_t *) builder->segment);
             bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX;
         }
         uint16_t bytes_to_copy = btstack_min(bytes_current_segment, data_len);
-        (void) memcpy(&network_pdu->data[network_pdu->len], data, bytes_to_copy);
+        (void) memcpy(&builder->segment->data[builder->segment->len], data, bytes_to_copy);
+        builder->segment->len += bytes_to_copy;
         bytes_current_segment -= bytes_to_copy;
-        network_pdu->len      += bytes_to_copy;
         data                  += bytes_to_copy;
         data_len              -= bytes_to_copy;
     }

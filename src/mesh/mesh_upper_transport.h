@@ -51,6 +51,7 @@ extern "C"
 // upper transport message builder
 typedef struct {
     mesh_upper_transport_pdu_t  * pdu;
+    mesh_network_pdu_t * segment;
 } mesh_upper_transport_builder_t;
 
 void mesh_upper_transport_message_init(mesh_upper_transport_builder_t * builder, mesh_pdu_type_t pdu_type);
