@@ -182,11 +182,12 @@ static void mesh_segmented_pdu_flatten(btstack_linked_list_t * segments, uint8_t
     while (btstack_linked_list_iterator_has_next(&it)) {
         mesh_network_pdu_t *segment = (mesh_network_pdu_t *) btstack_linked_list_iterator_next(&it);
         btstack_assert(segment->pdu_header.pdu_type == MESH_PDU_TYPE_NETWORK);
-        // get segment n
-        uint8_t *lower_transport_pdu = mesh_network_pdu_data(segment);
-        uint8_t seg_o = (big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
-        uint8_t *segment_data = &lower_transport_pdu[4];
-        (void) memcpy(&buffer[seg_o * segment_len], segment_data, segment_len);
+        uint8_t offset = 0;
+        while (offset < segment->len){
+            uint8_t seg_o = segment->data[offset++];
+            (void) memcpy(&buffer[seg_o * segment_len], &segment->data[offset], segment_len);
+            offset += segment_len;
+        }
     }
 }
 
@@ -424,6 +425,7 @@ static void mesh_upper_transport_validate_access_message_digest(void * arg){
         case MESH_PDU_TYPE_SEGMENTED:
             segmented_pdu = (mesh_segmented_pdu_t *) incoming_access_encrypted;
             mesh_segmented_pdu_flatten(&segmented_pdu->segments, 12, upper_transport_pdu_data_out);
+            mesh_print_hex("Encrypted Payload:", upper_transport_pdu_data_out, upper_transport_pdu_len);
             btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data_out, upper_transport_pdu_data_out,
                                              &mesh_upper_transport_validate_access_message_ccm, NULL);
             break;

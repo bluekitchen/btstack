@@ -524,12 +524,30 @@ static void mesh_lower_transport_process_segment(mesh_segmented_pdu_t * message_
     // mark as received
     message_pdu->block_ack |= (1<<seg_o);
 
-    // add to segments
-    btstack_linked_list_add(&message_pdu->segments, (btstack_linked_item_t *) network_pdu);
+    // store segment
+    uint8_t max_segment_len = mesh_network_control(network_pdu) ? 8 : 12;
+    mesh_network_pdu_t * latest_segment = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
+    if ((latest_segment != NULL) && ((MESH_NETWORK_PAYLOAD_MAX - latest_segment->len) > (max_segment_len  + 1))){
+        // store in last added segment if there is enough space available
+        latest_segment->data[latest_segment->len++] = seg_o;
+        (void) memcpy(&latest_segment->data[latest_segment->len], &lower_transport_pdu[4], segment_len);
+        latest_segment->len += segment_len;
+        // free buffer
+        mesh_network_message_processed_by_higher_layer(network_pdu);
+    } else {
+        // move to beginning
+        network_pdu->data[0] = seg_o;
+        uint8_t i;
+        for (i=0;i<segment_len;i++){
+            network_pdu->data[1+i] = network_pdu->data[13+i];
+        }
+        network_pdu->len = 1 + segment_len;
+        // add this buffer
+        btstack_linked_list_add(&message_pdu->segments, (btstack_linked_item_t *) network_pdu);
+    }
 
     // last segment -> store len
     if (seg_o == seg_n){
-        uint8_t max_segment_len = mesh_network_control(network_pdu) ? 8 : 12;
         message_pdu->len = (seg_n * max_segment_len) + segment_len;
 #ifdef LOG_LOWER_TRANSPORT
         printf("Assembled payload len %u\n", message_pdu->len);
