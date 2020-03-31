@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "btstack_chipset_atwilc3000.c"
+
 /*
  *  btstack_chipset_atwilc3000.c
  *
@@ -42,17 +44,23 @@
  *  
  */
 
-#define BTSTACK_FILE__ "btstack_chipset_atwilc3000.c"
-
 #include "btstack_config.h"
-#include "btstack_chipset_atwilc3000.h"
-#include "btstack_debug.h"
-
 
 #include <stddef.h>   /* NULL */
-#include <stdio.h> 
+#include <stdio.h>
 #include <string.h>   /* memcpy */
+
+#include "btstack_chipset_atwilc3000.h"
+#include "btstack_debug.h"
 #include "hci.h"
+
+// assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
+#if HCI_OUTGOING_PACKET_BUFFER_SIZE < (HCI_CMD_HEADER_SIZE + 255)
+#error "HCI_OUTGOING_PACKET_BUFFER_SIZE to small. Outgoing HCI packet buffer to small for largest HCI Command packet. Please set HCI_ACL_PAYLOAD_SIZE to 258 or higher."
+#endif
+#if HCI_INCOMING_PACKET_BUFFER_SIZE < (HCI_EVENT_HEADER_SIZE_HEADER_SIZE + 255)
+#error "HCI_INCOMING_PACKET_BUFFER_SIZE to small. Incoming HCI packet buffer to small for largest HCI Event packet. Please set HCI_ACL_PAYLOAD_SIZE to 257 or higher."
+#endif
 
 // Address to load firmware
 #define IRAM_START 0x80000000

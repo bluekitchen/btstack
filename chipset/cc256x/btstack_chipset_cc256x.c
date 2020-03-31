@@ -64,10 +64,19 @@
 #include "btstack_config.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_debug.h"
+#include "hci.h"
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
 #include <string.h>   /* memcpy */
+
+// assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
+#if HCI_OUTGOING_PACKET_BUFFER_SIZE < (HCI_CMD_HEADER_SIZE + 255)
+#error "HCI_OUTGOING_PACKET_BUFFER_SIZE to small. Outgoing HCI packet buffer to small for largest HCI Command packet. Please set HCI_ACL_PAYLOAD_SIZE to 258 or higher."
+#endif
+#if HCI_INCOMING_PACKET_BUFFER_SIZE < (HCI_EVENT_HEADER_SIZE_HEADER_SIZE + 255)
+#error "HCI_INCOMING_PACKET_BUFFER_SIZE to small. Incoming HCI packet buffer to small for largest HCI Event packet. Please set HCI_ACL_PAYLOAD_SIZE to 257 or higher."
+#endif
 
 #if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
 #include "hal_compat.h"
