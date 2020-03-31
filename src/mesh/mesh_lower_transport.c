@@ -54,10 +54,10 @@
 
 #define LOG_LOWER_TRANSPORT
 
+// prototypes
 static void mesh_lower_transport_run(void);
 static void mesh_lower_transport_outgoing_complete(void);
-static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu);
-static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_source_t * ts);
+static void mesh_lower_transport_outgoing_segment_transmission_timeout(btstack_timer_source_t * ts);
 
 
 // lower transport outgoing state
@@ -111,69 +111,16 @@ void mesh_segmented_pdu_free(mesh_segmented_pdu_t * message_pdu){
     btstack_memory_mesh_segmented_pdu_free(message_pdu);
 }
 
-static void mesh_lower_transport_report_segments_as_processed(mesh_segmented_pdu_t * message_pdu) {
+// INCOMING //
+
+static void mesh_lower_transport_incoming_report_segments_as_processed(mesh_segmented_pdu_t * message_pdu) {
     while (message_pdu->segments){
         mesh_network_pdu_t * segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_pdu->segments);
         mesh_network_message_processed_by_higher_layer(segment);
     }
 }
 
-
-
-static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
-    if (lower_transport_outgoing_message == NULL) return;
-
-    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
-    uint16_t seq_zero_pdu = big_endian_read_16(lower_transport_pdu, 1) >> 2;
-    uint16_t seq_zero_out = lower_transport_outgoing_message->seq & 0x1fff;
-    uint32_t block_ack = big_endian_read_32(lower_transport_pdu, 3);
-
-#ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Segment Acknowledgment message with seq_zero %06x, block_ack %08x - outgoing seq %06x, block_ack %08x\n",
-           seq_zero_pdu, block_ack, seq_zero_out, lower_transport_outgoing_message->block_ack);
-#endif
-
-    if (block_ack == 0){
-        // If a Segment Acknowledgment message with the BlockAck field set to 0x00000000 is received,
-        // then the Upper Transport PDU shall be immediately cancelled and the higher layers shall be notified that
-        // the Upper Transport PDU has been cancelled.
-#ifdef LOG_LOWER_TRANSPORT
-        printf("[+] Block Ack == 0 => Abort\n");
-#endif
-        if (lower_transport_outgoing_segment_queued){
-            lower_transport_outgoing_transmission_complete = true;
-        } else {
-            mesh_lower_transport_outgoing_complete();
-        }
-        return;
-    }
-    if (seq_zero_pdu != seq_zero_out){
-
-#ifdef LOG_LOWER_TRANSPORT
-        printf("[!] Seq Zero doesn't match\n");
-#endif
-        return;
-    }
-
-    lower_transport_outgoing_message->block_ack &= ~block_ack;
-#ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Updated block_ack %08x\n", lower_transport_outgoing_message->block_ack);
-#endif
-
-    if (lower_transport_outgoing_message->block_ack == 0){
-#ifdef LOG_LOWER_TRANSPORT
-        printf("[+] Sent complete\n");
-#endif
-
-        if (lower_transport_outgoing_segment_queued){
-            lower_transport_outgoing_transmission_complete = true;
-        } else {
-            mesh_lower_transport_outgoing_complete();
-        }
-    }
-}
-
-static void mesh_lower_transport_deliver_to_higher_layer(void){
+static void mesh_lower_transport_incoming_deliver_to_higher_layer(void){
     if (mesh_lower_transport_higher_layer_pdu == NULL && !btstack_linked_list_empty(&mesh_lower_transport_queued_for_higher_layer)){
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&mesh_lower_transport_queued_for_higher_layer);
 
@@ -195,33 +142,12 @@ static void mesh_lower_transport_deliver_to_higher_layer(void){
     }
 }
 
-static void mesh_lower_transport_queue_for_higher_layer(mesh_pdu_t * pdu){
+static void mesh_lower_transport_incoming_queue_for_higher_layer(mesh_pdu_t * pdu){
     btstack_linked_list_add_tail(&mesh_lower_transport_queued_for_higher_layer, (btstack_linked_item_t *) pdu);
-    mesh_lower_transport_deliver_to_higher_layer();
+    mesh_lower_transport_incoming_deliver_to_higher_layer();
 }
 
-static void mesh_lower_transport_process_unsegmented_control_message(mesh_network_pdu_t *network_pdu){
-    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
-    uint8_t  opcode = lower_transport_pdu[0];
-
-#ifdef LOG_LOWER_TRANSPORT
-    printf("Unsegmented Control message, outgoing message %p, opcode %x\n", lower_transport_outgoing_message, opcode);
-#endif
-
-    switch (opcode){
-        case 0:
-            mesh_lower_transport_process_segment_acknowledgement_message(network_pdu);
-            mesh_network_message_processed_by_higher_layer(network_pdu);
-            break;
-        default:
-            mesh_lower_transport_queue_for_higher_layer((mesh_pdu_t *) network_pdu);
-            break;
-    }
-}
-
-// ack / incomplete message
-
-static void mesh_lower_transport_setup_segmented_acknowledge_message(uint8_t * data, uint8_t obo, uint16_t seq_zero, uint32_t block_ack){
+static void mesh_lower_transport_incoming_setup_acknowledge_message(uint8_t * data, uint8_t obo, uint16_t seq_zero, uint32_t block_ack){
     // printf("ACK Upper Transport, seq_zero %x\n", seq_zero);
     data[0] = 0;    // SEG = 0, Opcode = 0
     big_endian_store_16( data, 1, (obo << 15) | (seq_zero << 2) | 0);    // OBO, SeqZero, RFU
@@ -231,10 +157,10 @@ static void mesh_lower_transport_setup_segmented_acknowledge_message(uint8_t * d
 #endif
 }
 
-static void mesh_lower_transport_send_ack(uint16_t netkey_index, uint8_t ttl, uint16_t dest, uint16_t seq_zero, uint32_t block_ack){
+static void mesh_lower_transport_incoming_send_ack(uint16_t netkey_index, uint8_t ttl, uint16_t dest, uint16_t seq_zero, uint32_t block_ack){
     // setup ack message
     uint8_t  ack_msg[7];
-    mesh_lower_transport_setup_segmented_acknowledge_message(ack_msg, 0, seq_zero, block_ack);
+    mesh_lower_transport_incoming_setup_acknowledge_message(ack_msg, 0, seq_zero, block_ack);
     //
     // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
     // if (ttl <= 1) return 0;
@@ -256,19 +182,19 @@ static void mesh_lower_transport_send_ack(uint16_t netkey_index, uint8_t ttl, ui
     mesh_network_send_pdu(network_pdu);
 }
 
-static void mesh_lower_transport_send_ack_for_transport_pdu(mesh_segmented_pdu_t * message_pdu){
-    uint16_t seq_zero = message_pdu->seq_zero;
-    uint8_t ttl = message_pdu->ctl_ttl & 0x7f;
-    uint16_t dest = message_pdu->src;
-    uint16_t netkey_index = message_pdu->netkey_index;
+static void mesh_lower_transport_incoming_send_ack_for_segmented_pdu(mesh_segmented_pdu_t * segmented_pdu){
+    uint16_t seq_zero = segmented_pdu->seq_zero;
+    uint8_t  ttl = segmented_pdu->ctl_ttl & 0x7f;
+    uint16_t dest = segmented_pdu->src;
+    uint16_t netkey_index = segmented_pdu->netkey_index;
 #ifdef LOG_LOWER_TRANSPORT
     printf("mesh_transport_send_ack_for_transport_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
-           message_pdu, netkey_index, ttl, seq_zero, mesh_node_get_primary_element_address(), dest);
+           segmented_pdu, netkey_index, ttl, seq_zero, mesh_node_get_primary_element_address(), dest);
 #endif
-    mesh_lower_transport_send_ack(netkey_index, ttl, dest, seq_zero, message_pdu->block_ack);
+    mesh_lower_transport_incoming_send_ack(netkey_index, ttl, dest, seq_zero, segmented_pdu->block_ack);
 }
 
-static void mesh_lower_transport_send_ack_for_network_pdu(mesh_network_pdu_t *network_pdu, uint16_t seq_zero, uint32_t block_ack) {
+static void mesh_lower_transport_incoming_send_ack_for_network_pdu(mesh_network_pdu_t *network_pdu, uint16_t seq_zero, uint32_t block_ack) {
     uint8_t ttl = mesh_network_ttl(network_pdu);
     uint16_t dest = mesh_network_src(network_pdu);
     uint16_t netkey_index = network_pdu->netkey_index;
@@ -276,132 +202,82 @@ static void mesh_lower_transport_send_ack_for_network_pdu(mesh_network_pdu_t *ne
     printf("mesh_transport_send_ack_for_network_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
            network_pdu, netkey_index, ttl, seq_zero, mesh_node_get_primary_element_address(), dest);
 #endif
-    mesh_lower_transport_send_ack(netkey_index, ttl, dest, seq_zero, block_ack);
+    mesh_lower_transport_incoming_send_ack(netkey_index, ttl, dest, seq_zero, block_ack);
 }
 
-static void mesh_lower_transport_incoming_stop_acknowledgment_timer(mesh_segmented_pdu_t *message_pdu){
-    if (!message_pdu->acknowledgement_timer_active) return;
-    message_pdu->acknowledgement_timer_active = 0;
-    btstack_run_loop_remove_timer(&message_pdu->acknowledgement_timer);
+static void mesh_lower_transport_incoming_stop_acknowledgment_timer(mesh_segmented_pdu_t *segmented_pdu){
+    if (!segmented_pdu->acknowledgement_timer_active) return;
+    segmented_pdu->acknowledgement_timer_active = 0;
+    btstack_run_loop_remove_timer(&segmented_pdu->acknowledgement_timer);
 }
 
-static void mesh_lower_transport_incoming_stop_incomplete_timer(mesh_segmented_pdu_t *message_pdu){
-    if (!message_pdu->incomplete_timer_active) return;
-    message_pdu->incomplete_timer_active = 0;
-    btstack_run_loop_remove_timer(&message_pdu->incomplete_timer);
+static void mesh_lower_transport_incoming_stop_incomplete_timer(mesh_segmented_pdu_t *segmented_pdu){
+    if (!segmented_pdu->incomplete_timer_active) return;
+    segmented_pdu->incomplete_timer_active = 0;
+    btstack_run_loop_remove_timer(&segmented_pdu->incomplete_timer);
 }
 
-static void mesh_lower_transport_outgoing_stop_acknowledgment_timer(mesh_segmented_pdu_t *message_pdu){
-    if (!message_pdu->acknowledgement_timer_active) return;
-    message_pdu->acknowledgement_timer_active = 0;
-    btstack_run_loop_remove_timer(&message_pdu->acknowledgement_timer);
-}
-
-static void mesh_lower_transport_outgoing_stop_incomplete_timer(mesh_segmented_pdu_t *message_pdu){
-    if (!message_pdu->incomplete_timer_active) return;
-    message_pdu->incomplete_timer_active = 0;
-    btstack_run_loop_remove_timer(&message_pdu->incomplete_timer);
-}
-
-// stops timers and updates reassembly engine
-static void mesh_lower_transport_rx_segmented_message_complete(mesh_segmented_pdu_t * message_pdu){
+static void mesh_lower_transport_incoming_segmented_message_complete(mesh_segmented_pdu_t * segmented_pdu){
     // set flag
-    message_pdu->message_complete = 1;
+    segmented_pdu->message_complete = 1;
     // stop timers
-    mesh_lower_transport_incoming_stop_acknowledgment_timer(message_pdu);
-    mesh_lower_transport_incoming_stop_incomplete_timer(message_pdu);
+    mesh_lower_transport_incoming_stop_acknowledgment_timer(segmented_pdu);
+    mesh_lower_transport_incoming_stop_incomplete_timer(segmented_pdu);
     // stop reassembly
-    mesh_peer_t * peer = mesh_peer_for_addr(message_pdu->src);
+    mesh_peer_t * peer = mesh_peer_for_addr(segmented_pdu->src);
     if (peer){
         peer->message_pdu = NULL;
     }
 }
 
-static void mesh_lower_transport_rx_ack_timeout(btstack_timer_source_t *ts){
-    mesh_segmented_pdu_t * message_pdu = (mesh_segmented_pdu_t *) btstack_run_loop_get_timer_context(ts);
+static void mesh_lower_transport_incoming_ack_timeout(btstack_timer_source_t *ts){
+    mesh_segmented_pdu_t * segmented_pdu = (mesh_segmented_pdu_t *) btstack_run_loop_get_timer_context(ts);
 #ifdef LOG_LOWER_TRANSPORT
-    printf("ACK: acknowledgement timer fired for %p, send ACK\n", message_pdu);
+    printf("ACK: acknowledgement timer fired for %p, send ACK\n", segmented_pdu);
 #endif
-    message_pdu->acknowledgement_timer_active = 0;
-    mesh_lower_transport_send_ack_for_transport_pdu(message_pdu);
+    segmented_pdu->acknowledgement_timer_active = 0;
+    mesh_lower_transport_incoming_send_ack_for_segmented_pdu(segmented_pdu);
 }
 
-static void mesh_lower_transport_rx_incomplete_timeout(btstack_timer_source_t *ts){
-    mesh_segmented_pdu_t * message_pdu = (mesh_segmented_pdu_t *) btstack_run_loop_get_timer_context(ts);
+static void mesh_lower_transport_incoming_incomplete_timeout(btstack_timer_source_t *ts){
+    mesh_segmented_pdu_t * segmented_pdu = (mesh_segmented_pdu_t *) btstack_run_loop_get_timer_context(ts);
 #ifdef LOG_LOWER_TRANSPORT
-    printf("mesh_transport_rx_incomplete_timeout for %p - give up\n", message_pdu);
+    printf("mesh_lower_transport_incoming_incomplete_timeout for %p - give up\n", segmented_pdu);
 #endif
-    mesh_lower_transport_rx_segmented_message_complete(message_pdu);
+    mesh_lower_transport_incoming_segmented_message_complete(segmented_pdu);
     // free segments
-    mesh_lower_transport_report_segments_as_processed(message_pdu);
+    mesh_lower_transport_incoming_report_segments_as_processed(segmented_pdu);
     // free message
-    btstack_memory_mesh_segmented_pdu_free(message_pdu);
+    btstack_memory_mesh_segmented_pdu_free(segmented_pdu);
 }
 
-static void mesh_lower_transport_start_rx_acknowledgment_timer(mesh_segmented_pdu_t * message_pdu, uint32_t timeout){
+static void mesh_lower_transport_incoming_start_acknowledgment_timer(mesh_segmented_pdu_t * segmented_pdu, uint32_t timeout){
 #ifdef LOG_LOWER_TRANSPORT
-    printf("ACK: start rx ack timer for %p, timeout %u ms\n", message_pdu, (int) timeout);
+    printf("ACK: start rx ack timer for %p, timeout %u ms\n", segmented_pdu, (int) timeout);
 #endif
-    btstack_run_loop_set_timer(&message_pdu->acknowledgement_timer, timeout);
-    btstack_run_loop_set_timer_handler(&message_pdu->acknowledgement_timer, &mesh_lower_transport_rx_ack_timeout);
-    btstack_run_loop_set_timer_context(&message_pdu->acknowledgement_timer, message_pdu);
-    btstack_run_loop_add_timer(&message_pdu->acknowledgement_timer);
-    message_pdu->acknowledgement_timer_active = 1;
+    btstack_run_loop_set_timer(&segmented_pdu->acknowledgement_timer, timeout);
+    btstack_run_loop_set_timer_handler(&segmented_pdu->acknowledgement_timer, &mesh_lower_transport_incoming_ack_timeout);
+    btstack_run_loop_set_timer_context(&segmented_pdu->acknowledgement_timer, segmented_pdu);
+    btstack_run_loop_add_timer(&segmented_pdu->acknowledgement_timer);
+    segmented_pdu->acknowledgement_timer_active = 1;
 }
 
-static void mesh_lower_transport_tx_restart_segment_transmission_timer(void){
-    // restart segment transmission timer for unicast dst
-    // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
-    uint32_t timeout = 200 + 50 * (lower_transport_outgoing_message->ctl_ttl & 0x7f);
-    if (lower_transport_outgoing_message->acknowledgement_timer_active){
-        btstack_run_loop_remove_timer(&lower_transport_outgoing_message->acknowledgement_timer);
-    }
-
-#ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower transport, segmented pdu %p, seq %06x: setup transmission timeout %u ms\n", lower_transport_outgoing_message,
-           lower_transport_outgoing_message->seq, (int) timeout);
-#endif
-
-    btstack_run_loop_set_timer(&lower_transport_outgoing_message->acknowledgement_timer, timeout);
-    btstack_run_loop_set_timer_handler(&lower_transport_outgoing_message->acknowledgement_timer, &mesh_lower_transport_segment_transmission_timeout);
-    btstack_run_loop_add_timer(&lower_transport_outgoing_message->acknowledgement_timer);
-    lower_transport_outgoing_message->acknowledgement_timer_active = 1;
-}
-
-static void mesh_lower_transport_incoming_restart_incomplete_timer(mesh_segmented_pdu_t * message_pdu, uint32_t timeout,
+static void mesh_lower_transport_incoming_restart_incomplete_timer(mesh_segmented_pdu_t * segmented_pdu, uint32_t timeout,
                                                                    void (*callback)(btstack_timer_source_t *ts)){
 #ifdef LOG_LOWER_TRANSPORT
-    printf("RX-(re)start incomplete timer for %p, timeout %u ms\n", message_pdu, (int) timeout);
+    printf("RX-(re)start incomplete timer for %p, timeout %u ms\n", segmented_pdu, (int) timeout);
 #endif
-    if (message_pdu->incomplete_timer_active){
-        btstack_run_loop_remove_timer(&message_pdu->incomplete_timer);
+    if (segmented_pdu->incomplete_timer_active){
+        btstack_run_loop_remove_timer(&segmented_pdu->incomplete_timer);
     }
-    btstack_run_loop_set_timer(&message_pdu->incomplete_timer, timeout);
-    btstack_run_loop_set_timer_handler(&message_pdu->incomplete_timer, callback);
-    btstack_run_loop_set_timer_context(&message_pdu->incomplete_timer, message_pdu);
-    btstack_run_loop_add_timer(&message_pdu->incomplete_timer);
-    message_pdu->incomplete_timer_active = 1;
+    btstack_run_loop_set_timer(&segmented_pdu->incomplete_timer, timeout);
+    btstack_run_loop_set_timer_handler(&segmented_pdu->incomplete_timer, callback);
+    btstack_run_loop_set_timer_context(&segmented_pdu->incomplete_timer, segmented_pdu);
+    btstack_run_loop_add_timer(&segmented_pdu->incomplete_timer);
+    segmented_pdu->incomplete_timer_active = 1;
 }
 
-static void mesh_lower_transport_outgoing_complete(void){
-    btstack_assert(lower_transport_outgoing_message != NULL);
-#ifdef LOG_LOWER_TRANSPORT
-    printf("mesh_lower_transport_outgoing_complete %p, ack timer active %u, incomplete active %u\n", lower_transport_outgoing_message,
-           lower_transport_outgoing_message->acknowledgement_timer_active, lower_transport_outgoing_message->incomplete_timer_active);
-#endif
-    // stop timers
-    mesh_lower_transport_outgoing_stop_acknowledgment_timer(lower_transport_outgoing_message);
-    mesh_lower_transport_outgoing_stop_incomplete_timer(lower_transport_outgoing_message);
-
-    lower_transport_outgoing_message = NULL;
-
-    // notify upper transport
-    mesh_segmented_pdu_t * pdu   = lower_transport_outgoing_message;
-    lower_transport_outgoing_message = NULL;
-    higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE, (mesh_pdu_t *) pdu);
-}
-
-static mesh_segmented_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
+static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
     uint16_t src = mesh_network_src(network_pdu);
     uint16_t seq_zero = ( big_endian_read_16(mesh_network_pdu_data(network_pdu), 1) >> 2) & 0x1fff;
 #ifdef LOG_LOWER_TRANSPORT
@@ -438,7 +314,7 @@ static mesh_segmented_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
 #ifdef LOG_LOWER_TRANSPORT
         printf("mesh_transport_pdu_for_segmented_message: segment for last completed message. send ack\n");
 #endif
-        mesh_lower_transport_send_ack_for_network_pdu(network_pdu, seq_zero, peer->block_ack);
+        mesh_lower_transport_incoming_send_ack_for_network_pdu(network_pdu, seq_zero, peer->block_ack);
         return NULL;
     }
 
@@ -489,7 +365,7 @@ static mesh_segmented_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
     }
 }
 
-static void mesh_lower_transport_process_segment(mesh_segmented_pdu_t * message_pdu, mesh_network_pdu_t * network_pdu){
+static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t * message_pdu, mesh_network_pdu_t * network_pdu){
 
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(network_pdu);
@@ -508,7 +384,7 @@ static void mesh_lower_transport_process_segment(mesh_segmented_pdu_t * message_
     uint8_t * segment_data = &lower_transport_pdu[4];
 
 #ifdef LOG_LOWER_TRANSPORT
-    printf("mesh_lower_transport_process_segment: seq zero %04x, seg_o %02x, seg_n %02x, transmic len: %u\n", seq_zero, seg_o, seg_n, message_pdu->transmic_len * 8);
+    printf("mesh_lower_transport_incoming_process_segment: seq zero %04x, seg_o %02x, seg_n %02x, transmic len: %u\n", seq_zero, seg_o, seg_n, message_pdu->transmic_len * 8);
     mesh_print_hex("Segment", segment_data, segment_len);
 #endif
 
@@ -565,41 +441,13 @@ static void mesh_lower_transport_process_segment(mesh_segmented_pdu_t * message_
     }
 
     // send ack
-    mesh_lower_transport_send_ack_for_transport_pdu(message_pdu);
+    mesh_lower_transport_incoming_send_ack_for_segmented_pdu(message_pdu);
 
     // forward to upper transport
-    mesh_lower_transport_queue_for_higher_layer((mesh_pdu_t *) message_pdu);
+    mesh_lower_transport_incoming_queue_for_higher_layer((mesh_pdu_t *) message_pdu);
 
     // mark as done
-    mesh_lower_transport_rx_segmented_message_complete(message_pdu);
-}
-
-static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network_pdu) {// segmented?
-    if (mesh_network_segmented(network_pdu)){
-        mesh_segmented_pdu_t * message_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
-        if (message_pdu) {
-            // start acknowledgment timer if inactive
-            if (message_pdu->acknowledgement_timer_active == 0){
-                // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
-                uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
-                mesh_lower_transport_start_rx_acknowledgment_timer(message_pdu, timeout);
-            }
-            // restart incomplete timer
-            mesh_lower_transport_incoming_restart_incomplete_timer(message_pdu, 10000, &mesh_lower_transport_rx_incomplete_timeout);
-            mesh_lower_transport_process_segment(message_pdu, network_pdu);
-        } else {
-            mesh_network_message_processed_by_higher_layer(network_pdu);
-        }
-    } else {
-        // control?
-        if (mesh_network_control(network_pdu)){
-            // unsegmented control message (not encrypted)
-            mesh_lower_transport_process_unsegmented_control_message(network_pdu);
-        } else {
-            // unsegmented access message (encrypted)
-            mesh_lower_transport_queue_for_higher_layer((mesh_pdu_t *) network_pdu);
-        }
-    }
+    mesh_lower_transport_incoming_segmented_message_complete(message_pdu);
 }
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
@@ -609,7 +457,7 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_SEGMENTED:
             // free segments
-            mesh_lower_transport_report_segments_as_processed((mesh_segmented_pdu_t *) pdu);
+            mesh_lower_transport_incoming_report_segments_as_processed((mesh_segmented_pdu_t *) pdu);
             mesh_segmented_pdu_free((mesh_segmented_pdu_t *) pdu);
             break;
         case MESH_PDU_TYPE_UNSEGMENTED:
@@ -620,45 +468,120 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
             btstack_assert(0);
             break;
     }
-    mesh_lower_transport_deliver_to_higher_layer();
+    mesh_lower_transport_incoming_deliver_to_higher_layer();
 }
 
-void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu){
-    mesh_peer_t * peer;
-    uint16_t src;
-    uint16_t seq;
-    switch (callback_type){
-        case MESH_NETWORK_PDU_RECEIVED:
-            src = mesh_network_src(network_pdu);
-            seq = mesh_network_seq(network_pdu);
-            peer = mesh_peer_for_addr(src);
-#ifdef LOG_LOWER_TRANSPORT
-            printf("Transport: received message. SRC %x, SEQ %x\n", src, seq);
-#endif
-            // validate seq
-            if (peer && seq > peer->seq){
-                // track seq
-                peer->seq = seq;
-                // process
-                mesh_lower_transport_process_network_pdu(network_pdu);
-                mesh_lower_transport_run();
-            } else {
-                // drop packet
-#ifdef LOG_LOWER_TRANSPORT
-                printf("Transport: drop packet - src/seq auth failed\n");
-#endif
-                mesh_network_message_processed_by_higher_layer(network_pdu);
-            }
-            break;
-        case MESH_NETWORK_PDU_SENT:
-            mesh_lower_transport_network_pdu_sent(network_pdu);
-            break;
-        default:
-            break;
+// OUTGOING //
+
+static void mesh_lower_transport_outgoing_setup_block_ack(mesh_segmented_pdu_t *message_pdu){
+    // setup block ack - set bit for segment to send, will be cleared on ack
+    int      ctl = message_pdu->ctl_ttl >> 7;
+    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
+    uint8_t  seg_n = (message_pdu->len - 1) / max_segment_len;
+    if (seg_n < 31){
+        message_pdu->block_ack = (1 << (seg_n+1)) - 1;
+    } else {
+        message_pdu->block_ack = 0xffffffff;
     }
 }
 
-static void mesh_lower_transport_setup_segment(mesh_segmented_pdu_t *message_pdu, uint8_t seg_o, mesh_network_pdu_t *network_pdu){
+static void mesh_lower_transport_outgoing_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
+    if (lower_transport_outgoing_message == NULL) return;
+
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
+    uint16_t seq_zero_pdu = big_endian_read_16(lower_transport_pdu, 1) >> 2;
+    uint16_t seq_zero_out = lower_transport_outgoing_message->seq & 0x1fff;
+    uint32_t block_ack = big_endian_read_32(lower_transport_pdu, 3);
+
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Segment Acknowledgment message with seq_zero %06x, block_ack %08x - outgoing seq %06x, block_ack %08x\n",
+           seq_zero_pdu, block_ack, seq_zero_out, lower_transport_outgoing_message->block_ack);
+#endif
+
+    if (block_ack == 0){
+        // If a Segment Acknowledgment message with the BlockAck field set to 0x00000000 is received,
+        // then the Upper Transport PDU shall be immediately cancelled and the higher layers shall be notified that
+        // the Upper Transport PDU has been cancelled.
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[+] Block Ack == 0 => Abort\n");
+#endif
+        if (lower_transport_outgoing_segment_queued){
+            lower_transport_outgoing_transmission_complete = true;
+        } else {
+            mesh_lower_transport_outgoing_complete();
+        }
+        return;
+    }
+    if (seq_zero_pdu != seq_zero_out){
+
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[!] Seq Zero doesn't match\n");
+#endif
+        return;
+    }
+
+    lower_transport_outgoing_message->block_ack &= ~block_ack;
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Updated block_ack %08x\n", lower_transport_outgoing_message->block_ack);
+#endif
+
+    if (lower_transport_outgoing_message->block_ack == 0){
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[+] Sent complete\n");
+#endif
+
+        if (lower_transport_outgoing_segment_queued){
+            lower_transport_outgoing_transmission_complete = true;
+        } else {
+            mesh_lower_transport_outgoing_complete();
+        }
+    }
+}
+
+static void mesh_lower_transport_outgoing_stop_acknowledgment_timer(mesh_segmented_pdu_t *segmented_pdu){
+    if (!segmented_pdu->acknowledgement_timer_active) return;
+    segmented_pdu->acknowledgement_timer_active = 0;
+    btstack_run_loop_remove_timer(&segmented_pdu->acknowledgement_timer);
+}
+
+static void mesh_lower_transport_outgoing_restart_segment_transmission_timer(mesh_segmented_pdu_t *segmented_pdu){
+    // restart segment transmission timer for unicast dst
+    // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
+    uint32_t timeout = 200 + 50 * (segmented_pdu->ctl_ttl & 0x7f);
+    if (segmented_pdu->acknowledgement_timer_active){
+        btstack_run_loop_remove_timer(&lower_transport_outgoing_message->acknowledgement_timer);
+    }
+
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: setup transmission timeout %u ms\n", segmented_pdu,
+           segmented_pdu->seq, (int) timeout);
+#endif
+
+    btstack_run_loop_set_timer(&segmented_pdu->acknowledgement_timer, timeout);
+    btstack_run_loop_set_timer_handler(&segmented_pdu->acknowledgement_timer, &mesh_lower_transport_outgoing_segment_transmission_timeout);
+    btstack_run_loop_set_timer_context(&segmented_pdu->acknowledgement_timer, lower_transport_outgoing_message);
+    btstack_run_loop_add_timer(&segmented_pdu->acknowledgement_timer);
+    segmented_pdu->acknowledgement_timer_active = 1;
+}
+
+static void mesh_lower_transport_outgoing_complete(void){
+    btstack_assert(lower_transport_outgoing_message != NULL);
+#ifdef LOG_LOWER_TRANSPORT
+    printf("mesh_lower_transport_outgoing_complete %p, ack timer active %u, incomplete active %u\n", lower_transport_outgoing_message,
+           lower_transport_outgoing_message->acknowledgement_timer_active, lower_transport_outgoing_message->incomplete_timer_active);
+#endif
+    // stop timers
+    mesh_lower_transport_outgoing_stop_acknowledgment_timer(lower_transport_outgoing_message);
+
+    lower_transport_outgoing_message = NULL;
+
+    // notify upper transport
+    mesh_segmented_pdu_t * pdu   = lower_transport_outgoing_message;
+    lower_transport_outgoing_message = NULL;
+    higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE, (mesh_pdu_t *) pdu);
+}
+
+static void mesh_lower_transport_outgoing_setup_segment(mesh_segmented_pdu_t *message_pdu, uint8_t seg_o, mesh_network_pdu_t *network_pdu){
 
     int ctl = message_pdu->ctl_ttl >> 7;
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
@@ -712,13 +635,13 @@ static void mesh_lower_transport_setup_segment(mesh_segmented_pdu_t *message_pdu
     mesh_network_setup_pdu(network_pdu, message_pdu->netkey_index, nid, 0, ttl, seq, src, dest, lower_transport_pdu_data, lower_transport_pdu_len);
 }
 
-static void mesh_lower_transport_send_next_segment(void){
+static void mesh_lower_transport_outgoing_send_next_segment(void){
     btstack_assert(lower_transport_outgoing_message != NULL);
 
-    #ifdef LOG_LOWER_TRANSPORT
+#ifdef LOG_LOWER_TRANSPORT
     printf("[+] Lower Transport, segmented pdu %p, seq %06x: send next segment\n", lower_transport_outgoing_message,
            lower_transport_outgoing_message->seq);
-    #endif
+#endif
 
     int ctl = lower_transport_outgoing_message->ctl_ttl >> 7;
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
@@ -767,11 +690,11 @@ static void mesh_lower_transport_send_next_segment(void){
 
     // restart segment transmission timer for unicast dst
     if (mesh_network_address_unicast(lower_transport_outgoing_message->dst)){
-        mesh_lower_transport_tx_restart_segment_transmission_timer();
+        mesh_lower_transport_outgoing_restart_segment_transmission_timer(lower_transport_outgoing_message);
     }
 
-    mesh_lower_transport_setup_segment(lower_transport_outgoing_message, lower_transport_outgoing_seg_o,
-                                       lower_transport_outgoing_segment);
+    mesh_lower_transport_outgoing_setup_segment(lower_transport_outgoing_message, lower_transport_outgoing_seg_o,
+                                                lower_transport_outgoing_segment);
 
 #ifdef LOG_LOWER_TRANSPORT
     printf("[+] Lower Transport, segmented pdu %p, seq %06x: send seg_o %x, seg_n %x\n", lower_transport_outgoing_message,
@@ -787,14 +710,14 @@ static void mesh_lower_transport_send_next_segment(void){
     mesh_network_send_pdu(lower_transport_outgoing_segment);
 }
 
-static void mesh_lower_transport_setup_sending_segmented_pdus(void){
+static void mesh_lower_transport_outgoing_setup_sending_segmented_pdus(void){
     printf("[+] Lower Transport, segmented pdu %p, seq %06x: send retry count %u\n", lower_transport_outgoing_message,
            lower_transport_outgoing_message->seq, lower_transport_outgoing_message->retry_count);
     lower_transport_outgoing_message->retry_count--;
     lower_transport_outgoing_seg_o   = 0;
 }
 
-static void mesh_lower_transport_segment_transmission_fired(void){
+static void mesh_lower_transport_outgoing_segment_transmission_fired(void){
     // once more?
     if (lower_transport_outgoing_message->retry_count == 0){
         printf("[!] Lower transport, segmented pdu %p, seq %06x: send failed, retries exhausted\n", lower_transport_outgoing_message,
@@ -809,10 +732,27 @@ static void mesh_lower_transport_segment_transmission_fired(void){
 #endif
 
     // send remaining segments again
-    mesh_lower_transport_setup_sending_segmented_pdus();
+    mesh_lower_transport_outgoing_setup_sending_segmented_pdus();
     // send next segment
-    mesh_lower_transport_send_next_segment();
+    mesh_lower_transport_outgoing_send_next_segment();
 }
+
+static void mesh_lower_transport_outgoing_segment_transmission_timeout(btstack_timer_source_t * ts){
+    mesh_segmented_pdu_t * segmented_pdu = (mesh_segmented_pdu_t *) btstack_run_loop_get_timer_context(ts);
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission timer fired\n", segmented_pdu,
+           segmented_pdu->seq);
+#endif
+    segmented_pdu->acknowledgement_timer_active = 0;
+
+    if (lower_transport_outgoing_segment_queued){
+        lower_transport_outgoing_transmission_timeout = true;
+    } else {
+        mesh_lower_transport_outgoing_segment_transmission_fired();
+    }
+}
+
+// GENERAL //
 
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu){
     // figure out what pdu was sent
@@ -838,12 +778,12 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
         if (lower_transport_outgoing_transmission_timeout){
             // handle timeout
             lower_transport_outgoing_transmission_timeout = false;
-            mesh_lower_transport_segment_transmission_fired();
+            mesh_lower_transport_outgoing_segment_transmission_fired();
             return;
         }
 
         // send next segment
-        mesh_lower_transport_send_next_segment();
+        mesh_lower_transport_outgoing_send_next_segment();
         return;
     }
 
@@ -857,15 +797,86 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
     higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
 }
 
-static void mesh_lower_transport_setup_block_ack(mesh_segmented_pdu_t *message_pdu){
-    // setup block ack - set bit for segment to send, will be cleared on ack
-    int      ctl = message_pdu->ctl_ttl >> 7;
-    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
-    uint8_t  seg_n = (message_pdu->len - 1) / max_segment_len;
-    if (seg_n < 31){
-        message_pdu->block_ack = (1 << (seg_n+1)) - 1;
+static void mesh_lower_transport_process_unsegmented_control_message(mesh_network_pdu_t *network_pdu){
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
+    uint8_t  opcode = lower_transport_pdu[0];
+
+#ifdef LOG_LOWER_TRANSPORT
+    printf("Unsegmented Control message, outgoing message %p, opcode %x\n", lower_transport_outgoing_message, opcode);
+#endif
+
+    switch (opcode){
+        case 0:
+            mesh_lower_transport_outgoing_process_segment_acknowledgement_message(network_pdu);
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+            break;
+        default:
+            mesh_lower_transport_incoming_queue_for_higher_layer((mesh_pdu_t *) network_pdu);
+            break;
+    }
+}
+
+static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network_pdu) {// segmented?
+    if (mesh_network_segmented(network_pdu)){
+        mesh_segmented_pdu_t * message_pdu = mesh_lower_transport_incoming_pdu_for_segmented_message(network_pdu);
+        if (message_pdu) {
+            // start acknowledgment timer if inactive
+            if (message_pdu->acknowledgement_timer_active == 0){
+                // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
+                uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
+                mesh_lower_transport_incoming_start_acknowledgment_timer(message_pdu, timeout);
+            }
+            // restart incomplete timer
+            mesh_lower_transport_incoming_restart_incomplete_timer(message_pdu, 10000,
+                                                                   &mesh_lower_transport_incoming_incomplete_timeout);
+            mesh_lower_transport_incoming_process_segment(message_pdu, network_pdu);
+        } else {
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+        }
     } else {
-        message_pdu->block_ack = 0xffffffff;
+        // control?
+        if (mesh_network_control(network_pdu)){
+            // unsegmented control message (not encrypted)
+            mesh_lower_transport_process_unsegmented_control_message(network_pdu);
+        } else {
+            // unsegmented access message (encrypted)
+            mesh_lower_transport_incoming_queue_for_higher_layer((mesh_pdu_t *) network_pdu);
+        }
+    }
+}
+
+void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu){
+    mesh_peer_t * peer;
+    uint16_t src;
+    uint16_t seq;
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+            src = mesh_network_src(network_pdu);
+            seq = mesh_network_seq(network_pdu);
+            peer = mesh_peer_for_addr(src);
+#ifdef LOG_LOWER_TRANSPORT
+            printf("Transport: received message. SRC %x, SEQ %x\n", src, seq);
+#endif
+            // validate seq
+            if (peer && seq > peer->seq){
+                // track seq
+                peer->seq = seq;
+                // process
+                mesh_lower_transport_process_network_pdu(network_pdu);
+                mesh_lower_transport_run();
+            } else {
+                // drop packet
+#ifdef LOG_LOWER_TRANSPORT
+                printf("Transport: drop packet - src/seq auth failed\n");
+#endif
+                mesh_network_message_processed_by_higher_layer(network_pdu);
+            }
+            break;
+        case MESH_NETWORK_PDU_SENT:
+            mesh_lower_transport_network_pdu_sent(network_pdu);
+            break;
+        default:
+            break;
     }
 }
 
@@ -888,21 +899,6 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     }
     btstack_linked_list_add_tail(&lower_transport_outgoing_ready, (btstack_linked_item_t*) pdu);
     mesh_lower_transport_run();
-}
-
-static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_source_t * ts){
-    UNUSED(ts);
-#ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission timer fired\n", lower_transport_outgoing_message,
-           lower_transport_outgoing_message->seq);
-#endif
-    lower_transport_outgoing_message->acknowledgement_timer_active = 0;
-    
-    if (lower_transport_outgoing_segment_queued){
-        lower_transport_outgoing_transmission_timeout = true;
-    } else {
-        mesh_lower_transport_segment_transmission_fired();
-    }
 }
 
 static void mesh_lower_transport_run(void){
@@ -932,9 +928,9 @@ static void mesh_lower_transport_run(void){
                 lower_transport_outgoing_message = message_pdu;
                 lower_transport_outgoing_transmission_timeout  = false;
                 lower_transport_outgoing_transmission_complete = false;
-                mesh_lower_transport_setup_block_ack(message_pdu);
-                mesh_lower_transport_setup_sending_segmented_pdus();
-                mesh_lower_transport_send_next_segment();
+                mesh_lower_transport_outgoing_setup_block_ack(message_pdu);
+                mesh_lower_transport_outgoing_setup_sending_segmented_pdus();
+                mesh_lower_transport_outgoing_send_next_segment();
                 break;
             default:
                 btstack_assert(false);
