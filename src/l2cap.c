@@ -1889,9 +1889,9 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
-    // we have been waiting for remote supported features, if both support SSP, 
+    // we have been waiting for remote supported features
     log_info("l2cap received remote supported features, sec_level_0_allowed for psm %u = %u", channel->psm, l2cap_security_level_0_allowed_for_PSM(channel->psm));
-    if (gap_ssp_supported_on_both_sides(channel->con_handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
+    if (l2cap_security_level_0_allowed_for_PSM(channel->psm) == 0){
         // request security level 2
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
         channel->required_security_level = LEVEL_2;
