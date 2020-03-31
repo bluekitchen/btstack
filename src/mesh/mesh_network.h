@@ -126,14 +126,14 @@ typedef struct {
     uint32_t              block_ack;
     // meta data network layer
     uint16_t              netkey_index;
-    // meta data transport layer
-    uint16_t              appkey_index;
     // transmic size
     uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
+    // retry count
+    uint8_t               retry_count;
     // acknowledgement timer active
     uint8_t               acknowledgement_timer_active;
     // incomplete timer active
