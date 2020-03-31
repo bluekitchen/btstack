@@ -62,8 +62,11 @@ static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_sour
 
 // lower transport outgoing state
 
-// queue mesh_segmented_pdu_t or mesh_network_pdu_t
+// queued mesh_segmented_pdu_t or mesh_network_pdu_t
 static btstack_linked_list_t lower_transport_outgoing_ready;
+
+// mesh_segmented_pdu_t to unicast address, segment transmission timer is active
+static btstack_linked_list_t lower_transport_outgoing_waiting;
 
 // active outgoing segmented message
 static mesh_segmented_pdu_t * lower_transport_outgoing_message;
@@ -735,23 +738,31 @@ static void mesh_lower_transport_send_next_segment(void){
         lower_transport_outgoing_seg_o   = 0;
 
         // done for unicast, ack timer already set, too
-        if (mesh_network_address_unicast(lower_transport_outgoing_message->dst)) return;
+        if (mesh_network_address_unicast(lower_transport_outgoing_message->dst)) {
+//             btstack_linked_list_add(&lower_transport_outgoing_waiting, (btstack_linked_item_t *) lower_transport_outgoing_message);
+//             lower_transport_outgoing_message = NULL;
+            return;
+        }
 
-        // done, more?
+        // done for group/virtual, no more retries?
         if (lower_transport_outgoing_message->retry_count == 0){
 #ifdef LOG_LOWER_TRANSPORT
             printf("[+] Lower Transport, message unacknowledged -> free\n");
 #endif
-            // notify upper transport
+            // notify upper transport, sets lower_transport_outgoing_message = NULL
             mesh_lower_transport_outgoing_complete();
             return;
         }
 
-        // start retry
+        // re-queue mssage;
 #ifdef LOG_LOWER_TRANSPORT
         printf("[+] Lower Transport, message unacknowledged retry count %u\n", lower_transport_outgoing_message->retry_count);
 #endif
         lower_transport_outgoing_message->retry_count--;
+//        btstack_linked_list_add(&lower_transport_outgoing_ready, (btstack_linked_item_t *) lower_transport_outgoing_message);
+//        lower_transport_outgoing_message = NULL;
+//        mesh_lower_transport_run();
+//        return;
     }
 
     // restart segment transmission timer for unicast dst
@@ -860,6 +871,7 @@ static void mesh_lower_transport_setup_block_ack(mesh_segmented_pdu_t *message_p
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     mesh_network_pdu_t * network_pdu;
+    mesh_segmented_pdu_t * segmented_pdu;
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
@@ -867,6 +879,8 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
             btstack_assert(network_pdu->len >= 9);
             break;
         case MESH_PDU_TYPE_SEGMENTED:
+            segmented_pdu = (mesh_segmented_pdu_t *) pdu;
+            segmented_pdu->retry_count = 3;
             break;
         default:
             btstack_assert(false);
@@ -916,7 +930,6 @@ static void mesh_lower_transport_run(void){
                        message_pdu->seq);
                 // start sending segmented pdu
                 lower_transport_outgoing_message = message_pdu;
-                lower_transport_outgoing_message->retry_count = 3;
                 lower_transport_outgoing_transmission_timeout  = false;
                 lower_transport_outgoing_transmission_complete = false;
                 mesh_lower_transport_setup_block_ack(message_pdu);
