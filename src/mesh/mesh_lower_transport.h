@@ -75,8 +75,8 @@ typedef enum {
     MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE,
 } mesh_transport_status_t;
 
-mesh_segmented_pdu_t * mesh_message_pdu_get(void);
-void mesh_message_pdu_free(mesh_segmented_pdu_t * message_pdu);
+mesh_segmented_pdu_t * mesh_segmented_pdu_get(void);
+void mesh_segmented_pdu_free(mesh_segmented_pdu_t * message_pdu);
 
 void mesh_lower_transport_init(void);
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));

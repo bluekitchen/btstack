@@ -987,7 +987,7 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
             break;
         case MESH_PDU_TYPE_SEGMENTED:
             message_pdu = (mesh_segmented_pdu_t *) pdu;
-            mesh_message_pdu_free(message_pdu);
+            mesh_segmented_pdu_free(message_pdu);
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
