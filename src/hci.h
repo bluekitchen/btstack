@@ -800,7 +800,8 @@ typedef struct {
     /* 3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
     /* 4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
     /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
-    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */ 
+    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */
+    /* 7 - Read Encryption Key Size                (Octet 20/bit 4) */
     uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */

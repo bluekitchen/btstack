@@ -2022,8 +2022,9 @@ static void event_handler(uint8_t *packet, int size){
                      (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)       |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting 
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x01) << 4) |  // bit 4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x08) << 2) |  // bit 5 = Octet 35, bit 3 / LE Read Maximum Data Length
-                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1);   // bit 6 = Octet 35, bit 5 / LE Set Default PHY
-                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1) |  // bit 6 = Octet 35, bit 5 / LE Set Default PHY
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+20] & 0x10) << 3);   // bit 7 = Octet 20, bit 4 / Read Encryption Key Size
+                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]);
             }
 #ifdef ENABLE_CLASSIC
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
@@ -2316,11 +2317,19 @@ static void event_handler(uint8_t *packet, int size){
                     if (hci_is_le_connection(conn)){
                         // For LE, we accept connection as encrypted
                         conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                        hci_emit_security_level(handle, gap_security_level_for_connection(conn));
                     }
 #ifdef ENABLE_CLASSIC
                     else {
-                        // For Classic, we need to validate encryption key size first
-                        conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                        if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
+                            // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
+                            conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                        } else {
+                            // if not, pretend everything is perfect
+                            conn->encryption_key_size = 16;
+                            conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+                        }
                     }
 #endif
                 } else {
