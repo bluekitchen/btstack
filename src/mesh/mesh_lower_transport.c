@@ -340,9 +340,10 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
         pdu->seq = seq_auth;
 
         // get akf_aid & transmic
-        uint8_t * lower_transport_pdu = mesh_network_pdu_data(network_pdu);
-        pdu->akf_aid_control = lower_transport_pdu[0] & 0x7f;
-        pdu->transmic_len    = lower_transport_pdu[1] & 0x80 ? 8 : 4;
+        pdu->akf_aid_control = network_pdu->data[9] & 0x7f;
+        if ((network_pdu->data[10] & 0x80) != 0){
+            pdu->flags |= MESH_TRANSPORT_FLAG_TRANSMIC_64;
+        }
 
         // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;
@@ -386,7 +387,8 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
     uint8_t * segment_data = &lower_transport_pdu[4];
 
 #ifdef LOG_LOWER_TRANSPORT
-    printf("mesh_lower_transport_incoming_process_segment: seq zero %04x, seg_o %02x, seg_n %02x, transmic len: %u\n", seq_zero, seg_o, seg_n, message_pdu->transmic_len * 8);
+    uint8_t transmic_len = ((message_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 64 : 32;
+    printf("mesh_lower_transport_incoming_process_segment: seq zero %04x, seg_o %02x, seg_n %02x, transmic len: %u bit\n", seq_zero, seg_o, seg_n, transmic_len);
     mesh_print_hex("Segment", segment_data, segment_len);
 #endif
 
@@ -605,11 +607,14 @@ static void mesh_lower_transport_outgoing_setup_segment(mesh_segmented_pdu_t *me
     }
     uint16_t seq_zero = message_pdu->seq & 0x01fff;
     uint8_t  seg_n    = (message_pdu->len - 1) / max_segment_len;
-    uint8_t  szmic    = ((!ctl) && (message_pdu->transmic_len == 8)) ? 1 : 0; // only 1 for access messages with 64 bit TransMIC
+    uint8_t  szmic    = ((message_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 1 : 0;
     uint8_t  nid      = message_pdu->ivi_nid & 0x7f;
     uint8_t  ttl      = message_pdu->ctl_ttl & 0x7f;
     uint16_t src      = message_pdu->src;
     uint16_t dest     = message_pdu->dst;
+
+    // only 1 for access messages with 64 bit TransMIC
+    btstack_assert((szmic == 0) || !ctl);
 
     // current segment.
     uint16_t seg_offset = seg_o * max_segment_len;

@@ -516,7 +516,6 @@ static void mesh_upper_transport_send_access_segmented(mesh_upper_transport_pdu_
     // copy meta
     segmented_pdu->len = upper_pdu->len;
     segmented_pdu->netkey_index = upper_pdu->netkey_index;
-    segmented_pdu->transmic_len = upper_pdu->transmic_len;
     segmented_pdu->akf_aid_control = upper_pdu->akf_aid_control;
     segmented_pdu->flags = upper_pdu->flags;
 
@@ -528,6 +527,17 @@ static void mesh_upper_transport_send_access_segmented(mesh_upper_transport_pdu_
     segmented_pdu->seq = upper_pdu->seq;
     segmented_pdu->src = upper_pdu->src;
     segmented_pdu->dst = upper_pdu->dst;
+
+    switch (upper_pdu->transmic_len){
+        case 4:
+            break;
+        case 8:
+            segmented_pdu->flags |= MESH_TRANSPORT_FLAG_TRANSMIC_64;
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
 
     // queue up
     upper_pdu->lower_pdu = (mesh_pdu_t *) segmented_pdu;
@@ -698,9 +708,10 @@ static void mesh_upper_transport_send_segmented_control_pdu(mesh_upper_transport
     // copy meta
     segmented_pdu->len = upper_pdu->len;
     segmented_pdu->netkey_index = upper_pdu->netkey_index;
-    segmented_pdu->transmic_len = 0;   // no TransMIC for control
     segmented_pdu->akf_aid_control = upper_pdu->akf_aid_control;
     segmented_pdu->flags = upper_pdu->flags;
+
+    btstack_assert((upper_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) == 0);
 
     // setup segmented_pdu header
     // TODO: use fields in mesh_segmented_pdu_t and setup network header in lower transport
@@ -726,7 +737,7 @@ static void mesh_upper_transport_run(void){
         // get next message
         mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_pop(&upper_transport_incoming);
         mesh_network_pdu_t   * network_pdu;
-        mesh_segmented_pdu_t   * message_pdu;
+        mesh_segmented_pdu_t   * segmented_pdu;
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UNSEGMENTED:
                 network_pdu = (mesh_network_pdu_t *) pdu;
@@ -781,30 +792,30 @@ static void mesh_upper_transport_run(void){
                 }
                 break;
             case MESH_PDU_TYPE_SEGMENTED:
-                message_pdu = (mesh_segmented_pdu_t *) pdu;
-                uint8_t ctl = message_pdu->ctl_ttl >> 7;
+                segmented_pdu = (mesh_segmented_pdu_t *) pdu;
+                uint8_t ctl = segmented_pdu->ctl_ttl >> 7;
                 if (ctl){
                     incoming_control_pdu=  &incoming_pdu_singleton.control;
                     incoming_control_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_CONTROL;
 
                     // flatten
-                    mesh_segmented_pdu_flatten(&message_pdu->segments, 8, incoming_control_pdu->data);
+                    mesh_segmented_pdu_flatten(&segmented_pdu->segments, 8, incoming_control_pdu->data);
 
                     // copy meta data into encrypted pdu buffer
                     incoming_control_pdu->flags = 0;
-                    incoming_control_pdu->len =  message_pdu->len;
-                    incoming_control_pdu->netkey_index =  message_pdu->netkey_index;
-                    incoming_control_pdu->akf_aid_control = message_pdu->akf_aid_control;
-                    incoming_access_decrypted->ivi_nid = message_pdu->ivi_nid;
-                    incoming_access_decrypted->ctl_ttl = message_pdu->ctl_ttl;
-                    incoming_access_decrypted->seq = message_pdu->seq;
-                    incoming_access_decrypted->src = message_pdu->src;
-                    incoming_access_decrypted->dst = message_pdu->dst;
+                    incoming_control_pdu->len =  segmented_pdu->len;
+                    incoming_control_pdu->netkey_index =  segmented_pdu->netkey_index;
+                    incoming_control_pdu->akf_aid_control = segmented_pdu->akf_aid_control;
+                    incoming_access_decrypted->ivi_nid = segmented_pdu->ivi_nid;
+                    incoming_access_decrypted->ctl_ttl = segmented_pdu->ctl_ttl;
+                    incoming_access_decrypted->seq = segmented_pdu->seq;
+                    incoming_access_decrypted->src = segmented_pdu->src;
+                    incoming_access_decrypted->dst = segmented_pdu->dst;
 
                     mesh_print_hex("Assembled payload", incoming_control_pdu->data, incoming_control_pdu->len);
 
                     // free mesh message
-                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)message_pdu);
+                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)segmented_pdu);
 
                     btstack_assert(mesh_control_message_handler != NULL);
                     mesh_pdu_t * pdu = (mesh_pdu_t*) incoming_control_pdu;
@@ -812,19 +823,19 @@ static void mesh_upper_transport_run(void){
 
                 } else {
 
-                    incoming_access_encrypted = (mesh_pdu_t *) message_pdu;
+                    incoming_access_encrypted = (mesh_pdu_t *) segmented_pdu;
 
                     incoming_access_decrypted = &incoming_pdu_singleton.access;
                     incoming_access_decrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
-                    incoming_access_decrypted->len =  message_pdu->len;
-                    incoming_access_decrypted->netkey_index =  message_pdu->netkey_index;
-                    incoming_access_decrypted->transmic_len =  message_pdu->transmic_len;
-                    incoming_access_decrypted->akf_aid_control =  message_pdu->akf_aid_control;
-                    incoming_access_decrypted->ivi_nid = message_pdu->ivi_nid;
-                    incoming_access_decrypted->ctl_ttl = message_pdu->ctl_ttl;
-                    incoming_access_decrypted->seq = message_pdu->seq;
-                    incoming_access_decrypted->src = message_pdu->src;
-                    incoming_access_decrypted->dst = message_pdu->dst;
+                    incoming_access_decrypted->len =  segmented_pdu->len;
+                    incoming_access_decrypted->netkey_index = segmented_pdu->netkey_index;
+                    incoming_access_decrypted->transmic_len = ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
+                    incoming_access_decrypted->akf_aid_control =  segmented_pdu->akf_aid_control;
+                    incoming_access_decrypted->ivi_nid = segmented_pdu->ivi_nid;
+                    incoming_access_decrypted->ctl_ttl = segmented_pdu->ctl_ttl;
+                    incoming_access_decrypted->seq = segmented_pdu->seq;
+                    incoming_access_decrypted->src = segmented_pdu->src;
+                    incoming_access_decrypted->dst = segmented_pdu->dst;
 
                     mesh_upper_transport_process_access_message();
                 }

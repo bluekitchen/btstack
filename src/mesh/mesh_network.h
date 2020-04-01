@@ -108,6 +108,7 @@ typedef struct mesh_network_pdu {
 
 #define MESH_TRANSPORT_FLAG_SEQ_RESERVED    1
 #define MESH_TRANSPORT_FLAG_CONTROL         2
+#define MESH_TRANSPORT_FLAG_TRANSMIC_64     4
 
 typedef struct {
     mesh_pdu_t pdu_header;
@@ -126,8 +127,6 @@ typedef struct {
     uint32_t              block_ack;
     // meta data network layer
     uint16_t              netkey_index;
-    // transmic size
-    uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
     // MESH_TRANSPORT_FLAG
