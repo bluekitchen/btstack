@@ -718,16 +718,16 @@ static void mesh_lower_transport_outgoing_send_next_segment(void){
     mesh_network_send_pdu(lower_transport_outgoing_segment);
 }
 
-static void mesh_lower_transport_outgoing_setup_sending_segmented_pdus(void){
-    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send retry count %u\n", lower_transport_outgoing_message,
-           lower_transport_outgoing_message->seq, lower_transport_outgoing_message->retry_count);
-    lower_transport_outgoing_message->retry_count--;
+static void mesh_lower_transport_outgoing_setup_sending_segmented_pdus(mesh_segmented_pdu_t *segmented_pdu) {
+    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send retry count %u\n", segmented_pdu,
+           segmented_pdu->seq, segmented_pdu->retry_count);
+    segmented_pdu->retry_count--;
     lower_transport_outgoing_seg_o   = 0;
 }
 
-static void mesh_lower_transport_outgoing_segment_transmission_fired(void){
+static void mesh_lower_transport_outgoing_segment_transmission_fired(mesh_segmented_pdu_t *segmented_pdu) {
     // once more?
-    if (lower_transport_outgoing_message->retry_count == 0){
+    if (segmented_pdu->retry_count == 0){
         printf("[!] Lower transport, segmented pdu %p, seq %06x: send failed, retries exhausted\n", lower_transport_outgoing_message,
                lower_transport_outgoing_message->seq);
         mesh_lower_transport_outgoing_complete();
@@ -735,12 +735,12 @@ static void mesh_lower_transport_outgoing_segment_transmission_fired(void){
     }
 
 #ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission fired\n", lower_transport_outgoing_message,
-           lower_transport_outgoing_message->seq);
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission fired\n", segmented_pdu,
+           segmented_pdu->seq);
 #endif
 
     // send remaining segments again
-    mesh_lower_transport_outgoing_setup_sending_segmented_pdus();
+    mesh_lower_transport_outgoing_setup_sending_segmented_pdus(segmented_pdu);
     // send next segment
     mesh_lower_transport_outgoing_send_next_segment();
 }
@@ -756,7 +756,7 @@ static void mesh_lower_transport_outgoing_segment_transmission_timeout(btstack_t
     if (lower_transport_outgoing_segment_at_network_layer){
         lower_transport_outgoing_transmission_timeout = true;
     } else {
-        mesh_lower_transport_outgoing_segment_transmission_fired();
+        mesh_lower_transport_outgoing_segment_transmission_fired(segmented_pdu);
     }
 }
 
@@ -786,7 +786,7 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
         if (lower_transport_outgoing_transmission_timeout){
             // handle timeout
             lower_transport_outgoing_transmission_timeout = false;
-            mesh_lower_transport_outgoing_segment_transmission_fired();
+            mesh_lower_transport_outgoing_segment_transmission_fired(lower_transport_outgoing_message);
             return;
         }
 
@@ -937,7 +937,7 @@ static void mesh_lower_transport_run(void){
                 lower_transport_outgoing_transmission_timeout  = false;
                 lower_transport_outgoing_transmission_complete = false;
                 mesh_lower_transport_outgoing_setup_block_ack(message_pdu);
-                mesh_lower_transport_outgoing_setup_sending_segmented_pdus();
+                mesh_lower_transport_outgoing_setup_sending_segmented_pdus(message_pdu);
                 mesh_lower_transport_outgoing_send_next_segment();
                 break;
             default:
