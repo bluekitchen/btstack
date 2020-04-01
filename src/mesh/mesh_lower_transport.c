@@ -685,15 +685,15 @@ static void mesh_lower_transport_outgoing_send_next_segment(void){
             return;
         }
 
-        // re-queue mssage;
+        // re-queue mssage
 #ifdef LOG_LOWER_TRANSPORT
         printf("[+] Lower Transport, message unacknowledged retry count %u\n", lower_transport_outgoing_message->retry_count);
 #endif
         lower_transport_outgoing_message->retry_count--;
-//        btstack_linked_list_add(&lower_transport_outgoing_ready, (btstack_linked_item_t *) lower_transport_outgoing_message);
-//        lower_transport_outgoing_message = NULL;
-//        mesh_lower_transport_run();
-//        return;
+        btstack_linked_list_add(&lower_transport_outgoing_ready, (btstack_linked_item_t *) lower_transport_outgoing_message);
+        lower_transport_outgoing_message = NULL;
+        mesh_lower_transport_run();
+        return;
     }
 
     // restart segment transmission timer for unicast dst
