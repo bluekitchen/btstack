@@ -106,9 +106,11 @@ typedef struct mesh_network_pdu {
     uint8_t               data[MESH_NETWORK_PAYLOAD_MAX];
 } mesh_network_pdu_t;
 
-#define MESH_TRANSPORT_FLAG_SEQ_RESERVED    1
-#define MESH_TRANSPORT_FLAG_CONTROL         2
-#define MESH_TRANSPORT_FLAG_TRANSMIC_64     4
+#define MESH_TRANSPORT_FLAG_SEQ_RESERVED      1
+#define MESH_TRANSPORT_FLAG_CONTROL           2
+#define MESH_TRANSPORT_FLAG_TRANSMIC_64       4
+#define MESH_TRANSPORT_FLAG_ACK_TIMER         8
+#define MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER 16
 
 typedef struct {
     mesh_pdu_t pdu_header;
@@ -119,9 +121,9 @@ typedef struct {
     uint16_t              dst;
     uint32_t              seq;
 
-    // rx/tx: acknowledgement timer / segment transmission timer
+    // incoming: acknowledgement timer / outgoing: segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
-    // rx: incomplete timer / tx: resend timer
+    // incoming: incomplete timer / outgoing: not used
     btstack_timer_source_t incomplete_timer;
     // block access
     uint32_t              block_ack;
@@ -133,12 +135,6 @@ typedef struct {
     uint16_t              flags;
     // retry count
     uint8_t               retry_count;
-    // acknowledgement timer active
-    uint8_t               acknowledgement_timer_active;
-    // incomplete timer active
-    uint8_t               incomplete_timer_active;
-    // message complete
-    uint8_t               message_complete;
     // pdu segments
     uint16_t              len;
     btstack_linked_list_t segments;

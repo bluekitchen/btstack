@@ -207,20 +207,18 @@ static void mesh_lower_transport_incoming_send_ack_for_network_pdu(mesh_network_
 }
 
 static void mesh_lower_transport_incoming_stop_acknowledgment_timer(mesh_segmented_pdu_t *segmented_pdu){
-    if (!segmented_pdu->acknowledgement_timer_active) return;
-    segmented_pdu->acknowledgement_timer_active = 0;
+    if ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_ACK_TIMER) == 0) return;
+    segmented_pdu->flags &= ~MESH_TRANSPORT_FLAG_ACK_TIMER;
     btstack_run_loop_remove_timer(&segmented_pdu->acknowledgement_timer);
 }
 
 static void mesh_lower_transport_incoming_stop_incomplete_timer(mesh_segmented_pdu_t *segmented_pdu){
-    if (!segmented_pdu->incomplete_timer_active) return;
-    segmented_pdu->incomplete_timer_active = 0;
+    if ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER) == 0) return;
+    segmented_pdu->flags &= ~MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER;
     btstack_run_loop_remove_timer(&segmented_pdu->incomplete_timer);
 }
 
 static void mesh_lower_transport_incoming_segmented_message_complete(mesh_segmented_pdu_t * segmented_pdu){
-    // set flag
-    segmented_pdu->message_complete = 1;
     // stop timers
     mesh_lower_transport_incoming_stop_acknowledgment_timer(segmented_pdu);
     mesh_lower_transport_incoming_stop_incomplete_timer(segmented_pdu);
@@ -236,7 +234,7 @@ static void mesh_lower_transport_incoming_ack_timeout(btstack_timer_source_t *ts
 #ifdef LOG_LOWER_TRANSPORT
     printf("ACK: acknowledgement timer fired for %p, send ACK\n", segmented_pdu);
 #endif
-    segmented_pdu->acknowledgement_timer_active = 0;
+    segmented_pdu->flags &= ~MESH_TRANSPORT_FLAG_ACK_TIMER;
     mesh_lower_transport_incoming_send_ack_for_segmented_pdu(segmented_pdu);
 }
 
@@ -260,7 +258,7 @@ static void mesh_lower_transport_incoming_start_acknowledgment_timer(mesh_segmen
     btstack_run_loop_set_timer_handler(&segmented_pdu->acknowledgement_timer, &mesh_lower_transport_incoming_ack_timeout);
     btstack_run_loop_set_timer_context(&segmented_pdu->acknowledgement_timer, segmented_pdu);
     btstack_run_loop_add_timer(&segmented_pdu->acknowledgement_timer);
-    segmented_pdu->acknowledgement_timer_active = 1;
+    segmented_pdu->flags |= MESH_TRANSPORT_FLAG_ACK_TIMER;
 }
 
 static void mesh_lower_transport_incoming_restart_incomplete_timer(mesh_segmented_pdu_t * segmented_pdu, uint32_t timeout,
@@ -268,14 +266,14 @@ static void mesh_lower_transport_incoming_restart_incomplete_timer(mesh_segmente
 #ifdef LOG_LOWER_TRANSPORT
     printf("RX-(re)start incomplete timer for %p, timeout %u ms\n", segmented_pdu, (int) timeout);
 #endif
-    if (segmented_pdu->incomplete_timer_active){
+    if ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER) != 0){
         btstack_run_loop_remove_timer(&segmented_pdu->incomplete_timer);
     }
     btstack_run_loop_set_timer(&segmented_pdu->incomplete_timer, timeout);
     btstack_run_loop_set_timer_handler(&segmented_pdu->incomplete_timer, callback);
     btstack_run_loop_set_timer_context(&segmented_pdu->incomplete_timer, segmented_pdu);
     btstack_run_loop_add_timer(&segmented_pdu->incomplete_timer);
-    segmented_pdu->incomplete_timer_active = 1;
+    segmented_pdu->flags |= MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER;
 }
 
 static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
@@ -348,8 +346,7 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
         // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;
         pdu->block_ack = 0;
-        pdu->acknowledgement_timer_active = 0;
-        pdu->message_complete = 0;
+        pdu->flags &= ~MESH_TRANSPORT_FLAG_ACK_TIMER;
 
         // update peer info
         peer->message_pdu   = pdu;
@@ -551,8 +548,8 @@ static void mesh_lower_transport_outgoing_process_segment_acknowledgement_messag
 }
 
 static void mesh_lower_transport_outgoing_stop_acknowledgment_timer(mesh_segmented_pdu_t *segmented_pdu){
-    if (!segmented_pdu->acknowledgement_timer_active) return;
-    segmented_pdu->acknowledgement_timer_active = 0;
+    if ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_ACK_TIMER) == 0) return;
+    segmented_pdu->flags &= ~MESH_TRANSPORT_FLAG_ACK_TIMER;
     btstack_run_loop_remove_timer(&segmented_pdu->acknowledgement_timer);
 }
 
@@ -560,7 +557,7 @@ static void mesh_lower_transport_outgoing_restart_segment_transmission_timer(mes
     // restart segment transmission timer for unicast dst
     // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
     uint32_t timeout = 200 + 50 * (segmented_pdu->ctl_ttl & 0x7f);
-    if (segmented_pdu->acknowledgement_timer_active){
+    if ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_ACK_TIMER) != 0){
         btstack_run_loop_remove_timer(&lower_transport_outgoing_message->acknowledgement_timer);
     }
 
@@ -573,14 +570,14 @@ static void mesh_lower_transport_outgoing_restart_segment_transmission_timer(mes
     btstack_run_loop_set_timer_handler(&segmented_pdu->acknowledgement_timer, &mesh_lower_transport_outgoing_segment_transmission_timeout);
     btstack_run_loop_set_timer_context(&segmented_pdu->acknowledgement_timer, lower_transport_outgoing_message);
     btstack_run_loop_add_timer(&segmented_pdu->acknowledgement_timer);
-    segmented_pdu->acknowledgement_timer_active = 1;
+    segmented_pdu->flags |= MESH_TRANSPORT_FLAG_ACK_TIMER;
 }
 
 static void mesh_lower_transport_outgoing_complete(void){
     btstack_assert(lower_transport_outgoing_message != NULL);
 #ifdef LOG_LOWER_TRANSPORT
     printf("mesh_lower_transport_outgoing_complete %p, ack timer active %u, incomplete active %u\n", lower_transport_outgoing_message,
-           lower_transport_outgoing_message->acknowledgement_timer_active, lower_transport_outgoing_message->incomplete_timer_active);
+           ((lower_transport_outgoing_message->flags & MESH_TRANSPORT_FLAG_ACK_TIMER) != 0), ((lower_transport_outgoing_message->flags & MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER) != 0));
 #endif
     // stop timers
     mesh_lower_transport_outgoing_stop_acknowledgment_timer(lower_transport_outgoing_message);
@@ -758,7 +755,7 @@ static void mesh_lower_transport_outgoing_segment_transmission_timeout(btstack_t
     printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission timer fired\n", segmented_pdu,
            segmented_pdu->seq);
 #endif
-    segmented_pdu->acknowledgement_timer_active = 0;
+    segmented_pdu->flags &= ~MESH_TRANSPORT_FLAG_ACK_TIMER;
 
     if (lower_transport_outgoing_segment_at_network_layer){
         lower_transport_outgoing_transmission_timeout = true;
@@ -836,7 +833,7 @@ static void mesh_lower_transport_process_network_pdu(mesh_network_pdu_t *network
         mesh_segmented_pdu_t * message_pdu = mesh_lower_transport_incoming_pdu_for_segmented_message(network_pdu);
         if (message_pdu) {
             // start acknowledgment timer if inactive
-            if (message_pdu->acknowledgement_timer_active == 0){
+            if ((message_pdu->flags & MESH_TRANSPORT_FLAG_ACK_TIMER) == 0){
                 // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
                 uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
                 mesh_lower_transport_incoming_start_acknowledgment_timer(message_pdu, timeout);
