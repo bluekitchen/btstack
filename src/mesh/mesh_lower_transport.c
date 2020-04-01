@@ -184,7 +184,7 @@ static void mesh_lower_transport_incoming_send_ack(uint16_t netkey_index, uint8_
 }
 
 static void mesh_lower_transport_incoming_send_ack_for_segmented_pdu(mesh_segmented_pdu_t * segmented_pdu){
-    uint16_t seq_zero = segmented_pdu->seq_zero;
+    uint16_t seq_zero = segmented_pdu->seq & 0x1fff;
     uint8_t  ttl = segmented_pdu->ctl_ttl & 0x7f;
     uint16_t dest = segmented_pdu->src;
     uint16_t netkey_index = segmented_pdu->netkey_index;
@@ -295,7 +295,7 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
     // reception of transport message ongoing
     if (peer->message_pdu){
         // check if segment for same seq zero
-        uint16_t active_seq_zero = peer->message_pdu->seq_zero;
+        uint16_t active_seq_zero = peer->message_pdu->seq & 0x1fff;
         if (active_seq_zero == seq_zero) {
 #ifdef LOG_LOWER_TRANSPORT
             printf("mesh_transport_pdu_for_segmented_message: segment for current transport pdu with SeqZero %x\n", active_seq_zero);
@@ -350,7 +350,6 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
         pdu->block_ack = 0;
         pdu->acknowledgement_timer_active = 0;
         pdu->message_complete = 0;
-        pdu->seq_zero = seq_zero;
 
         // update peer info
         peer->message_pdu   = pdu;

@@ -139,8 +139,6 @@ typedef struct {
     uint8_t               incomplete_timer_active;
     // message complete
     uint8_t               message_complete;
-    // seq_zero for segmented messages
-    uint16_t              seq_zero;
     // pdu segments
     uint16_t              len;
     btstack_linked_list_t segments;
