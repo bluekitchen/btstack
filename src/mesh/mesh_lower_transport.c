@@ -339,6 +339,11 @@ static mesh_segmented_pdu_t * mesh_lower_transport_incoming_pdu_for_segmented_me
         // store lower 24 bit of SeqAuth for App / Device Nonce
         pdu->seq = seq_auth;
 
+        // get akf_aid & transmic
+        uint8_t * lower_transport_pdu = mesh_network_pdu_data(network_pdu);
+        pdu->akf_aid_control = lower_transport_pdu[0] & 0x7f;
+        pdu->transmic_len    = lower_transport_pdu[1] & 0x80 ? 8 : 4;
+
         // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;
         pdu->block_ack = 0;
@@ -370,10 +375,6 @@ static void mesh_lower_transport_incoming_process_segment(mesh_segmented_pdu_t *
 
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(network_pdu);
-
-    // get akf_aid & transmic
-    message_pdu->akf_aid_control = lower_transport_pdu[0] & 0x7f;
-    message_pdu->transmic_len    = lower_transport_pdu[1] & 0x80 ? 8 : 4;
 
     // get seq_zero
     uint16_t seq_zero =  ( big_endian_read_16(lower_transport_pdu, 1) >> 2) & 0x1fff;
