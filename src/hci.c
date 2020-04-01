@@ -2317,7 +2317,6 @@ static void event_handler(uint8_t *packet, int size){
                     if (hci_is_le_connection(conn)){
                         // For LE, we accept connection as encrypted
                         conn->authentication_flags |= CONNECTION_ENCRYPTED;
-                        hci_emit_security_level(handle, gap_security_level_for_connection(conn));
                     }
 #ifdef ENABLE_CLASSIC
                     else {
