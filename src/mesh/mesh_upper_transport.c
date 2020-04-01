@@ -320,7 +320,7 @@ static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_pdu_t * 
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             access_pdu = (mesh_access_pdu_t *) pdu;
-            nonce[1] = access_pdu->transmic_len == 8 ? 0x80 : 0x00;
+            nonce[1] = ((access_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 0x80 : 0x00;
             big_endian_store_24(nonce, 2, access_pdu->seq);
             big_endian_store_16(nonce, 5, access_pdu->src);
             big_endian_store_16(nonce, 7, access_pdu->dst);
@@ -372,21 +372,22 @@ static void mesh_upper_transport_process_control_message_done(mesh_control_pdu_t
 static void mesh_upper_transport_validate_access_message_ccm(void * arg){
     UNUSED(arg);
 
+    uint8_t transmic_len = ((incoming_access_decrypted->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
     uint8_t * upper_transport_pdu     = incoming_access_decrypted->data;
-    uint8_t   upper_transport_pdu_len = incoming_access_decrypted->len - incoming_access_decrypted->transmic_len;
+    uint8_t   upper_transport_pdu_len = incoming_access_decrypted->len - transmic_len;
  
     mesh_print_hex("Decrypted PDU", upper_transport_pdu, upper_transport_pdu_len);
 
     // store TransMIC
     uint8_t trans_mic[8];
     btstack_crypto_ccm_get_authentication_value(&ccm, trans_mic);
-    mesh_print_hex("TransMIC", trans_mic, incoming_access_decrypted->transmic_len);
+    mesh_print_hex("TransMIC", trans_mic, transmic_len);
 
-    if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len], incoming_access_decrypted->transmic_len) == 0){
+    if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len], transmic_len) == 0){
         printf("TransMIC matches\n");
 
         // remove TransMIC from payload
-        incoming_access_decrypted->len -= incoming_access_decrypted->transmic_len;
+        incoming_access_decrypted->len -= transmic_len;
 
         // if virtual address, update dst to pseudo_dst
         if (mesh_network_address_virtual(incoming_access_decrypted->dst)){
@@ -415,8 +416,8 @@ static void mesh_upper_transport_validate_access_message_ccm(void * arg){
 
 static void mesh_upper_transport_validate_access_message_digest(void * arg){
     UNUSED(arg);
-    uint8_t   upper_transport_pdu_len      = incoming_access_decrypted->len - incoming_access_decrypted->transmic_len;
-    uint8_t * upper_transport_pdu_data_in  = incoming_access_decrypted->data;
+    uint8_t   transmic_len = ((incoming_access_decrypted->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
+    uint8_t   upper_transport_pdu_len      = incoming_access_decrypted->len - transmic_len;
     uint8_t * upper_transport_pdu_data_out = incoming_access_decrypted->data;
 
     mesh_network_pdu_t * unsegmented_pdu = NULL;
@@ -443,8 +444,9 @@ static void mesh_upper_transport_validate_access_message_digest(void * arg){
 }
 
 static void mesh_upper_transport_validate_access_message(void){
+    uint8_t   transmic_len = ((incoming_access_decrypted->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
     uint8_t * upper_transport_pdu_data =  incoming_access_decrypted->data;
-    uint8_t   upper_transport_pdu_len  = incoming_access_decrypted->len - incoming_access_decrypted->transmic_len;
+    uint8_t   upper_transport_pdu_len  = incoming_access_decrypted->len - transmic_len;
 
     if (!mesh_transport_key_and_virtual_address_iterator_has_more(&mesh_transport_key_it)){
         printf("No valid transport key found\n");
@@ -472,7 +474,7 @@ static void mesh_upper_transport_validate_access_message(void){
     if (mesh_network_address_virtual(incoming_access_decrypted->dst)){
         aad_len  = 16;
     }
-    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, incoming_access_decrypted->transmic_len);
+    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, transmic_len);
 
     if (aad_len){
         btstack_crypto_ccm_digest(&ccm, (uint8_t *) mesh_transport_key_it.address->label_uuid, aad_len,
@@ -483,8 +485,9 @@ static void mesh_upper_transport_validate_access_message(void){
 }
 
 static void mesh_upper_transport_process_access_message(void){
+    uint8_t   transmic_len = ((incoming_access_decrypted->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
     uint8_t * upper_transport_pdu     =  incoming_access_decrypted->data;
-    uint8_t   upper_transport_pdu_len = incoming_access_decrypted->len - incoming_access_decrypted->transmic_len;
+    uint8_t   upper_transport_pdu_len = incoming_access_decrypted->len - transmic_len;
     mesh_print_hex("Upper Transport pdu", upper_transport_pdu, upper_transport_pdu_len);
 
     uint8_t aid = incoming_access_decrypted->akf_aid_control & 0x3f;
@@ -767,8 +770,8 @@ static void mesh_upper_transport_run(void){
 
                     incoming_access_decrypted = &incoming_pdu_singleton.access;
                     incoming_access_decrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
+                    incoming_access_decrypted->flags = 0;
                     incoming_access_decrypted->netkey_index = network_pdu->netkey_index;
-                    incoming_access_decrypted->transmic_len = 4;
                     incoming_access_decrypted->akf_aid_control = network_pdu->data[9];
                     incoming_access_decrypted->len = network_pdu->len - 10; // 9 header + 1 AID
                     incoming_access_decrypted->ivi_nid = network_pdu->data[0];
@@ -776,7 +779,6 @@ static void mesh_upper_transport_run(void){
                     incoming_access_decrypted->seq = big_endian_read_24(network_pdu->data, 2);
                     incoming_access_decrypted->src = big_endian_read_16(network_pdu->data, 5);
                     incoming_access_decrypted->dst = big_endian_read_16(network_pdu->data, 7);
-                    //  (void)memcpy(incoming_access_decrypted->network_header, network_pdu->data, 9);
 
                     mesh_upper_transport_process_access_message();
                 }
@@ -817,9 +819,9 @@ static void mesh_upper_transport_run(void){
 
                     incoming_access_decrypted = &incoming_pdu_singleton.access;
                     incoming_access_decrypted->pdu_header.pdu_type = MESH_PDU_TYPE_ACCESS;
+                    incoming_access_decrypted->flags = segmented_pdu->flags;
                     incoming_access_decrypted->len =  segmented_pdu->len;
                     incoming_access_decrypted->netkey_index = segmented_pdu->netkey_index;
-                    incoming_access_decrypted->transmic_len = ((segmented_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
                     incoming_access_decrypted->akf_aid_control =  segmented_pdu->akf_aid_control;
                     incoming_access_decrypted->ivi_nid = segmented_pdu->ivi_nid;
                     incoming_access_decrypted->ctl_ttl = segmented_pdu->ctl_ttl;
@@ -1133,7 +1135,9 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_acces
     const uint8_t trans_mic_len = szmic ? 8 : 4;
 
     // store in transport pdu
-    access_pdu->transmic_len = trans_mic_len;
+    if (szmic){
+        access_pdu->flags |= MESH_TRANSPORT_FLAG_TRANSMIC_64;
+    }
     access_pdu->netkey_index = netkey_index;
     access_pdu->appkey_index = appkey_index;
     access_pdu->akf_aid_control = akf_aid;
