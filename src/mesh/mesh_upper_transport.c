@@ -1112,43 +1112,6 @@ uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey
     }
 }
 
-static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_access_pdu_t * access_pdu, uint16_t netkey_index,
-                                                                      uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic){
-
-    // get app or device key
-    const mesh_transport_key_t *appkey;
-    appkey = mesh_transport_key_get(appkey_index);
-    if (appkey == NULL) {
-        printf("[!] Upper transport, setup segmented Access PDU - appkey_index %x unknown\n", appkey_index);
-        return 1;
-    }
-    uint8_t akf_aid = (appkey->akf << 6) | appkey->aid;
-
-    // lookup network by netkey_index
-    const mesh_network_key_t *network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 1;
-    if (network_key == NULL) {
-        printf("[!] Upper transport, setup segmented Access PDU - netkey_index %x unknown\n", appkey_index);
-        return 1;
-    }
-
-    const uint8_t trans_mic_len = szmic ? 8 : 4;
-
-    // store in transport pdu
-    if (szmic){
-        access_pdu->flags |= MESH_TRANSPORT_FLAG_TRANSMIC_64;
-    }
-    access_pdu->netkey_index = netkey_index;
-    access_pdu->appkey_index = appkey_index;
-    access_pdu->akf_aid_control = akf_aid;
-    uint8_t iviNid = network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7);
-    access_pdu->ivi_nid = iviNid;
-    access_pdu->src = src;
-    access_pdu->dst = dest;
-    access_pdu->ctl_ttl = ttl;
-    return 0;
-}
-
 static uint8_t mesh_upper_transport_setup_upper_access_pdu_header(mesh_upper_transport_pdu_t * upper_pdu, uint16_t netkey_index,
                                                                   uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic){
 
@@ -1203,8 +1166,10 @@ static uint8_t mesh_upper_transport_setup_upper_access_pdu(mesh_upper_transport_
 uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
                                                      uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_ACCESS:
-            return mesh_upper_transport_setup_segmented_access_pdu_header((mesh_access_pdu_t *) pdu, netkey_index, appkey_index, ttl, src, dest, szmic);
+        case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+            return mesh_upper_transport_setup_upper_access_pdu_header((mesh_upper_transport_pdu_t *) pdu, netkey_index,
+                                                               appkey_index, ttl, src, dest, szmic);
         default:
             btstack_assert(false);
             return 1;
