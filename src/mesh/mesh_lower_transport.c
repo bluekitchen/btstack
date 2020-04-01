@@ -979,9 +979,14 @@ bool mesh_lower_transport_can_send_to_dest(uint16_t dest){
     while (btstack_linked_list_iterator_has_next(&it)){
         mesh_segmented_pdu_t * segmented_pdu = (mesh_segmented_pdu_t *) btstack_linked_list_iterator_next(&it);
         num_messages++;
-        if (segmented_pdu->dst == dest) return false;
+        if (segmented_pdu->dst == dest){
+            return false;
+        }
     }
-    // TODO: limit number of parallel outgoing messages
+#ifdef MAX_NR_MESH_OUTGOING_SEGMENTED_MESSAGES
+    // limit number of parallel outgoing messages if configured
+    if (num_messages >= MAX_NR_MESH_OUTGOING_SEGMENTED_MESSAGES) return false;
+#endif
     return true;
 }
 
