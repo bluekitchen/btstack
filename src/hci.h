@@ -70,6 +70,13 @@ extern "C" {
 #endif
      
 // packet buffer sizes
+#define HCI_CMD_HEADER_SIZE          3
+#define HCI_ACL_HEADER_SIZE          4
+#define HCI_SCO_HEADER_SIZE          3
+#define HCI_EVENT_HEADER_SIZE        2
+
+#define HCI_EVENT_PAYLOAD_SIZE     255
+#define HCI_CMD_PAYLOAD_SIZE       255
 
 // Max HCI Command LE payload size:
 // 64 from LE Generate DHKey command
@@ -141,15 +148,6 @@ extern "C" {
 #define HCI_INCOMING_PRE_BUFFER_SIZE 2
 #endif
 #endif
-
-// packet header sizes
-#define HCI_CMD_HEADER_SIZE          3
-#define HCI_ACL_HEADER_SIZE          4
-#define HCI_SCO_HEADER_SIZE          3
-#define HCI_EVENT_HEADER_SIZE        2
-
-#define HCI_EVENT_PAYLOAD_SIZE     255
-#define HCI_CMD_PAYLOAD_SIZE       255
 
 // 
 #define IS_COMMAND(packet, command) ( little_endian_read_16(packet,0) == command.opcode )
