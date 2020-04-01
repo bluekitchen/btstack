@@ -661,7 +661,7 @@ mesh_upper_transport_pdu_t * mesh_access_message_finalize(mesh_upper_transport_b
 
     // upgrade to segmented if needed
     if (upper_pdu->pdu_header.pdu_type == MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS) {
-        if ((upper_pdu->transmic_len == 8 ) || (upper_pdu->len > 11)){
+        if ((upper_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64 != 0 ) || (upper_pdu->len > 11)){
             upper_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
         }
     }

@@ -185,7 +185,6 @@ typedef struct {
     uint16_t              netkey_index;
     // meta data transport layer
     uint16_t              appkey_index;
-    uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
     // MESH_TRANSPORT_FLAG
