@@ -5405,4 +5405,8 @@ void hci_free_connections_fuzz(void){
         btstack_memory_hci_connection_free(con);
     }
 }
+void hci_simulate_working_fuzz(void){
+    hci_init_done();
+    hci_stack->num_cmd_packets = 255;
+}
 #endif

@@ -1251,6 +1251,9 @@ void hci_setup_test_connections_fuzz(void);
 // free all connections, used for fuzzing
 void hci_free_connections_fuzz(void);
 
+// simulate stack bootup
+void hci_simulate_working_fuzz(void);
+
 #if defined __cplusplus
 }
 #endif
