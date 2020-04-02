@@ -3434,7 +3434,7 @@ static void hci_run(void){
             return;
         }
         // finally, we can enable/disable le scan
-        if ((hci_stack->le_scanning_enabled && !hci_stack->le_scanning_active)){
+        if ((hci_stack->le_scanning_enabled != hci_stack->le_scanning_active)){
             hci_stack->le_scanning_active = hci_stack->le_scanning_enabled;
             hci_send_cmd(&hci_le_set_scan_enable, hci_stack->le_scanning_enabled, 0);
             return;
