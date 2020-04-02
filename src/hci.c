@@ -2850,6 +2850,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Master slave policy
     hci_stack->master_slave_policy = 1;
 
+    // Allow Role Switch
+    hci_stack->allow_role_switch = 1;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     hci_stack->gap_required_encyrption_key_size = 16;
 #endif
@@ -2955,6 +2958,14 @@ void gap_set_class_of_device(uint32_t class_of_device){
 
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings){
     hci_stack->default_link_policy_settings = default_link_policy_settings;
+}
+
+void gap_set_allow_role_switch(bool allow_role_switch){
+    hci_stack->allow_role_switch = allow_role_switch ? 1 : 0;
+}
+
+uint8_t hci_get_allow_role_switch(void){
+    return  hci_stack->allow_role_switch;
 }
 
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout){
@@ -3571,7 +3582,7 @@ static void hci_run(void){
 #ifdef ENABLE_CLASSIC
                     case BD_ADDR_TYPE_ACL:
                         log_info("sending hci_create_connection");
-                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, hci_stack->allow_role_switch);
                         break;
 #endif
                     default:

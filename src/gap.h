@@ -165,6 +165,12 @@ void gap_set_class_of_device(uint32_t class_of_device);
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
 
 /**
+ * @brief Set Allow Role Switch param for outgoing classic ACL links
+ * @param allow_role_switch - true: allow remote device to request role switch, false: stay master
+ */
+void gap_set_allow_role_switch(bool allow_role_switch);
+
+/**
  * @brief Set  link supervision timeout for outgoing classic ACL links
  * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds
  */

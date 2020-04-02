@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+## Changes April 2020
+
+### Fixed
+
+### Added
+- GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections
+
+### Changed
+
 ## Changes March 2020
 
 ### Fixed

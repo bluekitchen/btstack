@@ -1461,7 +1461,7 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
             // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
             (void)memcpy(l2cap_outgoing_classic_addr, channel->address, 6);
-            hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+            hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, hci_get_allow_role_switch());
             break;
 
         case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:

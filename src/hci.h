@@ -757,6 +757,7 @@ typedef struct {
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
     uint8_t            default_link_policy_settings;
+    uint8_t            allow_role_switch;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;
@@ -1239,6 +1240,11 @@ void hci_halting_defer(void);
  * Disable automatic L2CAP disconnect if no L2CAP connection is established
  */
 void hci_disable_l2cap_timeout_check(void);
+
+/**
+ *  Get Classic Allow Role Switch param
+ */
+uint8_t hci_get_allow_role_switch(void);
 
 /**
  * Get state
