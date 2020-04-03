@@ -1221,6 +1221,8 @@ void mesh_upper_transport_message_add_data(mesh_upper_transport_builder_t * buil
 
     if (builder->pdu == NULL) return;
 
+    builder->pdu->len += data_len;
+
     uint16_t bytes_current_segment = 0;
     if (builder->segment){
         bytes_current_segment = MESH_NETWORK_PAYLOAD_MAX - builder->segment->len;
