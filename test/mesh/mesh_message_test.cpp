@@ -498,14 +498,17 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
     mesh_pdu_t * pdu;
     if (transport_pdu_len < 12){
         // send as unsegmented control pdu
-        pdu = (mesh_pdu_t *) mesh_network_pdu_get();
-        pdu->pdu_type = MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL;
+        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+        mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
+        pdu = (mesh_pdu_t *) network_pdu;
     } else {
-        // send as segmented control pdu
-        pdu = (mesh_pdu_t *) &upper_pdu;
-        upper_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL;
+        mesh_upper_transport_builder_t builder;
+        mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL);
+        mesh_upper_transport_message_add_data(&builder, transport_pdu_data+1, transport_pdu_len-1);
+        mesh_upper_transport_pdu_t * upper_pdu = (mesh_upper_transport_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+        mesh_upper_transport_setup_segmented_control_pdu_header(upper_pdu, netkey_index, ttl, src, dest, opcode);
+        pdu = (mesh_pdu_t *) upper_pdu;
     }
-    mesh_upper_transport_setup_control_pdu(pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
     mesh_upper_transport_send_control_pdu(pdu);
 
     // check for all network pdus

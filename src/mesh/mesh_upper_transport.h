@@ -65,28 +65,28 @@ mesh_upper_transport_pdu_t * mesh_upper_transport_message_finalize(mesh_upper_tr
 
 void mesh_upper_transport_init(void);
 
-void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
-
-// Control PDUs
-
 void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
-
-uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey_index,
-        uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
-
-void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu);
-
-// Access PDUs
-
 
 void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
+void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
+
+void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
+
+// Control PDUs: setup and send
+uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
+                                                           const uint8_t * control_pdu_data, uint16_t control_pdu_len);
+
+uint8_t mesh_upper_transport_setup_segmented_control_pdu_header(mesh_upper_transport_pdu_t * upper_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode);
+
+void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu);
+
+// Access PDUs: setup and send
 uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
                                                                uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic);
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 
-void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
 
 // test
 void mesh_upper_transport_dump(void);
