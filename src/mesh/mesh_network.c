@@ -139,6 +139,9 @@ static mesh_network_pdu_t * adv_bearer_network_pdu;
 static uint32_t mesh_network_cache[MESH_NETWORK_CACHE_SIZE];
 static int      mesh_network_cache_index;
 
+// register for freed network pdu
+void (*mesh_network_free_pdu_callback)(void);
+
 // prototypes
 
 static void mesh_network_run(void);
@@ -1266,7 +1269,18 @@ mesh_network_pdu_t * mesh_network_pdu_get(void){
 
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu){
     btstack_memory_mesh_network_pdu_free(network_pdu);
+    if (mesh_network_free_pdu_callback!=NULL){
+        void (*callback)(void) = mesh_network_free_pdu_callback;
+        mesh_network_free_pdu_callback= NULL;
+        (*callback)();
+    }
 }
+
+void mesh_network_notify_on_freed_pdu(void (*callback)(void)){
+    btstack_assert(mesh_network_free_pdu_callback == NULL);
+    mesh_network_free_pdu_callback = callback;
+}
+
 
 // Mesh Subnet Management
 

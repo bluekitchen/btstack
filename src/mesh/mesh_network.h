@@ -442,6 +442,7 @@ mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet
 // buffer pool
 mesh_network_pdu_t * mesh_network_pdu_get(void);
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu);
+void mesh_network_notify_on_freed_pdu(void (*callback)(void));
 
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
