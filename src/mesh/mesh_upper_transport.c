@@ -111,8 +111,12 @@ static mesh_access_pdu_t *   incoming_access_decrypted;
 // pointer to incoming_pdu_singleton.access
 static mesh_control_pdu_t *  incoming_control_pdu;
 
+// incoming incoming_access_decrypted ready to be deliverd
+static bool incoming_access_pdu_ready;
+
 // incoming unsegmented (network) and segmented (transport) control and access messages
 static btstack_linked_list_t upper_transport_incoming;
+
 
 // outgoing unsegmented and segmented control and access messages
 static btstack_linked_list_t upper_transport_outgoing;
@@ -377,6 +381,28 @@ static void mesh_upper_transport_process_control_message_done(mesh_control_pdu_t
     mesh_upper_transport_run();
 }
 
+static void mesh_upper_transport_deliver_access_message(void){
+    if (incoming_access_pdu_ready == false){
+        return;
+    }
+
+    bool message_builder_ready = mesh_upper_transport_message_reserve();
+
+    if (message_builder_ready == false){
+        // waiting for free upper pdu
+        if (message_builder_reserved_upper_pdu == false){
+            return;
+        }
+        // register for free network pdus if missing
+        mesh_network_notify_on_freed_pdu(&mesh_upper_transport_deliver_access_message);
+        return;
+    }
+
+    // message builder ready = one outgoing pdu is guaranteed, deliver access pdu
+    incoming_access_pdu_ready = false;
+    mesh_access_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) incoming_access_decrypted);
+}
+
 static void mesh_upper_transport_validate_access_message_ccm(void * arg){
     UNUSED(arg);
 
@@ -403,11 +429,8 @@ static void mesh_upper_transport_validate_access_message_ccm(void * arg){
         }
 
         // pass to upper layer
-        btstack_assert(mesh_access_message_handler != NULL);
-        mesh_pdu_t * pdu = (mesh_pdu_t*) incoming_access_decrypted;
-        mesh_access_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
-
-        printf("\n");
+        incoming_access_pdu_ready = true;
+        mesh_upper_transport_deliver_access_message();
 
     } else {
         uint8_t akf = incoming_access_decrypted->akf_aid_control & 0x40;
@@ -1001,6 +1024,7 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
         case MESH_PDU_TYPE_SEGMENTED:
             message_pdu = (mesh_segmented_pdu_t *) pdu;
             mesh_segmented_pdu_free(message_pdu);
+            break;
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
@@ -1010,6 +1034,8 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
                 mesh_network_pdu_free(segment);
             }
             btstack_memory_mesh_upper_transport_pdu_free(upper_pdu);
+            // check if incoming access pdu ready
+            mesh_upper_transport_deliver_access_message();
             break;
         default:
             btstack_assert(false);
