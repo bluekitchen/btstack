@@ -66,6 +66,9 @@
 // TODO: extract mesh_pdu functions into lower transport or network
 #include "mesh/mesh_access.h"
 
+// MESH_ACCESS_MESH_NETWORK_PAYLOAD_MAX (384) / MESH_NETWORK_PAYLOAD_MAX (29) = 13.24.. < 14
+#define MESSAGE_BUILDER_MAX_NUM_NETWORK_PDUS (14)
+
 // combined key x address iterator for upper transport decryption
 
 typedef struct {
@@ -116,6 +119,11 @@ static btstack_linked_list_t upper_transport_outgoing;
 
 // outgoing upper transport messages that have been sent to lower transport and wait for sent event
 static btstack_linked_list_t upper_transport_outgoing_active;
+
+// message builder buffers
+static mesh_upper_transport_pdu_t * message_builder_reserved_upper_pdu;
+static uint8_t message_builder_num_network_pdus_reserved;
+static btstack_linked_list_t message_builder_reserved_network_pdus;
 
 // TODO: higher layer define used for assert
 #define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
@@ -1149,11 +1157,34 @@ void mesh_upper_transport_init(){
     mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_pdu_handler);
 }
 
+bool mesh_upper_transport_message_reserve(void){
+    if (message_builder_reserved_upper_pdu == NULL){
+        message_builder_reserved_upper_pdu = btstack_memory_mesh_upper_transport_pdu_get();
+    }
+    if (message_builder_reserved_upper_pdu == NULL){
+        return false;
+    }
+    while (message_builder_num_network_pdus_reserved < MESSAGE_BUILDER_MAX_NUM_NETWORK_PDUS){
+        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+        if (network_pdu == NULL){
+            return false;
+        }
+        btstack_linked_list_add(&message_builder_reserved_network_pdus, (btstack_linked_item_t *) network_pdu);
+        message_builder_num_network_pdus_reserved++;
+    }
+    return true;
+}
 
 void mesh_upper_transport_message_init(mesh_upper_transport_builder_t * builder, mesh_pdu_type_t pdu_type) {
     btstack_assert(builder != NULL);
 
-    builder->pdu = btstack_memory_mesh_upper_transport_pdu_get();
+    // use reserved buffer if available
+    if (message_builder_reserved_upper_pdu != NULL){
+        builder->pdu = message_builder_reserved_upper_pdu;
+        message_builder_reserved_upper_pdu = NULL;
+    } else {
+        builder->pdu = btstack_memory_mesh_upper_transport_pdu_get();
+    }
     if (!builder->pdu) return;
 
     builder->segment = NULL;
@@ -1175,7 +1206,13 @@ void mesh_upper_transport_message_add_data(mesh_upper_transport_builder_t * buil
     }
     while (data_len > 0){
         if (bytes_current_segment == 0){
-            builder->segment = (mesh_network_pdu_t *) mesh_network_pdu_get();
+            // use reserved buffer if available
+            if (message_builder_num_network_pdus_reserved > 0){
+                message_builder_num_network_pdus_reserved--;
+                builder->segment = (mesh_network_pdu_t *) btstack_linked_list_pop(&message_builder_reserved_network_pdus);
+            } else {
+                builder->segment = (mesh_network_pdu_t *) mesh_network_pdu_get();
+            }
             if (builder->segment == NULL) {
                 mesh_upper_transport_pdu_free((mesh_pdu_t *) builder->pdu);
                 builder->pdu = NULL;
