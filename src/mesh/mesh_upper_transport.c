@@ -1146,23 +1146,6 @@ static uint8_t mesh_upper_transport_setup_upper_access_pdu_header(mesh_upper_tra
     return 0;
 }
 
-static uint8_t mesh_upper_transport_setup_upper_access_pdu(mesh_upper_transport_pdu_t * upper_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
-                                                           uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len){
-    int status = mesh_upper_transport_setup_upper_access_pdu_header(upper_pdu, netkey_index, appkey_index, ttl, src,
-                                                                    dest, szmic);
-    if (status) return status;
-
-    // allocate segments
-    btstack_linked_list_t free_segments = NULL;
-    bool ok = mesh_segmented_allocate_segments( &free_segments, access_pdu_len);
-    if (!ok) return 1;
-    // store control pdu
-    mesh_segmented_store_payload(access_pdu_data, access_pdu_len, &free_segments, &upper_pdu->segments);
-    upper_pdu->len = access_pdu_len;
-    return 0;
-}
-
-
 uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
                                                      uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic){
     switch (pdu->pdu_type){
@@ -1170,21 +1153,6 @@ uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t 
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
             return mesh_upper_transport_setup_upper_access_pdu_header((mesh_upper_transport_pdu_t *) pdu, netkey_index,
                                                                appkey_index, ttl, src, dest, szmic);
-        default:
-            btstack_assert(false);
-            return 1;
-    }
-}
-
-uint8_t mesh_upper_transport_setup_access_pdu(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
-                                              uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic,
-                                              const uint8_t * access_pdu_data, uint8_t access_pdu_len){
-    switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
-        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
-            return mesh_upper_transport_setup_upper_access_pdu((mesh_upper_transport_pdu_t *) pdu, netkey_index,
-                                                               appkey_index, ttl, src, dest, szmic, access_pdu_data,
-                                                               access_pdu_len);
         default:
             btstack_assert(false);
             return 1;

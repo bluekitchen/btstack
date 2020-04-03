@@ -444,22 +444,31 @@ static void expect_adv_network_pdu(const uint8_t * data, uint16_t len){
 static mesh_upper_transport_pdu_t upper_pdu = { 0 };
 void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
 
-    upper_pdu.lower_pdu = NULL;
-
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
 
-    upper_pdu.flags = 0;
+    mesh_pdu_type_t pdu_type;
     if (count == 1 ){
         // send as unsegmented access pdu
-        upper_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS;
+        pdu_type = MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS;
     } else {
         // send as segmented access pdu
-        upper_pdu.pdu_header.pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
+        pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
     }
-
+#if 0
+    //
+    upper_pdu.lower_pdu = NULL;
+    upper_pdu.flags = 0;
+    upper_pdu.pdu_type = pdu_type;
     mesh_pdu_t * pdu = (mesh_pdu_t *) &upper_pdu;
     mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
+#else
+    mesh_upper_transport_builder_t builder;
+    mesh_upper_transport_message_init(&builder, pdu_type);
+    mesh_upper_transport_message_add_data(&builder, transport_pdu_data, transport_pdu_len);
+    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+    mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, szmic);
+#endif
     mesh_upper_transport_send_access_pdu(pdu);
 
     // check for all network pdus
@@ -476,11 +485,6 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
 #ifdef ENABLE_MESH_ADV_BEARER
         expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
-    }
-    // free segments
-    while (btstack_linked_list_empty(&upper_pdu.segments) == false){
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&upper_pdu.segments);
-        mesh_network_pdu_free(network_pdu);
     }
 }
 
