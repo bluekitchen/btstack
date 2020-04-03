@@ -46,6 +46,10 @@ hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activit
 ### Changed
 - hid_host_mode: allow sniff mode
 
+### Added
+- port/qt-usb and port/qt-h4: integrate BTstack Qt run loop for Unix- or Win32-based Qt application connected to Bluetooth module via H4 over serial port or USB.
+
+
 ## Changes January 2020
 
 ### Fixed
