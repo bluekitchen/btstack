@@ -14,6 +14,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+## Changes April 2020
+
+### Fixed
+
+### Added
+- GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections
+
+### Changed
+
+## Changes March 2020
+
+### Fixed
+- GAP: fixed gap_set_scan_parameters() if issued right before gap_start_scan() 
+- HCI: only send HCI Read Local Encryption Key Size if supported by Controller
+
+### Added
+- GATT Client: allow to register for any notification/indication and/or any connection
+hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity
+- chipset: assert hci packet buffers are suitable for firmware upload or patches (atwilc3000,bcm,cc256x,intel)
+
+### Changed
+- AVRCP Target: volume in avrcp_target_volume_changed is reported as current value in interim response to register for volume change notifications
+- SDP Client: query attributes 0x0000..0xffff instead of 0x0001..0xffff to match other stacks / improve compatibility with bad sdp server implementations
+
 ## Changes Februar 2020
 
 ### Fixed
@@ -21,6 +45,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - hid_host_mode: allow sniff mode
+
+### Added
+- port/qt-usb and port/qt-h4: integrate BTstack Qt run loop for Unix- or Win32-based Qt application connected to Bluetooth module via H4 over serial port or USB.
+
 
 ## Changes January 2020
 

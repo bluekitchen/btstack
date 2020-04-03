@@ -70,6 +70,13 @@ extern "C" {
 #endif
      
 // packet buffer sizes
+#define HCI_CMD_HEADER_SIZE          3
+#define HCI_ACL_HEADER_SIZE          4
+#define HCI_SCO_HEADER_SIZE          3
+#define HCI_EVENT_HEADER_SIZE        2
+
+#define HCI_EVENT_PAYLOAD_SIZE     255
+#define HCI_CMD_PAYLOAD_SIZE       255
 
 // Max HCI Command LE payload size:
 // 64 from LE Generate DHKey command
@@ -141,15 +148,6 @@ extern "C" {
 #define HCI_INCOMING_PRE_BUFFER_SIZE 2
 #endif
 #endif
-
-// packet header sizes
-#define HCI_CMD_HEADER_SIZE          3
-#define HCI_ACL_HEADER_SIZE          4
-#define HCI_SCO_HEADER_SIZE          3
-#define HCI_EVENT_HEADER_SIZE        2
-
-#define HCI_EVENT_PAYLOAD_SIZE     255
-#define HCI_CMD_PAYLOAD_SIZE       255
 
 // 
 #define IS_COMMAND(packet, command) ( little_endian_read_16(packet,0) == command.opcode )
@@ -759,6 +757,7 @@ typedef struct {
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
     uint8_t            default_link_policy_settings;
+    uint8_t            allow_role_switch;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;
@@ -800,7 +799,8 @@ typedef struct {
     /* 3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
     /* 4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
     /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
-    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */ 
+    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */
+    /* 7 - Read Encryption Key Size                (Octet 20/bit 4) */
     uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */
@@ -1242,6 +1242,11 @@ void hci_halting_defer(void);
 void hci_disable_l2cap_timeout_check(void);
 
 /**
+ *  Get Classic Allow Role Switch param
+ */
+uint8_t hci_get_allow_role_switch(void);
+
+/**
  * Get state
  */
 HCI_STATE hci_get_state(void);
@@ -1251,6 +1256,9 @@ void hci_setup_test_connections_fuzz(void);
 
 // free all connections, used for fuzzing
 void hci_free_connections_fuzz(void);
+
+// simulate stack bootup
+void hci_simulate_working_fuzz(void);
 
 #if defined __cplusplus
 }

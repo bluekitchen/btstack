@@ -2022,8 +2022,9 @@ static void event_handler(uint8_t *packet, int size){
                      (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)       |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting 
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x01) << 4) |  // bit 4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x08) << 2) |  // bit 5 = Octet 35, bit 3 / LE Read Maximum Data Length
-                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1);   // bit 6 = Octet 35, bit 5 / LE Set Default PHY
-                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1) |  // bit 6 = Octet 35, bit 5 / LE Set Default PHY
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+20] & 0x10) << 3);   // bit 7 = Octet 20, bit 4 / Read Encryption Key Size
+                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]);
             }
 #ifdef ENABLE_CLASSIC
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
@@ -2319,8 +2320,15 @@ static void event_handler(uint8_t *packet, int size){
                     }
 #ifdef ENABLE_CLASSIC
                     else {
-                        // For Classic, we need to validate encryption key size first
-                        conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                        if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
+                            // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
+                            conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                        } else {
+                            // if not, pretend everything is perfect
+                            conn->encryption_key_size = 16;
+                            conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+                        }
                     }
 #endif
                 } else {
@@ -2842,6 +2850,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Master slave policy
     hci_stack->master_slave_policy = 1;
 
+    // Allow Role Switch
+    hci_stack->allow_role_switch = 1;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     hci_stack->gap_required_encyrption_key_size = 16;
 #endif
@@ -2947,6 +2958,14 @@ void gap_set_class_of_device(uint32_t class_of_device){
 
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings){
     hci_stack->default_link_policy_settings = default_link_policy_settings;
+}
+
+void gap_set_allow_role_switch(bool allow_role_switch){
+    hci_stack->allow_role_switch = allow_role_switch ? 1 : 0;
+}
+
+uint8_t hci_get_allow_role_switch(void){
+    return  hci_stack->allow_role_switch;
 }
 
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout){
@@ -3413,17 +3432,22 @@ static void hci_run(void){
     && ((hci_stack->le_own_addr_type == BD_ADDR_TYPE_LE_PUBLIC) || hci_stack->le_random_address_set)){
 
 #ifdef ENABLE_LE_CENTRAL
-        // handle le scan
+        // parameter change requires scanning to be stopped first
+        if (hci_stack->le_scan_type != 0xff) {
+            if (hci_stack->le_scanning_active){
+                hci_stack->le_scanning_active = 0;
+                hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+            } else {
+                int scan_type = (int) hci_stack->le_scan_type;
+                hci_stack->le_scan_type = 0xff;
+                hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
+            }
+            return;
+        }
+        // finally, we can enable/disable le scan
         if ((hci_stack->le_scanning_enabled != hci_stack->le_scanning_active)){
             hci_stack->le_scanning_active = hci_stack->le_scanning_enabled;
             hci_send_cmd(&hci_le_set_scan_enable, hci_stack->le_scanning_enabled, 0);
-            return;
-        }
-        if (hci_stack->le_scan_type != 0xff){
-            // defaults: active scanning, accept all advertisement packets
-            int scan_type = hci_stack->le_scan_type;
-            hci_stack->le_scan_type = 0xff;
-            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
             return;
         }
 #endif
@@ -3558,7 +3582,7 @@ static void hci_run(void){
 #ifdef ENABLE_CLASSIC
                     case BD_ADDR_TYPE_ACL:
                         log_info("sending hci_create_connection");
-                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, hci_stack->allow_role_switch);
                         break;
 #endif
                     default:
@@ -5338,12 +5362,17 @@ void hci_setup_test_connections_fuzz(void){
     // default address: 66:55:44:33:00:01
     bd_addr_t addr = { 0x66, 0x55, 0x44, 0x33, 0x00, 0x00};
 
+    // setup Controller info
+    hci_stack->num_cmd_packets = 255;
+    hci_stack->acl_packets_total_num = 255;
+
     // setup incoming Classic ACL connection with con handle 0x0001, 66:55:44:33:22:01
     addr[5] = 0x01;
     conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = RECEIVED_CONNECTION_REQUEST;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup incoming Classic SCO connection with con handle 0x0002
     addr[5] = 0x02;
@@ -5351,6 +5380,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = RECEIVED_CONNECTION_REQUEST;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready Classic ACL connection with con handle 0x0003
     addr[5] = 0x03;
@@ -5358,6 +5388,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready Classic SCO connection with con handle 0x0004
     addr[5] = 0x04;
@@ -5365,6 +5396,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 
     // setup ready LE ACL connection with con handle 0x005 and public address
     addr[5] = 0x05;
@@ -5372,6 +5404,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->con_handle = addr[5];
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
+    conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
 }
 
 void hci_free_connections_fuzz(void){
@@ -5382,5 +5415,9 @@ void hci_free_connections_fuzz(void){
         btstack_linked_list_iterator_remove(&it);
         btstack_memory_hci_connection_free(con);
     }
+}
+void hci_simulate_working_fuzz(void){
+    hci_init_done();
+    hci_stack->num_cmd_packets = 255;
 }
 #endif

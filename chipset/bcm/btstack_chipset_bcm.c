@@ -52,6 +52,7 @@
 #include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_chipset_bcm.h"
+#include "hci.h"
 
 #ifdef HAVE_POSIX_FILE_IO
 #include <ctype.h>
@@ -62,6 +63,14 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#endif
+
+// assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
+#if HCI_OUTGOING_PACKET_BUFFER_SIZE < (HCI_CMD_HEADER_SIZE + 255)
+#error "HCI_OUTGOING_PACKET_BUFFER_SIZE to small. Outgoing HCI packet buffer to small for largest HCI Command packet. Please set HCI_ACL_PAYLOAD_SIZE to 258 or higher."
+#endif
+#if HCI_INCOMING_PACKET_BUFFER_SIZE < (HCI_EVENT_HEADER_SIZE + 255)
+#error "HCI_INCOMING_PACKET_BUFFER_SIZE to small. Incoming HCI packet buffer to small for largest HCI Event packet. Please set HCI_ACL_PAYLOAD_SIZE to 257 or higher."
 #endif
 
 static int send_download_command;

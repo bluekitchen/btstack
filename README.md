@@ -1,6 +1,6 @@
 # Welcome to BTstack
 
-BTstack is [BlueKitchen's](http://bluekitchen-gmbh.com) implementation of the official Bluetooth stack.
+BTstack is [BlueKitchen's](https://bluekitchen-gmbh.com) implementation of the official Bluetooth stack.
 It is well suited for small, resource-constraint devices
 such as 8 or 16 bit embedded systems as it is highly configurable and comes with an ultra small memory footprint.
 
@@ -20,7 +20,7 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Third-party libraries (FOSS):** [List of used libraries and their licenses](https://github.com/bluekitchen/btstack/blob/develop/3rd-party/README.md)
 
-**Discussion and Community Support:** [BTstack Google Group](http://groups.google.com/group/btstack-dev)
+**Discussion and Community Support:** [BTstack Google Group](https://groups.google.com/group/btstack-dev)
 
 
 ### Supported Protocols and Profiles
@@ -28,6 +28,10 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 **Protocols:** L2CAP (incl. LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections).
 
 **Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP incl. Browsing, GATT.
+
+**GATT Services:** Battery, Cycling Power, Cycling Speed and Cadence, Device Information, Heart Rate, HID over GATT (HOG), Mesh Provisioning, Mesh Proxy, Nordic SPP, u-Blox SPP. 
+
+GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](http://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 
 **Beta Stage:** HID, HOGP, PBAP.
 
@@ -58,13 +62,15 @@ No build server | [wiced-h5](https://github.com/bluekitchen/btstack/tree/master/
 #### Other Platforms:     
 Status             | Port  | Platform
 -------------------| ------|---------
+[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-libusb-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-libusb-master) | [libusb](https://github.com/bluekitchen/btstack/tree/master/port/libusb) | Unix-based system with dedicated USB Bluetooth dongle
+No build server | [libusb-intel](https://github.com/bluekitchen/btstack/tree/master/port/libusb-intel) | Unix-based system with Intel Wireless 8260/8265 Controller
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-posix-h4-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-posix-h4-master) | [posix-h4](https://github.com/bluekitchen/btstack/tree/master/port/posix-h4) | Unix-based system connected to Bluetooth module via H4 over serial port   
 No build server | [posix-h4-da14581](https://github.com/bluekitchen/btstack/tree/master/port/posix-h4-da14581) | Unix-based system connected to Dialog Semiconductor DA14581 via H4 over serial port
 No build server | [posix-h4-da14585](https://github.com/bluekitchen/btstack/tree/master/port/posix-h4-da14585) | Unix-based system connected to Dialog Semiconductor DA14585 via H4 over serial port   
 No build server | [posix-h5](https://github.com/bluekitchen/btstack/tree/master/port/posix-h5) | Unix-based system connected to Bluetooth module via H5 over serial port   
 No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/master/port/posix-h5) | Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port   
-[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-libusb-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-libusb-master) | [libusb](https://github.com/bluekitchen/btstack/tree/master/port/libusb) | Unix-based system with dedicated USB Bluetooth dongle
-No build server | [libusb-intel](https://github.com/bluekitchen/btstack/tree/master/port/libusb-intel) | Unix-based system with Intel Wireless 8260/8265 Controller
+No build server | [qt-h4](https://github.com/bluekitchen/btstack/tree/master/port/qt-h4) | Unix- or Win32-based [Qt application](https://qt.io) connected to Bluetooth module via H4 over serial port 
+No build server | [qt-usb](https://github.com/bluekitchen/btstack/tree/master/port/qt-usb) | Unix- or Win32-based [Qt application](https://qt.io) with dedicated USB Bluetooth dongle
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/master/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
 No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/master/port/windows-winusb) | Win32-based system with dedicated USB Bluetooth dongle
 No build server | [windows-winusb-intel](https://github.com/bluekitchen/btstack/tree/master/port/windows-winusb-intel) | Win32-based system with Intel Wireless 8260/8265 Controller

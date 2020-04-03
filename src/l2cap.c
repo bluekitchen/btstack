@@ -1461,7 +1461,7 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
             // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
             (void)memcpy(l2cap_outgoing_classic_addr, channel->address, 6);
-            hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+            hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, hci_get_allow_role_switch());
             break;
 
         case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
@@ -1889,9 +1889,9 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
-    // we have been waiting for remote supported features, if both support SSP, 
+    // we have been waiting for remote supported features
     log_info("l2cap received remote supported features, sec_level_0_allowed for psm %u = %u", channel->psm, l2cap_security_level_0_allowed_for_PSM(channel->psm));
-    if (gap_ssp_supported_on_both_sides(channel->con_handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
+    if (l2cap_security_level_0_allowed_for_PSM(channel->psm) == 0){
         // request security level 2
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
         channel->required_security_level = LEVEL_2;

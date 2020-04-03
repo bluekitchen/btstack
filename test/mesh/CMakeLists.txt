@@ -13,7 +13,7 @@ include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
 include_directories(../../platform/posix)
-include_directories(../rijndael)
+include_directories(../../3rd-party/rijndael)
 include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c"                     "../../src/*.h" "../../example/sco_demo_util.c" "../../example/sco_demo_util.h")
@@ -92,7 +92,7 @@ add_executable(mesh_message_test
 ../../src/hci_dump.c
 ../../src/hci_cmd.c
 ../../3rd-party/micro-ecc/uECC.c
-../rijndael/rijndael.c
+../../3rd-party/rijndael/rijndael.c
 mock.c
 mesh_message_test.cpp
 )

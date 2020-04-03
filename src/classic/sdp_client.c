@@ -88,7 +88,7 @@ static void     sdp_client_parse_service_search_response(uint8_t* packet, uint16
 static void     sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size);
 #endif
 
-static uint8_t des_attributeIDList[] = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Attribute: 0x0001 - 0x0100
+static uint8_t des_attributeIDList[] = { 0x35, 0x05, 0x0A, 0x00, 0x00, 0xff, 0xff};  // Attribute: 0x0000 - 0xffff
 
 // State DES Parser
 static de_state_t de_header_state;

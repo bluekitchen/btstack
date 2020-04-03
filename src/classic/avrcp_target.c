@@ -747,9 +747,8 @@ uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentag
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    // if (connection->volume_percentage == volume_percentage) return ERROR_CODE_SUCCESS;
+    connection->volume_percentage = volume_percentage;
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED )) {
-        connection->volume_percentage = volume_percentage;
         connection->notify_volume_percentage_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }

@@ -42,13 +42,23 @@
 #include <stdio.h>
 
 #include "btstack_chipset_intel_firmware.h"
-#include "hci_cmd.h"
+
 #include "bluetooth.h"
-#include "hci_dump.h"
-#include "btstack_event.h"
 #include "btstack_debug.h"
-#include "btstack_util.h"
+#include "btstack_event.h"
 #include "btstack_run_loop.h"
+#include "btstack_util.h"
+#include "hci.h"
+#include "hci_cmd.h"
+#include "hci_dump.h"
+
+// assert outgoing and incoming hci packet buffers can hold max hci command resp. event packet
+#if HCI_OUTGOING_PACKET_BUFFER_SIZE < (HCI_CMD_HEADER_SIZE + 255)
+#error "HCI_OUTGOING_PACKET_BUFFER_SIZE to small. Outgoing HCI packet buffer to small for largest HCI Command packet. Please set HCI_ACL_PAYLOAD_SIZE to 258 or higher."
+#endif
+#if HCI_INCOMING_PACKET_BUFFER_SIZE < (HCI_EVENT_HEADER_SIZE_HEADER_SIZE + 255)
+#error "HCI_INCOMING_PACKET_BUFFER_SIZE to small. Incoming HCI packet buffer to small for largest HCI Event packet. Please set HCI_ACL_PAYLOAD_SIZE to 257 or higher."
+#endif
 
 // Vendor specific structs
 

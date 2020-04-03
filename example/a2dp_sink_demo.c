@@ -57,6 +57,10 @@
  * 
  * @test To controll the playback, tap SPACE on the console to show the available 
  * AVRCP commands.
+ *
+ * For more info on BTstack audio, see our blog post 
+ * [A2DP Sink and Source on STM32 F4 Discovery Board](http://bluekitchen-gmbh.com/a2dp-sink-and-source-on-stm32-f4-discovery-board/).
+ * 
  */
 // *****************************************************************************
 
@@ -114,14 +118,14 @@ static int       request_frames;
 #define STORE_FROM_PLAYBACK
 
 // WAV File
-#ifdef STORE_TO_WAV_FILE    
-static int frame_count = 0;
-static char * wav_filename = "avdtp_sink.wav";
+#ifdef STORE_TO_WAV_FILE
+static uint32_t audio_frame_count = 0;
+static char * wav_filename = "av2dp_sink_demo.wav";
 #endif
 
 #ifdef STORE_TO_SBC_FILE    
 static FILE * sbc_file;
-static char * sbc_filename = "avdtp_sink.sbc";
+static char * sbc_filename = "av2dp_sink_demo.sbc";
 #endif
 
 static int volume_percentage = 0; 
@@ -294,28 +298,28 @@ static int a2dp_and_avrcp_setup(void){
     return 0;
 }
 
-static void playback_handler(int16_t * buffer, uint16_t num_frames){
+static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
 #ifdef STORE_TO_WAV_FILE
-    int       wav_samples = num_frames * NUM_CHANNELS;
+    int       wav_samples = num_audio_frames * NUM_CHANNELS;
     int16_t * wav_buffer  = buffer;
 #endif
     
     // called from lower-layer but guaranteed to be on main thread
     if (sbc_frame_size == 0){
-        memset(buffer, 0, num_frames * BYTES_PER_FRAME);
+        memset(buffer, 0, num_audio_frames * BYTES_PER_FRAME);
         return;
     }
 
     // first fill from resampled audio
     uint32_t bytes_read;
-    btstack_ring_buffer_read(&decoded_audio_ring_buffer, (uint8_t *) buffer, num_frames * BYTES_PER_FRAME, &bytes_read);
+    btstack_ring_buffer_read(&decoded_audio_ring_buffer, (uint8_t *) buffer, num_audio_frames * BYTES_PER_FRAME, &bytes_read);
     buffer          += bytes_read / NUM_CHANNELS;
-    num_frames   -= bytes_read / BYTES_PER_FRAME;
+    num_audio_frames   -= bytes_read / BYTES_PER_FRAME;
 
     // then start decoding sbc frames using request_* globals
     request_buffer = buffer;
-    request_frames = num_frames;
+    request_frames = num_audio_frames;
     while (request_frames && btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) >= sbc_frame_size){
         // decode frame
         uint8_t sbc_frame[MAX_SBC_FRAME_SIZE];
@@ -324,11 +328,12 @@ static void playback_handler(int16_t * buffer, uint16_t num_frames){
     }
 
 #ifdef STORE_TO_WAV_FILE
+    audio_frame_count += num_audio_frames;
     wav_writer_write_int16(wav_samples, wav_buffer);
 #endif
 }
 
-static void handle_pcm_data(int16_t * data, int num_frames, int num_channels, int sample_rate, void * context){
+static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channels, int sample_rate, void * context){
     UNUSED(sample_rate);
     UNUSED(context);
     UNUSED(num_channels);   // must be stereo == 2
@@ -336,14 +341,15 @@ static void handle_pcm_data(int16_t * data, int num_frames, int num_channels, in
     const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
     if (!audio_sink){
 #ifdef STORE_TO_WAV_FILE
-        wav_writer_write_int16(num_frames * NUM_CHANNELS, data);
+        audio_frame_count += num_audio_frames;
+        wav_writer_write_int16(num_audio_frames * NUM_CHANNELS, data);
 #endif
         return;
     }
 
     // resample into request buffer - add some additional space for resampling
     int16_t  output_buffer[(128+16) * NUM_CHANNELS]; // 16 * 8 * 2
-    uint32_t resampled_frames = btstack_resample_block(&resample_instance, data, num_frames, output_buffer);
+    uint32_t resampled_frames = btstack_resample_block(&resample_instance, data, num_audio_frames, output_buffer);
 
     // store data in btstack_audio buffer first
     int frames_to_copy = btstack_min(resampled_frames, request_frames);
@@ -417,10 +423,10 @@ static void media_processing_close(void){
 
 #ifdef STORE_TO_WAV_FILE                 
     wav_writer_close();
-    int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
+    uint32_t total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
-    printf("WAV Writer: Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n", total_frames_nr, state.good_frames_nr, total_frames_nr - state.good_frames_nr);
-    printf("WAV Writer: Written %d frames to wav file: %s\n", frame_count, wav_filename);
+    printf("WAV Writer: Decoding done. Processed %u SBC frames:\n - %d good\n - %d bad\n", total_frames_nr, state.good_frames_nr, total_frames_nr - state.good_frames_nr);
+    printf("WAV Writer: Wrote %u audio frames to wav file: %s\n", audio_frame_count, wav_filename);
 #endif
 
 #ifdef STORE_TO_SBC_FILE

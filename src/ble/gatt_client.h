@@ -691,8 +691,8 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
  * @brief Register for notifications and indications of a characteristic enabled by gatt_client_write_client_characteristic_configuration
  * @param notification struct used to store registration
  * @param callback
- * @param con_handle
- * @param characteristic
+ * @param con_handle or GATT_CLIENT_ANY_CONNECTION to receive updates from all connected devices
+ * @param characteristic or NULL to receive updates for all characteristics
  */
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
 
@@ -742,6 +742,10 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
 void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service);
 void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic);
 void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor);
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void gatt_client_att_packet_handler_fuzz(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
+#endif
 
 #if defined __cplusplus
 }

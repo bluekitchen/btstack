@@ -14,6 +14,7 @@ SUBDIRS =  \
 	flash_tlv \
 	gatt_client \
 	gatt_server \
+	gap \
 	hfp \
 	hid_parser \
 	linked_list \

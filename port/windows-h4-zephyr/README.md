@@ -46,6 +46,9 @@ In the MSYS2 shell, you can install everything with pacman:
 
     $ make
 
+Note: When compiling with msys2-32 bit and/or the 32-bit toolchain, compilation fails
+as `conio.h` seems to be mission. Please use msys2-64 bit with the 64-bit toolchain for now.
+
 ## Run example
 
 Just run any of the created binaries, e.g.
