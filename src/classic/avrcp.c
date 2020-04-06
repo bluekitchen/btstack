@@ -699,6 +699,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     btstack_packet_handler_t packet_handler;
     uint8_t status_target;
     uint8_t status_controller;
+    bool decline_connection;
+    bool outoing_active;
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
@@ -715,17 +717,28 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                    // create two connection objects (both)
-                    status_target = avrcp_handle_incoming_connection_for_role(AVRCP_TARGET, event_addr, local_cid);
-                    status_controller = avrcp_handle_incoming_connection_for_role(AVRCP_CONTROLLER, event_addr, local_cid);
-
-                    if (!status_target && !status_controller){
-                        l2cap_decline_connection(local_cid);
-                        break;
+                    outoing_active = false;
+                    if (get_avrcp_connection_for_bd_addr(AVRCP_TARGET, event_addr) != NULL){
+                        outoing_active = true;
                     }
-
-                    log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x", local_cid);
-                    l2cap_accept_connection(local_cid);
+                    if (get_avrcp_connection_for_bd_addr(AVRCP_CONTROLLER, event_addr) != NULL){
+                        outoing_active = true;
+                    }
+                    decline_connection = outoing_active;
+                    if (outoing_active == false){
+                        // create two connection objects (both)
+                        status_target = avrcp_handle_incoming_connection_for_role(AVRCP_TARGET, event_addr, local_cid);
+                        status_controller = avrcp_handle_incoming_connection_for_role(AVRCP_CONTROLLER, event_addr, local_cid);
+                        if (!status_target && !status_controller) {
+                            decline_connection = true;
+                        }
+                    }
+                    if (decline_connection){
+                        l2cap_decline_connection(local_cid);
+                    } else {
+                        log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x", local_cid);
+                        l2cap_accept_connection(local_cid);
+                    }
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
