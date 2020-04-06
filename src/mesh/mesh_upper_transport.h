@@ -130,6 +130,12 @@ void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_
 void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
 /**
+ * @brief Request to send upper transport PDU
+ * @param request
+ */
+void mesh_upper_transport_request_to_send(btstack_context_callback_registration_t * request);
+
+/**
  * @brief Free any PDU type
  * @param pdu
  */

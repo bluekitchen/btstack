@@ -124,6 +124,9 @@ static btstack_linked_list_t upper_transport_outgoing;
 // outgoing upper transport messages that have been sent to lower transport and wait for sent event
 static btstack_linked_list_t upper_transport_outgoing_active;
 
+// outgoing send requests
+static btstack_linked_list_t upper_transport_send_requests;
+
 // message builder buffers
 static mesh_upper_transport_pdu_t * message_builder_reserved_upper_pdu;
 static uint8_t message_builder_num_network_pdus_reserved;
@@ -387,7 +390,10 @@ static void mesh_upper_transport_deliver_access_message(void) {
 }
 
 static bool mesh_upper_transport_send_requests_pending(void){
-    return incoming_access_pdu_ready;
+    if (incoming_access_pdu_ready) {
+        return true;
+    }
+    return btstack_linked_list_empty(&upper_transport_send_requests) == false;
 }
 
 static void mesh_upper_transport_schedule_send_requests(void){
@@ -408,12 +414,24 @@ static void mesh_upper_transport_schedule_send_requests(void){
         }
 
         // process send requests
+
+        // incoming access pdu
         if (incoming_access_pdu_ready){
             // message builder ready = one outgoing pdu is guaranteed, deliver access pdu
             mesh_upper_transport_deliver_access_message();
-            return;
+            continue;
         }
+
+        // regular send request
+        btstack_context_callback_registration_t * send_request = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&upper_transport_send_requests);
+        btstack_assert(send_request != NULL);
+        (*send_request->callback)(send_request->context);
     }
+}
+
+void mesh_upper_transport_request_to_send(btstack_context_callback_registration_t * request){
+    btstack_linked_list_add_tail(&upper_transport_send_requests, (btstack_linked_item_t *) request);
+    mesh_upper_transport_schedule_send_requests();
 }
 
 static void mesh_upper_transport_validate_access_message_ccm(void * arg){
