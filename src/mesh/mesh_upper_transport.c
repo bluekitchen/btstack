@@ -83,8 +83,9 @@ typedef struct {
     // key info
 } mesh_transport_key_and_virtual_address_iterator_t;
 
-static void mesh_upper_transport_validate_access_message(void);
 static void mesh_upper_transport_run(void);
+static void mesh_upper_transport_schedule_send_requests(void);
+static void mesh_upper_transport_validate_access_message(void);
 
 // upper transport callbacks - in access layer
 static void (*mesh_access_message_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
@@ -131,6 +132,10 @@ static btstack_linked_list_t upper_transport_send_requests;
 static mesh_upper_transport_pdu_t * message_builder_reserved_upper_pdu;
 static uint8_t message_builder_num_network_pdus_reserved;
 static btstack_linked_list_t message_builder_reserved_network_pdus;
+
+// requets network pdus for outgoing send requests and outgoing run
+static bool upper_transport_need_pdu_for_send_requests;
+static bool upper_transport_need_pdu_for_run_outgoing;
 
 // TODO: higher layer define used for assert
 #define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
@@ -384,6 +389,34 @@ static void mesh_upper_transport_process_control_message_done(mesh_control_pdu_t
     mesh_upper_transport_run();
 }
 
+static void mesh_upper_transport_network_pdu_freed(void){
+    // call both while prioritizing run outgoing
+    // both functions will trigger request for network pdu if needed
+    if (upper_transport_need_pdu_for_run_outgoing){
+        upper_transport_need_pdu_for_run_outgoing = false;
+        mesh_upper_transport_run();
+    }
+    if (upper_transport_need_pdu_for_send_requests){
+        upper_transport_need_pdu_for_send_requests = false;
+        mesh_upper_transport_schedule_send_requests();
+    }
+}
+
+static void mesh_upper_transport_need_pdu_for_send_requests(void) {
+    bool waiting = upper_transport_need_pdu_for_send_requests || upper_transport_need_pdu_for_run_outgoing;
+    upper_transport_need_pdu_for_send_requests = true;
+    if (waiting == false) {
+        mesh_network_notify_on_freed_pdu(&mesh_upper_transport_network_pdu_freed);
+    }
+}
+static void mesh_upper_transport_need_pdu_for_run_outgoing(void) {
+    bool waiting = upper_transport_need_pdu_for_send_requests || upper_transport_need_pdu_for_run_outgoing;
+    upper_transport_need_pdu_for_run_outgoing = true;
+    if (waiting == false) {
+        mesh_network_notify_on_freed_pdu(&mesh_upper_transport_network_pdu_freed);
+    }
+}
+
 static void mesh_upper_transport_deliver_access_message(void) {
     incoming_access_pdu_ready = false;
     mesh_access_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) incoming_access_decrypted);
@@ -409,7 +442,7 @@ static void mesh_upper_transport_schedule_send_requests(void){
                 return;
             }
             // request callback on network pdu free
-            mesh_network_notify_on_freed_pdu(&mesh_upper_transport_schedule_send_requests);
+            mesh_upper_transport_need_pdu_for_send_requests();
             return;
         }
 
@@ -938,6 +971,7 @@ static void mesh_upper_transport_run(void){
                     segmented_pdu = btstack_memory_mesh_segmented_pdu_get();
                 }
                 if (segmented_pdu == NULL) {
+                    mesh_upper_transport_need_pdu_for_run_outgoing();
                     abort_outgoing_loop = true;
                     break;
                 }
@@ -961,6 +995,7 @@ static void mesh_upper_transport_run(void){
                     upper_pdu->lower_pdu = (mesh_pdu_t *) mesh_network_pdu_get();
                 }
                 if (upper_pdu->lower_pdu == NULL) {
+                    mesh_upper_transport_need_pdu_for_run_outgoing();
                     abort_outgoing_loop = true;
                     break;
                 }
