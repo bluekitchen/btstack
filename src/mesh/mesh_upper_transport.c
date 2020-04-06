@@ -900,29 +900,35 @@ static void mesh_upper_transport_run(void){
         }
     }
 
-    while (!btstack_linked_list_empty(&upper_transport_outgoing)){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &upper_transport_outgoing);
+    while (btstack_linked_list_iterator_has_next(&it)){
 
         if (crypto_active) break;
 
-        mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_outgoing);
-        if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
+        mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_iterator_next(&it);
+        if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == false) {
+            // skip pdu for now
+            continue;
+        }
 
         mesh_upper_transport_pdu_t * upper_pdu;
         mesh_segmented_pdu_t * segmented_pdu;
         uint8_t transmic_len;
         bool ok;
+        bool abort_outgoing_loop = false;
 
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
                 // control pdus can go through directly
                 btstack_assert(mesh_pdu_ctl(pdu) != 0);
-                (void) btstack_linked_list_pop(&upper_transport_outgoing);
+                btstack_linked_list_iterator_remove(&it);
                 mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
                 break;
             case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
                 // control pdus can go through directly
                 btstack_assert(mesh_pdu_ctl(pdu) != 0);
-                (void) btstack_linked_list_pop(&upper_transport_outgoing);
+                btstack_linked_list_iterator_remove(&it);
                 mesh_upper_transport_send_segmented_control_pdu((mesh_upper_transport_pdu_t *) pdu);
                 break;
             case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
@@ -931,15 +937,21 @@ static void mesh_upper_transport_run(void){
                 if (upper_pdu->lower_pdu == NULL){
                     segmented_pdu = btstack_memory_mesh_segmented_pdu_get();
                 }
-                if (segmented_pdu == NULL) break;
+                if (segmented_pdu == NULL) {
+                    abort_outgoing_loop = true;
+                    break;
+                }
                 upper_pdu->lower_pdu = (mesh_pdu_t *) segmented_pdu;
                 segmented_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
                 // and a mesh-network-pdu for each segment in upper pdu
                 transmic_len = ((upper_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
                 ok = mesh_segmented_allocate_segments(&segmented_pdu->segments, upper_pdu->len + transmic_len);
-                if (!ok) break;
+                if (!ok) {
+                    abort_outgoing_loop = true;
+                    break;
+                }
                 // all buffers available, get started
-                (void) btstack_linked_list_pop(&upper_transport_outgoing);
+                btstack_linked_list_iterator_remove(&it);
                 mesh_upper_transport_send_access(upper_pdu);
                 break;
             case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
@@ -948,13 +960,19 @@ static void mesh_upper_transport_run(void){
                 if (upper_pdu->lower_pdu == NULL){
                     upper_pdu->lower_pdu = (mesh_pdu_t *) mesh_network_pdu_get();
                 }
-                if (upper_pdu->lower_pdu == NULL) break;
-                (void) btstack_linked_list_pop(&upper_transport_outgoing);
+                if (upper_pdu->lower_pdu == NULL) {
+                    abort_outgoing_loop = true;
+                    break;
+                }
+                btstack_linked_list_iterator_remove(&it);
                 mesh_upper_transport_send_access((mesh_upper_transport_pdu_t *) pdu);
                 break;
             default:
                 btstack_assert(false);
                 break;
+        }
+        if (abort_outgoing_loop) {
+            break;
         }
     }
 }
