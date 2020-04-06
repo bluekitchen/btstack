@@ -90,6 +90,7 @@ typedef enum {
 
 typedef struct {
     mesh_publish_state_t publish_state_fn;
+    btstack_context_callback_registration_t send_request;
     mesh_model_publication_state_t state;
     uint32_t next_publication_ms;
     uint32_t next_retransmit_ms;

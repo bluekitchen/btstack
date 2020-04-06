@@ -953,6 +953,14 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
+static void mesh_model_trigger_publication(mesh_model_t * mesh_model){
+    // queue publication
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    publication_model->send_request.context = mesh_model;
+    publication_model->send_request.callback = &mesh_model_publication_publish_now_model;
+    mesh_upper_transport_request_to_send(&publication_model->send_request);
+}
+
 static void mesh_model_publication_run(btstack_timer_source_t * ts){
 
     uint32_t now = btstack_run_loop_get_time_ms();
@@ -988,13 +996,13 @@ static void mesh_model_publication_run(btstack_timer_source_t * ts){
                     // schedule next publication and retransmission
                     mesh_model_publication_setup_publication(publication_model, now);
                     mesh_model_publication_setup_retransmission(publication_model, now);
-                    mesh_model_publication_publish_now_model(mesh_model);
+                    mesh_model_trigger_publication(mesh_model);
                     break;
                 case MESH_MODEL_PUBLICATION_STATE_RETRANSMIT_READY:
                     // schedule next retransmission
                     publication_model->retransmit_count--;
                     mesh_model_publication_setup_retransmission(publication_model, now);
-                    mesh_model_publication_publish_now_model(mesh_model);
+                    mesh_model_trigger_publication(mesh_model);
                     break;
                 default:
                     break;
