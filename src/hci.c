@@ -1565,6 +1565,16 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
     }
 
+#ifdef HAVE_EM9301_PATCH_CONTAINER
+    // EM9301 is in ISP mode
+    if ((hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT)
+    		&& (hci_event_packet_get_type(packet) == HCI_EVENT_HARDWARE_ERROR)
+			&& (packet[2] == 0x80)){
+    	// continue processing due normal behavior
+        command_completed = 1;
+    }
+#endif
+
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 
     // Vendor == CSR

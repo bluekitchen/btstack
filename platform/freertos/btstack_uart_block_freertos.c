@@ -48,7 +48,7 @@
 #include "btstack_debug.h"
 #include "btstack_uart_block.h"
 #include "btstack_run_loop_freertos.h"
-#include "hal_uart_dma.h"
+#include <platform/embedded/hal_uart_dma.h>
 
 #ifdef HAVE_FREERTOS_INCLUDE_PREFIX
 #include "freertos/FreeRTOS.h"
@@ -126,9 +126,11 @@ static int btstack_uart_block_freertos_open(void){
 } 
 
 static int btstack_uart_block_freertos_close(void){
-
     // close device
     // ...
+#ifdef HAL_UART_DMA_DEINIT
+    hal_uart_dma_deinit();
+#endif
     return 0;
 }
 

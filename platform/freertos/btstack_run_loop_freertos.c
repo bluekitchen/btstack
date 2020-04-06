@@ -52,7 +52,7 @@
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
-#include "hal_time_ms.h"
+#include <platform/embedded/hal_time_ms.h>
 
 // some SDKs, e.g. esp-idf, place FreeRTOS headers into an 'freertos' folder to avoid name collisions (e.g. list.h, queue.h, ..)
 // wih this flag, the headers are properly found

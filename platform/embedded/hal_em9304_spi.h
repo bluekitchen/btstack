@@ -87,7 +87,7 @@ void hal_em9304_spi_disable_ready_interrupt(void);
 /**
  * @brief Poll READY state
  */
-int hal_em9304_spi_get_ready();
+int hal_em9304_spi_get_ready(void);
 
 /**
  * @brief Set Chip Selet
