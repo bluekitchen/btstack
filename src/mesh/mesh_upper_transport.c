@@ -381,26 +381,39 @@ static void mesh_upper_transport_process_control_message_done(mesh_control_pdu_t
     mesh_upper_transport_run();
 }
 
-static void mesh_upper_transport_deliver_access_message(void){
-    if (incoming_access_pdu_ready == false){
-        return;
-    }
-
-    bool message_builder_ready = mesh_upper_transport_message_reserve();
-
-    if (message_builder_ready == false){
-        // waiting for free upper pdu
-        if (message_builder_reserved_upper_pdu == false){
-            return;
-        }
-        // register for free network pdus if missing
-        mesh_network_notify_on_freed_pdu(&mesh_upper_transport_deliver_access_message);
-        return;
-    }
-
-    // message builder ready = one outgoing pdu is guaranteed, deliver access pdu
+static void mesh_upper_transport_deliver_access_message(void) {
     incoming_access_pdu_ready = false;
     mesh_access_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) incoming_access_decrypted);
+}
+
+static bool mesh_upper_transport_send_requests_pending(void){
+    return incoming_access_pdu_ready;
+}
+
+static void mesh_upper_transport_schedule_send_requests(void){
+
+    while (mesh_upper_transport_send_requests_pending()){
+
+        // get ready
+        bool message_builder_ready = mesh_upper_transport_message_reserve();
+
+        if (message_builder_ready == false){
+            // waiting for free upper pdu, we will get called again on pdu free
+            if (message_builder_reserved_upper_pdu == false){
+                return;
+            }
+            // request callback on network pdu free
+            mesh_network_notify_on_freed_pdu(&mesh_upper_transport_schedule_send_requests);
+            return;
+        }
+
+        // process send requests
+        if (incoming_access_pdu_ready){
+            // message builder ready = one outgoing pdu is guaranteed, deliver access pdu
+            mesh_upper_transport_deliver_access_message();
+            return;
+        }
+    }
 }
 
 static void mesh_upper_transport_validate_access_message_ccm(void * arg){
@@ -430,7 +443,7 @@ static void mesh_upper_transport_validate_access_message_ccm(void * arg){
 
         // pass to upper layer
         incoming_access_pdu_ready = true;
-        mesh_upper_transport_deliver_access_message();
+        mesh_upper_transport_schedule_send_requests();
 
     } else {
         uint8_t akf = incoming_access_decrypted->akf_aid_control & 0x40;
@@ -1034,8 +1047,8 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
                 mesh_network_pdu_free(segment);
             }
             btstack_memory_mesh_upper_transport_pdu_free(upper_pdu);
-            // check if incoming access pdu ready
-            mesh_upper_transport_deliver_access_message();
+            // check if send request can be handled now
+            mesh_upper_transport_schedule_send_requests();
             break;
         default:
             btstack_assert(false);
