@@ -1334,11 +1334,12 @@ static void hci_initializing_run(void){
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
 
-                    // - RTS will raise during update, but manual RTS/CTS in WICED port on RedBear Duo cannot handle this
-                    //   -> Work around: wait a few milliseconds here.
-                    log_info("BCM delay after init script");
+                    uint16_t bcm_delay_ms = 300;
+                    // - UART may or may not be disabled during update and Controller RTS may or may not be high during this time
+                    //   -> Work around: wait here.
+                    log_info("BCM delay (%u ms) after init script", bcm_delay_ms);
                     hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY;
-                    btstack_run_loop_set_timer(&hci_stack->timeout, 10);
+                    btstack_run_loop_set_timer(&hci_stack->timeout, bcm_delay_ms);
                     btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                     btstack_run_loop_add_timer(&hci_stack->timeout);
                     break;
