@@ -51,5 +51,8 @@
 // allow for one NetKey update
 #define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
 
+// Some USB dongles take longer to respond to HCI reset (e.g. BCM20702A).
+#define HCI_RESET_RESEND_TIMEOUT_MS   500
+
 #endif
 

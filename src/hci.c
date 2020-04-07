@@ -94,7 +94,10 @@
 #endif
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
+
+#ifndef HCI_RESET_RESEND_TIMEOUT_MS
 #define HCI_RESET_RESEND_TIMEOUT_MS 200
+#endif
 
 // Names are arbitrarily shortened to 32 bytes if not requested otherwise
 #ifndef GAP_INQUIRY_MAX_NAME_LEN
