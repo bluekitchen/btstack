@@ -4028,21 +4028,21 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         (void)memcpy(hci_stack->outgoing_addr, addr, 6);
     }
 
-    if (IS_COMMAND(packet, hci_link_key_request_reply)){
+    else if (IS_COMMAND(packet, hci_link_key_request_reply)){
         hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_REPLY);
     }
-    if (IS_COMMAND(packet, hci_link_key_request_negative_reply)){
+    else if (IS_COMMAND(packet, hci_link_key_request_negative_reply)){
         hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
     }
     
-    if (IS_COMMAND(packet, hci_delete_stored_link_key)){
+    else if (IS_COMMAND(packet, hci_delete_stored_link_key)){
         if (hci_stack->link_key_db){
             reverse_bd_addr(&packet[3], addr);
             hci_stack->link_key_db->delete_link_key(addr);
         }
     }
 
-    if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
+    else if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
     ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
         reverse_bd_addr(&packet[3], addr);
         conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
@@ -4051,7 +4051,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         }
     }
 
-    if (IS_COMMAND(packet, hci_user_confirmation_request_negative_reply)
+    else if (IS_COMMAND(packet, hci_user_confirmation_request_negative_reply)
     ||  IS_COMMAND(packet, hci_user_confirmation_request_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
@@ -4064,12 +4064,12 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 
 #ifdef ENABLE_SCO_OVER_HCI
     // setup_synchronous_connection? Voice setting at offset 22
-    if (IS_COMMAND(packet, hci_setup_synchronous_connection)){
+    else if (IS_COMMAND(packet, hci_setup_synchronous_connection)){
         // TODO: compare to current setting if sco connection already active
         hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
     }
     // accept_synchronus_connection? Voice setting at offset 18
-    if (IS_COMMAND(packet, hci_accept_synchronous_connection)){
+    else if (IS_COMMAND(packet, hci_accept_synchronous_connection)){
         // TODO: compare to current setting if sco connection already active
         hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
     }
@@ -4077,17 +4077,17 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 #endif
 
 #ifdef ENABLE_BLE
-    if (IS_COMMAND(packet, hci_le_set_random_address)){
+    else if (IS_COMMAND(packet, hci_le_set_random_address)){
         hci_stack->le_random_address_set = 1;
         reverse_bd_addr(&packet[3], hci_stack->le_random_address);
     }
 #ifdef ENABLE_LE_PERIPHERAL
-    if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
+    else if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
         hci_stack->le_advertisements_active = packet[3];
     }
 #endif
 #ifdef ENABLE_LE_CENTRAL
-    if (IS_COMMAND(packet, hci_le_create_connection)){
+    else if (IS_COMMAND(packet, hci_le_create_connection)){
         // white list used?
         uint8_t initiator_filter_policy = packet[7];
         switch (initiator_filter_policy){
@@ -4103,7 +4103,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 break;
         }
     }
-    if (IS_COMMAND(packet, hci_le_create_connection_cancel)){
+    else if (IS_COMMAND(packet, hci_le_create_connection_cancel)){
         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     }
 #endif
