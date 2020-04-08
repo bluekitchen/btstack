@@ -44,6 +44,7 @@
 #include "ble/core.h"
 #include "ble/sm.h"
 #include "bluetooth_company_id.h"
+#include "btstack_bool.h"
 #include "btstack_crypto.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -1831,24 +1832,8 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
 }
 #endif
 
-static void sm_run(void){
-
-    btstack_linked_list_iterator_t it;
-
-    // assert that stack has already bootet
-    if (hci_get_state() != HCI_STATE_WORKING) return;
-
-    // assert that we can send at least commands
-    if (!hci_can_send_command_packet_now()) return;
-
-    // pause until IR/ER are ready
-    if (sm_persistent_keys_random_active) return;
-
-    //
-    // non-connection related behaviour
-    //
-
-    // distributed key generation
+// distributed key generation
+static bool sm_run_dpkg(void){
     switch (dkg_state){
         case DKG_CALC_IRK:
             // already busy?
@@ -1858,7 +1843,7 @@ static void sm_run(void){
                 sm_d1_d_prime(1, 0, sm_aes128_plaintext);  // plaintext = d1 prime
                 sm_aes128_state = SM_AES128_ACTIVE;
                 btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_ir, sm_aes128_plaintext, sm_persistent_irk, sm_handle_encryption_result_dkg_irk, NULL);
-                return;
+                return true;
             }
             break;
         case DKG_CALC_DHK:
@@ -1869,38 +1854,46 @@ static void sm_run(void){
                 sm_d1_d_prime(3, 0, sm_aes128_plaintext);  // plaintext = d1 prime
                 sm_aes128_state = SM_AES128_ACTIVE;
                 btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_ir, sm_aes128_plaintext, sm_persistent_dhk, sm_handle_encryption_result_dkg_dhk, NULL);
-                return;
+                return true;
             }
             break;
         default:
             break;
     }
+    return false;
+}
 
-    // random address updates
+// random address updates
+static bool sm_run_rau(void){
     switch (rau_state){
         case RAU_GET_RANDOM:
             rau_state = RAU_W4_RANDOM;
             btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 6, &sm_handle_random_result_rau, NULL);
-            return;
+            return true;
         case RAU_GET_ENC:
             // already busy?
             if (sm_aes128_state == SM_AES128_IDLE) {
                 sm_ah_r_prime(sm_random_address, sm_aes128_plaintext);
                 sm_aes128_state = SM_AES128_ACTIVE;
                 btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_irk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_rau, NULL);
-                return;
+                return true;
             }
             break;
         case RAU_SET_ADDRESS:
             log_info("New random address: %s", bd_addr_to_str(sm_random_address));
             rau_state = RAU_IDLE;
             hci_send_cmd(&hci_le_set_random_address, sm_random_address);
-            return;
+            return true;
         default:
             break;
     }
+    return false;
+}
 
-    // CSRK Lookup
+// CSRK Lookup
+static bool sm_run_csrk(void){
+    btstack_linked_list_iterator_t it;
+
     // -- if csrk lookup ready, find connection that require csrk lookup
     if (sm_address_resolution_idle()){
         hci_connections_get_iterator(&it);
@@ -1964,7 +1957,7 @@ static void sm_run(void){
             sm_address_resolution_ah_calculation_active = 1;
             sm_aes128_state = SM_AES128_ACTIVE;
             btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_aes128_key, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_address_resolution, NULL);
-            return;
+            return true;
         }
 
         if (sm_address_resolution_test >= le_device_db_max_count()){
@@ -1972,23 +1965,28 @@ static void sm_run(void){
             sm_address_resolution_handle_event(ADDRESS_RESOLUTION_FAILED);
         }
     }
+    return false;
+}
 
+// SC OOB
+static bool sm_run_oob(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     switch (sm_sc_oob_state){
         case SM_SC_OOB_W2_CALC_CONFIRM:
             if (!sm_cmac_ready()) break;
             sm_sc_oob_state = SM_SC_OOB_W4_CONFIRM;
             f4_engine(NULL, ec_q, ec_q, sm_sc_oob_random, 0);
-            return;
+            return true;
         default:
             break;
     }
 #endif
+    return false;
+}
 
-    // assert that we can send at least commands - cmd might have been sent by crypto engine
-    if (!hci_can_send_command_packet_now()) return;
-
-    // handle basic actions that don't requires the full context
+// handle basic actions that don't requires the full context
+static bool sm_run_basic(void){
+    btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
     while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
@@ -1998,7 +1996,7 @@ static void sm_run(void){
             case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
                 sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
-                return;
+                return true;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_RECEIVED_LTK_REQUEST:
@@ -2007,7 +2005,7 @@ static void sm_run(void){
                         log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
                         sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
                         hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
-                        return;
+                        return true;
                     default:
                         break;
                 }
@@ -2017,6 +2015,170 @@ static void sm_run(void){
                 break;
         }
     }
+    return false;
+}
+
+static void sm_run_activate_connection(void){
+    // Find connections that requires setup context and make active if no other is locked
+    btstack_linked_list_iterator_t it;
+    hci_connections_get_iterator(&it);
+    while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        sm_connection_t  * sm_connection = &hci_connection->sm_connection;
+        // - if no connection locked and we're ready/waiting for setup context, fetch it and start
+        int done = 1;
+        int err;
+        UNUSED(err);
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        // assert ec key is ready
+        if ((sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED)
+            ||  (sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST)){
+            if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
+                sm_ec_generate_new_key();
+            }
+            if (ec_key_generation_state != EC_KEY_GENERATION_DONE){
+                continue;
+            }
+        }
+#endif
+
+        switch (sm_connection->sm_engine_state) {
+#ifdef ENABLE_LE_PERIPHERAL
+            case SM_RESPONDER_SEND_SECURITY_REQUEST:
+                // send packet if possible,
+                if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
+                    const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, sm_auth_req};
+                    sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+                    l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                } else {
+                    l2cap_request_can_send_fix_channel_now_event(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+                }
+                // don't lock sxetup context yet
+                done = 0;
+                break;
+            case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
+                sm_reset_setup();
+                sm_init_setup(sm_connection);
+                // recover pairing request
+                (void)memcpy(&setup->sm_m_preq,
+                             &sm_connection->sm_m_preq,
+                             sizeof(sm_pairing_packet_t));
+                err = sm_stk_generation_init(sm_connection);
+
+#ifdef ENABLE_TESTING_SUPPORT
+            if (0 < test_pairing_failure && test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
+                        log_info("testing_support: respond with pairing failure %u", test_pairing_failure);
+                        err = test_pairing_failure;
+                    }
+#endif
+                if (err){
+                    setup->sm_pairing_failed_reason = err;
+                    sm_connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                    break;
+                }
+                sm_timeout_start(sm_connection);
+                // generate random number first, if we need to show passkey
+                if (setup->sm_stk_generation_method == PK_INIT_INPUT){
+                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, (void *)(uintptr_t) sm_connection->sm_handle);
+                    break;
+                }
+                sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
+                break;
+            case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
+                sm_reset_setup();
+                sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
+                break;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_SC_RECEIVED_LTK_REQUEST:
+                switch (sm_connection->sm_irk_lookup_state){
+                    case IRK_LOOKUP_SUCCEEDED:
+                        // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
+                        // start using context by loading security info
+                        sm_reset_setup();
+                        sm_load_security_info(sm_connection);
+                        if ((setup->sm_peer_ediv == 0) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
+                            (void)memcpy(setup->sm_ltk,
+                                         setup->sm_peer_ltk, 16);
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
+                            break;
+                        }
+                        log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
+                        sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
+                        hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
+                        // don't lock setup context yet
+                        return;
+                    default:
+                        // just wait until IRK lookup is completed
+                        // don't lock setup context yet
+                        done = 0;
+                        break;
+                }
+                break;
+#endif /* ENABLE_LE_SECURE_CONNECTIONS */
+#endif /* ENABLE_LE_PERIPHERAL */
+
+#ifdef ENABLE_LE_CENTRAL
+            case SM_INITIATOR_PH0_HAS_LTK:
+                sm_reset_setup();
+                sm_load_security_info(sm_connection);
+                sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
+                break;
+            case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+                sm_reset_setup();
+                sm_init_setup(sm_connection);
+                sm_timeout_start(sm_connection);
+                sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+                break;
+#endif
+
+            default:
+                done = 0;
+                break;
+        }
+        if (done){
+            sm_active_connection_handle = sm_connection->sm_handle;
+            log_info("sm: connection 0x%04x locked setup context as %s, state %u", sm_active_connection_handle, sm_connection->sm_role ? "responder" : "initiator", sm_connection->sm_engine_state);
+        }
+    }
+}
+
+static void sm_run(void){
+
+    // assert that stack has already bootet
+    if (hci_get_state() != HCI_STATE_WORKING) return;
+
+    // assert that we can send at least commands
+    if (!hci_can_send_command_packet_now()) return;
+
+    // pause until IR/ER are ready
+    if (sm_persistent_keys_random_active) return;
+
+    bool done;
+
+    //
+    // non-connection related behaviour
+    //
+
+    done = sm_run_dpkg();
+    if (done) return;
+
+    done = sm_run_rau();
+    if (done) return;
+
+    done = sm_run_csrk();
+    if (done) return;
+
+    done = sm_run_oob();
+    if (done) return;
+
+    // assert that we can send at least commands - cmd might have been sent by crypto engine
+    if (!hci_can_send_command_packet_now()) return;
+
+    // handle basic actions that don't requires the full context
+    done = sm_run_basic();
+    if (done) return;
 
     //
     // active connection handling
@@ -2024,134 +2186,13 @@ static void sm_run(void){
 
     while (true) {
 
-        // Find connections that requires setup context and make active if no other is locked
-        hci_connections_get_iterator(&it);
-        while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
-            hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-            sm_connection_t  * sm_connection = &hci_connection->sm_connection;
-            // - if no connection locked and we're ready/waiting for setup context, fetch it and start
-            int done = 1;
-            int err;
-            UNUSED(err);
+        sm_run_activate_connection();
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-            // assert ec key is ready
-            if ((sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED) 
-            ||  (sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST)){
-                if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
-                    sm_ec_generate_new_key();
-                }
-                if (ec_key_generation_state != EC_KEY_GENERATION_DONE){
-                    continue;
-                }
-           }
-#endif
-
-            switch (sm_connection->sm_engine_state) {
-#ifdef ENABLE_LE_PERIPHERAL
-                case SM_RESPONDER_SEND_SECURITY_REQUEST:
-                    // send packet if possible,
-                    if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
-                        const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, sm_auth_req};
-                        sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
-                        l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                    } else {
-                        l2cap_request_can_send_fix_channel_now_event(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-                    }
-                    // don't lock sxetup context yet
-                    done = 0;
-                    break;
-                case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
-                    sm_reset_setup();
-                    sm_init_setup(sm_connection);
-                    // recover pairing request
-                    (void)memcpy(&setup->sm_m_preq,
-                                 &sm_connection->sm_m_preq,
-                                 sizeof(sm_pairing_packet_t));
-                    err = sm_stk_generation_init(sm_connection);
-
-#ifdef ENABLE_TESTING_SUPPORT
-                    if (0 < test_pairing_failure && test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
-                        log_info("testing_support: respond with pairing failure %u", test_pairing_failure);
-                        err = test_pairing_failure;
-                    }
-#endif
-                    if (err){
-                        setup->sm_pairing_failed_reason = err;
-                        sm_connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-                        break;
-                    }
-                    sm_timeout_start(sm_connection);
-                    // generate random number first, if we need to show passkey
-                    if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                        btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, (void *)(uintptr_t) sm_connection->sm_handle);
-                        break;
-                    }
-                    sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
-                    break;
-                case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
-                    sm_reset_setup();
-                    sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
-                    break;
-
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-                case SM_SC_RECEIVED_LTK_REQUEST:
-                    switch (sm_connection->sm_irk_lookup_state){
-                        case IRK_LOOKUP_SUCCEEDED:
-                            // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
-                            // start using context by loading security info
-                            sm_reset_setup();
-                            sm_load_security_info(sm_connection);
-                            if ((setup->sm_peer_ediv == 0) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
-                                (void)memcpy(setup->sm_ltk,
-                                             setup->sm_peer_ltk, 16);
-                                sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
-                                break;
-                            }
-                            log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
-                            sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
-                            hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
-                            // don't lock setup context yet
-                            return;
-                        default:
-                            // just wait until IRK lookup is completed
-                            // don't lock setup context yet
-                            done = 0;
-                            break;
-                    }
-                    break;
-#endif /* ENABLE_LE_SECURE_CONNECTIONS */
-#endif /* ENABLE_LE_PERIPHERAL */
-
-#ifdef ENABLE_LE_CENTRAL
-                case SM_INITIATOR_PH0_HAS_LTK:
-                    sm_reset_setup();
-                    sm_load_security_info(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
-                    break;
-                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
-                    sm_reset_setup();
-                    sm_init_setup(sm_connection);
-                    sm_timeout_start(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-                    break;
-#endif
-
-                default:
-                    done = 0;
-                    break;
-            }
-            if (done){
-                sm_active_connection_handle = sm_connection->sm_handle;
-                log_info("sm: connection 0x%04x locked setup context as %s, state %u", sm_active_connection_handle, sm_connection->sm_role ? "responder" : "initiator", sm_connection->sm_engine_state);
-            }
-        }
+        if (sm_active_connection_handle == HCI_CON_HANDLE_INVALID) return;
 
         //
         // active connection handling
         //
-
-        if (sm_active_connection_handle == HCI_CON_HANDLE_INVALID) return;
 
         sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection_handle);
         if (!connection) {
