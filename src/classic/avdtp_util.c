@@ -857,70 +857,62 @@ static void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_han
 }
 
 static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, 
-    avdtp_media_type_t media_type, const uint8_t * media_codec_information, uint8_t reconfigure){
+    avdtp_media_type_t media_type, const uint8_t * media_codec_information, uint8_t reconfigure) {
     if (!callback) return;
-    uint8_t event[16+2];
+    uint8_t event[16 + 2];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
-    
+
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = local_seid;
     event[pos++] = remote_seid;
     event[pos++] = reconfigure;
-    
-    uint8_t num_channels = 0;
-    uint16_t sampling_frequency = 0;
-    uint8_t subbands = 0;
-    uint8_t block_length = 0;
+
 
     uint8_t sampling_frequency_bitmap = media_codec_information[0] >> 4;
     uint8_t channel_mode_bitmap = media_codec_information[0] & 0x0F;
     uint8_t block_length_bitmap = media_codec_information[1] >> 4;
     uint8_t subbands_bitmap = (media_codec_information[1] & 0x0F) >> 2;
 
-    if (channel_mode_bitmap & AVDTP_SBC_MONO){
+    uint8_t num_channels = 0;
+    if ((channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO) ||
+        (channel_mode_bitmap & AVDTP_SBC_STEREO) ||
+        (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL)) {
+        num_channels = 2;
+    } else if (channel_mode_bitmap & AVDTP_SBC_MONO) {
         num_channels = 1;
     }
-    if ( (channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO) || 
-         (channel_mode_bitmap & AVDTP_SBC_STEREO) ||
-         (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL) ){
-        num_channels = 2;
-    }
 
-    if (sampling_frequency_bitmap & AVDTP_SBC_16000){
+    uint16_t sampling_frequency = 0;
+    if (sampling_frequency_bitmap & AVDTP_SBC_48000) {
+        sampling_frequency = 48000;
+    } else if (sampling_frequency_bitmap & AVDTP_SBC_44100) {
+        sampling_frequency = 44100;
+    } else if (sampling_frequency_bitmap & AVDTP_SBC_32000) {
+        sampling_frequency = 32000;
+    } else if (sampling_frequency_bitmap & AVDTP_SBC_16000) {
         sampling_frequency = 16000;
     }
-    if (sampling_frequency_bitmap & AVDTP_SBC_32000){
-        sampling_frequency = 32000;
-    }
-    if (sampling_frequency_bitmap & AVDTP_SBC_44100){
-        sampling_frequency = 44100;
-    }
-    if (sampling_frequency_bitmap & AVDTP_SBC_48000){
-        sampling_frequency = 48000;
-    }
 
-    if (subbands_bitmap & AVDTP_SBC_SUBBANDS_4){
-        subbands = 4;
-    }
+    uint8_t subbands = 0;
     if (subbands_bitmap & AVDTP_SBC_SUBBANDS_8){
         subbands = 8;
+    } else if (subbands_bitmap & AVDTP_SBC_SUBBANDS_4){
+        subbands = 4;
     }
 
-    if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_4){
-        block_length = 4;
-    }
-    if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_8){
-        block_length = 8;
-    }
-    if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_12){
-        block_length = 12;
-    }
+    uint8_t block_length = 0;
     if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_16){
         block_length = 16;
+    } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_12){
+        block_length = 12;
+    } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_8){
+        block_length = 8;
+    } else if (block_length_bitmap & AVDTP_SBC_BLOCK_LENGTH_4){
+        block_length = 4;
     }
     
     event[pos++] = media_type;
