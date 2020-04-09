@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections
 
 ### Changed
+- Broadcom/Cypress: wait 300 ms after PatchRAM update in hci.c to assert Controller is ready
 
 ## Changes March 2020
 
