@@ -1535,16 +1535,12 @@ static void hci_init_done(void){
     hci_run();
 }
 
-static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
-
-    UNUSED(size);   // ok: less than 6 bytes are read from our buffer
-    
-    uint8_t command_completed = 0;
-
+static bool hci_initializing_event_handler_command_completed(const uint8_t * packet){
+    bool command_completed = false;
     if (hci_event_packet_get_type(packet) == HCI_EVENT_COMMAND_COMPLETE){
         uint16_t opcode = little_endian_read_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
-            command_completed = 1;
+            command_completed = true;
             log_debug("Command complete for expected opcode %04x at substate %u", opcode, hci_stack->substate);
         } else {
             log_info("Command complete for different opcode %04x, expected %04x, at substate %u", opcode, hci_stack->last_cmd_opcode, hci_stack->substate);
@@ -1556,7 +1552,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         uint16_t opcode = little_endian_read_16(packet,4);
         if (opcode == hci_stack->last_cmd_opcode){
             if (status){
-                command_completed = 1;
+                command_completed = true;
                 log_debug("Command status error 0x%02x for expected opcode %04x at substate %u", status, opcode, hci_stack->substate);
             } else {
                 log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
@@ -1565,22 +1561,32 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             log_debug("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
     }
-
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
-
     // Vendor == CSR
     if ((hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT) && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
         // TODO: track actual command
-        command_completed = 1;
+        command_completed = true;
     }
 
     // Vendor == Toshiba
     if ((hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE) && (hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC)){
         // TODO: track actual command
-        command_completed = 1;
+        command_completed = true;
         // Fix: no HCI Command Complete received, so num_cmd_packets not reset
         hci_stack->num_cmd_packets = 1;
     }
+#endif
+
+    return command_completed;
+}
+
+static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size){
+
+    UNUSED(size);   // ok: less than 6 bytes are read from our buffer
+    
+    bool command_completed =  hci_initializing_event_handler_command_completed(packet);
+
+#if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 
     // Late response (> 100 ms) for HCI Reset e.g. on Toshiba TC35661:
     // Command complete for HCI Reset arrives after we've resent the HCI Reset command
@@ -1637,8 +1643,8 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     if (!command_completed) return;
 
-    int need_baud_change = 0;
-    int need_addr_change = 0;
+    bool need_baud_change = false;
+    bool need_addr_change = false;
 
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
     need_baud_change = hci_stack->config
@@ -1665,7 +1671,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             btstack_run_loop_remove_timer(&hci_stack->timeout);
             break;
         case HCI_INIT_W4_SEND_READ_LOCAL_NAME:
-            log_info("Received local name, need baud change %d", need_baud_change);
+            log_info("Received local name, need baud change %d", (int) need_baud_change);
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
