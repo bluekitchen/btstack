@@ -50,6 +50,7 @@
 #include "hci_dump.h"
 #include "bluetooth_sdp.h"
 #include "bluetooth_psm.h"
+#include "btstack_bool.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -1640,17 +1641,13 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
 }
 #endif
 
-// MARK: L2CAP_RUN
-// process outstanding signaling tasks
-static void l2cap_run(void){
-    
-    // log_info("l2cap_run: entered");
+static void l2cap_run_signaling_response() {
 
     // check pending signaling responses
     while (signaling_responses_pending){
-        
+
         hci_con_handle_t handle = signaling_responses[0].handle;
-        
+
         if (!hci_can_send_acl_packet_now(handle)) break;
 
         uint8_t  sig_id        = signaling_responses[0].sig_id;
@@ -1704,7 +1701,7 @@ static void l2cap_run(void){
                     default:
                         // all other types are not supported
                         l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 1, 0, NULL);
-                        break;                        
+                        break;
                 }
                 break;
             case COMMAND_REJECT:
@@ -1724,13 +1721,12 @@ static void l2cap_run(void){
                 break;
         }
     }
-    
-#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
-    btstack_linked_list_iterator_t it;    
-#endif
+}
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static bool l2ap_run_ertm(void){
     // send l2cap information request if neccessary
+    btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
@@ -1740,25 +1736,16 @@ static void l2cap_run(void){
             uint8_t sig_id = l2cap_next_sig_id();
             uint8_t info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
             l2cap_send_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
-            return;
+            return true;
         }
     }
-#endif
-
-#ifdef ENABLE_CLASSIC
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-
-        if (channel->channel_type != L2CAP_CHANNEL_TYPE_CLASSIC) continue;
-
-        // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
-        l2cap_run_for_classic_channel(channel);
-    }
+    return false;
+}
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
+static void l2cap_run_le_data_channels(void){
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         uint16_t mps;
@@ -1788,7 +1775,7 @@ static void l2cap_run(void){
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming, 0);
                 // notify client
                 l2cap_emit_le_channel_opened(channel, 0);
-                break;                       
+                break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_INVALID;
@@ -1815,19 +1802,55 @@ static void l2cap_run(void){
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
-                l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);   
+                l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);
                 break;
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->state = L2CAP_STATE_INVALID;
-                l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
+                l2cap_send_le_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);
                 l2cap_le_finialize_channel_close(channel);  // -- remove from list
                 break;
             default:
                 break;
         }
     }
+}
 #endif
+
+// MARK: L2CAP_RUN
+// process outstanding signaling tasks
+static void l2cap_run(void){
+    
+    // log_info("l2cap_run: entered");
+    l2cap_run_signaling_response();
+
+    bool done;
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    done = l2ap_run_ertm();
+    if (done) return;
+#endif
+
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_BLE)
+    btstack_linked_list_iterator_t it;
+#endif
+
+#ifdef ENABLE_CLASSIC
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+
+        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+
+        if (channel->channel_type != L2CAP_CHANNEL_TYPE_CLASSIC) continue;
+
+        // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
+        l2cap_run_for_classic_channel(channel);
+    }
+#endif
+
+#ifdef ENABLE_LE_DATA_CHANNELS
+    l2cap_run_le_data_channels();
+    #endif
 
 #ifdef ENABLE_BLE
     // send l2cap con paramter update if necessary
