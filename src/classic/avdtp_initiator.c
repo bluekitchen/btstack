@@ -85,10 +85,16 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
         if (!stream_endpoint){
             stream_endpoint = avdtp_stream_endpoint_with_seid(connection->initiator_local_seid, context);
         }
-        if (!stream_endpoint) return;
+        if (!stream_endpoint) {
+            log_error("stream_endpoint for seid 0x%02x not found", connection->initiator_local_seid);
+            return;
+        }
         sep.seid = connection->initiator_remote_seid;
         
-        if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) return;
+        if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
+            log_error("initiator_config_state is in wrong state %d, expected %d", stream_endpoint->initiator_config_state, AVDTP_INITIATOR_W4_ANSWER);
+            return;
+        }
         stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
     }
     
@@ -382,7 +388,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
                 log_info("initiator SM stop sending SET_CONFIGURATION cmd:");
                 break;
             }
-            log_info("INT: AVDTP_INITIATOR_W2_(RE)CONFIGURATION bitmap, int seid %d, acp seid %d", connection->initiator_local_seid, connection->initiator_remote_seid);
+            log_info("INT: AVDTP_INITIATOR_W2_(RE)CONFIGURATION bitmap, local seid %d, remote seid 0x%02x", connection->initiator_local_seid, connection->initiator_remote_seid);
             // log_info_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
             connection->initiator_signaling_packet.acp_seid = connection->initiator_remote_seid;
             connection->initiator_signaling_packet.int_seid = connection->initiator_local_seid;
@@ -418,7 +424,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
         case AVDTP_INITIATOR_W2_OPEN_STREAM:
             switch (stream_endpoint->state){
                 case AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM:
-                    log_info("INT: AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM");
+                    log_info("INT: send AVDTP_SI_OPEN signaling to remote, transaction_label %d, remote seid 0x%02x", connection->initiator_transaction_label, connection->initiator_remote_seid);
                     avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_OPEN, connection->initiator_transaction_label, connection->initiator_remote_seid);
                     break;
                 default:
