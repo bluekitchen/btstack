@@ -237,7 +237,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     UNUSED(connection_handle);
 
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
-        return att_read_callback_handle_blob((const uint8_t *)counter_string, buffer_size, offset, buffer, buffer_size);
+        return att_read_callback_handle_blob((const uint8_t *)counter_string, counter_string_len, offset, buffer, buffer_size);
     }
     return 0;
 }
