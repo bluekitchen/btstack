@@ -1168,27 +1168,28 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         log_error("Connection not found\n");
                         break;
                     }
-                    
-                    if (connection->accept_response){
+
+                    else if (connection->accept_response){
                         connection->accept_response = 0;
                         avrcp_target_send_response(connection->l2cap_signaling_cid, connection);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                         break;
                     }
-                    if (connection->abort_continue_response){
+
+                    else if (connection->abort_continue_response){
                         connection->abort_continue_response = 0;
                         connection->now_playing_info_response = 0;
                         avrcp_target_abort_continue_response(connection->l2cap_signaling_cid, connection);
                         break;
                     }
 
-                    if (connection->now_playing_info_response){
+                    else if (connection->now_playing_info_response){
                         connection->now_playing_info_response = 0;
                         avrcp_target_send_now_playing_info(connection->l2cap_signaling_cid, connection);
                         break;
                     }
                     
-                    if (connection->track_changed){
+                    else if (connection->track_changed){
                         connection->track_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED, connection->track_id, 8);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
@@ -1196,7 +1197,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         break;
                     }
                     
-                    if (connection->playback_status_changed){
+                    else if (connection->playback_status_changed){
                         connection->playback_status_changed = 0;
                         uint8_t playback_status = (uint8_t) connection->playback_status;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, &playback_status, 1);
@@ -1205,7 +1206,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         break;
                     }
                     
-                    // if (connection->addressed_player_changed){
+                    // else if (connection->addressed_player_changed){
                     //     connection->playback_status_changed = 0;
                     //     avrcp_target_send_addressed_player_changed_notification(connection->l2cap_signaling_cid, connection, connection->addressed_player_id, connection->uid_counter);
                     //     avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
@@ -1213,7 +1214,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     //     break;
                     // }
                     
-                    if (connection->playing_content_changed){
+                    else if (connection->playing_content_changed){
                         connection->playing_content_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED, NULL, 0);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
@@ -1221,7 +1222,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         break;
                     }
                     
-                    if (connection->battery_status_changed){
+                    else if (connection->battery_status_changed){
                         connection->battery_status_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED, (uint8_t *)&connection->battery_status, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
@@ -1229,7 +1230,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         break;
                     }
                     
-                    if (connection->notify_volume_percentage_changed){
+                    else if (connection->notify_volume_percentage_changed){
                         // printf("emit new volume %d\n", connection->volume_percentage);
                         connection->notify_volume_percentage_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED, &connection->volume_percentage, 1);
@@ -1238,7 +1239,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         break;
                     }
 
-                    if (connection->reject_transport_header){
+                    else if (connection->reject_transport_header){
                         connection->state = AVCTP_CONNECTION_OPENED;
                         connection->reject_transport_header = 0;
                         l2cap_reserve_packet_buffer();
