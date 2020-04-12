@@ -1882,6 +1882,20 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
 #endif
 }
 
+static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_t size) {
+    // handle BT initialization
+    if (hci_stack->state == HCI_STATE_INITIALIZING) {
+        hci_initializing_event_handler(packet, size);
+    }
+
+    // help with BT sleep
+    if ((hci_stack->state == HCI_STATE_FALLING_ASLEEP)
+        && (hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE)
+        && HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)) {
+        hci_initializing_next_state();
+    }
+}
+
 static void event_handler(uint8_t *packet, int size){
 
     uint16_t event_length = packet[1];
@@ -1917,7 +1931,7 @@ static void event_handler(uint8_t *packet, int size){
                 packet[6+248] = 0;
                 log_info("local name: %s", &packet[6]);
             }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_buffer_size)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_buffer_size)){
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
                 if (hci_stack->state == HCI_STATE_INITIALIZING){
                     uint16_t acl_len = little_endian_read_16(packet, 6);
@@ -1935,7 +1949,7 @@ static void event_handler(uint8_t *packet, int size){
                              hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num); 
                 }
             }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_rssi)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_rssi)){
                 if (packet[5] == 0){
                     uint8_t event[5];
                     event[0] = GAP_EVENT_RSSI_MEASUREMENT;
@@ -1945,7 +1959,7 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
 #ifdef ENABLE_BLE
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
                 // determine usable ACL payload size
@@ -1956,19 +1970,19 @@ static void event_handler(uint8_t *packet, int size){
             }
 #endif
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_maximum_data_length)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_maximum_data_length)){
                 hci_stack->le_supported_max_tx_octets = little_endian_read_16(packet, 6);
                 hci_stack->le_supported_max_tx_time = little_endian_read_16(packet, 8);
                 log_info("hci_le_read_maximum_data_length: tx octets %u, tx time %u us", hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
             }
 #endif
 #ifdef ENABLE_LE_CENTRAL
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
                 hci_stack->le_whitelist_capacity = packet[6];
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
                 reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
 				hci_stack->local_bd_addr);
                 log_info("Local Address, Status: 0x%02x: Addr: %s",
@@ -1980,10 +1994,10 @@ static void event_handler(uint8_t *packet, int size){
 #endif
             }
 #ifdef ENABLE_CLASSIC
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack->discoverable);
             }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_inquiry_cancel)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_inquiry_cancel)){
                 if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W4_CANCELLED){
                     hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
                     uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
@@ -1993,7 +2007,7 @@ static void event_handler(uint8_t *packet, int size){
 #endif
 
             // Note: HCI init checks 
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_features)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_features)){
                 (void)memcpy(hci_stack->local_supported_features,
 			     &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
 			     8);
@@ -2006,7 +2020,7 @@ static void event_handler(uint8_t *packet, int size){
                 // Classic/LE
                 log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
             }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 // hci_stack->hci_version    = little_endian_read_16(packet, 4);
                 // hci_stack->hci_revision   = little_endian_read_16(packet, 6);
                 uint16_t manufacturer = little_endian_read_16(packet, 10);
@@ -2021,7 +2035,7 @@ static void event_handler(uint8_t *packet, int size){
                 // hci_stack->lmp_subversion = little_endian_read_16(packet, 12);
                 log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
             }
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 hci_stack->local_supported_commands[0] =
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0x80) >> 7) |  // bit 0 = Octet 14, bit 7 / Read Buffer Size
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5) |  // bit 1 = Octet 24, bit 6 / Write Le Host Supported
@@ -2034,12 +2048,12 @@ static void event_handler(uint8_t *packet, int size){
                     log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]);
             }
 #ifdef ENABLE_CLASSIC
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
                 if (packet[5] == 0){
                     hci_stack->synchronous_flow_control_enabled = 1;
                 }
-            } 
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_encryption_key_size)){
+            }
+            else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_encryption_key_size)){
                 uint8_t status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
                 handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
                 conn   = hci_connection_for_handle(handle);
@@ -2089,7 +2103,7 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
             break;
-            
+
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
             if (size < 3) return;
             uint16_t num_handles = packet[2];
@@ -2596,18 +2610,8 @@ static void event_handler(uint8_t *packet, int size){
             break;
     }
 
-    // handle BT initialization
-    if (hci_stack->state == HCI_STATE_INITIALIZING){
-        hci_initializing_event_handler(packet, size);
-    }
-    
-    // help with BT sleep
-    if ((hci_stack->state == HCI_STATE_FALLING_ASLEEP)
-        && (hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE)
-        && HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_scan_enable)){
-        hci_initializing_next_state();
-    }
-    
+    handle_event_for_current_stack_state(packet, size);
+
     // notify upper stack
 	hci_emit_event(packet, size, 0);   // don't dump, already happened in packet handler
 
