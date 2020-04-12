@@ -1437,7 +1437,9 @@ static uint32_t l2cap_extended_features_mask(void){
 
 //
 #ifdef ENABLE_CLASSIC
-static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
+
+// returns true if channel was finalized
+static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     uint8_t  config_options[18];
@@ -1445,7 +1447,7 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
     uint8_t  config_options[10];
 #endif
 
-    if (!hci_can_send_acl_packet_now(channel->con_handle)) return;
+    if (!hci_can_send_acl_packet_now(channel->con_handle)) return false;
 
     switch (channel->state){
 
@@ -1561,10 +1563,12 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
     }
 
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-
     // handle channel finalize on L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE and L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE
-    if (!channel) return;
+    return channel == NULL;
+}
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static void l2cap_run_for_classic_channel_ertm(l2cap_channel_t * channel){
 
     // ERTM mode
     if (channel->mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) return;
@@ -1631,9 +1635,9 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             return;
         }
     }
-#endif
 }
-#endif
+#endif /* ERTM */
+#endif /* Classic */
 
 static void l2cap_run_signaling_response() {
 
@@ -1838,7 +1842,13 @@ static void l2cap_run(void){
         if (channel->channel_type != L2CAP_CHANNEL_TYPE_CLASSIC) continue;
 
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
-        l2cap_run_for_classic_channel(channel);
+        bool finalized = l2cap_run_for_classic_channel(channel);
+
+        if (!finalized) {
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+            l2cap_run_for_classic_channel_ertm(channel);
+#endif
+        }
     }
 #endif
 
