@@ -1445,11 +1445,12 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
     uint8_t  config_options[10];
 #endif
 
+    if (!hci_can_send_acl_packet_now(channel->con_handle)) return;
+
     switch (channel->state){
 
         case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
         case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
             if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
                 channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
                 l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 1, 0);
@@ -1457,7 +1458,6 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
-            if (!hci_can_send_command_packet_now()) break;
             // send connection request - set state first
             channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
             // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
@@ -1466,7 +1466,6 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
             channel->state = L2CAP_STATE_INVALID;
             l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
             // discard channel - l2cap_finialize_channel_close without sending l2cap close event
@@ -1476,14 +1475,12 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
             channel->state = L2CAP_STATE_CONFIG;
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
             l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
             break;
 
         case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
             // success, start l2cap handshake
             channel->local_sig_id = l2cap_next_sig_id();
             channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
@@ -1492,7 +1489,6 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_CONFIG:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
             // fallback to basic mode if ERTM requested but not not supported by remote
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
@@ -1549,7 +1545,6 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
             channel->state = L2CAP_STATE_INVALID;
             l2cap_send_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);
             // we don't start an RTX timer for a disconnect - there's no point in closing the channel if the other side doesn't respond :)
@@ -1558,7 +1553,6 @@ static void l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
-            if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
             channel->local_sig_id = l2cap_next_sig_id();
             channel->state = L2CAP_STATE_WAIT_DISCONNECT;
             l2cap_send_signaling_packet( channel->con_handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);
