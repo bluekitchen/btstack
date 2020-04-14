@@ -1821,11 +1821,9 @@ static void l2cap_run(void){
     
     // log_info("l2cap_run: entered");
     l2cap_run_signaling_response();
-
-    bool done;
-
+    
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    done = l2ap_run_ertm();
+    bool done = l2ap_run_ertm();
     if (done) return;
 #endif
 
