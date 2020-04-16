@@ -250,7 +250,7 @@ static hal_flash_bank_synergy_t  hal_flash_bank_context;
 static const hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    4000000,
+    2000000,
     1,
     NULL
 };

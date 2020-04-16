@@ -28,11 +28,11 @@ void OnProjectLoad (void) {
   Project.SetTIFSpeed ("50 MHz");
   Project.AddPathSubstitute ("/Volumes/[C] Windows 10.hidden/Users/mringwal/e2_studio/workspace/btstack_port", "$(ProjectDir)");
   Project.AddPathSubstitute ("C:/Users/mringwal/e2_studio/workspace/btstack_port", "$(ProjectDir)");
-  Project.AddSvdFile ("/Applications/SEGGER/Ozone/Ozone.app/Contents/MacOS/Config/CPU/Cortex-M23.svd");
+  Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M23.svd");
   //
   // User settings
   //
-  File.Open ("$(ProjectDir)/Debug/btstack_port.elf");
+  File.Open ("$(ProjectDir)/Debug/btstack_example.elf");
 }
 
 /*********************************************************************

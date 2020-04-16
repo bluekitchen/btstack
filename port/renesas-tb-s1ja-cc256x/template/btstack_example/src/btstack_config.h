@@ -16,7 +16,7 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_CLASSIC
 #define ENABLE_LE_DATA_CHANNELS
-#define ENABLE_LOG_INFO
+// #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SCO_STEREO_PLAYBACK
@@ -26,6 +26,7 @@
 #define ENABLE_SEGGER_RTT
 
 // BTstack configuration. buffers, sizes, ...
+#define SDP_RESPONSE_BUFFER_SIZE 200
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define MAX_NR_GATT_CLIENTS 1
 #define MAX_NR_HCI_CONNECTIONS 2
