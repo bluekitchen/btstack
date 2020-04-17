@@ -60,7 +60,9 @@ def create_examples(port_folder, suffix):
     for file in example_files:
         if not file.endswith(".c"):
             continue
-        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'a2dp_sink_demo.c', 'a2dp_source_demo.c']:
+        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'audio_duplex.c', 'mod_player.c']:
+            continue
+        if file in ['a2dp_sink_demo.c', 'a2dp_source_demo.c', 'hfp_hf_demo.c', 'hfp_ag_demo.c', 'hsp_hs_demo.c', 'hsp_ag_demo.c']:
             continue
 
         example = file[:-2]
@@ -85,7 +87,7 @@ def create_examples(port_folder, suffix):
         create_folder(src_folder)
 
         # copy files skipping example.c and gatt_streamer_server.h
-        for file in ['btstack_config.h', 'hal_entry.c']:
+        for file in ['btstack_config.h', 'hal_entry.c', 'hal_flash_bank_synergy.c',  'hal_flash_bank_synergy.h']:
             shutil.copy(project_template + "src/" + file, src_folder)
 
         # copy synergy_gen
@@ -100,9 +102,9 @@ def create_examples(port_folder, suffix):
         shutil.copy(port_folder + "/" + init_script, src_folder)
 
         # add sco_demo_util.c for audio examples
-        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
-            shutil.copy(examples_embedded + 'sco_demo_util.c', src_folder)
-            shutil.copy(examples_embedded + 'sco_demo_util.h', src_folder)
+        # if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
+        #    shutil.copy(examples_embedded + 'sco_demo_util.c', src_folder)
+        #    shutil.copy(examples_embedded + 'sco_demo_util.h', src_folder)
 
         # update project files
         for file in ['.project', '.cproject','btstack_example.jdebug']:
