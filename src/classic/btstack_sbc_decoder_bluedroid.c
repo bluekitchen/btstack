@@ -208,7 +208,7 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
     state->bytes_in_frame_buffer += size;
 }
 
-void btstack_sbc_decoder_bluedroid_simulate_error(const OI_BYTE *frame_data) {
+static void btstack_sbc_decoder_bluedroid_simulate_error(const OI_BYTE *frame_data) {
     static int frame_count = 0;
     if (corrupt_frame_period > 0){
         frame_count++;
@@ -322,7 +322,7 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
 }
 
 
-void btstack_sbc_decoder_insert_missing_frames(btstack_sbc_decoder_state_t *state) {
+static void btstack_sbc_decoder_insert_missing_frames(btstack_sbc_decoder_state_t *state) {
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     const unsigned int MSBC_FRAME_SIZE = 60;
 
