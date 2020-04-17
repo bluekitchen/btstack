@@ -653,6 +653,7 @@ static void avrcp_handle_open_connection_for_role(avrcp_role_t role, bd_addr_t e
 
     connection->l2cap_signaling_cid = local_cid;
     connection->l2cap_mtu = l2cap_mtu;
+    connection->incoming_declined = false;
     connection->song_length_ms = 0xFFFFFFFF;
     connection->song_position_ms = 0xFFFFFFFF;
     connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
@@ -718,12 +719,18 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     outoing_active = false;
-                    if (get_avrcp_connection_for_bd_addr(AVRCP_TARGET, event_addr) != NULL){
+                    connection = get_avrcp_connection_for_bd_addr(AVRCP_TARGET, event_addr);
+                    if (connection != NULL){
                         outoing_active = true;
+                        connection->incoming_declined = true;
                     }
-                    if (get_avrcp_connection_for_bd_addr(AVRCP_CONTROLLER, event_addr) != NULL){
+                    
+                    connection = get_avrcp_connection_for_bd_addr(AVRCP_CONTROLLER, event_addr);
+                    if (connection != NULL){
                         outoing_active = true;
+                        connection->incoming_declined = true;
                     }
+
                     decline_connection = outoing_active;
                     if (outoing_active == false){
                         // create two connection objects (both)
