@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changes April 2020
 
 ### Fixed
+- hog_mouse_demo/hog_keyboard_demo: handle set protocol mode = boot protocol mode
 
 ### Added
 - GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections

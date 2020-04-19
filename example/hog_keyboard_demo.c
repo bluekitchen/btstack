@@ -166,6 +166,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static uint8_t battery = 100;
 static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
+static uint8_t protocol_mode = 1;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -257,7 +258,16 @@ static int keycode_and_modifer_us_for_character(uint8_t character, uint8_t * key
 
 static void send_report(int modifier, int keycode){
     uint8_t report[] = { /* 0xa1, */ modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
-    hids_device_send_input_report(con_handle, report, sizeof(report));
+    switch (protocol_mode){
+        case 0:
+            hids_device_send_boot_keyboard_input_report(con_handle, report, sizeof(report));
+            break;
+        case 1:
+           hids_device_send_input_report(con_handle, report, sizeof(report));
+           break;
+        default:
+            break;
+    }
 }
 
 // Demo Application
@@ -426,6 +436,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("Boot Keyboard Characteristic Subscribed %u\n", hids_subevent_boot_keyboard_input_report_enable_get_enable(packet));
                             break;
                         case HIDS_SUBEVENT_PROTOCOL_MODE:
+                            protocol_mode = hids_subevent_protocol_mode_get_protocol_mode(packet);
                             printf("Protocol Mode: %s mode\n", hids_subevent_protocol_mode_get_protocol_mode(packet) ? "Report" : "Boot");
                             break;
                         case HIDS_SUBEVENT_CAN_SEND_NOW:
