@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections
+- example: hog_boot_host_demo implement an HID-over-GATT Boot Host that supports keyboard and mouse
 
 ### Changed
 - Broadcom/Cypress: wait 300 ms after PatchRAM update in hci.c to assert Controller is ready
