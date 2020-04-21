@@ -643,6 +643,7 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
     }
 }
 static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
+    UNUSED(size);
     uint8_t status;
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_GOEP_META:

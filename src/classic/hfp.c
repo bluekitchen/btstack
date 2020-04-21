@@ -613,8 +613,10 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
 
 
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
+    UNUSED(packet_type);
     UNUSED(channel);    // ok: no channel
-
+    UNUSED(size);    
+    
     bd_addr_t event_addr;
     hci_con_handle_t handle;
     hfp_connection_t * hfp_connection = NULL;
@@ -743,7 +745,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 }
 
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
+    UNUSED(packet_type);
     UNUSED(channel);    // ok: no channel
+    UNUSED(size);
 
     bd_addr_t event_addr;
     uint16_t rfcomm_cid;
