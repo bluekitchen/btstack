@@ -953,7 +953,7 @@ void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback)
 }
 
 uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
-    return avrcp_connect(AVRCP_CONTROLLER, bd_addr, &avrcp_controller_context, avrcp_cid);
+    return avrcp_connect(bd_addr, &avrcp_controller_context, avrcp_cid);
 }
 
 uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){

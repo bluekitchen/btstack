@@ -794,16 +794,16 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 }
 
-uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
+uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr_for_role(context->role, bd_addr);
     if (connection) return ERROR_CODE_COMMAND_DISALLOWED;
 
     if (!sdp_client_ready()) return ERROR_CODE_COMMAND_DISALLOWED;
     
-    btstack_packet_handler_t packet_handler = avrcp_packet_handler_for_role(role);
+    btstack_packet_handler_t packet_handler = avrcp_packet_handler_for_role(context->role);
     if (!packet_handler) return 0;
 
-    connection = avrcp_create_connection(role, bd_addr);
+    connection = avrcp_create_connection(context->role, bd_addr);
     if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
     
     if (avrcp_cid){
