@@ -255,9 +255,8 @@ static int keycode_and_modifer_us_for_character(uint8_t character, uint8_t * key
 }
 
 // HID Report sending
-
 static void send_report(int modifier, int keycode){
-    uint8_t report[] = { /* 0xa1, */ modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+    uint8_t report[] = {  modifier, 0, keycode, 0, 0, 0, 0, 0};
     switch (protocol_mode){
         case 0:
             hids_device_send_boot_keyboard_input_report(con_handle, report, sizeof(report));

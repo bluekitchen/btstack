@@ -151,7 +151,7 @@ static const uint8_t keytable_us_shift[] = {
 /**
  * @section HOG Boot Keyboard Handler
  * @text Boot Keyboard Input Report contains a report of format
- * [ modifier, reserved, led status, 6 x usage for usage page keyboard]
+ * [ modifier, reserved, 6 x usage for key 1..6 from keyboard usage]
  * Track new usages, map key usage to actual character and simulate terminal
  */
 
@@ -176,7 +176,7 @@ static void handle_boot_keyboard_event(uint8_t packet_type, uint16_t channel, ui
     uint8_t key_index;
     for (key_index = 0; key_index < NUM_KEYS; key_index++){
 
-        uint16_t usage = data[3 + key_index];
+        uint16_t usage = data[2 + key_index];
         if (usage == 0) continue;
         if (usage >= sizeof(keytable_us_none)) continue;
 
