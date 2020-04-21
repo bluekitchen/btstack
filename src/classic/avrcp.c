@@ -294,7 +294,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-avrcp_connection_t * get_avrcp_connection_for_bd_addr(avrcp_role_t role, bd_addr_t addr){
+avrcp_connection_t * get_avrcp_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -306,7 +306,7 @@ avrcp_connection_t * get_avrcp_connection_for_bd_addr(avrcp_role_t role, bd_addr
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(avrcp_role_t role, uint16_t l2cap_cid){
+avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -318,7 +318,7 @@ avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(avrcp_role_t r
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(avrcp_role_t role, uint16_t avrcp_cid){
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -330,7 +330,7 @@ avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(avrcp_role_t role, uint1
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_cid(avrcp_role_t role, uint16_t browsing_cid){
+avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -342,7 +342,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_cid(avrcp_role_t role, ui
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t role, uint16_t browsing_l2cap_cid){
+avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -354,7 +354,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t ro
     return NULL;
 }
 
-avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_role_t role, uint16_t l2cap_cid){
+avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -380,7 +380,7 @@ uint16_t avrcp_get_next_cid(avrcp_role_t role){
         } else {
             avrcp_cid_counter++;
         }
-    } while (get_avrcp_connection_for_avrcp_cid(role, avrcp_cid_counter) !=  NULL) ;
+    } while (get_avrcp_connection_for_avrcp_cid_for_role(role, avrcp_cid_counter) !=  NULL) ;
     return avrcp_cid_counter;
 }
 
@@ -561,7 +561,7 @@ static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * c
 }
 
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(sdp_query_context->role, sdp_query_context->avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(sdp_query_context->role, sdp_query_context->avrcp_cid);
     if (!connection) return;
     if (connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return; 
     
@@ -636,7 +636,7 @@ static void avrcp_handle_open_connection_for_role(avrcp_role_t role, bd_addr_t e
         // printf("AVRCP: avrcp_handle_open_connection_for_role %d, PH not defined\n", role);
         return;
     }
-    avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(role, event_addr);
+    avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr_for_role(role, event_addr);
     if (!connection) {
         // printf("AVRCP: avrcp_handle_open_connection_for_role %d, no connection found\n", role);
         return;  
@@ -669,7 +669,7 @@ static void avrcp_handle_close_connection_for_role(avrcp_role_t role,uint16_t lo
     btstack_packet_handler_t packet_handler = avrcp_packet_handler_for_role(role);
     if (!packet_handler) return;
     
-    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid(role, local_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(role, local_cid);
     if (!connection) return;
 
     // printf("avrcp_handle_close_connection_for_role avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x, role %d\n", connection->avrcp_cid, connection->l2cap_signaling_cid, role);
@@ -719,13 +719,13 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     outoing_active = false;
-                    connection = get_avrcp_connection_for_bd_addr(AVRCP_TARGET, event_addr);
+                    connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
                     if (connection != NULL){
                         outoing_active = true;
                         connection->incoming_declined = true;
                     }
                     
-                    connection = get_avrcp_connection_for_bd_addr(AVRCP_CONTROLLER, event_addr);
+                    connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
                     if (connection != NULL){
                         outoing_active = true;
                         connection->incoming_declined = true;
@@ -768,7 +768,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_TARGET, local_cid);
+                    connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
                     if (connection && connection->wait_to_send){
                         // printf("AVRCP: L2CAP_EVENT_CAN_SEND_NOW target\n");
                         connection->wait_to_send = 0;
@@ -776,7 +776,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                         break;    
                     }
 
-                    connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_CONTROLLER, local_cid);
+                    connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     if (connection && connection->wait_to_send){
                         // printf("AVRCP: L2CAP_EVENT_CAN_SEND_NOW controller\n");
                         connection->wait_to_send = 0;
@@ -795,7 +795,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 }
 
 uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(context->role, bd_addr);
+    avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr_for_role(context->role, bd_addr);
     if (connection) return ERROR_CODE_COMMAND_DISALLOWED;
 
     if (!sdp_client_ready()) return ERROR_CODE_COMMAND_DISALLOWED;

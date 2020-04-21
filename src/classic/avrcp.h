@@ -553,13 +553,13 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
 
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 
-avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(avrcp_role_t role, uint16_t l2cap_cid);
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(avrcp_role_t role, uint16_t avrcp_cid);
-avrcp_connection_t * get_avrcp_connection_for_bd_addr(avrcp_role_t role, bd_addr_t addr);
+avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid);
+avrcp_connection_t * get_avrcp_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr);
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_cid(avrcp_role_t role, uint16_t browsing_cid);
-avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t role, uint16_t browsing_l2cap_cid);
-avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_role_t role, uint16_t l2cap_cid);
+avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
+avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
+avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
 
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 uint16_t avrcp_get_next_cid(avrcp_role_t role);

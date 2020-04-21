@@ -458,7 +458,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
 // }
 
 static uint8_t avrcp_target_pass_through_response(uint16_t avrcp_cid, avrcp_command_type_t cmd_type, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("Could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -491,7 +491,7 @@ uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operati
 }
 
 void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_operation_reject: could not find a connection.");
         return; 
@@ -501,7 +501,7 @@ void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_ty
 }
 
 void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_operation_reject: could not find a connection.");
         return; 
@@ -556,7 +556,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
 }
 
 static inline uint8_t avrcp_prepare_vendor_dependent_response(uint16_t avrcp_cid, avrcp_connection_t ** out_connection, avrcp_pdu_id_t pdu_id, uint16_t param_length){
-    *out_connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    *out_connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!*out_connection){
         log_error("avrcp tartget: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -640,7 +640,7 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
 }   
 
 uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -654,7 +654,7 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
 }
 
 void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection. cid 0x%02x\n", avrcp_cid);
         return; 
@@ -682,7 +682,7 @@ void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t *
 }
 
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_track_changed: could not find connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -698,7 +698,7 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
 }
 
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_playing_content_changed: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -711,7 +711,7 @@ uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -727,7 +727,7 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
 }
 
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -742,7 +742,7 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
 }
 
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -1152,7 +1152,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     avrcp_connection_t * connection;
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
-            connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_TARGET, channel);
+            connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
             if (!connection) break;
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
@@ -1163,7 +1163,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     (*avrcp_target_context.avrcp_callback)(packet_type, channel, packet, size);
                     break;
                 case L2CAP_EVENT_CAN_SEND_NOW:{
-                    connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_TARGET, channel);
+                    connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
                     if (!connection) {
                         log_error("Connection not found\n");
                         break;
@@ -1296,7 +1296,7 @@ uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
 }
 
 uint8_t avrcp_target_disconnect(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_disconnect: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
