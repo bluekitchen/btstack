@@ -2405,12 +2405,19 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
 
-            // re-enable advertisements for le connections if active
             conn = hci_connection_for_handle(handle);
-            if (!conn) break; 
+            if (!conn) break;
+            // mark connection for shutdown
             conn->state = RECEIVED_DISCONNECTION_COMPLETE;
+
+            // emit dedicatd bonding event
+            if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
+                hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
+            }
+
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
+            // re-enable advertisements for le connections if active
             if (hci_is_le_connection(conn)){
                 hci_reenable_advertisements_if_needed();
             }
@@ -2624,17 +2631,9 @@ static void event_handler(uint8_t *packet, int size){
             handle = little_endian_read_16(packet, 3);
             hci_connection_t * aConn = hci_connection_for_handle(handle);
             if (aConn) {
-                uint8_t status = aConn->bonding_status;
-                uint16_t flags = aConn->bonding_flags;
-                bd_addr_t bd_address;
-                (void)memcpy(&bd_address, aConn->address, 6);
-                // only discard connection if app did not trigger a reconnect
+                // discard connection if app did not trigger a reconnect in the event handler
                 if (aConn->state == RECEIVED_DISCONNECTION_COMPLETE){
                     hci_shutdown_connection(aConn);
-                }
-                // connection struct might be  gone, don't access anymore
-                if (flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
-                    hci_emit_dedicated_bonding_result(bd_address, status);
                 }
             }
         }
