@@ -45,6 +45,7 @@ hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activit
 
 ### Fixed
 - AVRCP Target: fix reporting of PLAYBACK_STATUS_CHANGED
+- HCI: handle reconnect request for Classic and LE connections triggered by packet handler for Disconnection Complete Event
 
 ### Changed
 - hid_host_mode: allow sniff mode
