@@ -305,7 +305,7 @@ static void mesh_pts_dump_mesh_options(void){
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != MESH_BEACON_PACKET) return;
-    uint8_t  device_uuid[16];
+    static uint8_t  device_uuid[16];
     uint16_t oob;
     memcpy(device_uuid, &packet[1], 16);
     oob = big_endian_read_16(packet, 17);
