@@ -54,7 +54,7 @@
 #include "classic/sdp_util.h"
 
 static int record_id = -1;
-static uint8_t   attribute_value[30];
+static uint8_t   attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 // typedef struct {

@@ -60,7 +60,7 @@ static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP 
 static uint16_t  avrcp_cid_counter = 0;
 
 static avrcp_context_t * sdp_query_context;
-static uint8_t   attribute_value[30];
+static uint8_t   attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 static btstack_linked_list_t connections;
