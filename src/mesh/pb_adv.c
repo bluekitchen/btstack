@@ -206,6 +206,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
         case MESH_GENERIC_PROVISIONING_LINK_CLOSE: // Close a session on a bearer
             // does it match link id
             if (link_id != pb_adv_link_id) break;
+            if (link_state == LINK_STATE_W4_OPEN) break;
             reason = pdu[1];
             link_state = LINK_STATE_W4_OPEN;
             log_info("link close, reason %x", reason);
