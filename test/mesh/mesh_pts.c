@@ -154,7 +154,14 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
-                    printf("Provisioner link opened");
+                    switch (mesh_subevent_pb_transport_link_open_get_status(packet)){
+                        case ERROR_CODE_SUCCESS:
+                            printf("Provisioner link opened\n");
+                            break;
+                        default:
+                            printf("Provisioner link open failed, status 0x%02x\n", mesh_subevent_pb_transport_link_open_get_status(packet));
+                            break;
+                    }
                     break;
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Provisioner link close");

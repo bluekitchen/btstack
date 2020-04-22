@@ -54,7 +54,8 @@
 #include "mesh/provisioning.h"
 
 #define PB_ADV_LINK_OPEN_RETRANSMIT_MS 1000
-
+#define PB_ADV_LINK_OPEN_TIMEOUT_MS   60000
+#define PB_ADV_LINK_OPEN_RETRIES (PB_ADV_LINK_OPEN_TIMEOUT_MS / PB_ADV_LINK_OPEN_RETRANSMIT_MS)
 static void pb_adv_run(void);
 
 /* taps: 32 31 29 1; characteristic polynomial: x^32 + x^31 + x^29 + x + 1 */
@@ -91,6 +92,7 @@ static link_state_t link_state;
 
 #ifdef ENABLE_MESH_PROVISIONER
 static const uint8_t * pb_adv_peer_device_uuid;
+static uint8_t pb_adv_provisioner_open_countdown;
 #endif
 
 static uint8_t  pb_adv_msg_in_buffer[MESH_PB_ADV_MAX_PDU_SIZE];   // TODO: how large are prov messages?
@@ -178,7 +180,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
                     printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
                     link_state = LINK_STATE_W2_SEND_ACK;
                     adv_bearer_request_can_send_now_for_provisioning_pdu();
-                    pb_adv_emit_link_open(0, pb_adv_cid);
+                    pb_adv_emit_link_open(ERROR_CODE_SUCCESS, pb_adv_cid);
                     break;
                 case LINK_STATE_OPEN:
                     if (pb_adv_link_id != link_id) break;
@@ -200,7 +202,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             btstack_run_loop_remove_timer(&pb_adv_random_delay_timer);
             log_info("link open, id %08x", pb_adv_link_id);
             printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
-            pb_adv_emit_link_open(0, pb_adv_cid);
+            pb_adv_emit_link_open(ERROR_CODE_SUCCESS, pb_adv_cid);
             break;
 #endif
         case MESH_GENERIC_PROVISIONING_LINK_CLOSE: // Close a session on a bearer
@@ -454,6 +456,11 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case MESH_SUBEVENT_CAN_SEND_NOW:
 #ifdef ENABLE_MESH_PROVISIONER
                     if (link_state == LINK_STATE_W4_ACK){
+                        pb_adv_provisioner_open_countdown--;
+                        if (pb_adv_provisioner_open_countdown == 0){
+                            pb_adv_emit_link_open(ERROR_CODE_PAGE_TIMEOUT, pb_adv_cid);
+                            break;
+                        }
                         // build packet
                         uint8_t buffer[22];
                         big_endian_store_32(buffer, 0, pb_adv_link_id);
@@ -623,6 +630,7 @@ uint16_t pb_adv_create_link(const uint8_t * device_uuid){
     
     pb_adv_peer_device_uuid = device_uuid;
     pb_adv_provisioner_role = 1;
+    pb_adv_provisioner_open_countdown = PB_ADV_LINK_OPEN_RETRIES;
 
     // create new 32-bit link id
     pb_adv_link_id = pb_adv_random();
