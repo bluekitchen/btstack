@@ -2628,8 +2628,11 @@ static void event_handler(uint8_t *packet, int size){
                 uint16_t flags = aConn->bonding_flags;
                 bd_addr_t bd_address;
                 (void)memcpy(&bd_address, aConn->address, 6);
-                hci_shutdown_connection(aConn);
-                // connection struct is gone, don't access anymore
+                // only discard connection if app did not trigger a reconnect
+                if (aConn->state == RECEIVED_DISCONNECTION_COMPLETE){
+                    hci_shutdown_connection(aConn);
+                }
+                // connection struct might be  gone, don't access anymore
                 if (flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
                     hci_emit_dedicated_bonding_result(bd_address, status);
                 }
@@ -4681,7 +4684,7 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
         conn->state = SEND_CREATE_CONNECTION;
         log_info("gap_connect: send create connection next");
         hci_run();
-        return 0;
+        return ERROR_CODE_SUCCESS;
     }
     
     if (!hci_is_le_connection(conn) ||
@@ -4691,11 +4694,19 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
         log_error("gap_connect: classic connection or connect is already being created");
         return GATT_CLIENT_IN_WRONG_STATE;
     }
-    
+
+    // check if connection was just disconnected
+    if (conn->state == RECEIVED_DISCONNECTION_COMPLETE){
+        log_info("gap_connect: send create connection (again)");
+        conn->state = SEND_CREATE_CONNECTION;
+        hci_run();
+        return ERROR_CODE_SUCCESS;
+    }
+
     log_info("gap_connect: context exists with state %u", conn->state);
     hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, 0);
     hci_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 // @assumption: only a single outgoing LE Connection exists
