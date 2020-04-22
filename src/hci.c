@@ -4030,6 +4030,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 // and OPEN, emit connection complete command
                 hci_emit_connection_complete(addr, conn->con_handle, 0);
                 return -1; // packet not sent to controller
+            case RECEIVED_DISCONNECTION_COMPLETE:
+                // create connection triggered in disconnect complete event, let's do it now
+                break;
             case SEND_CREATE_CONNECTION:
                 // connection created by hci, e.g. dedicated bonding, but not executed yet, let's do it now
                 break;
