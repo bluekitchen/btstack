@@ -524,6 +524,7 @@ typedef struct {
     btstack_packet_handler_t browsing_packet_handler;
 
     // SDP query
+    bd_addr_t remote_addr;
     uint8_t  parse_sdp_record;
     uint32_t record_id;
     uint16_t avrcp_cid;
