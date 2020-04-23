@@ -171,7 +171,7 @@ static void handle_boot_keyboard_event(uint8_t packet_type, uint16_t channel, ui
     memset(new_keys, 0, sizeof(new_keys));
     int new_keys_count = 0;
 
-    bool shift = (data[0] & 1) != 0;
+    bool shift = (data[0] & 0x22) != 0;
 
     uint8_t key_index;
     for (key_index = 0; key_index < NUM_KEYS; key_index++){
