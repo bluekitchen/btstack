@@ -428,9 +428,19 @@ ublox_spp_le_counter: ublox_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ
 mesh_node_demo: mesh_node_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
 	${CC} $(filter-out mesh_node_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
+ifdef	BTSTACK_SYSTEM
+ifeq ($(BTSTACK_SYSTEM),LIBUSB)
+$(info Making for linux...)
+endif
+ifeq ($(BTSTACK_SYSTEM),RASPI)
+$(info Making for raspberry pi...)
+endif
+else
+$(warning BTSTACK_SYSTEM not defined!)
+endif
+
 clean:
 	rm -f ${EXAMPLES} ${EXAMPLES_GATT_H_FILES}
-	rm -f  *.o *.out *.hex *.exe *.wav *.sbc 
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o

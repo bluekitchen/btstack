@@ -1,5 +1,6 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	POSIX_H4_DA14585
 
 CORE += \
 	btstack_chipset_da14581.c \
@@ -28,4 +29,3 @@ VPATH += ${BTSTACK_ROOT}/chipset/da14581
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
 
 all: ${EXAMPLES}
-

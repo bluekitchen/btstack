@@ -1,5 +1,6 @@
 # Makefile for Raspberry Pi
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	RASPI
 
 CORE += \
 	btstack_chipset_bcm.c \
@@ -41,7 +42,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 
-VPATH += ${BTSTACK_ROOT}/chipset/bcm	
+VPATH += ${BTSTACK_ROOT}/chipset/bcm
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
 EXAMPLES += pan_lwip_http_server

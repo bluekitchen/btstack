@@ -1,5 +1,6 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	LIBUSB
 
 CORE += main.c btstack_stdin_posix.c btstack_tlv_posix.c
 
@@ -57,4 +58,3 @@ clean_src:
 	rm -rf * ${BTSTACK_ROOT}/platform/embedded/*.o
 
 all: ${EXAMPLES}
-

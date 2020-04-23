@@ -1,5 +1,6 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	POSIX_H4_ATWILC3000
 
 CORE += \
 	btstack_chipset_atwilc3000.c \

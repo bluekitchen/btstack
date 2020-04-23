@@ -1,5 +1,6 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	POSIX_H4
 
 CORE += \
 	bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
@@ -51,7 +52,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 
-VPATH += ${BTSTACK_ROOT}/chipset/bcm	
+VPATH += ${BTSTACK_ROOT}/chipset/bcm
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/chipset/csr
 VPATH += ${BTSTACK_ROOT}/chipset/em9301
@@ -69,4 +70,3 @@ EXAMPLES += pan_lwip_http_server
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
 all: BCM43430A1.hcd ${EXAMPLES}
-

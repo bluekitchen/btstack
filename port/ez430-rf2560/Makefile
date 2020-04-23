@@ -9,6 +9,7 @@ CC2564B = bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o
 CC2567  = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
 
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	EZ430_RF2560
 VPATH += example
 VPATH += firmware
 VPATH += src
@@ -83,7 +84,7 @@ BLE = \
 
 LCD = hal_lcd.c hal_lcd_fonts.c
 
-	
+
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
 SPP_OBJ    = $(SPP:.c=.o)
@@ -92,7 +93,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create .hex file from .out
 %.hex: %.out
-	msp430-objcopy -O ihex $< $@    
+	msp430-objcopy -O ihex $< $@
 
 # create firmware image from common objects and example source file
 
@@ -103,18 +104,18 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compiling requires a 20-bit mspgcc version
 # spp_and_gatt_counter.hex spp_accel.hex spp_flowcontrol.hex spp_counter.hex
-# sdp_rfcomm_query.hex sdp_general_query.hex 
-# gap_inquiry.hex 
+# sdp_rfcomm_query.hex sdp_general_query.hex
+# gap_inquiry.hex
 
 # compiling ant-test requires special ant init script
 # ant-test.hex
 
 # compile GATT database
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 
-led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 
+led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp_server.o ant_cmds.o ${CC2567} ant-test.o
@@ -123,7 +124,7 @@ ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp_server.o ant_cm
 ble_server.out: ${CORE_OBJ} ${COMMON_OBJ} ${BLE_OBJ} ${LCD_OBJ} profile.h ble_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_demo.o 
+hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_demo.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp_server.o hal_adc.o
@@ -152,4 +153,4 @@ clean:
 
 size: all
 	msp430-size *.o
-	msp430-size *.out 
+	msp430-size *.out
