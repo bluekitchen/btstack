@@ -441,6 +441,7 @@ endif
 
 clean:
 	rm -f ${EXAMPLES} ${EXAMPLES_GATT_H_FILES}
+	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
