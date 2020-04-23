@@ -51,7 +51,6 @@
 static const uint8_t AVRCP_NOTIFICATION_TRACK_SELECTED[] = {0,0,0,0,0,0,0,0};
 static const uint8_t AVRCP_NOTIFICATION_TRACK_NOT_SELECTED[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-avrcp_context_t avrcp_target_context;
 
 static int avrcp_target_supports_browsing(uint16_t target_supported_features){
     return target_supported_features & (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
@@ -1292,7 +1291,7 @@ void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
-    return avrcp_connect(bd_addr, &avrcp_target_context, avrcp_cid);
+    return avrcp_connect(AVRCP_TARGET, bd_addr, avrcp_cid);
 }
 
 uint8_t avrcp_target_disconnect(uint16_t avrcp_cid){

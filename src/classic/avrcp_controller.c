@@ -48,7 +48,6 @@
 #include "classic/avrcp_controller.h"
 
 // made public in avrcp_controller.h
-avrcp_context_t avrcp_controller_context;
 
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
     return controller_supported_features & (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
@@ -953,7 +952,7 @@ void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback)
 }
 
 uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
-    return avrcp_connect(bd_addr, &avrcp_controller_context, avrcp_cid);
+    return avrcp_connect(AVRCP_CONTROLLER, bd_addr, avrcp_cid);
 }
 
 uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){

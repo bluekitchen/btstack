@@ -60,6 +60,10 @@ static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP 
 static uint16_t  avrcp_cid_counter = 0;
 
 static avrcp_context_t * sdp_query_context;
+
+avrcp_context_t avrcp_controller_context;
+avrcp_context_t avrcp_target_context;
+
 static uint8_t   attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
@@ -562,6 +566,7 @@ static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * c
 
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(sdp_query_context->role, sdp_query_context->avrcp_cid);
+    
     if (!connection) return;
     if (connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return; 
     
@@ -794,27 +799,38 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 }
 
-uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr_for_role(context->role, bd_addr);
+uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, uint16_t * avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr_for_role(role, bd_addr);
     if (connection) return ERROR_CODE_COMMAND_DISALLOWED;
 
     if (!sdp_client_ready()) return ERROR_CODE_COMMAND_DISALLOWED;
     
-    btstack_packet_handler_t packet_handler = avrcp_packet_handler_for_role(context->role);
+    btstack_packet_handler_t packet_handler = avrcp_packet_handler_for_role(role);
     if (!packet_handler) return 0;
 
-    connection = avrcp_create_connection(context->role, bd_addr);
+    connection = avrcp_create_connection(role, bd_addr);
     if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
     
     if (avrcp_cid){
         *avrcp_cid = connection->avrcp_cid;
     }
-    context->avrcp_l2cap_psm = 0;
-    context->avrcp_version = 0;
-    context->avrcp_cid = connection->avrcp_cid;
+
+    switch (role){
+        case AVRCP_CONTROLLER:
+            sdp_query_context = &avrcp_controller_context;
+            break;
+        case AVRCP_TARGET:
+            sdp_query_context = &avrcp_target_context;
+            break;
+    }
+
     connection->browsing_l2cap_psm = 0;
     connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
-    sdp_query_context = context;
+
+    sdp_query_context->avrcp_l2cap_psm = 0;
+    sdp_query_context->avrcp_version = 0;
+    sdp_query_context->avrcp_cid = connection->avrcp_cid;
+
     sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
     return ERROR_CODE_SUCCESS;
 }
