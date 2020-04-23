@@ -105,6 +105,7 @@ static uint8_t  pb_adv_provisioner_role;
 static uint32_t pb_adv_link_id;
 static uint8_t  pb_adv_link_close_reason;
 static uint8_t  pb_adv_link_close_countdown;
+static btstack_timer_source_t pb_adv_link_timeout;
 
 // random delay for outgoing packets
 static uint32_t pb_adv_lfsr;
@@ -120,7 +121,7 @@ static uint8_t  pb_adv_msg_in_segments_missing; // bitfield for segmentes 1-n
 static uint8_t  pb_adv_msg_in_transaction_nr;
 static uint8_t  pb_adv_msg_in_send_ack;
 
-// oputgoing message
+// outgoing message
 static uint8_t         pb_adv_msg_out_active;
 static uint8_t         pb_adv_msg_out_transaction_nr;
 static uint8_t         pb_adv_msg_out_completed_transaction_nr;
@@ -157,6 +158,15 @@ static void pb_adv_emit_link_close(uint16_t pb_transport_cid, uint8_t reason){
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void pb_adv_device_link_timeout(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    // timeout occured
+    link_state = LINK_STATE_W4_OPEN;
+    log_info("link timeout, %08x", pb_adv_link_id);
+    printf("PB-ADV: Link timeout %08x\n", pb_adv_link_id);
+    pb_adv_emit_link_close(pb_adv_cid, ERROR_CODE_PAGE_TIMEOUT);
+}
+
 static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
     UNUSED(transaction_nr);
     UNUSED(size);
@@ -170,6 +180,10 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             own_device_uuid = mesh_node_get_device_uuid();
             if (!own_device_uuid) break;
             if (memcmp(&pdu[1], own_device_uuid, 16) != 0) break;
+            btstack_run_loop_remove_timer(&pb_adv_link_timeout);
+            btstack_run_loop_set_timer(&pb_adv_link_timeout, PB_ADV_LINK_OPEN_TIMEOUT_MS);
+            btstack_run_loop_set_timer_handler(&pb_adv_link_timeout, &pb_adv_device_link_timeout);
+            btstack_run_loop_add_timer(&pb_adv_link_timeout);
             switch(link_state){
                 case LINK_STATE_W4_OPEN:
                     pb_adv_link_id = link_id;
@@ -209,6 +223,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             // does it match link id
             if (link_id != pb_adv_link_id) break;
             if (link_state == LINK_STATE_W4_OPEN) break;
+            btstack_run_loop_remove_timer(&pb_adv_link_timeout);
             reason = pdu[1];
             link_state = LINK_STATE_W4_OPEN;
             log_info("link close, reason %x", reason);
@@ -342,7 +357,7 @@ static void pb_adv_handle_transaction_cont(uint8_t transaction_nr, const uint8_t
     }
 }
 
-static void pb_adv_outgoing_transation_complete(uint8_t status){
+static void pb_adv_outgoing_transaction_complete(uint8_t status){
     // stop sending
     pb_adv_msg_out_active = 0;
     // emit done
@@ -366,7 +381,7 @@ static void pb_adv_handle_transaction_ack(uint8_t transaction_nr, const uint8_t 
     UNUSED(size);
     if (transaction_nr == pb_adv_msg_out_transaction_nr){
         printf("PB-ADV: %02x ACK received\n", transaction_nr);
-        pb_adv_outgoing_transation_complete(ERROR_CODE_SUCCESS);
+        pb_adv_outgoing_transaction_complete(ERROR_CODE_SUCCESS);
     } else if (transaction_nr == pb_adv_msg_out_completed_transaction_nr){
         // Transaction ack received again
     } else {
@@ -436,6 +451,9 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // verify link id and link state
             if (link_state != LINK_STATE_OPEN) break;
 
+            // stop link establishment timer
+            btstack_run_loop_remove_timer(&pb_adv_link_timeout);
+
             switch (generic_provisioning_control_format){
                 case MESH_GPCF_TRANSACTION_START:
                     pb_adv_handle_transaction_start(transaction_nr, &data[7], length-6);
@@ -479,7 +497,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #endif
                     if (link_state == LINK_STATE_CLOSING){
                         log_info("link close %08x", pb_adv_link_id);
-                        printf("PB-ADV: Sending Link Close\n");
+                        printf("PB-ADV: Sending Link Close %08x\n", pb_adv_link_id);
                         // build packet
                         uint8_t buffer[7];
                         big_endian_store_32(buffer, 0, pb_adv_link_id);
@@ -505,7 +523,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         buffer[5] = (1 << 2) | 3; // Link Ack | Provisioning Bearer Control
                         adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         log_info("link ack %08x", pb_adv_link_id);
-                        printf("PB-ADV: Sending Link Open Ack\n");
+                        printf("PB-ADV: Sending Link Open Ack %08x\n", pb_adv_link_id);
                         break;
                     }
                     if (pb_adv_msg_in_send_ack){
@@ -527,7 +545,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         // this claculation is correct even when the run loop time overruns
                         uint32_t transaction_time_ms = btstack_run_loop_get_time_ms() - pb_adv_msg_out_start;
                         if (transaction_time_ms >= MESH_GENERIC_PROVISIONING_TRANSACTION_TIMEOUT_MS){
-                            pb_adv_outgoing_transation_complete(ERROR_CODE_CONNECTION_TIMEOUT);
+                            pb_adv_outgoing_transaction_complete(ERROR_CODE_CONNECTION_TIMEOUT);
                             return;
                         }
 
