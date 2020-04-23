@@ -68,6 +68,7 @@
 #include "mesh/pb_gatt.h"
 #include "mesh/provisioning.h"
 #include "mesh/provisioning_device.h"
+#include "mesh/provisioning_provisioner.h"
 
 static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data);
 static int mesh_node_startup_from_tlv(void);
@@ -1224,6 +1225,11 @@ void mesh_init(void){
 
     provisioning_device_init();
     provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
+
+#ifdef ENABLE_MESH_PROVISIONER
+    provisioning_provisioner_init();
+    provisioning_provisioner_register_packet_handler(&mesh_provisioning_message_handler);
+#endif
 
     // Node Configuration
     mesh_node_init();
