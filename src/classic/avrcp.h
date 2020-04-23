@@ -529,6 +529,9 @@ typedef struct {
     uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
     uint16_t avrcp_version;
+
+    uint16_t browsing_l2cap_psm;
+    uint16_t browsing_version;
 } avrcp_context_t; 
 
 

@@ -449,7 +449,7 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * connection , uint8_t *packet){
+static void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
 
@@ -553,11 +553,11 @@ static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * c
                         switch (uuid){
                             case BLUETOOTH_PROTOCOL_L2CAP:
                                 if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_l2cap_psm);
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->browsing_l2cap_psm);
                                 break;
                             case BLUETOOTH_PROTOCOL_AVCTP:
                                 if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_version);
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->browsing_version);
                                 break;
                             default:
                                 break;
@@ -580,29 +580,32 @@ static void avrcp_handle_sdp_query_failed(avrcp_connection_t * connection, uint8
     avrcp_finalize_connection(connection);
 }
 
-static void avrcp_handle_sdp_query_succeeded(avrcp_connection_t * connection, uint16_t avrcp_l2cap_psm){
+static void avrcp_handle_sdp_query_succeeded(avrcp_connection_t * connection, uint16_t avrcp_l2cap_psm, uint16_t browsing_l2cap_psm, uint16_t browsing_version){
     connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+    connection->browsing_version = browsing_version;
+    connection->browsing_l2cap_psm = browsing_l2cap_psm;
+
     l2cap_create_channel(&avrcp_packet_handler, connection->remote_addr, avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
 }
 
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(sdp_query_context->role, sdp_query_context->avrcp_cid);
     
     if (!connection) return;
     if (connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return; 
     
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
-
     uint8_t status;
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            avrcp_handle_sdp_client_query_attribute_value(connection, packet);
+            avrcp_handle_sdp_client_query_attribute_value(packet);
             break;
             
-        case SDP_EVENT_QUERY_COMPLETE:{
+        case SDP_EVENT_QUERY_COMPLETE:
             status = sdp_event_query_complete_get_status(packet);
     
             if (status != ERROR_CODE_SUCCESS){
@@ -615,11 +618,15 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
                 break;                
             } 
             
-            avrcp_handle_sdp_query_succeeded(connection, sdp_query_context->avrcp_l2cap_psm);
+            avrcp_handle_sdp_query_succeeded(connection, sdp_query_context->avrcp_l2cap_psm, sdp_query_context->browsing_l2cap_psm, sdp_query_context->browsing_version);
             break;
-        }
+       
+        default:
+            break;
+
     }
 }
+
 
 static int avrcp_handle_incoming_connection_for_role(avrcp_role_t role, bd_addr_t event_addr, uint16_t local_cid){
     if (!avrcp_packet_handler_for_role(role)) {
