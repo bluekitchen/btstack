@@ -234,6 +234,7 @@ static void provisioning_send_data(uint16_t the_pb_adv_cid){
 
 typedef enum {
     PROVISIONER_IDLE,
+    PROVISIONER_W4_LINK_OPENED,
     PROVISIONER_SEND_INVITE,
     PROVISIONER_W4_CAPABILITIES,
     PROVISIONER_W4_AUTH_CONFIGURATION,
@@ -646,6 +647,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
             if (packet[0] != HCI_EVENT_MESH_META)  break;
             switch (packet[2]){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
+                    if (provisioner_state != PROVISIONER_W4_LINK_OPENED) break;
                     switch (mesh_subevent_pb_transport_link_open_get_status(packet)) {
                         case ERROR_CODE_SUCCESS:
                             printf("Link opened, sending Invite\n");
@@ -744,6 +746,7 @@ uint16_t provisioning_provisioner_start_provisioning(const uint8_t * device_uuid
     btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
 
     if (pb_adv_cid == MESH_PB_TRANSPORT_INVALID_CID) {
+        provisioner_state = PROVISIONER_W4_LINK_OPENED;
         pb_adv_cid = pb_adv_create_link(device_uuid);
     }
     return pb_adv_cid;

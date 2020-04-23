@@ -324,7 +324,7 @@ static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t chan
     oob = big_endian_read_16(packet, 17);
     printf("received unprovisioned device beacon, oob data %x, device uuid: ", oob);
     printf_hexdump(device_uuid, 16);
-    pb_adv_create_link(device_uuid);
+    provisioning_provisioner_start_provisioning(device_uuid);
 }
 
 static int scan_hex_byte(const char * byte_string){
