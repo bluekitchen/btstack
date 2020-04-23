@@ -370,6 +370,16 @@ avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_ro
     return NULL;
 }
 
+static btstack_packet_handler_t avrcp_packet_handler_for_role(avrcp_role_t role){
+    switch (role){
+        case AVRCP_CONTROLLER:
+            return avrcp_controller_packet_handler;
+        case AVRCP_TARGET:
+            return avrcp_target_packet_handler;
+    }
+    return NULL;
+}
+
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid){
     // printf("AVRCP: avrcp_request_can_send_now, role %d\n", connection->role);
     connection->wait_to_send = 1;
@@ -564,6 +574,17 @@ static void avrcp_handle_sdp_client_query_attribute_value(avrcp_connection_t * c
     }
 }
 
+static void avrcp_handle_sdp_query_failed(avrcp_connection_t * connection, uint8_t status){
+    log_info("AVRCP: SDP query failed with status 0x%02x.", status);
+    avrcp_emit_connection_established(avrcp_packet_handler_for_role(connection->role), connection->avrcp_cid, connection->remote_addr, status);
+    avrcp_finalize_connection(connection);
+}
+
+static void avrcp_handle_sdp_query_succeeded(avrcp_connection_t * connection, uint16_t avrcp_l2cap_psm){
+    connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+    l2cap_create_channel(&avrcp_packet_handler, connection->remote_addr, avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
+}
+
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(sdp_query_context->role, sdp_query_context->avrcp_cid);
     
@@ -585,34 +606,19 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
             status = sdp_event_query_complete_get_status(packet);
     
             if (status != ERROR_CODE_SUCCESS){
-                log_info("AVRCP: SDP query failed with status 0x%02x.", status);
-                avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, status);
-                avrcp_finalize_connection(connection);
+                avrcp_handle_sdp_query_failed(connection, status);
                 break;
             }
 
             if (!sdp_query_context->avrcp_l2cap_psm){
-                connection->state = AVCTP_CONNECTION_IDLE;
-                log_info("AVRCP: no suitable service found");
-                avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, SDP_SERVICE_NOT_FOUND);
-                avrcp_finalize_connection(connection);
+                avrcp_handle_sdp_query_failed(connection, SDP_SERVICE_NOT_FOUND);
                 break;                
             } 
-            connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-            l2cap_create_channel(&avrcp_packet_handler, connection->remote_addr, sdp_query_context->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
+            
+            avrcp_handle_sdp_query_succeeded(connection, sdp_query_context->avrcp_l2cap_psm);
             break;
         }
     }
-}
-
-static btstack_packet_handler_t avrcp_packet_handler_for_role(avrcp_role_t role){
-    switch (role){
-        case AVRCP_CONTROLLER:
-            return avrcp_controller_packet_handler;
-        case AVRCP_TARGET:
-            return avrcp_target_packet_handler;
-    }
-    return NULL;
 }
 
 static int avrcp_handle_incoming_connection_for_role(avrcp_role_t role, bd_addr_t event_addr, uint16_t local_cid){
