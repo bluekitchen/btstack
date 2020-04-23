@@ -105,12 +105,18 @@ static uint8_t  pb_adv_provisioner_role;
 static uint32_t pb_adv_link_id;
 static uint8_t  pb_adv_link_close_reason;
 static uint8_t  pb_adv_link_close_countdown;
-static btstack_timer_source_t pb_adv_link_timeout;
+static bool     pb_adv_link_establish_timer_active;
 
 // random delay for outgoing packets
 static uint32_t pb_adv_lfsr;
-static uint8_t                pb_adv_random_delay_active;
-static btstack_timer_source_t pb_adv_random_delay_timer;
+static uint8_t  pb_adv_random_delay_active;
+
+// adv link timer used for
+// establishment:
+// - device: 60s timeout after receiving link open and sending link ack until first provisioning PDU
+// - provisioner: 1s timer to send link open messages
+// open: random delay
+static btstack_timer_source_t pb_adv_link_timer;
 
 // incoming message
 static uint8_t  pb_adv_msg_in_transaction_nr_prev;
@@ -180,10 +186,11 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             own_device_uuid = mesh_node_get_device_uuid();
             if (!own_device_uuid) break;
             if (memcmp(&pdu[1], own_device_uuid, 16) != 0) break;
-            btstack_run_loop_remove_timer(&pb_adv_link_timeout);
-            btstack_run_loop_set_timer(&pb_adv_link_timeout, PB_ADV_LINK_OPEN_TIMEOUT_MS);
-            btstack_run_loop_set_timer_handler(&pb_adv_link_timeout, &pb_adv_device_link_timeout);
-            btstack_run_loop_add_timer(&pb_adv_link_timeout);
+            btstack_run_loop_remove_timer(&pb_adv_link_timer);
+            btstack_run_loop_set_timer(&pb_adv_link_timer, PB_ADV_LINK_OPEN_TIMEOUT_MS);
+            btstack_run_loop_set_timer_handler(&pb_adv_link_timer, &pb_adv_device_link_timeout);
+            btstack_run_loop_add_timer(&pb_adv_link_timer);
+            pb_adv_link_establish_timer_active = true;
             switch(link_state){
                 case LINK_STATE_W4_OPEN:
                     pb_adv_link_id = link_id;
@@ -213,7 +220,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             pb_adv_msg_out_transaction_nr = 0;
             pb_adv_msg_in_transaction_nr = 0x7f;    // first transaction nr will be 0x80
             pb_adv_msg_in_transaction_nr_prev = 0x7f;
-            btstack_run_loop_remove_timer(&pb_adv_random_delay_timer);
+            btstack_run_loop_remove_timer(&pb_adv_link_timer);
             log_info("link open, id %08x", pb_adv_link_id);
             printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
             pb_adv_emit_link_open(ERROR_CODE_SUCCESS, pb_adv_cid);
@@ -223,7 +230,7 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
             // does it match link id
             if (link_id != pb_adv_link_id) break;
             if (link_state == LINK_STATE_W4_OPEN) break;
-            btstack_run_loop_remove_timer(&pb_adv_link_timeout);
+            btstack_run_loop_remove_timer(&pb_adv_link_timer);
             reason = pdu[1];
             link_state = LINK_STATE_W4_OPEN;
             log_info("link close, reason %x", reason);
@@ -408,9 +415,9 @@ static void pb_adv_run(void){
     pb_adv_random_delay_active = 1;
     uint16_t random_delay_ms = 20 + (pb_adv_random() & 0x1f);
     log_info("random delay %u ms", random_delay_ms);
-    btstack_run_loop_set_timer_handler(&pb_adv_random_delay_timer, &pb_adv_timer_handler);
-    btstack_run_loop_set_timer(&pb_adv_random_delay_timer, random_delay_ms);
-    btstack_run_loop_add_timer(&pb_adv_random_delay_timer);
+    btstack_run_loop_set_timer_handler(&pb_adv_link_timer, &pb_adv_timer_handler);
+    btstack_run_loop_set_timer(&pb_adv_link_timer, random_delay_ms);
+    btstack_run_loop_add_timer(&pb_adv_link_timer);
 }
 
 static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -452,7 +459,10 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (link_state != LINK_STATE_OPEN) break;
 
             // stop link establishment timer
-            btstack_run_loop_remove_timer(&pb_adv_link_timeout);
+            if (pb_adv_link_establish_timer_active) {
+                pb_adv_link_establish_timer_active = false;
+                btstack_run_loop_remove_timer(&pb_adv_link_timer);
+            }
 
             switch (generic_provisioning_control_format){
                 case MESH_GPCF_TRANSACTION_START:
@@ -489,9 +499,9 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         log_info("link open %08x", pb_adv_link_id);
                         printf("PB-ADV: Sending Link Open for device uuid: ");
                         printf_hexdump(pb_adv_peer_device_uuid, 16);
-                        btstack_run_loop_set_timer_handler(&pb_adv_random_delay_timer, &pb_adv_timer_handler);
-                        btstack_run_loop_set_timer(&pb_adv_random_delay_timer, PB_ADV_LINK_OPEN_RETRANSMIT_MS);
-                        btstack_run_loop_add_timer(&pb_adv_random_delay_timer);
+                        btstack_run_loop_set_timer_handler(&pb_adv_link_timer, &pb_adv_timer_handler);
+                        btstack_run_loop_set_timer(&pb_adv_link_timer, PB_ADV_LINK_OPEN_RETRANSMIT_MS);
+                        btstack_run_loop_add_timer(&pb_adv_link_timer);
                         break;
                     }
 #endif
