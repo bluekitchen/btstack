@@ -166,6 +166,12 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Provisioner link close");
                     break;
+#ifdef ENABLE_MESH_PROVISIONER
+                case MESH_SUBEVENT_PB_PROV_CAPABILITIES:
+                    printf("Provisioner, select authentication method\n");
+                    provisioning_provisioner_select_authentication_method(1, 0, 0, 0, 0, 0);
+                    break;
+#endif
                 case MESH_SUBEVENT_ATTENTION_TIMER:
                     printf("Attention Timer: %u\n", mesh_subevent_attention_timer_get_attention_time(packet));
                     break;
