@@ -177,6 +177,7 @@ static void mesh_lower_transport_incoming_send_ack(uint16_t netkey_index, uint8_
     if (!network_pdu) return;
 
     // setup network_pdu
+    network_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENT_ACKNOWLEDGMENT;
     mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), mesh_node_get_primary_element_address(), dest, ack_msg, sizeof(ack_msg));
 
     // send network_pdu
@@ -769,6 +770,12 @@ static void mesh_lower_transport_outgoing_segment_transmission_timeout(btstack_t
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu){
     // figure out what pdu was sent
 
+    // Segment Acknowledgment message sent by us?
+    if (network_pdu->pdu_header.pdu_type == MESH_PDU_TYPE_SEGMENT_ACKNOWLEDGMENT){
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        return;
+    }
+
     // single segment?
     if (lower_transport_outgoing_segment == network_pdu){
         btstack_assert(lower_transport_outgoing_message != NULL);
@@ -796,12 +803,6 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
 
         // send next segment
         mesh_lower_transport_outgoing_send_next_segment();
-        return;
-    }
-
-    // Segment Acknowledgment message sent by us?
-    if (mesh_network_control(network_pdu) && network_pdu->data[0] == 0){
-        btstack_memory_mesh_network_pdu_free(network_pdu);
         return;
     }
 
