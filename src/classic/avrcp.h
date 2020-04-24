@@ -549,9 +549,6 @@ const char * avrcp_shuffle2str(uint8_t index);
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
-void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
-void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
-
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 
 avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
@@ -577,6 +574,12 @@ void    avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t 
  * @brief Set up AVRCP service
  */
 void avrcp_init(void);
+
+/**
+ * @brief Register callback for the AVRCP Controller client. 
+ * @param callback
+ */
+void avrcp_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief   Connect to AVRCP service on a remote device, emits AVRCP_SUBEVENT_CONNECTION_ESTABLISHED with status

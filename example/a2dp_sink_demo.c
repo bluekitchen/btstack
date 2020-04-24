@@ -225,6 +225,7 @@ static btstack_resample_t resample_instance;
 
 /* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size);
+static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -249,6 +250,7 @@ static int a2dp_and_avrcp_setup(void){
 
     // Initialize AVRCP service.
     avrcp_init();
+    avrcp_register_packet_handler(&avrcp_packet_handler);
     
     // Initialize AVRCP Controller
     avrcp_controller_init();
@@ -577,7 +579,7 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configu
     printf("\n");
 }
 
-static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     uint16_t local_cid;
@@ -590,13 +592,13 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             if (avrcp_cid != 0 && avrcp_cid != local_cid) {
-                printf("AVRCP Controller: Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_cid, local_cid);
+                printf("AVRCP: Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_cid, local_cid);
                 return;
             }
 
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Controller: Connection failed: status 0x%02x\n", status);
+                printf("AVRCP: Connection failed: status 0x%02x\n", status);
                 avrcp_cid = 0;
                 return;
             }
@@ -604,7 +606,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             avrcp_cid = local_cid;
             avrcp_connected = 1;
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
-            printf("AVRCP Controller: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
+            printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
 
             // automatically enable notifications
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
@@ -612,15 +614,25 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             return;
         }
+        
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-            printf("AVRCP Controller: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+            printf("AVRCP: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
             avrcp_connected = 0;
             return;
         default:
             break;
     }
+}
 
+static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    uint8_t  status = 0xFF;
+    
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
+    
     status = packet[5];
     if (!avrcp_cid) return;
 
@@ -727,8 +739,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    bd_addr_t address;
-    uint16_t local_cid;
     uint8_t  status = ERROR_CODE_SUCCESS;
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -742,23 +752,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             volume_percentage = volume * 100 / 127;
             printf("AVRCP Target    : Volume set to %d%% (%d)\n", volume_percentage, volume);
             break;
-        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: 
-            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            if (avrcp_cid != 0 && avrcp_cid != local_cid) {
-                printf("AVRCP Target    : Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_cid, local_cid);
-                return;
-            }
-
-            status = avrcp_subevent_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Target    : Connection failed: status 0x%02x\n", status);
-                avrcp_cid = 0;
-                return;
-            }
-            avrcp_cid = local_cid;
-            avrcp_subevent_connection_established_get_bd_addr(packet, address);
-            printf("AVRCP Target    : Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), avrcp_cid);
-            break;
+        
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
             status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
             break;
@@ -825,9 +819,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             }
             break;
         }
-        case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-            printf("AVRCP Target    : Disconnected, cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
-            return;
         default:
             printf("AVRCP Target    : Event 0x%02x is not parsed\n", packet[2]);
             break;

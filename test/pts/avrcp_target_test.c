@@ -845,6 +845,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // Initialize AVRCP service
     avrcp_init();
+    avrcp_register_packet_handler(&avrcp_target_packet_handler);
     // Initialize AVRCP Target.
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
