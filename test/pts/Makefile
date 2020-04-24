@@ -13,7 +13,8 @@ CORE += \
 	btstack_stdin_posix.c       \
 	btstack_tlv.c 		\
 	btstack_tlv_posix.c 		\
-	
+	rijndael.c \
+
 COMMON += \
 	hci.c			            \
 	device_id_server.c          \
@@ -90,12 +91,12 @@ CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/eCC
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 CFLAGS += -I${BTSTACK_ROOT}/chipset/zephyr
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
@@ -108,6 +109,7 @@ VPATH += ${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 # use pkg-config for libusb
