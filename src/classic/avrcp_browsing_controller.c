@@ -52,7 +52,8 @@ static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, 
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
-    if (!callback) return;
+    btstack_assert(callback != NULL);
+    
     uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -67,7 +68,8 @@ static void avrcp_emit_browsing_connection_established(btstack_packet_handler_t 
 }
 
 static void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr){
-    if (!callback) return;
+    btstack_assert(callback != NULL);
+    
     uint8_t event[11];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -81,7 +83,8 @@ static void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t cal
 }
 
 static void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callback, uint16_t browsing_cid){
-    if (!callback) return;
+    btstack_assert(callback != NULL);
+    
     uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -197,7 +200,6 @@ static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, 
             break;
         
         case L2CAP_EVENT_CHANNEL_CLOSED:
-            // data: event (8), len(8), channel (16)
             local_cid = l2cap_event_channel_closed_get_local_cid(packet);
             avrcp_connection = get_avrcp_connection_for_browsing_l2cap_cid_for_role(context->role, local_cid);
             
@@ -217,15 +219,6 @@ static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, 
 static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avrcp_browsing_connection_t * connection){
     uint8_t command[100];
     int pos = 0; 
-
-    // // if (connection->cmd_operands[3] == AVRCP_PDU_ID_GET_CAPABILITIES){
-    //     printf("cheet\n");
-    //     uint8_t buffer[] = {0xB0, 0x11, 0x0E, 0xFF, 0x00, 0x02, 0xFF, 0xFF};
-    //     memcpy(command, buffer, sizeof(buffer));
-    //     pos =  sizeof(buffer);
-    //     return l2cap_send(cid, command, pos);
-    // // }
-
     // transport header
     // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
@@ -453,7 +446,8 @@ static void avrcp_browsing_controller_handle_can_send_now(avrcp_browsing_connect
 
 
 static void avrcp_browsing_controller_emit_done_with_uid_counter(btstack_packet_handler_t callback, uint16_t browsing_cid, uint16_t uid_counter, uint8_t browsing_status, uint8_t bluetooth_status){
-    if (!callback) return;
+    btstack_assert(callback != NULL);
+
     uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -478,19 +472,20 @@ static void avrcp_parser_reset(avrcp_browsing_connection_t * connection){
 
 static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_connection_t * connection){
     uint8_t prepended_header_size = 1;
+    uint16_t attribute_total_value_len;
+
     switch(connection->parser_state){
-        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:{
+        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
             connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
             if (connection->parser_attribute_header_pos < AVRCP_BROWSING_ITEM_HEADER_LEN) break;
 
-            uint16_t attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 1);
+            attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 1);
             connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = connection->parser_attribute_header[0];   // prepend with item type
             connection->parsed_attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE - prepended_header_size);                 // reduce AVRCP_MAX_ATTRIBUTTE_SIZE for the size ot item type
             connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_VALUE;
-            // printf("AVRCP_PARSER_GET_ATTRIBUTE_HEADER value len %d, to parse %d, offset %d\n", attribute_total_value_len, connection->parsed_attribute_value_len, connection->parsed_attribute_value_offset);
             break;
-        }
-        case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
+        
+        case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:
             connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = byte;
             if (connection->parsed_attribute_value_offset < (connection->parsed_attribute_value_len + prepended_header_size)){
                 break;
@@ -510,7 +505,7 @@ static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_conn
                 break;
             }
             break;
-        }
+    
         case AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE:
             connection->parsed_attribute_value_offset++;
             if (connection->parsed_attribute_value_offset < (big_endian_read_16(connection->parser_attribute_header, 1) + prepended_header_size)){
@@ -546,24 +541,21 @@ static void avrcp_browsing_controller_emit_failed(btstack_packet_handler_t callb
 
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_browsing_connection_t * browsing_connection;
-            
+    uint8_t transport_header;
+    int pos;
+
     switch (packet_type) {
-        case L2CAP_DATA_PACKET:{                            
+        case L2CAP_DATA_PACKET:                         
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER, channel);
             if (!browsing_connection) break;
-            // printf("received \n");
-            // printf_hexdump(packet,size);
-            int pos = 0;
-            uint8_t transport_header = packet[pos++];
+            pos = 0;
+            transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
             browsing_connection->transaction_label = transport_header >> 4;
             avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
-            // printf("L2CAP_DATA_PACKET, packet type %d\n", avctp_packet_type);
             switch (avctp_packet_type){
                 case AVRCP_SINGLE_PACKET:
                 case AVRCP_START_PACKET:
-                    // uint8_t frame_type = (transport_header & 0x03) >> 1;
-                    // uint8_t ipid = transport_header & 0x01;
                     pos += 2;
                     browsing_connection->num_packets = 1;
                     if (avctp_packet_type == AVRCP_START_PACKET){
@@ -575,7 +567,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                         return;  
                     }
                     browsing_connection->pdu_id = packet[pos++];
-                    // uint16_t length = big_endian_read_16(packet, pos);
                     pos += 2;
                     browsing_connection->browsing_status = packet[pos++]; 
                     if (browsing_connection->browsing_status != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
@@ -589,28 +580,23 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             }
 
             uint32_t i;
+            uint8_t folder_depth;
+
             switch(browsing_connection->pdu_id){
                 case AVRCP_PDU_ID_CHANGE_PATH:
-                    // printf("AVRCP_PDU_ID_CHANGE_PATH \n");
                     break;
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:
-                    // printf("AVRCP_PDU_ID_SET_ADDRESSED_PLAYER \n");
                     break;
-                case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
-                    // uint32_t num_items = big_endian_read_32(packet, pos);
-                    // pos += 4;
-                    // printf("TODO: send event, uid_counter %d, num_items %d\n", browsing_connection->uid_counter, num_items);
+                case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:
                     break;
-                }
-                case AVRCP_PDU_ID_SET_BROWSED_PLAYER:{
-                    // printf("AVRCP_PDU_ID_SET_BROWSED_PLAYER \n");
+                case AVRCP_PDU_ID_SET_BROWSED_PLAYER:
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
-                    // uint32_t num_items = big_endian_read_32(packet, pos);
+                    // num_items
                     pos += 4;
-                    // uint16_t charset = big_endian_read_16(packet, pos);
+                    // charset
                     pos += 2;
-                    uint8_t folder_depth = packet[pos++];
+                    folder_depth = packet[pos++];
 
                     for (i = 0; i < folder_depth; i++){
                         uint16_t folder_name_length = big_endian_read_16(packet, pos);
@@ -621,9 +607,8 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                         pos += folder_name_length;
                     }
                     break;
-                }
+
                 case AVRCP_PDU_ID_GET_FOLDER_ITEMS:{
-                    // printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS \n");
                     switch (avctp_packet_type){
                         case AVRCP_SINGLE_PACKET:
                         case AVRCP_START_PACKET:
@@ -643,16 +628,15 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                             avrcp_browsing_parse_and_emit_element_attrs(packet+pos, size-pos, browsing_connection);
                             avrcp_parser_reset(browsing_connection);
                             break;
+                        default:
+                            break;
                     }
                     break;
                 }                
-                case AVRCP_PDU_ID_SEARCH:{
+                case AVRCP_PDU_ID_SEARCH:
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
-                    // uint32_t num_items = big_endian_read_32(packet, pos);
-                    // printf("TODO: send as event, search found %d items\n", num_items);
                     break;
-                }
                 case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:
                     packet[pos-1] = AVRCP_BROWSING_MEDIA_ELEMENT_ITEM_ATTRIBUTE;
                     (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, packet+pos-1, size - pos + 1);
@@ -665,16 +649,14 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             switch (avctp_packet_type){
                 case AVRCP_SINGLE_PACKET:
                 case AVRCP_END_PACKET:
-                    // printf("reset browsing connection state to OPENED\n");
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
                     avrcp_browsing_controller_emit_done_with_uid_counter(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
                     break;
                 default:
                     break;
             }
-            // printf(" paket done\n");
             break;
-        }
+
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
@@ -699,10 +681,7 @@ void avrcp_browsing_controller_init(void){
 }
 
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback){
-    if (callback == NULL){
-        log_error("avrcp_browsing_controller_register_packet_handler called with NULL callback");
-        return;
-    }
+    btstack_assert(callback != NULL);
     avrcp_controller_context.browsing_avrcp_callback = callback;
 }
 

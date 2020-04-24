@@ -58,7 +58,8 @@ void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_reco
 }
 
 static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){
-    if (!callback) return;
+    btstack_assert(callback != NULL);
+    
     uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -73,7 +74,8 @@ static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback
 }
 
 static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8_t subevent, uint16_t avrcp_cid, uint8_t ctype, uint8_t operation_id){
-    if (!callback) return;
+    btstack_assert(callback != NULL);
+    
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -336,8 +338,6 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
             break;
     }
     event[data_len_pos] = pos - 2;
-    // printf("Send attribute 0x%02x, len %u\n", attr_id, value_len);
-    // printf_hexdump(value, value_len);
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -468,24 +468,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t operands[20];
     uint8_t opcode;
     int     pos = 3;
-    // uint8_t transport_header = packet[0];
-    // uint8_t transaction_label = transport_header >> 4;
-    // uint8_t packet_type = (transport_header & 0x0C) >> 2;
-    // uint8_t frame_type = (transport_header & 0x02) >> 1;
-    // uint8_t ipid = transport_header & 0x01;
-    // uint8_t byte_value = packet[2];
-    // uint16_t pid = (byte_value << 8) | packet[2];
     
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     uint8_t byte_value = packet[pos++];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
     avrcp_subunit_type_t subunit_id = (avrcp_subunit_type_t)   (byte_value & 0x07);
     opcode = packet[pos++];
-    
-    // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
-    //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
-    // // printf_hexdump(packet+pos, size-pos);
-    
+
     uint8_t pdu_id;
     uint16_t param_length;
     switch (avrcp_cmd_opcode(packet,size)){
@@ -519,7 +508,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // operands:
             (void)memcpy(operands, packet + pos, 7);
             pos += 7;
-            // uint32_t company_id = operands[0] << 16 | operands[1] << 8 | operands[2];
             pdu_id = operands[3];
 
             if ((connection->state != AVCTP_W2_RECEIVE_RESPONSE) && (pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION)){
@@ -528,15 +516,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             } 
             connection->state = AVCTP_CONNECTION_OPENED;
 
-            
-            // uint8_t unit_type = operands[4] >> 3;
-            // uint8_t unit = operands[4] & 0x07;
             param_length = big_endian_read_16(operands, 5);
 
-            // printf("    VENDOR DEPENDENT response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x\n",
-            //     ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
-
-            // if (ctype == AVRCP_CTYPE_RESPONSE_INTERIM) return;
             log_info("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
             switch (pdu_id){
                 case AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue:{
@@ -592,7 +573,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     int i;
                     switch (capability_id){
                         case AVRCP_CAPABILITY_ID_COMPANY:
-                            // log_info("Supported companies %d: ", capability_count);
                             for (i = 0; i < capability_count; i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
@@ -600,7 +580,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             }
                             break;
                         case AVRCP_CAPABILITY_ID_EVENT:
-                            // log_info("Supported events %d: ", capability_count);
                             for (i = 0; i < capability_count; i++){
                                 uint8_t event_id = packet[pos++];
                                 log_info("  0x%02x %s", event_id, avrcp_event2str(event_id));
@@ -615,7 +594,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint32_t song_position = big_endian_read_32(packet, pos);
                     pos += 4;
                     uint8_t play_status = packet[pos];
-                    // log_info("        GET_PLAY_STATUS length 0x%04X, position 0x%04X, status %s", song_length, song_position, avrcp_play_status2str(play_status));
 
                     uint8_t event[15];
                     int offset = 0;
@@ -641,7 +619,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CTYPE_RESPONSE_INTERIM:
                             // register as enabled
                             connection->notifications_enabled |= event_mask;
-                            // printf("INTERIM notifications_enabled 0x%2x, notifications_to_register 0x%2x\n", connection->notifications_enabled,  connection->notifications_to_register);
                             break;
                         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
                             // received change, event is considered deregistered
@@ -650,7 +627,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             connection->notifications_enabled &= reset_event_mask;
                             if (! (connection->notifications_to_deregister & event_mask)){
                                 avrcp_register_notification(connection, event_id);
-                                // printf("CHANGED_STABLE notifications_enabled 0x%2x, notifications_to_register 0x%2x\n", connection->notifications_enabled,  connection->notifications_to_register);
                             } else {
                                 connection->notifications_to_deregister &= reset_event_mask;
                             }
@@ -754,25 +730,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
 
-                        // case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:{
-                        //     uint8_t num_PlayerApplicationSettingAttributes = packet[pos++];
-                        //     int i;
-                        //     for (i = 0; i < num_PlayerApplicationSettingAttributes; i++){
-                        //         uint8_t PlayerApplicationSetting_AttributeID = packet[pos++];
-                        //         uint8_t PlayerApplicationSettingValueID = packet[pos++];
-                        //     }
-                        //     break;
-                        // }
-                        // case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:
-                        //     uint16_t player_id = big_endian_read_16(packet, pos);
-                        //     pos += 2;
-                        //     uint16_t uid_counter = big_endian_read_16(packet, pos);
-                        //     pos += 2;
-                        //     break;
-                        // case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
-                        //     uint16_t uid_counter = big_endian_read_16(packet, pos);
-                        //     pos += 2;
-                        //     break;
                         default:
                             log_info("avrcp: not implemented");
                             break;
@@ -792,7 +749,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             connection->list_size = param_length;
                             connection->num_attributes = packet[pos++];
                             
-                            // printf("AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES num_attributes %d, total size %d, packet type 0x%02x \n", connection->num_attributes, connection->list_size, operands[4] & 0x03);
                             avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
                             
                             if (packet_type == AVRCP_START_PACKET){
@@ -834,8 +790,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     connection->state = AVCTP_CONNECTION_OPENED;
                     break;
                 default:
-                    // check for notifications? move state transition down
-                    // log_info("AVRCP_CMD_OPCODE_PASS_THROUGH state %d\n", connection->state);
                     break;
             }
             if (connection->state == AVCTP_W4_STOP){
@@ -923,7 +877,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
                     break;
                 
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    // printf("AVRCP: received by controller L2CAP_EVENT_CAN_SEND_NOW, channel 0x%02x\n", channel);
                     connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
                     if (!connection) break;
                     avrcp_controller_handle_can_send_now(connection);
@@ -943,10 +896,7 @@ void avrcp_controller_init(void){
 }
 
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback){
-    if (callback == NULL){
-        log_error("avrcp_register_packet_handler called with NULL callback");
-        return;
-    }
+    btstack_assert(callback != NULL);
     avrcp_controller_context.avrcp_callback = callback;
 }
 
