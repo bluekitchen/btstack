@@ -424,6 +424,8 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
         }
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+            return ((mesh_upper_transport_pdu_t *) pdu)->dst;
         default:
             btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;

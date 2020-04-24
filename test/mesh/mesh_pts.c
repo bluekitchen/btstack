@@ -376,6 +376,8 @@ static void load_pts_app_key(void){
     printf_hexdump(pts_application_key.key, 16);
 }
 static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, int ttl_type){
+    uint8_t access_pdu_data[16];
+
     uint8_t ttl;
     switch (ttl_type){
         case 0:
@@ -389,10 +391,21 @@ static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, 
             break;
     }
     printf("%s dst %04x, ttl %u\n", dst_type, dst_addr, ttl);
-    int lower_transport_pdu_len = 16;
-    uint8_t lower_transport_pdu_data[16];
-    memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
-    mesh_network_send(ttl, dst_addr, lower_transport_pdu_data, lower_transport_pdu_len);
+
+    int access_pdu_len = 1;
+    memset(access_pdu_data, 0x55, access_pdu_len);
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+    uint16_t src = mesh_node_get_primary_element_address();
+
+    // send as unsegmented access pdu
+    mesh_upper_transport_builder_t builder;
+    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
+    mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
+    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
+    if (status) return;
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void send_pts_unsegmented_access_messsage(void){
@@ -407,7 +420,7 @@ static void send_pts_unsegmented_access_messsage(void){
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
 
     // send as unsegmented access pdu
     mesh_upper_transport_builder_t builder;
