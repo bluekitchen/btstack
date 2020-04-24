@@ -97,7 +97,7 @@ static uint8_t pb_adv_provisioner_open_countdown;
 
 static uint8_t  pb_adv_msg_in_buffer[MESH_PB_ADV_MAX_PDU_SIZE];   // TODO: how large are prov messages?
 
-// single adv link
+// single adv link, roles: provisioner = 1, device = 0
 static uint16_t pb_adv_cid = 1;
 static uint8_t  pb_adv_provisioner_role;
 
@@ -137,12 +137,21 @@ static uint8_t         pb_adv_msg_out_seg;
 static uint32_t        pb_adv_msg_out_start;
 static const uint8_t * pb_adv_msg_out_buffer;
 
-static btstack_packet_handler_t pb_adv_packet_handler;
+static btstack_packet_handler_t pb_adv_device_packet_handler;
+static btstack_packet_handler_t pb_adv_provisioner_packet_handler;
 
 // poor man's random number generator
 static uint32_t pb_adv_random(void){
     pb_adv_lfsr = LFSR(pb_adv_lfsr);
     return pb_adv_lfsr;
+}
+
+static void pb_adv_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    if (pb_adv_provisioner_role == 0){
+        (*pb_adv_device_packet_handler)(packet_type, channel, packet, size);
+    } else {
+        (*pb_adv_provisioner_packet_handler)(packet_type, channel, packet, size);
+    }
 }
 
 static void pb_adv_emit_pdu_sent(uint8_t status){
@@ -614,8 +623,12 @@ void pb_adv_init(void){
     pb_adv_random();
 }
 
-void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
-    pb_adv_packet_handler = packet_handler;
+void pb_adv_register_device_packet_handler(btstack_packet_handler_t packet_handler){
+    pb_adv_device_packet_handler = packet_handler;
+}
+
+void pb_adv_register_provisioner_packet_handler(btstack_packet_handler_t packet_handler){
+    pb_adv_provisioner_packet_handler = packet_handler;
 }
 
 void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t size){

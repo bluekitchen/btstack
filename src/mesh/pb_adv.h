@@ -54,11 +54,16 @@ extern "C" {
 void pb_adv_init(void);
 
 /**
- * Register listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
+ * Register provisioning device listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
  */
-void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler);
+void pb_adv_register_device_packet_handler(btstack_packet_handler_t packet_handler);
 
-/** 
+/**
+ * Register provisioning provisioner listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
+ */
+void pb_adv_register_provisioner_packet_handler(btstack_packet_handler_t packet_handler);
+
+/**
  * Send Provisioning PDU
  * @param pb_adv_cid
  * @param pdu

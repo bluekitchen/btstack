@@ -843,7 +843,7 @@ void provisioning_device_init(void){
 #ifdef ENABLE_MESH_ADV_BEARER
     // setup PB ADV
     pb_adv_init();
-    pb_adv_register_packet_handler(&provisioning_handle_pdu);
+    pb_adv_register_device_packet_handler(&provisioning_handle_pdu);
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
     // setup PB GATT
