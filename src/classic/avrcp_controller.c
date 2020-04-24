@@ -937,7 +937,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 }
 
 void avrcp_controller_init(void){
-    avrcp_init();
     avrcp_controller_context.role = AVRCP_CONTROLLER;
     avrcp_controller_context.packet_handler = avrcp_controller_packet_handler;
     avrcp_register_controller_packet_handler(&avrcp_controller_packet_handler);

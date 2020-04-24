@@ -545,13 +545,10 @@ const char * avrcp_ctype2str(uint8_t index);
 const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
 
-void avrcp_init(void);
 
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
-void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
-uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, uint16_t * avrcp_cid);
 void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 
@@ -569,7 +566,34 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 uint16_t avrcp_get_next_cid(avrcp_role_t role);
 
 // SDP query
-void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+void    avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+void    avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+
+
+/* API_START */
+
+/**
+ * @brief Set up AVRCP service
+ */
+void avrcp_init(void);
+
+/**
+ * @brief   Connect to AVRCP service on a remote device, emits AVRCP_SUBEVENT_CONNECTION_ESTABLISHED with status
+ * @param   remote_addr
+ * @param   avrcp_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
+ * @returns status     
+ */
+uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp_cid);
+
+/**
+ * @brief   Disconnect from AVRCP service
+ * @param   avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_disconnect(uint16_t avrcp_cid);
+
+/* API_END */
 
 #if defined __cplusplus
 }

@@ -177,10 +177,12 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize L2CAP.
     l2cap_init();
     
+    // Initialize AVRCP service.
+    avrcp_init();
     // Initialize AVRCP Controller.
     avrcp_controller_init();
 
-        // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
+    // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
     avrcp_browsing_controller_init();
     // // Register AVRCP for HCI events.
     avrcp_browsing_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);

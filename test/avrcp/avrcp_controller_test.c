@@ -346,6 +346,8 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     
+    // Initialize AVRCP service.
+    avrcp_init();
     // Initialize AVRCP COntroller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&packet_handler);

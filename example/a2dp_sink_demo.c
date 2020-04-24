@@ -247,6 +247,10 @@ static int a2dp_and_avrcp_setup(void){
         return 1;
     }
     a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
+
+    // Initialize AVRCP service.
+    avrcp_init();
+    
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);

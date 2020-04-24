@@ -844,6 +844,8 @@ int btstack_main(int argc, const char * argv[]){
     }
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
 
+    // Initialize AVRCP service
+    avrcp_init();
     // Initialize AVRCP Target.
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);

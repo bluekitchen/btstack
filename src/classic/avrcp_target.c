@@ -1276,7 +1276,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 }
 
 void avrcp_target_init(void){
-    avrcp_init();
     avrcp_target_context.role = AVRCP_TARGET;
     avrcp_target_context.packet_handler = avrcp_target_packet_handler;
     avrcp_register_target_packet_handler(&avrcp_target_packet_handler);

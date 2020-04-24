@@ -1134,7 +1134,9 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
-    // Initialize AVRCP COntroller
+    // Initialize AVRCP service.
+    avrcp_init();
+    // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&packet_handler);
     avrcp_browsing_controller_init();
