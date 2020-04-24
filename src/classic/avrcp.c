@@ -410,7 +410,6 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->role = role;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;
-    connection->avrcp_cid = avrcp_get_next_cid(role);
     log_info("avrcp_create_connection, role %d, avrcp cid 0x%02x", role, connection->avrcp_cid);
     (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
@@ -631,13 +630,14 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
 }
 
 
-static int avrcp_handle_incoming_connection_for_role(avrcp_role_t role, bd_addr_t event_addr, uint16_t local_cid){
+static int avrcp_handle_incoming_connection_for_role(avrcp_role_t role, bd_addr_t event_addr, uint16_t local_cid, uint16_t avrcp_cid){
     if (!avrcp_packet_handler_for_role(role)) {
         // printf("AVRCP: avrcp_handle_incoming_connection_for_role %d, PH not defined\n", role);
         return 0;
     }
     
     avrcp_connection_t * connection = avrcp_create_connection(role, event_addr);
+
     if (!connection) {
         // printf("AVRCP: avrcp_handle_incoming_connection_for_role %d, no connection created\n", role);
         return 0 ;  
@@ -646,6 +646,7 @@ static int avrcp_handle_incoming_connection_for_role(avrcp_role_t role, bd_addr_
     // printf("AVRCP: AVCTP_CONNECTION_W4_L2CAP_CONNECTED, role %d\n", role);
     connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     connection->l2cap_signaling_cid = local_cid;
+    connection->avrcp_cid = avrcp_cid;
     return 1;
 }
 
@@ -755,8 +756,10 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     decline_connection = outoing_active;
                     if (outoing_active == false){
                         // create two connection objects (both)
-                        status_target = avrcp_handle_incoming_connection_for_role(AVRCP_TARGET, event_addr, local_cid);
-                        status_controller = avrcp_handle_incoming_connection_for_role(AVRCP_CONTROLLER, event_addr, local_cid);
+                        uint16_t avrcp_cid = avrcp_get_next_cid(AVRCP_CONTROLLER);
+    
+                        status_target = avrcp_handle_incoming_connection_for_role(AVRCP_TARGET, event_addr, local_cid, avrcp_cid);
+                        status_controller = avrcp_handle_incoming_connection_for_role(AVRCP_CONTROLLER, event_addr, local_cid, avrcp_cid);
                         if (!status_target && !status_controller) {
                             decline_connection = true;
                         }
@@ -833,6 +836,8 @@ uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    uint16_t cid = avrcp_get_next_cid(AVRCP_CONTROLLER);
+    
     connection_controller = avrcp_create_connection(AVRCP_CONTROLLER, remote_addr);
     if (!connection_controller) return BTSTACK_MEMORY_ALLOC_FAILED;
     
@@ -842,14 +847,11 @@ uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp
         return BTSTACK_MEMORY_ALLOC_FAILED;
     } 
 
-    uint16_t cid = 0;
     switch (role){
         case AVRCP_CONTROLLER:
-            cid = connection_controller->avrcp_cid;
             sdp_query_context = &avrcp_controller_context;
             break;
         case AVRCP_TARGET:
-            cid = connection_target->avrcp_cid;
             sdp_query_context = &avrcp_target_context;
             break;
         default:
@@ -861,7 +863,10 @@ uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp
     }
 
     connection_controller->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+    connection_controller->avrcp_cid = cid;
+
     connection_target->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+    connection_target->avrcp_cid = cid;
 
     sdp_query_context->avrcp_l2cap_psm = 0;
     sdp_query_context->avrcp_version  = 0;
