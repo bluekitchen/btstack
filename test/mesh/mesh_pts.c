@@ -375,6 +375,7 @@ static void load_pts_app_key(void){
     printf("PTS Application Key (AID %02x): ", 0x38);
     printf_hexdump(pts_application_key.key, 16);
 }
+
 static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, int ttl_type){
     uint8_t access_pdu_data[16];
 
@@ -553,7 +554,7 @@ static void stdin_process(char cmd){
             send_pts_network_messsage("Unicast", 0x0001, pts_type++);
             break;
         case '1':
-            send_pts_network_messsage("Virtual", pts_virtual_addresss->hash, pts_type++);
+            send_pts_network_messsage("Virtual", pts_virtual_addresss->pseudo_dst, pts_type++);
             break;
         case '2':
             send_pts_network_messsage("Group", 0xd000, pts_type++);
