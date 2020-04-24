@@ -79,10 +79,6 @@ void    avrcp_target_init(void);
 
 void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
 
-uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
-
-uint8_t avrcp_target_disconnect(uint16_t avrcp_cid);
-
 uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
 uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
 

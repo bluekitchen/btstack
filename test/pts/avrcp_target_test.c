@@ -720,11 +720,11 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth  A2DP Source/AVRCP Target Demo %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Source create  connection to addr %s\n", device_addr_string);
-    printf("B      - AVDTP Source disconnect\n");
-    printf("c      - AVRCP Target create connection to addr %s\n", device_addr_string);
-    printf("C      - AVRCP Target disconnect\n");
+    printf("\n--- Bluetooth  A2DP Source/AVRCP Demo %s ---\n", bd_addr_to_str(iut_address));
+    printf("b - AVDTP Source create  connection to addr %s\n", device_addr_string);
+    printf("B - AVDTP Source disconnect\n");
+    printf("c - AVRCP create connection to addr %s\n", device_addr_string);
+    printf("C - AVRCP disconnect\n");
 
     printf("v - trigger notification VOLUME_CHANGED 20percent \n");
     printf("s - trigger notification TRACK_CHANGED\n");
@@ -741,7 +741,6 @@ static void show_usage(void){
     // printf("0      - Reset now playing info\n");
 
     printf("g      - Get capabilities\n");
-    printf("\n--- Bluetooth  AVRCP Target Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
 }
 
@@ -758,12 +757,12 @@ static void stdin_process(char * cmd, int size){
             status = avdtp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'c':
-            printf(" - Create AVRCP Target connection to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_target_connect(device_addr, &avrcp_cid);
+            printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
+            status = avrcp_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
-            printf(" - AVRCP Target disconnect\n");
-            status = avrcp_target_disconnect(avrcp_cid);
+            printf(" - AVRCP disconnect\n");
+            status = avrcp_disconnect(avrcp_cid);
             break;
 
         case '\n':

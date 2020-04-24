@@ -818,7 +818,23 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     }
 }
 
-uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp_cid){
+uint8_t avrcp_disconnect(uint16_t avrcp_cid){
+    avrcp_connection_t * connection_controller = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (!connection_controller){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    avrcp_connection_t * connection_target = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (!connection_target){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection_controller->browsing_connection){
+        l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid, 0);
+    }
+    l2cap_disconnect(connection_controller->l2cap_signaling_cid, 0);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_packet_handler_for_role(AVRCP_CONTROLLER) != NULL);
     btstack_assert(avrcp_packet_handler_for_role(AVRCP_TARGET) != NULL);
 
@@ -847,17 +863,8 @@ uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp
         return BTSTACK_MEMORY_ALLOC_FAILED;
     } 
 
-    switch (role){
-        case AVRCP_CONTROLLER:
-            sdp_query_context = &avrcp_controller_context;
-            break;
-        case AVRCP_TARGET:
-            sdp_query_context = &avrcp_target_context;
-            break;
-        default:
-            break;
-    }
-
+    sdp_query_context = &avrcp_controller_context;
+    
     if (avrcp_cid != NULL){
         *avrcp_cid = cid;
     }

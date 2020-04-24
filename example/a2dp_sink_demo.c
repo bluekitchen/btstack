@@ -166,7 +166,7 @@ static uint8_t companies[] = {
 };
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
-static const char * device_addr_string = "00:1B:DC:08:E2:72";
+static const char * device_addr_string = "6C:72:E7:10:22:EE";
 // mac 2013: static const char * device_addr_string = "84:38:35:65:d1:15";
 // iPhone 5S: 
 // static const char * device_addr_string = "54:E4:3A:26:A2:39";
@@ -187,8 +187,7 @@ static int media_initialized = 0;
 static bd_addr_t device_addr;
 #endif
 
-static uint16_t avrcp_controller_cid = 0;
-static uint16_t avrcp_target_cid = 0;
+static uint16_t avrcp_cid = 0;
 static uint8_t  avrcp_connected = 0;
 static uint8_t  sdp_avrcp_controller_service_buffer[200];
 
@@ -590,32 +589,32 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     switch (packet[2]){
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            if (avrcp_controller_cid != 0 && avrcp_controller_cid != local_cid) {
-                printf("AVRCP Controller: Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_controller_cid, local_cid);
+            if (avrcp_cid != 0 && avrcp_cid != local_cid) {
+                printf("AVRCP Controller: Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_cid, local_cid);
                 return;
             }
 
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("AVRCP Controller: Connection failed: status 0x%02x\n", status);
-                avrcp_controller_cid = 0;
+                avrcp_cid = 0;
                 return;
             }
             
-            avrcp_controller_cid = local_cid;
+            avrcp_cid = local_cid;
             avrcp_connected = 1;
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
-            printf("AVRCP Controller: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_controller_cid);
+            printf("AVRCP Controller: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
 
             // automatically enable notifications
-            avrcp_controller_enable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-            avrcp_controller_enable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
-            avrcp_controller_enable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             return;
         }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP Controller: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
-            avrcp_controller_cid = 0;
+            avrcp_cid = 0;
             avrcp_connected = 0;
             return;
         default:
@@ -623,7 +622,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     }
 
     status = packet[5];
-    if (!avrcp_controller_cid) return;
+    if (!avrcp_cid) return;
 
     // ignore INTERIM status
     if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
@@ -745,26 +744,26 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: 
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            if (avrcp_target_cid != 0 && avrcp_target_cid != local_cid) {
-                printf("AVRCP Target    : Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_target_cid, local_cid);
+            if (avrcp_cid != 0 && avrcp_cid != local_cid) {
+                printf("AVRCP Target    : Connection failed, expected 0x%02X cid, received 0x%02X\n", avrcp_cid, local_cid);
                 return;
             }
 
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("AVRCP Target    : Connection failed: status 0x%02x\n", status);
-                avrcp_target_cid = 0;
+                avrcp_cid = 0;
                 return;
             }
-            avrcp_target_cid = local_cid;
+            avrcp_cid = local_cid;
             avrcp_subevent_connection_established_get_bd_addr(packet, address);
-            printf("AVRCP Target    : Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), avrcp_target_cid);
+            printf("AVRCP Target    : Connected to %s, cid 0x%02x\n", bd_addr_to_str(address), avrcp_cid);
             break;
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            status = avrcp_target_supported_events(avrcp_target_cid, events_num, events, sizeof(events));
+            status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
             break;
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            status = avrcp_target_supported_companies(avrcp_target_cid, companies_num, companies, sizeof(companies));
+            status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
         case AVRCP_SUBEVENT_OPERATION:{
             avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
@@ -941,10 +940,8 @@ static void show_usage(void){
     printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("b      - AVDTP Sink create  connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("B      - AVDTP Sink disconnect\n");
-    printf("c      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
-    printf("C      - AVRCP Controller disconnect\n");
-    printf("d      - AVRCP Target create connection to addr %s\n", bd_addr_to_str(device_addr));
-    printf("D      - AVRCP Target disconnect\n");
+    printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("C      - AVRCP disconnect\n");
 
     printf("w - delay report\n");
 
@@ -994,22 +991,14 @@ static void stdin_process(char cmd){
             status = avdtp_sink_disconnect(a2dp_cid);
             break;
         case 'c':
-            printf(" - Create AVRCP Controller connection to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_controller_connect(device_addr, &avrcp_controller_cid);
+            printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
+            status = avrcp_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
-            printf(" - AVRCP Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_controller_disconnect(avrcp_controller_cid);
+            printf(" - AVRCP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
+            status = avrcp_disconnect(avrcp_cid);
             break;
-        case 'd':
-            printf(" - Create AVRCP Target connection to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_target_connect(device_addr, &avrcp_target_cid);
-            break;
-        case 'D':
-            printf(" - AVRCP Target disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_target_disconnect(avrcp_target_cid);
-            break;
-
+        
         case '\n':
         case '\r':
             break;
@@ -1021,105 +1010,105 @@ static void stdin_process(char cmd){
         case 't':
             volume_percentage = volume_percentage <= 90 ? volume_percentage + 10 : 100;
             printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
-            status = avrcp_target_volume_changed(avrcp_target_cid, volume_percentage * 127 / 100);
+            status = avrcp_target_volume_changed(avrcp_cid, volume_percentage * 127 / 100);
             break;
         case 'T':
             volume_percentage = volume_percentage >= 10 ? volume_percentage - 10 : 0;
             printf(" - volume down for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
-            status = avrcp_target_volume_changed(avrcp_target_cid, volume_percentage * 127 / 100);
+            status = avrcp_target_volume_changed(avrcp_cid, volume_percentage * 127 / 100);
             break;
 
         case 'O':
             printf(" - get play status\n");
-            status = avrcp_controller_get_play_status(avrcp_controller_cid);
+            status = avrcp_controller_get_play_status(avrcp_cid);
             break;
         case 'j':
             printf(" - get now playing info\n");
-            status = avrcp_controller_get_now_playing_info(avrcp_controller_cid);
+            status = avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
         case 'k':
             printf(" - play\n");
-            status = avrcp_controller_play(avrcp_controller_cid);
+            status = avrcp_controller_play(avrcp_cid);
             break;
         case 'K':
             printf(" - stop\n");
-            status = avrcp_controller_stop(avrcp_controller_cid);
+            status = avrcp_controller_stop(avrcp_cid);
             break;
         case 'L':
             printf(" - pause\n");
-            status = avrcp_controller_pause(avrcp_controller_cid);
+            status = avrcp_controller_pause(avrcp_cid);
             break;
         case 'u':
             printf(" - start fast forward\n");
-            status = avrcp_controller_press_and_hold_fast_forward(avrcp_controller_cid);
+            status = avrcp_controller_press_and_hold_fast_forward(avrcp_cid);
             break;
         case 'U':
             printf(" - stop fast forward\n");
-            status = avrcp_controller_release_press_and_hold_cmd(avrcp_controller_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'n':
             printf(" - start rewind\n");
-            status = avrcp_controller_press_and_hold_rewind(avrcp_controller_cid);
+            status = avrcp_controller_press_and_hold_rewind(avrcp_cid);
             break;
         case 'N':
             printf(" - stop rewind\n");
-            status = avrcp_controller_release_press_and_hold_cmd(avrcp_controller_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'i':
             printf(" - forward\n");
-            status = avrcp_controller_forward(avrcp_controller_cid); 
+            status = avrcp_controller_forward(avrcp_cid); 
             break;
         case 'I':
             printf(" - backward\n");
-            status = avrcp_controller_backward(avrcp_controller_cid);
+            status = avrcp_controller_backward(avrcp_cid);
             break;
         case 'M':
             printf(" - mute\n");
-            status = avrcp_controller_mute(avrcp_controller_cid);
+            status = avrcp_controller_mute(avrcp_cid);
             break;
         case 'r':
             printf(" - skip\n");
-            status = avrcp_controller_skip(avrcp_controller_cid);
+            status = avrcp_controller_skip(avrcp_cid);
             break;
         case 'q':
             printf(" - query repeat and shuffle mode\n");
-            status = avrcp_controller_query_shuffle_and_repeat_modes(avrcp_controller_cid);
+            status = avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
         case 'v':
             printf(" - repeat single track\n");
-            status = avrcp_controller_set_repeat_mode(avrcp_controller_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            status = avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
             printf(" - repeat all tracks\n");
-            status = avrcp_controller_set_repeat_mode(avrcp_controller_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
+            status = avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
             printf(" - disable repeat mode\n");
-            status = avrcp_controller_set_repeat_mode(avrcp_controller_cid, AVRCP_REPEAT_MODE_OFF);
+            status = avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
             printf(" - shuffle all tracks\n");
-            status = avrcp_controller_set_shuffle_mode(avrcp_controller_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            status = avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
             printf(" - disable shuffle mode\n");
-            status = avrcp_controller_set_shuffle_mode(avrcp_controller_cid, AVRCP_SHUFFLE_MODE_OFF);
+            status = avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
         case 'a':
             printf("AVRCP: enable notification TRACK_CHANGED\n");
-            avrcp_controller_enable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'A':
             printf("AVRCP: disable notification TRACK_CHANGED\n");
-            avrcp_controller_disable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'R':
             printf("AVRCP: enable notification PLAYBACK_POS_CHANGED\n");
-            avrcp_controller_enable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
         case 'P':
             printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
-            avrcp_controller_disable_notification(avrcp_controller_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
 
         default:

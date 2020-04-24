@@ -1289,18 +1289,4 @@ void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){
     avrcp_target_context.avrcp_callback = callback;
 }
 
-uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
-    return avrcp_connect(AVRCP_TARGET, bd_addr, avrcp_cid);
-}
-
-uint8_t avrcp_target_disconnect(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
-    if (!connection){
-        log_error("avrcp_target_disconnect: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    l2cap_disconnect(connection->l2cap_signaling_cid, 0);
-    return ERROR_CODE_SUCCESS;
-}
 

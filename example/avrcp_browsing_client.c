@@ -435,11 +435,11 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVRCP Controller Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("C      - AVRCP disconnect\n");
     printf("e      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("E      - AVRCP Browsing Controller disconnect\n");
-    printf("C      - AVRCP Controller disconnect\n");
-
+    
     printf("I      - Set first found player as addressed player\n");
     printf("O      - Set first found player as browsed player\n");
     
@@ -467,15 +467,15 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf(" - Create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_controller_connect(device_addr, &avrcp_cid);
+            status = avrcp_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
             if (avrcp_connected){
-                printf(" - AVRCP Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-                status = avrcp_controller_disconnect(avrcp_cid);
+                printf(" - AVRCP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
+                status = avrcp_disconnect(avrcp_cid);
                 break;
             }
-            printf("AVRCP Controller already disconnected\n");
+            printf("AVRCP service already disconnected\n");
             break;
 
         case 'e':

@@ -856,11 +856,11 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth  A2DP Source/AVRCP Target Demo %s ---\n", bd_addr_to_str(iut_address));
+    printf("\n--- Bluetooth  A2DP Source/AVRCP Demo %s ---\n", bd_addr_to_str(iut_address));
     printf("b      - A2DP Source create connection to addr %s\n", device_addr_string);
     printf("B      - A2DP Source disconnect\n");
-    printf("c      - AVRCP Target create connection to addr %s\n", device_addr_string);
-    printf("C      - AVRCP Target disconnect\n");
+    printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
+    printf("C      - AVRCP disconnect\n");
 
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
@@ -873,7 +873,6 @@ static void show_usage(void){
     printf("T      - volume down\n");
     printf("v      - absolute volume of 50 percent\n");
 
-    printf("\n--- Bluetooth  AVRCP Target Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
 }
 
@@ -889,12 +888,12 @@ static void stdin_process(char cmd){
             status = a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'c':
-            printf("%c - Create AVRCP Target connection to addr %s.\n", cmd, bd_addr_to_str(device_addr));
-            status = avrcp_target_connect(device_addr, &media_tracker.avrcp_cid);
+            printf("%c - Create AVRCP connection to addr %s.\n", cmd, bd_addr_to_str(device_addr));
+            status = avrcp_connect(device_addr, &media_tracker.avrcp_cid);
             break;
         case 'C':
-            printf("%c - AVRCP Target disconnect\n", cmd);
-            status = avrcp_target_disconnect(media_tracker.avrcp_cid);
+            printf("%c - AVRCP disconnect\n", cmd);
+            status = avrcp_disconnect(media_tracker.avrcp_cid);
             break;
 
         case '\n':

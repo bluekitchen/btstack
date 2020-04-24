@@ -584,7 +584,7 @@ void avrcp_init(void);
  * @param   avrcp_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @returns status     
  */
-uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t remote_addr, uint16_t * avrcp_cid);
+uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
 
 /**
  * @brief   Disconnect from AVRCP service

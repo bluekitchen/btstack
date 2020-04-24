@@ -950,10 +950,6 @@ void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback)
     avrcp_controller_context.avrcp_callback = callback;
 }
 
-uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid){
-    return avrcp_connect(AVRCP_CONTROLLER, bd_addr, avrcp_cid);
-}
-
 uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
@@ -1327,21 +1323,6 @@ uint8_t avrcp_controller_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode
 uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode){
     if ((mode < AVRCP_REPEAT_MODE_OFF) || (mode > AVRCP_REPEAT_MODE_GROUP)) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     return avrcp_controller_set_current_player_application_setting_value(avrcp_cid, 0x02, mode);
-}
-
-uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
-    if (!connection){
-        log_error("avrcp_get_capabilities: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    if (connection->browsing_connection){
-        if (connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-        l2cap_disconnect(connection->browsing_connection->l2cap_browsing_cid, 0);
-    }
-    l2cap_disconnect(connection->l2cap_signaling_cid, 0);
-    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){

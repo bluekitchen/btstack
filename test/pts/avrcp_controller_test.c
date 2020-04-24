@@ -633,11 +633,11 @@ static void stdin_process(char * cmd, int size){
             break;
         case 'c':
             printf("Establish AVRCP connection to %s.\n", bd_addr_to_str(device_addr));
-            avrcp_controller_connect(device_addr, &avrcp_cid);
+            avrcp_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
             printf("Disconnect AVRCP\n");
-            avrcp_controller_disconnect(avrcp_cid);
+            avrcp_disconnect(avrcp_cid);
             break;
 
          case 'e':

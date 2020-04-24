@@ -88,21 +88,6 @@ void avrcp_controller_init(void);
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Connect to device with a Bluetooth address.
- * @param bd_addr
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
-
-/**
- * @brief Disconnect from AVRCP target
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid);
-
-/**
  * @brief Set max num fragments in whuch message can be transmited.
  * @param avrcp_cid
  * @param max_num_fragments
