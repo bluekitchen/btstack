@@ -51,6 +51,7 @@
 static const uint8_t AVRCP_NOTIFICATION_TRACK_SELECTED[] = {0,0,0,0,0,0,0,0};
 static const uint8_t AVRCP_NOTIFICATION_TRACK_NOT_SELECTED[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
+avrcp_context_t avrcp_target_context;
 
 static int avrcp_target_supports_browsing(uint16_t target_supported_features){
     return target_supported_features & (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
@@ -62,7 +63,7 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
 
 static void avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_cid, avrcp_operation_id_t operation_id, uint8_t operands_length, uint8_t operand){
     btstack_assert(callback != NULL);
-    
+
     uint8_t event[8];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -78,7 +79,7 @@ static void avrcp_target_emit_operation(btstack_packet_handler_t callback, uint1
 
 static void avrcp_target_emit_volume_changed(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t absolute_volume){
     btstack_assert(callback != NULL);
-    
+
     uint8_t event[7];
     int offset = 0;
     event[offset++] = HCI_EVENT_AVRCP_META;
@@ -93,7 +94,7 @@ static void avrcp_target_emit_volume_changed(btstack_packet_handler_t callback, 
 
 static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t subevent_id){
     btstack_assert(callback != NULL);
-    
+
     uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
@@ -1068,23 +1069,14 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
             connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
-            if (!connection) break;
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
-                case HCI_EVENT_AVRCP_META:
-                    // forward to app
-                    (*avrcp_target_context.avrcp_callback)(packet_type, channel, packet, size);
-                    break;
                 case L2CAP_EVENT_CAN_SEND_NOW:{
                     connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
-                    if (!connection) {
-                        log_error("Connection not found\n");
-                        break;
-                    }
-
-                    else if (connection->accept_response){
+                    
+                    if (connection->accept_response){
                         connection->accept_response = 0;
                         avrcp_target_send_response(connection->l2cap_signaling_cid, connection);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);

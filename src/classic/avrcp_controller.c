@@ -48,6 +48,7 @@
 #include "classic/avrcp_controller.h"
 
 // made public in avrcp_controller.h
+avrcp_context_t avrcp_controller_context;
 
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
     return controller_supported_features & (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
@@ -865,20 +866,13 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
             connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
-            if (!connection) break;
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
         
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
-                case HCI_EVENT_AVRCP_META:
-                    // forward to app
-                    (*avrcp_controller_context.avrcp_callback)(packet_type, channel, packet, size);
-                    break;
-                
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
-                    if (!connection) break;
                     avrcp_controller_handle_can_send_now(connection);
                     break;
             default:

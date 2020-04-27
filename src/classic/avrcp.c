@@ -60,9 +60,7 @@ static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP 
 static uint16_t  avrcp_cid_counter = 0;
 
 static avrcp_context_t * sdp_query_context;
-
-avrcp_context_t avrcp_controller_context;
-avrcp_context_t avrcp_target_context;
+static avrcp_context_t avrcp_context;
 
 static btstack_packet_handler_t avrcp_callback;
 
@@ -372,16 +370,6 @@ avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_ro
     return NULL;
 }
 
-static btstack_packet_handler_t avrcp_packet_handler_for_role(avrcp_role_t role){
-    switch (role){
-        case AVRCP_CONTROLLER:
-            return avrcp_controller_packet_handler;
-        case AVRCP_TARGET:
-            return avrcp_target_packet_handler;
-    }
-    return NULL;
-}
-
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid){
     // printf("AVRCP: avrcp_request_can_send_now, role %d\n", connection->role);
     connection->wait_to_send = 1;
@@ -635,13 +623,7 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
 
 
 static int avrcp_handle_incoming_connection_for_role(avrcp_role_t role, bd_addr_t event_addr, uint16_t local_cid, uint16_t avrcp_cid){
-    if (!avrcp_packet_handler_for_role(role)) {
-        // printf("AVRCP: avrcp_handle_incoming_connection_for_role %d, PH not defined\n", role);
-        return 0;
-    }
-    
     avrcp_connection_t * connection = avrcp_create_connection(role, event_addr);
-
     if (!connection) {
         // printf("AVRCP: avrcp_handle_incoming_connection_for_role %d, no connection created\n", role);
         return 0 ;  
@@ -666,16 +648,6 @@ static void avrcp_handle_open_connection_for_role( avrcp_connection_t * connecti
     log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x, role %d", connection->avrcp_cid, connection->l2cap_signaling_cid, connection->role);
 }
 
-static avrcp_role_t avrcp_role_from_transport_header(uint8_t transport_header){
-    avrcp_frame_type_t frame_type = (avrcp_frame_type_t)((transport_header & 0x02) >> 1);
-    switch (frame_type){
-        case AVRCP_COMMAND_FRAME:
-            return AVRCP_TARGET;
-        default: // AVRCP_RESPONSE_FRAME - make compiler happy
-            return AVRCP_CONTROLLER;
-    }
-}
-
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -683,8 +655,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     uint16_t local_cid;
     uint16_t l2cap_mtu;
     uint8_t  status;
-    avrcp_role_t role;
-    btstack_packet_handler_t packet_handler;
+    avrcp_frame_type_t frame_type;
     uint8_t status_target;
     uint8_t status_controller;
     bool decline_connection;
@@ -694,18 +665,13 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     avrcp_connection_t * connection_target;
     
     switch (packet_type) {
-        case L2CAP_DATA_PACKET:
-            role = avrcp_role_from_transport_header(packet[0]);
-            packet_handler = avrcp_packet_handler_for_role(role);
-            if (!packet_handler) return;
-            
-            (*packet_handler)(packet_type, channel, packet, size);
-            break;
-
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
 
                 case L2CAP_EVENT_INCOMING_CONNECTION:
+                    btstack_assert(avrcp_controller_packet_handler != NULL);
+                    btstack_assert(avrcp_target_packet_handler != NULL);
+
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     outoing_active = false;
@@ -785,9 +751,9 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
+                    
                     connection_target = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
                     if (connection_target && connection_target->wait_to_send){
-                        // printf("AVRCP: L2CAP_EVENT_CAN_SEND_NOW target\n");
                         connection_target->wait_to_send = 0;
                         (*avrcp_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;    
@@ -795,7 +761,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                     connection_controller = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     if (connection_controller && connection_controller->wait_to_send){
-                        // printf("AVRCP: L2CAP_EVENT_CAN_SEND_NOW controller\n");
                         connection_controller->wait_to_send = 0;
                         (*avrcp_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;    
@@ -806,6 +771,21 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     break;
             }
             break;
+
+        case L2CAP_DATA_PACKET:
+            frame_type = (avrcp_frame_type_t)((packet[0] & 0x02) >> 1);
+
+            switch (frame_type){
+                case AVRCP_RESPONSE_FRAME:
+                    (*avrcp_controller_packet_handler)(packet_type, channel, packet, size);
+                    break;
+                case AVRCP_COMMAND_FRAME:
+                default:    // make compiler happy
+                    (*avrcp_target_packet_handler)(packet_type, channel, packet, size);
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -828,8 +808,8 @@ uint8_t avrcp_disconnect(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
-    btstack_assert(avrcp_packet_handler_for_role(AVRCP_CONTROLLER) != NULL);
-    btstack_assert(avrcp_packet_handler_for_role(AVRCP_TARGET) != NULL);
+    btstack_assert(avrcp_controller_packet_handler != NULL);
+    btstack_assert(avrcp_target_packet_handler != NULL);
 
     // TODO: implement delayed SDP query
     if (sdp_client_ready() == 0){
@@ -856,8 +836,6 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     } 
 
-    sdp_query_context = &avrcp_controller_context;
-    
     if (avrcp_cid != NULL){
         *avrcp_cid = cid;
     }
@@ -868,6 +846,7 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     connection_target->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
     connection_target->avrcp_cid = cid;
 
+    sdp_query_context = &avrcp_context;
     sdp_query_context->avrcp_l2cap_psm = 0;
     sdp_query_context->avrcp_version  = 0;
     sdp_query_context->avrcp_cid = cid;
