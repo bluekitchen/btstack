@@ -211,7 +211,10 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
 #ifdef ENABLE_BLE
     conn->le_phy_update_all_phys = 0xff;
-#endif    
+#endif
+#ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
+    conn->le_max_tx_octets = 27;
+#endif
     btstack_linked_list_add(&hci_stack->connections, (btstack_linked_item_t *) conn);
     return conn;
 }
@@ -649,8 +652,11 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         max_acl_data_packet_length = hci_stack->le_data_packets_length;
     }
 
-    // testing: reduce buffer to minimum
-    // max_acl_data_packet_length = 52;
+#ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
+    if (hci_is_le_connection(connection)){
+        max_acl_data_packet_length = connection->le_max_tx_octets;
+    }
+#endif
 
     log_debug("hci_send_acl_packet_fragments entered");
 
@@ -2600,6 +2606,15 @@ static void event_handler(uint8_t *packet, int size){
                         }
                     }
                     break;
+#ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
+                case HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE:
+                    handle = hci_subevent_le_data_length_change_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (conn) {
+                        conn->le_max_tx_octets = hci_subevent_le_data_length_change_get_max_tx_octets(packet);
+                    }
+                    break;
+#endif
                 default:
                     break;
             }
