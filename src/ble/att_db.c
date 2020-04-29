@@ -733,13 +733,16 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     if (value_offset > it.value_len){
         return setup_error_invalid_offset(response_buffer, request_type, handle);
     }
-    
-    // store
-    uint16_t offset   = 1;
-    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
-    offset += bytes_copied;
-    
+
+    // prepare response
     response_buffer[0] = ATT_READ_BLOB_RESPONSE;
+    uint16_t offset   = 1;
+
+    // fetch more data if available
+    if (value_offset < it.value_len){
+        uint16_t bytes_copied = att_copy_value(&it, value_offset, &response_buffer[offset], response_buffer_size - offset, att_connection->con_handle);
+        offset += bytes_copied;
+    }
     return offset;
 }
 

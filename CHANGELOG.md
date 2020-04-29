@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Broadcom/Cypress: wait 300 ms after PatchRAM update in hci.c to assert Controller is ready
 - esp32: provide esp-idf/component/btstack/btstack_port_esp32.c and only minimal app_main in template/main/main.c
+- att_db: skip att_read_callback for ATT Read Blob Request if offset == value_len
 
 ## Changes March 2020
 
