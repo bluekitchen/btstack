@@ -676,7 +676,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     }
 
 #ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
-    if (hci_is_le_connection(connection)){
+    if (hci_is_le_connection(connection) && (connection->le_max_tx_octets < max_acl_data_packet_length)){
         max_acl_data_packet_length = connection->le_max_tx_octets;
     }
 #endif
