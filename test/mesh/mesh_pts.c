@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mesh/mesh_iv_index_seq_number.h>
 
 #include "btstack.h"
 #include "mesh_pts.h"
@@ -641,6 +642,24 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     return 0;
 }
 
+static void pts_lower_transport_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+            printf("PTS: network pdu received. TTL %02x CTL %02x SRC %04x DST %04x\n",
+                    mesh_network_ttl(network_pdu), mesh_network_control(network_pdu),
+                    mesh_network_src(network_pdu), mesh_network_dst(network_pdu));
+            printf("PTS: payload ");
+            printf_hexdump(mesh_network_pdu_data(network_pdu), mesh_network_pdu_len(network_pdu));
+            break;
+        case MESH_NETWORK_PDU_SENT:
+            break;
+        default:
+            break;
+    }
+    // forward to mesh_transport
+    mesh_lower_transport_received_message(callback_type, network_pdu);
+}
+
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -723,6 +742,9 @@ int btstack_main(void)
     gap_set_scan_parameters(0, 0x300, 0x300);
     gap_start_scan();
 #endif
+
+    // intercept messages between network and lower layer
+    mesh_network_set_higher_layer_handler(&pts_lower_transport_callback_handler);
 
     //  PTS add-on
 
