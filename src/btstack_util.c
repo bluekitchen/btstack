@@ -338,6 +338,20 @@ char * bd_addr_to_str(const bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
+void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const bd_addr_t address){
+    const int bd_addr_string_len = 17;
+    int i = 0;
+    while (i < (size - bd_addr_string_len)){
+        if (memcmp(&buffer[i], "00:00:00:00:00:00", bd_addr_string_len)) {
+            i++;
+            continue;
+        }
+        // set address
+        (void)memcpy(&buffer[i], bd_addr_to_str(address), bd_addr_string_len);
+        i += bd_addr_string_len;
+    }
+}
+
 static int scan_hex_byte(const char * byte_string){
     int upper_nibble = nibble_for_char(*byte_string++);
     if (upper_nibble < 0) return -1;
