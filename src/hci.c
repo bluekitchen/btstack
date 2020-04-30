@@ -1451,20 +1451,20 @@ static void hci_initializing_run(void){
             hci_stack->last_cmd_opcode = opcode;
             packet[0] = opcode & 0xff;
             packet[1] = opcode >> 8;
-            packet[2] = 1 + 240;
+            packet[2] = 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN;
             packet[3] = 0;  // FEC not required
             if (hci_stack->eir_data){
-                (void)memcpy(&packet[4], hci_stack->eir_data, 240);
+                (void)memcpy(&packet[4], hci_stack->eir_data, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
             } else {
-                memset(&packet[4], 0, 240);
+                memset(&packet[4], 0, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
                 int name_len = strlen(hci_stack->local_name);
                 packet[4] = name_len + 1;
                 packet[5] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
                 (void)memcpy(&packet[6], hci_stack->local_name, name_len);
             }
             // expand '00:00:00:00:00:00' in name with bd_addr
-            hci_replace_bd_addr_placeholder(&packet[4], 240);
-            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + 240);
+            hci_replace_bd_addr_placeholder(&packet[4], EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
+            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
             break;
         }
         case HCI_INIT_WRITE_INQUIRY_MODE:
@@ -4310,11 +4310,11 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
             case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
                 event[14] = 1;
                 event[15] = packet [3 + (num_responses*(6+1+num_reserved_fields+3+2)) + (i*1)]; // rssi
-                // for EIR packets, there is only one reponse in it
+                // for EIR packets, there is only one response in it
                 eir_data = &packet[3 + (6+1+num_reserved_fields+3+2+1)];
                 name = NULL;
-                // EIR data is 240 bytes in EIR event
-                for (ad_iterator_init(&context, 240, eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+                // Iterate over EIR data
+                for (ad_iterator_init(&context, EXTENDED_INQUIRY_RESPONSE_DATA_LEN, eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
                     uint8_t data_type    = ad_iterator_get_data_type(&context);
                     uint8_t data_size    = ad_iterator_get_data_len(&context);
                     const uint8_t * data = ad_iterator_get_data(&context);
@@ -5080,7 +5080,7 @@ uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle){
 #ifdef ENABLE_CLASSIC 
 /**
  * @brief Set Extended Inquiry Response data
- * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @param eir_data size HCI_EXTENDED_INQUIRY_RESPONSE_DATA_LEN (240) bytes, is not copied make sure memory is accessible during stack startup
  * @note has to be done before stack starts up
  */
 void gap_set_extended_inquiry_response(const uint8_t * data){

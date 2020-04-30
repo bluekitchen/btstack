@@ -100,6 +100,11 @@ typedef enum {
 } link_key_type_t;
 
 /**
+ * @brief Extended Inquiry Response
+ */
+#define EXTENDED_INQUIRY_RESPONSE_DATA_LEN 240
+
+/**
  * @brief Inquiry modes
  */
 typedef enum {

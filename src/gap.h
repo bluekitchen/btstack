@@ -146,7 +146,7 @@ void gap_set_local_name(const char * local_name);
  * @note has to be done before stack starts up
  * @note If not set, local name will be used for EIR data (see gap_set_local_name)
  * @note '00:00:00:00:00:00' in local_name will be replaced with actual bd addr
- * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @param eir_data size HCI_EXTENDED_INQUIRY_RESPONSE_DATA_LEN (240) bytes, is not copied make sure memory is accessible during stack startup
  */
 void gap_set_extended_inquiry_response(const uint8_t * data); 
 
