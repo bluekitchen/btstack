@@ -1448,25 +1448,41 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
             hci_reserve_packet_buffer();
             uint8_t * packet = hci_stack->hci_packet_buffer;
-            // construct HCI Command and send
+            // construct HCI Command in-place and send
             uint16_t opcode = hci_write_extended_inquiry_response.opcode;
             hci_stack->last_cmd_opcode = opcode;
-            packet[0] = opcode & 0xff;
-            packet[1] = opcode >> 8;
-            packet[2] = 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN;
-            packet[3] = 0;  // FEC not required
+            uint16_t offset = 0;
+            packet[offset++] = opcode & 0xff;
+            packet[offset++] = opcode >> 8;
+            packet[offset++] = 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN;
+            packet[offset++] = 0;  // FEC not required
+            memset(&packet[offset], 0, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
             if (hci_stack->eir_data){
-                (void)memcpy(&packet[4], hci_stack->eir_data, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
+                // copy items and expand '00:00:00:00:00:00' in name with bd_addr
+                ad_context_t context;
+                for (ad_iterator_init(&context, EXTENDED_INQUIRY_RESPONSE_DATA_LEN, hci_stack->eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+                    uint8_t data_type   = ad_iterator_get_data_type(&context);
+                    uint8_t size        = ad_iterator_get_data_len(&context);
+                    const uint8_t *data = ad_iterator_get_data(&context);
+                    // copy item
+                    packet[offset++] = size + 1;
+                    packet[offset++] = data_type;
+                    memcpy(&packet[offset], data, size);
+                    // update name item
+                    if ((data_type == BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME) || (data_type == BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME)){
+                        hci_replace_bd_addr_placeholder(&packet[offset], size);
+                    }
+                    offset += size;
+                }
             } else {
-                memset(&packet[4], 0, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
                 uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
                 uint16_t bytes_to_copy = btstack_min(name_len, EXTENDED_INQUIRY_RESPONSE_DATA_LEN - 2);
-                packet[4] = bytes_to_copy + 1;
-                packet[5] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
+                packet[offset++] = bytes_to_copy + 1;
+                packet[offset++] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
                 (void)memcpy(&packet[6], hci_stack->local_name, bytes_to_copy);
+                // expand '00:00:00:00:00:00' in name with bd_addr
+                hci_replace_bd_addr_placeholder(&packet[offset], bytes_to_copy);
             }
-            // expand '00:00:00:00:00:00' in name with bd_addr
-            hci_replace_bd_addr_placeholder(&packet[4], EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
             break;
         }
