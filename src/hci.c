@@ -1435,10 +1435,12 @@ static void hci_initializing_run(void){
             packet[1] = opcode >> 8;
             packet[2] = DEVICE_NAME_LEN;
             memset(&packet[3], 0, DEVICE_NAME_LEN);
-            (void)memcpy(&packet[3], hci_stack->local_name,
-                         strlen(hci_stack->local_name));
+            uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
+            uint16_t bytes_to_copy = btstack_min(name_len, DEVICE_NAME_LEN);
+            // if shorter than DEVICE_NAME_LEN, it's implicitly NULL-terminated by memset call
+            (void)memcpy(&packet[3], hci_stack->local_name, bytes_to_copy);
             // expand '00:00:00:00:00:00' in name with bd_addr
-            hci_replace_bd_addr_placeholder(&packet[3], DEVICE_NAME_LEN);
+            hci_replace_bd_addr_placeholder(&packet[3], bytes_to_copy);
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
             break;
         }
@@ -1457,10 +1459,11 @@ static void hci_initializing_run(void){
                 (void)memcpy(&packet[4], hci_stack->eir_data, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
             } else {
                 memset(&packet[4], 0, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
-                int name_len = strlen(hci_stack->local_name);
-                packet[4] = name_len + 1;
+                uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
+                uint16_t bytes_to_copy = btstack_min(name_len, EXTENDED_INQUIRY_RESPONSE_DATA_LEN - 2);
+                packet[4] = bytes_to_copy + 1;
                 packet[5] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
-                (void)memcpy(&packet[6], hci_stack->local_name, name_len);
+                (void)memcpy(&packet[6], hci_stack->local_name, bytes_to_copy);
             }
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[4], EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
@@ -4310,7 +4313,7 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
             case HCI_EVENT_EXTENDED_INQUIRY_RESPONSE:
                 event[14] = 1;
                 event[15] = packet [3 + (num_responses*(6+1+num_reserved_fields+3+2)) + (i*1)]; // rssi
-                // for EIR packets, there is only one response in it
+                // EIR packets only contain a single inquiry response
                 eir_data = &packet[3 + (6+1+num_reserved_fields+3+2+1)];
                 name = NULL;
                 // Iterate over EIR data
