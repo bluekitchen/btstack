@@ -633,8 +633,12 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hci_event_connection_request_get_bd_addr(packet, event_addr);
                     hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
                     if (!hfp_connection) break;
-                    log_info("hf accept sco\n");
-                    hfp_connection->hf_accept_sco = 1;
+                    if (hci_event_connection_request_get_link_type(packet) == 2){
+                        hfp_connection->hf_accept_sco = 2;
+                    } else {
+                        hfp_connection->hf_accept_sco = 1;
+                    }
+                    log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
                     if (!hfp_hf_run_for_context) break;
                     (*hfp_hf_run_for_context)(hfp_connection);
                     break;

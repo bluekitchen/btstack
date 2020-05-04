@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
 
 ### Added
 
