@@ -552,28 +552,28 @@ static inline uint8_t avrcp_prepare_vendor_dependent_response(uint16_t avrcp_cid
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t capability_id, uint8_t capabilities_num, uint8_t * capabilities, uint8_t size){
+static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t capability_id, uint8_t num_capabilities, uint8_t * capabilities, uint8_t capabilities_size){
     avrcp_connection_t * connection = NULL;
-    uint8_t status = avrcp_prepare_vendor_dependent_response(avrcp_cid, &connection, AVRCP_PDU_ID_GET_CAPABILITIES, 2+size);
+    uint8_t status = avrcp_prepare_vendor_dependent_response(avrcp_cid, &connection, AVRCP_PDU_ID_GET_CAPABILITIES, 2 + capabilities_size);
     if (status != ERROR_CODE_SUCCESS) return status;
 
     connection->cmd_operands[connection->cmd_operands_length++] = capability_id;
-    connection->cmd_operands[connection->cmd_operands_length++] = capabilities_num;
+    connection->cmd_operands[connection->cmd_operands_length++] = num_capabilities;
     (void)memcpy(connection->cmd_operands + connection->cmd_operands_length,
-                 capabilities, size);
-    connection->cmd_operands_length += size;
+                 capabilities, capabilities_size);
+    connection->cmd_operands_length += capabilities_size;
     
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_num, uint8_t * capabilities, uint8_t size){
-    return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_EVENT, capabilities_num, capabilities, size);
+uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids, uint8_t * event_ids, uint8_t event_ids_size){
+    return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_EVENT, num_event_ids, event_ids, event_ids_size);
 }
 
-uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_num, uint8_t * capabilities, uint8_t size ){
-    return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_COMPANY, capabilities_num, capabilities, size);
+uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company_ids, uint8_t * company_ids, uint8_t company_ids_size){
+    return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_COMPANY, num_company_ids, company_ids, company_ids_size);
 }
 
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t play_status){

@@ -77,7 +77,7 @@ typedef enum {
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
- * @brief Set up AVRCP Controller device.
+ * @brief Set up AVRCP Controller service.
  */
 void avrcp_controller_init(void);
 

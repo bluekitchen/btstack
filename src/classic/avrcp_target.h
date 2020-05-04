@@ -75,14 +75,49 @@ typedef enum {
  */
 void    avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
+/**
+ * @brief Set up AVRCP Target service.
+ */
 void    avrcp_target_init(void);
 
+/**
+ * @brief Register callback for the AVRCP Target client. 
+ * @param callback
+ */
 void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
 
-uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
-uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
+/**
+ * @brief Send a list of Company IDs supported by target. 
+ * @note  The avrcp_target_packet_handler will receive AVRCP_SUBEVENT_COMPANY_IDS_QUERY event. Use this function to respond.
+ * @param avrcp_cid
+ * @param num_company_ids
+ * @param company_ids
+ * @param company_ids_size
+ * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ */
+uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company_ids, uint8_t * company_ids, uint8_t company_ids_size);
 
+/**
+ * @brief Send a list of Events supported by target.
+ * @note  The avrcp_target_packet_handler will receive AVRCP_SUBEVENT_EVENT_IDS_QUERY event. Use this function to respond.
+ * @param avrcp_cid
+ * @param num_event_ids
+ * @param event_ids
+ * @param event_ids_size
+ * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ */
+uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids, uint8_t * event_ids, uint8_t event_ids_size);
+
+/**
+ * @brief Send a play status.
+ * @note  The avrcp_target_packet_handler will receive AVRCP_SUBEVENT_PLAY_STATUS_QUERY event. Use this function to respond.
+ * @param avrcp_cid
+ * @param song_length_ms
+ * @param song_position_ms
+ * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
+ */
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status); 
+
 
 void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks);
 uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status);
@@ -95,9 +130,6 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * trackID);
-
-// uint8_t avrcp_target_trigger_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
-
 
 uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
