@@ -273,6 +273,7 @@ typedef enum {
     AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
+    AVCTP_CONNECTION_W2_L2CAP_RECONNECT,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
     AVCTP_W2_SEND_RELEASE_COMMAND,
@@ -396,6 +397,7 @@ typedef struct {
     
     avrcp_role_t role;
     bd_addr_t remote_addr;
+    uint16_t avrcp_l2cap_psm;
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
@@ -432,6 +434,7 @@ typedef struct {
     uint16_t  cmd_operands_fragmented_pos;
     uint16_t  cmd_operands_fragmented_len;
 
+    btstack_timer_source_t reconnect_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
     uint8_t  continuous_fast_forward_cmd;
     uint16_t notifications_enabled;
@@ -563,8 +566,6 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 uint16_t avrcp_get_next_cid(avrcp_role_t role);
 
 // SDP query
-void    avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 void    avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 
