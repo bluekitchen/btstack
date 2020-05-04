@@ -19,11 +19,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - hog_mouse_demo/hog_keyboard_demo: handle set protocol mode = boot protocol mode
+- HCI: only update BD_ADDR placeholder in shortened and complete name in EIR data, limit device name to 240/248 bytes
 
 ### Added
 - GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections
 - example: hog_boot_host_demo implement an HID-over-GATT Boot Host that supports keyboard and mouse
-- hci: add ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS that forces fragmentation of ACL-LE packets to fit into over-the-air packet
+- HCI: add ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS that forces fragmentation of ACL-LE packets to fit into over-the-air packet
 
 ### Changed
 - Broadcom/Cypress: wait 300 ms after PatchRAM update in hci.c to assert Controller is ready
@@ -38,8 +39,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GATT Client: allow to register for any notification/indication and/or any connection
-hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity
+- HCI: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity commands
 - chipset: assert hci packet buffers are suitable for firmware upload or patches (atwilc3000,bcm,cc256x,intel)
+- btstack_util: added btstack_replace_bd_addr_placeholder
 
 ### Changed
 - AVRCP Target: volume in avrcp_target_volume_changed is reported as current value in interim response to register for volume change notifications
