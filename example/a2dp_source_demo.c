@@ -726,12 +726,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     switch (packet[2]){
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: 
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            if (media_tracker.avrcp_cid != 0 && media_tracker.avrcp_cid != local_cid) {
-                printf("AVRCP: Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", media_tracker.avrcp_cid, local_cid);
-                return;
-            }
-            if (media_tracker.avrcp_cid != local_cid) break;
-            
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("AVRCP: Connection failed, status 0x%02x\n", status);
