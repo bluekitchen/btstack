@@ -184,7 +184,7 @@ static void btstack_run_loop_corefoundation_add_timer(btstack_timer_source_t * t
     CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
-static int btstack_run_loop_corefoundation_remove_timer(btstack_timer_source_t * ts){
+static bool btstack_run_loop_corefoundation_remove_timer(btstack_timer_source_t * ts){
     // printf("btstack_run_loop_corefoundation_remove_timer %x -> %x\n", (int) ts, (int) ts->item.next);
 	if (ts->item.next != NULL) {
     	CFRunLoopTimerInvalidate((CFRunLoopTimerRef) ts->item.next);    // also removes timer from run loops + releases it
