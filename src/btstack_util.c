@@ -340,8 +340,8 @@ char * bd_addr_to_str(const bd_addr_t addr){
 
 void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const bd_addr_t address){
     const int bd_addr_string_len = 17;
-    int i = 0;
-    while (i < (size - bd_addr_string_len)){
+    uint16_t i = 0;
+    while ((i + bd_addr_string_len) <= size){
         if (memcmp(&buffer[i], "00:00:00:00:00:00", bd_addr_string_len)) {
             i++;
             continue;
