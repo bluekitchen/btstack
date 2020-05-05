@@ -4201,8 +4201,8 @@ int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
     uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
     int err = hci_send_cmd_packet(packet, size);
 
-    // release packet buffer for synchronous transport implementations
-    if (hci_transport_synchronous()){
+    // release packet buffer on error or for synchronous transport implementations
+    if ((err < 0) || hci_transport_synchronous()){
         hci_release_packet_buffer();
         hci_emit_transport_packet_sent();
     }
