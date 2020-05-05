@@ -1560,6 +1560,7 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             break;
 
         case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
+            if (!hci_can_send_acl_packet_now(channel->con_handle)) return false;
             channel->local_sig_id = l2cap_next_sig_id();
             channel->state = L2CAP_STATE_WAIT_DISCONNECT;
             l2cap_send_signaling_packet( channel->con_handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);
