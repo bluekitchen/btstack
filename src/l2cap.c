@@ -2403,12 +2403,14 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                             // we need to know if ERTM is supported before sending a config response
                             hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-                            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
-                            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
-#else
+                            if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_DONE){
+                                connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+                                channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+                                break;
+                            }
+#endif
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
                             l2cap_emit_incoming_connection(channel);
-#endif
                         } else {
                             channel->reason = 0x0003; // security block
                             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
