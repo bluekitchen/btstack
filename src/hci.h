@@ -566,6 +566,10 @@ typedef struct {
     // LE Security Manager
     sm_connection_t sm_connection;
 
+#ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
+    uint16_t le_max_tx_octets;
+#endif
+
     // ATT Server
     att_server_t    att_server;
 #endif

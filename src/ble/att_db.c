@@ -554,21 +554,17 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     uint8_t error_code = 0;
     uint16_t first_matching_but_unreadable_handle = 0;
 
-#ifdef ENABLE_ATT_DELAYED_RESPONSE
-    bool read_request_pending = false;
-#endif
-
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         
-        if (!it.handle) break;
+        if ((it.handle == 0 ) || (it.handle > end_handle)) break;
+
         if (it.handle < start_handle) continue;
-        if (it.handle > end_handle) break;  // (1)
 
         // does current attribute match
         if (!att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
         
-        // skip handles that cannot be read but rembember that there has been at least one
+        // skip handles that cannot be read but remember that there has been at least one
         if ((it.flags & ATT_PROPERTY_READ) == 0) {
             if (first_matching_but_unreadable_handle == 0) {
                 first_matching_but_unreadable_handle = it.handle;
@@ -584,17 +580,14 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == ATT_READ_RESPONSE_PENDING){
-            read_request_pending = true;
+            return ATT_READ_RESPONSE_PENDING;
         }
-        if (read_request_pending) continue;
 #endif
 
         // check if value has same len as last one
         uint16_t this_pair_len = 2 + it.value_len;
-        if (offset > 1){
-            if (pair_len != this_pair_len) {
-                break;
-            }
+        if ((offset > 1) && (pair_len != this_pair_len)) {
+            break;
         }
         
         // first
@@ -617,10 +610,6 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
         offset += bytes_copied;
     }
-    
-#ifdef ENABLE_ATT_DELAYED_RESPONSE
-    if (read_request_pending) return ATT_READ_RESPONSE_PENDING;
-#endif
 
     // at least one attribute could be read
     if (offset > 1){
@@ -744,13 +733,16 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     if (value_offset > it.value_len){
         return setup_error_invalid_offset(response_buffer, request_type, handle);
     }
-    
-    // store
-    uint16_t offset   = 1;
-    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
-    offset += bytes_copied;
-    
+
+    // prepare response
     response_buffer[0] = ATT_READ_BLOB_RESPONSE;
+    uint16_t offset   = 1;
+
+    // fetch more data if available
+    if (value_offset < it.value_len){
+        uint16_t bytes_copied = att_copy_value(&it, value_offset, &response_buffer[offset], response_buffer_size - offset, att_connection->con_handle);
+        offset += bytes_copied;
+    }
     return offset;
 }
 

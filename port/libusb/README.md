@@ -29,14 +29,14 @@ To add an udev rule, please create `/etc/udev/rules.d/btstack.rules` and add thi
 	# Match all devices from CSR
 	SUBSYSTEM=="usb", ATTRS{idVendor}=="0a12", MODE="0666"
 
-	# Match DeLOCK Bluetooth 4.0 dongle
-	SUBSYSTEM=="usb", ATTRS{idVendor}=="0a5c", ATTRS{device}=="21e8", MODE="0666"
+	# Match Cypress Semiconductor / Broadcom BCM20702A, e.g. DeLOCK Bluetooth 4.0 dongle
+	SUBSYSTEM=="usb", ATTRS{idVendor}=="0a5c", ATTRS{idProduct}=="21e8", MODE="0666"
 
 	# Match Asus BT400
-	SUBSYSTEM=="usb", ATTRS{idVendor}=="0b05", ATTRS{device}=="17cb", MODE="0666"
+	SUBSYSTEM=="usb", ATTRS{idVendor}=="0b05", ATTRS{idProduct}=="17cb", MODE="0666"
 
 	# Match Laird BT860 / Cypress Semiconductor CYW20704A2
-	SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{device}=="f901", MODE="0666"
+	SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{idProduct}=="f901", MODE="0666"
 
 ### macOS
 

@@ -42,7 +42,12 @@ Generate example projects
 
     $ python create_examples.py
 
-This will generate an e2 Studio project for each example.
+This will generate an e2 Studio project for each example. 
+
+### Excluded Examples
+
+The a2dp examples (a2dp_source_demo and a2dp_sink_demo) were disabled as the C open-source SBC codec
+with compile option -O2 wasn't fast enough to provide real-time encoding/decoding. 
 
 
 ## Build, Flash And Run The Examples in e2 Studio
@@ -52,7 +57,8 @@ Open the e2 Studio project and press the 'Debug' button. Debug output is only av
 
 ## Run Example Project using Ozone
 
-After compiling the project with e2 Studio, the genereated .elf file can be used with Ozone. In Ozone, the debug output is readily available. A .jdebug file is provided in the project folder.
+After compiling the project with e2 Studio, the genereated .elf file can be used with Ozone (also e.g. on macOS). 
+In Ozone, the debug output is readily available in the terminal. A .jdebug file is provided in the project folder.
 
 
 ## Debug output
@@ -61,8 +67,9 @@ All debug output is send via SEGGER RTT.
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in src/port.c The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
-
+Also, the full packet log can be enabled in src/hal_entry.c by uncommenting the hci_dump_open(NULL, HCI_DUMP_STDOUT) call.
+The console output can then be converted into .pklg files by running tool/create_packet_log.py. The .pklg file can be 
+analyzed with the macOS X PacketLogger or WireShark.
 
 ## GATT Database
 In BTstack, the GATT Database is defined via the .gatt file in the example folder. The create_examples.py script converts the .gatt files into a corresponding .h for the project. After updating a .gatt file, the .h can be updated manually by running the provided update_gatt_db.sh or update_gatt_db.bat scripts. 
@@ -75,4 +82,4 @@ Note: In theory, this can be integrated into the e2 Studio/Eclipse project.
 
 
 ## Nice to have
-- Allow compilation using Makefile/CMake on macOS
+- Allow compilation using Makefile/CMake without the e2 Studio, e.g. on the Mac.

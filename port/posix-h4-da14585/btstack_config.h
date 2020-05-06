@@ -25,7 +25,9 @@
 #define ENABLE_LOG_INFO 
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
-// #define ENABLE_EHCILL
+
+// work around bug in Controller ACL fragmentation
+#define ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy

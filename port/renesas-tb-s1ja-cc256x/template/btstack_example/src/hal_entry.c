@@ -250,7 +250,7 @@ static hal_flash_bank_synergy_t  hal_flash_bank_context;
 static const hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    4000000,
+    2000000,
     1,
     NULL
 };
@@ -270,7 +270,8 @@ void hal_entry(void) {
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
-    hci_dump_open( NULL, HCI_DUMP_STDOUT );
+    // enable HCI logging
+    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
 
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);

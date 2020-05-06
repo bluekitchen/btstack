@@ -938,27 +938,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // printf("Initial Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
                     instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_RECEIVED;
                     break;
+
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
                 case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
                     if (instance->con_interval_status != CP_CONNECTION_INTERVAL_STATUS_W4_UPDATE) return;
                     
                     if ((instance->con_interval > instance->con_interval_max) || (instance->con_interval < instance->con_interval_min)){
                         instance->con_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
-                        // printf("Updated Connection Interval: %u, %u.%02u ms\n", instance->con_interval, instance->con_interval * 125 / 100, 25 * (instance->con_interval & 3));
-                        // printf("Updated Connection Latency: %u\n", hci_subevent_le_connection_update_complete_get_conn_latency(packet));  
                         instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_ACCEPTED;
                     } else {
                         instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_REJECTED;
                     }
                     att_server_response_ready(l2cap_event_connection_parameter_update_response_get_handle(packet));
                     break;
+#endif
                 default:
                     break;
             }
             break;
+
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
         case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
             if (instance->con_interval_status != CP_CONNECTION_INTERVAL_STATUS_W4_L2CAP_RESPONSE) return;
             
-            // printf("L2CAP Connection Parameter Update Complete, response: %x\n", l2cap_event_connection_parameter_update_response_get_result(packet));
             if (l2cap_event_connection_parameter_update_response_get_result(packet) == ERROR_CODE_SUCCESS){
                 instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_W4_UPDATE;
             } else {
@@ -966,6 +968,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 att_server_response_ready(l2cap_event_connection_parameter_update_response_get_handle(packet));
             }
             break;
+#endif
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:{
             if (!instance) return;

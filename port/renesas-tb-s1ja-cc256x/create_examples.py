@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Create project files for all BTstack embedded examples in local port/renesas-tb-s1ja-cc256x folder
 
@@ -55,10 +55,14 @@ def create_examples(port_folder, suffix):
     print("Creating example projects in example folder")
 
     # iterate over btstack examples
-    for file in os.listdir(examples_embedded):
+    example_files = os.listdir(examples_embedded)
+    example_files.sort()
+    for file in example_files:
         if not file.endswith(".c"):
             continue
-        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c']:
+        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c', 'audio_duplex.c', 'mod_player.c']:
+            continue
+        if file in ['a2dp_sink_demo.c', 'a2dp_source_demo.c', 'hfp_hf_demo.c', 'hfp_ag_demo.c', 'hsp_hs_demo.c', 'hsp_ag_demo.c']:
             continue
 
         example = file[:-2]
@@ -83,7 +87,7 @@ def create_examples(port_folder, suffix):
         create_folder(src_folder)
 
         # copy files skipping example.c and gatt_streamer_server.h
-        for file in ['btstack_config.h', 'hal_entry.c']:
+        for file in ['btstack_config.h', 'hal_entry.c', 'hal_flash_bank_synergy.c',  'hal_flash_bank_synergy.h']:
             shutil.copy(project_template + "src/" + file, src_folder)
 
         # copy synergy_gen
@@ -98,21 +102,22 @@ def create_examples(port_folder, suffix):
         shutil.copy(port_folder + "/" + init_script, src_folder)
 
         # add sco_demo_util.c for audio examples
-        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
-            shutil.copy(examples_embedded + 'sco_demo_util.c', src_folder)
-            shutil.copy(examples_embedded + 'sco_demo_util.h', src_folder)
+        # if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
+        #    shutil.copy(examples_embedded + 'sco_demo_util.c', src_folder)
+        #    shutil.copy(examples_embedded + 'sco_demo_util.h', src_folder)
 
         # update project files
-        for file in ['.project', '.cproject']:
+        for file in ['.project', '.cproject','btstack_example.jdebug']:
             with open(project_template + file, 'r') as fin:
                 template = fin.read()
+            file = file.replace('btstack_example',example)
             with open(project_folder + file, 'wt') as fout:
                 template = template.replace("btstack_example", example)
                 fout.write(template)
 
         # copy jlink and launch files
-        shutil.copy(project_template + 'btstack_port Debug.jlink',  project_folder + example + ' Debug.jlink' )
-        shutil.copy(project_template + 'btstack_port Debug.launch', project_folder + example + ' Debug.launch')
+        shutil.copy(project_template + 'btstack_example Debug.jlink',  project_folder + example + ' Debug.jlink' )
+        shutil.copy(project_template + 'btstack_example Debug.launch', project_folder + example + ' Debug.launch')
 
         # generate .h from .gatt
         gatt_path = examples_embedded + example + ".gatt"
@@ -127,7 +132,7 @@ def create_examples(port_folder, suffix):
             if os.name == "nt":
                 subprocess.run(["python.exe", port_folder + "/../../tool/compile_gatt.py", gatt_path, src_folder + example + ".h" ], shell=True, capture_output=True)
             else:
-	            subprocess.run(update_gatt_script.sh, shell=True, capture_output=True)
+	            subprocess.run(update_gatt_script_sh, shell=True, capture_output=True)
             print("- %s - converting GATT DB" % example)
         else:
             print("- %s" % example)

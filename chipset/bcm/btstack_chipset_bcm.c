@@ -147,15 +147,6 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         if (res == 0){
             log_info("chipset-bcm: end of file, size %u", init_script_offset);
             close(hcd_fd);
-
-            // TODO: should not be needed anymore - fixed for embedded below and tested on RedBear Duo
-
-            // wait for firmware patch to be applied - shorter delay possible
-#ifdef _WIN32
-            Sleep(1000);
-#else
-            sleep(1);
-#endif
             return BTSTACK_CHIPSET_DONE;
         }
         if (res < 0){
@@ -285,13 +276,6 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     }
 
     if (init_script_offset >= brcm_patch_ram_length) {
-        
-        // It takes up to 2 ms for the BCM to raise its RTS line
-        // If we send the next command right away, the raise of the RTS will fall happen during
-        // it and causing the next command to fail (at least on RedBear Duo with manual CTS/RTS)
-        //
-        // -> Work around implemented in hci.c
-
         return BTSTACK_CHIPSET_DONE;
     }
 

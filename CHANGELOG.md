@@ -9,19 +9,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
 
 ### Added
 
 ### Changed
+- L2CAP ERTM: send extended features request only once per HCI connection
+
 
 ## Changes April 2020
 
 ### Fixed
+- hog_mouse_demo/hog_keyboard_demo: handle set protocol mode = boot protocol mode
+- HCI: only update BD_ADDR placeholder in shortened and complete name in EIR data, limit device name to 240/248 bytes
 
 ### Added
 - GAP: gap_set_allow_role_switch allows to prevent role switch in outgoing classic ACL connections
+- example: hog_boot_host_demo implements an HID-over-GATT Boot Host that supports keyboard and mouse
+- HCI: add ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS that forces fragmentation of ACL-LE packets to fit into over-the-air packet
 
 ### Changed
+- Broadcom/Cypress: wait 300 ms after PatchRAM update in hci.c to assert Controller is ready
+- esp32: provide esp-idf/component/btstack/btstack_port_esp32.c and only minimal app_main in template/main/main.c
+- att_db: skip att_read_callback for ATT Read Blob Request if offset == value_len
+
 
 ## Changes March 2020
 
@@ -31,23 +42,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GATT Client: allow to register for any notification/indication and/or any connection
-hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity
+- HCI: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activity commands
 - chipset: assert hci packet buffers are suitable for firmware upload or patches (atwilc3000,bcm,cc256x,intel)
+- btstack_util: added btstack_replace_bd_addr_placeholder
 
 ### Changed
 - AVRCP Target: volume in avrcp_target_volume_changed is reported as current value in interim response to register for volume change notifications
 - SDP Client: query attributes 0x0000..0xffff instead of 0x0001..0xffff to match other stacks / improve compatibility with bad sdp server implementations
 
+
 ## Changes Februar 2020
 
 ### Fixed
 - AVRCP Target: fix reporting of PLAYBACK_STATUS_CHANGED
+- HCI: handle reconnect request for Classic and LE connections triggered by packet handler for Disconnection Complete Event
 
 ### Changed
 - hid_host_mode: allow sniff mode
 
 ### Added
-- port/qt-usb and port/qt-h4: integrate BTstack Qt run loop for Unix- or Win32-based Qt application connected to Bluetooth module via H4 over serial port or USB.
+- port/qt-usb and port/qt-h4: integrate BTstack Qt run loop for Unix- and Win32-based Qt application connected to Bluetooth module via H4 over serial port or USB.
 
 
 ## Changes January 2020
@@ -67,6 +81,7 @@ hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activit
 ### Changed
 - btstack_crypto: update AES-CMAC implementation to access all message bytes sequentially
 
+
 ## Changes December 2019
 
 ### Fixed
@@ -78,6 +93,7 @@ hci_cmd: added hci_read_inquiry_scan_activity and hci_write_inquiry_scan_activit
 ### Changed
 - Updated CC256x initscript: CC256xC v1.3
 - ESP32: add CMake project files
+
 
 ## Changes November 2019
 

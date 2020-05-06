@@ -373,7 +373,7 @@ void cycling_speed_and_cadence_service_server_update_values(int32_t wheel_revolu
 	instance->last_wheel_event_time = last_wheel_event_time;
 
 	cycling_speed_and_cadence_service_calculate_cumulative_crank_revolutions(crank_revolutions);
-	instance->last_wheel_event_time = last_crank_event_time;
+	instance->last_crank_event_time = last_crank_event_time;
 
 	if (instance->measurement_client_configuration_descriptor_notify){
 		instance->measurement_callback.callback = &cycling_speed_and_cadence_service_csc_measurement_can_send_now;

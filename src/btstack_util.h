@@ -230,6 +230,14 @@ char * uuid128_to_str(const uint8_t * uuid);
  */
 char * bd_addr_to_str(const bd_addr_t addr);
 
+/**
+ * @brief Replace address placeholder '00:00:00:00:00:00' with Bluetooth address
+ * @param buffer
+ * @param size
+ * @param address
+ */
+void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const bd_addr_t address);
+
 /** 
  * @brief Parse Bluetooth address
  * @param address_string

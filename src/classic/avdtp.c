@@ -54,7 +54,7 @@
 #include "classic/sdp_util.h"
 
 static int record_id = -1;
-static uint8_t   attribute_value[1000];
+static uint8_t   attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 // typedef struct {
@@ -259,12 +259,15 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
 /* START: tracking can send now requests pro l2cap cid */
 void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context){
     if (connection->wait_to_send_acceptor){
+        log_debug("call avdtp_acceptor_stream_config_subsm_run");
         connection->wait_to_send_acceptor = 0;
         avdtp_acceptor_stream_config_subsm_run(connection, context);
     } else if (connection->wait_to_send_initiator){
+        log_debug("call avdtp_initiator_stream_config_subsm_run");
         connection->wait_to_send_initiator = 0;
         avdtp_initiator_stream_config_subsm_run(connection, context);
     } else if (connection->wait_to_send_self){
+        log_debug("check for disconnect");
         connection->wait_to_send_self = 0;
         if (connection->disconnect){
             btstack_linked_list_iterator_t it;    
@@ -288,6 +291,8 @@ void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_c
 
     // re-register
     int more_to_send = connection->wait_to_send_acceptor || connection->wait_to_send_initiator || connection->wait_to_send_self;
+    log_debug("ask for more to send %d: acc-%d, ini-%d, self-%d",  more_to_send, connection->wait_to_send_acceptor, connection->wait_to_send_initiator, connection->wait_to_send_self);
+
     if (more_to_send){
         l2cap_request_can_send_now_event(l2cap_cid);
     }
@@ -726,6 +731,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     break;
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
+                    log_debug("avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x%02x", channel);
                     connection = avdtp_connection_for_l2cap_signaling_cid(channel, context);
                     if (!connection) {
                         stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(channel, context);

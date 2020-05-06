@@ -101,6 +101,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static uint8_t battery = 100;
 static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
+static uint8_t protocol_mode = 1;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -166,9 +167,16 @@ static void hog_mouse_setup(void){
 
 // HID Report sending
 static void send_report(uint8_t buttons, int8_t dx, int8_t dy){
-    // uint8_t report[] = { (uint8_t) dx, (uint8_t) dy, buttons};
-    uint8_t report[] = { buttons, (uint8_t) dx, (uint8_t) dy};
-    hids_device_send_input_report(con_handle, report, sizeof(report));
+    uint8_t report[] = { buttons, (uint8_t) dx, (uint8_t) dy, 0};
+    switch (protocol_mode){
+        case 0:
+            hids_device_send_boot_mouse_input_report(con_handle, report, sizeof(report));
+        case 1:
+            hids_device_send_input_report(con_handle, report, sizeof(report));
+            break;
+        default:
+            break;
+    }
     printf("Mouse: %d/%d - buttons: %02x\n", dx, dy, buttons);
 }
 
@@ -366,6 +374,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("Boot Mouse Characteristic Subscribed %u\n", hids_subevent_boot_mouse_input_report_enable_get_enable(packet));
                             break;
                         case HIDS_SUBEVENT_PROTOCOL_MODE:
+                            protocol_mode = hids_subevent_protocol_mode_get_protocol_mode(packet);
                             printf("Protocol Mode: %s mode\n", hids_subevent_protocol_mode_get_protocol_mode(packet) ? "Report" : "Boot");
                             break;
                         case HIDS_SUBEVENT_CAN_SEND_NOW:

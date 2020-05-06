@@ -79,11 +79,6 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 #endif
 
-// Avoid complaints of unused arguments when log levels are disabled.
-static inline void __log_unused(const char *format, ...) {
-	UNUSED(format);
-}
-
 // allow to provide port specific printf
 #ifndef BTSTACK_PRINTF
 #ifdef __AVR__
@@ -102,19 +97,19 @@ static inline void __log_unused(const char *format, ...) {
 #ifdef ENABLE_LOG_DEBUG
 #define log_debug(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
 #else
-#define log_debug(...) __log_unused(__VA_ARGS__)
+#define log_debug(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_INFO
 #define log_info(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
 #else
-#define log_info(...) __log_unused(__VA_ARGS__)
+#define log_info(...) (void)(0)
 #endif
 
 #ifdef ENABLE_LOG_ERROR
 #define log_error(format, ...)  HCI_DUMP_LOG(HCI_DUMP_LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
 #else
-#define log_error(...) __log_unused(__VA_ARGS__)
+#define log_error(...) (void)(0)
 #endif
 
 /** 

@@ -369,6 +369,8 @@ static void hsp_run(void){
     if (wait_ok) return;
 
     if (hs_accept_sco_connection && hci_can_send_command_packet_now()){
+
+        bool eSCO = hs_accept_sco_connection == 2;
         hs_accept_sco_connection = 0;
         
         log_info("HSP: sending hci_accept_connection_request.");
@@ -377,8 +379,8 @@ static void hsp_run(void){
         uint16_t max_latency;
         uint8_t  retransmission_effort;
         uint16_t packet_types;
-        
-        if (hci_remote_esco_supported(rfcomm_handle)){
+
+        if (eSCO && hci_extended_sco_link_supported() && hci_remote_esco_supported(rfcomm_handle)){
             max_latency = 0x000c;
             retransmission_effort = 0x02;
             packet_types = 0x388;
@@ -529,12 +531,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case 0: //  SCO
                 case 2: // eSCO
                     hci_event_connection_request_get_bd_addr(packet, event_addr);
-                    printf("remote device %s\n", bd_addr_to_str(remote));
-                    printf("accept sco for device %s\n", bd_addr_to_str(event_addr));
-
                     if (bd_addr_cmp(event_addr, remote) == 0){
-                        printf("hs_accept_sco_connection \n");
-                        hs_accept_sco_connection = 1;
+                        if (hci_event_connection_request_get_link_type(packet) == 2){
+                            hs_accept_sco_connection = 2;
+                        } else {
+                            hs_accept_sco_connection = 1;
+                        }
+                        log_info("hs_accept_sco_connection %u", hs_accept_sco_connection);
                     }
                     break;
                 default:

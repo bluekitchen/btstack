@@ -117,6 +117,9 @@ def create_examples(script_path, suffix):
         if not os.path.exists(main_folder):
             os.makedirs(main_folder)
 
+        # copy main file
+        shutil.copyfile(script_path + '/template/main/main.c', apps_folder + "/main/main.c")
+
         # copy example file
         shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 

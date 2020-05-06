@@ -405,7 +405,7 @@ static void vli_square(uECC_word_t *result, const uECC_word_t *left);
 static void vli_modSquare_fast(uECC_word_t *result, const uECC_word_t *left);
 #endif
 
-#if (defined(_WIN32) || defined(_WIN64))
+#if ((defined(_WIN32) || defined(_WIN64)) && !defined(uECC_NO_DEFAULT_RNG))
 /* Windows */
 
 #define WIN32_LEAN_AND_MEAN
@@ -423,8 +423,8 @@ static int default_RNG(uint8_t *dest, unsigned size) {
     return 1;
 }
 
-#elif defined(unix) || defined(__linux__) || defined(__unix__) || defined(__unix) || \
-    (defined(__APPLE__) && defined(__MACH__)) || defined(uECC_POSIX)
+#elif (defined(unix) || defined(__linux__) || defined(__unix__) || defined(__unix) || \
+    (defined(__APPLE__) && defined(__MACH__)) || defined(uECC_POSIX)) && !defined(uECC_NO_DEFAULT_RNG)
 
 /* Some POSIX-like system with /dev/urandom or /dev/random. */
 #include <sys/types.h>

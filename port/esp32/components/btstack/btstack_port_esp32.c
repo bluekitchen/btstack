@@ -58,6 +58,7 @@
 #include "esp_bt.h"
 #include "btstack_debug.h"
 #include "btstack_audio.h"
+#include "btstack_port_esp32.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -359,17 +360,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-extern int btstack_main(int argc, const char * argv[]);
-
-// main
-int app_main(void){
-
-    printf("BTstack: setup\n");
-
-    // enable packet logger
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
-
-    /// GET STARTED with BTstack ///
+uint8_t btstack_init(void){
+    // Setup memory pools and run loop
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_freertos_get_instance());
 
@@ -394,10 +386,6 @@ int app_main(void){
     // setup i2s audio sink
     btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
 
-    btstack_main(0, NULL);
-
-    printf("BTstack: execute run loop\n");
-    btstack_run_loop_execute();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
