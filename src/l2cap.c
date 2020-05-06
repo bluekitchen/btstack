@@ -618,7 +618,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
 
     // add to connections list
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // store local_cid
     if (out_local_cid){
@@ -2008,7 +2008,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 #endif    
 
     // add to connections list
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // store local_cid
     if (out_local_cid){
@@ -2501,7 +2501,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING);
     
     // add to connections list
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // assert security requirements
     gap_request_security_level(handle, channel->required_security_level);
@@ -3208,7 +3208,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel->state_var |= L2CAP_CHANNEL_STATE_VAR_INCOMING;
 
                 // add to connections list
-                btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
+                btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
                 // post connection request event
                 l2cap_emit_le_incoming_connection(channel);
@@ -3985,7 +3985,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
     channel->automatic_credits    = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
 
     // add to connections list
-    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
+    btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // go
     l2cap_run();
