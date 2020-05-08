@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
+- pbap_client: fix PBAP UUID len on connect message
 
 ### Added
 - example/le_mitm: MITM implementation that forwards ATT PDUs and allows for pairing

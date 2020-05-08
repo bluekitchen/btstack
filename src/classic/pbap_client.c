@@ -281,7 +281,7 @@ static void pbap_handle_can_send_now(void){
     switch (pbap_client->state){
         case PBAP_W2_SEND_CONNECT_REQUEST:
             goep_client_request_create_connect(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_client_header_add_target(pbap_client->goep_cid, pbap_uuid, 18);
+            goep_client_header_add_target(pbap_client->goep_cid, pbap_uuid, 16);
             // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
             if (goep_client_get_pbap_supported_features(pbap_client->goep_cid) != PBAP_FEATURES_NOT_PRESENT){
                 application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
