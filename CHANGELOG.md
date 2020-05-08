@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - example/le_mitm: MITM implementation that forwards ATT PDUs and allows for pairing
+- GAP: gap_set_security_level sets required security level for incoming and outgoing connections
 
 ### Changed
 - L2CAP ERTM: send extended features request only once per HCI connection

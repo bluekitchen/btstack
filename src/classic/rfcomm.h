@@ -274,6 +274,7 @@ void rfcomm_init(void);
 
 /** 
  * @brief Set security level required for incoming connections, need to be called before registering services.
+ * @deprecated use gap_set_security_level instead
  */
 void rfcomm_set_required_security_level(gap_security_level_t security_level);
 

@@ -771,6 +771,7 @@ typedef struct {
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
     uint16_t           link_supervision_timeout;
+    gap_security_level_t gap_security_level;
 #endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers

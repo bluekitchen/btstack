@@ -851,8 +851,8 @@ void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t descriptor_l
     hci_device_set_report = dummy_set_report;
     hci_device_report_data = dummy_report_data;
 
-    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 100, LEVEL_2);
-    l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, LEVEL_2);                                      
+    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 100, gap_get_security_level());
+    l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, gap_get_security_level());
 }
 
 /**

@@ -194,6 +194,7 @@ int bnep_set_multicast_filter(uint16_t bnep_cid, bnep_multi_filter_t *filter, ui
 
 /**
  * @brief Set security level required for incoming connections, need to be called before registering services.
+ * @deprecated use gap_set_security_level instead
  */
 void bnep_set_required_security_level(gap_security_level_t security_level);
 

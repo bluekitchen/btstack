@@ -2886,6 +2886,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Allow Role Switch
     hci_stack->allow_role_switch = 1;
 
+    // Default / minimum security level = 2
+    hci_stack->gap_security_level = LEVEL_2;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     hci_stack->gap_required_encyrption_key_size = 16;
 #endif
@@ -2981,6 +2984,14 @@ void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
     if (encryption_key_size < 7)  return;
     if (encryption_key_size > 16) return;
     hci_stack->gap_required_encyrption_key_size = encryption_key_size;
+}
+
+void gap_set_security_level(gap_security_level_t security_level){
+    hci_stack->gap_security_level = security_level;
+}
+
+gap_security_level_t gap_get_security_level(void){
+    return hci_stack->gap_security_level;
 }
 #endif
 

@@ -120,7 +120,7 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context->stream_endpoints_id_counter = 0;
     avdtp_sink_context->packet_handler = packet_handler;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, LEVEL_2);
+    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
