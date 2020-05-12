@@ -326,7 +326,7 @@ typedef struct sm_setup_context {
     uint8_t   sm_peer_q[64];    // also stores random for EC key generation during init
     sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
     sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
-    sm_key_t  sm_dhkey;
+    uint8_t   sm_dhkey[32];
     sm_key_t  sm_peer_dhkey_check;
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
@@ -3844,6 +3844,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
         case SM_SC_W4_DHKEY_CHECK_COMMAND:
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
+        case SM_SC_W4_USER_RESPONSE:
             if (sm_pdu_code != SM_CODE_PAIRING_DHKEY_CHECK){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
