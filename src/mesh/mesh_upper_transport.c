@@ -1349,13 +1349,13 @@ void mesh_upper_transport_message_add_uint16(mesh_upper_transport_builder_t * bu
     mesh_upper_transport_message_add_data(builder, buffer, sizeof(buffer));
 }
 
-void mesh_upper_transport_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value){
+void mesh_upper_transport_message_add_uint24(mesh_upper_transport_builder_t * builder, uint32_t value){
     uint8_t buffer[3];
     little_endian_store_24(buffer, 0, value);
     mesh_upper_transport_message_add_data(builder, buffer, sizeof(buffer));
 }
 
-void mesh_upper_transport_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value){
+void mesh_upper_transport_message_add_uint32(mesh_upper_transport_builder_t * builder, uint32_t value){
     uint8_t buffer[4];
     little_endian_store_32(buffer, 0, value);
     mesh_upper_transport_message_add_data(builder, buffer, sizeof(buffer));

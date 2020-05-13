@@ -91,13 +91,13 @@ void mesh_upper_transport_message_add_uint16(mesh_upper_transport_builder_t * bu
  * @param builder
  * @param value
  */
-void mesh_upper_transport_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_upper_transport_message_add_uint24(mesh_upper_transport_builder_t * builder, uint32_t value);
 /**
  * @brief append uint32
  * @param builder
  * @param value
  */
-void mesh_upper_transport_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_upper_transport_message_add_uint32(mesh_upper_transport_builder_t * builder, uint32_t value);
 /**
  * @brief finalize message
  * @param builder
