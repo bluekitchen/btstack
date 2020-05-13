@@ -1010,18 +1010,6 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
 
 static const uint32_t mesh_tag_for_prov_data = ((uint32_t) 'P' << 24) | ((uint32_t) 'R' << 16) | ((uint32_t) 'O' <<  8) | (uint32_t)'V';
 
-void mesh_node_reset(void){
-    // PROV
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data);
-    // everything else
-    mesh_delete_network_keys();
-    mesh_delete_app_keys();
-    mesh_delete_appkey_lists();
-    mesh_delete_virtual_addresses();
-    mesh_delete_subscriptions();
-    mesh_delete_publications();
-}
-
 typedef struct {
     uint16_t unicast_address;
     uint8_t  flags;
@@ -1068,6 +1056,20 @@ static void mesh_access_setup_without_provisiong_data_random(void * arg){
     // set random value
     mesh_node_set_device_uuid(random_device_uuid);
     mesh_access_setup_unprovisioned_device(random_device_uuid);
+}
+
+void mesh_node_reset(void){
+    // PROV
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data);
+    // everything else
+    mesh_delete_network_keys();
+    mesh_delete_app_keys();
+    mesh_delete_appkey_lists();
+    mesh_delete_virtual_addresses();
+    mesh_delete_subscriptions();
+    mesh_delete_publications();
+    // start advertising as unprovisioned device
+    mesh_access_setup_unprovisioned_device(mesh_node_get_device_uuid());
 }
 
 static void mesh_access_setup_with_provisiong_data_random(void * arg){

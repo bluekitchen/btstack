@@ -768,6 +768,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
                     if (device_state == DEVICE_W4_DONE){
+                        pb_close_link(1, 0);
                         provisioning_done();
                     }
                     break;                    
