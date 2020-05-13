@@ -95,7 +95,6 @@ static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 static uint8_t ag_num_button_press_received = 0;
 static uint8_t ag_support_custom_commands = 0;
-static uint8_t ag_establish_sco = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
 static uint8_t hsp_establish_audio_connection = 0;
 static uint8_t hsp_release_audio_connection = 0;
@@ -386,33 +385,6 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
-    if (ag_establish_sco && hci_can_send_command_packet_now()){
-        ag_establish_sco = 0;
-        
-        log_info("HSP: sending hci_accept_connection_request.");
-        // remote supported feature eSCO is set if link type is eSCO
-        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
-        uint16_t max_latency;
-        uint8_t  retransmission_effort;
-        uint16_t packet_types;
-        
-        if (hci_remote_esco_supported(rfcomm_handle)){
-            max_latency = 0x000c;
-            retransmission_effort = 0x02;
-            packet_types = 0x388;
-        } else {
-            max_latency = 0xffff;
-            retransmission_effort = 0xff;
-            packet_types = 0x003f;
-        }
-        
-        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
-        
-        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
-        hci_send_cmd(&hci_accept_synchronous_connection, remote, 8000, 8000, max_latency, 
-                        sco_voice_setting, retransmission_effort, packet_types);
-        return;
-    }
 
     if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
@@ -592,10 +564,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint16_t handle;
 
     switch (event) {
-        case HCI_EVENT_CONNECTION_REQUEST:
-            hci_event_connection_request_get_bd_addr(packet, sco_event_addr);
-            ag_establish_sco = 1;
-            break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             uint8_t status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
