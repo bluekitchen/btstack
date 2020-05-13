@@ -829,7 +829,7 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
     // send as segmented access pdu
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) &builder);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_appkey_add_or_update_aid(void *arg){
@@ -844,7 +844,7 @@ static void config_appkey_add_or_update_aid(void *arg){
     // add app key
     mesh_transport_key_add(transport_key);
 
-    uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
+    uint32_t netkey_and_appkey_index = (((uint32_t)transport_key->appkey_index) << 12) | transport_key->netkey_index;
     config_appkey_status(mesh_node_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
 
     mesh_access_message_processed(access_pdu_in_process);
@@ -1064,7 +1064,7 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
 
     mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
 
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) &builder);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
