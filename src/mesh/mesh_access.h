@@ -252,8 +252,8 @@ void mesh_access_message_init(mesh_upper_transport_builder_t * builder, uint32_t
 void mesh_access_message_add_data(mesh_upper_transport_builder_t * builder, const uint8_t * data, uint16_t data_len);
 void mesh_access_message_add_uint8(mesh_upper_transport_builder_t * builder, uint8_t value);
 void mesh_access_message_add_uint16(mesh_upper_transport_builder_t * builder, uint16_t value);
-void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value);
-void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint32_t value);
+void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint32_t value);
 void mesh_access_message_add_model_identifier(mesh_upper_transport_builder_t * builder, uint32_t model_identifier);
 mesh_upper_transport_pdu_t * mesh_access_message_finalize(mesh_upper_transport_builder_t * builder);
 

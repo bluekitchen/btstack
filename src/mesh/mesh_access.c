@@ -642,11 +642,11 @@ void mesh_access_message_add_uint16(mesh_upper_transport_builder_t * builder, ui
     mesh_upper_transport_message_add_uint16(builder, value);
 }
 
-void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint16_t value){
+void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint32_t value){
     mesh_upper_transport_message_add_uint24(builder, value);
 }
 
-void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint16_t value){
+void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint32_t value){
     mesh_upper_transport_message_add_uint32(builder, value);
 }
 
