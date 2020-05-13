@@ -418,15 +418,18 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
     uint8_t ctl_in_bit_7 = ctl_ttl & 0x80;
     uint8_t ttl          = ctl_ttl & 0x7f;
 
+    // prepare pdu for resending
+    network_pdu->data[1] = ctl_in_bit_7 | (ttl - 1);
+    network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
+
 #ifdef LOG_NETWORK
     printf("TX-Relay-NetworkPDU (%p): ", network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
     printf("^^ into network_pdus_queued\n");
 #endif
 
-    // prepare pdu for resending
-    network_pdu->data[1] = ctl_in_bit_7 | (ttl - 1);
-    network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
+    uint8_t net_mic_len = ctl_in_bit_7 ? 8 : 4;
+    btstack_assert((network_pdu->len + net_mic_len) <= 29);
 
     // queue up
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
