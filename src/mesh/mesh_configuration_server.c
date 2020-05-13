@@ -823,6 +823,7 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     mesh_transport_key_iterator_init(&it, netkey_index_of_list);
     while (mesh_transport_key_iterator_has_more(&it)){
         mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+        if (transport_key->old_key == 1) continue;
         mesh_access_message_add_uint16(&builder, transport_key->appkey_index);
     }
 
