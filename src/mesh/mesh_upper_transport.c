@@ -1012,7 +1012,7 @@ static void mesh_upper_transport_run(void){
     }
 }
 
-static mesh_upper_transport_pdu_t * mesh_upper_transport_find_pdu_for_lower(mesh_pdu_t * pdu_to_find){
+static mesh_upper_transport_pdu_t * mesh_upper_transport_find_and_remove_pdu_for_lower(mesh_pdu_t * pdu_to_find){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &upper_transport_outgoing_active);
     mesh_upper_transport_pdu_t * upper_pdu;
@@ -1047,7 +1047,7 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
             switch (pdu->pdu_type){
                 case MESH_PDU_TYPE_SEGMENTED:
                     // try to find in outgoing active
-                    upper_pdu = mesh_upper_transport_find_pdu_for_lower(pdu);
+                    upper_pdu = mesh_upper_transport_find_and_remove_pdu_for_lower(pdu);
                     btstack_assert(upper_pdu != NULL);
                     segmented_pdu = (mesh_segmented_pdu_t *) pdu;
                     // free chunks
@@ -1057,7 +1057,6 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                     }
                     // free segmented pdu
                     btstack_memory_mesh_segmented_pdu_free(segmented_pdu);
-                    // TODO: free segmented_pdu
                     upper_pdu->lower_pdu = NULL;
                     switch (upper_pdu->pdu_header.pdu_type){
                         case MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL:
@@ -1073,7 +1072,7 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                     break;
                 case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
                     // find corresponding upper transport pdu and free single segment
-                    upper_pdu = mesh_upper_transport_find_pdu_for_lower(pdu);
+                    upper_pdu = mesh_upper_transport_find_and_remove_pdu_for_lower(pdu);
                     btstack_assert(upper_pdu != NULL);
                     btstack_assert(upper_pdu->lower_pdu == (mesh_pdu_t *) pdu);
                     mesh_network_pdu_free((mesh_network_pdu_t *) pdu);
