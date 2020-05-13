@@ -78,6 +78,8 @@ static int      pts_type;
 
 static mesh_virtual_address_t * pts_virtual_addresss;
 
+static uint16_t test_destination = 0x0001;
+
 const char * pts_device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
 
 static uint8_t      prov_static_oob_data[16];
@@ -377,22 +379,10 @@ static void load_pts_app_key(void){
     printf_hexdump(pts_application_key.key, 16);
 }
 
-static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, int ttl_type){
+static void send_pts_network_messsage(uint16_t dst_addr, uint8_t ttl){
     uint8_t access_pdu_data[16];
 
-    uint8_t ttl;
-    switch (ttl_type){
-        case 0:
-            ttl = 0;
-            break;
-        case 1:
-            ttl = PTS_DEFAULT_TTL;
-            break;
-        default:
-            ttl = 0x7f;
-            break;
-    }
-    printf("%s dst %04x, ttl %u\n", dst_type, dst_addr, ttl);
+    printf("Send Network message dst %04x, ttl %u\n", dst_addr, ttl);
 
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -410,14 +400,14 @@ static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, 
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
-static void send_pts_unsegmented_access_messsage(void){
-    uint8_t access_pdu_data[16];
+static void send_pts_unsegmented_access_messsage(uint16_t dst_addr, uint8_t ttl){
+
+    printf("Send Unsegmented Access message dst %04x, ttl %u\n", dst_addr, ttl);
 
     load_pts_app_key();
 
+    uint8_t access_pdu_data[16];
     uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = 0x0001;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -429,19 +419,20 @@ static void send_pts_unsegmented_access_messsage(void){
     mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
     mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
     mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
-    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
     if (status) return;
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
-static void send_pts_segmented_access_messsage_unicast(void){
-    uint8_t access_pdu_data[20];
+static void send_pts_segmented_access_messsage_unicast(uint16_t dst_addr, uint8_t ttl){
+
+    printf("Send Segmented Access message dst %04x, ttl %u\n", dst_addr, ttl);
 
     load_pts_app_key();
 
+    uint8_t access_pdu_data[20];
+
     uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = 0x0001;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -453,54 +444,8 @@ static void send_pts_segmented_access_messsage_unicast(void){
     mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
     mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
     mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
-    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
     if (status) return;
-    mesh_access_send_unacknowledged_pdu(pdu);
-}
-
-static void send_pts_segmented_access_messsage_group(void){
-    uint8_t access_pdu_data[20];
-
-    load_pts_app_key();
-
-    uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = 0xd000;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
-
-    int access_pdu_len = 20;
-    memset(access_pdu_data, 0x55, access_pdu_len);
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-
-    // send as segmented access pdu
-    mesh_upper_transport_builder_t builder;
-    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS);
-    mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
-    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
-    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
-    mesh_access_send_unacknowledged_pdu(pdu);
-}
-
-static void send_pts_segmented_access_messsage_virtual(void){
-    uint8_t access_pdu_data[20];
-
-    load_pts_app_key();
-
-    uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = pts_virtual_addresss->pseudo_dst;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
-
-    int access_pdu_len = 20;
-    memset(access_pdu_data, 0x55, access_pdu_len);
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-
-    // send as segmented access pdu
-    mesh_upper_transport_builder_t builder;
-    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS);
-    mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
-    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
-    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
@@ -508,21 +453,27 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
-    printf("0      - Send Network Message Unicast\n");
-    printf("1      - Send Network Message Virtual 9779\n");
-    printf("2      - Send Network Message Group   D000\n");
-    printf("3      - Send Network Message All Proxies\n");
-    printf("4      - Send Network Message All Friends\n");
-    printf("5      - Send Network Message All Relays\n");
-    printf("6      - Send Network Message Nodes\n");
-    printf("7      - Dump Network Messages\n");
+    printf("Destination: %04x\n", test_destination);
+    printf("\n");
+    printf("0      - Destination:  Unicast\n");
+    printf("1      - Destination:  Virtual     9779\n");
+    printf("2      - Destination:  Group       D000\n");
+    printf("3      - Destination:  All Proxies FFFC\n");
+    printf("4      - Destination:  All Friends FFFD\n");
+    printf("5      - Destination:  All Relays  FFFE\n");
+    printf("6      - Destination:  Nodes       FFFF\n");
+
+    printf("7      - Send Network Message\n");
+    printf("8      - Send Unsegmented Access Message\n");
+    printf("9      - Send Segmented Access Message\n");
+
     printf("?      - Send Unsegmented Access Message\n");
     printf("?      - Send Segmented Access Message - Unicast\n");
     printf("?      - Send Segmented Access Message - Group   D000\n");
     printf("?      - Send Segmented Access Message - Virtual 9779\n");
     printf("?      - Clear Replay Protection List\n");
     printf("?      - Load PTS App key\n");
-    printf("8      - Delete provisioning data\n");
+    printf("R      - Delete provisioning data\n");
     printf("p      - Enable Public Key OOB \n");
     printf("o      - Enable Output OOB \n");
     printf("i      - Input  Output OOB \n");
@@ -550,33 +501,56 @@ static void stdin_process(char cmd){
         }
         return;
     }
+
+    uint8_t ttl;
+    switch (pts_type){
+        case 0:
+            ttl = 0;
+            break;
+        case 1:
+            ttl = PTS_DEFAULT_TTL;
+            break;
+        default:
+            ttl = 0x7f;
+            break;
+    }
+
     switch (cmd){
         case '0':
-            send_pts_network_messsage("Unicast", 0x0001, pts_type++);
+            test_destination = 0x0001;
             break;
         case '1':
-            send_pts_network_messsage("Virtual", pts_virtual_addresss->pseudo_dst, pts_type++);
+            test_destination = pts_virtual_addresss->pseudo_dst;
             break;
         case '2':
-            send_pts_network_messsage("Group", 0xd000, pts_type++);
+            test_destination =  0xd000;
             break;
         case '3':
-            send_pts_network_messsage("All Proxies", MESH_ADDRESS_ALL_PROXIES, pts_type++);
+            test_destination =  MESH_ADDRESS_ALL_PROXIES;
             break;
         case '4':
-            send_pts_network_messsage("All Friends", MESH_ADDRESS_ALL_FRIENDS, pts_type++);
+            test_destination = MESH_ADDRESS_ALL_FRIENDS;
             break;
         case '5':
-            send_pts_network_messsage("All Relays", MESH_ADDRESS_ALL_RELAYS, pts_type++);
+            test_destination = MESH_ADDRESS_ALL_RELAYS;
             break;
         case '6':
-            send_pts_network_messsage("All Nodes", MESH_ADDRESS_ALL_NODES, pts_type++);
+            test_destination = MESH_ADDRESS_ALL_NODES;
             break;
         case '7':
-            printf("Dump Network packets\n");
-            mesh_network_set_higher_layer_handler(&mesh_pts_received_network_message);
+            send_pts_network_messsage(test_destination, ttl);
+            pts_type++;
             break;
         case '8':
+            send_pts_unsegmented_access_messsage(test_destination, ttl);
+            pts_type++;
+            break;
+        case '9':
+            send_pts_segmented_access_messsage_unicast(test_destination, ttl);
+            pts_type++;
+            break;
+
+        case 'R':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
 #ifdef ENABLE_MESH_PROXY_SERVER
