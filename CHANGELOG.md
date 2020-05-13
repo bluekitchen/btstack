@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
 - pbap_client: fix PBAP UUID len on connect message
 - sm: fix secure connection pairing as peripheral when local user confirmation happens after remote one
+- A2DP Source: only connect to remote sink stream endpoints
 
 ### Added
 - example/le_mitm: MITM implementation that forwards ATT PDUs and allows for pairing
