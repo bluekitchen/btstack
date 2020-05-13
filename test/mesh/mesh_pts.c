@@ -369,7 +369,7 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     printf("\n");
 }
 
-static void load_pts_app_key(void){
+static void load_pts_tspx_application_key(void){
     // PTS app key
     btstack_parse_hex("3216D1509884B533248541792B877F98", 16, pts_application_key.key);
     pts_application_key.aid = 0x38;
@@ -404,7 +404,7 @@ static void send_pts_unsegmented_access_messsage(uint16_t dst_addr, uint8_t ttl)
 
     printf("Send Unsegmented Access message dst %04x, ttl %u\n", dst_addr, ttl);
 
-    load_pts_app_key();
+    // load_pts_app_key();
 
     uint8_t access_pdu_data[16];
     uint16_t src = mesh_node_get_primary_element_address();
@@ -412,7 +412,7 @@ static void send_pts_unsegmented_access_messsage(uint16_t dst_addr, uint8_t ttl)
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as unsegmented access pdu
     mesh_upper_transport_builder_t builder;
@@ -428,7 +428,7 @@ static void send_pts_segmented_access_messsage_unicast(uint16_t dst_addr, uint8_
 
     printf("Send Segmented Access message dst %04x, ttl %u\n", dst_addr, ttl);
 
-    load_pts_app_key();
+    // load_pts_app_key();
 
     uint8_t access_pdu_data[20];
 
