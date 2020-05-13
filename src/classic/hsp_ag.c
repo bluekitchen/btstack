@@ -79,7 +79,6 @@
 static const char default_hsp_ag_service_name[] = "Audio Gateway";
 
 static bd_addr_t remote;
-static bd_addr_t sco_event_addr;
 static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
