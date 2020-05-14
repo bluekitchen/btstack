@@ -977,3 +977,15 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, b
                     &connection->ertm_config, connection->ertm_buffer, connection->ertm_buffer_size, NULL);
 
 }
+
+uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrcp_role){
+    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(avrcp_role, avrcp_browsing_cid);
+    if (!avrcp_connection){
+        log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    l2cap_disconnect(avrcp_connection->browsing_connection->l2cap_browsing_cid, 0);
+    return ERROR_CODE_SUCCESS;
+}

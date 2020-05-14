@@ -645,15 +645,7 @@ uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buff
 }
 
 uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
-    if (!avrcp_connection){
-        log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    
-    l2cap_disconnect(avrcp_connection->browsing_connection->l2cap_browsing_cid, 0);
-    return ERROR_CODE_SUCCESS;
+    return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_CONTROLLER);
 }
 
 uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config){

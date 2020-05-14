@@ -611,6 +611,14 @@ uint8_t avrcp_disconnect(uint16_t avrcp_cid);
  */
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, btstack_packet_handler_t avrcp_browsing_packet_handler, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
 
+/**
+ * @brief   Disconnect from AVRCP Browsing service
+ * @param   avrcp_browsing_cid
+ * @param   avrcp_role
+ * @returns status
+ */
+uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrcp_role);
+
 /* API_END */
 
 avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection);

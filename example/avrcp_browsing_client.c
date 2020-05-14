@@ -87,13 +87,13 @@ static bd_addr_t device_addr;
 #endif
 
 static uint16_t avrcp_cid = 0;
-static uint8_t  avrcp_connected = 0;
+static bool     avrcp_connected = false;
 
 static uint16_t browsing_cid = 0;
 static uint8_t  avrcp_browsing_connected = 0;
 static uint8_t  sdp_avrcp_browsing_controller_service_buffer[200];
 
-static uint8_t browsing_query_active = 0;
+static bool     browsing_query_active = false;
 static avrcp_media_item_context_t media_item_context;
 
 typedef struct {
@@ -252,7 +252,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             }
             
             avrcp_cid = local_cid;
-            avrcp_connected = 1;
+            avrcp_connected = true;
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
             printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
             return;
@@ -261,7 +261,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
-            avrcp_connected = 0;
+            avrcp_connected = false;
             return;
         default:
             break;
@@ -274,7 +274,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
     switch(packet_type){
         case AVRCP_BROWSING_DATA_PACKET:
             pos = 0;
-            browsing_query_active = 1;
+            browsing_query_active = true;
             avrcp_browsing_item_type_t data_type = (avrcp_browsing_item_type_t)packet[pos++];
             pos += 2; // length
 
@@ -419,7 +419,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     return;
                 
                 case AVRCP_SUBEVENT_BROWSING_DONE:
-                    browsing_query_active = 0;
+                    browsing_query_active = false;
                     browsing_uid_counter = 0;
                     if (avrcp_subevent_browsing_done_get_browsing_status(packet) != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
                         printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
