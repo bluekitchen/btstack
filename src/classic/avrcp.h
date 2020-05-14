@@ -625,6 +625,7 @@ avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_
 void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status);
 void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr);
 void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callback, uint16_t browsing_cid);
+void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 
 #if defined __cplusplus
 }
