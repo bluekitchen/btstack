@@ -942,6 +942,50 @@ avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_
     return connection;
 }
 
+void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
+    btstack_assert(callback != NULL);
+    
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED;
+    event[pos++] = status;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr){
+    btstack_assert(callback != NULL);
+    
+    uint8_t event[11];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callback, uint16_t browsing_cid){
+    btstack_assert(callback != NULL);
+    
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, btstack_packet_handler_t avrcp_browsing_packet_handler, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_bd_addr_for_role(avrcp_role, remote_addr);
     

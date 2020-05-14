@@ -125,50 +125,6 @@ static void avrcp_browsing_target_emit_get_total_num_items(btstack_packet_handle
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
-    btstack_assert(callback != NULL);
-
-    uint8_t event[12];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVRCP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED;
-    event[pos++] = status;
-    reverse_bd_addr(addr,&event[pos]);
-    pos += 6;
-    little_endian_store_16(event, pos, browsing_cid);
-    pos += 2;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr){
-    btstack_assert(callback != NULL);
-
-    uint8_t event[11];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVRCP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION;
-    reverse_bd_addr(addr,&event[pos]);
-    pos += 6;
-    little_endian_store_16(event, pos, browsing_cid);
-    pos += 2;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callback, uint16_t browsing_cid){
-    btstack_assert(callback != NULL);
-
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVRCP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED;
-    little_endian_store_16(event, pos, browsing_cid);
-    pos += 2;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context){
     UNUSED(channel);
     UNUSED(size);
