@@ -439,9 +439,9 @@ static void send_pts_segmented_access_messsage_unicast(uint16_t dst_addr, uint8_
     uint16_t netkey_index = 0;
     uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
-    // send as unsegmented access pdu
+    // send as segmented access pdu
     mesh_upper_transport_builder_t builder;
-    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
+    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS);
     mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
     mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
     int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
