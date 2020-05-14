@@ -597,7 +597,23 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
  */
 uint8_t avrcp_disconnect(uint16_t avrcp_cid);
 
+
+/**
+ * @brief   Connect to AVRCP Browsing service on a remote device, emits AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED with status
+ * @param   remote_addr
+ * @param   avrcp_role
+ * @param   avrcp_browsing_packet_handler
+ * @param   ertm_buffer
+ * @param   ertm_buffer_size
+ * @param   ertm_config
+ * @param   avrcp_browsing_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
+ * @returns status     
+ */
+uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, btstack_packet_handler_t avrcp_browsing_packet_handler, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
+
 /* API_END */
+
+avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection);
 
 #if defined __cplusplus
 }

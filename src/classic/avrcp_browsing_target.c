@@ -169,51 +169,6 @@ static void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callb
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection){
-    avrcp_browsing_connection_t * connection = btstack_memory_avrcp_browsing_connection_get();
-    connection->state = AVCTP_CONNECTION_IDLE;
-    connection->transaction_label = 0xFF;
-    avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid(avrcp_connection->role);
-    avrcp_connection->browsing_connection = connection;
-    return connection;
-}
-
-static uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_context_t * context, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * browsing_cid){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_bd_addr_for_role(context->role, remote_addr);
-    
-    if (!avrcp_connection){
-        log_error("avrcp: there is no previously established AVRCP controller connection.");
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
-    if (connection){
-        log_error(" avrcp_browsing_connect connection exists.");
-        return ERROR_CODE_SUCCESS;
-    }
-    
-    connection = avrcp_browsing_create_connection(avrcp_connection);
-    if (!connection){
-        log_error("avrcp: could not allocate connection struct.");
-        return BTSTACK_MEMORY_ALLOC_FAILED;
-    }
-    
-    if (browsing_cid){
-        *browsing_cid = avrcp_connection->avrcp_browsing_cid; 
-    }
-    
-    connection->ertm_buffer = ertm_buffer;
-    connection->ertm_buffer_size = size;
-    avrcp_connection->browsing_connection = connection;
-
-    (void)memcpy(&connection->ertm_config, ertm_config,
-                 sizeof(l2cap_ertm_config_t));
-
-    return l2cap_create_ertm_channel(avrcp_browsing_target_packet_handler, remote_addr, avrcp_connection->browsing_l2cap_psm, 
-                    &connection->ertm_config, connection->ertm_buffer, connection->ertm_buffer_size, NULL);
-
-}
-
 static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context){
     UNUSED(channel);
     UNUSED(size);
@@ -391,7 +346,7 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
 }
 
 uint8_t avrcp_browsing_target_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
-    return avrcp_browsing_connect(bd_addr, &avrcp_target_context, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
+    return avrcp_browsing_connect(bd_addr, AVRCP_TARGET, avrcp_browsing_target_packet_handler, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
 }
 
 uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid){
