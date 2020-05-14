@@ -1068,6 +1068,9 @@ void mesh_node_reset(void){
     mesh_delete_virtual_addresses();
     mesh_delete_subscriptions();
     mesh_delete_publications();
+    // also reset iv index + sequence number
+    mesh_set_iv_index(0);
+    mesh_sequence_number_set(0);
     // start advertising as unprovisioned device
     mesh_access_setup_unprovisioned_device(mesh_node_get_device_uuid());
 }
