@@ -1645,7 +1645,7 @@ static void l2cap_run_for_classic_channel_ertm(l2cap_channel_t * channel){
 #endif /* ERTM */
 #endif /* Classic */
 
-static void l2cap_run_signaling_response() {
+static void l2cap_run_signaling_response(void) {
 
     // check pending signaling responses
     while (signaling_responses_pending){
