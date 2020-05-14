@@ -80,7 +80,7 @@
 // iPhone 5S: static const char * device_addr_string = "54:E4:3A:26:A2:39";
 // phone 2013:  
 // static const char * device_addr_string = "B0:34:95:CB:97:C4";
-
+// iPod
 static const char * device_addr_string = "B0:34:95:CB:97:C4";
 
 static bd_addr_t device_addr;
@@ -132,7 +132,6 @@ static l2cap_ertm_config_t ertm_config = {
     0,      // No FCS
 };
 
-
 static inline int next_index(int * index, int max_value){
     if ((*index) < max_value){
         (*index)++;
@@ -164,6 +163,8 @@ static int next_player_index(void){
 
 /* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd);
 #endif
@@ -179,8 +180,13 @@ int btstack_main(int argc, const char * argv[]){
     
     // Initialize AVRCP service.
     avrcp_init();
-    // Initialize AVRCP Controller.
+    // Initialize AVRCP Controller & Target Service.
     avrcp_controller_init();
+    avrcp_target_init();
+
+    avrcp_register_packet_handler(&avrcp_packet_handler);
+    avrcp_controller_register_packet_handler(&avrcp_packet_handler);
+    avrcp_target_register_packet_handler(&avrcp_packet_handler);
 
     // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
     avrcp_browsing_controller_init();
@@ -226,6 +232,41 @@ int btstack_main(int argc, const char * argv[]){
 }
 /* LISTING_END */
 
+static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    uint16_t local_cid;
+    uint8_t  status = 0xFF;
+    bd_addr_t adress;
+    
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
+    switch (packet[2]){
+        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
+            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
+            status = avrcp_subevent_connection_established_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+                avrcp_cid = 0;
+                return;
+            }
+            
+            avrcp_cid = local_cid;
+            avrcp_connected = 1;
+            avrcp_subevent_connection_established_get_bd_addr(packet, adress);
+            printf("AVRCP: Connected to %s, cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
+            return;
+        }
+        
+        case AVRCP_SUBEVENT_CONNECTION_RELEASED:
+            printf("AVRCP: Channel released: cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+            avrcp_cid = 0;
+            avrcp_connected = 0;
+            return;
+        default:
+            break;
+    }
+}
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     int pos;
@@ -336,35 +377,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
 
             if (packet[0] != HCI_EVENT_AVRCP_META) break;
             switch (packet[2]){
-                case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
-                    local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-                    printf("AVRCP_SUBEVENT_CONNECTION_ESTABLISHED cid 0x%02x\n", local_cid);
-                    
-                    if (avrcp_cid != 0 && avrcp_cid != local_cid) {
-                        printf("AVRCP Controller connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
-                        return;
-                    }
-
-                    status = avrcp_subevent_connection_established_get_status(packet);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("AVRCP Controller connection failed: status 0x%02x\n", status);
-                        avrcp_cid = 0;
-                        return;
-                    }
-                    
-                    avrcp_cid = local_cid;
-                    avrcp_connected = 1;
-                    avrcp_subevent_connection_established_get_bd_addr(packet, address);
-                    printf("AVRCP Controller connected.\n");
-                    return;
-                }
-                case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-                    printf("AVRCP Controller Client released.\n");
-                    avrcp_cid = 0;
-                    avrcp_browsing_connected = 0;
-                    folder_index = 0;
-                    memset(folders, 0, sizeof(folders));
-                    return;
                 
                 case AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION:
                     local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
