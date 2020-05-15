@@ -105,6 +105,9 @@ static uint32_t         init_script_size;
 // power in db - set by btstack_chipset_cc256x_set_power
 static int16_t    init_power_in_dB    = 13; // 13 dBm
 
+// explicit power vectors of 16 uint8_t bytes
+static const uint8_t * init_power_vectors[3];
+
 // upload position
 static uint32_t   init_script_offset  = 0;
 
@@ -242,8 +245,16 @@ static int get_highest_level_for_given_power(int power_db, int recommended_db){
 }
 
 static void update_set_power_vector(uint8_t *hci_cmd_buffer){
-    int i;
-    int modulation_type = hci_cmd_buffer[3];
+    uint8_t modulation_type = hci_cmd_buffer[3];
+    btstack_assert(modulation_type <= 2);
+
+    // explicit power vector provided by user
+    if (init_power_vectors[modulation_type] != NULL){
+        (void)memcpy(&hci_cmd_buffer[4], init_power_vectors[modulation_type], 16);
+        return;
+    }
+
+    unsigned int i;
     int power_db = get_max_power_for_modulation_type(modulation_type);
     int dynamic_range = 0;
 
@@ -366,6 +377,11 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 // MARK: public API
 void btstack_chipset_cc256x_set_power(int16_t power_in_dB){
     init_power_in_dB = power_in_dB;
+}
+
+void btstack_chipset_cc256x_set_power_vector(uint8_t modulation_type, const uint8_t * power_vector){
+    btstack_assert(modulation_type <= 2);
+
 }
 
 void btstack_chipset_cc256x_set_init_script(uint8_t * data, uint32_t size){
