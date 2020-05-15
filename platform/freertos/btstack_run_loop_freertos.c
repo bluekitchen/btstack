@@ -105,6 +105,7 @@ static EventGroupHandle_t   btstack_run_loop_event_group;
 // the run loop
 static btstack_linked_list_t timers;
 static btstack_linked_list_t data_sources;
+static bool run_loop_exit_requested;
 
 static uint32_t btstack_run_loop_freertos_get_time_ms(void){
     return hal_time_ms();
@@ -207,12 +208,18 @@ void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(v
 }
 #endif
 
+void btstack_run_loop_freertos_trigger_exit(void){
+    run_loop_exit_requested = true;
+}
+
 /**
  * Execute run_loop
  */
 static void btstack_run_loop_freertos_execute(void) {
     log_debug("RL: execute");
     
+    run_loop_exit_requested = false;
+
     while (true) {
 
         // process data sources
@@ -252,6 +259,9 @@ static void btstack_run_loop_freertos_execute(void) {
             log_debug("RL: first timer %p", ts->process);
             ts->process(ts);
         }
+
+        // exit triggered by btstack_run_loop_freertos_trigger_exit (from data source, timer, run on main thread)
+        if (run_loop_exit_requested) break;
 
         // wait for timeout or event group/task notification
         log_debug("RL: wait with timeout %u", (int) timeout_ms);

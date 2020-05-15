@@ -76,7 +76,12 @@ void btstack_run_loop_freertos_trigger(void);
  * @brief Triggers processing of data sources from an ISR.
  * Has to be called after enabling a poll data source to wake-pup run loop.
  */
-void btstack_run_loop_freertos_trigger_from_isr(void);    
+void btstack_run_loop_freertos_trigger_from_isr(void);
+
+/**
+ * @brief Triggers exit of run loop from BTstack main thread, causes call to btstack_run_loop_execute to return
+ */
+void btstack_run_loop_freertos_trigger_exit(void);
 
 /* API_END */
 
