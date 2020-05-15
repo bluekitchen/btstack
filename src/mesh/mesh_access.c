@@ -932,7 +932,8 @@ static void mesh_model_publication_setup_retransmission(mesh_publication_model_t
     publication_model->state = MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS;
 }
 
-static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
+static void mesh_model_publication_publish_now_model(void * arg){
+    mesh_model_t * mesh_model = (mesh_model_t *) arg;
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     if (publication_model == NULL) return;
     if (publication_model->publish_state_fn == NULL) return;
