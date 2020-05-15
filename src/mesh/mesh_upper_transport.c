@@ -893,11 +893,11 @@ static void mesh_upper_transport_run(void){
                     incoming_control_pdu->len =  segmented_pdu->len;
                     incoming_control_pdu->netkey_index =  segmented_pdu->netkey_index;
                     incoming_control_pdu->akf_aid_control = segmented_pdu->akf_aid_control;
-                    incoming_access_decrypted->ivi_nid = segmented_pdu->ivi_nid;
-                    incoming_access_decrypted->ctl_ttl = segmented_pdu->ctl_ttl;
-                    incoming_access_decrypted->seq = segmented_pdu->seq;
-                    incoming_access_decrypted->src = segmented_pdu->src;
-                    incoming_access_decrypted->dst = segmented_pdu->dst;
+                    incoming_control_pdu->ivi_nid = segmented_pdu->ivi_nid;
+                    incoming_control_pdu->ctl_ttl = segmented_pdu->ctl_ttl;
+                    incoming_control_pdu->seq = segmented_pdu->seq;
+                    incoming_control_pdu->src = segmented_pdu->src;
+                    incoming_control_pdu->dst = segmented_pdu->dst;
 
                     mesh_print_hex("Assembled payload", incoming_control_pdu->data, incoming_control_pdu->len);
 
@@ -906,7 +906,7 @@ static void mesh_upper_transport_run(void){
 
                     btstack_assert(mesh_control_message_handler != NULL);
                     mesh_pdu_t * pdu = (mesh_pdu_t*) incoming_control_pdu;
-                    mesh_access_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
+                    mesh_control_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
 
                 } else {
 

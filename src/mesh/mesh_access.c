@@ -459,6 +459,8 @@ uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return ((mesh_access_pdu_t*) pdu)->len;
+        case MESH_PDU_TYPE_CONTROL:
+            return ((mesh_control_pdu_t*) pdu)->len;
         case MESH_PDU_TYPE_NETWORK:
             return ((mesh_network_pdu_t *) pdu)->len - 10;
         default:
@@ -471,6 +473,8 @@ uint8_t * mesh_pdu_data(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             return ((mesh_access_pdu_t*) pdu)->data;
+        case MESH_PDU_TYPE_CONTROL:
+            return ((mesh_control_pdu_t*) pdu)->data;
         case MESH_PDU_TYPE_NETWORK:
             return &((mesh_network_pdu_t *) pdu)->data[10];
         default:
@@ -483,6 +487,8 @@ uint8_t mesh_pdu_control_opcode(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_NETWORK:
             return mesh_network_control_opcode((mesh_network_pdu_t *) pdu);
+        case MESH_PDU_TYPE_CONTROL:
+            return ((mesh_control_pdu_t *) pdu)->akf_aid_control;
         default:
             btstack_assert(false);
             return 0xff;
