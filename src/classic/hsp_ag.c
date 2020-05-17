@@ -83,8 +83,8 @@ static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
-static uint16_t sco_handle = 0;
-static uint16_t rfcomm_handle = 0;
+static uint16_t sco_handle = HCI_CON_HANDLE_INVALID;
+static uint16_t rfcomm_handle = HCI_CON_HANDLE_INVALID;
 static btstack_timer_source_t hs_timeout;
 
 static int ag_microphone_gain = -1;
@@ -256,7 +256,7 @@ static void hsp_ag_reset_state(void){
     hsp_state = HSP_IDLE;
     
     rfcomm_cid = 0;
-    rfcomm_handle = 0;
+    rfcomm_handle = HCI_CON_HANDLE_INVALID;
     sco_handle = 0;
 
     ag_send_ok = 0;
@@ -610,7 +610,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         }
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
-            // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             if (hsp_state != HSP_IDLE) return;
 
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);  
@@ -622,13 +621,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case RFCOMM_EVENT_CHANNEL_OPENED:
             log_info("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, packet[0] %x", packet_type, packet[0]);
-            // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (rfcomm_event_channel_opened_get_status(packet)) {
                 log_info("RFCOMM channel open failed, status %u§", rfcomm_event_channel_opened_get_status(packet));
                 hsp_ag_reset_state();
                 hsp_state = HSP_IDLE;
             } else {
-                // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
                 rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                 mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
@@ -639,8 +636,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         
         case RFCOMM_EVENT_CHANNEL_CLOSED:
-            rfcomm_handle = 0;
-            hsp_state = HSP_IDLE;
             hsp_ag_reset_state();
             emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
             break;
@@ -652,17 +647,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = little_endian_read_16(packet,3);
             if (handle == sco_handle){
-                sco_handle = 0;
+                sco_handle = HCI_CON_HANDLE_INVALID;
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
                 break;
             } 
-            if (handle == rfcomm_handle) {
-                rfcomm_handle = 0;
-                hsp_state = HSP_IDLE;
-                hsp_ag_reset_state();
-                emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
-            }
             break;
 
         default:
