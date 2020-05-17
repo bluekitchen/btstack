@@ -140,6 +140,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     strcpy(gap_name_buffer, gap_name_prefix);
                     strcat(gap_name_buffer, bd_addr_to_str(addr));
 
+                    // stop publication for testing
+                    mesh_model_publication_stop(mesh_node_get_health_server());
+
                     // dump PTS MeshOptions.ini
                     mesh_pts_dump_mesh_options();
                     break;
@@ -467,10 +470,6 @@ static void show_usage(void){
     printf("8      - Send Unsegmented Access Message\n");
     printf("9      - Send Segmented Access Message\n");
 
-    printf("?      - Send Unsegmented Access Message\n");
-    printf("?      - Send Segmented Access Message - Unicast\n");
-    printf("?      - Send Segmented Access Message - Group   D000\n");
-    printf("?      - Send Segmented Access Message - Virtual 9779\n");
     printf("?      - Clear Replay Protection List\n");
     printf("?      - Load PTS App key\n");
     printf("R      - Delete provisioning data\n");
