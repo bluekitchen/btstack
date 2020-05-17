@@ -312,13 +312,8 @@ void hsp_hs_disconnect(void){
         return;
     }
 
-    if (hsp_state < HSP_W4_SCO_CONNECTED){
-        hsp_state = HSP_W2_DISCONNECT_RFCOMM;
-        return;
-    }
-
-    hsp_disconnect_rfcomm = 1;
-    hsp_run();
+    hsp_establish_audio_connection = 0;
+    rfcomm_disconnect(rfcomm_cid);
 }
 
 
@@ -406,13 +401,6 @@ static void hsp_run(void){
         hsp_release_audio_connection = 0;
         wait_ok = 1;
         hsp_hs_send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
-        return;
-    }
-
-    if (hsp_disconnect_rfcomm){
-        hsp_disconnect_rfcomm = 0;
-        hsp_establish_audio_connection = 0;
-        rfcomm_disconnect(rfcomm_cid);
         return;
     }
 
