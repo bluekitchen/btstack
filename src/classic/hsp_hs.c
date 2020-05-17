@@ -83,7 +83,7 @@ static uint8_t channel_nr = 0;
 static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
 static uint16_t sco_handle = 0;
-static uint16_t rfcomm_handle = 0;
+static uint16_t rfcomm_handle = HCI_CON_HANDLE_INVALID;
 
 // static uint8_t connection_state = 0;
 
@@ -509,10 +509,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 
     if (packet_type != HCI_EVENT_PACKET) return;
+
     uint8_t event = hci_event_packet_get_type(packet);
     bd_addr_t event_addr;
     uint16_t handle;
-    // printf("packet_handler HCI_EVENT_PACKET type %u, packet[0] %x\n", packet_type, packet[0]);
     switch (event) {
         case HCI_EVENT_CONNECTION_REQUEST:
             switch(hci_event_connection_request_get_link_type(packet)){
@@ -535,21 +535,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             if (hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED) return;
-            int index = 2;
-            uint8_t status = packet[index++];
-            sco_handle = little_endian_read_16(packet, index);
-            index+=2;
-            bd_addr_t address; 
-            (void)memcpy(address, &packet[index], 6);
-            index+=6;
-            uint8_t link_type = packet[index++];
-            uint8_t transmission_interval = packet[index++];  // measured in slots
-            uint8_t retransmission_interval = packet[index++];// measured in slots
-            uint16_t rx_packet_length = little_endian_read_16(packet, index); // measured in bytes
-            index+=2;
-            uint16_t tx_packet_length = little_endian_read_16(packet, index); // measured in bytes
-            index+=2;
-            uint8_t air_mode = packet[index];
+            hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
+            uint8_t status                   = hci_event_synchronous_connection_complete_get_status(packet);
+            sco_handle                       = hci_event_synchronous_connection_complete_get_handle(packet);
+            uint8_t  link_type               = hci_event_synchronous_connection_complete_get_link_type(packet);
+            uint8_t  transmission_interval   = hci_event_synchronous_connection_complete_get_transmission_interval(packet);   // measured in slots
+            uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet); // measured in slots
+            uint16_t rx_packet_length        = hci_event_synchronous_connection_complete_get_rx_packet_length(packet);        // measured in bytes
+            uint16_t tx_packet_length        = hci_event_synchronous_connection_complete_get_tx_packet_length(packet);        // measured in bytes
+            uint8_t  air_mode                = hci_event_synchronous_connection_complete_get_air_mode(packet);
 
             if (status != 0){
                 log_error("(e)SCO Connection failed, status %u", status);
@@ -575,7 +569,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
-                 bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
+                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
             hsp_state = HSP_AUDIO_CONNECTION_ESTABLISHED;
             emit_event_audio_connected(status, sco_handle);
@@ -583,34 +577,29 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         }
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
-            // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             if (hsp_state != HSP_IDLE) return;
-
-            reverse_bd_addr(&packet[2], event_addr); 
-            rfcomm_cid = little_endian_read_16(packet, 9);
-            log_info("RFCOMM channel %u requested for %s", packet[8], bd_addr_to_str(event_addr));
+            rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
+            rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+            log_info("RFCOMM channel %u requested for %s", rfcomm_event_incoming_connection_get_server_channel(packet), bd_addr_to_str(event_addr));
             hsp_state = HSP_W4_RFCOMM_CONNECTED;
             rfcomm_accept_connection(rfcomm_cid);
             break;
 
         case RFCOMM_EVENT_CHANNEL_OPENED:
-            // printf("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
-            // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (hsp_state != HSP_W4_RFCOMM_CONNECTED) return;
-            if (packet[2]) {
-                log_info("RFCOMM channel open failed, status %u", packet[2]);
+            if (rfcomm_event_channel_opened_get_status(packet)) {
+                log_info("RFCOMM channel open failed, status %u", rfcomm_event_channel_opened_get_status(packet));
                 hsp_state = HSP_IDLE;
                 hsp_hs_reset_state();
             } else {
-                // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-                rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
-                rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
                 rfcomm_event_channel_opened_get_bd_addr(packet, remote);
+                rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
+                rfcomm_cid    = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                mtu           = rfcomm_event_channel_opened_get_max_frame_size(packet);
                 log_info("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u, handle %02x", rfcomm_cid, mtu, rfcomm_handle);
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
             }
-            emit_event(HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE, packet[2]);
+            emit_event(HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE, rfcomm_event_channel_opened_get_status(packet));
             break;
 
         case RFCOMM_EVENT_CAN_SEND_NOW:
@@ -618,24 +607,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            handle = little_endian_read_16(packet,3);
+            handle = hci_event_disconnection_complete_get_connection_handle(packet);
             if (handle == sco_handle){
                 sco_handle = 0;
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
                 break;
             } 
-            if (handle == rfcomm_handle) {
-                rfcomm_handle = 0;
-                hsp_state = HSP_IDLE;
-                emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
-                hsp_hs_reset_state();
-            }
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
+            hsp_state = HSP_IDLE;
             hsp_hs_reset_state();
-            hsp_hs_callback(HCI_EVENT_PACKET, 0, packet, size);
+            emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
             break;
 
         default:
