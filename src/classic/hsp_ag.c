@@ -614,8 +614,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (hsp_state != HSP_IDLE) return;
 
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);  
-            rfcomm_cid = rfcomm_event_incoming_connection_get_server_channel(packet);
-            log_info("RFCOMM channel %u requested for %s", packet[8], bd_addr_to_str(event_addr));
+            rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+            log_info("RFCOMM channel %u requested for %s with cid 0x%04x", rfcomm_event_incoming_connection_get_server_channel(packet), bd_addr_to_str(event_addr), rfcomm_cid);
             hsp_state = HSP_W4_RFCOMM_CONNECTED;
             rfcomm_accept_connection(rfcomm_cid);
             break;

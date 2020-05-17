@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP Source: only connect to remote sink stream endpoints
 - btstack_hal_flash_memory: fix write of 0xff bytes to simulated flash
 - hsp_hs: fix disconnect if audio not connected
+- hsp_ag: fix accept incoming connection
 
 ### Added
 - example/le_mitm: MITM implementation that forwards ATT PDUs and allows for pairing
