@@ -2221,7 +2221,7 @@ static void event_handler(uint8_t *packet, int size){
                     conn->con_handle = little_endian_read_16(packet, 3);
 
                     // queue get remote feature
-                    conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES;
+                    conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
 
                     // queue set supervision timeout if we're master
                     if ((hci_stack->link_supervision_timeout != 0) && (conn->role == HCI_ROLE_MASTER)){
@@ -3777,8 +3777,8 @@ static bool hci_run_general_pending_commmands(void){
             return true;
         }
 
-        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES){
-            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES;
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_0){
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
             hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
             return true;
         }
