@@ -686,6 +686,10 @@ static void avrcp_reconnect_timer_start(avrcp_connection_t * connection){
     btstack_run_loop_add_timer(&connection->reconnect_timer);
 }
 
+static avrcp_frame_type_t avrcp_get_frame_type(uint8_t header){
+    return (avrcp_frame_type_t)((header & 0x02) >> 1);
+}
+
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -693,7 +697,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     uint16_t local_cid;
     uint16_t l2cap_mtu;
     uint8_t  status;
-    avrcp_frame_type_t frame_type;
     bool decline_connection;
     bool outoing_active;
 
@@ -838,9 +841,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             break;
 
         case L2CAP_DATA_PACKET:
-            frame_type = (avrcp_frame_type_t)((packet[0] & 0x02) >> 1);
-
-            switch (frame_type){
+            switch (avrcp_get_frame_type(packet[0])){
                 case AVRCP_RESPONSE_FRAME:
                     (*avrcp_controller_packet_handler)(packet_type, channel, packet, size);
                     break;
@@ -1007,38 +1008,34 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
     uint8_t  status;
     avrcp_browsing_connection_t * browsing_connection = NULL;
     avrcp_connection_t * avrcp_connection = NULL;
-    
+    avrcp_frame_type_t frame_type;
     btstack_packet_handler_t browsing_callback;
 
-    switch (avrcp_role){
-        case AVRCP_CONTROLLER:
-            browsing_callback = avrcp_browsing_controller_packet_handler;
-            break;
-        case AVRCP_TARGET:
-            browsing_callback = avrcp_browsing_target_packet_handler;
-            break;
-        default:
-            break;
-    }
-    btstack_assert(browsing_callback != NULL);
-
+    
     switch (packet_type){
         case L2CAP_DATA_PACKET:
-            (*browsing_callback)(packet_type, channel, packet, size);
-            // frame_type = (avrcp_frame_type_t)((packet[0] & 0x02) >> 1);
-
-            // switch (frame_type){
-            //     case AVRCP_RESPONSE_FRAME:
-            //         (*avrcp_controller_packet_handler)(packet_type, channel, packet, size);
-            //         break;
-            //     case AVRCP_COMMAND_FRAME:
-            //     default:    // make compiler happy
-            //         (*avrcp_target_packet_handler)(packet_type, channel, packet, size);
-            //         break;
-            // }
+            switch (avrcp_get_frame_type(packet[0])){
+                case AVRCP_RESPONSE_FRAME:
+                    (*avrcp_browsing_controller_packet_handler)(packet_type, channel, packet, size);
+                    break;
+                case AVRCP_COMMAND_FRAME:
+                default:    // make compiler happy
+                    (*avrcp_browsing_target_packet_handler)(packet_type, channel, packet, size);
+                    break;
+            }
             break;
         case HCI_EVENT_PACKET:
-                    
+             switch (avrcp_role){
+                case AVRCP_CONTROLLER:
+                    browsing_callback = avrcp_browsing_controller_packet_handler;
+                    break;
+                case AVRCP_TARGET:
+                default:
+                    browsing_callback = avrcp_browsing_target_packet_handler;
+                    break;
+            }
+            btstack_assert(browsing_callback != NULL);
+  
             switch (hci_event_packet_get_type(packet)) {
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     (*browsing_callback)(packet_type, channel, packet, size);
