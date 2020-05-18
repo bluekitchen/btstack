@@ -2297,6 +2297,26 @@ static void event_handler(uint8_t *packet, int size){
                 if (features[7] & (1<<7)){
                     conn->remote_supported_features[0] |= 2;
                 }
+                // read extended features if possible
+                if (((hci_stack->local_supported_commands[1] & 1) != 0) && ((conn->remote_supported_features[0] & 2) != 0)) {
+                    conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_1;
+                    break;
+                }
+            }
+            hci_handle_remote_features_received(conn);
+            break;
+
+        case HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE:
+            handle = little_endian_read_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            // status = ok, page = 1
+            if (!packet[2] && packet[5] == 1){
+                const uint8_t * features = &packet[7];
+                // SSP Host
+                if (features[0] & (1 << 0)){
+                    conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_HOST;
+                }
             }
             hci_handle_remote_features_received(conn);
             break;
@@ -3790,6 +3810,12 @@ static bool hci_run_general_pending_commmands(void){
         if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_0){
             connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
             hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
+            return true;
+        }
+
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_1){
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_1;
+            hci_send_cmd(&hci_read_remote_extended_features_command, connection->con_handle, 1);
             return true;
         }
 
