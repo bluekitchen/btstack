@@ -2262,6 +2262,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     
 #ifdef ENABLE_CLASSIC
     bd_addr_t address;
+    hci_connection_t * hci_connection;
     int hci_con_used;
 #endif
 #ifdef L2CAP_USES_CHANNELS
@@ -2372,7 +2373,11 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
+        case HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE:
             handle = little_endian_read_16(packet, 3);
+            hci_connection = hci_connection_for_handle(handle);
+            if (hci_connection == NULL) break;
+            if ((hci_connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) == 0) break;
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
