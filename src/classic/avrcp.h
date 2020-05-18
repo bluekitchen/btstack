@@ -597,19 +597,28 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
  */
 uint8_t avrcp_disconnect(uint16_t avrcp_cid);
 
+/**
+ * @brief Set up AVRCP Browsing service
+ */
+void avrcp_browsing_init(void);
+
+/**
+ * @brief Register callback for the AVRCP Browsing Controller client. 
+ * @param callback
+ */
+void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief   Connect to AVRCP Browsing service on a remote device, emits AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED with status
  * @param   remote_addr
  * @param   avrcp_role
- * @param   avrcp_browsing_packet_handler
  * @param   ertm_buffer
  * @param   ertm_buffer_size
  * @param   ertm_config
  * @param   avrcp_browsing_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @returns status     
  */
-uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, btstack_packet_handler_t avrcp_browsing_packet_handler, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
+uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
 
 /**
  * @brief   Disconnect from AVRCP Browsing service
@@ -621,11 +630,11 @@ uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrc
 
 /* API_END */
 
+void avrcp_browsing_register_controller_packet_handler(btstack_packet_handler_t callback);
+void avrcp_browsing_register_target_packet_handler(btstack_packet_handler_t callback);
+void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid);
+
 avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection);
-void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status);
-void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr);
-void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callback, uint16_t browsing_cid);
-void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 
 #if defined __cplusplus
 }

@@ -46,14 +46,7 @@
 #include "classic/avrcp.h"
 #include "classic/avrcp_browsing_target.h"
 
-#define PSM_AVCTP_BROWSING              0x001b
-
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-static void avrcp_browsing_target_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid){
-    connection->wait_to_send = 1;
-    l2cap_request_can_send_now_event(l2cap_cid);
-}
 
 static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t * connection){
     int pos = 0; 
@@ -90,7 +83,7 @@ static uint8_t avrcp_browsing_target_response_general_reject(avrcp_browsing_conn
     connection->cmd_operands[pos++] = status;
     connection->cmd_operands_length = 4;
     connection->state = AVCTP_W2_SEND_RESPONSE;
-    avrcp_browsing_target_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -126,6 +119,7 @@ static void avrcp_browsing_target_emit_get_total_num_items(btstack_packet_handle
 
 
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
     avrcp_browsing_connection_t * browsing_connection;
 
     switch (packet_type) {
@@ -202,7 +196,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                     avrcp_browsing_target_handle_can_send_now(browsing_connection);
                     break;
                 default:
-                    avrcp_browser_packet_handler(packet_type, channel, packet, size, &avrcp_target_context);
                     break;
             }
             break;
@@ -214,7 +207,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
 
 void avrcp_browsing_target_init(void){
     avrcp_target_context.browsing_packet_handler = avrcp_browsing_target_packet_handler;
-    l2cap_register_service(&avrcp_browsing_target_packet_handler, PSM_AVCTP_BROWSING, 0xffff, gap_get_security_level());
+    avrcp_browsing_register_target_packet_handler(avrcp_browsing_target_packet_handler);
 }
 
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback){
@@ -223,7 +216,7 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
 }
 
 uint8_t avrcp_browsing_target_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
-    return avrcp_browsing_connect(bd_addr, AVRCP_TARGET, avrcp_browsing_target_packet_handler, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
+    return avrcp_browsing_connect(bd_addr, AVRCP_TARGET, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
 }
 
 uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid){
@@ -312,7 +305,7 @@ uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsin
     // printf_hexdump(connection->cmd_operands, connection->cmd_operands_length);
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
-    avrcp_browsing_target_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -348,7 +341,7 @@ uint8_t avrcp_subevent_browsing_get_total_num_items_response(uint16_t avrcp_brow
     connection->cmd_operands_length = pos;    
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
-    avrcp_browsing_target_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 

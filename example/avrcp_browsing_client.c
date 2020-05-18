@@ -80,8 +80,10 @@
 // iPhone 5S: static const char * device_addr_string = "54:E4:3A:26:A2:39";
 // phone 2013:  
 // static const char * device_addr_string = "B0:34:95:CB:97:C4";
-// iPod
-static const char * device_addr_string = "B0:34:95:CB:97:C4";
+// iPod 
+// static const char * device_addr_string = "B0:34:95:CB:97:C4";
+// iPhone
+static const char * device_addr_string = "6C:72:E7:10:22:EE";
 
 static bd_addr_t device_addr;
 #endif
@@ -157,12 +159,12 @@ static int next_player_index(void){
  * SDP record and register it with the SDP service. 
  * You'll also need to register several packet handlers:
  * - stdin_process callback - used to trigger AVRCP commands, such are get media players, playlists, albums, etc. Requires HAVE_BTSTACK_STDIN.
- * - avrcp_browsing_controller_packet_handler - used to receive answers for AVRCP commands.
+ * - avrcp_browsing_packet_handler - used to receive answers for AVRCP commands.
  *
  */
 
 /* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
-static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -188,10 +190,15 @@ int btstack_main(int argc, const char * argv[]){
     avrcp_controller_register_packet_handler(&avrcp_packet_handler);
     avrcp_target_register_packet_handler(&avrcp_packet_handler);
 
-    // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
+    // Initialize AVRCP Browsing Service. 
+    avrcp_browsing_init();
     avrcp_browsing_controller_init();
-    // // Register AVRCP for HCI events.
-    avrcp_browsing_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
+    avrcp_browsing_target_init();
+    
+    // Register for HCI events.
+    avrcp_browsing_controller_register_packet_handler(&avrcp_browsing_packet_handler);
+    avrcp_browsing_target_register_packet_handler(&avrcp_browsing_packet_handler);
+    avrcp_browsing_register_packet_handler(&avrcp_browsing_packet_handler);
     
     // Initialize SDP. 
     sdp_init();
@@ -214,12 +221,9 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_class_of_device(0x200408);
     
     // Register for HCI events.
-    hci_event_callback_registration.callback = &avrcp_browsing_controller_packet_handler;
+    hci_event_callback_registration.callback = &avrcp_browsing_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // Register for AVRCP events.
-    avrcp_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
-
+    
 
 #ifdef HAVE_BTSTACK_STDIN
     // Parse human readable Bluetooth address.
@@ -267,7 +271,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             break;
     }
 }
-static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     int pos;
 

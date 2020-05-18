@@ -46,7 +46,6 @@
 #include "classic/avrcp.h"
 #include "classic/avrcp_browsing_controller.h"
 
-#define PSM_AVCTP_BROWSING              0x001b
 
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -377,9 +376,8 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
     avrcp_browsing_connection_t * browsing_connection;
     uint8_t transport_header;
     int pos;
-
     switch (packet_type) {
-        case L2CAP_DATA_PACKET:                         
+        case L2CAP_DATA_PACKET:   
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER, channel);
             if (!browsing_connection) break;
             pos = 0;
@@ -499,7 +497,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     avrcp_browsing_controller_handle_can_send_now(browsing_connection);
                     break;
                 default:
-                    avrcp_browser_packet_handler(packet_type, channel, packet, size, &avrcp_controller_context);
                     break;
             }
             break;
@@ -511,7 +508,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
 
 void avrcp_browsing_controller_init(void){
     avrcp_controller_context.browsing_packet_handler = avrcp_browsing_controller_packet_handler;
-    l2cap_register_service(&avrcp_browsing_controller_packet_handler, PSM_AVCTP_BROWSING, 0xffff, gap_get_security_level());
+    avrcp_browsing_register_controller_packet_handler(avrcp_browsing_controller_packet_handler);
 }
 
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback){
@@ -520,7 +517,7 @@ void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t 
 }
 
 uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
-    return avrcp_browsing_connect(bd_addr, AVRCP_CONTROLLER, avrcp_browsing_controller_packet_handler, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
+    return avrcp_browsing_connect(bd_addr, AVRCP_CONTROLLER, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
 }
 
 uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
@@ -586,7 +583,7 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
     connection->uid_counter = uid_counter;
     connection->attr_bitmap = attr_bitmap;
 
-    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -616,7 +613,7 @@ static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsin
     connection->end_item = end_item;
     connection->attr_bitmap = attr_bitmap;
 
-    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -654,7 +651,7 @@ uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid
 
     connection->set_browsed_player_id = 1;
     connection->browsed_player_id = browsed_player_id;
-    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -688,7 +685,7 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
         (void)memcpy(connection->folder_uid, folder_uid, 8);
     }
     
-    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -728,7 +725,7 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
     memset(connection->search_str, 0, sizeof(connection->search_str));
     (void)memcpy(connection->search_str, search_str,
                  connection->search_str_len);
-    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -752,6 +749,6 @@ uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_br
     }
     connection->get_total_nr_items = 1;
     connection->get_total_nr_items_scope = scope;
-    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
