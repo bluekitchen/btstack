@@ -806,7 +806,8 @@ typedef struct {
     /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
     /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */
     /* 7 - Read Encryption Key Size                (Octet 20/bit 4) */
-    uint8_t local_supported_commands[1];
+    /* 8 - Read Remote Extended Features           (Octet  2/bit 5) */
+    uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */
     // uint16_t hci_version;
