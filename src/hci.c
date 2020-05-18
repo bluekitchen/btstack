@@ -1905,6 +1905,14 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
 #endif
 }
 
+static void hci_handle_remote_features_received(hci_connection_t * conn){
+    conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
+    log_info("Remote features received, bonding flags %x, eSCO %u", conn->bonding_flags, conn->remote_supported_feature_eSCO);
+    if (conn->bonding_flags & BONDING_DEDICATED){
+        conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+    }
+}
+
 static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_t size) {
     // handle BT initialization
     if (hci_stack->state == HCI_STATE_INITIALIZING) {
@@ -2284,11 +2292,7 @@ static void event_handler(uint8_t *packet, int size){
                     conn->remote_supported_feature_eSCO = 1;
                 }
             }
-            conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
-            log_info("HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE, bonding flags %x, eSCO %u", conn->bonding_flags, conn->remote_supported_feature_eSCO);
-            if (conn->bonding_flags & BONDING_DEDICATED){
-                conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-            }
+            hci_handle_remote_features_received(conn);
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
