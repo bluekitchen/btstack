@@ -129,6 +129,7 @@ extern const hci_cmd_t hci_read_local_version_information;
 extern const hci_cmd_t hci_read_loopback_mode;
 extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_read_remote_supported_features_command;
+extern const hci_cmd_t hci_read_remote_extended_features_command;
 extern const hci_cmd_t hci_read_remote_version_information;
 extern const hci_cmd_t hci_read_transmit_power_level;
 extern const hci_cmd_t hci_read_rssi;

@@ -452,6 +452,8 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI                 0x22
 
+#define HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE   0x23
+
 /**
  * @format 1HB111221
  * @param status

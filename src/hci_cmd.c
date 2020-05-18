@@ -325,6 +325,13 @@ OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
 };
 
 /**
+* @param handle
+*/
+const hci_cmd_t hci_read_remote_extended_features_command = {
+        OPCODE(OGF_LINK_CONTROL, 0x1C), "H1"
+};
+
+/**
  * @param handle
  */
 const hci_cmd_t hci_read_remote_version_information = {
