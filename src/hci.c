@@ -133,6 +133,7 @@ static void hci_update_scan_enable(void);
 static void hci_emit_discoverable_enabled(uint8_t enabled);
 static int  hci_local_ssp_activated(void);
 static int  hci_remote_ssp_supported(hci_con_handle_t con_handle);
+static bool hci_ssp_supported(hci_connection_t * connection);
 static void hci_notify_if_sco_can_send_now(void);
 static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con_handle, uint8_t status);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
@@ -4569,11 +4570,16 @@ int hci_remote_esco_supported(hci_con_handle_t con_handle){
     return (connection->remote_supported_features[0] & 1) != 0;
 }
 
+static bool hci_ssp_supported(hci_connection_t * connection){
+    const uint8_t mask = BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER | BONDING_REMOTE_SUPPORTS_SSP_HOST;
+    return (connection->bonding_flags & mask) == mask;
+}
+
 // query if remote side supports SSP
 int hci_remote_ssp_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return 0;
-    return (connection->bonding_flags & BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER) ? 1 : 0;
+    return hci_ssp_supported(connection) ? 1 : 0;
 }
 
 int gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
