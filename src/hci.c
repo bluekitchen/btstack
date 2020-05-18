@@ -1907,7 +1907,7 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
 
 static void hci_handle_remote_features_received(hci_connection_t * conn){
     conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
-    log_info("Remote features received, bonding flags %x, eSCO %u", conn->bonding_flags, conn->remote_supported_features[0] & 1);
+    log_info("Remote features %02x, bonding flags %x", conn->remote_supported_features[0], conn->bonding_flags);
     if (conn->bonding_flags & BONDING_DEDICATED){
         conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     }
@@ -2285,11 +2285,17 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) break;
             if (!packet[2]){
                 uint8_t * features = &packet[5];
+                // SSP Controller
                 if (features[6] & (1 << 3)){
                     conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER;
                 }
+                // eSCO
                 if (features[3] & (1<<7)){
                     conn->remote_supported_features[0] |= 1;
+                }
+                // Extended features
+                if (features[7] & (1<<7)){
+                    conn->remote_supported_features[0] |= 2;
                 }
             }
             hci_handle_remote_features_received(conn);
