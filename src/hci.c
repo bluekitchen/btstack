@@ -2278,7 +2278,7 @@ static void event_handler(uint8_t *packet, int size){
             if (!packet[2]){
                 uint8_t * features = &packet[5];
                 if (features[6] & (1 << 3)){
-                    conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP;
+                    conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER;
                 }
                 if (features[3] & (1<<7)){
                     conn->remote_supported_feature_eSCO = 1;
@@ -4537,7 +4537,7 @@ int hci_remote_esco_supported(hci_con_handle_t con_handle){
 int hci_remote_ssp_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return 0;
-    return (connection->bonding_flags & BONDING_REMOTE_SUPPORTS_SSP) ? 1 : 0;
+    return (connection->bonding_flags & BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER) ? 1 : 0;
 }
 
 int gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
