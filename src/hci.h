@@ -505,7 +505,8 @@ typedef struct {
     link_key_type_t link_key_type;
 
     // remote supported features
-    uint8_t remote_supported_feature_eSCO;
+    /* bit 0 - eSCO */
+    uint8_t remote_supported_features[0];
 
 #ifdef ENABLE_CLASSIC
     // connection mode, default ACL_CONNECTION_MODE_ACTIVE

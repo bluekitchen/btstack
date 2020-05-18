@@ -1907,7 +1907,7 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
 
 static void hci_handle_remote_features_received(hci_connection_t * conn){
     conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
-    log_info("Remote features received, bonding flags %x, eSCO %u", conn->bonding_flags, conn->remote_supported_feature_eSCO);
+    log_info("Remote features received, bonding flags %x, eSCO %u", conn->bonding_flags, conn->remote_supported_features[0] & 1);
     if (conn->bonding_flags & BONDING_DEDICATED){
         conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     }
@@ -2212,7 +2212,7 @@ static void event_handler(uint8_t *packet, int size){
             conn->state = RECEIVED_CONNECTION_REQUEST;
             // store info about eSCO
             if (link_type == 0x02){
-                conn->remote_supported_feature_eSCO = 1;
+                conn->remote_supported_features[0] |= 1;
             }
             hci_run();
             break;
@@ -2289,7 +2289,7 @@ static void event_handler(uint8_t *packet, int size){
                     conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER;
                 }
                 if (features[3] & (1<<7)){
-                    conn->remote_supported_feature_eSCO = 1;
+                    conn->remote_supported_features[0] |= 1;
                 }
             }
             hci_handle_remote_features_received(conn);
@@ -3686,7 +3686,7 @@ static bool hci_run_general_pending_commmands(void){
             case RECEIVED_CONNECTION_REQUEST:
                 connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_ACL){
-                    log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
+                    log_info("sending hci_accept_connection_request");
                     connection->state = ACCEPTED_CONNECTION_REQUEST;
                     hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
                 }
@@ -4534,7 +4534,7 @@ static void hci_emit_discoverable_enabled(uint8_t enabled){
 int hci_remote_esco_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return 0;
-    return connection->remote_supported_feature_eSCO;
+    return (connection->remote_supported_features[0] & 1) != 0;
 }
 
 // query if remote side supports SSP
