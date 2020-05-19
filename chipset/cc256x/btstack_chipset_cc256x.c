@@ -381,7 +381,7 @@ void btstack_chipset_cc256x_set_power(int16_t power_in_dB){
 
 void btstack_chipset_cc256x_set_power_vector(uint8_t modulation_type, const uint8_t * power_vector){
     btstack_assert(modulation_type <= 2);
-
+    init_power_vectors[modulation_type] = power_vector;
 }
 
 void btstack_chipset_cc256x_set_init_script(uint8_t * data, uint32_t size){
