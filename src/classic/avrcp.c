@@ -1040,7 +1040,7 @@ static void avrcp_browsing_handle_open_connection_for_role(avrcp_connection_t * 
     log_info("L2CAP_EVENT_CHANNEL_OPENED browsing_avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x, role %d", connection->avrcp_cid, connection->l2cap_signaling_cid, connection->role);
 }
 
-static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_role_t avrcp_role){
+static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t event_addr;
@@ -1049,7 +1049,6 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
     bool decline_connection;
     bool outoing_active;
 
-    btstack_packet_handler_t browsing_callback;
     avrcp_connection_t * connection_controller;
     avrcp_connection_t * connection_target;
 
@@ -1066,16 +1065,8 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
             }
             break;
         case HCI_EVENT_PACKET:
-             switch (avrcp_role){
-                case AVRCP_CONTROLLER:
-                    browsing_callback = avrcp_browsing_controller_packet_handler;
-                    break;
-                case AVRCP_TARGET:
-                default:
-                    browsing_callback = avrcp_browsing_target_packet_handler;
-                    break;
-            }
-            btstack_assert(browsing_callback != NULL);
+            btstack_assert(avrcp_browsing_controller_packet_handler != NULL);
+            btstack_assert(avrcp_browsing_target_packet_handler != NULL);
   
             switch (hci_event_packet_get_type(packet)) {
                 
@@ -1227,11 +1218,6 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
             break;
     }
 
-}
-
-static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    avrcp_browsing_packet_handler_with_role(packet_type, channel, packet, size, AVRCP_CONTROLLER);
-    // avrcp_browsing_packet_handler_with_role(packet_type, channel, packet, size, AVRCP_TARGET);
 }
 
 void avrcp_browsing_init(void){
