@@ -500,7 +500,7 @@ static void stdin_process(char cmd){
                 break;
             }
             printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_browsing_controller_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
+            status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
             break;
         case 'E':
             if (avrcp_browsing_connected){

@@ -67,17 +67,6 @@ void avrcp_browsing_target_init(void);
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Connect to device with a Bluetooth address.
- * @param bd_addr
- * @param ertm_buffer
- * @param ertm_buffer_size
- * @param ertm_config
- * @param avrcp_browsing_cid
- * @returns status
- */
-uint8_t avrcp_browsing_target_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
-
-/**
  * @brief Configure incoming connection.
  * @param avrcp_browsing_cid
  * @param ertm_buffer

@@ -389,6 +389,9 @@ typedef struct {
     avrcp_packet_type_t  packet_type;
     uint8_t cmd_operands[200];
     uint8_t cmd_operands_length;
+
+    bool incoming_declined;
+    btstack_timer_source_t reconnect_timer;
 } avrcp_browsing_connection_t;
 // BROWSING END
 
@@ -611,14 +614,13 @@ void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
 /**
  * @brief   Connect to AVRCP Browsing service on a remote device, emits AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED with status
  * @param   remote_addr
- * @param   avrcp_role
  * @param   ertm_buffer
  * @param   ertm_buffer_size
  * @param   ertm_config
  * @param   avrcp_browsing_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
  * @returns status     
  */
-uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_role_t avrcp_role, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
+uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
 
 /**
  * @brief   Disconnect from AVRCP Browsing service
@@ -633,8 +635,6 @@ uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrc
 void avrcp_browsing_register_controller_packet_handler(btstack_packet_handler_t callback);
 void avrcp_browsing_register_target_packet_handler(btstack_packet_handler_t callback);
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid);
-
-avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection);
 
 #if defined __cplusplus
 }

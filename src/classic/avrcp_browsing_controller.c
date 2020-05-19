@@ -493,7 +493,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER,channel);
-                    if (!browsing_connection) break;
                     avrcp_browsing_controller_handle_can_send_now(browsing_connection);
                     break;
                 default:
@@ -516,10 +515,6 @@ void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t 
     avrcp_controller_context.browsing_avrcp_callback = callback;
 }
 
-uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
-    return avrcp_browsing_connect(bd_addr, AVRCP_CONTROLLER, ertm_buffer, size, ertm_config, avrcp_browsing_cid);
-}
-
 uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
     return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_CONTROLLER);
 }
@@ -527,19 +522,19 @@ uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
 uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
-        log_error("avrcp_browsing_controller_decline_incoming_connection: could not find a connection.");
+        log_error("avrcp_browsing_controller_configure_incoming_connection: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!avrcp_connection->browsing_connection){
-        log_error("avrcp_browsing_controller_decline_incoming_connection: no browsing connection.");
+        log_error("avrcp_browsing_controller_configure_incoming_connection: no browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     } 
 
     if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_W4_ERTM_CONFIGURATION){
-        log_error("avrcp_browsing_controller_decline_incoming_connection: browsing connection in a wrong state.");
+        log_error("avrcp_browsing_controller_configure_incoming_connection: browsing connection in a wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
-
+    log_error("avrcp_browsing_controller_configure_incoming_connection: l2cap_accept_ertm_connection.");
     avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     avrcp_connection->browsing_connection->ertm_buffer = ertm_buffer;
     avrcp_connection->browsing_connection->ertm_buffer_size = size;
