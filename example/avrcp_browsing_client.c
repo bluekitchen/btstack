@@ -384,9 +384,9 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                 
                 case AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION:
                     local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
-                    printf("AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION cid 0x%02x\n", local_cid);
+                    printf("AVRCP Browsing: incoming connection cid 0x%02x\n", local_cid);
                     if (browsing_cid != 0 && browsing_cid != local_cid) {
-                        printf("AVRCP Browsing: connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                        printf("AVRCP Browsing: decline incoming connection, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
                         avrcp_browsing_decline_incoming_connection(browsing_cid);
                         return;
                     }
@@ -397,7 +397,6 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 
                 case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
                     local_cid = avrcp_subevent_browsing_connection_established_get_browsing_cid(packet);
-                    printf("AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED cid 0x%02x\n", local_cid);
                     if (browsing_cid != 0 && browsing_cid != local_cid) {
                         printf("AVRCP Browsing: connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
                         return;
@@ -413,11 +412,11 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                     browsing_cid = local_cid;
                     avrcp_browsing_connected = 1;
                     avrcp_subevent_browsing_connection_established_get_bd_addr(packet, address);
-                    printf("AVRCP Browsing: connected\n");
+                    printf("AVRCP Browsing: connected, browsing cid 0x%02x\n", browsing_cid);
                     return;
                 }
                 case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
-                    printf("AVRCP Browsing: disconnected\n");
+                    printf("AVRCP Browsing: disconnected, browsing cid 0x%02x\n", browsing_cid);
                     browsing_cid = 0;
                     avrcp_browsing_connected = 0;
                     return;

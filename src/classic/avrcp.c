@@ -951,7 +951,7 @@ static void avrcp_browsing_finalize_connection(avrcp_connection_t * connection){
     connection->browsing_connection = NULL;
 }
 
-static void avrcp_emit_browsing_connection_established(uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
+static void avrcp_browsing_emit_connection_established(uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
     btstack_assert(avrcp_browsing_callback != NULL);
     
     uint8_t event[12];
@@ -967,7 +967,7 @@ static void avrcp_emit_browsing_connection_established(uint16_t browsing_cid, bd
     (*avrcp_browsing_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_incoming_browsing_connection(uint16_t browsing_cid, bd_addr_t addr){
+static void avrcp_browsing_emit_incoming_connection(uint16_t browsing_cid, bd_addr_t addr){
     btstack_assert(avrcp_browsing_callback != NULL);
     
     uint8_t event[11];
@@ -982,7 +982,7 @@ static void avrcp_emit_incoming_browsing_connection(uint16_t browsing_cid, bd_ad
     (*avrcp_browsing_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_browsing_connection_closed(uint16_t browsing_cid){
+static void avrcp_browsing_emit_connection_closed(uint16_t browsing_cid){
     btstack_assert(avrcp_browsing_callback != NULL);
     
     uint8_t event[5];
@@ -1035,7 +1035,7 @@ static avrcp_browsing_connection_t * avrcp_browsing_handle_incoming_connection(a
     return connection->browsing_connection;
 }
 
-static void avrcp_browsing_handle_open_connection_for_role( avrcp_connection_t * connection, uint16_t local_cid){
+static void avrcp_browsing_handle_open_connection_for_role(avrcp_connection_t * connection, uint16_t local_cid){
     connection->browsing_connection->l2cap_browsing_cid = local_cid;
     connection->browsing_connection->incoming_declined = false;
     connection->browsing_connection->state = AVCTP_CONNECTION_OPENED;
@@ -1138,7 +1138,7 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
                         l2cap_decline_connection(local_cid);
                     } else {
                         log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION browsing_avrcp_cid 0x%02x", connection_controller->avrcp_browsing_cid);
-                        avrcp_emit_incoming_browsing_connection(connection_controller->avrcp_browsing_cid, event_addr);
+                        avrcp_browsing_emit_incoming_connection(connection_controller->avrcp_browsing_cid, event_addr);
                     }
                     break;
                     
@@ -1146,29 +1146,43 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
                     l2cap_event_channel_opened_get_address(packet, event_addr);
                     status = l2cap_event_channel_opened_get_status(packet);
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                    log_info("received L2CAP_EVENT_CHANNEL_OPENED, cid 0x%02x", local_cid);
                     
                     connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
-                    if (!connection_controller){
-                        log_error("Failed to find AVRCP connection for bd_addr %s", bd_addr_to_str(event_addr));
-                        avrcp_emit_browsing_connection_established(local_cid, event_addr, L2CAP_LOCAL_CID_DOES_NOT_EXIST);
-                        l2cap_disconnect(local_cid, 0); // reason isn't used
-                        break;
-                    }
+                    connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
 
-                    if (status != ERROR_CODE_SUCCESS){
-                        log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
-                        avrcp_emit_browsing_connection_established(connection_controller->avrcp_browsing_cid, event_addr, status);
-                        avrcp_browsing_finalize_connection(connection_controller);
+                    // incoming: structs are already created in L2CAP_EVENT_INCOMING_CONNECTION
+                    // outgoing: structs are cteated in avrcp_connect() and avrcp_browsing_connect()
+                    if ((connection_controller == NULL) || (connection_target == NULL)) {
                         break;
                     }
-                    if (connection_controller->browsing_connection->state != AVCTP_CONNECTION_W4_L2CAP_CONNECTED) break;
+                    if ((connection_controller->browsing_connection == NULL) || (connection_target->browsing_connection == NULL)) {
+                        break;
+                    }
                     
-                    connection_controller->browsing_connection->l2cap_browsing_cid = local_cid;
-
-                    log_info("L2CAP_EVENT_CHANNEL_OPENED browsing cid 0x%02x, l2cap cid 0x%02x", connection_controller->avrcp_browsing_cid, connection_controller->browsing_connection->l2cap_browsing_cid);
-                    connection_controller->browsing_connection->state = AVCTP_CONNECTION_OPENED;
-                    avrcp_emit_browsing_connection_established(connection_controller->avrcp_browsing_cid, event_addr, ERROR_CODE_SUCCESS);
+                    switch (status){
+                        case ERROR_CODE_SUCCESS:
+                            avrcp_browsing_handle_open_connection_for_role(connection_target, local_cid);
+                            avrcp_browsing_handle_open_connection_for_role(connection_controller, local_cid);
+                            avrcp_browsing_emit_connection_established(connection_controller->avrcp_browsing_cid, event_addr, status);
+                            return;
+                        case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
+                            if (connection_controller->browsing_connection->incoming_declined == true){
+                                log_info("Incoming browsing connection was declined, and the outgoing failed");
+                                connection_controller->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_RECONNECT;
+                                connection_controller->browsing_connection->incoming_declined = false;
+                                connection_target->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_RECONNECT;
+                                connection_target->browsing_connection->incoming_declined = false;
+                                avrcp_reconnect_timer_start(connection_controller);
+                                return;
+                            } 
+                            break;
+                        default:
+                            break;
+                    }
+                    log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
+                    avrcp_browsing_emit_connection_established(connection_controller->avrcp_browsing_cid, event_addr, status);
+                    avrcp_finalize_connection(connection_controller);
+                    avrcp_finalize_connection(connection_target);
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -1176,13 +1190,13 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
                     connection_controller = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     
                     if (connection_controller && connection_controller->browsing_connection){
-                        avrcp_emit_browsing_connection_closed(connection_controller->avrcp_browsing_cid);
+                        avrcp_browsing_emit_connection_closed(connection_controller->avrcp_browsing_cid);
                         avrcp_browsing_finalize_connection(connection_controller);
                         break;
                     }
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    avrcp_emit_browsing_connection_closed(ERROR_CODE_SUCCESS);
+                    avrcp_browsing_emit_connection_closed(ERROR_CODE_SUCCESS);
                     break;
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     (*browsing_callback)(packet_type, channel, packet, size);
