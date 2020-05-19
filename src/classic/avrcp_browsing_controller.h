@@ -109,14 +109,6 @@ void avrcp_browsing_controller_init(void);
  */
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
 
-
-/**
- * @brief Disconnect from AVRCP target
- * @param avrcp_browsing_cid
- * @returns status
- */
-uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid);
-
 /**
  * @brief Retrieve a list of media players.
  * @param avrcp_browsing_cid

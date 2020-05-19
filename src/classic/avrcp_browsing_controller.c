@@ -515,10 +515,6 @@ void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t 
     avrcp_controller_context.browsing_avrcp_callback = callback;
 }
 
-uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
-    return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_CONTROLLER);
-}
-
 uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap, avrcp_browsing_scope_t scope){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){

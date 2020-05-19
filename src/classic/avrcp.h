@@ -642,10 +642,9 @@ uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
 /**
  * @brief   Disconnect from AVRCP Browsing service
  * @param   avrcp_browsing_cid
- * @param   avrcp_role
  * @returns status
  */
-uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrcp_role);
+uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid);
 
 /* API_END */
 

@@ -1272,7 +1272,7 @@ uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid
     if (!connection_controller->browsing_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!connection_controller->browsing_connection){
+    if (!connection_target->browsing_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1307,7 +1307,7 @@ uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
     if (!connection_controller->browsing_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!connection_controller->browsing_connection){
+    if (!connection_target->browsing_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1322,15 +1322,24 @@ uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrcp_role){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(avrcp_role, avrcp_browsing_cid);
-    if (!avrcp_connection){
-        log_error("Could not find a connection.");
+uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid){
+    avrcp_connection_t * connection_controller = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    if (!connection_controller){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    avrcp_connection_t * connection_target = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    if (!connection_target){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     
-    l2cap_disconnect(avrcp_connection->browsing_connection->l2cap_browsing_cid, 0);
+    if (!connection_controller->browsing_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (!connection_target->browsing_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    l2cap_disconnect(connection_controller->browsing_connection->l2cap_browsing_cid, 0);
     return ERROR_CODE_SUCCESS;
 }
 

@@ -212,10 +212,6 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
     avrcp_target_context.browsing_avrcp_callback = callback;
 }
 
-uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid){
-    return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_TARGET);
-}
-
 uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
