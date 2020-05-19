@@ -623,7 +623,7 @@ void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
 
 /**
- * @brief Configure incoming connection.
+ * @brief Configure incoming connection for Browsing Service.
  * @param avrcp_browsing_cid
  * @param ertm_buffer
  * @param ertm_buffer_size
@@ -631,6 +631,13 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
  * @returns status
  */
 uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config);
+
+/**
+ * @brief Decline incoming connection Browsing Service.
+ * @param avrcp_browsing_cid
+ * @returns status
+ */
+uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
 
 /**
  * @brief   Disconnect from AVRCP Browsing service

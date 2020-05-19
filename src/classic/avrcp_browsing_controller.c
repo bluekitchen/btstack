@@ -519,23 +519,6 @@ uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
     return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_CONTROLLER);
 }
 
-
-uint8_t avrcp_browsing_controller_decline_incoming_connection(uint16_t avrcp_browsing_cid){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
-    if (!avrcp_connection){
-        log_error("avrcp_browsing_controller_decline_incoming_connection: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!avrcp_connection->browsing_connection) return ERROR_CODE_SUCCESS;
-    if (avrcp_connection->browsing_connection->state > AVCTP_CONNECTION_W4_ERTM_CONFIGURATION) return ERROR_CODE_COMMAND_DISALLOWED;
-    
-    l2cap_decline_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid);
-    // free connection
-    btstack_memory_avrcp_browsing_connection_free(avrcp_connection->browsing_connection);
-    avrcp_connection->browsing_connection = NULL;
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap, avrcp_browsing_scope_t scope){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){

@@ -109,13 +109,6 @@ void avrcp_browsing_controller_init(void);
  */
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
 
-/**
- * @brief Decline incoming connection.
- * @param avrcp_browsing_cid
- * @returns status
- */
-uint8_t avrcp_browsing_controller_decline_incoming_connection(uint16_t avrcp_browsing_cid);
-
 
 /**
  * @brief Disconnect from AVRCP target

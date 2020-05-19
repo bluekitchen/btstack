@@ -387,7 +387,7 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                     printf("AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION cid 0x%02x\n", local_cid);
                     if (browsing_cid != 0 && browsing_cid != local_cid) {
                         printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                        avrcp_browsing_controller_decline_incoming_connection(browsing_cid);
+                        avrcp_browsing_decline_incoming_connection(browsing_cid);
                         return;
                     }
                     browsing_cid = local_cid;

@@ -216,22 +216,6 @@ uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid){
     return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_TARGET);
 }
 
-uint8_t avrcp_browsing_target_decline_incoming_connection(uint16_t avrcp_browsing_cid){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
-    if (!avrcp_connection){
-        log_error("avrcp_browsing_decline_incoming_connection: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!avrcp_connection->browsing_connection) return ERROR_CODE_SUCCESS;
-    if (avrcp_connection->browsing_connection->state > AVCTP_CONNECTION_W4_ERTM_CONFIGURATION) return ERROR_CODE_COMMAND_DISALLOWED;
-    
-    l2cap_decline_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid);
-    // free connection
-    btstack_memory_avrcp_browsing_connection_free(avrcp_connection->browsing_connection);
-    avrcp_connection->browsing_connection = NULL;
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
