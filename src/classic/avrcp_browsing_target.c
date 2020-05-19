@@ -216,31 +216,6 @@ uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid){
     return avrcp_browsing_disconnect(avrcp_browsing_cid, AVRCP_TARGET);
 }
 
-uint8_t avrcp_browsing_target_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
-    if (!avrcp_connection){
-        log_error("avrcp_browsing_decline_incoming_connection: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (!avrcp_connection->browsing_connection){
-        log_error("avrcp_browsing_decline_incoming_connection: no browsing connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    } 
-
-    if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_W4_ERTM_CONFIGURATION){
-        log_error("avrcp_browsing_decline_incoming_connection: browsing connection in a wrong state.");
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    } 
-
-    avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    avrcp_connection->browsing_connection->ertm_buffer = ertm_buffer;
-    avrcp_connection->browsing_connection->ertm_buffer_size = size;
-    (void)memcpy(&avrcp_connection->browsing_connection->ertm_config,
-                 ertm_config, sizeof(l2cap_ertm_config_t));
-    l2cap_accept_ertm_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid, &avrcp_connection->browsing_connection->ertm_config, avrcp_connection->browsing_connection->ertm_buffer, avrcp_connection->browsing_connection->ertm_buffer_size);
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t avrcp_browsing_target_decline_incoming_connection(uint16_t avrcp_browsing_cid){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){

@@ -110,16 +110,6 @@ void avrcp_browsing_controller_init(void);
 void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Configure incoming connection.
- * @param avrcp_browsing_cid
- * @param ertm_buffer
- * @param ertm_buffer_size
- * @param ertm_config
- * @returns status
- */
-uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config);
-
-/**
  * @brief Decline incoming connection.
  * @param avrcp_browsing_cid
  * @returns status

@@ -392,7 +392,7 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                     }
                     browsing_cid = local_cid;
                     printf("AVRCP Browsing Client configure incoming connection, browsing cid 0x%02x\n", browsing_cid);
-                    avrcp_browsing_controller_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
+                    avrcp_browsing_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
                     break;
 
                 case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {

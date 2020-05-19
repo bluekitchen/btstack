@@ -996,7 +996,7 @@ static void avrcp_emit_browsing_connection_closed(uint16_t browsing_cid){
 }
 
 
-static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection, uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
+static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection, uint16_t avrcp_browsing_cid){
     avrcp_browsing_connection_t * browsing_connection = btstack_memory_avrcp_browsing_connection_get();
     if (!browsing_connection){
         log_error("Not enough memory to create browsing connection");
@@ -1004,13 +1004,6 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
     }
     browsing_connection->state = AVCTP_CONNECTION_IDLE;
     browsing_connection->transaction_label = 0xFF;
-    browsing_connection->ertm_buffer = ertm_buffer;
-    browsing_connection->ertm_buffer_size = ertm_buffer_size;
-    
-    if (ertm_buffer_size > 0) {
-        (void)memcpy(&browsing_connection->ertm_config, ertm_config,
-                 sizeof(l2cap_ertm_config_t));
-    }
     
     avrcp_connection->avrcp_browsing_cid = avrcp_browsing_cid;
     avrcp_connection->browsing_connection = browsing_connection;
@@ -1019,10 +1012,20 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
     return browsing_connection;
 }
 
+static void avrcp_browsing_configure_ertm(avrcp_browsing_connection_t * browsing_connection, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
+    browsing_connection->ertm_buffer = ertm_buffer;
+    browsing_connection->ertm_buffer_size = ertm_buffer_size;
+    
+    if (ertm_buffer_size > 0) {
+        (void)memcpy(&browsing_connection->ertm_config, ertm_config,
+                 sizeof(l2cap_ertm_config_t));
+        log_info("avrcp_browsing_configure_ertm");
+    }
+}
 
 static avrcp_browsing_connection_t * avrcp_browsing_handle_incoming_connection(avrcp_connection_t * connection, uint16_t local_cid, uint16_t avrcp_browsing_cid){
     if (connection->browsing_connection == NULL){
-        avrcp_browsing_create_connection(connection, avrcp_browsing_cid, NULL, 0, NULL);
+        avrcp_browsing_create_connection(connection, avrcp_browsing_cid);
     }
     if (connection->browsing_connection) {
         connection->browsing_connection->l2cap_browsing_cid = local_cid;
@@ -1222,26 +1225,26 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    avrcp_browsing_connection_t * browsing_connection_controller = connection_controller->browsing_connection;
-    if (browsing_connection_controller){
+    if (connection_controller->browsing_connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    avrcp_browsing_connection_t * browsing_connection_target = connection_controller->browsing_connection;
-    if (browsing_connection_target){
+    if (connection_target->browsing_connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
     uint16_t cid = avrcp_get_next_cid(AVRCP_CONTROLLER);
 
-    browsing_connection_controller = avrcp_browsing_create_connection(connection_controller, cid, ertm_buffer, ertm_buffer_size, ertm_config);
-    if (!browsing_connection_controller) return BTSTACK_MEMORY_ALLOC_FAILED;
-
-    browsing_connection_target = avrcp_browsing_create_connection(connection_target, cid, ertm_buffer, ertm_buffer_size, ertm_config);
-    if (!browsing_connection_target){
+    connection_controller->browsing_connection = avrcp_browsing_create_connection(connection_controller, cid);
+    if (!connection_controller->browsing_connection) return BTSTACK_MEMORY_ALLOC_FAILED;
+    
+    connection_target->browsing_connection = avrcp_browsing_create_connection(connection_target, cid);
+    if (!connection_target->browsing_connection){
         avrcp_browsing_finalize_connection(connection_controller);
         return BTSTACK_MEMORY_ALLOC_FAILED;
     } 
-    
+    avrcp_browsing_configure_ertm(connection_controller->browsing_connection, ertm_buffer, ertm_buffer_size, ertm_config);
+    avrcp_browsing_configure_ertm(connection_target->browsing_connection, ertm_buffer, ertm_buffer_size, ertm_config);
+
     if (avrcp_browsing_cid != NULL){
         *avrcp_browsing_cid = cid;
     }
@@ -1254,6 +1257,42 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
                     connection_controller->browsing_connection->ertm_buffer, 
                     connection_controller->browsing_connection->ertm_buffer_size, NULL);
 
+}
+
+uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
+    avrcp_connection_t * connection_controller = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    if (!connection_controller){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    avrcp_connection_t * connection_target = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    if (!connection_target){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (!connection_controller->browsing_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (!connection_controller->browsing_connection){
+        log_error("avrcp_browsing_configure_incoming_connection: browsing connection in a wrong state.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection_controller->browsing_connection->state != AVCTP_CONNECTION_W4_ERTM_CONFIGURATION){
+        log_error("avrcp_browsing_configure_incoming_connection: browsing connection in a wrong state.");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+
+    avrcp_browsing_configure_ertm(connection_controller->browsing_connection, ertm_buffer, ertm_buffer_size, ertm_config);
+    avrcp_browsing_configure_ertm(connection_target->browsing_connection, ertm_buffer, ertm_buffer_size, ertm_config);
+
+    connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+    connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+    
+    l2cap_accept_ertm_connection(connection_controller->browsing_connection->l2cap_browsing_cid, 
+        &connection_controller->browsing_connection->ertm_config, 
+        connection_controller->browsing_connection->ertm_buffer, 
+        connection_controller->browsing_connection->ertm_buffer_size);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid, avrcp_role_t avrcp_role){
