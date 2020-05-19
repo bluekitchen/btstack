@@ -413,7 +413,7 @@ typedef struct {
     avrcp_browsing_connection_t * browsing_connection;
 
     avctp_connection_state_t state;
-    uint8_t wait_to_send;
+    bool wait_to_send;
     
     // PID check
     uint8_t reject_transport_header;
