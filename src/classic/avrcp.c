@@ -385,8 +385,7 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 }
 
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid){
-    // printf("AVRCP: avrcp_request_can_send_now, role %d\n", connection->role);
-    connection->wait_to_send = 1;
+    connection->wait_to_send = true;
     l2cap_request_can_send_now_event(l2cap_cid);
 }
 
@@ -1204,7 +1203,21 @@ static void avrcp_browsing_packet_handler_with_role(uint8_t packet_type, uint16_
                     break;
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    (*browsing_callback)(packet_type, channel, packet, size);
+                    local_cid = l2cap_event_can_send_now_get_local_cid(packet);
+                    
+                    connection_target = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
+                    if ((connection_target != NULL) && (connection_target->browsing_connection != NULL) && connection_target->browsing_connection->wait_to_send) {
+                        connection_target->browsing_connection->wait_to_send = false;
+                        (*avrcp_browsing_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
+                        break;  
+                    }
+
+                    connection_controller = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    if ((connection_controller != NULL) && (connection_controller->browsing_connection != NULL) && connection_controller->browsing_connection->wait_to_send) {
+                        connection_controller->browsing_connection->wait_to_send = false;
+                        (*avrcp_browsing_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
+                        break;  
+                    }
                     break;    
                 
                 default:

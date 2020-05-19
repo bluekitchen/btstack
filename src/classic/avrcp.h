@@ -325,7 +325,7 @@ typedef struct {
     uint16_t l2cap_browsing_cid;
 
     avctp_connection_state_t state;
-    uint8_t  wait_to_send;
+    bool     wait_to_send;
     uint8_t  transaction_label;
     // used for AVCTP fragmentation
     uint8_t  num_packets;

@@ -64,7 +64,7 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
                  connection->cmd_operands_length);
     
     pos += connection->cmd_operands_length;
-    connection->wait_to_send = 0;
+    connection->wait_to_send = false;
     // return l2cap_send_prepared(connection->l2cap_browsing_cid, pos);
     return l2cap_send(connection->l2cap_browsing_cid, packet, pos);
 }
