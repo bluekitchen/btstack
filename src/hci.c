@@ -1906,6 +1906,28 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
 #endif
 }
 
+static void hci_handle_remote_features_page_0(hci_connection_t * conn, const uint8_t * features){
+    // SSP Controller
+    if (features[6] & (1 << 3)){
+        conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER;
+    }
+    // eSCO
+    if (features[3] & (1<<7)){
+        conn->remote_supported_features[0] |= 1;
+    }
+    // Extended features
+    if (features[7] & (1<<7)){
+        conn->remote_supported_features[0] |= 2;
+    }
+}
+
+static void hci_handle_remote_features_page_1(hci_connection_t * conn, const uint8_t * features){
+    // SSP Host
+    if (features[0] & (1 << 0)){
+        conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_HOST;
+    }
+}
+
 static void hci_handle_remote_features_received(hci_connection_t * conn){
     conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
     log_info("Remote features %02x, bonding flags %x", conn->remote_supported_features[0], conn->bonding_flags);
@@ -2285,19 +2307,9 @@ static void event_handler(uint8_t *packet, int size){
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
             if (!packet[2]){
-                uint8_t * features = &packet[5];
-                // SSP Controller
-                if (features[6] & (1 << 3)){
-                    conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER;
-                }
-                // eSCO
-                if (features[3] & (1<<7)){
-                    conn->remote_supported_features[0] |= 1;
-                }
-                // Extended features
-                if (features[7] & (1<<7)){
-                    conn->remote_supported_features[0] |= 2;
-                }
+                const uint8_t * features = &packet[5];
+                hci_handle_remote_features_page_0(conn, features);
+
                 // read extended features if possible
                 if (((hci_stack->local_supported_commands[1] & 1) != 0) && ((conn->remote_supported_features[0] & 2) != 0)) {
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_1;
@@ -2314,10 +2326,7 @@ static void event_handler(uint8_t *packet, int size){
             // status = ok, page = 1
             if (!packet[2] && packet[5] == 1){
                 const uint8_t * features = &packet[7];
-                // SSP Host
-                if (features[0] & (1 << 0)){
-                    conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_HOST;
-                }
+                hci_handle_remote_features_page_1(conn, features);
             }
             hci_handle_remote_features_received(conn);
             break;
