@@ -660,17 +660,34 @@ static void avrcp_handle_open_connection_for_role( avrcp_connection_t * connecti
     log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x, role %d", connection->avrcp_cid, connection->l2cap_signaling_cid, connection->role);
 }
 
+static void avrcp_browsing_reconnect_handler(avrcp_connection_t * connection_controller, avrcp_connection_t * connection_target){
+    if ((connection_controller->browsing_connection == NULL) || (connection_target->browsing_connection == NULL)) return;
+
+    if (connection_controller->browsing_connection->state == AVCTP_CONNECTION_W2_L2CAP_RECONNECT){
+        connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+        connection_target->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+
+        l2cap_create_ertm_channel(avrcp_browsing_packet_handler, connection_controller->remote_addr, connection_controller->browsing_l2cap_psm, 
+                &connection_controller->browsing_connection->ertm_config, 
+                connection_controller->browsing_connection->ertm_buffer, 
+                connection_controller->browsing_connection->ertm_buffer_size, NULL);
+    }
+}
+
 static void avrcp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t avrcp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-    avrcp_connection_t * controller_connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
-    if (controller_connection == NULL) return;
-    avrcp_connection_t * target_connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
-    if (target_connection == NULL) return;
+    avrcp_connection_t * connection_controller = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    if (connection_controller == NULL) return;
+    avrcp_connection_t * connection_target = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    if (connection_target == NULL) return;
 
-    controller_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    target_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    
-    l2cap_create_channel(&avrcp_packet_handler, controller_connection->remote_addr, controller_connection->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
+    if (connection_controller->state == AVCTP_CONNECTION_W2_L2CAP_RECONNECT){
+        connection_controller->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+        connection_target->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+        l2cap_create_channel(&avrcp_packet_handler, connection_controller->remote_addr, connection_controller->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
+    } else {
+        avrcp_browsing_reconnect_handler(connection_controller, connection_target);
+    }
 }
 
 static void avrcp_reconnect_timer_start(avrcp_connection_t * connection){
@@ -944,7 +961,7 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback){
 
 // AVRCP Browsing Service functions
 static void avrcp_browsing_finalize_connection(avrcp_connection_t * connection){
-    btstack_run_loop_remove_timer(&connection->browsing_connection->reconnect_timer);
+    btstack_run_loop_remove_timer(&connection->reconnect_timer);
     btstack_memory_avrcp_browsing_connection_free(connection->browsing_connection);
     connection->browsing_connection = NULL;
 }
@@ -1028,7 +1045,7 @@ static avrcp_browsing_connection_t * avrcp_browsing_handle_incoming_connection(a
     if (connection->browsing_connection) {
         connection->browsing_connection->l2cap_browsing_cid = local_cid;
         connection->browsing_connection->state = AVCTP_CONNECTION_W4_ERTM_CONFIGURATION;
-        btstack_run_loop_remove_timer(&connection->browsing_connection->reconnect_timer);
+        btstack_run_loop_remove_timer(&connection->reconnect_timer);
     } 
     return connection->browsing_connection;
 }
