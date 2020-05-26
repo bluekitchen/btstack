@@ -154,7 +154,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
-static const char * device_addr_string = "00:1B:DC:07:32:EF";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // Minijambox:      
@@ -524,12 +524,12 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
             if (browsing_cid != 0 && browsing_cid != local_cid) {
                 printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                avrcp_browsing_target_decline_incoming_connection(browsing_cid);
+                avrcp_browsing_decline_incoming_connection(browsing_cid);
                 return;
             }
             browsing_cid = local_cid;
             printf("AVRCP Browsing Client configure incoming connection, browsing cid 0x%02x\n", browsing_cid);
-            avrcp_browsing_target_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
+            avrcp_browsing_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
             break;
 
         case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
@@ -849,6 +849,10 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize AVRCP Target.
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
+
+    avrcp_browsing_init();
+    avrcp_browsing_register_packet_handler(&avrcp_target_packet_handler);
+    
     avrcp_browsing_target_init();
     avrcp_browsing_target_register_packet_handler(&avrcp_target_packet_handler);
     // Initialize SDP, 

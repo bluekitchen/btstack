@@ -60,7 +60,7 @@
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         static const char * device_addr_string = "00:1B:DC:07:32:EF";
 // iPod 5G-C:   
-static const char * device_addr_string = "B0:34:95:CB:97:C4";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
@@ -354,7 +354,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             avrcp_cid = local_cid;
                             avrcp_connected = 1;
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-                            printf("AVRCP Controller connected.\n");
+                            printf("AVRCP Controller connected avrcp_cid 0x0%2x.\n", avrcp_cid);
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -369,12 +369,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
                             if (browsing_cid != 0 && browsing_cid != local_cid) {
                                 printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                                avrcp_browsing_controller_decline_incoming_connection(browsing_cid);
+                                avrcp_browsing_decline_incoming_connection(browsing_cid);
                                 return;
                             }
                             browsing_cid = local_cid;
                             printf("AVRCP Browsing Client configure incoming connection, browsing cid 0x%02x\n", browsing_cid);
-                            avrcp_browsing_controller_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
+                            avrcp_browsing_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
                             break;
 
                         case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
@@ -646,12 +646,12 @@ static void stdin_process(char * cmd, int size){
                 break;
             }
             printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_browsing_controller_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
+            status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
             break;
         case 'E':
             if (avrcp_browsing_connected){
                 printf(" - AVRCP Browsing Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-                status = avrcp_browsing_controller_disconnect(browsing_cid);
+                status = avrcp_browsing_disconnect(browsing_cid);
                 break;
             }
             printf("AVRCP Browsing Controller already disconnected\n");
@@ -1140,6 +1140,10 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&packet_handler);
+    
+    avrcp_browsing_init();
+    avrcp_browsing_register_packet_handler(&packet_handler);
+
     avrcp_browsing_controller_init();
     avrcp_browsing_controller_register_packet_handler(&packet_handler);
     

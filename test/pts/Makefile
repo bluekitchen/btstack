@@ -70,6 +70,14 @@ AVDTP += \
 	a2dp_sink.c  		\
 	btstack_ring_buffer.c \
 
+AVRCP += \
+	avrcp_media_item_iterator.c \
+	avrcp.c  \
+	avrcp_target.c  \
+	avrcp_controller.c  \
+	avrcp_browsing_target.c \
+	avrcp_browsing_controller.c \
+
 # include ${BTSTACK_ROOT}/example/Makefile.inc
 
 HXCMOD_PLAYER = \
@@ -128,6 +136,7 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
+AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
@@ -171,10 +180,10 @@ hrp_server_test: hrp_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_S
 hrp_col_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} hrp_col_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp.o avrcp_target.o avrcp_browsing_target.o btstack_stdin_pts.o  avrcp_target_test.c
+avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${AVRCP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o btstack_stdin_pts.o  avrcp_target_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp_controller_test.o
+avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVRCP_OBJ} ${AVDTP_OBJ} sdp_client.o btstack_stdin_pts.o avrcp_controller_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
