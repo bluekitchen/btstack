@@ -100,7 +100,9 @@ static void sm_pairing_central_setup(void){
 
     /**
      * Choose ONE of the following configurations
-     * Bonding is disabled to allow for repeated testing. It can be enabled with SM_AUTHREQ_BONDING
+     * Bonding is disabled to allow for repeated testing. It can be enabled by or'ing
+     * SM_AUTHREQ_BONDING to the authentication requirements like this:
+     * sm_set_authentication_requirements( X | SM_AUTHREQ_BONDING)
      */
 
     // register handler
@@ -112,7 +114,7 @@ static void sm_pairing_central_setup(void){
 
     // LE Legacy Pairing, Just Works
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-    // sm_set_authentication_requirements(SM_AUTHREQ_ NO_BONDING);
+    // sm_set_authentication_requirements(0);
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
@@ -120,12 +122,15 @@ static void sm_pairing_central_setup(void){
     // sm_use_fixed_passkey_in_display_role(FIXED_PASSKEY);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    // LE Secure Connetions, Just Works
+
+    // enable LE Secure Connections Only mode - disables Legacy pairing
+    // sm_set_secure_connections_only_mode(true);
+
+    // LE Secure Connections, Just Works
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
 
     // LE Secure Connections, Numeric Comparison
-    // sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 
@@ -237,7 +242,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     printf("Pairing failed, timeout\n");
                     break;
                 case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
-                    printf("Pairing faileed, disconnected\n");
+                    printf("Pairing failed, disconnected\n");
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
                     printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
