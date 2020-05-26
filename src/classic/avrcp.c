@@ -1194,8 +1194,8 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
         
-                    connection_controller = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
-                    connection_target = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
+                    connection_controller = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    connection_target = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_controller == NULL) || (connection_target == NULL)) {
                         break;
                     }
@@ -1211,15 +1211,13 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    
-                    connection_target = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
+                    connection_target = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_target != NULL) && (connection_target->browsing_connection != NULL) && connection_target->browsing_connection->wait_to_send) {
                         connection_target->browsing_connection->wait_to_send = false;
                         (*avrcp_browsing_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;  
                     }
-
-                    connection_controller = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    connection_controller = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     if ((connection_controller != NULL) && (connection_controller->browsing_connection != NULL) && connection_controller->browsing_connection->wait_to_send) {
                         connection_controller->browsing_connection->wait_to_send = false;
                         (*avrcp_browsing_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
