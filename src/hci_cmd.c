@@ -843,6 +843,14 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
 };
 
 /**
+ * @param secure_connections_host_support
+ */
+const hci_cmd_t hci_write_secure_connections_host_support = {
+        OPCODE(OGF_CONTROLLER_BASEBAND, 0x7a), "1"
+// return: status
+};
+
+/**
  */
 const hci_cmd_t hci_read_local_extended_ob_data = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x7d), ""

@@ -168,6 +168,7 @@ extern const hci_cmd_t hci_write_page_timeout;
 extern const hci_cmd_t hci_write_pin_type;
 extern const hci_cmd_t hci_write_page_scan_activity;
 extern const hci_cmd_t hci_write_scan_enable;
+extern const hci_cmd_t hci_write_secure_connections_host_support;
 extern const hci_cmd_t hci_write_secure_connections_test_mode;
 extern const hci_cmd_t hci_write_simple_pairing_debug_mode;
 extern const hci_cmd_t hci_write_simple_pairing_mode;
