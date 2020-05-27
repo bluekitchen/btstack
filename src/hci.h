@@ -647,9 +647,7 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
     HCI_INIT_WRITE_SCAN_ENABLE,
     HCI_INIT_W4_WRITE_SCAN_ENABLE,
-    HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
-    HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
-
+    
     // SCO over HCI
     HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
@@ -809,7 +807,6 @@ typedef struct {
     /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */
     /* 7 - Read Encryption Key Size                (Octet 20/bit 4) */
     /* 8 - Read Remote Extended Features           (Octet  2/bit 5) */
-    /* 9 - Write Secure Connections Host           (Octet 32/bit 3) */
     uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */
