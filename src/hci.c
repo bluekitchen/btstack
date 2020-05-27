@@ -1473,6 +1473,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
             break;
+        case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
+            hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+            hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+            break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
@@ -1806,7 +1810,15 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
 
 #endif  /* ENABLE_BLE */
-            
+
+        case HCI_INIT_W4_WRITE_INQUIRY_MODE:
+            // skip write secure connections host support if not supported or disabled
+            if (hci_stack->secure_connections_enable && hci_stack->local_supported_commands[1] & 0x02) {
+                hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;
+                return;
+            }
+            break;
+
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             // skip write synchronous flow control if not supported
@@ -2057,7 +2069,8 @@ static void event_handler(uint8_t *packet, int size){
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1) |  // bit 6 = Octet 35, bit 5 / LE Set Default PHY
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+20] & 0x10) << 3);   // bit 7 = Octet 20, bit 4 / Read Encryption Key Size
                 hci_stack->local_supported_commands[1] =
-                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+ 2] & 0x40) >> 6);   // bit 8 = Octet  2, bit 6 / Read Remote Extended Features
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+ 2] & 0x40) >> 6) |  // bit 8 = Octet  2, bit 6 / Read Remote Extended Features
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+32] & 0x08) >> 2);   // bit 9 = Octet 32, bit 3 / Write Secure Connections Host
                 log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
             }
 #ifdef ENABLE_CLASSIC
@@ -2900,6 +2913,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
+
+    // Secure Connections: enable (requires support from Controller)
+    hci_stack->secure_connections_enable = true;
 
     // voice setting - signed 16 bit pcm data with CVSD over the air
     hci_stack->sco_voice_setting = 0x60;
@@ -4196,6 +4212,11 @@ void gap_ssp_set_authentication_requirement(int authentication_requirement){
 void gap_ssp_set_auto_accept(int auto_accept){
     hci_stack->ssp_auto_accept = auto_accept;
 }
+
+void gap_secure_connections_enable(bool enable){
+    hci_stack->secure_connections_enable = enable;
+}
+
 #endif
 
 // va_list part of hci_send_cmd

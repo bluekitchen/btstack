@@ -209,7 +209,7 @@ void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t add
 /* Configure Secure Simple Pairing */
 
 /**
- * @brief Enable will enable SSP during init.
+ * @brief Enable will enable SSP during init. Default: true
  */
 void gap_ssp_set_enable(int enable);
 
@@ -222,6 +222,11 @@ void gap_ssp_set_io_capability(int ssp_io_capability);
  * @brief Set Authentication Requirements using during SSP
  */
 void gap_ssp_set_authentication_requirement(int authentication_requirement);
+
+/**
+ * @brief Enable/disable Secure Connections. Default: true if supported by Controller
+ */
+void gap_secure_connections_enable(bool enable);
 
 /**
  * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
