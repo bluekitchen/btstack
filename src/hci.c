@@ -1477,6 +1477,10 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
             break;
+        case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
+            hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+            hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+            break;
         // only sent if ENABLE_SCO_OVER_HCI is defined
         case HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE:
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
@@ -1806,9 +1810,17 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
 
 #endif  /* ENABLE_BLE */
-            
-#ifdef ENABLE_SCO_OVER_HCI
+
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
+
+            // skip write secure connections host support if not supported
+            if (hci_stack->local_supported_commands[1] & 0x02) break;
+            hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+
+            /* fall through */
+
+#ifdef ENABLE_SCO_OVER_HCI
+        case HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
             // skip write synchronous flow control if not supported
             if (hci_stack->local_supported_commands[0] & 0x04) break;
             hci_stack->substate = HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE;
@@ -2057,7 +2069,8 @@ static void event_handler(uint8_t *packet, int size){
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1) |  // bit 6 = Octet 35, bit 5 / LE Set Default PHY
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+20] & 0x10) << 3);   // bit 7 = Octet 20, bit 4 / Read Encryption Key Size
                 hci_stack->local_supported_commands[1] =
-                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+ 2] & 0x40) >> 6);   // bit 8 = Octet  2, bit 6 / Read Remote Extended Features
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+ 2] & 0x40) >> 6) |  // bit 8 = Octet  2, bit 6 / Read Remote Extended Features
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+32] & 0x08) >> 2);   // bit 9 = Octet 32, bit 3 / Write Secure Connections Host
                 log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
             }
 #ifdef ENABLE_CLASSIC
