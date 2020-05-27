@@ -3864,6 +3864,12 @@ static bool hci_run_general_pending_commmands(void){
             return true;
         }
 
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_2){
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_2;
+            hci_send_cmd(&hci_read_remote_extended_features_command, connection->con_handle, 2);
+            return true;
+        }
+
         if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
             connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
             connection->bonding_flags |= BONDING_EMIT_COMPLETE_ON_DISCONNECT;
