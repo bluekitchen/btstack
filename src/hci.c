@@ -1926,6 +1926,17 @@ static void hci_handle_remote_features_page_1(hci_connection_t * conn, const uin
     if (features[0] & (1 << 0)){
         conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP_HOST;
     }
+    // SC Host
+    if (features[0] & (1 << 3)){
+        conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SC_HOST;
+    }
+}
+
+static void hci_handle_remote_features_page_2(hci_connection_t * conn, const uint8_t * features){
+    // SC Controller
+    if (features[1] & (1 << 0)){
+        conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SC_CONTROLLER;
+    }
 }
 
 static void hci_handle_remote_features_received(hci_connection_t * conn){
@@ -2324,9 +2335,33 @@ static void event_handler(uint8_t *packet, int size){
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
             // status = ok, page = 1
-            if (!packet[2] && packet[5] == 1){
+            if (!packet[2]) {
+                uint8_t page_number = packet[5];
+                uint8_t maximum_page_number = packet[6];
                 const uint8_t * features = &packet[7];
-                hci_handle_remote_features_page_1(conn, features);
+                bool done = false;
+                switch (page_number){
+                    case 1:
+                        hci_handle_remote_features_page_1(conn, features);
+                        if (maximum_page_number >= 2){
+                            // get Secure Connections (Controller) from Page 2 if available
+                            conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_2;
+                        } else {
+                            // otherwise, assume SC (Controller) == SC (Host)
+                            if ((conn->bonding_flags & BONDING_REMOTE_SUPPORTS_SC_HOST) != 0){
+                                conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SC_CONTROLLER;
+                            }
+                            done = true;
+                        }
+                        break;
+                    case 2:
+                        hci_handle_remote_features_page_2(conn, features);
+                        done = true;
+                        break;
+                    default:
+                        break;
+                }
+                if (!done) break;
             }
             hci_handle_remote_features_received(conn);
             break;
