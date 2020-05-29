@@ -72,6 +72,13 @@ static bd_addr_t device_addr;
 static const uint8_t fragmented_message[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
+typedef enum {
+    AVRCP_BROWSING_STATE_IDLE,
+    AVRCP_BROWSING_STATE_W4_GET_PLAYERS,
+    AVRCP_BROWSING_STATE_W4_SET_PLAYER,
+    AVRCP_BROWSING_STATE_READY
+} avrcp_browsing_state_t;
+
 typedef struct {
     uint16_t  charset;
     uint8_t   depth;
@@ -147,6 +154,7 @@ static avdtp_stream_endpoint_t * local_stream_endpoint;
 static avdtp_context_t a2dp_sink_context;
 static uint8_t  avrcp_value[100];
 static uint16_t browsing_uid_counter = 0;
+static avrcp_browsing_state_t browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
 static uint8_t ertm_buffer[10000];
 static l2cap_ertm_config_t ertm_config = {
@@ -336,6 +344,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;   
                   
                 case HCI_EVENT_AVRCP_META:
+                    printf("received HCI_EVENT_AVRCP_META 0x%2x\n", packet[2]);
+
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
                             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
@@ -395,6 +405,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             avrcp_browsing_connected = 1;
                             avrcp_subevent_browsing_connection_established_get_bd_addr(packet, event_addr);
                             printf("AVRCP Browsing Client connected\n");
+                            printf("AVRCP Browsing: get media players. Browsing cid 0x%02X\n", browsing_cid);
+                            media_player_item_index = -1;
+                            status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
+                            
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("Could not get players, status 0x%02X\n", status);
+                                break;
+                            }         
+                            browsing_state = AVRCP_BROWSING_STATE_W4_GET_PLAYERS;              
                             return;
                         }
                         case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
@@ -410,11 +429,33 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
                                     avrcp_subevent_browsing_done_get_browsing_status(packet),
                                     avrcp_subevent_browsing_done_get_bluetooth_status(packet));
-                                break;    
+                                return;    
                             }
                             browsing_uid_counter = avrcp_subevent_browsing_done_get_uid_counter(packet);
                             printf("DONE, browsing_uid_counter %d.\n", browsing_uid_counter);
-                            break;
+                            
+                            switch (browsing_state){
+                                case AVRCP_BROWSING_STATE_W4_GET_PLAYERS:
+                                    if (media_player_item_index < 0) {
+                                        printf("Get media players first\n");
+                                        break;
+                                    }
+                                    printf("Set browsed player\n");
+                                    browsing_state = AVRCP_BROWSING_STATE_W4_SET_PLAYER;
+                                    status = avrcp_browsing_controller_set_browsed_player(browsing_cid, media_player_items[0].player_id);
+                                    if (status != ERROR_CODE_SUCCESS){
+                                        printf("Could not set player, status 0x%02X\n", status);
+                                        status = AVRCP_BROWSING_STATE_W4_GET_PLAYERS;
+                                        break;
+                                    }         
+                                    break;
+                                case AVRCP_BROWSING_STATE_W4_SET_PLAYER:
+                                    browsing_state = AVRCP_BROWSING_STATE_READY;
+                                    break;
+                                default:
+                                    break; 
+                            }
+                            return;
 
                         default:
                             break;
@@ -428,6 +469,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
                     
                     switch (packet[2]){
+                        case AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO:
+                            printf("Now playing:     Track: %d\n", avrcp_subevent_now_playing_track_info_get_track(packet));
+                            break;
+
+                        case AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO:
+                            printf("Now playing:     Total Tracks: %d\n", avrcp_subevent_now_playing_total_tracks_info_get_total_tracks(packet));
+                            break;
                         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
                             printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
                             return;
@@ -443,6 +491,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
                             printf("notification changed\n");
                             return; 
+                        case AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED:{
+                            printf("UUIDS changed 0x%2x\n", avrcp_subevent_notification_event_uids_changed_get_uid_counter(packet));
+                            // reset to root folder
+                            media_element_item_index = -1;
+                            playable_folder_index = 0;
+                            folder_index = -1;
+                            parent_folder_set = 0;
+                            return;
+                        }
                         case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
                             uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
                             uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
@@ -921,7 +978,6 @@ static void stdin_process(char * cmd, int size){
         case 'p':
             switch (cmd[1]){
                 case 'p':
-                    // players[next_media_player_item_index()] = 1;
                     printf("AVRCP Browsing: get media players. Browsing cid 0x%02X\n", browsing_cid);
                     media_player_item_index = -1;
                     status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
@@ -1171,6 +1227,8 @@ int btstack_main(int argc, const char * argv[]){
     printf("TSPX_avctp_iut_command_data: ");
     int i; for (i=0;i<sizeof(fragmented_message);i++){ printf("%02x", fragmented_message[i]);}
     printf("\n");
+
+    browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
