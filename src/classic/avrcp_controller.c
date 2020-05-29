@@ -718,19 +718,74 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
-                            uint8_t event[7];
+                            uint8_t event[8];
+                            uint16_t uuid = big_endian_read_16(packet, pos);
                             int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
-                            event[offset++] = AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED;
                             little_endian_store_16(event, offset, connection->avrcp_cid);
                             offset += 2;
                             event[offset++] = ctype;
-                            event[offset++] = packet[pos++] & 0x7F;
+                            little_endian_store_16(event, offset, uuid);
+                            offset += 2;
                             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
                         }
 
+                        case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END:{
+                            uint8_t event[6];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
+                        case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START:{
+                            uint8_t event[6];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_START;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
+                        case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:{
+                            uint8_t event[7];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = packet[pos++];
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
+
+                        case AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED:{
+                            uint8_t event[7];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = packet[pos];
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
+
+                        case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
                         default:
                             log_info("avrcp: not implemented");
                             break;
