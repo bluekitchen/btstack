@@ -162,7 +162,7 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d,                     // The volume has been changed locally on the TG, see 6.13.3.
-    AVRCP_NOTIFICATION_EVENT_MAX_VALUE = 0x0d
+    AVRCP_NOTIFICATION_EVENT_MAX_VALUE = 0x0e
 } avrcp_notification_event_id_t;
 
 
@@ -259,7 +259,7 @@ typedef enum{
     AVRCP_PLAYBACK_STATUS_ERROR = 0xFF
 } avrcp_playback_status_t;
 
-typedef enum{
+typedef enum {
     AVRCP_BATTERY_STATUS_NORMAL = 0x00, // Battery operation is in normal state
     AVRCP_BATTERY_STATUS_WARNING,       // unable to operate soon. Is provided when the battery level is going down.
     AVRCP_BATTERY_STATUS_CRITICAL,      // can not operate any more. Is provided when the battery level is going down.
@@ -267,6 +267,19 @@ typedef enum{
     AVRCP_BATTERY_STATUS_FULL_CHARGE    // when the device is completely charged from the external power supply
 } avrcp_battery_status_t;
 
+typedef enum {
+    AVRCP_SYSTEM_STATUS_POWER_ON = 0x00,
+    AVRCP_SYSTEM_STATUS_POWER_OFF,
+    AVRCP_SYSTEM_STATUS_UNPLUGGED
+} avrcp_system_status_t;
+
+typedef enum {
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_ILLEGAL = 0x00,       // ValueIDs with descriptions:
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_EQUALIZER_STATUS,     // 1 - off, 2 - on
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_REPEAT_MODE_STATUS,   // 1 - off, 2 - single track repeat, 3 - all tracks repeat, 4 - group repeat
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SHUFFLE_STATUS,       // 1 - off, 2 - all tracks shuffle , 3 - group shuffle
+    AVRCP_PLAYER_APPLICATION_SETTING_ATTRIBUTE_ID_SCAN_STATUS           // 1 - off, 2 - all tracks scan    , 3 - group scan
+} avrcp_player_application_setting_attribute_id_t;
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
@@ -391,7 +404,6 @@ typedef struct {
     uint8_t cmd_operands_length;
 
     bool incoming_declined;
-    btstack_timer_source_t reconnect_timer;
 } avrcp_browsing_connection_t;
 // BROWSING END
 
