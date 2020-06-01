@@ -1813,7 +1813,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 
         case HCI_INIT_W4_WRITE_INQUIRY_MODE:
             // skip write secure connections host support if not supported or disabled
-            if (hci_stack->secure_connections_enable && hci_stack->local_supported_commands[1] & 0x02) {
+            if (!hci_stack->secure_connections_enable || (hci_stack->local_supported_commands[1] & 0x02) == 0) {
                 hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;
                 return;
             }
