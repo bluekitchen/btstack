@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - FreeRTOS: btstack_run_loop_freertos_trigger_exit allows to request run loop exit
 - sm: support LE Secure Connections Only mode with sm_set_secure_connections_only_mode
 - GAP: enable BR/EDR Secure Connections if supported, add gap_secure_connections_enable
+- GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
 
 ### Changed
 - L2CAP ERTM: send extended features request only once per HCI connection
