@@ -1965,7 +1965,15 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
 static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
     conn->authentication_flags |= CONNECTION_ENCRYPTED;
     conn->encryption_key_size = encryption_key_size;
-    hci_emit_security_level(conn->con_handle, gap_security_level_for_connection(conn));
+
+    if ((conn->authentication_flags & CONNECTION_AUTHENTICATED) != 0) {
+        hci_emit_security_level(conn->con_handle, gap_security_level_for_connection(conn));
+        return;
+    }
+
+    // Request Authentication if not already done
+    if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
+    conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
 }
 #endif
 
@@ -2476,7 +2484,7 @@ static void event_handler(uint8_t *packet, int size){
 
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
-            handle = little_endian_read_16(packet, 3);
+            handle = hci_event_authentication_complete_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
 
@@ -2488,12 +2496,20 @@ static void event_handler(uint8_t *packet, int size){
                 break;
             }
 
-            if ((packet[2] == 0) && (gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level)){
-                // link key sufficient for requested security
-                conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
-                break;
+            // authenticated only if auth status == 0
+            if (hci_event_authentication_complete_get_status(packet) == 0){
+                // authenticated
+                conn->authentication_flags |= CONNECTION_AUTHENTICATED;
+
+                // If link key sufficient for requested security and not already encrypted, start encryption
+                if (((gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level)) &&
+                    ((conn->authentication_flags & CONNECTION_ENCRYPTED) == 0)){
+                    conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
+                    break;
+                }
             }
-            // not enough
+
+            // emit updated security level
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 #endif
@@ -3896,6 +3912,7 @@ static bool hci_run_general_pending_commmands(void){
 
         if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
             connection->bonding_flags &= ~BONDING_SEND_AUTHENTICATE_REQUEST;
+            connection->bonding_flags |= BONDING_SENT_AUTHENTICATE_REQUEST;
             hci_send_cmd(&hci_authentication_requested, connection->con_handle);
             return true;
         }
@@ -4615,6 +4632,7 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
     if (!connection) return LEVEL_0;
     if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
+    if ((connection->authentication_flags & CONNECTION_AUTHENTICATED) == 0) return LEVEL_0;
     if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
     gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
     // LEVEL 4 always requires 128 bit encrytion key size
@@ -4779,7 +4797,8 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     }
 #endif
 
-    // start to authenticate connection
+    // start to authenticate connection if not already active
+    if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     hci_run();
 }

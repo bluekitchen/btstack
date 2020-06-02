@@ -200,10 +200,11 @@ typedef enum {
     SEND_USER_PASSKEY_REPLY        = 0x0400,
 
     // pairing status
-    LEGACY_PAIRING_ACTIVE          = 0x2000,
-    SSP_PAIRING_ACTIVE             = 0x4000,
+    LEGACY_PAIRING_ACTIVE          = 0x1000,
+    SSP_PAIRING_ACTIVE             = 0x2000,
 
     // connection status
+    CONNECTION_AUTHENTICATED       = 0x4000,
     CONNECTION_ENCRYPTED           = 0x8000,
 
     // errands
@@ -246,6 +247,7 @@ enum {
     BONDING_SEND_READ_ENCRYPTION_KEY_SIZE     = 0x1000,
     BONDING_DEDICATED                         = 0x2000,
     BONDING_EMIT_COMPLETE_ON_DISCONNECT       = 0x4000,
+    BONDING_SENT_AUTHENTICATE_REQUEST         = 0x8000
 };
 
 typedef enum {
