@@ -1961,6 +1961,14 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
     }
 }
 
+#ifdef ENABLE_CLASSIC
+static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
+    conn->authentication_flags |= CONNECTION_ENCRYPTED;
+    conn->encryption_key_size = encryption_key_size;
+    hci_emit_security_level(conn->con_handle, gap_security_level_for_connection(conn));
+}
+#endif
+
 static void event_handler(uint8_t *packet, int size){
 
     uint16_t event_length = packet[1];
@@ -2126,16 +2134,14 @@ static void event_handler(uint8_t *packet, int size){
                 handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
                 conn   = hci_connection_for_handle(handle);
                 if (!conn) break;
+                uint8_t key_size = 0;
                 if (status == 0){
-                    uint8_t key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
+                    key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
                     log_info("Handle %x04x key Size: %u", handle, key_size);
-                    conn->encryption_key_size = key_size;
                 } else {
-                    log_info("Read Encryption Key Size failed -> assuming insecure connection with key size of 1");
-                    conn->encryption_key_size = 1;
+                    log_info("Read Encryption Key Size failed 0x%02x-> assuming insecure connection with key size of 1", status);
                 }
-                conn->authentication_flags |= CONNECTION_ENCRYPTED;
-                hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+                hci_handle_read_encryption_key_size_complete(conn, key_size);
             }
 #endif
             break;
@@ -2457,9 +2463,7 @@ static void event_handler(uint8_t *packet, int size){
                             conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
                         } else {
                             // if not, pretend everything is perfect
-                            conn->encryption_key_size = 16;
-                            conn->authentication_flags |= CONNECTION_ENCRYPTED;
-                            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+                            hci_handle_read_encryption_key_size_complete(conn, 16);
                         }
                     }
 #endif
