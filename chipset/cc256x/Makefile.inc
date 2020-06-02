@@ -16,7 +16,7 @@ CONVERSION_SCRIPT=$(BTSTACK_ROOT)/chipset/cc256x/convert_bts_init_scripts.py
 
 CC2560_BT_SP_BTS.zip:
 	@echo "Downloading $@"
-	@curl -sS -O http://processors.wiki.ti.com/images/d/da/CC2560_BT_SP_BTS.zip
+	@curl -sS -O https://processors.wiki.ti.com/images/d/da/CC2560_BT_SP_BTS.zip
 
 bluetooth_init_cc2560_2.44.bts: CC2560_BT_SP_BTS.zip
 	@echo "Extracting $@"
@@ -28,11 +28,11 @@ bluetooth_init_cc2560_2.44.bts: CC2560_BT_SP_BTS.zip
 
 CC2560A_BT_SP_BTS.zip:
 	@echo "Downloading $@"
-	@curl -sS -O http://processors.wiki.ti.com/images/e/e7/CC2560A_BT_SP_BTS.zip
+	@curl -sS -O https://processors.wiki.ti.com/images/e/e7/CC2560A_BT_SP_BTS.zip
 
 CC2564_BT_BLE_SP_BTS.zip:
 	@echo "Downloading $@"
-	@curl -sS -O http://processors.wiki.ti.com/images/1/1e/CC2564_BT_BLE_SP_BTS.zip
+	@curl -sS -O https://processors.wiki.ti.com/images/1/1e/CC2564_BT_BLE_SP_BTS.zip
 
 bluetooth_init_cc2560A_2.14.bts: CC2560A_BT_SP_BTS.zip
 	@echo "Extracting $@"
