@@ -47,7 +47,7 @@ project(EXAMPLE)
 
 main_cmake_template = '''
 idf_component_register(
-        SRCS "EXAMPLE.c"
+        SRCS "EXAMPLE.c" "main.c"
         INCLUDE_DIRS "${CMAKE_CURRENT_BINARY_DIR}")
 '''
 
