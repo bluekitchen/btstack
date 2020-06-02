@@ -418,8 +418,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
             sep.media_type = (avdtp_media_type_t) avdtp_subevent_signaling_sep_found_get_media_type(packet);
             sep.type = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-            log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %d (1-SNK), index %d", sep.seid, sep.in_use, sep.media_type, sep.type, num_remote_seps);
-            remote_seps[num_remote_seps++] = sep;
+            log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %s (1-SNK), index %d",
+                    sep.seid, sep.in_use, sep.media_type, sep.type == AVDTP_SOURCE ? "source" : "sink", num_remote_seps);
+            if (sep.type == AVDTP_SINK){
+                remote_seps[num_remote_seps++] = sep;
+            }
             break;
         }
         case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:

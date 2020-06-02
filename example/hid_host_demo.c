@@ -251,11 +251,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             
         case SDP_EVENT_QUERY_COMPLETE:
             if (!hid_control_psm) {
-                printf("HID Control PSM missing\n");
-                break;
+                hid_control_psm = BLUETOOTH_PSM_HID_CONTROL;
+                printf("HID Control PSM missing, using default 0x%04x\n", hid_control_psm);
             }
             if (!hid_interrupt_psm) {
-                printf("HID Interrupt PSM missing\n");
+                hid_interrupt_psm = BLUETOOTH_PSM_HID_INTERRUPT;
+                printf("HID Interrupt PSM missing, using default 0x%04x\n", hid_interrupt_psm);
                 break;
             }
             printf("Setup HID\n");

@@ -823,7 +823,7 @@ void avrcp_init(void){
     connections = NULL;
     if (l2cap_service_registered) return;
 
-    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, LEVEL_2);
+    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, gap_get_security_level());
     if (status != ERROR_CODE_SUCCESS) return;
     l2cap_service_registered = 1;
 }

@@ -180,17 +180,11 @@ typedef struct btstack_linked_list_gatt_client_helper{
     hci_con_handle_t con_handle;
     connection_t * active_connection;   // the one that started the current query
     btstack_linked_list_t  all_connections;     // list of all connections that ever used this helper
-    btstack_linked_list_t gatt_client_notifications;    // could be in client_state_t as well
     uint16_t characteristic_length;
     uint16_t characteristic_handle;
     uint8_t  characteristic_buffer[10 + ATT_MAX_LONG_ATTRIBUTE_SIZE];   // header for sending event right away
     uint8_t  long_query_type;
 } btstack_linked_list_gatt_client_helper_t;
-
-typedef struct {
-    btstack_linked_item_t       item;
-    gatt_client_notification_t  notification_listener;
-} btstack_linked_list_gatt_client_notification_t;
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -230,6 +224,7 @@ static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
 static btstack_linked_list_t clients = NULL;        // list of connected clients `
 #ifdef ENABLE_BLE
+static gatt_client_notification_t daemon_gatt_client_notifications;
 static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
 #endif
 
@@ -487,17 +482,7 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
     }
 
     if (!helper) return;
-
-    // stop listening
-    btstack_linked_list_iterator_init(&it, &helper->gatt_client_notifications);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        btstack_linked_list_gatt_client_notification_t * item = (btstack_linked_list_gatt_client_notification_t*) btstack_linked_list_iterator_next(&it);
-        log_info("Stop gatt notification listener %p", item);
-        gatt_client_stop_listening_for_characteristic_value_updates(&item->notification_listener);
-        btstack_linked_list_remove(&helper->gatt_client_notifications, (btstack_linked_item_t *) item);
-        free(item);
-    }
-
+    
     // remove all connection from helper
     btstack_linked_list_iterator_init(&it, &helper->all_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1278,7 +1263,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_client_deserialize_characteristic_descriptor(packet, 5, &descriptor);
             gatt_client_read_long_characteristic_descriptor(&handle_gatt_client_event, gatt_helper->con_handle, &descriptor);
             break;
-            
         case GATT_WRITE_CHARACTERISTIC_DESCRIPTOR:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
@@ -1304,20 +1288,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic, configuration);
             if (status){
                 send_gatt_query_complete(connection, gatt_helper->con_handle, status);
-                break;
             }
-            // ignore notification off
-            if (configuration == 0) break;
-
-            // TODO: we assume it works
-
-            // start listening
-            btstack_linked_list_gatt_client_notification_t * linked_notification = malloc(sizeof(btstack_linked_list_gatt_client_notification_t));
-            if (!linked_notification) break;
-            memset(linked_notification, 0, sizeof(btstack_linked_list_gatt_client_notification_t));
-            log_info("Start gatt notification listener %p", linked_notification);
-            gatt_client_listen_for_characteristic_value_updates(&linked_notification->notification_listener, &handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
-            btstack_linked_list_add(&gatt_helper->gatt_client_notifications, (btstack_linked_item_t *) linked_notification);
             break;
         }
         case GATT_GET_MTU:
@@ -2015,6 +1986,7 @@ static void btstack_server_configure_stack(void){
 
     // GATT Client
     gatt_client_init();
+    gatt_client_listen_for_characteristic_value_updates(&daemon_gatt_client_notifications, &handle_gatt_client_event, GATT_CLIENT_ANY_CONNECTION, GATT_CLIENT_ANY_VALUE_HANDLE);
 
     // GATT Server - empty attribute database
     att_server_init(NULL, NULL, NULL);    

@@ -216,6 +216,7 @@ EXAMPLES_LE_ONLY=           \
 	hog_boot_host_demo      \
 	le_data_channel_client  \
 	le_data_channel_server  \
+	le_mitm                 \
 	le_streamer_client      \
 	mesh_node_demo          \
 	nordic_spp_le_counter   \
@@ -322,6 +323,9 @@ gatt_streamer_server: gatt_streamer_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ
 	${CC} $(filter-out gatt_streamer_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} le_streamer_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+le_mitm: ${CORE_OBJ} ${COMMON_OBJ} le_mitm.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gatt_heart_rate_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_heart_rate_client.c

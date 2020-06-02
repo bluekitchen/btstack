@@ -645,9 +645,11 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_EIR_DATA,
     HCI_INIT_WRITE_INQUIRY_MODE,
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
+    HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
+    HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
     HCI_INIT_WRITE_SCAN_ENABLE,
     HCI_INIT_W4_WRITE_SCAN_ENABLE,
-    
+
     // SCO over HCI
     HCI_INIT_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
     HCI_INIT_W4_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
@@ -766,11 +768,13 @@ typedef struct {
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
+    bool               secure_connections_enable;
     inquiry_mode_t     inquiry_mode;
 #ifdef ENABLE_CLASSIC
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
     uint16_t           link_supervision_timeout;
+    gap_security_level_t gap_security_level;
 #endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
@@ -805,7 +809,9 @@ typedef struct {
     /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
     /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */
     /* 7 - Read Encryption Key Size                (Octet 20/bit 4) */
-    uint8_t local_supported_commands[1];
+    /* 8 - Read Remote Extended Features           (Octet  2/bit 5) */
+    /* 9 - Write Secure Connections Host           (Octet 32/bit 3) */
+    uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */
     // uint16_t hci_version;

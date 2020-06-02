@@ -1567,7 +1567,7 @@ static void bnep_handle_can_send_now(uint16_t l2cap_cid){
 /* BNEP BTStack API */
 void bnep_init(void)
 {
-    bnep_security_level = LEVEL_2;
+    bnep_security_level = gap_get_security_level();
 }
 
 void bnep_set_required_security_level(gap_security_level_t security_level)

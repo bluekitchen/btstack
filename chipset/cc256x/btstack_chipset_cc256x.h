@@ -56,6 +56,16 @@ extern "C" {
 void btstack_chipset_cc256x_set_power(int16_t power_in_dB);
 
 /**
+ * Configure output power for specific modulation before HCI POWER_ON using explicit power vector
+ * @see https://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Set_Power_Vector_.280xFD82.29
+ * @note data is not copied, pointer has to stay valid
+ * @note overrides setting from btstack_chipset_cc256x_set_power
+ * @param modulation_type 0=GFSK, 1=EDR2, 2= EDR3
+ * @param power_vector array of 16 uint8_t values as explained on TI wiki
+ */
+void btstack_chipset_cc256x_set_power_vector(uint8_t modulation_type, const uint8_t * power_vector);
+
+/**
  * Get chipset instance for CC256x series
  */
 const btstack_chipset_t * btstack_chipset_cc256x_instance(void);
@@ -71,7 +81,6 @@ uint16_t btstack_chipset_cc256x_lmp_subversion(void);
  * Note: Only needed when switching between different add-ons (BLE, AVRP, ANT+)
  * Note: Not supported by MSP430 "init script at 0x10000" workaround
  *
- * @param init_script_data or 0 for default script
  * @param init_script_size or 0 for default script
  */
 void btstack_chipset_cc256x_set_init_script(uint8_t * data, uint32_t size);

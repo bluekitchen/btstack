@@ -1645,7 +1645,7 @@ static void l2cap_run_for_classic_channel_ertm(l2cap_channel_t * channel){
 #endif /* ERTM */
 #endif /* Classic */
 
-static void l2cap_run_signaling_response() {
+static void l2cap_run_signaling_response(void) {
 
     // check pending signaling responses
     while (signaling_responses_pending){
@@ -1925,8 +1925,8 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     if (l2cap_security_level_0_allowed_for_PSM(channel->psm) == 0){
         // request security level 2
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
-        channel->required_security_level = LEVEL_2;
-        gap_request_security_level(channel->con_handle, LEVEL_2);
+        channel->required_security_level = gap_get_security_level();
+        gap_request_security_level(channel->con_handle, gap_get_security_level());
         return;
     }
 

@@ -325,6 +325,13 @@ OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
 };
 
 /**
+* @param handle
+*/
+const hci_cmd_t hci_read_remote_extended_features_command = {
+        OPCODE(OGF_LINK_CONTROL, 0x1C), "H1"
+};
+
+/**
  * @param handle
  */
 const hci_cmd_t hci_read_remote_version_information = {
@@ -832,6 +839,14 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x6c), ""
  */
 const hci_cmd_t hci_write_le_host_supported = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
+// return: status
+};
+
+/**
+ * @param secure_connections_host_support
+ */
+const hci_cmd_t hci_write_secure_connections_host_support = {
+        OPCODE(OGF_CONTROLLER_BASEBAND, 0x7a), "1"
 // return: status
 };
 

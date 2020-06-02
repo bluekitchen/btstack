@@ -1473,6 +1473,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
             break;
+        case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
+            hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+            hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
+            break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
@@ -1806,7 +1810,15 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
 
 #endif  /* ENABLE_BLE */
-            
+
+        case HCI_INIT_W4_WRITE_INQUIRY_MODE:
+            // skip write secure connections host support if not supported or disabled
+            if (!hci_stack->secure_connections_enable || (hci_stack->local_supported_commands[1] & 0x02) == 0) {
+                hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;
+                return;
+            }
+            break;
+
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             // skip write synchronous flow control if not supported
@@ -2051,12 +2063,15 @@ static void event_handler(uint8_t *packet, int size){
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0x80) >> 7) |  // bit 0 = Octet 14, bit 7 / Read Buffer Size
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5) |  // bit 1 = Octet 24, bit 6 / Write Le Host Supported
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+10] & 0x10) >> 2) |  // bit 2 = Octet 10, bit 4 / Write Synchronous Flow Control Enable
-                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)       |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting 
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)     ) |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x01) << 4) |  // bit 4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x08) << 2) |  // bit 5 = Octet 35, bit 3 / LE Read Maximum Data Length
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x20) << 1) |  // bit 6 = Octet 35, bit 5 / LE Set Default PHY
                     ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+20] & 0x10) << 3);   // bit 7 = Octet 20, bit 4 / Read Encryption Key Size
-                    log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]);
+                hci_stack->local_supported_commands[1] =
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+ 2] & 0x40) >> 6) |  // bit 8 = Octet  2, bit 6 / Read Remote Extended Features
+                    ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+32] & 0x08) >> 2);   // bit 9 = Octet 32, bit 3 / Write Secure Connections Host
+                log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
             }
 #ifdef ENABLE_CLASSIC
             else if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_write_synchronous_flow_control_enable)){
@@ -2341,17 +2356,27 @@ static void event_handler(uint8_t *packet, int size){
 #endif
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
-            handle = little_endian_read_16(packet, 3);
+            handle = hci_event_encryption_change_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
-            if (packet[2] == 0) {
-                if (packet[5]){
+            if (hci_event_encryption_change_get_status(packet) == 0) {
+                uint8_t encryption_enabled = hci_event_encryption_change_get_encryption_enabled(packet);
+                if (encryption_enabled){
                     if (hci_is_le_connection(conn)){
                         // For LE, we accept connection as encrypted
                         conn->authentication_flags |= CONNECTION_ENCRYPTED;
                     }
 #ifdef ENABLE_CLASSIC
                     else {
+                        // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
+                        bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type) != 0;
+                        bool connected_uses_aes_ccm = encryption_enabled == 2;
+                        if (sc_used_during_pairing && !connected_uses_aes_ccm){
+                            log_info("SC during pairing, but only E0 now -> abort");
+                            conn->state = conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
+                            break;
+                        }
+
                         if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
                             // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
                             conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
@@ -2886,6 +2911,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Allow Role Switch
     hci_stack->allow_role_switch = 1;
 
+    // Default / minimum security level = 2
+    hci_stack->gap_security_level = LEVEL_2;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     hci_stack->gap_required_encyrption_key_size = 16;
 #endif
@@ -2895,6 +2923,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
+
+    // Secure Connections: enable (requires support from Controller)
+    hci_stack->secure_connections_enable = true;
 
     // voice setting - signed 16 bit pcm data with CVSD over the air
     hci_stack->sco_voice_setting = 0x60;
@@ -2981,6 +3012,14 @@ void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
     if (encryption_key_size < 7)  return;
     if (encryption_key_size > 16) return;
     hci_stack->gap_required_encyrption_key_size = encryption_key_size;
+}
+
+void gap_set_security_level(gap_security_level_t security_level){
+    hci_stack->gap_security_level = security_level;
+}
+
+gap_security_level_t gap_get_security_level(void){
+    return hci_stack->gap_security_level;
 }
 #endif
 
@@ -4183,6 +4222,11 @@ void gap_ssp_set_authentication_requirement(int authentication_requirement){
 void gap_ssp_set_auto_accept(int auto_accept){
     hci_stack->ssp_auto_accept = auto_accept;
 }
+
+void gap_secure_connections_enable(bool enable){
+    hci_stack->secure_connections_enable = enable;
+}
+
 #endif
 
 // va_list part of hci_send_cmd

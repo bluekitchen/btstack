@@ -1080,6 +1080,7 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     	    }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 int ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x06) == 0x06;
+                UNUSED(ecdh_operations_supported);
                 log_info("controller supports ECDH operation: %u", ecdh_operations_supported);
 #ifdef ENABLE_ECC_P256
 #ifndef USE_SOFTWARE_ECC_P256_IMPLEMENTATION

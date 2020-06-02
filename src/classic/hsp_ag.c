@@ -79,13 +79,12 @@
 static const char default_hsp_ag_service_name[] = "Audio Gateway";
 
 static bd_addr_t remote;
-static bd_addr_t sco_event_addr;
 static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
-static uint16_t sco_handle = 0;
-static uint16_t rfcomm_handle = 0;
+static uint16_t sco_handle = HCI_CON_HANDLE_INVALID;
+static uint16_t rfcomm_handle = HCI_CON_HANDLE_INVALID;
 static btstack_timer_source_t hs_timeout;
 
 static int ag_microphone_gain = -1;
@@ -95,7 +94,6 @@ static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 static uint8_t ag_num_button_press_received = 0;
 static uint8_t ag_support_custom_commands = 0;
-static uint8_t ag_establish_sco = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
 static uint8_t hsp_establish_audio_connection = 0;
 static uint8_t hsp_release_audio_connection = 0;
@@ -258,7 +256,7 @@ static void hsp_ag_reset_state(void){
     hsp_state = HSP_IDLE;
     
     rfcomm_cid = 0;
-    rfcomm_handle = 0;
+    rfcomm_handle = HCI_CON_HANDLE_INVALID;
     sco_handle = 0;
 
     ag_send_ok = 0;
@@ -386,33 +384,6 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
-    if (ag_establish_sco && hci_can_send_command_packet_now()){
-        ag_establish_sco = 0;
-        
-        log_info("HSP: sending hci_accept_connection_request.");
-        // remote supported feature eSCO is set if link type is eSCO
-        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
-        uint16_t max_latency;
-        uint8_t  retransmission_effort;
-        uint16_t packet_types;
-        
-        if (hci_remote_esco_supported(rfcomm_handle)){
-            max_latency = 0x000c;
-            retransmission_effort = 0x02;
-            packet_types = 0x388;
-        } else {
-            max_latency = 0xffff;
-            retransmission_effort = 0xff;
-            packet_types = 0x003f;
-        }
-        
-        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
-        
-        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
-        hci_send_cmd(&hci_accept_synchronous_connection, remote, 8000, 8000, max_latency, 
-                        sco_voice_setting, retransmission_effort, packet_types);
-        return;
-    }
 
     if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
@@ -592,10 +563,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint16_t handle;
 
     switch (event) {
-        case HCI_EVENT_CONNECTION_REQUEST:
-            hci_event_connection_request_get_bd_addr(packet, sco_event_addr);
-            ag_establish_sco = 1;
-            break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             uint8_t status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
@@ -643,25 +610,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         }
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
-            // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             if (hsp_state != HSP_IDLE) return;
 
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);  
-            rfcomm_cid = rfcomm_event_incoming_connection_get_server_channel(packet);
-            log_info("RFCOMM channel %u requested for %s", packet[8], bd_addr_to_str(event_addr));
+            rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+            log_info("RFCOMM channel %u requested for %s with cid 0x%04x", rfcomm_event_incoming_connection_get_server_channel(packet), bd_addr_to_str(event_addr), rfcomm_cid);
             hsp_state = HSP_W4_RFCOMM_CONNECTED;
             rfcomm_accept_connection(rfcomm_cid);
             break;
 
         case RFCOMM_EVENT_CHANNEL_OPENED:
             log_info("RFCOMM_EVENT_CHANNEL_OPENED packet_handler type %u, packet[0] %x", packet_type, packet[0]);
-            // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (rfcomm_event_channel_opened_get_status(packet)) {
                 log_info("RFCOMM channel open failed, status %u§", rfcomm_event_channel_opened_get_status(packet));
                 hsp_ag_reset_state();
                 hsp_state = HSP_IDLE;
             } else {
-                // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
                 rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                 mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
@@ -672,8 +636,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         
         case RFCOMM_EVENT_CHANNEL_CLOSED:
-            rfcomm_handle = 0;
-            hsp_state = HSP_IDLE;
             hsp_ag_reset_state();
             emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
             break;
@@ -685,17 +647,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = little_endian_read_16(packet,3);
             if (handle == sco_handle){
-                sco_handle = 0;
+                sco_handle = HCI_CON_HANDLE_INVALID;
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
                 break;
             } 
-            if (handle == rfcomm_handle) {
-                rfcomm_handle = 0;
-                hsp_state = HSP_IDLE;
-                hsp_ag_reset_state();
-                emit_event(HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE,0);
-            }
             break;
 
         default:

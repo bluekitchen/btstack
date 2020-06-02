@@ -191,6 +191,7 @@ static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
 static uint32_t sm_fixed_passkey_in_display_role;
 static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
+static bool sm_sc_only_mode;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_sc_oob_random[16];
@@ -326,7 +327,7 @@ typedef struct sm_setup_context {
     uint8_t   sm_peer_q[64];    // also stores random for EC key generation during init
     sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
     sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
-    sm_key_t  sm_dhkey;
+    uint8_t   sm_dhkey[32];
     sm_key_t  sm_peer_dhkey_check;
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
@@ -1130,6 +1131,12 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     if (!sm_validate_stk_generation_method()) return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // check LE SC Only mode
+    if (sm_sc_only_mode && (setup->sm_use_secure_connections == false)){
+        log_info("SC Only mode active but SC not possible");
+        return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+    }
+
     // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
     if (setup->sm_use_secure_connections){
         remote_key_request &= ~SM_KEYDIST_ENC_KEY;
@@ -3844,6 +3851,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
         case SM_SC_W4_DHKEY_CHECK_COMMAND:
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
+        case SM_SC_W4_USER_RESPONSE:
             if (sm_pdu_code != SM_CODE_PAIRING_DHKEY_CHECK){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
@@ -4453,4 +4461,13 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
     }
     // IRK Lookup Succeeded, re-encryption should be initiated. When done, state gets reset
     return sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED;
+}
+
+void sm_set_secure_connections_only_mode(bool enable){
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    sm_sc_only_mode = enable;
+#else
+    // SC Only mode not possible without support for SC
+    btstack_assert(enable == false);
+#endif
 }

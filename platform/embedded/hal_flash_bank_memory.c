@@ -89,7 +89,10 @@ static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offse
 	int i;
 	for (i=0;i<size;i++){
 		// write 0xff doesn't change anything
-		if (data[i] == 0xff) continue;
+		if (data[i] == 0xff) {
+		    offset++;
+		    continue;
+		}
 		// writing something other than 0x00 is only allowed once
 		if (self->banks[bank][offset] != 0xff && data[i] != 0x00){
 			log_error("Error: offset %u written twice. Data: 0x%02x!", offset+i, data[i]);

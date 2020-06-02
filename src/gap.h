@@ -189,16 +189,27 @@ void gap_set_bondable_mode(int enabled);
 int gap_get_bondable_mode(void);
 
 /**
+ * @brief Set security level for all outgoing and incoming connections. Default: LEVEL_2
+ * @param security_level
+ * @note has to be called before services or profiles are initialized
+ */
+void gap_set_security_level(gap_security_level_t security_level);
+
+/**
+ * @brief Get security level
+ * @return security_level
+ */
+gap_security_level_t gap_get_security_level(void);
+
+/**
  * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
  */
-
 void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr));
-
 
 /* Configure Secure Simple Pairing */
 
 /**
- * @brief Enable will enable SSP during init.
+ * @brief Enable will enable SSP during init. Default: true
  */
 void gap_ssp_set_enable(int enable);
 
@@ -211,6 +222,11 @@ void gap_ssp_set_io_capability(int ssp_io_capability);
  * @brief Set Authentication Requirements using during SSP
  */
 void gap_ssp_set_authentication_requirement(int authentication_requirement);
+
+/**
+ * @brief Enable/disable Secure Connections. Default: true if supported by Controller
+ */
+void gap_secure_connections_enable(bool enable);
 
 /**
  * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.

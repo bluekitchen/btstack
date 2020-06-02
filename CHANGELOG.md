@@ -9,10 +9,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
-- hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
 
 ### Added
+- GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
+
+### Changed
+
+## Changes May 2020
+
+### Fixed
+- hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
+- pbap_client: fix PBAP UUID len on connect message
+- sm: fix secure connection pairing as peripheral when local user confirmation happens after remote one
+- A2DP Source: only connect to remote sink stream endpoints
+- btstack_hal_flash_memory: fix write of 0xff bytes to simulated flash
+- hsp_hs: fix disconnect if audio not connected
+- hsp_ag: fix accept incoming connection
+
+### Added
+- example/le_mitm: MITM implementation that forwards ATT PDUs and allows for pairing
+- GAP: gap_set_security_level sets required security level for incoming and outgoing connections
+- cc256x: allow to specify power vector for each modulation type
 - FreeRTOS: btstack_run_loop_freertos_trigger_exit allows to request run loop exit
+- sm: support LE Secure Connections Only mode with sm_set_secure_connections_only_mode
+- GAP: enable BR/EDR Secure Connections if supported, add gap_secure_connections_enable
 
 ### Changed
 - L2CAP ERTM: send extended features request only once per HCI connection

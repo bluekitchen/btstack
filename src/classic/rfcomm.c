@@ -2186,7 +2186,7 @@ void rfcomm_init(void){
     rfcomm_multiplexers = NULL;
     rfcomm_services     = NULL;
     rfcomm_channels     = NULL;
-    rfcomm_security_level = LEVEL_2;
+    rfcomm_security_level = gap_get_security_level();
 }
 
 void rfcomm_set_required_security_level(gap_security_level_t security_level){

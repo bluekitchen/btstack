@@ -111,6 +111,12 @@ void sm_set_authentication_requirements(uint8_t auth_req);
 void sm_set_io_capabilities(io_capability_t io_capability);
 
 /**
+ * @brief Enable/disable Secure Connections Mode only
+ * @param enable secure connections only mode
+ */
+void sm_set_secure_connections_only_mode(bool enable);
+
+/**
  * @brief Let Peripheral request an encrypted connection right after connecting
  * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
