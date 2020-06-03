@@ -253,7 +253,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:{
-                    // log_info("acceptor SM received SET_CONFIGURATION cmd: role is_initiator %d", connection->is_initiator);
+                    log_info("Received SET_CONFIGURATION cmd: config state %d", connection->configuration_state);
                     switch (connection->configuration_state){
                         case AVDTP_CONFIGURATION_STATE_IDLE:
                             avdtp_acceptor_handle_configuration_command(connection, context, offset, packet_size, stream_endpoint);
@@ -261,8 +261,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                             break;
                         case AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED:
                         case AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED:
-                            log_info("ACP: Set configuration already initiated locally, reject cmd, local seid %d", connection->acceptor_local_seid);
-                            // send reject with category
                             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                             connection->reject_service_category = 0;
                             connection->error_code = BAD_STATE;
@@ -581,6 +579,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
         case AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM:
             log_info("ACP: DONE");
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_CLOSE);
+            connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
             emit_accept = true;
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM:
