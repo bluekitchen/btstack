@@ -2488,6 +2488,9 @@ static void event_handler(uint8_t *packet, int size){
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
 
+            // ignore authentication event if we didn't request it
+            if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) == 0) break;
+
             // dedicated bonding: send result and disconnect
             if (conn->bonding_flags & BONDING_DEDICATED){
                 conn->bonding_flags &= ~BONDING_DEDICATED;
