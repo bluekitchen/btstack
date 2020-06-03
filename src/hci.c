@@ -3774,7 +3774,7 @@ static bool hci_run_general_pending_commmands(void){
 #endif
             case SEND_DISCONNECT:
                 connection->state = SENT_DISCONNECT;
-                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
+                hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                 return true;
 
             default:
@@ -3873,7 +3873,8 @@ static bool hci_run_general_pending_commmands(void){
         if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
             connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
             connection->bonding_flags |= BONDING_EMIT_COMPLETE_ON_DISCONNECT;
-            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // authentication done
+            connection->state = SENT_DISCONNECT;
+            hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
             return true;
         }
 
@@ -3897,8 +3898,11 @@ static bool hci_run_general_pending_commmands(void){
 
         if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
             connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
-            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
-            return true;
+            if (connection->state != SENT_DISCONNECT){
+                connection->state = SENT_DISCONNECT;
+                hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_AUTHENTICATION_FAILURE);
+                return true;
+            }
         }
 
 #ifdef ENABLE_CLASSIC
@@ -4036,7 +4040,7 @@ static void hci_run(void){
                         hci_shutdown_connection(connection);
 
                         // finally, send the disconnect command
-                        hci_send_cmd(&hci_disconnect, con_handle, 0x13);  // remote closed connection
+                        hci_send_cmd(&hci_disconnect, con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                         return;
                     }
 
@@ -4092,8 +4096,8 @@ static void hci_run(void){
                         if (!hci_can_send_command_packet_now()) return;
 
                         log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
-                        hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
-                        
+                        hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+
                         // send disconnected event right away - causes higher layer connections to get closed, too.
                         hci_shutdown_connection(connection);
                         return;
