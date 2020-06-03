@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Added
-- GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS) by remote features and actual encryption type
+- GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack by remote features and actual encryption type (BIAS) 
+- GAP: Mutual authentication: request authentication after Classic connection got encrypted (BIAS)
 
 ### Changed
 
