@@ -3801,11 +3801,23 @@ static bool hci_run_general_pending_commmands(void){
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request");
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
+
             link_key_t link_key;
             link_key_type_t link_key_type;
-            if ( hci_stack->link_key_db
-                 && hci_stack->link_key_db->get_link_key(connection->address, link_key, &link_key_type)
-                 && (gap_security_level_for_link_key_type(link_key_type) >= connection->requested_security_level)){
+            bool have_link_key = hci_stack->link_key_db && hci_stack->link_key_db->get_link_key(connection->address, link_key, &link_key_type);
+
+            const uint16_t sc_enabled_mask = BONDING_REMOTE_SUPPORTS_SC_HOST | BONDING_REMOTE_SUPPORTS_SC_CONTROLLER;
+            bool sc_enabled_remote = (connection->bonding_flags & sc_enabled_mask) == sc_enabled_mask;
+            bool sc_downgrade = have_link_key && (gap_secure_connection_for_link_key_type(link_key_type) == 1) && !sc_enabled_remote;
+            if (sc_downgrade){
+                log_info("Link key based on SC, but remote does not support SC -> disconnect");
+                connection->state = SENT_DISCONNECT;
+                hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_AUTHENTICATION_FAILURE);
+                return true;
+            }
+
+            bool security_level_sufficient = have_link_key && (gap_security_level_for_link_key_type(link_key_type) >= connection->requested_security_level);
+            if (have_link_key && security_level_sufficient){
                 connection->link_key_type = link_key_type;
                 hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
             } else {
