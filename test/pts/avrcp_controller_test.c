@@ -365,6 +365,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             avrcp_connected = 1;
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
                             printf("AVRCP Controller connected avrcp_cid 0x0%2x.\n", avrcp_cid);
+                            
+                            // Set PTS default TSPX_max_avc_fragments = 10
+                            avrcp_controller_set_max_num_fragments(avrcp_cid, 10); 
+
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
