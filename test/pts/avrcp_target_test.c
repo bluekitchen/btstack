@@ -514,7 +514,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint8_t  status = ERROR_CODE_SUCCESS;
+    uint8_t  avrcp_status = ERROR_CODE_SUCCESS;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
@@ -539,9 +539,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 return;
             }
 
-            status = avrcp_subevent_browsing_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Browsing Client connection failed: status 0x%02x\n", status);
+            avrcp_status = avrcp_subevent_browsing_connection_established_get_status(packet);
+            if (avrcp_status != ERROR_CODE_SUCCESS){
+                printf("AVRCP Browsing Client connection failed: status 0x%02x\n", avrcp_status);
                 browsing_cid = 0;
                 return;
             }
@@ -597,15 +597,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            // if (avrcp_cid != 0 && avrcp_cid != local_cid) {
-            //     printf("AVRCP Target: Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
-            //     return;
-            // }
-            // if (avrcp_cid != local_cid) break;
             
-            status = avrcp_subevent_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Target: Connection failed, status 0x%02x\n", status);
+            avrcp_status = avrcp_subevent_connection_established_get_status(packet);
+            if (avrcp_status != ERROR_CODE_SUCCESS){
+                printf("AVRCP Target: Connection failed, status 0x%02x\n", avrcp_status);
                 return;
             }
             avrcp_connected = 1;
@@ -620,13 +615,13 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         }
         
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+            avrcp_status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
             break;
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
+            avrcp_status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
         case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
-            status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
+            avrcp_status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
             break;
         // case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
         //     status = avrcp_target_now_playing_info(avrcp_cid);
@@ -636,19 +631,19 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             // if (!media_tracker.connected) break;
             switch (operation_id){
                 case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target: PLAY\n");
-                    status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    printf("AVRCP Target: received operation PLAY\n");
+                    a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target: PAUSE\n");
-                    status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    printf("AVRCP Target: received operation PAUSE\n");
+                    a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target: STOP\n");
-                    status = a2dp_source_disconnect(media_tracker.a2dp_cid);
+                    printf("AVRCP Target: received operation STOP\n");
+                    a2dp_source_disconnect(media_tracker.a2dp_cid);
                     break;
                 case AVRCP_OPERATION_ID_VOLUME_UP:
-                    printf("AVRCP Target: received operation VOULME_UP\n");
+                    printf("AVRCP Target: received operation VOLUME_UP\n");
                     break;
                 case AVRCP_OPERATION_ID_VOLUME_DOWN:
                     printf("AVRCP Target: received operation VOLUME_DOWN\n");
@@ -711,8 +706,8 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
     }
 
-    if (status != ERROR_CODE_SUCCESS){
-        printf("Responding to event 0x%02x failed with status 0x%02x\n", packet[2], status);
+    if (avrcp_status != ERROR_CODE_SUCCESS){
+        printf("Responding to AVRCP event 0x%02x failed with status 0x%02x\n", packet[2], avrcp_status);
     }
 }
 
