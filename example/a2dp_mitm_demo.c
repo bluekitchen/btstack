@@ -35,6 +35,7 @@
  *
  */
 
+#define BTSTACK_FILE__ "a2dp_mitm_demo.c"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -381,29 +382,25 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint16_t cid;
-    uint8_t local_seid;
+    bd_addr_t event_addr;
+    uint8_t status;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
     switch (packet[2]){
-        // case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-        //     printf("A2DP Sink: A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, cid 0x%02x seid %d\n", a2dp_sink_cid, a2dp_sink_local_seid);
+         case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+             printf("A2DP Sink: A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, cid 0x%02x seid %d\n", a2dp_sink_cid, a2dp_sink_local_seid);
             
-        //     a2dp_subevent_signaling_connection_established_get_bd_addr(packet, event_addr);
-        //     status = a2dp_subevent_signaling_connection_established_get_status(packet);
-        //     if (status != ERROR_CODE_SUCCESS){
-        //         printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
-        //         break;
-        //     }
-        //     cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
-        //     if (cid != a2dp_sink_cid){
-        //         printf("A2DP Sink: Connection failed, received cid 0x%02x, expected 0x%02x\n", cid, a2dp_sink_cid);
-        //         break;
-        //     }
-        //     printf("A2DP Sink: Connected to device with addr %s, a2dp cid 0x%02x.\n", bd_addr_to_str(event_addr), a2dp_sink_cid);
-        //     break;
+             a2dp_subevent_signaling_connection_established_get_bd_addr(packet, event_addr);
+             status = a2dp_subevent_signaling_connection_established_get_status(packet);
+             if (status != ERROR_CODE_SUCCESS){
+                 printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
+                 break;
+             }
+             a2dp_sink_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
+             printf("A2DP Sink: Connected to device with addr %s, a2dp cid 0x%02x.\n", bd_addr_to_str(event_addr), a2dp_sink_cid);
+             break;
 
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             printf("A2DP Sink: received SBC codec configuration.\n");
@@ -432,39 +429,18 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
        
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             app_sink_state = AVDTP_SINK_APPLICATION_STREAMING;
-            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+            a2dp_sink_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             a2dp_sink_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            if (local_seid != a2dp_sink_local_seid){
-                printf("A2DP Sink: establishing stream on wrong stream endpoint, received seid %d, expected seid %d\n", local_seid, a2dp_sink_local_seid);
-                break;
-            }
-            printf("A2DP Sink: stream established a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
+            printf("A2DP Sink: stream established a2dp_cid 0x%02x, local seid %d, remote seid %d\n",
                 a2dp_sink_cid, a2dp_sink_local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
-            printf("A2DP Sink: A2DP_SUBEVENT_STREAM_RELEASED, cid 0x%02x seid %d\n", a2dp_sink_cid, a2dp_sink_local_seid);
-                
-            cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
-            if (cid != a2dp_sink_cid) {
-                printf("A2DP Sink: streaming connection release, received unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_sink_cid);
-                break;
-            }
-            local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
-            if (local_seid != a2dp_sink_local_seid){
-                printf("A2DP Sink: streaming connection release, received unexpected local seid 0x%02x instead of 0x%02x\n", local_seid, a2dp_sink_local_seid);
-                break;
-            }
             printf("A2DP Sink: stream released\n");
             media_processing_close();
             break;
 
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            cid = a2dp_subevent_signaling_connection_released_get_a2dp_cid(packet);
-            if (cid != a2dp_sink_cid) {
-                printf("A2DP Sink: signaling connection release, received unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_sink_cid);
-                break;
-            }
             a2dp_sink_cid = 0;
             printf("A2DP Sink: signaling connection released\n");
             break;
@@ -478,8 +454,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t event_addr;
-    uint16_t cid;
-    uint8_t local_seid;
     uint8_t status;
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -493,11 +467,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
                 break;
             }
-            cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
-            if (cid != a2dp_source_cid){
-                printf("A2DP Source: Connection failed, received cid 0x%02x, expected 0x%02x\n", cid, a2dp_source_cid);
-                break;
-            }
+            a2dp_source_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
             printf("A2DP Source: Connected to device with addr %s, a2dp cid 0x%02x.\n", bd_addr_to_str(event_addr), a2dp_source_cid);
             break;
 
@@ -533,8 +503,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             printf("A2DP Source: headset stream ready\n");
             break;       
 
-        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:{
-            // if (a2dp_source_local_seid != media_tracker.source_local_seid) break;
+        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
 
             uint16_t num_frames;
             uint16_t len = 0;
@@ -551,7 +520,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 btstack_ring_buffer_read(&ring_buffer, &media_tracker.sbc_storage[pos], len, &bytes_read);
                 pos += len;
             }
-
 
             a2dp_source_stream_send_media_payload(media_tracker.source_cid, media_tracker.source_local_seid, media_tracker.sbc_storage, pos, num_frames, 0);
             
@@ -581,26 +549,11 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
-            cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
-            if (cid != a2dp_source_cid) {
-                printf("A2DP Source: streaming connection release, received unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_source_cid);
-                break;
-            }
-            local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
-            if (local_seid != a2dp_source_local_seid){
-                printf("A2DP Source: streaming connection release, received unexpected local seid 0x%02x instead of 0x%02x\n", local_seid, a2dp_source_local_seid);
-                break;
-            }
             printf("A2DP Source: stream released\n");
             media_processing_close();
             break;
 
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            cid = a2dp_subevent_signaling_connection_released_get_a2dp_cid(packet);
-            if (cid != a2dp_source_cid) {
-                printf("A2DP Source: singnaling connection release, received unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_source_cid);
-                break;
-            }
             a2dp_source_cid = 0;
             printf("A2DP Source: signaling connection released\n");
             break;
@@ -618,10 +571,7 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
 
     printf("\n");
-    printf("--- Bluetooth A2DP MITM Console / ");
-    
-    printf("A = %s / ", bd_addr_to_str(iut_address));
-    printf("B = %s ---\n", bd_addr_to_str(iut_address));
+    printf("--- Bluetooth A2DP MITM Console on %s ---\n", bd_addr_to_str(iut_address));
 
     printf("p      - create connection to smartphone %s\n", bd_addr_to_str(smartphone_addr));
     printf("h      - create connection to headset    %s\n", bd_addr_to_str(headset_addr));
@@ -639,14 +589,12 @@ static void stdin_process(char cmd){
     sep.seid = 1;
     switch (cmd){
         case 'p':
-            
             status = a2dp_sink_establish_stream(smartphone_addr, a2dp_sink_local_seid, &a2dp_sink_cid);
-            printf("Creating A2DP Connection to remote audio source (smartphone) using A: %s, a2dp sink cid 0x%02x\n", bd_addr_to_str(smartphone_addr), a2dp_sink_cid);
+            printf("Creating A2DP Connection to remote audio source (smartphone) %s, a2dp sink cid 0x%02x\n", bd_addr_to_str(smartphone_addr), a2dp_sink_cid);
             break;
         case 'h':
-    
             status = a2dp_source_establish_stream(headset_addr, a2dp_source_local_seid, &a2dp_source_cid);
-            printf("Creating A2DP Connection to remote audio sink (headset) using B: %s, a2dp source cid 0x%02x\n", bd_addr_to_str(headset_addr), a2dp_source_cid);
+            printf("Creating A2DP Connection to remote audio sink (headset) %s, a2dp source cid 0x%02x\n", bd_addr_to_str(headset_addr), a2dp_source_cid);
             break;
         case 'd':
             printf("Disconnect all\n");
