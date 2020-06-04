@@ -686,14 +686,16 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
     // Register A2DP Sink for receiving media data.
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
+
     // Create a stream endpoint to which the streaming channel will be opened.
-    uint8_t status = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), &a2dp_sink_local_seid);
-    if (status != ERROR_CODE_SUCCESS){
+    avdtp_stream_endpoint_t * local_sink_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities),
+                                                                                       media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    if (!local_sink_stream_endpoint){
         printf("A2DP Sink: not enough memory to create local stream endpoint\n");
         return 1;
     }
-    printf("A2DP Sink: created stream ednpoint with seid %d\n", a2dp_sink_local_seid);
-    
+    a2dp_sink_local_seid = avdtp_local_seid(local_sink_stream_endpoint);
+
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
@@ -705,13 +707,13 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_register_packet_handler(&a2dp_source_packet_handler);
     // Create stream endpoint.
 
-    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
-    if (!local_stream_endpoint){
+    avdtp_stream_endpoint_t * local_source_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    if (!local_source_stream_endpoint){
         printf("A2DP Source: not enough memory to create local stream endpoint\n");
         return 1;
     }
-    a2dp_source_local_seid = avdtp_local_seid(local_stream_endpoint);
-    printf("A2DP Source: created stream ednpoint with seid %d\n", a2dp_source_local_seid);
+    a2dp_source_local_seid = avdtp_local_seid(local_source_stream_endpoint);
+    printf("A2DP Source: created stream endpoint with seid %d\n", a2dp_source_local_seid);
     
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
     a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
@@ -719,6 +721,7 @@ int btstack_main(int argc, const char * argv[]){
 
 
     // GAP
+    gap_set_local_name("A2DP MITM Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
 
