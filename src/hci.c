@@ -2373,7 +2373,7 @@ static void event_handler(uint8_t *packet, int size){
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
                         if (sc_used_during_pairing && !connected_uses_aes_ccm){
                             log_info("SC during pairing, but only E0 now -> abort");
-                            conn->state = conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
+                            conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
                             break;
                         }
 
