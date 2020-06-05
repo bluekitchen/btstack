@@ -1111,6 +1111,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
             hfp_connection->line_size = 0;
             hfp_connection->command = HFP_CMD_CALL_PHONE_NUMBER;
         } else {
+            if ((hfp_connection->line_size + 1) >= HFP_MAX_INDICATOR_DESC_SIZE) return;
             hfp_connection->line_buffer[hfp_connection->line_size++] = byte;
         }
         return;
