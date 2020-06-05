@@ -1033,8 +1033,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 }
 
 static void hfp_parser_store_byte(hfp_connection_t * hfp_connection, uint8_t byte){
-    // printf("hfp_parser_store_byte %c at pos %u\n", (char) byte, context->line_size);
-    // TODO: add limit
+    if ((hfp_connection->line_size + 1 ) >= HFP_MAX_INDICATOR_DESC_SIZE) return;
     hfp_connection->line_buffer[hfp_connection->line_size++] = byte;
     hfp_connection->line_buffer[hfp_connection->line_size] = 0;
 }
