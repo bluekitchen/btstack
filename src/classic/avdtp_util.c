@@ -66,7 +66,7 @@ static const char * avdtp_si_name[] = {
     "AVDTP_SI_DELAY_REPORT" 
 };
 const char * avdtp_si2str(uint16_t index){
-    if ((index <= 0) || (index > sizeof(avdtp_si_name))) return avdtp_si_name[0];
+    if ((index <= 0) || (index > sizeof(avdtp_si_name)/sizeof(avdtp_si_name[0]) )) return avdtp_si_name[0];
     return avdtp_si_name[index];
 }
 
