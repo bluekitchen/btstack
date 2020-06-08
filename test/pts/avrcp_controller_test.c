@@ -156,6 +156,8 @@ static uint8_t  avrcp_value[100];
 static uint16_t browsing_uid_counter = 0;
 static avrcp_browsing_state_t browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
+static bool auto_avrcp_browsing = false;
+
 static uint8_t ertm_buffer[10000];
 static l2cap_ertm_config_t ertm_config = {
     1,  // ertm mandatory
@@ -367,8 +369,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("AVRCP Controller connected avrcp_cid 0x0%2x.\n", avrcp_cid);
                             
                             // Set PTS default TSPX_max_avc_fragments = 10
-                            avrcp_controller_set_max_num_fragments(avrcp_cid, 10); 
+                            avrcp_controller_set_max_num_fragments(avrcp_cid, 10);
 
+                            if (auto_avrcp_browsing){
+                                printf("Regular AVRCP Connection -> Create AVRCP Browsing connection to addr %s.\n", bd_addr_to_str(device_addr));
+                                status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
+                            }
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -577,7 +583,7 @@ static void show_usage(void){
     printf("C      - AVRCP disconnect\n");
     printf("e      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("E      - AVRCP Browsing Controller disconnect\n");
-    
+    printf("I      - trigger outgoing browsing AVRCP connection on incoming AVRCP connection to test reject and retry\n");
 
     printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("q - get capabilities: supported events\n");
@@ -716,6 +722,10 @@ static void stdin_process(char * cmd, int size){
                 break;
             }
             printf("AVRCP Browsing Controller already disconnected\n");
+            break;
+        case 'I':
+            printf("- Auto-connect AVRCP Browsing on AVRCP Connection enabled\n");
+            auto_avrcp_browsing = true;
             break;
 
         case '\n':
@@ -1211,7 +1221,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     // setup AVDTP sink
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10002, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     
     // setup AVRCP

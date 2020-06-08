@@ -147,6 +147,8 @@ static l2cap_ertm_config_t ertm_config = {
     4,
 };
 
+static bool auto_avrcp_regular  = false;
+static bool auto_avrcp_browsing = false;
 
 static avdtp_context_t avdtp_source_context;
 
@@ -154,7 +156,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 #ifdef HAVE_BTSTACK_STDIN
 // pts:         
-static const char * device_addr_string = "00:1B:DC:08:E2:5C";
+static const char * device_addr_string = "00:1A:7D:DA:71:01";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // Minijambox:      
@@ -387,13 +389,24 @@ static void avdtp_source_packet_handler(uint8_t packet_type, uint16_t channel, u
         return;
     }
 #endif
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
-        printf("Pin code request - using '0000'\n");
-        hci_event_pin_code_request_get_bd_addr(packet, address);
-        gap_pin_code_response(address, "0000");
-        return;
+
+    switch (hci_event_packet_get_type(packet)){
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            printf("Pin code request - using '0000'\n");
+            hci_event_pin_code_request_get_bd_addr(packet, address);
+            gap_pin_code_response(address, "0000");
+            break;
+            // Test hack: initiate avrcp connection on incoming hci connection request to trigger parallel connect
+        case HCI_EVENT_CONNECTION_REQUEST:
+            if (auto_avrcp_regular){
+                printf("Incoming HCI Connection -> Create regular AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
+                avrcp_connect(device_addr, &avrcp_cid);
+            }
+            break;
+        default:
+            break;
     }
-    
+
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
@@ -611,6 +624,12 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
             avrcp_target_set_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
             avrcp_target_set_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, (uint8_t *)subunit_info, sizeof(subunit_info));
+
+            if (auto_avrcp_browsing){
+                printf("Regular AVRCP Connection -> Create AVRCP Browsing connection to addr %s.\n", bd_addr_to_str(device_addr));
+                avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
+            }
+
             return;
         }
         
@@ -727,15 +746,12 @@ static void show_usage(void){
     printf("l - trigger notification NOW_PLAYING_CONTENT_CHANGED\n");
 
     printf("t - select track with short info\n");
-    printf("t - select track with long info\n");
-    
-    // printf("x      - start streaming sine\n");
-    
-    // printf("p      - pause streaming\n");
-    // printf("t      - STREAM_PTS_TEST.\n");
-    // printf("0      - Reset now playing info\n");
+    printf("T - select track with long info\n");
 
-    printf("g      - Get capabilities\n");
+    printf("i - trigger outgoing regular AVRCP connection on incoming HCI Connection to test reject and retry\n");
+    printf("I - trigger outgoing browsing AVRCP connection on incoming AVRCP connection to test reject and retry\n");
+
+    printf("g  - Get capabilities\n");
     printf("---\n");
 }
 
@@ -758,6 +774,15 @@ static void stdin_process(char * cmd, int size){
         case 'C':
             printf(" - AVRCP disconnect\n");
             status = avrcp_disconnect(avrcp_cid);
+            break;
+
+        case 'i':
+            printf("- Auto-connect AVRCP on incoming HCI connection enabled\n");
+            auto_avrcp_regular = true;
+            break;
+        case 'I':
+            printf("- Auto-connect AVRCP Browsing on AVRCP Connection enabled\n");
+            auto_avrcp_browsing = true;
             break;
 
         case '\n':
