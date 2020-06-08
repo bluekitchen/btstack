@@ -476,17 +476,9 @@ static void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
                         uint32_t uuid = de_get_uuid32(element);
                         switch (uuid){
                             case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_TARGET:
-                                if (sdp_query_context->role == AVRCP_CONTROLLER) {
-                                    sdp_query_context->parse_sdp_record = 1;
-                                    break;
-                                }
-                                break;
                             case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL:
                             case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_CONTROLLER:
-                                if (sdp_query_context->role == AVRCP_TARGET) {
-                                    sdp_query_context->parse_sdp_record = 1;
-                                    break;
-                                }
+                                sdp_query_context->parse_sdp_record = 1;
                                 break;
                             default:
                                 break;
