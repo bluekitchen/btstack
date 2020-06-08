@@ -1049,6 +1049,44 @@ static inline void hci_event_simple_pairing_complete_get_bd_addr(const uint8_t *
 }
 
 /**
+ * @brief Get field bd_addr from event HCI_EVENT_USER_PASSKEY_NOTIFICATION
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_user_passkey_notification_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[2], bd_addr, 6);
+}
+/**
+ * @brief Get field numeric_value from event HCI_EVENT_USER_PASSKEY_NOTIFICATION
+ * @param event packet
+ * @return numeric_value
+ * @note: btstack_type 4
+ */
+static inline uint32_t hci_event_user_passkey_notification_get_numeric_value(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+
+/**
+ * @brief Get field bd_addr from event HCI_EVENT_KEYPRESS_NOTIFICATION
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_keypress_notification_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[2], bd_addr, 6);
+}
+/**
+ * @brief Get field notification_type from event HCI_EVENT_KEYPRESS_NOTIFICATION
+ * @param event packet
+ * @return notification_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_keypress_notification_get_notification_type(const uint8_t * event){
+    return event[8];
+}
+
+/**
  * @brief Get field state from event BTSTACK_EVENT_STATE
  * @param event packet
  * @return state
@@ -8729,22 +8767,22 @@ static inline uint16_t mesh_subevent_configuration_heartbeat_publication_get_hea
     return little_endian_read_16(event, 6);
 }
 /**
- * @brief Get field count_log from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
+ * @brief Get field count_S from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
  * @param event packet
- * @return count_log
- * @note: btstack_type 1
+ * @return count_S
+ * @note: btstack_type 2
  */
-static inline uint8_t mesh_subevent_configuration_heartbeat_publication_get_count_log(const uint8_t * event){
-    return event[8];
+static inline uint16_t mesh_subevent_configuration_heartbeat_publication_get_count_S(const uint8_t * event){
+    return little_endian_read_16(event, 8);
 }
 /**
- * @brief Get field period_log from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
+ * @brief Get field period_S from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
  * @param event packet
- * @return period_log
- * @note: btstack_type 1
+ * @return period_S
+ * @note: btstack_type 2
  */
-static inline uint8_t mesh_subevent_configuration_heartbeat_publication_get_period_log(const uint8_t * event){
-    return event[9];
+static inline uint16_t mesh_subevent_configuration_heartbeat_publication_get_period_S(const uint8_t * event){
+    return little_endian_read_16(event, 10);
 }
 /**
  * @brief Get field ttl from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
@@ -8753,7 +8791,7 @@ static inline uint8_t mesh_subevent_configuration_heartbeat_publication_get_peri
  * @note: btstack_type 1
  */
 static inline uint8_t mesh_subevent_configuration_heartbeat_publication_get_ttl(const uint8_t * event){
-    return event[10];
+    return event[12];
 }
 /**
  * @brief Get field features from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
@@ -8762,7 +8800,7 @@ static inline uint8_t mesh_subevent_configuration_heartbeat_publication_get_ttl(
  * @note: btstack_type 2
  */
 static inline uint16_t mesh_subevent_configuration_heartbeat_publication_get_features(const uint8_t * event){
-    return little_endian_read_16(event, 11);
+    return little_endian_read_16(event, 13);
 }
 /**
  * @brief Get field netkey_index from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION
@@ -8771,7 +8809,7 @@ static inline uint16_t mesh_subevent_configuration_heartbeat_publication_get_fea
  * @note: btstack_type 2
  */
 static inline uint16_t mesh_subevent_configuration_heartbeat_publication_get_netkey_index(const uint8_t * event){
-    return little_endian_read_16(event, 13);
+    return little_endian_read_16(event, 15);
 }
 
 /**
@@ -8811,22 +8849,22 @@ static inline uint16_t mesh_subevent_configuration_heartbeat_subscription_get_he
     return little_endian_read_16(event, 8);
 }
 /**
- * @brief Get field count_log from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION
+ * @brief Get field count_S from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION
  * @param event packet
- * @return count_log
- * @note: btstack_type 1
+ * @return count_S
+ * @note: btstack_type 2
  */
-static inline uint8_t mesh_subevent_configuration_heartbeat_subscription_get_count_log(const uint8_t * event){
-    return event[10];
+static inline uint16_t mesh_subevent_configuration_heartbeat_subscription_get_count_S(const uint8_t * event){
+    return little_endian_read_16(event, 10);
 }
 /**
- * @brief Get field period_log from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION
+ * @brief Get field period_S from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION
  * @param event packet
- * @return period_log
- * @note: btstack_type 1
+ * @return period_S
+ * @note: btstack_type 2
  */
-static inline uint8_t mesh_subevent_configuration_heartbeat_subscription_get_period_log(const uint8_t * event){
-    return event[11];
+static inline uint16_t mesh_subevent_configuration_heartbeat_subscription_get_period_S(const uint8_t * event){
+    return little_endian_read_16(event, 12);
 }
 /**
  * @brief Get field min_hops from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION
@@ -8835,7 +8873,7 @@ static inline uint8_t mesh_subevent_configuration_heartbeat_subscription_get_per
  * @note: btstack_type 1
  */
 static inline uint8_t mesh_subevent_configuration_heartbeat_subscription_get_min_hops(const uint8_t * event){
-    return event[12];
+    return event[14];
 }
 /**
  * @brief Get field max_hops from event MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_SUBSCRIPTION
@@ -8844,7 +8882,7 @@ static inline uint8_t mesh_subevent_configuration_heartbeat_subscription_get_min
  * @note: btstack_type 1
  */
 static inline uint8_t mesh_subevent_configuration_heartbeat_subscription_get_max_hops(const uint8_t * event){
-    return event[13];
+    return event[15];
 }
 
 /**

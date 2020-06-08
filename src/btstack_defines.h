@@ -517,10 +517,25 @@ typedef uint8_t sm_key_t[16];
  */
 #define HCI_EVENT_SIMPLE_PAIRING_COMPLETE                  0x36
 
+/**
+ * @format B4
+ * @param bd_addr
+ * @param numeric_value
+ */
+#define HCI_EVENT_USER_PASSKEY_NOTIFICATION                0x3B
+
+/**
+ * @format B1
+ * @param bd_addr
+ * @param notification_type
+ */
+#define HCI_EVENT_KEYPRESS_NOTIFICATION                    0x3C
+
 #define HCI_EVENT_LE_META                                  0x3E
 
 // last used HCI_EVENT in 2.1 is 0x3d
 // last used HCI_EVENT in 4.1 is 0x57
+// last used HCI_EVENT in 5.2 is 0x58
 
 #define HCI_EVENT_VENDOR_SPECIFIC                          0xFF
 
@@ -3134,7 +3149,7 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_CONFIGURATION_HEARTBEAT_PUBLICATION                               0x54
 
 /**
- * @format 12122221111
+ * @format 121222211
  * @param subevent_code
  * @param dest
  * @param foundation_status
