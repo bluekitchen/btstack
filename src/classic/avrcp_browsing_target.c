@@ -225,13 +225,10 @@ uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsin
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    
-    if (connection->state != AVCTP_CONNECTION_OPENED) {
-        log_info("avrcp_subevent_browsing_get_folder_items_response: wrong state.");
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    int pos = 0;
 
+    // TODO: handle response to SetAddressedPlayer
+
+    uint16_t pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
     big_endian_store_16(connection->cmd_operands, pos, attr_list_size);
     pos += 2;

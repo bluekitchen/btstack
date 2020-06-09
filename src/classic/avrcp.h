@@ -538,6 +538,8 @@ typedef struct {
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
 
+    bool (*set_addressed_player_callback)(uint16_t player_id);
+
     btstack_packet_handler_t browsing_avrcp_callback;
     btstack_packet_handler_t browsing_packet_handler;
 

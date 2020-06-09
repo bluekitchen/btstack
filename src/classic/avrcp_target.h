@@ -87,6 +87,13 @@ void    avrcp_target_init(void);
 void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
+ * @brief Select Player that is controlled by Controller
+ * @param callback
+ * @note Callback should return if selected player is valid
+ */
+void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_t player_id));
+
+/**
  * @brief Send a list of Company IDs supported by target. 
  * @note  The avrcp_target_packet_handler will receive AVRCP_SUBEVENT_COMPANY_IDS_QUERY event. Use this function to respond.
  * @param avrcp_cid

@@ -862,11 +862,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             connection->cmd_operands_length = 3;
             switch (pdu_id){
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
-                    if (length == 0){
+                    bool ok = length == 4;
+                    if (avrcp_target_context.set_addressed_player_callback != NULL){
+                        uint16_t player_id = big_endian_read_16(pdu, 4);
+                        ok = avrcp_target_context.set_addressed_player_callback(player_id);
+                    }
+                    if (ok){
+                        avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_SUCCESS);
+                    } else {
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PLAYER_ID);
-                        break;
-                    } 
-                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_SUCCESS);
+                    }
                     break;
                 }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
@@ -1179,6 +1184,11 @@ void avrcp_target_init(void){
 void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     avrcp_target_context.avrcp_callback = callback;
+}
+
+void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_t player_id)){
+    btstack_assert(callbac != NULL);
+    avrcp_target_context.set_addressed_player_callback = callback;
 }
 
 
