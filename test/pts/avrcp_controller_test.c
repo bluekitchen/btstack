@@ -669,7 +669,7 @@ static void show_usage(void){
     printf("p6 - Add to now playing: first media item from search folder\n");
 
     printf("pf - Send fragmented (long) command\n");
-
+    printf("pv - trigger notification VOLUME_CHANGED 20per\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -991,6 +991,11 @@ static void stdin_process(char * cmd, int size){
         
         case 'p':
             switch (cmd[1]){
+                 case 'v':
+                    printf("AVRCP: trigger notification VOLUME_CHANGED 20per\n");
+                    avrcp_target_volume_changed(avrcp_cid, 20);
+                    break;
+            
                 case 'p':
                     printf("AVRCP Browsing: get media players. Browsing cid 0x%02X\n", browsing_cid);
                     media_player_item_index = -1;
@@ -1210,12 +1215,16 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&packet_handler);
-    
+    avrcp_target_init();
+    avrcp_target_register_packet_handler(&packet_handler);
+
     avrcp_browsing_init();
     avrcp_browsing_register_packet_handler(&packet_handler);
 
     avrcp_browsing_controller_init();
     avrcp_browsing_controller_register_packet_handler(&packet_handler);
+    avrcp_browsing_target_init();
+    avrcp_browsing_target_register_packet_handler(&packet_handler);
     
     // Initialize SDP 
     sdp_init();
