@@ -1053,10 +1053,11 @@ static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t
     if (hfp_connection->keep_byte == 1) return 1;
 
     int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
-                            (byte == ')') || (byte == '(') || (byte == ':') || 
+                            (byte == ')') || (byte == '(') || (byte == ':') || (byte == ';') ||
                             (byte == '-') || (byte == '"') ||  (byte == '?')|| (byte == '=');
     return found_separator;
 }
+
 static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byte){
     hfp_connection->line_size = 0;
     if (hfp_parser_is_end_of_line(byte)){
