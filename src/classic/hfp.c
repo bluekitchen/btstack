@@ -1120,7 +1120,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     }
 
     // ignore spaces outside command or double quotes (required e.g. for '+CME ERROR:..") command
-    if (byte == ' ' && hfp_connection->parser_state != HFP_PARSER_CMD_HEADER) return;
+    if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return;
 
     // TODO:
     if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
@@ -1146,20 +1146,20 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
 
     switch (hfp_connection->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
-            if (byte == '='){
-                hfp_connection->keep_byte = 1;
-                hfp_parser_store_byte(hfp_connection, byte);
-                return;
-            }
-            
-            if (byte == '?'){
-                hfp_connection->keep_byte = 0;
-                hfp_parser_store_byte(hfp_connection, byte);
-                return;
-            }
-
-            if (byte == ','){
-                hfp_connection->resolve_byte = 1;
+            switch (byte) {
+                case '=':
+                    hfp_connection->keep_byte = 1;
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return;
+                case '?':
+                    hfp_connection->keep_byte = 0;
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return;
+                case ',':
+                    hfp_connection->resolve_byte = 1;
+                    break;
+                default:
+                    break;
             }
 
             // printf(" parse header 2 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
