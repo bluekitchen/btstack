@@ -502,6 +502,7 @@ typedef struct hfp_connection {
     hfp_parser_state_t parser_state;
     int      parser_item_index;
     int      parser_indicator_index;
+    bool     parser_quoted;
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
     int      line_size;
     

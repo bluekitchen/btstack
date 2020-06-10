@@ -1057,8 +1057,8 @@ static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t
     if (hfp_connection->keep_byte == 1) return 1;
 
     int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
-                            (byte == ')') || (byte == '(') || (byte == ':') || (byte == ';') ||
-                            (byte == '-') || (byte == '"') ||  (byte == '?')|| (byte == '=');
+                            (byte == ')') || (byte == '(') || (byte == ':') ||
+                            (byte == ';') || (byte == '-') || (byte == '?')|| (byte == '=');
     return found_separator;
 }
 
@@ -1109,9 +1109,20 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
 
 void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
 
-    // TODO: handle space inside word
-    if ((byte == ' ') && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
-    
+    // handle doubles quotes
+    if (byte == '"'){
+        hfp_connection->parser_quoted = !hfp_connection->parser_quoted;
+        return;
+    }
+    if (hfp_connection->parser_quoted) {
+        hfp_parser_store_byte(hfp_connection, byte);
+        return;
+    }
+
+    // ignore spaces outside command or double quotes (required e.g. for '+CME ERROR:..") command
+    if (byte == ' ' && hfp_connection->parser_state != HFP_PARSER_CMD_HEADER) return;
+
+    // TODO:
     if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
         if (hfp_connection->line_size == 0){
             hfp_connection->line_buffer[0] = 0;
