@@ -840,6 +840,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     log_info("command '%s', handsfree %u", line_buffer, isHandsFree);
     int offset = isHandsFree ? 0 : 2;
 
+    if (strncmp(line_buffer+offset, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
+        return HFP_CMD_CALL_PHONE_NUMBER;
+    }
+
     if (strncmp(line_buffer+offset, HFP_LIST_CURRENT_CALLS, strlen(HFP_LIST_CURRENT_CALLS)) == 0){
         return HFP_CMD_LIST_CURRENT_CALLS;
     }
@@ -1046,7 +1050,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 }
 
 static int hfp_parser_is_end_of_header(uint8_t byte){
-    return hfp_parser_is_end_of_line(byte) || (byte == ':') || (byte == '?');
+    return hfp_parser_is_end_of_line(byte) || (byte == ':') || (byte == '?') || (byte == ';');
 }
 
 static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1104,21 +1108,8 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
 }
 
 void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
-    // handle ATD<dial_string>;
-    if (strncmp((const char*)hfp_connection->line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
-        // check for end-of-line or ';'
-        if ((byte == ';') || hfp_parser_is_end_of_line(byte)){
-            hfp_connection->line_buffer[hfp_connection->line_size] = 0;
-            hfp_connection->line_size = 0;
-            hfp_connection->command = HFP_CMD_CALL_PHONE_NUMBER;
-        } else {
-            if ((hfp_connection->line_size + 1) >= HFP_MAX_INDICATOR_DESC_SIZE) return;
-            hfp_connection->line_buffer[hfp_connection->line_size++] = byte;
-        }
-        return;
-    }
 
-    // TODO: handle space inside word        
+    // TODO: handle space inside word
     if ((byte == ' ') && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
     
     if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
