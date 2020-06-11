@@ -1096,6 +1096,8 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
 
 static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
 
+    log_info("State: %u, byte '%c'", hfp_connection->parser_state, byte);
+
     // handle doubles quotes
     if (byte == '"'){
         hfp_connection->parser_quoted = !hfp_connection->parser_quoted;
@@ -1212,24 +1214,23 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             hfp_parser_next_state(hfp_connection, byte);
             return true;
 
-        default:
-            break;
-    }
-
-    if (!hfp_parser_is_separator(byte)){
-        hfp_parser_store_byte(hfp_connection, byte);
-        return true;
-    } 
-
-    if (hfp_parser_is_end_of_line(byte)) {
-        if (hfp_parser_is_buffer_empty(hfp_connection)){
-            hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-        }
-    }
-    if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
-
-    switch (hfp_connection->parser_state){
         case HFP_PARSER_SECOND_ITEM:
+            switch (byte){
+                case ',':
+                case '\n':
+                case '\r':
+                case ';':
+                    // separator
+                    break;
+                case '(':
+                case ')':
+                    // ignore brackets for now
+                    return true;
+                default:
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return true;
+            }
+
             switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                     log_info("format %s, ", hfp_connection->line_buffer);
@@ -1261,8 +1262,26 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 default:
                     break;
             }
-            break;
+            hfp_parser_next_state(hfp_connection, byte);
+            return true;
 
+        default:
+            break;
+    }
+
+    if (!hfp_parser_is_separator(byte)){
+        hfp_parser_store_byte(hfp_connection, byte);
+        return true;
+    } 
+
+    if (hfp_parser_is_end_of_line(byte)) {
+        if (hfp_parser_is_buffer_empty(hfp_connection)){
+            hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
+        }
+    }
+    if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
+
+    switch (hfp_connection->parser_state){
         case HFP_PARSER_THIRD_ITEM:
              switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
