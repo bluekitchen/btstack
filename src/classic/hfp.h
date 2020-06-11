@@ -541,8 +541,7 @@ typedef struct hfp_connection {
 
     bool found_equal_sign;
     uint8_t ignore_value;
-    uint8_t resolve_byte;
-    
+
     uint8_t change_status_update_for_individual_ag_indicators; 
     uint8_t operator_name_changed;      
 

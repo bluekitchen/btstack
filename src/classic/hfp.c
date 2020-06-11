@@ -1135,15 +1135,12 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 case ':':
                     hfp_parser_store_byte(hfp_connection, byte);
                     break;
-                case ',':
-                    hfp_connection->resolve_byte = 1;
-                    break;
                 default:
-                    if (hfp_connection->found_equal_sign) {
-                        break;
+                    if (!hfp_connection->found_equal_sign) {
+                        hfp_parser_store_byte(hfp_connection, byte);
+                        return true;
                     }
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return true;
+                    break;
             }
 
             if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
@@ -1188,7 +1185,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             break;
     }
 
-    // TODO:
     if ((byte == ',') && (hfp_connection->parser_state == HFP_PARSER_CMD_SEQUENCE)){
         if (hfp_connection->line_size == 0){
             hfp_connection->line_buffer[0] = 0;
@@ -1271,13 +1267,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
     hfp_parser_next_state(hfp_connection, byte);
 
-    if (hfp_connection->resolve_byte && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
-        hfp_connection->resolve_byte = 0;
-        hfp_connection->ignore_value = 1;
-        parse_sequence(hfp_connection);
-        hfp_connection->line_buffer[0] = 0;
-        hfp_connection->line_size = 0;
-    }
     return true;
 }
 
