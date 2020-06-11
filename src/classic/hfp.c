@@ -837,7 +837,6 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 }
 // translates command string into hfp_command_t CMD
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
-    log_info("command '%s', handsfree %u", line_buffer, isHandsFree);
     int offset = isHandsFree ? 0 : 2;
 
     if (strncmp(line_buffer+offset, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
@@ -1020,12 +1019,10 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     } 
 
     if (strncmp(line_buffer+offset, "AT+", 3) == 0){
-        log_info("process unknown HF command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
     } 
     
     if (strncmp(line_buffer+offset, "+", 1) == 0){
-        log_info(" process unknown AG command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
     }
     
@@ -1047,10 +1044,6 @@ static int hfp_parser_is_buffer_empty(hfp_connection_t * hfp_connection){
 
 static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
-}
-
-static int hfp_parser_is_end_of_header(uint8_t byte){
-    return hfp_parser_is_end_of_line(byte) || (byte == ':') || (byte == '?') || (byte == ';');
 }
 
 static int hfp_parser_is_separator(uint8_t byte) {
@@ -1170,6 +1163,8 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                         break;
                 }
             }
+
+            log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
 
             hfp_connection->line_size = 0;
             hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
