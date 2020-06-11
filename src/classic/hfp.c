@@ -1123,7 +1123,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return;
 
     // TODO:
-    if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
+    if ((byte == ',') && (hfp_connection->parser_state == HFP_PARSER_CMD_SEQUENCE)){
         if (hfp_connection->line_size == 0){
             hfp_connection->line_buffer[0] = 0;
             hfp_connection->ignore_value = 1;
