@@ -836,200 +836,122 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     }
 }
 // translates command string into hfp_command_t CMD
+
+typedef struct {
+    const char * command;
+    hfp_command_t command_id;
+} hfp_command_entry_t;
+
+static hfp_command_entry_t hfp_ag_commmand_table[] = {
+    { "AT+BIND=",  HFP_CMD_LIST_GENERIC_STATUS_INDICATORS },
+    { "AT+BIND=?", HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS },
+    { "AT+BIND?",  HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE },
+    { "AT+BTRH=",  HFP_CMD_RESPONSE_AND_HOLD_COMMAND},
+    { "AT+BTRH?",  HFP_CMD_RESPONSE_AND_HOLD_QUERY},
+    { "AT+CHLD=",  HFP_CMD_CALL_HOLD },
+    { "AT+CHLD=?", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
+    { "AT+CIND=?", HFP_CMD_RETRIEVE_AG_INDICATORS},
+    { "AT+CIND?",  HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS },
+    { "AT+COPS=",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT },
+    { "AT+COPS?",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "ATA",       HFP_CMD_CALL_ANSWERED },
+};
+
+static hfp_command_entry_t hfp_hf_commmand_table[] = {
+    { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
+    { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
+    { "+CHLD:", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
+    { "+COPS:", HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+};
+
+typedef struct {
+    const char * command;
+    hfp_command_t hf_command_id;
+    hfp_command_t ag_command_id;
+} hfp_command_table_t;
+
+static hfp_command_table_t hfp_command_table[] = {
+    { "+BAC",  HFP_CMD_AVAILABLE_CODECS, HFP_CMD_AVAILABLE_CODECS},
+    { "+BCC",  HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP, HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP},
+    { "+BCS",  HFP_CMD_AG_SUGGESTED_CODEC, HFP_CMD_HF_CONFIRMED_CODEC},
+    { "+BIA",  HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE}, // +BIA:<enabled>,,<enabled>,,,<enabled>
+    { "+BIEV", HFP_CMD_HF_INDICATOR_STATUS, HFP_CMD_HF_INDICATOR_STATUS},
+    { "+BINP", HFP_CMD_AG_SENT_PHONE_NUMBER, HFP_CMD_HF_REQUEST_PHONE_NUMBER},
+    { "+BLDN", HFP_CMD_REDIAL_LAST_NUMBER, HFP_CMD_REDIAL_LAST_NUMBER},
+    { "+BRSF", HFP_CMD_SUPPORTED_FEATURES, HFP_CMD_SUPPORTED_FEATURES},
+    { "+BSIR", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING, HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING},
+    { "+BVRA", HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION, HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION },  // EC (Echo CAnceling), NR (Noise Reduction)
+    { "+CCWA", HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE, HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION},
+    { "+CHUP", HFP_CMD_HANG_UP_CALL, HFP_CMD_HANG_UP_CALL},
+    { "+CIEV", HFP_CMD_TRANSFER_AG_INDICATOR_STATUS, HFP_CMD_TRANSFER_AG_INDICATOR_STATUS},
+    { "+CLCC", HFP_CMD_LIST_CURRENT_CALLS, HFP_CMD_LIST_CURRENT_CALLS},
+    { "+CLIP", HFP_CMD_AG_SENT_CLIP_INFORMATION, HFP_CMD_ENABLE_CLIP},
+    { "+CME ERROR", HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR, HFP_CMD_NONE},
+    { "+CMEE", HFP_CMD_NONE, HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR},
+    { "+CMER", HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE, HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE},
+    { "+CNUM", HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION, HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION},
+    { "+NREC", HFP_CMD_TURN_OFF_EC_AND_NR, HFP_CMD_TURN_OFF_EC_AND_NR },                        // EC (Echo CAnceling), NR (Noise Reduction)}
+    { "+VGM",  HFP_CMD_SET_MICROPHONE_GAIN, HFP_CMD_SET_MICROPHONE_GAIN},
+    { "+VGS",  HFP_CMD_SET_SPEAKER_GAIN, HFP_CMD_SET_SPEAKER_GAIN},
+    { "+VTS",  HFP_CMD_TRANSMIT_DTMF_CODES, HFP_CMD_TRANSMIT_DTMF_CODES},
+    { "ERROR", HFP_CMD_ERROR, HFP_CMD_ERROR},
+    { "NOP",   HFP_CMD_NONE, HFP_CMD_NONE}, // dummy commmand used by unit tests
+    { "OK",    HFP_CMD_OK, HFP_CMD_NONE},
+    { "RING",  HFP_CMD_RING, HFP_CMD_RING},
+};
+
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
-    int offset = isHandsFree ? 0 : 2;
 
-    if (strncmp(line_buffer+offset, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
+    // note: if parser in CMD_HEADER state would treats digits and maybe '+' as separator, match on "ATD" would work.
+    // prefix match on 'ATD', AG only
+    if ((isHandsFree == 0) && (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0)){
         return HFP_CMD_CALL_PHONE_NUMBER;
     }
 
-    if (strncmp(line_buffer+offset, HFP_LIST_CURRENT_CALLS, strlen(HFP_LIST_CURRENT_CALLS)) == 0){
-        return HFP_CMD_LIST_CURRENT_CALLS;
-    }
+    uint16_t offset = isHandsFree ? 0 : 2;
 
-    if (strncmp(line_buffer+offset, HFP_SUBSCRIBER_NUMBER_INFORMATION, strlen(HFP_SUBSCRIBER_NUMBER_INFORMATION)) == 0){
-        return HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION;
-    }
+    uint16_t i;
+    uint16_t num_entries;
 
-    if (strncmp(line_buffer+offset, HFP_PHONE_NUMBER_FOR_VOICE_TAG, strlen(HFP_PHONE_NUMBER_FOR_VOICE_TAG)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SENT_PHONE_NUMBER;
-        return HFP_CMD_HF_REQUEST_PHONE_NUMBER;
+    // role-based table lookup
+    hfp_command_entry_t * table;
+    if (isHandsFree == 0){
+        table = hfp_ag_commmand_table;
+        num_entries = sizeof(hfp_ag_commmand_table) / sizeof(hfp_command_entry_t);
+    } else {
+        table = hfp_hf_commmand_table;
+        num_entries = sizeof(hfp_hf_commmand_table) / sizeof(hfp_command_entry_t);
     }
-
-    if (strncmp(line_buffer+offset, HFP_TRANSMIT_DTMF_CODES, strlen(HFP_TRANSMIT_DTMF_CODES)) == 0){
-        return HFP_CMD_TRANSMIT_DTMF_CODES;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SET_MICROPHONE_GAIN, strlen(HFP_SET_MICROPHONE_GAIN)) == 0){
-        return HFP_CMD_SET_MICROPHONE_GAIN;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SET_SPEAKER_GAIN, strlen(HFP_SET_SPEAKER_GAIN)) == 0){
-        return HFP_CMD_SET_SPEAKER_GAIN;
-    }
-    
-    if (strncmp(line_buffer+offset, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
-        return HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR)) == 0){
-        return HFP_CMD_TURN_OFF_EC_AND_NR;
-    }
-
-    if (strncmp(line_buffer, HFP_ANSWER_CALL, strlen(HFP_ANSWER_CALL)) == 0){
-        return HFP_CMD_CALL_ANSWERED;
-    }
-
-    if (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
-        return HFP_CMD_CALL_PHONE_NUMBER;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_REDIAL_LAST_NUMBER, strlen(HFP_REDIAL_LAST_NUMBER)) == 0){
-        return HFP_CMD_REDIAL_LAST_NUMBER;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_CHANGE_IN_BAND_RING_TONE_SETTING, strlen(HFP_CHANGE_IN_BAND_RING_TONE_SETTING)) == 0){
-        return HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_HANG_UP_CALL, strlen(HFP_HANG_UP_CALL)) == 0){
-        return HFP_CMD_HANG_UP_CALL;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ERROR, strlen(HFP_ERROR)) == 0){
-        return HFP_CMD_ERROR;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_RING, strlen(HFP_RING)) == 0){
-        return HFP_CMD_RING;
-    }
-
-    if (isHandsFree && (strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0)){
-        return HFP_CMD_OK;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
-        return HFP_CMD_SUPPORTED_FEATURES;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TRANSFER_HF_INDICATOR_STATUS, strlen(HFP_TRANSFER_HF_INDICATOR_STATUS)) == 0){
-        return HFP_CMD_HF_INDICATOR_STATUS;
-    }
-    
-    if (strncmp(line_buffer+offset, HFP_RESPONSE_AND_HOLD, strlen(HFP_RESPONSE_AND_HOLD)) == 0){
-        if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "?", 1) == 0){
-            return HFP_CMD_RESPONSE_AND_HOLD_QUERY;
-        }
-        if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "=", 1) == 0){
-            return HFP_CMD_RESPONSE_AND_HOLD_COMMAND;
-        }
-        return HFP_CMD_RESPONSE_AND_HOLD_STATUS;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "?", 1) == 0){
-            return HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
-        }
-
-        if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "=?", 2) == 0){
-            return HFP_CMD_RETRIEVE_AG_INDICATORS;
+    for (i=0;i<num_entries;i++) {
+        hfp_command_entry_t *entry = &table[i];
+        int match = strcmp(line_buffer, entry->command);
+        if (match == 0){
+            return entry->command_id;
         }
     }
 
-    if (strncmp(line_buffer+offset, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
-        return HFP_CMD_AVAILABLE_CODECS;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
-        return HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ENABLE_CLIP, strlen(HFP_ENABLE_CLIP)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SENT_CLIP_INFORMATION;
-        return HFP_CMD_ENABLE_CLIP;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ENABLE_CALL_WAITING_NOTIFICATION, strlen(HFP_ENABLE_CALL_WAITING_NOTIFICATION)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE;
-        return HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
-        
-        if (isHandsFree) return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
-
-        if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=?", 2) == 0){
-            return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
+    // combined table lookup
+    num_entries = sizeof(hfp_command_table) / sizeof(hfp_command_table_t);
+    for (i=0;i<num_entries;i++){
+        hfp_command_table_t * entry = &hfp_command_table[i];
+        bool match = strncmp(line_buffer+offset, entry->command, strlen(entry->command)) == 0;
+        if (match){
+            if (isHandsFree == 1){
+                if (entry->hf_command_id != HFP_CMD_NONE) return entry->hf_command_id;
+            } else {
+                if (entry->ag_command_id != HFP_CMD_NONE) return entry->ag_command_id;
+            }
         }
-        if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=", 1) == 0){
-            return HFP_CMD_CALL_HOLD;    
-        }
-
-        return HFP_CMD_UNKNOWN;
-    } 
-
-    if (strncmp(line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        if (isHandsFree) {
-            return HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS;
-        }
-        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
-            return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-        } 
-        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
-            return HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;    
-        }
-        return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-    } 
-
-    if (strncmp(line_buffer+offset, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
-        return HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
-    } 
-    
-
-    if (strncmp(line_buffer+offset, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
-        if (strncmp(line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+offset, "=", 1) == 0){
-            return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
-        } 
-        return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
     }
-
-    if (strncmp(line_buffer+offset, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_TRANSFER_AG_INDICATOR_STATUS)) == 0){
-        return HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
-    } 
-
-    if (isHandsFree && (strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
-        return HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
-    }
-
-    if (!isHandsFree && (strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
-        return HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
-        return HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
-    } 
-
-    if (strncmp(line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
-        if (isHandsFree){
-            return HFP_CMD_AG_SUGGESTED_CODEC;
-        } else {
-            return HFP_CMD_HF_CONFIRMED_CODEC;
-        }
-    } 
 
     if (strncmp(line_buffer+offset, "AT+", 3) == 0){
         return HFP_CMD_UNKNOWN;
-    } 
-    
+    }
+
     if (strncmp(line_buffer+offset, "+", 1) == 0){
         return HFP_CMD_UNKNOWN;
     }
-    
-    if (strncmp(line_buffer+offset, "NOP", 3) == 0){
-        return HFP_CMD_NONE;
-    } 
-    
+
     return HFP_CMD_NONE;
 }
 
@@ -1046,7 +968,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
+static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
     hfp_connection->line_buffer[0] = 0;
 }
