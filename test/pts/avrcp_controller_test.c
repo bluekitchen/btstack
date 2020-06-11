@@ -193,6 +193,34 @@ static int next_media_player_item_index(){
     return next_index(&media_player_item_index, AVRCP_BROWSING_MAX_MEDIA_ITEMS);
 }
 
+static void avdtp_service_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    uint8_t  status;
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (packet[0] != HCI_EVENT_AVDTP_META) return;
+
+    switch (packet[2]){
+        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+            avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
+            status    = avdtp_subevent_signaling_connection_established_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("AVDTP connection establishment failed: status 0x%02x.\n", status);
+                break;    
+            }
+            printf("AVDTP connection established: avdtp_cid 0x%02x.\n", avdtp_cid);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+            avdtp_cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+            printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
+            break;
+        default:
+            printf("AVDTP event not parsed.\n");
+            break; 
+    }
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // if (packet_type != HCI_EVENT_PACKET) return;
     UNUSED(channel);
@@ -328,27 +356,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case HCI_EVENT_PACKET:
             switch (packet[0]){
-                case HCI_EVENT_AVDTP_META:
-                    switch (packet[2]){
-                        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-                            avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
-                            status    = avdtp_subevent_signaling_connection_established_get_status(packet);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("AVDTP connection establishment failed: status 0x%02x.\n", status);
-                                break;    
-                            }
-                            printf("AVDTP connection established: avdtp_cid 0x%02x.\n", avdtp_cid);
-                            break;
-                        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-                            avdtp_cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
-                            printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
-                            break;
-                        default:
-                            // printf("AVDTP event not parsed.\n");
-                            break; 
-                    }
-                    break;   
-                  
                 case HCI_EVENT_AVRCP_META:
                     printf("received HCI_EVENT_AVRCP_META 0x%2x\n", packet[2]);
 
@@ -1212,7 +1219,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     // Initialize AVDTP Sink
     avdtp_sink_init(&a2dp_sink_context);
-    avdtp_sink_register_packet_handler(&packet_handler);
+    avdtp_sink_register_packet_handler(&avdtp_service_packet_handler);
 
     local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
     if (!local_stream_endpoint) {
@@ -1225,7 +1232,7 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
     avdtp_source_init(&a2dp_source_context);
-    avdtp_source_register_packet_handler(&packet_handler);
+    avdtp_source_register_packet_handler(&avdtp_service_packet_handler);
     a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *) media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t*) media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
     
 
