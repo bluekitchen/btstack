@@ -539,7 +539,7 @@ typedef struct hfp_connection {
     // uint8_t send_ok;
     uint8_t send_error;
 
-    uint8_t keep_byte;
+    bool found_equal_sign;
     uint8_t ignore_value;
     uint8_t resolve_byte;
     

@@ -379,7 +379,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->ok_pending = 0;
     hfp_connection->send_error = 0;
 
-    hfp_connection->keep_byte = 0;
+    hfp_connection->found_equal_sign = false;
 
     hfp_connection->change_status_update_for_individual_ag_indicators = 0; 
     hfp_connection->operator_name_changed = 0;      
@@ -1054,7 +1054,7 @@ static int hfp_parser_is_end_of_header(uint8_t byte){
 }
 
 static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t byte){
-    if (hfp_connection->keep_byte == 1) return 1;
+    if (hfp_connection->found_equal_sign) return 1;
 
     int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
                             (byte == ')') || (byte == '(') || (byte == ':') ||
@@ -1070,13 +1070,6 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
         return;
     }
     switch (hfp_connection->parser_state){
-        case HFP_PARSER_CMD_HEADER:
-            hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
-            if (hfp_connection->keep_byte == 1){
-                hfp_parser_store_byte(hfp_connection, byte);
-                hfp_connection->keep_byte = 0;
-            }
-            break;
         case HFP_PARSER_CMD_SEQUENCE:
             switch (hfp_connection->command){
                 case HFP_CMD_AG_SENT_PHONE_NUMBER:
@@ -1104,6 +1097,8 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
             }
             hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
             break;
+        default:
+            break;
     }
 }
 
@@ -1121,6 +1116,79 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
 
     // ignore spaces outside command or double quotes (required e.g. for '+CME ERROR:..") command
     if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return;
+
+    switch (hfp_connection->parser_state) {
+
+        case HFP_PARSER_CMD_HEADER:
+
+            switch (byte) {
+                case '\n':
+                case '\r':
+                case ';':
+                    break;
+                case '=':
+                    hfp_connection->found_equal_sign = true;
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return;
+                case '?':
+                    hfp_connection->found_equal_sign = false;
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return;
+                case ':':
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    break;
+                case ',':
+                    hfp_connection->resolve_byte = 1;
+                    break;
+                default:
+                    if (hfp_connection->found_equal_sign) {
+                        break;
+                    }
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return;
+            }
+
+            if (hfp_parser_is_buffer_empty(hfp_connection)) return;
+
+            hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
+
+            /* resolve command name according to hfp_connection */
+            if (hfp_connection->command == HFP_CMD_UNKNOWN){
+                switch(hfp_connection->state){
+                    case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
+                        hfp_connection->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;
+                        break;
+                    case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
+                        hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
+                        break;
+                    case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+                        hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
+                        break;
+                    case HFP_W4_RETRIEVE_INDICATORS_STATUS:
+                        hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+                        break;
+                    case HFP_W4_RETRIEVE_INDICATORS:
+                        hfp_connection->send_ag_indicators_segment = 0;
+                        hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            hfp_connection->line_size = 0;
+            hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
+
+            // handle look-a-head byte
+            if (hfp_connection->found_equal_sign){
+                hfp_parser_store_byte(hfp_connection, byte);
+                hfp_connection->found_equal_sign = false;
+            }
+
+            return;
+        default:
+            break;
+    }
 
     // TODO:
     if ((byte == ',') && (hfp_connection->parser_state == HFP_PARSER_CMD_SEQUENCE)){
@@ -1145,56 +1213,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     if (hfp_parser_is_buffer_empty(hfp_connection)) return;
 
     switch (hfp_connection->parser_state){
-        case HFP_PARSER_CMD_HEADER: // header
-            switch (byte) {
-                case '=':
-                    hfp_connection->keep_byte = 1;
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return;
-                case '?':
-                    hfp_connection->keep_byte = 0;
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return;
-                case ',':
-                    hfp_connection->resolve_byte = 1;
-                    break;
-                default:
-                    break;
-            }
-
-            // printf(" parse header 2 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
-            if (hfp_parser_is_end_of_header(byte) || (hfp_connection->keep_byte == 1)){
-                // printf(" parse header 3 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
-                char * line_buffer = (char *)hfp_connection->line_buffer;
-                hfp_connection->command = parse_command(line_buffer, isHandsFree);
-                
-                /* resolve command name according to hfp_connection */
-                if (hfp_connection->command == HFP_CMD_UNKNOWN){
-                    switch(hfp_connection->state){
-                        case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
-                            hfp_connection->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;
-                            break;
-                        case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-                            hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-                            break;
-                        case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                            hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-                            break;
-                        case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-                            hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
-                            break;
-                        case HFP_W4_RETRIEVE_INDICATORS:
-                            hfp_connection->send_ag_indicators_segment = 0;
-                            hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            break;
-
-        case HFP_PARSER_CMD_SEQUENCE: 
+        case HFP_PARSER_CMD_SEQUENCE:
             parse_sequence(hfp_connection);
             break;
         case HFP_PARSER_SECOND_ITEM:
@@ -1248,7 +1267,10 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                     break;
             }
             break;
+        default:
+            break;
     }
+
     hfp_parser_next_state(hfp_connection, byte);
 
     if (hfp_connection->resolve_byte && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
