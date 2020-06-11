@@ -1053,9 +1053,7 @@ static int hfp_parser_is_end_of_header(uint8_t byte){
     return hfp_parser_is_end_of_line(byte) || (byte == ':') || (byte == '?') || (byte == ';');
 }
 
-static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t byte){
-    if (hfp_connection->found_equal_sign) return 1;
-
+static int hfp_parser_is_separator(uint8_t byte) {
     int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
                             (byte == ')') || (byte == '(') || (byte == ':') ||
                             (byte == ';') || (byte == '-') || (byte == '?')|| (byte == '=');
@@ -1102,20 +1100,20 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
     }
 }
 
-void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
+static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
 
     // handle doubles quotes
     if (byte == '"'){
         hfp_connection->parser_quoted = !hfp_connection->parser_quoted;
-        return;
+        return true;
     }
     if (hfp_connection->parser_quoted) {
         hfp_parser_store_byte(hfp_connection, byte);
-        return;
+        return true;
     }
 
     // ignore spaces outside command or double quotes (required e.g. for '+CME ERROR:..") command
-    if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return;
+    if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return true;
 
     switch (hfp_connection->parser_state) {
 
@@ -1129,11 +1127,11 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                 case '=':
                     hfp_connection->found_equal_sign = true;
                     hfp_parser_store_byte(hfp_connection, byte);
-                    return;
+                    return true;
                 case '?':
                     hfp_connection->found_equal_sign = false;
                     hfp_parser_store_byte(hfp_connection, byte);
-                    return;
+                    return true;
                 case ':':
                     hfp_parser_store_byte(hfp_connection, byte);
                     break;
@@ -1145,10 +1143,10 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                         break;
                     }
                     hfp_parser_store_byte(hfp_connection, byte);
-                    return;
+                    return true;
             }
 
-            if (hfp_parser_is_buffer_empty(hfp_connection)) return;
+            if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
 
             hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
 
@@ -1179,13 +1177,13 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
             hfp_connection->line_size = 0;
             hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
 
-            // handle look-a-head byte
+            // handle lookahead byte
             if (hfp_connection->found_equal_sign){
-                hfp_parser_store_byte(hfp_connection, byte);
                 hfp_connection->found_equal_sign = false;
+                return false;
             }
 
-            return;
+            return true;
         default:
             break;
     }
@@ -1196,13 +1194,13 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
             hfp_connection->line_buffer[0] = 0;
             hfp_connection->ignore_value = 1;
             parse_sequence(hfp_connection);
-            return;    
+            return true;
         } 
     }
 
-    if (!hfp_parser_found_separator(hfp_connection, byte)){
+    if (!hfp_parser_is_separator(byte)){
         hfp_parser_store_byte(hfp_connection, byte);
-        return;
+        return true;
     } 
 
     if (hfp_parser_is_end_of_line(byte)) {
@@ -1210,7 +1208,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
             hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
         }
     }
-    if (hfp_parser_is_buffer_empty(hfp_connection)) return;
+    if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
 
     switch (hfp_connection->parser_state){
         case HFP_PARSER_CMD_SEQUENCE:
@@ -1279,6 +1277,14 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
         parse_sequence(hfp_connection);
         hfp_connection->line_buffer[0] = 0;
         hfp_connection->line_size = 0;
+    }
+    return true;
+}
+
+void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
+    bool processed = false;
+    while (!processed){
+        processed = hfp_parse_byte(hfp_connection, byte, isHandsFree);
     }
 }
 
