@@ -1046,57 +1046,39 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-static int hfp_parser_is_separator(uint8_t byte) {
-    int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
-                            (byte == ')') || (byte == '(') || (byte == ':') ||
-                            (byte == ';') || (byte == '-') || (byte == '?')|| (byte == '=');
-    return found_separator;
-}
-
-static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byte){
+void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
     hfp_connection->line_buffer[0] = 0;
-    if (hfp_parser_is_end_of_line(byte)){
-        hfp_connection->parser_item_index = 0;
-        hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-        return;
-    }
-    switch (hfp_connection->parser_state){
-        case HFP_PARSER_CMD_SEQUENCE:
-            switch (hfp_connection->command){
-                case HFP_CMD_AG_SENT_PHONE_NUMBER:
-                case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
-                case HFP_CMD_AG_SENT_CLIP_INFORMATION:
-                case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
-                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
-                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
-                case HFP_CMD_RETRIEVE_AG_INDICATORS:
-                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
-                case HFP_CMD_HF_INDICATOR_STATUS:
-                    hfp_connection->parser_state = HFP_PARSER_SECOND_ITEM;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case HFP_PARSER_SECOND_ITEM:
-            hfp_connection->parser_state = HFP_PARSER_THIRD_ITEM;
-            break;
-        case HFP_PARSER_THIRD_ITEM:
-            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
-                hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                break;
-            }
-            hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
+}
+
+static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
+    switch (byte){
+        case ',':
+        case ';':
+        case '(':
+        case ')':
+        case '\n':
+        case '\r':
             break;
         default:
+            hfp_parser_store_byte(hfp_connection, byte);
             break;
+    }
+}
+
+static bool hfp_parser_is_separator( uint8_t byte){
+    switch (byte){
+        case ',':
+        case ';':
+        case '\n':
+        case '\r':
+            return true;
+        default:
+            return false;
     }
 }
 
 static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
-
-    log_info("State: %u, byte '%c'", hfp_connection->parser_state, byte);
 
     // handle doubles quotes
     if (byte == '"'){
@@ -1142,7 +1124,7 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                     break;
             }
 
-            // ignore empty lines
+            // ignore empty tokens
             if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
 
             // parse
@@ -1175,61 +1157,52 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
 
             // next state
-            hfp_connection->line_size = 0;
-            hfp_connection->line_buffer[0] = 0;
             hfp_connection->found_equal_sign = false;
+            hfp_parser_reset_line_buffer(hfp_connection);
             hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
 
             return processed;
 
         case HFP_PARSER_CMD_SEQUENCE:
-            switch (byte){
-                case ',':
-                    if (hfp_connection->line_size == 0){
-                        hfp_connection->line_buffer[0] = 0;
-                        hfp_connection->ignore_value = 1;
-                        parse_sequence(hfp_connection);
-                        // note: keep state
-                        return true;
-                    }
-                    break;
-                case '\n':
-                case '\r':
-                case ';':
-                    // separator
-                    break;
-                case '(':
-                case ')':
-                    // ignore brackets for now
-                    return true;
-                default:
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return true;
+            // handle empty fields
+            if ((byte == ',' ) && (hfp_connection->line_size == 0)){
+                hfp_connection->line_buffer[0] = 0;
+                hfp_connection->ignore_value = 1;
+                parse_sequence(hfp_connection);
+                return true;
             }
 
-            // ignore empty lines
+            hfp_parser_store_if_token(hfp_connection, byte);
+            if (!hfp_parser_is_separator(byte)) return true;
+
+            // ignore empty tokens
             if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) return true;
 
             parse_sequence(hfp_connection);
-            hfp_parser_next_state(hfp_connection, byte);
+
+            hfp_parser_reset_line_buffer(hfp_connection);
+
+            switch (hfp_connection->command){
+                case HFP_CMD_AG_SENT_PHONE_NUMBER:
+                case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
+                case HFP_CMD_AG_SENT_CLIP_INFORMATION:
+                case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
+                case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
+                case HFP_CMD_RETRIEVE_AG_INDICATORS:
+                case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
+                case HFP_CMD_HF_INDICATOR_STATUS:
+                    hfp_connection->parser_state = HFP_PARSER_SECOND_ITEM;
+                    break;
+                default:
+                    break;
+            }
             return true;
 
         case HFP_PARSER_SECOND_ITEM:
-            switch (byte){
-                case ',':
-                case '\n':
-                case '\r':
-                case ';':
-                    // separator
-                    break;
-                case '(':
-                case ')':
-                    // ignore brackets for now
-                    return true;
-                default:
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return true;
-            }
+
+            hfp_parser_store_if_token(hfp_connection, byte);
+            if (!hfp_parser_is_separator(byte)) return true;
 
             switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
@@ -1262,25 +1235,18 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 default:
                     break;
             }
-            hfp_parser_next_state(hfp_connection, byte);
+
+            hfp_parser_reset_line_buffer(hfp_connection);
+
+            hfp_connection->parser_state = HFP_PARSER_THIRD_ITEM;
+
             return true;
 
         case HFP_PARSER_THIRD_ITEM:
-            switch (byte){
-                case ',':
-                case '\n':
-                case '\r':
-                case ';':
-                    // separator
-                    break;
-                case '(':
-                case ')':
-                    // ignore brackets for now
-                    return true;
-                default:
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return true;
-            }
+
+            hfp_parser_store_if_token(hfp_connection, byte);
+            if (!hfp_parser_is_separator(byte)) return true;
+
             switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                     strncpy(hfp_connection->network_operator.name, (char *)hfp_connection->line_buffer, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
@@ -1296,7 +1262,14 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 default:
                     break;
             }
-            hfp_parser_next_state(hfp_connection, byte);
+
+            hfp_parser_reset_line_buffer(hfp_connection);
+
+            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
+                hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
+            } else {
+                hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
+            }
             return true;
 
         default:
@@ -1309,6 +1282,11 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
     bool processed = false;
     while (!processed){
         processed = hfp_parse_byte(hfp_connection, byte, isHandsFree);
+    }
+    // reset parser state on end-of-line
+    if (hfp_parser_is_end_of_line(byte)){
+        hfp_connection->parser_item_index = 0;
+        hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     }
 }
 
