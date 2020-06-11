@@ -1108,39 +1108,44 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
     // ignore spaces outside command or double quotes (required e.g. for '+CME ERROR:..") command
     if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return true;
 
+    bool processed = true;
+
     switch (hfp_connection->parser_state) {
-
         case HFP_PARSER_CMD_HEADER:
-
             switch (byte) {
                 case '\n':
                 case '\r':
                 case ';':
+                    // ignore separator
+                    break;
+                case ':':
+                case '?':
+                    // store separator
+                    hfp_parser_store_byte(hfp_connection, byte);
                     break;
                 case '=':
+                    // equal sign: remember and wait for next char to decided between '=?' and '=\?'
                     hfp_connection->found_equal_sign = true;
                     hfp_parser_store_byte(hfp_connection, byte);
                     return true;
-                case '?':
-                    hfp_connection->found_equal_sign = false;
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    return true;
-                case ':':
-                    hfp_parser_store_byte(hfp_connection, byte);
-                    break;
                 default:
+                    // store if not lookahead
                     if (!hfp_connection->found_equal_sign) {
                         hfp_parser_store_byte(hfp_connection, byte);
                         return true;
                     }
+                    // mark as lookahead
+                    processed = false;
                     break;
             }
 
+            // ignore empty lines
             if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
 
+            // parse
             hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
 
-            /* resolve command name according to hfp_connection */
+            // resolve command name according to hfp_connection
             if (hfp_connection->command == HFP_CMD_UNKNOWN){
                 switch(hfp_connection->state){
                     case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
@@ -1166,16 +1171,16 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
 
             log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
 
+            // next state
             hfp_connection->line_size = 0;
+            hfp_connection->line_buffer[0] = 0;
+            hfp_connection->found_equal_sign = false;
             hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
 
-            // handle lookahead byte
-            if (hfp_connection->found_equal_sign){
-                hfp_connection->found_equal_sign = false;
-                return false;
-            }
+            return processed;
 
-            return true;
+        case HFP_PARSER_CMD_SEQUENCE:
+            break;
         default:
             break;
     }
