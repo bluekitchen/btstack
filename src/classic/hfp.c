@@ -1055,6 +1055,7 @@ static int hfp_parser_is_separator(uint8_t byte) {
 
 static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byte){
     hfp_connection->line_size = 0;
+    hfp_connection->line_buffer[0] = 0;
     if (hfp_parser_is_end_of_line(byte)){
         hfp_connection->parser_item_index = 0;
         hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
@@ -1180,18 +1181,39 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             return processed;
 
         case HFP_PARSER_CMD_SEQUENCE:
-            break;
+            switch (byte){
+                case ',':
+                    if (hfp_connection->line_size == 0){
+                        hfp_connection->line_buffer[0] = 0;
+                        hfp_connection->ignore_value = 1;
+                        parse_sequence(hfp_connection);
+                        // note: keep state
+                        return true;
+                    }
+                    break;
+                case '\n':
+                case '\r':
+                case ';':
+                    // separator
+                    break;
+                case '(':
+                case ')':
+                    // ignore brackets for now
+                    return true;
+                default:
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return true;
+            }
+
+            // ignore empty lines
+            if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) return true;
+
+            parse_sequence(hfp_connection);
+            hfp_parser_next_state(hfp_connection, byte);
+            return true;
+
         default:
             break;
-    }
-
-    if ((byte == ',') && (hfp_connection->parser_state == HFP_PARSER_CMD_SEQUENCE)){
-        if (hfp_connection->line_size == 0){
-            hfp_connection->line_buffer[0] = 0;
-            hfp_connection->ignore_value = 1;
-            parse_sequence(hfp_connection);
-            return true;
-        } 
     }
 
     if (!hfp_parser_is_separator(byte)){
@@ -1207,9 +1229,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
     if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
 
     switch (hfp_connection->parser_state){
-        case HFP_PARSER_CMD_SEQUENCE:
-            parse_sequence(hfp_connection);
-            break;
         case HFP_PARSER_SECOND_ITEM:
             switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
