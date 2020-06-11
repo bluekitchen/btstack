@@ -637,15 +637,16 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Sink create  connection to addr %s\n", device_addr_string);
+    printf("a      - AVDTP Sink create  connection to addr %s\n", device_addr_string);
+    printf("A      - AVDTP Sink disconnect\n");
+    printf("b      - AVDTP Source create  connection to addr %s\n", device_addr_string);
     printf("B      - AVDTP Sink disconnect\n");
-    printf(".      - AVDTP Source create  connection to addr %s\n", device_addr_string);
     
     printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
     printf("C      - AVRCP disconnect\n");
     printf("d      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("D      - AVRCP Browsing Controller disconnect\n");
-    printf("I      - trigger outgoing browsing AVRCP connection on incoming AVRCP connection to test reject and retry\n");
+    printf("#      - trigger outgoing browsing AVRCP connection on incoming AVRCP connection to test reject and retry\n");
 
     printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("q - get capabilities: supported events\n");
@@ -655,10 +656,10 @@ static void show_usage(void){
     printf("t - get now playing info\n");
     
     printf("01 - play\n");
-    printf("02 - stop\n");
-    printf("03 - pause\n");
-    printf("04 - fast forward\n");
-    printf("05 - rewind\n");
+    printf("02 - pause\n");
+    printf("03 - stop\n");
+    printf("04 - rewind\n");
+    printf("05 - fast forward\n");
     printf("06 - forward\n");
     printf("07 - backward\n");
     printf("08 - volume up\n");
@@ -666,10 +667,10 @@ static void show_usage(void){
     printf("00 - mute\n");
 
     printf("11 - press and hold: play\n");
-    printf("12 - press and hold: stop\n");
-    printf("13 - press and hold: pause\n");
-    printf("14 - press and hold: fast forward\n");
-    printf("15 - press and hold: rewind\n");
+    printf("12 - press and hold: pause\n");
+    printf("13 - press and hold: stop\n");
+    printf("14 - press and hold: rewind\n");
+    printf("15 - press and hold: fast forward\n");
     printf("16 - press and hold: forward\n");
     printf("17 - press and hold: backward\n");
     printf("18 - press and hold: volume up\n");
@@ -679,14 +680,14 @@ static void show_usage(void){
 
     printf("R - absolute volume of 50 percent\n");
     printf("u - skip\n");
-    printf("i - query repeat and shuffle mode\n");
+    printf(". - query repeat and shuffle mode\n");
     printf("o - repeat single track\n");
     printf("x/X - repeat/disable repeat all tracks\n");
     printf("z/Z - shuffle/disable shuffle all tracks\n");
     
-    printf("a/A - register/deregister PLAYBACK_STATUS_CHANGED\n");
+    printf("i/I - register/deregister PLAYBACK_STATUS_CHANGED\n");
     printf("s/S - register/deregister TRACK_CHANGED\n");
-    printf("d/D - register/deregister TRACK_REACHED_END\n");
+    printf("e/E - register/deregister TRACK_REACHED_END\n");
     printf("f/F - register/deregister TRACK_REACHED_START\n");
     printf("g/G - register/deregister PLAYBACK_POS_CHANGED\n");
     printf("h/H - register/deregister BATT_STATUS_CHANGED\n");
@@ -752,17 +753,21 @@ static void stdin_process(char * cmd, int size){
     sep.seid = 1;
     
     switch (cmd[0]){
-        case 'b':
+        case 'a':
             printf("Establish AVDTP sink connection to %s\n", device_addr_string);
             avdtp_sink_connect(device_addr, &avdtp_cid);
             break;
-        case 'B':
+        case 'A':
             printf("Disconnect AVDTP sink\n");
             avdtp_sink_disconnect(avdtp_cid);
             break;
-        case '.':
+        case 'b':
             printf("Establish AVDTP Source connection to %s\n", device_addr_string);
             avdtp_source_connect(device_addr, &avdtp_cid);
+            break;
+        case 'B':
+            printf("Disconnect AVDTP Source\n");
+            avdtp_source_disconnect(avdtp_cid);
             break;
         case 'c':
             printf("Establish AVRCP connection to %s.\n", bd_addr_to_str(device_addr));
@@ -773,7 +778,7 @@ static void stdin_process(char * cmd, int size){
             avrcp_disconnect(avrcp_cid);
             break;
 
-         case 'e':
+         case 'd':
             if (!avrcp_connected) {
                 printf(" You must first create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
                 break;
@@ -781,7 +786,7 @@ static void stdin_process(char * cmd, int size){
             printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &avrcp_browsing_cid);
             break;
-        case 'E':
+        case 'D':
             if (avrcp_browsing_connected){
                 printf(" - AVRCP Browsing Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
                 status = avrcp_browsing_disconnect(avrcp_browsing_cid);
@@ -789,7 +794,7 @@ static void stdin_process(char * cmd, int size){
             }
             printf("AVRCP Browsing Controller already disconnected\n");
             break;
-        case 'I':
+        case '#':
             printf("- Auto-connect AVRCP Browsing on AVRCP Connection enabled\n");
             auto_avrcp_browsing = true;
             break;
@@ -824,20 +829,20 @@ static void stdin_process(char * cmd, int size){
                     avrcp_controller_play(avrcp_cid);
                     break;
                 case '2':
-                    printf("AVRCP: stop\n");
-                    avrcp_controller_stop(avrcp_cid);
-                    break;
-                case '3':
                     printf("AVRCP: pause\n");
                     avrcp_controller_pause(avrcp_cid);
                     break;
-                case '4':
-                    printf("AVRCP: fast forward\n");
-                    avrcp_controller_fast_forward(avrcp_cid);
+                case '3':
+                    printf("AVRCP: stop\n");
+                    avrcp_controller_stop(avrcp_cid);
                     break;
-                case '5':
+                case '4':
                     printf("AVRCP: rewind\n");
                     avrcp_controller_rewind(avrcp_cid);
+                    break;
+                case '5':
+                    printf("AVRCP: fast forward\n");
+                    avrcp_controller_fast_forward(avrcp_cid);
                     break;
                 case '6':
                     printf("AVRCP: forward\n");
@@ -871,20 +876,20 @@ static void stdin_process(char * cmd, int size){
                     avrcp_controller_press_and_hold_play(avrcp_cid);
                     break;
                 case '2':
-                    printf("AVRCP: stop\n");
-                    avrcp_controller_press_and_hold_stop(avrcp_cid);
-                    break;
-                case '3':
                     printf("AVRCP: pause\n");
                     avrcp_controller_press_and_hold_pause(avrcp_cid);
                     break;
-                case '4':
-                    printf("AVRCP: fast forward\n");
-                    avrcp_controller_press_and_hold_fast_forward(avrcp_cid);
+                case '3':
+                    printf("AVRCP: stop\n");
+                    avrcp_controller_press_and_hold_stop(avrcp_cid);
                     break;
-                case '5':
+                case '4':
                     printf("AVRCP: rewind\n");
                     avrcp_controller_press_and_hold_rewind(avrcp_cid);
+                    break;
+                case '5':
+                    printf("AVRCP: fast forward\n");
+                    avrcp_controller_press_and_hold_fast_forward(avrcp_cid);
                     break;
                 case '6':
                     printf("AVRCP: forward\n");
@@ -922,7 +927,7 @@ static void stdin_process(char * cmd, int size){
             printf("AVRCP: skip\n");
             avrcp_controller_skip(avrcp_cid);
             break;
-        case 'i':
+        case '.':
             printf("AVRCP: query repeat and shuffle mode\n");
             avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
@@ -947,7 +952,7 @@ static void stdin_process(char * cmd, int size){
             avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
 
-        case 'a':
+        case 'i':
             printf("AVRCP: enable notification PLAYBACK_STATUS_CHANGED\n");
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
@@ -955,7 +960,7 @@ static void stdin_process(char * cmd, int size){
             printf("AVRCP: enable notification TRACK_CHANGED\n");
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
-        case 'd':
+        case 'e':
             printf("AVRCP: enable notification TRACK_REACHED_END\n");
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
             break;
@@ -1000,7 +1005,7 @@ static void stdin_process(char * cmd, int size){
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             break;
 
-        case 'A':
+        case 'I':
             printf("AVRCP: disable notification PLAYBACK_STATUS_CHANGED\n");
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
@@ -1008,7 +1013,7 @@ static void stdin_process(char * cmd, int size){
             printf("AVRCP: disable notification TRACK_CHANGED\n");
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
-        case 'D':
+        case 'E':
             printf("AVRCP: disable notification TRACK_REACHED_END\n");
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
             break;
