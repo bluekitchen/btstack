@@ -571,6 +571,10 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("AVRCP connection established: avrcp_cid 0x%02x.\n", avrcp_cid);
             
+            avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
+            avrcp_target_set_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
+            avrcp_target_set_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, (uint8_t *)subunit_info, sizeof(subunit_info));
+
             // Set PTS default TSPX_max_avc_fragments = 10
             avrcp_controller_set_max_num_fragments(avrcp_cid, 10);
 
@@ -578,8 +582,9 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
                 printf("Regular AVRCP Connection -> Create AVRCP Browsing connection to addr %s.\n", bd_addr_to_str(device_addr));
                 status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &avrcp_browsing_cid);
             }
-            return;
+            break;
         }
+
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP connection released: avrcp_cid 0x%02x.\n", avrcp_cid);
             avrcp_browsing_cid = 0;
@@ -663,48 +668,97 @@ static void avrcp_browsing_connection_establishment_packet_handler(uint8_t packe
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    UNUSED(channel);
-    UNUSED(size);
-    bd_addr_t event_addr;
-    uint16_t local_cid;
     uint8_t  avrcp_status = ERROR_CODE_SUCCESS;
+     printf("avrcp_target_packet_handler event 0x%02x\n", packet[2]);
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
     switch (packet[2]){
-        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
-            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            
-            avrcp_status = avrcp_subevent_connection_established_get_status(packet);
-            if (avrcp_status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Target: Connection failed, status 0x%02x\n", avrcp_status);
-                return;
+        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
+            avrcp_status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+            break;
+        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
+            avrcp_status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
+            break;
+        case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
+            avrcp_status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
+            break;
+        // case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
+        //     status = avrcp_target_now_playing_info(avrcp_cid);
+        //     break;
+        case AVRCP_SUBEVENT_OPERATION:{
+            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            // if (!media_tracker.connected) break;
+            switch (operation_id){
+                case AVRCP_OPERATION_ID_PLAY:
+                    printf("AVRCP Target: received operation PLAY\n");
+                    a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                case AVRCP_OPERATION_ID_PAUSE:
+                    printf("AVRCP Target: received operation PAUSE\n");
+                    a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                case AVRCP_OPERATION_ID_STOP:
+                    printf("AVRCP Target: received operation STOP\n");
+                    a2dp_source_disconnect(media_tracker.a2dp_cid);
+                    break;
+                case AVRCP_OPERATION_ID_VOLUME_UP:
+                    printf("AVRCP Target: received operation VOLUME_UP\n");
+                    break;
+                case AVRCP_OPERATION_ID_VOLUME_DOWN:
+                    printf("AVRCP Target: received operation VOLUME_DOWN\n");
+                    break;
+                case AVRCP_OPERATION_ID_REWIND:
+                    printf("AVRCP Target: received operation REWIND\n");
+                    break;
+                case AVRCP_OPERATION_ID_FAST_FORWARD:
+                    printf("AVRCP Target: received operation FAST_FORWARD\n");
+                    break;
+                case AVRCP_OPERATION_ID_FORWARD:
+                    printf("AVRCP Target: received operation FORWARD\n");
+                    break;
+                case AVRCP_OPERATION_ID_BACKWARD:
+                    printf("AVRCP Target: received operation BACKWARD\n");
+                    break;
+                case AVRCP_OPERATION_ID_SKIP:
+                    printf("AVRCP Target: received operation SKIP\n");
+                    break;
+                case AVRCP_OPERATION_ID_MUTE:
+                    printf("AVRCP Target: received operation MUTE\n");
+                    break;
+                case AVRCP_OPERATION_ID_CHANNEL_UP:
+                    printf("AVRCP Target: received operation CHANNEL_UP\n");
+                    break;
+                case AVRCP_OPERATION_ID_CHANNEL_DOWN:
+                    printf("AVRCP Target: received operation CHANNEL_DOWN\n");
+                    break;
+                case AVRCP_OPERATION_ID_SELECT:
+                    printf("AVRCP Target: received operation SELECT\n");
+                    break;
+                case AVRCP_OPERATION_ID_UP:
+                    printf("AVRCP Target: received operation UP\n");
+                    break;
+                case AVRCP_OPERATION_ID_DOWN:
+                    printf("AVRCP Target: received operation DOWN\n");
+                    break;
+                case AVRCP_OPERATION_ID_LEFT:
+                    printf("AVRCP Target: received operation LEFT\n");
+                    break;
+                case AVRCP_OPERATION_ID_RIGHT:
+                    printf("AVRCP Target: received operation RIGTH\n");
+                    break;
+                case AVRCP_OPERATION_ID_ROOT_MENU:
+                    printf("AVRCP Target: received operation ROOT_MENU\n");
+                    break;
+                
+                default:
+                    return;
             }
-            avrcp_connected = 1;
-            avrcp_cid = local_cid;
-            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-            printf("AVRCP Target: Connected to %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
-            
-            avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
-            avrcp_target_set_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
-            avrcp_target_set_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, (uint8_t *)subunit_info, sizeof(subunit_info));
-
-            if (auto_avrcp_browsing){
-                printf("Regular AVRCP Connection -> Create AVRCP Browsing connection to addr %s.\n", bd_addr_to_str(device_addr));
-                avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
-            }
-
-            return;
+            break;
         }
-        
-        case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-            printf("AVRCP Target: Disconnected, avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
-            avrcp_cid = 0;
-            avrcp_connected = 0;
-            return;
         default:
-            printf(" event not parsed\n");
+            printf("AVRCP target: event not parsed\n");
             break;
     }
 
@@ -810,7 +864,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             printf("\n");
             break;
         default:
-            printf("AVRCP event not parsed.\n");
+            printf("AVRCP controller: event not parsed.\n");
             break;
     }             
 }
@@ -820,7 +874,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
     uint8_t  avrcp_status = ERROR_CODE_SUCCESS;
-
+    printf("avrcp_browsing_target_packet_handler event 0x%02x\n", packet[2]);
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
@@ -859,89 +913,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                 default:
                     avrcp_subevent_browsing_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
                     break;
-            }
-            break;
-        }
-        
-        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            avrcp_status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
-            break;
-        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            avrcp_status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
-            break;
-        case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
-            avrcp_status = avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
-            break;
-        // case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
-        //     status = avrcp_target_now_playing_info(avrcp_cid);
-        //     break;
-        case AVRCP_SUBEVENT_OPERATION:{
-            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
-            // if (!media_tracker.connected) break;
-            switch (operation_id){
-                case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target: received operation PLAY\n");
-                    a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-                    break;
-                case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target: received operation PAUSE\n");
-                    a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-                    break;
-                case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target: received operation STOP\n");
-                    a2dp_source_disconnect(media_tracker.a2dp_cid);
-                    break;
-                case AVRCP_OPERATION_ID_VOLUME_UP:
-                    printf("AVRCP Target: received operation VOLUME_UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_VOLUME_DOWN:
-                    printf("AVRCP Target: received operation VOLUME_DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_REWIND:
-                    printf("AVRCP Target: received operation REWIND\n");
-                    break;
-                case AVRCP_OPERATION_ID_FAST_FORWARD:
-                    printf("AVRCP Target: received operation FAST_FORWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_FORWARD:
-                    printf("AVRCP Target: received operation FORWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_BACKWARD:
-                    printf("AVRCP Target: received operation BACKWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_SKIP:
-                    printf("AVRCP Target: received operation SKIP\n");
-                    break;
-                case AVRCP_OPERATION_ID_MUTE:
-                    printf("AVRCP Target: received operation MUTE\n");
-                    break;
-                case AVRCP_OPERATION_ID_CHANNEL_UP:
-                    printf("AVRCP Target: received operation CHANNEL_UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_CHANNEL_DOWN:
-                    printf("AVRCP Target: received operation CHANNEL_DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_SELECT:
-                    printf("AVRCP Target: received operation SELECT\n");
-                    break;
-                case AVRCP_OPERATION_ID_UP:
-                    printf("AVRCP Target: received operation UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_DOWN:
-                    printf("AVRCP Target: received operation DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_LEFT:
-                    printf("AVRCP Target: received operation LEFT\n");
-                    break;
-                case AVRCP_OPERATION_ID_RIGHT:
-                    printf("AVRCP Target: received operation RIGTH\n");
-                    break;
-                case AVRCP_OPERATION_ID_ROOT_MENU:
-                    printf("AVRCP Target: received operation ROOT_MENU\n");
-                    break;
-                
-                default:
-                    return;
             }
             break;
         }
@@ -1813,6 +1784,10 @@ static void stdin_process(char * cmd, int size){
 }
 #endif
 
+static bool avrcp_set_addressed_player_handler(uint16_t player_id){
+    if (player_id < 1 || player_id > 2) return false;
+    return true;
+}
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -1847,6 +1822,7 @@ int btstack_main(int argc, const char * argv[]){
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
+    avrcp_target_register_set_addressed_player_handler(&avrcp_set_addressed_player_handler);
 
     // Initialize AVRCP Browsing service
     avrcp_browsing_init();
