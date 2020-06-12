@@ -819,8 +819,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     }
                     avrcp_emit_connection_closed(connection_controller->avrcp_cid);
                     avrcp_finalize_connection(connection_controller);
-
-                    avrcp_emit_connection_closed(connection_target->avrcp_cid);
                     avrcp_finalize_connection(connection_target);
                     break;
 
@@ -1196,8 +1194,6 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                     }
                     avrcp_browsing_emit_connection_closed(connection_controller->avrcp_browsing_cid);
                     avrcp_browsing_finalize_connection(connection_controller);
-
-                    avrcp_browsing_emit_connection_closed(connection_target->avrcp_browsing_cid);
                     avrcp_browsing_finalize_connection(connection_target);
                     break;
 
