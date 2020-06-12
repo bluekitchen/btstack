@@ -905,7 +905,6 @@ static hfp_command_entry_t hfp_hf_commmand_table[] = {
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 
     // table lookup based on role
-    uint16_t i;
     uint16_t num_entries;
     hfp_command_entry_t * table;
     if (isHandsFree == 0){
@@ -915,11 +914,21 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         table = hfp_hf_commmand_table;
         num_entries = sizeof(hfp_hf_commmand_table) / sizeof(hfp_command_entry_t);
     }
-    for (i=0;i<num_entries;i++) {
-        hfp_command_entry_t *entry = &table[i];
+    // binary search
+    uint16_t left = 0;
+    uint16_t right = num_entries - 1;
+    while (left <= right){
+        uint16_t middle = left + (right - left) / 2;
+        hfp_command_entry_t *entry = &table[middle];
         int match = strcmp(line_buffer, entry->command);
-        if (match == 0){
+        if (match < 0){
+            // search term is lower than middle element
+            right = middle - 1;
+        } else if (match == 0){
             return entry->command_id;
+        } else {
+            // search term is higher than middle element
+            left = middle + 1;
         }
     }
 
