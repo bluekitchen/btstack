@@ -843,78 +843,70 @@ typedef struct {
 } hfp_command_entry_t;
 
 static hfp_command_entry_t hfp_ag_commmand_table[] = {
+    { "AT+BAC=",   HFP_CMD_AVAILABLE_CODECS },
+    { "AT+BCC",    HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP },
+    { "AT+BCS=",   HFP_CMD_HF_CONFIRMED_CODEC },
+    { "AT+BIA=",   HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, }, // +BIA:<enabled>,,<enabled>,,,<enabled>
+    { "AT+BIEV=",  HFP_CMD_HF_INDICATOR_STATUS },
     { "AT+BIND=",  HFP_CMD_LIST_GENERIC_STATUS_INDICATORS },
     { "AT+BIND=?", HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS },
     { "AT+BIND?",  HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE },
-    { "AT+BTRH=",  HFP_CMD_RESPONSE_AND_HOLD_COMMAND},
-    { "AT+BTRH?",  HFP_CMD_RESPONSE_AND_HOLD_QUERY},
+    { "AT+BINP",   HFP_CMD_HF_REQUEST_PHONE_NUMBER },
+    { "AT+BLDN",   HFP_CMD_REDIAL_LAST_NUMBER },
+    { "AT+BRSF=",  HFP_CMD_SUPPORTED_FEATURES },
+    { "AT+BTRH=",  HFP_CMD_RESPONSE_AND_HOLD_COMMAND },
+    { "AT+BTRH?",  HFP_CMD_RESPONSE_AND_HOLD_QUERY },
+    { "AT+BVRA=",  HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION },
+    { "AT+CCWA=",  HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION},
     { "AT+CHLD=",  HFP_CMD_CALL_HOLD },
     { "AT+CHLD=?", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
-    { "AT+CIND=?", HFP_CMD_RETRIEVE_AG_INDICATORS},
+    { "AT+CHUP",   HFP_CMD_HANG_UP_CALL },
+    { "AT+CIND=?", HFP_CMD_RETRIEVE_AG_INDICATORS },
     { "AT+CIND?",  HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS },
+    { "AT+CLCC",   HFP_CMD_LIST_CURRENT_CALLS },
+    { "AT+CLIP=",  HFP_CMD_ENABLE_CLIP},
+    { "AT+CMEE=",  HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR},
+    { "AT+CMER=",  HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE },
+    { "AT+CNUM",   HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION },
     { "AT+COPS=",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT },
     { "AT+COPS?",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "AT+NREC=",  HFP_CMD_TURN_OFF_EC_AND_NR, },
+    { "AT+VGM=",   HFP_CMD_SET_MICROPHONE_GAIN },
+    { "AT+VGS=",   HFP_CMD_SET_SPEAKER_GAIN },
+    { "AT+VTS:",   HFP_CMD_TRANSMIT_DTMF_CODES },
     { "ATA",       HFP_CMD_CALL_ANSWERED },
 };
 
 static hfp_command_entry_t hfp_hf_commmand_table[] = {
+    { "+BCS:",  HFP_CMD_AG_SUGGESTED_CODEC },
     { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
+    { "+BINP",  HFP_CMD_AG_SENT_PHONE_NUMBER },
+    { "+BRSF:", HFP_CMD_SUPPORTED_FEATURES },
+    { "+BSIR:", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING },
     { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
+    { "+BVRA:", HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION },
+    { "+CCWA:", HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE, },
     { "+CHLD:", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
-    { "+COPS:", HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "+CIEV:", HFP_CMD_TRANSFER_AG_INDICATOR_STATUS},
     { "+CIND:", HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC },
-};
-
-typedef struct {
-    const char * command;
-    hfp_command_t hf_command_id;
-    hfp_command_t ag_command_id;
-} hfp_command_table_t;
-
-static hfp_command_table_t hfp_command_table[] = {
-    { "+BAC",  HFP_CMD_AVAILABLE_CODECS, HFP_CMD_AVAILABLE_CODECS},
-    { "+BCC",  HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP, HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP},
-    { "+BCS",  HFP_CMD_AG_SUGGESTED_CODEC, HFP_CMD_HF_CONFIRMED_CODEC},
-    { "+BIA",  HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE}, // +BIA:<enabled>,,<enabled>,,,<enabled>
-    { "+BIEV", HFP_CMD_HF_INDICATOR_STATUS, HFP_CMD_HF_INDICATOR_STATUS},
-    { "+BINP", HFP_CMD_AG_SENT_PHONE_NUMBER, HFP_CMD_HF_REQUEST_PHONE_NUMBER},
-    { "+BLDN", HFP_CMD_REDIAL_LAST_NUMBER, HFP_CMD_REDIAL_LAST_NUMBER},
-    { "+BRSF", HFP_CMD_SUPPORTED_FEATURES, HFP_CMD_SUPPORTED_FEATURES},
-    { "+BSIR", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING, HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING},
-    { "+BVRA", HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION, HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION },  // EC (Echo CAnceling), NR (Noise Reduction)
-    { "+CCWA", HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE, HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION},
-    { "+CHUP", HFP_CMD_HANG_UP_CALL, HFP_CMD_HANG_UP_CALL},
-    { "+CIEV", HFP_CMD_TRANSFER_AG_INDICATOR_STATUS, HFP_CMD_TRANSFER_AG_INDICATOR_STATUS},
-    { "+CLCC", HFP_CMD_LIST_CURRENT_CALLS, HFP_CMD_LIST_CURRENT_CALLS},
-    { "+CLIP", HFP_CMD_AG_SENT_CLIP_INFORMATION, HFP_CMD_ENABLE_CLIP},
-    { "+CME ERROR", HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR, HFP_CMD_NONE},
-    { "+CMEE", HFP_CMD_NONE, HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR},
-    { "+CMER", HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE, HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE},
-    { "+CNUM", HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION, HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION},
-    { "+NREC", HFP_CMD_TURN_OFF_EC_AND_NR, HFP_CMD_TURN_OFF_EC_AND_NR },                        // EC (Echo CAnceling), NR (Noise Reduction)}
-    { "+VGM",  HFP_CMD_SET_MICROPHONE_GAIN, HFP_CMD_SET_MICROPHONE_GAIN},
-    { "+VGS",  HFP_CMD_SET_SPEAKER_GAIN, HFP_CMD_SET_SPEAKER_GAIN},
-    { "+VTS",  HFP_CMD_TRANSMIT_DTMF_CODES, HFP_CMD_TRANSMIT_DTMF_CODES},
-    { "ERROR", HFP_CMD_ERROR, HFP_CMD_ERROR},
-    { "NOP",   HFP_CMD_NONE, HFP_CMD_NONE}, // dummy commmand used by unit tests
-    { "OK",    HFP_CMD_OK, HFP_CMD_NONE},
-    { "RING",  HFP_CMD_RING, HFP_CMD_RING},
+    { "+CLCC:", HFP_CMD_LIST_CURRENT_CALLS },
+    { "+CLIP:", HFP_CMD_AG_SENT_CLIP_INFORMATION },
+    { "+CME ERROR:", HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR },
+    { "+CNUM:", HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION},
+    { "+COPS:", HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "+VGM:",  HFP_CMD_SET_MICROPHONE_GAIN },
+    { "+VGS:",  HFP_CMD_SET_SPEAKER_GAIN},
+    { "ERROR",  HFP_CMD_ERROR},
+    { "NOP",    HFP_CMD_NONE}, // dummy command used by unit tests
+    { "OK",     HFP_CMD_OK },
+    { "RING",   HFP_CMD_RING },
 };
 
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 
-    // note: if parser in CMD_HEADER state would treats digits and maybe '+' as separator, match on "ATD" would work.
-    // prefix match on 'ATD', AG only
-    if ((isHandsFree == 0) && (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0)){
-        return HFP_CMD_CALL_PHONE_NUMBER;
-    }
-
-    uint16_t offset = isHandsFree ? 0 : 2;
-
+    // table lookup based on role
     uint16_t i;
     uint16_t num_entries;
-
-    // role-based table lookup
     hfp_command_entry_t * table;
     if (isHandsFree == 0){
         table = hfp_ag_commmand_table;
@@ -931,25 +923,18 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         }
     }
 
-    // combined table lookup
-    num_entries = sizeof(hfp_command_table) / sizeof(hfp_command_table_t);
-    for (i=0;i<num_entries;i++){
-        hfp_command_table_t * entry = &hfp_command_table[i];
-        bool match = strncmp(line_buffer+offset, entry->command, strlen(entry->command)) == 0;
-        if (match){
-            if (isHandsFree == 1){
-                if (entry->hf_command_id != HFP_CMD_NONE) return entry->hf_command_id;
-            } else {
-                if (entry->ag_command_id != HFP_CMD_NONE) return entry->ag_command_id;
-            }
-        }
+    // note: if parser in CMD_HEADER state would treats digits and maybe '+' as separator, match on "ATD" would work.
+    // prefix match on 'ATD', AG only
+    if ((isHandsFree == 0) && (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0)){
+        return HFP_CMD_CALL_PHONE_NUMBER;
     }
 
-    if (strncmp(line_buffer+offset, "AT+", 3) == 0){
+    // Valid looking, but unknown commands/responses
+    if ((isHandsFree == 0) && (strncmp(line_buffer, "AT+", 3) == 0)){
         return HFP_CMD_UNKNOWN;
     }
 
-    if (strncmp(line_buffer+offset, "+", 1) == 0){
+    if ((isHandsFree != 0) && (strncmp(line_buffer, "+", 1) == 0)){
         return HFP_CMD_UNKNOWN;
     }
 
