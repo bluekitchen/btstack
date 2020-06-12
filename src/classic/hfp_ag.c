@@ -640,6 +640,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
             if (hfp_connection->state == HFP_W4_RETRIEVE_INDICATORS) {
                 // HF requested AG Indicators and we did expect it
+                hfp_connection->send_ag_indicators_segment = 0;
                 hfp_connection->state = HFP_RETRIEVE_INDICATORS;
                 // continue below in state switch
             }

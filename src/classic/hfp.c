@@ -862,6 +862,7 @@ static hfp_command_entry_t hfp_hf_commmand_table[] = {
     { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
     { "+CHLD:", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
     { "+COPS:", HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "+CIND:", HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC },
 };
 
 typedef struct {
@@ -1052,26 +1053,18 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             // parse
             hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
 
-            // resolve command name according to hfp_connection
-            if (hfp_connection->command == HFP_CMD_UNKNOWN){
+            // pick +CIND version based on connection state: descriptions during SLC vs. states later
+            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC){
                 switch(hfp_connection->state){
-                    case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
-                        hfp_connection->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;
-                        break;
-                    case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-                        hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-                        break;
-                    case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                        hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-                        break;
                     case HFP_W4_RETRIEVE_INDICATORS_STATUS:
                         hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
                         break;
                     case HFP_W4_RETRIEVE_INDICATORS:
-                        hfp_connection->send_ag_indicators_segment = 0;
                         hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
                         break;
                     default:
+                        btstack_assert(false);
+                        hfp_connection->command = HFP_CMD_UNKNOWN;
                         break;
                 }
             }
