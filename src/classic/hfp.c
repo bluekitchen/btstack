@@ -924,6 +924,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
     }
 
     // note: if parser in CMD_HEADER state would treats digits and maybe '+' as separator, match on "ATD" would work.
+    // note: phone number is currently expected in line_buffer[3..]
     // prefix match on 'ATD', AG only
     if ((isHandsFree == 0) && (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0)){
         return HFP_CMD_CALL_PHONE_NUMBER;
@@ -956,7 +957,6 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
-    hfp_connection->line_buffer[0] = 0;
 }
 
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1131,6 +1131,9 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                 case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
                 case HFP_CMD_AG_SENT_CLIP_INFORMATION:
                     hfp_connection->bnip_type = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
+                    break;
+                case HFP_CMD_HF_INDICATOR_STATUS:
+                    hfp_connection->parser_indicator_value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 default:
                     break;
@@ -1402,6 +1405,24 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_SENT_CLIP_INFORMATION:
             strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
             hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
+            break;
+        case HFP_CMD_CALL_HOLD:
+            hfp_connection->ag_call_hold_action = hfp_connection->line_buffer[0] - '0';
+            if (hfp_connection->line_buffer[1] != '\0'){
+                hfp_connection->call_index = btstack_atoi((char *)&hfp_connection->line_buffer[1]);
+            }
+            break;
+        case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
+            hfp_connection->ag_response_and_hold_action = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+            break;
+        case HFP_CMD_TRANSMIT_DTMF_CODES:
+            hfp_connection->ag_dtmf_code = hfp_connection->line_buffer[0];
+            break;
+        case HFP_CMD_ENABLE_CLIP:
+            hfp_connection->clip_enabled = hfp_connection->line_buffer[0] != '0';
+            break;
+        case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
+            hfp_connection->call_waiting_notification_enabled = hfp_connection->line_buffer[0] != '0';
             break;
         default:
             break;

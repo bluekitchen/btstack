@@ -502,6 +502,7 @@ typedef struct hfp_connection {
     hfp_parser_state_t parser_state;
     int      parser_item_index;
     int      parser_indicator_index;
+    uint32_t parser_indicator_value;
     bool     parser_quoted;
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
     int      line_size;
@@ -583,6 +584,9 @@ typedef struct hfp_connection {
     uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
     uint8_t next_subscriber_number_to_send;
+    uint8_t ag_call_hold_action;
+    uint8_t ag_response_and_hold_action;
+    uint8_t ag_dtmf_code;
 
     int send_status_of_current_calls;
     int next_call_index;
