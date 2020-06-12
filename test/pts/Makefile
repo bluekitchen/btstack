@@ -141,7 +141,7 @@ HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_controller_test sm_test avrcp_target_test gatt_profiles hrp_col_test hrp_server_test
+EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test sm_test gatt_profiles hrp_col_test hrp_server_test
 # EXAMPLES += hog_demo_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
@@ -180,10 +180,7 @@ hrp_server_test: hrp_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_S
 hrp_col_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} hrp_col_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${AVRCP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o btstack_stdin_pts.o  avrcp_target_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVRCP_OBJ} ${AVDTP_OBJ} sdp_client.o btstack_stdin_pts.o avrcp_controller_test.o
+avrcp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVRCP_OBJ} ${AVDTP_OBJ} sdp_client.o btstack_stdin_pts.o avrcp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
