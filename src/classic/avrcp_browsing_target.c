@@ -173,7 +173,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         }
                         default:
                             avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
-                            log_info(" not parsed pdu ID 0x%02x", browsing_connection->pdu_id);
+                            log_info("not parsed pdu ID 0x%02x", browsing_connection->pdu_id);
                             break;
                     }
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
@@ -215,13 +215,13 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
 uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
-        log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
+        log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (!connection){
-        log_info("avrcp_subevent_browsing_get_folder_items_response: could not find a connection.");
+        log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
@@ -258,19 +258,19 @@ uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsin
 uint8_t avrcp_subevent_browsing_get_total_num_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint32_t total_num_items){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
-        log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
+        log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (!connection){
-        log_info("avrcp_subevent_browsing_get_folder_items_response: could not find a connection.");
+        log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     
     if (connection->state != AVCTP_CONNECTION_OPENED) {
-        log_info("avrcp_subevent_browsing_get_folder_items_response: wrong state.");
+        log_info("Browsing connection wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
