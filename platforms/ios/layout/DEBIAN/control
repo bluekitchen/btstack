@@ -4,7 +4,7 @@ Description: Portable User-Space Bluetooth Stack
 Section: Networking
 Architecture: iphoneos-arm
 Breaks: co.cocoanuts.celeste (<= 0.90)
-Recommend: ldid
+Pre-Depends: ldid
 Depends: firmware (>= 3.0), ch.ringwald.springboardaccess (>= 0.3), preferenceloader (>= 2.2.2) 
 Author: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Maintainer: Mattthias Ringwald <tickets@btstack.uservoice.com>
