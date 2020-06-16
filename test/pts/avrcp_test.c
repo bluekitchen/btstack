@@ -68,6 +68,7 @@ static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 // bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
 #endif
 static bd_addr_t device_addr;
+static bd_addr_t device_addr_browsing;
 
 static const uint8_t fragmented_message[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -1122,14 +1123,14 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("a      - AVDTP Sink create  connection to addr %s\n", device_addr_string);
+    printf("a      - AVDTP Sink create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("A      - AVDTP Sink disconnect\n");
-    printf("b      - AVDTP Source create  connection to addr %s\n", device_addr_string);
+    printf("b      - AVDTP Source create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("B      - AVDTP Sink disconnect\n");
     
-    printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
+    printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - AVRCP disconnect\n");
-    printf("d      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("d      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr_browsing));
     printf("D      - AVRCP Browsing Controller disconnect\n");
     printf("#3     - trigger outgoing regular AVRCP connection on incoming HCI Connection to test reject and retry\n");
     printf("#4     - trigger outgoing browsing AVRCP connection on incoming AVRCP connection to test reject and retry\n");
@@ -1248,7 +1249,7 @@ static void stdin_process(char * cmd, int size){
     
     switch (cmd[0]){
         case 'a':
-            printf("Establish AVDTP sink connection to %s\n", device_addr_string);
+            printf("Establish AVDTP sink connection to %s\n", bd_addr_to_str(device_addr));
             avdtp_sink_connect(device_addr, &avdtp_cid);
             break;
         case 'A':
@@ -1256,11 +1257,11 @@ static void stdin_process(char * cmd, int size){
             avdtp_sink_disconnect(avdtp_cid);
             break;
         case 'b':
-            printf("Establish AVDTP Source connection to %s\n", device_addr_string);
+            printf("Establish AVDTP Source connection to %s\n", bd_addr_to_str(device_addr));
             avdtp_source_connect(device_addr, &avdtp_cid);
             break;
         case 'B':
-            printf("Disconnect AVDTP Source\n");
+             printf("Disconnect AVDTP Source\n");
             avdtp_source_disconnect(avdtp_cid);
             break;
         case 'c':
@@ -1277,8 +1278,8 @@ static void stdin_process(char * cmd, int size){
                 printf(" You must first create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
                 break;
             }
-            printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_browsing_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
+            printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr_browsing));
+            status = avrcp_browsing_connect(device_addr_browsing, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
             break;
         case 'D':
             if (avrcp_browsing_connected){
@@ -1874,11 +1875,11 @@ int btstack_main(int argc, const char * argv[]){
 
     browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
-#ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
-    sscanf_bd_addr(device_addr_string, device_addr);
+    sscanf_bd_addr("00:1A:7D:DA:71:01", device_addr);
+    sscanf_bd_addr("00:1A:7D:DA:71:02", device_addr_browsing);
     btstack_stdin_pts_setup(stdin_process);
-#endif
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;
