@@ -58,7 +58,7 @@ static bool l2cap_browsing_service_registered = false;
 static btstack_packet_handler_t avrcp_browsing_controller_packet_handler;
 static btstack_packet_handler_t avrcp_browsing_target_packet_handler;
 
-
+static bd_addr_t avrcp_browsing_sdp_addr;
 
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid){
     connection->wait_to_send = true;
@@ -382,6 +382,56 @@ void avrcp_browsing_init(void){
     l2cap_browsing_service_registered = true;
 }
 
+static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    avrcp_connection_t * avrcp_target_connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, avrcp_browsing_sdp_addr);
+    avrcp_connection_t * avrcp_controller_connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, avrcp_browsing_sdp_addr);
+
+    uint8_t status;
+    uint16_t browsing_l2cap_psm;
+
+    switch (hci_event_packet_get_type(packet)){
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+            avrcp_handle_sdp_client_query_attribute_value(packet);
+            break;
+
+        case SDP_EVENT_QUERY_COMPLETE:
+            status = sdp_event_query_complete_get_status(packet);
+
+            if (status != ERROR_CODE_SUCCESS){
+                // TODO: failed
+                // avrcp_handle_sdp_query_failed(avrcp_controller_connection, status);
+                // avrcp_handle_sdp_query_failed(avrcp_target_connection, status);
+                break;
+            }
+
+            browsing_l2cap_psm = avrcp_sdp_sdp_query_browsing_l2cap_psm();
+            if (!browsing_l2cap_psm){
+                // TODO failed
+                // avrcp_handle_sdp_query_failed(avrcp_controller_connection, SDP_SERVICE_NOT_FOUND);
+                // avrcp_handle_sdp_query_failed(avrcp_target_connection, SDP_SERVICE_NOT_FOUND);
+                break;
+            }
+
+            // TODO succeeded
+            // avrcp_handle_sdp_query_succeeded(avrcp_controller_connection);
+            // avrcp_handle_sdp_query_succeeded(avrcp_target_connection);
+
+            // l2cap_create_channel(&avrcp_packet_handler, sdp_query_context->remote_addr, sdp_query_context->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
+            l2cap_create_ertm_channel(avrcp_browsing_packet_handler, avrcp_browsing_sdp_addr, browsing_l2cap_psm,
+                                            &avrcp_controller_connection->browsing_connection->ertm_config,
+                                            avrcp_controller_connection->browsing_connection->ertm_buffer,
+                                            avrcp_controller_connection->browsing_connection->ertm_buffer_size, NULL);
+            break;
+
+        default:
+            break;
+
+    }
+}
 
 uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
     btstack_assert(avrcp_browsing_controller_packet_handler != NULL);
@@ -420,14 +470,20 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
         *avrcp_browsing_cid = cid;
     }
 
-    connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-    
-    return l2cap_create_ertm_channel(avrcp_browsing_packet_handler, remote_addr, connection_controller->browsing_l2cap_psm, 
-                    &connection_controller->browsing_connection->ertm_config, 
-                    connection_controller->browsing_connection->ertm_buffer, 
-                    connection_controller->browsing_connection->ertm_buffer_size, NULL);
+    if (connection_controller->browsing_l2cap_psm == 0){
+        memcpy(avrcp_browsing_sdp_addr, remote_addr, 6);
+        connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+        connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+        return avrcp_start_sdp_query(&avrcp_browsing_handle_sdp_client_query_result, remote_addr, cid);
+    } else {
+        connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+        connection_target->browsing_connection->state     = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
 
+        return l2cap_create_ertm_channel(avrcp_browsing_packet_handler, remote_addr, connection_controller->browsing_l2cap_psm,
+                                         &connection_controller->browsing_connection->ertm_config,
+                                         connection_controller->browsing_connection->ertm_buffer,
+                                         connection_controller->browsing_connection->ertm_buffer_size, NULL);
+    }
 }
 
 uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
