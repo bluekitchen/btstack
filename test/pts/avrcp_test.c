@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright (C) 2016 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
@@ -896,16 +896,16 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                         printf(" - %s\n", name);
                     }
                     
-                    avrcp_status = avrcp_subevent_browsing_get_folder_items_response(browsing_cid, uid_counter, media_player_list, sizeof(media_player_list));
+                    avrcp_status = avrcp_browsing_target_send_get_folder_items_response(browsing_cid, uid_counter, media_player_list, sizeof(media_player_list));
                     break;
                 case AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM:
-                    avrcp_status = avrcp_subevent_browsing_get_folder_items_response(browsing_cid, uid_counter, virtual_filesystem_list, sizeof(virtual_filesystem_list));
+                    avrcp_status = avrcp_browsing_target_send_get_folder_items_response(browsing_cid, uid_counter, virtual_filesystem_list, sizeof(virtual_filesystem_list));
                     break;
                 case AVRCP_BROWSING_SEARCH:
-                    avrcp_status = avrcp_subevent_browsing_get_folder_items_response(browsing_cid, uid_counter, search_list, sizeof(search_list));
+                    avrcp_status = avrcp_browsing_target_send_get_folder_items_response(browsing_cid, uid_counter, search_list, sizeof(search_list));
                     break;
                 case AVRCP_BROWSING_NOW_PLAYING:
-                    avrcp_status = avrcp_subevent_browsing_get_folder_items_response(browsing_cid, uid_counter, now_playing_list, sizeof(now_playing_list));
+                    avrcp_status = avrcp_browsing_target_send_get_folder_items_response(browsing_cid, uid_counter, now_playing_list, sizeof(now_playing_list));
                     break;
             }
             break;
@@ -916,14 +916,14 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             switch (scope){
                 case AVRCP_BROWSING_MEDIA_PLAYER_LIST:
                     total_num_items = big_endian_read_16(media_player_list, 0);
-                    avrcp_status = avrcp_subevent_browsing_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
+                    avrcp_status = avrcp_browsing_target_send_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
                     break;
                 case AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM:
                     total_num_items = big_endian_read_16(virtual_filesystem_list, 0);
-                    avrcp_status = avrcp_subevent_browsing_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
+                    avrcp_status = avrcp_browsing_target_send_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
                     break;
                 default:
-                    avrcp_status = avrcp_subevent_browsing_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
+                    avrcp_status = avrcp_browsing_target_send_get_total_num_items_response(browsing_cid, uid_counter, total_num_items);
                     break;
             }
             break;

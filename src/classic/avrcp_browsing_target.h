@@ -36,7 +36,7 @@
  */
 
 /*
- * avrcp_browsing_controller.h
+ * avrcp_browsing_target.h
  * 
  * Audio/Video Remote Control Profile Browsing
  *
@@ -67,14 +67,22 @@ void avrcp_browsing_target_init(void);
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Disconnect from AVRCP target
- * @param avrcp_browsing_cid
- * @returns status
+ * @brief Send answer to get folder items query on event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS. The first byte of this event defines the scope of the query, see avrcp_browsing_scope_t.
+ * @param browsing_cid
+ * @param uid_counter
+ * @param attr_list
+ * @param attr_list_size
  */
-uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size);
 
-uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size);
-uint8_t avrcp_subevent_browsing_get_total_num_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint32_t total_num_items);
+/**
+ * @brief Send answer to get total number of items query on event AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS. The first byte of this event defines the scope of the query, see avrcp_browsing_scope_t.
+ * @param browsing_cid
+ * @param uid_counter
+ * @param total_num_items
+ */
+uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint32_t total_num_items);
+
 /* API_END */
 
 #if defined __cplusplus
