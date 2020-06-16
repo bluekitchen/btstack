@@ -438,7 +438,11 @@ static void avrcp_emit_connection_closed(uint16_t avrcp_cid){
     (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
+uint16_t avrcp_sdp_sdp_query_browsing_l2cap_psm(void){
+    return sdp_query_context->browsing_l2cap_psm;
+}
+
+void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
 
@@ -848,6 +852,16 @@ uint8_t avrcp_disconnect(uint16_t avrcp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_start_sdp_query(btstack_packet_handler_t packet_handler, const uint8_t *remote_addr, uint16_t cid) {
+    sdp_query_context = &avrcp_context;
+    sdp_query_context->avrcp_l2cap_psm = 0;
+    sdp_query_context->avrcp_version  = 0;
+    sdp_query_context->avrcp_cid = cid;
+    memcpy(sdp_query_context->remote_addr, remote_addr, 6);
+
+    return sdp_client_query_uuid16(packet_handler, remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
+}
+
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     btstack_assert(avrcp_controller_packet_handler != NULL);
     btstack_assert(avrcp_target_packet_handler != NULL);
@@ -887,14 +901,7 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
     connection_target->state     = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
     connection_target->avrcp_cid = cid;
 
-    sdp_query_context = &avrcp_context;
-    sdp_query_context->avrcp_l2cap_psm = 0;
-    sdp_query_context->avrcp_version  = 0;
-    sdp_query_context->avrcp_cid = cid;
-    memcpy(sdp_query_context->remote_addr, remote_addr, 6);
-
-    sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
-    return ERROR_CODE_SUCCESS;
+    return avrcp_start_sdp_query(&avrcp_handle_sdp_client_query_result, remote_addr, cid);
 }
 
 void avrcp_init(void){
