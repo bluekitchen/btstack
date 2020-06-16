@@ -106,6 +106,7 @@
 #include "classic/avdtp_source.h"
 #include "classic/avdtp_util.h"
 #include "classic/avrcp.h"
+#include "classic/avrcp_browsing.h"
 #include "classic/avrcp_browsing_controller.h"
 #include "classic/avrcp_browsing_target.h"
 #include "classic/avrcp_controller.h"

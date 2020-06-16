@@ -75,6 +75,7 @@ AVRCP += \
 	avrcp.c  \
 	avrcp_target.c  \
 	avrcp_controller.c  \
+	avrcp_browsing.c \
 	avrcp_browsing_target.c \
 	avrcp_browsing_controller.c \
 

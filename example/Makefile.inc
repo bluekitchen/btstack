@@ -96,6 +96,7 @@ MBEDTLS = 					\
 	memory_buffer_alloc.c   \
 	platform.c 				\
 
+
 LWIP_CORE_SRC  = init.c mem.c memp.c netif.c udp.c ip.c pbuf.c inet_chksum.c def.c tcp.c tcp_in.c tcp_out.c timeouts.c sys_arch.c
 LWIP_IPV4_SRC  = acd.c dhcp.c etharp.c icmp.c ip4.c ip4_frag.c ip4_addr.c
 LWIP_NETIF_SRC = ethernet.c
@@ -127,6 +128,15 @@ AVDTP += \
 	a2dp_source.c          \
 	a2dp_sink.c            \
 	btstack_ring_buffer.c \
+
+AVRCP += \
+	avrcp.c							\
+	avrcp_controller.c				\
+	avrcp_target.c					\
+	avrcp_browsing.c				\
+	avrcp_browsing_controller.c		\
+	avrcp_browsing_target.c			\
+	avrcp_media_item_iterator.c		\
 
 HXCMOD_PLAYER = \
 	hxcmod.c                    \
@@ -269,6 +279,7 @@ SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o)
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
+AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 LWIP_OBJ = $(LWIP_SRC:.c=.o)
 MESH_OBJ = $(MESH:.c=.o)
@@ -403,7 +414,7 @@ a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_E
 a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o avrcp_target.o btstack_resample.o a2dp_sink_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} avrcp.o avrcp_controller.o avrcp_target.o avrcp_browsing_controller.o avrcp_browsing_target.o avrcp_media_item_iterator.o avrcp_browsing_client.c
+avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${AVRCP_OBJ} avrcp_browsing_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c

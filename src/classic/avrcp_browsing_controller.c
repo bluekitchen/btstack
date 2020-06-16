@@ -43,7 +43,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include "btstack.h"
-#include "classic/avrcp.h"
+#include "classic/avrcp_browsing.h"
 #include "classic/avrcp_browsing_controller.h"
 
 

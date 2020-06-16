@@ -46,6 +46,7 @@
 #define AVRCP_H
 
 #include <stdint.h>
+
 #include "btstack_run_loop.h"
 #include "btstack_linked_list.h"
 #include "l2cap.h"
@@ -54,6 +55,11 @@
 extern "C" {
 #endif
 
+#define PSM_AVCTP_BROWSING              0x001b
+
+#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
+#define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
+
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
 #define AVRCP_MAX_ATTRIBUTTE_SIZE 100
@@ -61,9 +67,6 @@ extern "C" {
 #define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
 #define AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED    0xFFFFFFFF
-// #define AVRCP_NO_TRACK_SELECTED_TRACK_CHANGED                0xFFFFFFFFFFFFFFFF
-
-#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
 
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
@@ -110,7 +113,6 @@ typedef enum {
     AVRCP_CAPABILITY_ID_EVENT = 0x03
 } avrcp_capability_id_t;
 
-#define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
 typedef enum {
     AVRCP_MEDIA_ATTR_ALL = 0x0000,
     AVRCP_MEDIA_ATTR_TITLE,
@@ -298,13 +300,6 @@ typedef enum {
     AVCTP_W2_SEND_FRAGMENTED_COMMAND,
 } avctp_connection_state_t;
 
-typedef enum {
-    AVRCP_BROWSING_MEDIA_PLAYER_LIST = 0x00,
-    AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM,
-    AVRCP_BROWSING_SEARCH,
-    AVRCP_BROWSING_NOW_PLAYING
-} avrcp_browsing_scope_t;
-
 typedef struct {
     uint16_t len;
     uint8_t  * value;
@@ -332,6 +327,35 @@ typedef enum{
     AVRCP_CONTROLLER = 0,
     AVRCP_TARGET
 } avrcp_role_t;
+
+typedef enum {
+    AVRCP_SHUFFLE_MODE_INVALID,
+    AVRCP_SHUFFLE_MODE_OFF,
+    AVRCP_SHUFFLE_MODE_ALL_TRACKS,
+    AVRCP_SHUFFLE_MODE_GROUP
+} avrcp_shuffle_mode_t;
+
+typedef enum {
+    AVRCP_REPEAT_MODE_INVALID,
+    AVRCP_REPEAT_MODE_OFF,
+    AVRCP_REPEAT_MODE_SINGLE_TRACK,
+    AVRCP_REPEAT_MODE_ALL_TRACKS,
+    AVRCP_REPEAT_MODE_GROUP
+} avrcp_repeat_mode_t;
+
+typedef enum {
+    RFC2978_CHARSET_MIB_UTF8 = 106
+} rfc2978_charset_mib_enumid_t;
+
+typedef enum {
+    AVRCP_BROWSING_MEDIA_PLAYER_LIST = 0x00,
+    AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM,
+    AVRCP_BROWSING_SEARCH,
+    AVRCP_BROWSING_NOW_PLAYING
+} avrcp_browsing_scope_t;
+
+
+
 
 // BROWSING 
 typedef struct {
@@ -405,7 +429,6 @@ typedef struct {
 
     bool incoming_declined;
 } avrcp_browsing_connection_t;
-// BROWSING END
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -513,25 +536,6 @@ typedef struct {
 
     uint8_t accept_response;
 } avrcp_connection_t;
-
-typedef enum {
-    AVRCP_SHUFFLE_MODE_INVALID,
-    AVRCP_SHUFFLE_MODE_OFF,
-    AVRCP_SHUFFLE_MODE_ALL_TRACKS,
-    AVRCP_SHUFFLE_MODE_GROUP
-} avrcp_shuffle_mode_t;
-
-typedef enum {
-    AVRCP_REPEAT_MODE_INVALID,
-    AVRCP_REPEAT_MODE_OFF,
-    AVRCP_REPEAT_MODE_SINGLE_TRACK,
-    AVRCP_REPEAT_MODE_ALL_TRACKS,
-    AVRCP_REPEAT_MODE_GROUP
-} avrcp_repeat_mode_t;
-
-typedef enum {
-    RFC2978_CHARSET_MIB_UTF8 = 106
-} rfc2978_charset_mib_enumid_t;
 
 typedef struct {
     avrcp_role_t role;
