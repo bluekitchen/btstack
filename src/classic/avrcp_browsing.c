@@ -54,48 +54,11 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 
 static btstack_packet_handler_t avrcp_browsing_callback;
 
-static btstack_linked_list_t connections;
-
 static bool l2cap_browsing_service_registered = false;
 static btstack_packet_handler_t avrcp_browsing_controller_packet_handler;
 static btstack_packet_handler_t avrcp_browsing_target_packet_handler;
 
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->role != role) continue;
-        if (connection->avrcp_browsing_cid != browsing_cid) continue;
-        return connection;
-    }
-    return NULL;
-}
-
-avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->role != role) continue;
-        if (connection->browsing_connection &&  (connection->browsing_connection->l2cap_browsing_cid != browsing_l2cap_cid)) continue;
-        return connection;
-    }
-    return NULL;
-}
-
-avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->role != role) continue;
-        if (connection->browsing_connection && (connection->browsing_connection->l2cap_browsing_cid != l2cap_cid)) continue;
-        return connection->browsing_connection;
-    }
-    return NULL;
-}
 
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid){
     connection->wait_to_send = true;

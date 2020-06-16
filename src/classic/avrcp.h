@@ -586,6 +586,9 @@ avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_ro
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 uint16_t avrcp_get_next_cid(avrcp_role_t role);
 
+avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
+avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
+avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
 // SDP query
 void    avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 

@@ -55,10 +55,6 @@
 extern "C" {
 #endif
 
-avrcp_connection_t *          get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
-avrcp_connection_t *          get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
-avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
-
 void avrcp_browsing_register_controller_packet_handler(btstack_packet_handler_t callback);
 void avrcp_browsing_register_target_packet_handler(btstack_packet_handler_t callback);
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid);
