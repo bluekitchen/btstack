@@ -734,7 +734,6 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t  status = ERROR_CODE_SUCCESS;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
@@ -749,14 +748,13 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
         
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
-            status = avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+            avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
             break;
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
-            status = avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
+            avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
         case AVRCP_SUBEVENT_OPERATION:{
             avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
-            // if (!media_tracker.connected) break;
             switch (operation_id){
                 case AVRCP_OPERATION_ID_PLAY:
                     printf("AVRCP Target    : PLAY\n");
