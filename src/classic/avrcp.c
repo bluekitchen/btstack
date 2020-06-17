@@ -859,7 +859,7 @@ uint8_t avrcp_start_sdp_query(btstack_packet_handler_t packet_handler, const uin
     sdp_query_context->avrcp_cid = cid;
     memcpy(sdp_query_context->remote_addr, remote_addr, 6);
 
-    return sdp_client_query_uuid16(packet_handler, remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
+    return sdp_client_query_uuid16(packet_handler, (uint8_t *) remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
 }
 
 uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){

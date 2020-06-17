@@ -402,23 +402,19 @@ static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, u
             status = sdp_event_query_complete_get_status(packet);
 
             if (status != ERROR_CODE_SUCCESS){
-                // TODO: failed
-                // avrcp_handle_sdp_query_failed(avrcp_controller_connection, status);
-                // avrcp_handle_sdp_query_failed(avrcp_target_connection, status);
+                avrcp_browsing_emit_connection_established(avrcp_target_connection->avrcp_browsing_cid, avrcp_browsing_sdp_addr, status);
+                avrcp_browsing_finalize_connection(avrcp_target_connection);
+                avrcp_browsing_finalize_connection(avrcp_controller_connection);
                 break;
             }
 
             browsing_l2cap_psm = avrcp_sdp_sdp_query_browsing_l2cap_psm();
             if (!browsing_l2cap_psm){
-                // TODO failed
-                // avrcp_handle_sdp_query_failed(avrcp_controller_connection, SDP_SERVICE_NOT_FOUND);
-                // avrcp_handle_sdp_query_failed(avrcp_target_connection, SDP_SERVICE_NOT_FOUND);
+                avrcp_browsing_emit_connection_established(avrcp_target_connection->avrcp_browsing_cid, avrcp_browsing_sdp_addr, SDP_SERVICE_NOT_FOUND);
+                avrcp_browsing_finalize_connection(avrcp_target_connection);
+                avrcp_browsing_finalize_connection(avrcp_controller_connection);
                 break;
             }
-
-            // TODO succeeded
-            // avrcp_handle_sdp_query_succeeded(avrcp_controller_connection);
-            // avrcp_handle_sdp_query_succeeded(avrcp_target_connection);
 
             // l2cap_create_channel(&avrcp_packet_handler, sdp_query_context->remote_addr, sdp_query_context->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
             l2cap_create_ertm_channel(avrcp_browsing_packet_handler, avrcp_browsing_sdp_addr, browsing_l2cap_psm,
