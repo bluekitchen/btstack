@@ -1876,8 +1876,8 @@ int btstack_main(int argc, const char * argv[]){
     browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
     // parse human readable Bluetooth address
-    sscanf_bd_addr("00:1A:7D:DA:71:01", device_addr);
-    sscanf_bd_addr("00:1A:7D:DA:71:02", device_addr_browsing);
+    sscanf_bd_addr(device_addr_string, device_addr);
+    sscanf_bd_addr(device_addr_string, device_addr_browsing);
     btstack_stdin_pts_setup(stdin_process);
 
     // turn on!
