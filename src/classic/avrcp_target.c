@@ -1187,7 +1187,7 @@ void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_t player_id)){
-    btstack_assert(callbac != NULL);
+    btstack_assert(callback != NULL);
     avrcp_target_context.set_addressed_player_callback = callback;
 }
 
