@@ -923,6 +923,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         int match = strcmp(line_buffer, entry->command);
         if (match < 0){
             // search term is lower than middle element
+            if (right == 0) break;
             right = middle - 1;
         } else if (match == 0){
             return entry->command_id;
@@ -1057,7 +1058,6 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                         hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
                         break;
                     default:
-                        btstack_assert(false);
                         hfp_connection->command = HFP_CMD_UNKNOWN;
                         break;
                 }
