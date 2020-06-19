@@ -69,7 +69,7 @@
 #define REMOTE_SERVICE 0x1111
 
 // Fixed passkey - used with sm_pairing_peripheral. Passkey is random in general
-#define FIXED_PASSKEY 12346
+#define FIXED_PASSKEY 123456
 
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -134,10 +134,14 @@ static void sm_pairing_central_setup(void){
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
     sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 
-    // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
-    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // LE Secure Pairing, Passkey entry initiator (us) enters, responder displays
+    // sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
     // sm_use_fixed_passkey_in_display_role(FIXED_PASSKEY);
+
+    // LE Secure Pairing, Passkey entry initiator (us) displays, responder enters
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 #endif
 }
 
