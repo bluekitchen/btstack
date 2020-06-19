@@ -191,6 +191,13 @@ static void hfp_next_codec_index(hfp_connection_t * hfp_connection){
     }
 }
 
+static void hfp_next_remote_call_services_index(hfp_connection_t * hfp_connection){
+    if (hfp_connection->remote_call_services_index < HFP_MAX_NUM_CALL_SERVICES - 1){
+        hfp_connection->remote_call_services_index++;
+    } else {
+        log_info("Ignoring additional remote_call_services");
+    }
+}
 
 const char * hfp_hf_feature(int index){
     if (index > HFP_HF_FEATURES_SIZE){
@@ -1277,6 +1284,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
+            // index > 2 are ignored in switch above
             hfp_connection->parser_item_index++;
             break;            
         case HFP_CMD_LIST_CURRENT_CALLS:
@@ -1312,6 +1320,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
+            // index > 6 are ignored in switch above
             hfp_connection->parser_item_index++;
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
@@ -1380,7 +1389,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             if (hfp_connection->line_size > 2 ) break;
             strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
             hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
-            hfp_connection->remote_call_services_index++;
+            hfp_next_remote_call_services_index(hfp_connection);
             break;
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
