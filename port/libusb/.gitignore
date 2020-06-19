@@ -44,6 +44,7 @@ hfp_mitm
 hid_host_demo
 hid_keyboard_demo
 hid_mouse_demo
+hog_boot_host_demo
 hog_keyboard_demo
 hog_keyboard_demo.h
 hog_mouse_demo
@@ -57,6 +58,7 @@ le_counter_work
 le_data_channel_client
 le_data_channel_server
 le_data_channel_server.h
+le_mitm
 le_streamer
 le_streamer.h
 le_streamer_and_counter_client
@@ -70,6 +72,7 @@ nordic_spp_le_counter
 nordic_spp_le_counter.h
 nordic_spp_le_streamer
 nordic_spp_le_streamer.h
+pan_lwip_http_server
 pan_lwip_http_server
 panu_demo
 pbap_client_demo
@@ -99,5 +102,4 @@ spp_streamer_client
 ublox_spp_le_counter
 ublox_spp_le_counter.h
 ublox_spp_le_counter.h
-pan_lwip_http_server
 xcode
