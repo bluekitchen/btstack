@@ -74,8 +74,8 @@ static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static uint8_t hfp_indicators_nr = 0;
-static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
-static uint32_t hfp_indicators_value[HFP_MAX_NUM_HF_INDICATORS];
+static uint8_t hfp_indicators[HFP_MAX_NUM_INDICATORS];
+static uint32_t hfp_indicators_value[HFP_MAX_NUM_INDICATORS];
 
 static uint8_t hfp_hf_speaker_gain = 9;
 static uint8_t hfp_hf_microphone_gain = 9;

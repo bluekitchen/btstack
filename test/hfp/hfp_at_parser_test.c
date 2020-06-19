@@ -177,7 +177,7 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
     sprintf(packet, "\r\n%s:(1,1x,2,2x,3)\r\n\r\nOK\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     parse_hf(packet);
     CHECK_EQUAL(HFP_CMD_OK, context.command);
-    CHECK_EQUAL(5, context.remote_call_services_nr);
+    CHECK_EQUAL(5, context.remote_call_services_index);
 
     STRCMP_EQUAL("1", (char*)context.remote_call_services[0].name);
     STRCMP_EQUAL("1x", (char*)context.remote_call_services[1].name);

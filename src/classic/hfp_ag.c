@@ -92,10 +92,10 @@ static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static int  hfp_ag_indicators_nr = 0;
-static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
+static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_INDICATORS];
 
 static int hfp_generic_status_indicators_nr = 0;
-static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
+static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
 static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
@@ -2096,7 +2096,7 @@ void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_ind
 }
 
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators){
-    if (hf_indicators_nr > HFP_MAX_NUM_HF_INDICATORS) return;
+    if (hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
     hfp_generic_status_indicators_nr = hf_indicators_nr;
     (void)memcpy(hfp_generic_status_indicators, hf_indicators,
                  hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));

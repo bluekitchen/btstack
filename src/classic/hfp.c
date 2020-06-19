@@ -157,6 +157,41 @@ static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
 
 static hfp_connection_t * sco_establishment_active;
 
+static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
+    uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+
+    if (index > HFP_MAX_NUM_INDICATORS){
+        log_info("ignoring invalid indicator index bigger then HFP_MAX_NUM_INDICATORS");
+        return HFP_MAX_NUM_INDICATORS - 1;
+    } 
+
+    // indicator index enumeration starts with 1, we substract 1 to store in array with starting index 0
+    if (index > 0){
+        index -= 1;
+    } else {
+        log_info("ignoring invalid indicator index 0");
+        return 0;
+    }
+    return index;
+}
+
+static void hfp_next_indicators_index(hfp_connection_t * hfp_connection){
+    if (hfp_connection->parser_item_index < HFP_MAX_NUM_INDICATORS - 1){
+        hfp_connection->parser_item_index++;
+    } else {
+        log_info("Ignoring additional indicator");
+    }
+}
+
+static void hfp_next_codec_index(hfp_connection_t * hfp_connection){
+    if (hfp_connection->parser_item_index < HFP_MAX_NUM_CODECS - 1){
+        hfp_connection->parser_item_index++;
+    } else {
+        log_info("Ignoring additional codec index");
+    }
+}
+
+
 const char * hfp_hf_feature(int index){
     if (index > HFP_HF_FEATURES_SIZE){
         return hfp_hf_features[HFP_HF_FEATURES_SIZE];
@@ -1167,8 +1202,8 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].max_range = btstack_atoi((char *)hfp_connection->line_buffer);
-                    hfp_connection->parser_item_index++;
-                    hfp_connection->ag_indicators_nr++;
+                    hfp_next_indicators_index(hfp_connection);
+                    hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
                     log_info("%s)\n", hfp_connection->line_buffer);
                     break;
                 default:
@@ -1226,7 +1261,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             break;
 
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
@@ -1319,7 +1354,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AVAILABLE_CODECS:
             log_info("Parsed codec %s\n", hfp_connection->line_buffer);
             hfp_connection->remote_codecs[hfp_connection->parser_item_index] = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
-            hfp_connection->parser_item_index++;
+            hfp_next_codec_index(hfp_connection);
             hfp_connection->remote_codecs_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
@@ -1331,10 +1366,10 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             log_info("Parsed Indicator %d with status: %s\n", hfp_connection->parser_item_index+1, hfp_connection->line_buffer);
             hfp_connection->ag_indicators[hfp_connection->parser_item_index].status = btstack_atoi((char *) hfp_connection->line_buffer);
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             break;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             if (hfp_connection->parser_item_index != 4) break;
             log_info("Parsed Enable indicators: %s\n", hfp_connection->line_buffer);
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -1343,24 +1378,24 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
             log_info("Parsed Support call hold: %s\n", hfp_connection->line_buffer);
             if (hfp_connection->line_size > 2 ) break;
-            strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
-            hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
-            hfp_connection->remote_call_services_nr++;
+            strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
+            hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
+            hfp_connection->remote_call_services_index++;
             break;
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
             log_info("Parsed Generic status indicator: %s\n", hfp_connection->line_buffer);
             hfp_connection->generic_status_indicators[hfp_connection->parser_item_index].uuid = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             hfp_connection->generic_status_indicators_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             // HF parses inital AG gen. ind. state
             log_info("Parsed List generic status indicator %s state: ", hfp_connection->line_buffer);
-            hfp_connection->parser_item_index = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->parser_item_index = hfp_parse_indicator_index(hfp_connection);
             break;
         case HFP_CMD_HF_INDICATOR_STATUS:
-            hfp_connection->parser_indicator_index = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->parser_indicator_index = hfp_parse_indicator_index(hfp_connection);
             log_info("Parsed HF indicator index %u", hfp_connection->parser_indicator_index);
             break;
         case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
@@ -1379,11 +1414,11 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 log_info("Parsed Enable AG indicator pos %u('%s'): %u\n", hfp_connection->parser_item_index,
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].name, value);
             }
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
             // indicators are indexed starting with 1
-            hfp_connection->parser_item_index = btstack_atoi((char *)&hfp_connection->line_buffer[0]) - 1;
+            hfp_connection->parser_item_index = hfp_parse_indicator_index(hfp_connection);
             log_info("Parsed status of the AG indicator %d, status ", hfp_connection->parser_item_index);
             break;
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
