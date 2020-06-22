@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - HFP: Fix parsing of empty fields, e.g. phone number in +CLCC and other AT commands
-
+- sm: Fix validation of confirm value for secure connection Passkey entry
+ 
 ### Added
 - GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack by remote features and actual encryption type (BIAS) 
 - GAP: Mutual authentication: request authentication after Classic connection got encrypted (BIAS)

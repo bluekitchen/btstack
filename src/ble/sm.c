@@ -3797,8 +3797,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // validate confirm value if Cb = f4(Pkb, Pka, Nb, z)
             // only check for JUST WORK/NC in initiator role OR passkey entry
+            log_info("SM_SC_W4_PAIRING_RANDOM, responder: %u, just works: %u, passkey used %u, passkey entry %u",
+                     IS_RESPONDER(sm_conn->sm_role), sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method),
+                     sm_passkey_used(setup->sm_stk_generation_method), sm_passkey_entry(setup->sm_stk_generation_method));
             if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)) 
-            ||   (sm_passkey_used(setup->sm_stk_generation_method)) ) {
+            ||   (sm_passkey_entry(setup->sm_stk_generation_method)) ) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
                  break;
             }
