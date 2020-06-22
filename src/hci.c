@@ -1906,6 +1906,7 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
 #endif
 }
 
+#ifdef ENABLE_CLASSIC
 static void hci_handle_remote_features_page_0(hci_connection_t * conn, const uint8_t * features){
     // SSP Controller
     if (features[6] & (1 << 3)){
@@ -1946,6 +1947,7 @@ static void hci_handle_remote_features_received(hci_connection_t * conn){
         conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     }
 }
+#endif
 
 static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_t size) {
     // handle BT initialization
