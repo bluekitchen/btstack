@@ -1,14 +1,14 @@
 # Makefile for windows-h4 examples
 BTSTACK_ROOT ?= ../..
 
-CORE += main.c btstack_stdin_windows.c
+CORE += main.c btstack_stdin_windows.c btstack_tlv_posix.c
 
 COMMON  += \
 			btstack_chipset_zephyr.c     \
 			btstack_run_loop_windows.c   \
 			btstack_uart_block_windows.c \
 			hci_transport_h4.c           \
-			le_device_db_fs.c            \
+			le_device_db_tlv.c           \
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc

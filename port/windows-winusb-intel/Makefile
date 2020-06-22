@@ -1,9 +1,9 @@
 # Makefile for windows WinUSB based examples
 BTSTACK_ROOT ?= ../..
 
-CORE += main.c btstack_stdin_windows.c
+CORE += main.c btstack_stdin_windows.c btstack_tlv_posix.c
 
-COMMON  += hci_transport_h2_winusb.c btstack_run_loop_windows.c le_device_db_fs.c btstack_link_key_db_fs.c wav_util.c
+COMMON  += hci_transport_h2_winusb.c btstack_run_loop_windows.c le_device_db_tlv.c btstack_link_key_db_tlv.c wav_util.c
 COMMON  += btstack_chipset_intel_firmware.c rijndael.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
@@ -20,6 +20,7 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/windows \
           -I${BTSTACK_ROOT}/3rd-party/rijndael \
           -I${BTSTACK_ROOT}/3rd-party/tinydir
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/windows

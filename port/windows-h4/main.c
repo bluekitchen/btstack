@@ -54,7 +54,9 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "hal_led.h"
-#include "btstack_link_key_db_fs.h"
+#include "btstack_tlv_posix.h"
+#include "ble/le_device_db_tlv.h"
+#include "classic/btstack_link_key_db_tlv.h"
 
 #include "btstack_stdin.h"
 
@@ -80,6 +82,13 @@ int is_bcm;
 
 static int led_state = 0;
 
+#define TLV_DB_PATH_PREFIX "btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
+static bd_addr_t             local_addr;
+
 void hal_led_toggle(void){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
@@ -88,7 +97,7 @@ void hal_led_toggle(void){
 static void sigint_handler(int param){
     UNUSED(param);
 
-    printf("CTRL-C = SIGINT received, shutting down..\n");   
+    printf("CTRL-C = SIGINT received, shutting down..\n");
     log_info("sigint_handler: shutting down");
 
     // reset anyway
@@ -97,7 +106,7 @@ static void sigint_handler(int param){
     // power down
     hci_power_control(HCI_POWER_OFF);
     hci_close();
-    log_info("Good bye, see you.\n");    
+    log_info("Good bye, see you.\n");
     exit(0);
 }
 
@@ -110,6 +119,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             gap_local_bd_addr(addr);
+            printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+            strcat(tlv_db_path, bd_addr_to_str(local_addr));
+            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+            btstack_tlv_set_instance(tlv_impl, &tlv_context);
+#ifdef ENABLE_CLASSIC
+            hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+#endif
+#ifdef ENABLE_BLE
+            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+#endif
             printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
@@ -121,7 +142,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 if (is_bcm){
                     btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
                 }
-            }        
+            }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 local_version_information_handler(packet);
             }
@@ -153,7 +174,7 @@ static void local_version_information_handler(uint8_t * packet){
             use_fast_uart();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;
-        case BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC: 
+        case BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC:
             printf("Texas Instruments - CC256x compatible chipset.\n");
             if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
                 printf("Error: LMP Subversion does not match initscript!");
@@ -169,13 +190,13 @@ static void local_version_information_handler(uint8_t * packet){
             printf("eHCILL disable.\n");
 #endif
             break;
-        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:   
+        case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:
             printf("Broadcom - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
             use_fast_uart();
             is_bcm = 1;
             break;
-        case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:   
+        case BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS:
             printf("ST Microelectronics - using STLC2500d driver.\n");
             use_fast_uart();
             hci_set_chipset(btstack_chipset_stlc2500d_instance());
@@ -186,7 +207,7 @@ static void local_version_information_handler(uint8_t * packet){
             break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
-            break;        
+            break;
         case BLUETOOTH_COMPANY_ID_TOSHIBA_CORP:
             printf("Toshiba - using TC3566x driver.\n");
             hci_set_chipset(btstack_chipset_tc3566x_instance());
@@ -199,10 +220,10 @@ static void local_version_information_handler(uint8_t * packet){
 }
 
 int main(int argc, const char * argv[]){
-	printf("BTstack on windows booting up\n");
+    printf("BTstack on windows booting up\n");
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
 
     hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
@@ -220,10 +241,8 @@ int main(int argc, const char * argv[]){
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
-    const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
-	hci_init(transport, (void*) &config);
-    hci_set_link_key_db(link_key_db);
+    const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    hci_init(transport, (void*) &config);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
@@ -236,7 +255,7 @@ int main(int argc, const char * argv[]){
     btstack_main(argc, argv);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
 
-	return 0;
+    return 0;
 }
