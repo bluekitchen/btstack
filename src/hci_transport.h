@@ -172,6 +172,11 @@ const hci_transport_t * hci_transport_usb_instance(void);
  */
 void hci_transport_usb_set_path(int len, uint8_t * port_numbers);
 
+/**	
+ * @brief Specify USB Bluetooth device via device address	
+ */
+void hci_transport_usb_set_address(uint8_t _dev_addr);
+
 /* API_END */
     
 #if defined __cplusplus
