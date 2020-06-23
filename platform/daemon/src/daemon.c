@@ -30,7 +30,7 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at
+ * Please inquire about commercial licensing options at 
  * contact@bluekitchen-gmbh.com
  *
  */
@@ -54,9 +54,6 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
-
-/* ... ?? */
-#include "bluetooth_comapny_id.h"
 
 #ifdef _WIN32
 #include "Winsock2.h"
@@ -127,7 +124,7 @@ const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 
 // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
 #ifndef BTSTACK_LOG_TYPE
-#define BTSTACK_LOG_TYPE HCI_DUMP_PACKETLOGGER
+#define BTSTACK_LOG_TYPE HCI_DUMP_PACKETLOGGER 
 #endif
 
 #define DAEMON_NO_ACTIVE_CLIENT_TIMEOUT 10000
@@ -149,7 +146,7 @@ const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
-
+    
     // connection
     connection_t * connection;
 
@@ -162,10 +159,10 @@ typedef struct {
 
     // power mode
     HCI_POWER_MODE power_mode;
-
+    
     // discoverable
     uint8_t        discoverable;
-
+    
 } client_state_t;
 
 typedef struct btstack_linked_list_uint32 {
@@ -271,41 +268,41 @@ static void daemon_no_connections_timeout(struct btstack_timer_source *ts){
 
 
 static void add_uint32_to_list(btstack_linked_list_t *list, uint32_t value){
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, list);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         if ( item->value == value) return; // already in list
-    }
+    } 
 
     btstack_linked_list_uint32_t * item = malloc(sizeof(btstack_linked_list_uint32_t));
-    if (!item) return;
+    if (!item) return; 
     memset(item, 0, sizeof(btstack_linked_list_uint32_t));
     item->value = value;
     btstack_linked_list_add(list, (btstack_linked_item_t *) item);
 }
 
 static void remove_and_free_uint32_from_list(btstack_linked_list_t *list, uint32_t value){
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, list);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
         if ( item->value != value) continue;
         btstack_linked_list_remove(list, (btstack_linked_item_t *) item);
         free(item);
-    }
+    } 
 }
 
 static void daemon_add_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint32_to_list(&client_state->rfcomm_services, service_channel);
+    add_uint32_to_list(&client_state->rfcomm_services, service_channel);    
 }
 
 static void daemon_remove_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint32_from_list(&client_state->rfcomm_services, service_channel);
+    remove_and_free_uint32_from_list(&client_state->rfcomm_services, service_channel);    
 }
 
 static void daemon_add_client_rfcomm_channel(connection_t * connection, uint16_t cid){
@@ -347,27 +344,27 @@ static void daemon_remove_client_l2cap_channel(connection_t * connection, uint16
 static void daemon_add_client_sdp_service_record_handle(connection_t * connection, uint32_t handle){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint32_to_list(&client_state->sdp_record_handles, handle);
+    add_uint32_to_list(&client_state->sdp_record_handles, handle);    
 }
 
 static void daemon_remove_client_sdp_service_record_handle(connection_t * connection, uint32_t handle){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);
+    remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);    
 }
 
 #ifdef ENABLE_BLE
 static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t handle){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-
+    
     // check if handle already exists in the gatt_con_handles list
     btstack_linked_list_iterator_t it;
     int handle_found = 0;
     btstack_linked_list_iterator_init(&it, &client_state->gatt_con_handles);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
-        if (item->value == handle){
+        if (item->value == handle){ 
             handle_found = 1;
             break;
         }
@@ -376,7 +373,7 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
     if (!handle_found){
         add_uint32_to_list(&client_state->gatt_con_handles, handle);
     }
-
+    
     // check if there is a helper with given handle
     btstack_linked_list_gatt_client_helper_t * gatt_helper = NULL;
     btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
@@ -391,7 +388,7 @@ static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t ha
     // if gatt_helper doesn't exist, create it and add it to gatt_client_helpers list
     if (!gatt_helper){
         gatt_helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t), 1);
-        if (!gatt_helper) return;
+        if (!gatt_helper) return; 
         gatt_helper->con_handle = handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) gatt_helper);
     }
@@ -422,8 +419,8 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
     // might be extracted or vanish totally
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-
-    btstack_linked_list_iterator_t it;
+    
+    btstack_linked_list_iterator_t it;    
     // remove handle from gatt_con_handles list
     btstack_linked_list_iterator_init(&it, &client_state->gatt_con_handles);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -472,7 +469,7 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
 static void daemon_remove_gatt_client_helper(uint32_t con_handle){
     log_info("daemon_remove_gatt_client_helper for con_handle 0x%04x", con_handle);
 
-    btstack_linked_list_iterator_t it, cl;
+    btstack_linked_list_iterator_t it, cl;    
     // find helper with given handle
     btstack_linked_list_gatt_client_helper_t * helper = NULL;
     btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
@@ -485,7 +482,7 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
     }
 
     if (!helper) return;
-
+    
     // remove all connection from helper
     btstack_linked_list_iterator_init(&it, &helper->all_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -496,7 +493,7 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
 
     btstack_linked_list_remove(&gatt_client_helpers, (btstack_linked_item_t *) helper);
     free(helper);
-
+    
     btstack_linked_list_iterator_init(&cl, &clients);
     while (btstack_linked_list_iterator_has_next(&cl)){
         client_state_t * client_state = (client_state_t *) btstack_linked_list_iterator_next(&cl);
@@ -513,10 +510,10 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
 #endif
 
 static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;  
     btstack_linked_list_t *rfcomm_services = &daemon_client->rfcomm_services;
     btstack_linked_list_t *rfcomm_cids = &daemon_client->rfcomm_cids;
-
+    
     btstack_linked_list_iterator_init(&it, rfcomm_services);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
@@ -536,10 +533,10 @@ static void daemon_rfcomm_close_connection(client_state_t * daemon_client){
 
 
 static void daemon_l2cap_close_connection(client_state_t * daemon_client){
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;  
     btstack_linked_list_t *l2cap_psms = &daemon_client->l2cap_psms;
     btstack_linked_list_t *l2cap_cids = &daemon_client->l2cap_cids;
-
+    
     btstack_linked_list_iterator_init(&it, l2cap_psms);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
@@ -559,7 +556,7 @@ static void daemon_l2cap_close_connection(client_state_t * daemon_client){
 
 static void daemon_sdp_close_connection(client_state_t * daemon_client){
     btstack_linked_list_t * list = &daemon_client->sdp_record_handles;
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;  
     btstack_linked_list_iterator_init(&it, list);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
@@ -593,28 +590,28 @@ static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 
 // pre: ServiceRecordHandle is first attribute and is not already registered in database
 // @returns status
 static uint32_t daemon_sdp_create_and_register_service(uint8_t * record){
-
+    
     // create new handle
     uint32_t record_handle = sdp_create_service_record_handle();
-
-    // calculate size of new service record: DES (2 byte len)
+    
+    // calculate size of new service record: DES (2 byte len) 
     // + ServiceRecordHandle attribute (UINT16 UINT32) + size of existing attributes
     uint16_t recordSize =  3 + (3 + 5) + de_get_data_size(record);
-
+        
     // alloc memory for new service record
     uint8_t * newRecord = malloc(recordSize);
     if (!newRecord) return 0;
-
+    
     // create DES for new record
     de_create_sequence(newRecord);
-
+    
     // set service record handle
     de_add_number(newRecord, DE_UINT, DE_SIZE_16, 0);
     de_add_number(newRecord, DE_UINT, DE_SIZE_32, record_handle);
-
+    
     // add other attributes
     sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
-
+    
     uint8_t status = sdp_register_service(newRecord);
 
     if (status) {
@@ -647,7 +644,7 @@ static void daemon_gatt_client_close_connection(connection_t * connection){
     client_state_t * client = client_for_connection(connection);
     if (!client) return;
 
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it; 
 
     btstack_linked_list_iterator_init(&it, &client->gatt_con_handles);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -673,7 +670,7 @@ static void daemon_disconnect_client(connection_t * connection){
 #endif
 
     btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
-    free(client);
+    free(client); 
 }
 
 static void hci_emit_btstack_version(void){
@@ -710,8 +707,8 @@ static void send_l2cap_connection_open_failed(connection_t * connection, bd_addr
     // little_endian_store_16(event, 13, channel->local_cid);
     // little_endian_store_16(event, 15, channel->remote_cid);
     // little_endian_store_16(event, 17, channel->local_mtu);
-    // little_endian_store_16(event, 19, channel->remote_mtu);
-    // little_endian_store_16(event, 21, channel->flush_timeout);
+    // little_endian_store_16(event, 19, channel->remote_mtu); 
+    // little_endian_store_16(event, 21, channel->flush_timeout); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -767,10 +764,10 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
 #ifdef ENABLE_BLE
 
 btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(hci_con_handle_t con_handle) {
-    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_t it;  
     if (!gatt_client_helpers) return NULL;
     log_debug("daemon_get_gatt_client_helper for handle 0x%02x", con_handle);
-
+    
     btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_gatt_client_helper_t * item = (btstack_linked_list_gatt_client_helper_t*) btstack_linked_list_iterator_next(&it);
@@ -807,7 +804,7 @@ static void send_gatt_mtu_event(connection_t * connection, hci_con_handle_t con_
 }
 
 btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet, int track_active_connection) {
-    hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
+    hci_con_handle_t con_handle = little_endian_read_16(packet, 3);    
     log_info("daemon_setup_gatt_client_request for handle 0x%02x", con_handle);
     hci_connection_t * hci_con = hci_connection_for_handle(con_handle);
     if ((hci_con == NULL) || (hci_con->state != OPEN)){
@@ -820,18 +817,18 @@ btstack_linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(conn
     if (!helper){
         log_info("helper does not exist");
         helper = calloc(sizeof(btstack_linked_list_gatt_client_helper_t), 1);
-        if (!helper) return NULL;
+        if (!helper) return NULL; 
         helper->con_handle = con_handle;
         btstack_linked_list_add(&gatt_client_helpers, (btstack_linked_item_t *) helper);
-    }
-
+    } 
+    
     if (track_active_connection && helper->active_connection){
         send_gatt_query_complete(connection, con_handle, GATT_CLIENT_BUSY);
         return NULL;
     }
 
     daemon_add_gatt_client_handle(connection, con_handle);
-
+    
     if (track_active_connection){
         // remember connection responsible for this request
         helper->active_connection = connection;
@@ -874,7 +871,7 @@ static void btstack_server_intel_firmware_done(int result){
 #endif
 
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
-
+    
     bd_addr_t addr;
 #ifdef ENABLE_BLE
     bd_addr_type_t addr_type;
@@ -936,14 +933,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case BTSTACK_GET_VERSION:
             log_info("BTSTACK_GET_VERSION");
             hci_emit_btstack_version();
-            break;
+            break;   
 #ifdef HAVE_PLATFORM_IPHONE_OS
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
             log_info("BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED %u", packet[3]);
             btstack_control_iphone_bt_set_enabled(packet[3]);
             hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
             break;
-
+            
         case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
             log_info("BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED");
             hci_emit_system_bluetooth_enabled(btstack_control_iphone_bt_enabled());
@@ -1075,7 +1072,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             cid    = little_endian_read_16(packet, 3);
             reason = packet[7];
             rfcomm_decline_connection(cid);
-            break;
+            break;            
         case RFCOMM_GRANT_CREDITS:
             cid    = little_endian_read_16(packet, 3);
             rfcomm_credits = packet[5];
@@ -1115,7 +1112,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
                 free(data);
             }
             break;
-        case SDP_CLIENT_QUERY_RFCOMM_SERVICES:
+        case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
             reverse_bd_addr(&packet[3], addr);
 
             serviceSearchPatternLen = de_get_len(&packet[9]);
@@ -1131,10 +1128,10 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 
             serviceSearchPatternLen = de_get_len(&packet[9]);
             memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
-
-            attributeIDListLen = de_get_len(&packet[9+serviceSearchPatternLen]);
+            
+            attributeIDListLen = de_get_len(&packet[9+serviceSearchPatternLen]); 
             memcpy(attributeIDList, &packet[9+serviceSearchPatternLen], attributeIDListLen);
-
+            
             sdp_client_query(&handle_sdp_client_query_result, addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
             break;
 #ifdef ENABLE_BLE
@@ -1183,7 +1180,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_client_deserialize_service(packet, 5, &service);
             gatt_client_find_included_services_for_service(&handle_gatt_client_event, gatt_helper->con_handle, &service);
             break;
-
+        
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
@@ -1203,7 +1200,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
-
+        
         case GATT_READ_VALUE_OF_CHARACTERISTIC:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 1);
             if (!gatt_helper) break;
@@ -1216,7 +1213,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gatt_client_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_read_long_value_of_characteristic(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             break;
-
+        
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
             gatt_helper = daemon_setup_gatt_client_request(connection, packet, 0);  // note: don't track active connection
             if (!gatt_helper) break;
@@ -1316,7 +1313,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             sm_just_works_confirm(little_endian_read_16(packet, 3));
             break;
         case SM_NUMERIC_COMPARISON_CONFIRM:
-            sm_numeric_comparison_confirm(little_endian_read_16(packet, 3));
+            sm_numeric_comparison_confirm(little_endian_read_16(packet, 3));    
             break;
         case SM_PASSKEY_INPUT:
             sm_passkey_input(little_endian_read_16(packet, 3), little_endian_read_32(packet, 5));
@@ -1326,18 +1323,18 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_error("Error: command %u not implemented:", READ_CMD_OCF(packet));
             break;
     }
-
+    
     return 0;
 }
 
 static int daemon_client_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
-
+    
     int err = 0;
     client_state_t * client;
-
+    
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
-            if (READ_CMD_OGF(data) != OGF_BTSTACK) {
+            if (READ_CMD_OGF(data) != OGF_BTSTACK) { 
                 // HCI Command
                 hci_send_cmd_packet(data, length);
             } else {
@@ -1441,9 +1438,9 @@ static void preferences_changed_callback(void){
 #endif
 
 static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
-
+    
     uint8_t update_status = 0;
-
+    
     // handle state event
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
@@ -1459,23 +1456,23 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
         default:
             break;
     }
-
-    // choose full bluetooth state
+    
+    // choose full bluetooth state 
     if (update_status) {
         update_ui_status();
     }
 }
 
 static void daemon_retry_parked(void){
-
+    
     // socket_connection_retry_parked is not reentrant
     static int retry_mutex = 0;
 
     // lock mutex
     if (retry_mutex) return;
     retry_mutex = 1;
-
-    // ... try sending again
+    
+    // ... try sending again  
     socket_connection_retry_parked();
 
     // unlock mutex
@@ -1561,11 +1558,11 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     packet[9+248] = 0;
                     btstack_device_name_db->put_name(addr, (device_name_t *)&packet[9]);
                     break;
-
+                
                 case HCI_EVENT_INQUIRY_RESULT:
                 case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
                     if (!btstack_device_name_db) break;
-
+                    
                     // first send inq result packet
                     daemon_emit_packet(connection, packet_type, channel, packet, size);
 
@@ -1578,22 +1575,22 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                             remote_name_event[1] = sizeof(remote_name_event) - 2 - 1;
                             remote_name_event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
                             reverse_bd_addr(addr, &remote_name_event[3]);
-
+                            
                             remote_name_event[9+248] = 0;   // assert \0 for log_info
                             log_info("DAEMON_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &remote_name_event[9]);
                             hci_dump_packet(HCI_EVENT_PACKET, 0, remote_name_event, sizeof(remote_name_event)-1);
                             daemon_emit_packet(connection, HCI_EVENT_PACKET, channel, remote_name_event, sizeof(remote_name_event) -1);
                         }
-                        offset += 14; // 6 + 1 + 1 + 1 + 3 + 2;
+                        offset += 14; // 6 + 1 + 1 + 1 + 3 + 2; 
                     }
                     return;
                 }
-
+                
                 case DAEMON_EVENT_RFCOMM_CREDITS:
                     // RFCOMM CREDITS received...
                     daemon_retry_parked();
                     break;
-
+                
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     cid = little_endian_read_16(packet, 13);
                     connection = connection_for_rfcomm_cid(cid);
@@ -1643,14 +1640,14 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
             connection = connection_for_l2cap_cid(channel);
             if (!connection) return;
             break;
-        case RFCOMM_DATA_PACKET:
+        case RFCOMM_DATA_PACKET:        
             connection = connection_for_l2cap_cid(channel);
             if (!connection) return;
             break;
         default:
             break;
     }
-
+    
     daemon_emit_packet(connection, packet_type, channel, packet, size);
 }
 
@@ -1666,7 +1663,7 @@ static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t chann
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, packet, size);
             break;
-        default:
+        default: 
             break;
     }
 }
@@ -1688,7 +1685,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)){
                 log_info_hexdump(attribute_value, sdp_event_query_attribute_byte_get_attribute_length(packet));
 
-                int event_len = 1 + 3 * 2 + sdp_event_query_attribute_byte_get_attribute_length(packet);
+                int event_len = 1 + 3 * 2 + sdp_event_query_attribute_byte_get_attribute_length(packet); 
                 uint8_t event[event_len];
                 event[0] = SDP_EVENT_QUERY_ATTRIBUTE_VALUE;
                 little_endian_store_16(event, 1, sdp_event_query_attribute_byte_get_record_id(packet));
@@ -1727,13 +1724,13 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
 }
 
 static void daemon_sigint_handler(int param){
-
+    
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // notify daemons
     notify_post("ch.ringwald.btstack.stopped");
 #endif
-
-    log_info(" <= SIGINT received, shutting down..\n");
+    
+    log_info(" <= SIGINT received, shutting down..\n");    
 
     int send_power_off = 1;
 #ifdef HAVE_INTEL_USB
@@ -1745,9 +1742,9 @@ static void daemon_sigint_handler(int param){
         hci_power_control( HCI_POWER_OFF);
         hci_close();
     }
-
-    log_info("Good bye, see you.\n");
-
+    
+    log_info("Good bye, see you.\n");    
+    
     exit(0);
 }
 
@@ -1765,7 +1762,7 @@ static void stop_power_off_timer(void){
 }
 
 static void start_power_off_timer(void){
-#ifdef USE_POWER_OFF_TIMER
+#ifdef USE_POWER_OFF_TIMER    
     stop_power_off_timer();
     btstack_run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
     btstack_run_loop_add_timer(&timeout);
@@ -1798,9 +1795,9 @@ static void clients_clear_power_request(void){
 }
 
 static int clients_require_power_on(void){
-
+    
     if (global_enable) return 1;
-
+    
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
@@ -1822,7 +1819,6 @@ static int clients_require_discoverable(void){
     return 0;
 }
 
-/*
 static void usage(const char * name) {
     printf("%s, BTstack background daemon\n", name);
     printf("usage: %s [--help] [--tcp]\n", name);
@@ -1830,9 +1826,8 @@ static void usage(const char * name) {
     printf("    --tcp    use TCP server on port %u\n", BTSTACK_PORT);
     printf("Without the --tcp option, BTstack Server is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
 }
-*/
 
-#ifdef HAVE_PLATFORM_IPHONE_OS
+#ifdef HAVE_PLATFORM_IPHONE_OS 
 static void * btstack_run_loop_thread(void *context){
     btstack_run_loop_execute();
     return NULL;
@@ -1866,7 +1861,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     if (!gatt_client_helper){
         log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", con_handle);
         return;
-    }
+    } 
 
     connection_t *connection = NULL;
 
@@ -1875,7 +1870,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case GATT_EVENT_NOTIFICATION:
         case GATT_EVENT_INDICATION:{
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
-
+            
             btstack_linked_item_t *it;
             for (it = (btstack_linked_item_t *) clients; it ; it = it->next){
                 client_state_t * client_state = (client_state_t *) it;
@@ -1905,7 +1900,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, packet, size);
             break;
-
+            
         case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_EVENT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             offset = little_endian_read_16(packet, 6);
@@ -1977,7 +1972,7 @@ static void btstack_server_configure_stack(void){
     log_info("config.h: ENABLE_RFCOMM\n");
     rfcomm_init();
 #endif
-
+    
 #ifdef ENABLE_SDP
     sdp_init();
 #endif
@@ -1987,14 +1982,14 @@ static void btstack_server_configure_stack(void){
     sm_event_callback_registration.callback = &stack_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION);
+    // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
 
     // GATT Client
     gatt_client_init();
     gatt_client_listen_for_characteristic_value_updates(&daemon_gatt_client_notifications, &handle_gatt_client_event, GATT_CLIENT_ANY_CONNECTION, GATT_CLIENT_ANY_VALUE_HANDLE);
 
     // GATT Server - empty attribute database
-    att_server_init(NULL, NULL, NULL);
+    att_server_init(NULL, NULL, NULL);    
 
 #endif
 }
@@ -2029,7 +2024,7 @@ int btstack_server_run(int tcp_flag){
     btstack_control_t * control = NULL;
     const btstack_uart_block_t * uart_block_implementation = NULL;
     (void) uart_block_implementation;
-
+    
 #ifdef HAVE_TRANSPORT_H4
     hci_transport_config_uart.type = HCI_TRANSPORT_CONFIG_UART;
     hci_transport_config_uart.baudrate_init = UART_SPEED;
@@ -2044,7 +2039,7 @@ int btstack_server_run(int tcp_flag){
     uart_block_implementation = btstack_uart_block_posix_instance();
 #endif
 #endif
-
+    
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // use default (max) UART baudrate over netgraph interface
     hci_transport_config_uart.baudrate_init = 0;
@@ -2091,14 +2086,14 @@ int btstack_server_run(int tcp_flag){
     newLoggingEnabled = platform_iphone_logging_enabled();
 #endif
     daemon_set_logging_enabled(newLoggingEnabled);
-
+    
     // dump version
     log_info("BTStack Server started\n");
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
 #ifndef HAVE_INTEL_USB
     btstack_server_configure_stack();
-#endif
+#endif    
 
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();
@@ -2113,8 +2108,8 @@ int btstack_server_run(int tcp_flag){
     }
 #endif
     socket_connection_register_packet_callback(&daemon_client_handler);
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
+        
+#ifdef HAVE_PLATFORM_IPHONE_OS 
     // notify daemons
     notify_post("ch.ringwald.btstack.started");
 
@@ -2135,21 +2130,20 @@ int btstack_server_run_tcp(void){
 }
 
 int main (int argc,  char * const * argv){
-
-	/*
+    
     int tcp_flag = 0;
     struct option long_options[] = {
         { "tcp", no_argument, &tcp_flag, 1 },
         { "help", no_argument, 0, 0 },
         { 0,0,0,0 } // This is a filler for -1
     };
-
+    
     while (true) {
         int c;
         int option_index = -1;
         c = getopt_long(argc, argv, "h", long_options, &option_index);
         if (c == -1) break; // no more option
-
+        
         // treat long parameter first
         if (option_index == -1) {
             switch (c) {
@@ -2168,22 +2162,7 @@ int main (int argc,  char * const * argv){
             }
         }
     }
-    */
-        uint8_t initiator_usb_device_id;
-        int tcp_flag = 0;
-
-        /* Parse arguments */
-        if(argc < 3)
-        {
-                printf("Too few arguments provided\n");
-                printf("Usage:./%s device_id port\n", argv[0]);
-                exit(0);
-        }
-
-        initiator_usb_device_id = strtol(argv[1], 0, 10);
-        tcp_flag = strtol(argv[2], 0, 10);
-        hci_transport_usb_set_address(initiator_usb_device_id);
-
+    
 #ifndef HAVE_UNIX_SOCKETS
     // TCP is default if there are no unix sockets
     tcp_flag = 1;
