@@ -197,7 +197,7 @@ static btstack_resample_t resample_instance;
  * - avrcp_packet_handler - receives connect/disconnect event.
  * - avrcp_controller_packet_handler - receives answers for sent AVRCP commands.
  * - avrcp_target_packet_handler - receives AVRCP commands, and registered notifications.
- * - stdin_process callback - used to trigger AVRCP commands to the A2DP Source device, such are get now playing info, start, stop, volume control. Requires HAVE_BTSTACK_STDIN.
+ * - stdin_process - used to trigger AVRCP commands to the A2DP Source device, such are get now playing info, start, stop, volume control. Requires HAVE_BTSTACK_STDIN.
  *
  * @text To announce A2DP Sink and AVRCP services, you need to create corresponding
  * SDP records and register them with the SDP service. 
@@ -210,15 +210,17 @@ static btstack_resample_t resample_instance;
  */
 
 /* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size);
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size);
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+#ifdef HAVE_BTSTACK_STDIN
+static void stdin_process(char cmd);
+#endif
 
 static int a2dp_and_avrcp_setup(void){
-
     l2cap_init();
     // Initialize AVDTP Sink
     a2dp_sink_init();

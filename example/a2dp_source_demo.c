@@ -44,17 +44,17 @@
 // *****************************************************************************
 /* EXAMPLE_START(a2dp_source_demo): Serve audio stream and handle remote playback control and queries.
  *
- * @text This  A2DP Source example demonstrates how to send an audio data stream 
+ * @text This A2DP Source example demonstrates how to send an audio data stream 
  * to a remote A2DP Sink device and how to switch between two audio data sources.  
  * In addition, the AVRCP Target is used to answer queries on currently played media,
- * as well as to handle remote playback control, i.e. play, stop, repeat, etc.
+ * as well as to handle remote playback control, i.e. play, stop, repeat, etc. If HAVE_BTSTACK_STDIN 
+ * is set, press SPACE on the console to show the available AVDTP and AVRCP commands.
  *
- * @test To test with a remote device, e.g. a Bluetooth speaker,
+ * @text To test with a remote device, e.g. a Bluetooth speaker,
  * set the device_addr_string to the Bluetooth address of your 
  * remote device in the code, and use the UI to connect and start playback. 
- * Tap SPACE on the console to show the available commands.
  * 
- * For more info on BTstack audio, see our blog post 
+ * @text For more info on BTstack audio, see our blog post 
  * [A2DP Sink and Source on STM32 F4 Discovery Board](http://bluekitchen-gmbh.com/a2dp-sink-and-source-on-stm32-f4-discovery-board/).
  * 
  */
@@ -173,8 +173,8 @@ static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
 // Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
 // BeatsX:          static const char * device_addr_string = "DC:D3:A2:89:57:FB";
-
 static bd_addr_t device_addr;
+
 static uint8_t sdp_a2dp_source_service_buffer[150];
 static uint8_t sdp_avrcp_target_service_buffer[200];
 static uint8_t sdp_avrcp_controller_service_buffer[200];
@@ -207,8 +207,8 @@ static const uint8_t subunit_info[] = {
 };
 
 static uint32_t company_id = 0x112233;
-static uint8_t companies_num = 1;
-static uint8_t companies[] = {
+static uint8_t  companies_num = 1;
+static uint8_t  companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
 };
 
@@ -251,10 +251,21 @@ avrcp_play_status_info_t play_info;
 
 /* @section Main Application Setup
  *
- * @text The Listing MainConfiguration shows how to setup AD2P Source and AVRCP Target services. 
+ * @text The Listing MainConfiguration shows how to setup AD2P Source and AVRCP services. 
+ * Besides calling init() method for each service, you'll also need to register several packet handlers:
+ * - hci_packet_handler - handles legacy pairing, here by using fixed '0000' pin code.
+ * - a2dp_source_packet_handler - handles events on stream connection status (established, released), the media codec configuration, and, the commands on stream itself (open, pause, stopp).
+ * - avrcp_packet_handler - receives connect/disconnect event.
+ * - avrcp_controller_packet_handler - receives answers for sent AVRCP commands.
+ * - avrcp_target_packet_handler - receives AVRCP commands, and registered notifications.
+ * - stdin_process - used to trigger AVRCP commands to the A2DP Source device, such are get now playing info, start, stop, volume control. Requires HAVE_BTSTACK_STDIN.
+ *
+ * @text To announce A2DP Source and AVRCP services, you need to create corresponding
+ * SDP records and register them with the SDP service. 
  */
 
 /* LISTING_START(MainConfiguration): Setup Audio Source and AVRCP Target services */
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size);
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -263,24 +274,9 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 static void stdin_process(char cmd);
 #endif
 
-static void a2dp_demo_reconfigure_sample_rate(int new_sample_rate){
-    if (!hxcmod_initialized){
-        hxcmod_initialized = hxcmod_init(&mod_context);
-        if (!hxcmod_initialized) {
-            printf("could not initialize hxcmod\n");
-            return;
-        }
-    }
-    sample_rate = new_sample_rate;
-    media_tracker.sbc_storage_count = 0;
-    media_tracker.samples_ready = 0;
-    hxcmod_unload(&mod_context);
-    hxcmod_setcfg(&mod_context, sample_rate, 16, 1, 1, 1);
-    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
-}
+static void a2dp_demo_reconfigure_sample_rate(int new_sample_rate);
 
 static int a2dp_source_and_avrcp_services_init(void){
-
     // request role change on reconnecting headset to always use them in slave mode
     hci_set_master_slave_policy(0);
 
@@ -298,6 +294,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
     avdtp_source_register_delay_reporting_category(media_tracker.local_seid);
 
+    // Initialize AVRCP Service.
     avrcp_init();
     avrcp_register_packet_handler(&avrcp_packet_handler);
     // Initialize AVRCP Target.
@@ -338,20 +335,35 @@ static int a2dp_source_and_avrcp_services_init(void){
     gap_set_class_of_device(0x200408);
     
     // Register for HCI events.
-    hci_event_callback_registration.callback = &a2dp_source_packet_handler;
+    hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     a2dp_demo_reconfigure_sample_rate(sample_rate);
     
+#ifdef HAVE_BTSTACK_STDIN
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);
-
-#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
     return 0;
 }
 /* LISTING_END */
+
+static void a2dp_demo_reconfigure_sample_rate(int new_sample_rate){
+    if (!hxcmod_initialized){
+        hxcmod_initialized = hxcmod_init(&mod_context);
+        if (!hxcmod_initialized) {
+            printf("could not initialize hxcmod\n");
+            return;
+        }
+    }
+    sample_rate = new_sample_rate;
+    media_tracker.sbc_storage_count = 0;
+    media_tracker.samples_ready = 0;
+    hxcmod_unload(&mod_context);
+    hxcmod_setcfg(&mod_context, sample_rate, 16, 1, 1, 1);
+    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
+}
 
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
@@ -505,6 +517,31 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t * confi
     printf("    - bitpool_value [%d, %d] \n", configuration->min_bitpool_value, configuration->max_bitpool_value);
 }
 
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+#ifndef HAVE_BTSTACK_STDIN
+    if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE){
+        if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+        printf("Create A2DP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
+        uint8_t status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+        if (status != ERROR_CODE_SUCCESS){
+            printf("Could not perform command, status 0x%2x\n", status);
+        }
+        return;
+    }
+#endif
+
+    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
+        bd_addr_t address;
+        printf("Pin code request - using '0000'\n");
+        hci_event_pin_code_request_get_bd_addr(packet, address);
+        gap_pin_code_response(address, "0000");
+    }
+}
+
 static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -514,25 +551,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
     uint16_t cid;
 
     if (packet_type != HCI_EVENT_PACKET) return;
-
-#ifndef HAVE_BTSTACK_STDIN
-    if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE){
-        if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-        printf("Create A2DP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
-        status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
-        if (status != ERROR_CODE_SUCCESS){
-            printf("Could not perform command, status 0x%2x\n", status);
-        }
-        return;
-    }
-#endif
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_PIN_CODE_REQUEST) {
-        printf("Pin code request - using '0000'\n");
-        hci_event_pin_code_request_get_bd_addr(packet, address);
-        gap_pin_code_response(address, "0000");
-        return;
-    }
-    
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
     switch (hci_event_a2dp_meta_get_subevent_code(packet)){

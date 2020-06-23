@@ -47,9 +47,9 @@
  * @text This example demonstrates how to use the AVRCP Controller Browsing service to 
  * browse madia players and media information on a remote AVRCP Source device. 
  *
- * @test To test with a remote device, e.g. a mobile phone,
- * pair from the remote device with the demo, then use the UI for browsing (tap 
- * SPACE on the console to show the available AVRCP commands).
+ * @text To test with a remote device, e.g. a mobile phone,
+ * pair from the remote device with the demo, then use the UI for browsing. If HAVE_BTSTACK_STDIN is set, 
+ * press SPACE on the console to show the available AVDTP and AVRCP commands.
  *
  */
 // *****************************************************************************
