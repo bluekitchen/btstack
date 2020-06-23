@@ -14,10 +14,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message("${Qt5_DIR}")
 
 find_package(Qt5Core)
-include(FindPythonInterp)
+find_package(FindPython3)
 
 # BTstack Root
-set(BTSTACK_ROOT "../..")
+set(BTSTACK_ROOT "${PROJECT_SOURCE_DIR}/../..")
 message("BTSTACK_ROOT: ${BTSTACK_ROOT}")
 
 # BTstack include

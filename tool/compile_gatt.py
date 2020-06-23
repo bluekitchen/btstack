@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # BLE GATT configuration generator for use with BTstack
 # Copyright 2019 BlueKitchen GmbH
