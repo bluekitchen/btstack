@@ -141,9 +141,9 @@ typedef struct {
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
 
-static uint8_t events_num = 1;
+static uint8_t events_num = 0;
 static uint8_t events[] = {
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+    // AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
 };
 
 static uint8_t companies_num = 1;
@@ -266,7 +266,7 @@ static int a2dp_and_avrcp_setup(void){
     
     // setup AVRCP Target
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
-    uint16_t target_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER);
+    uint16_t target_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 

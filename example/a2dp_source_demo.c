@@ -309,7 +309,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     
     // Create  A2DP Source service record and register it with SDP.
     memset(sdp_a2dp_source_service_buffer, 0, sizeof(sdp_a2dp_source_service_buffer));
-    a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10002, 1, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, 1, NULL, NULL);
     sdp_register_service(sdp_a2dp_source_service_buffer);
     
     // Create AVRCP target service record and register it with SDP.
@@ -318,13 +318,13 @@ static int a2dp_source_and_avrcp_services_init(void){
 #ifdef AVRCP_BROWSING_ENABLED
     supported_features |= (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
 #endif
-    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10001, supported_features, NULL, NULL);
+    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10002, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
     // setup AVRCP Controller
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    uint16_t controller_supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER);
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10002, controller_supported_features, NULL, NULL);
+    uint16_t controller_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
     // Set local name with a template Bluetooth address, that will be automatically
@@ -746,7 +746,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP: Connection failed, status 0x%02x\n", status);
+                printf("AVRCP: Connection failed, local cid 0x%02x, status 0x%02x\n", local_cid, status);
                 return;
             }
             media_tracker.avrcp_cid = local_cid;
@@ -974,7 +974,7 @@ static void stdin_process(char cmd){
             return;
     }
     if (status != ERROR_CODE_SUCCESS){
-        printf("Could not perform command \'%c\', status 0x%2x\n", cmd, status);
+        printf("Could not perform command \'%c\', status 0x%02x\n", cmd, status);
     }
 }
 #endif
