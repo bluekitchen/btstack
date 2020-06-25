@@ -141,10 +141,12 @@ typedef struct {
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
 
-static uint8_t events_num = 0;
+#ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
+static uint8_t events_num = 1;
 static uint8_t events[] = {
-    // AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
 };
+#endif
 
 static uint8_t companies_num = 1;
 static uint8_t companies[] = {
@@ -732,7 +734,11 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
         
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
+#ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
             avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+#else
+            avrcp_target_supported_events(avrcp_cid, 0, NULL, 0);
+#endif
             break;
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
             avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
