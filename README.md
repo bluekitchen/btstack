@@ -100,6 +100,7 @@ Espressif ESP32              | Dual mode | VHCI            | Not yet          | 
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
+Renesas RX23W                | LE        | H4              | n.a.             |                | HCI Firmware part of BTTS
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
 STM32-WB5x                   | LE        | VHCI            | n.a.             |                | SoC with multi-protocol Radio co-processor
 Toshiba TC35661              | Dual mode | H4              | No               | tc3566         |
