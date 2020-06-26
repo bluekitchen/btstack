@@ -72,6 +72,7 @@
 #include "btstack_resample.h"
 
 //#define AVRCP_BROWSING_ENABLED
+#define SUPPORT_VOLUME_CHANGE_NOTIFICATION
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
@@ -254,7 +255,7 @@ static int a2dp_and_avrcp_setup(void){
     sdp_init();
     // setup AVDTP sink
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_SF_Headphone, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     
     // setup AVRCP Controller
@@ -268,7 +269,7 @@ static int a2dp_and_avrcp_setup(void){
     
     // setup AVRCP Target
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
-    uint16_t target_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    uint16_t target_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER);
     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 

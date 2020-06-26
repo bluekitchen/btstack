@@ -106,6 +106,8 @@ typedef struct {
     uint8_t  sbc_storage[SBC_STORAGE_SIZE];
     uint16_t sbc_storage_count;
     uint8_t  sbc_ready_to_send;
+
+    uint16_t volume; 
 } a2dp_media_sending_context_t;
 
 static  uint8_t media_sbc_codec_capabilities[] = {
@@ -212,7 +214,7 @@ static uint8_t  companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
 };
 
-static uint8_t events_num = 13;
+static uint8_t events_num = 12;
 static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
@@ -225,8 +227,7 @@ static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
     AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED
 };
 
 typedef struct {
@@ -309,7 +310,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     
     // Create  A2DP Source service record and register it with SDP.
     memset(sdp_a2dp_source_service_buffer, 0, sizeof(sdp_a2dp_source_service_buffer));
-    a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, 1, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, AVDTP_SOURCE_SF_Player, NULL, NULL);
     sdp_register_service(sdp_a2dp_source_service_buffer);
     
     // Create AVRCP target service record and register it with SDP.
@@ -323,7 +324,7 @@ static int a2dp_source_and_avrcp_services_init(void){
 
     // setup AVRCP Controller
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    uint16_t controller_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    uint16_t controller_supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
@@ -565,6 +566,8 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 break;
             }
             media_tracker.a2dp_cid = cid;
+            media_tracker.volume = 64;
+
             printf("A2DP Source: Connected to address %s, a2dp cid 0x%02x, local seid %d.\n", bd_addr_to_str(address), media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
@@ -784,7 +787,8 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            printf("AVRCP Target: new volume %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
+            media_tracker.volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
+            printf("AVRCP Target: Volume set to %d%% (%d)\n", media_tracker.volume * 127/100, media_tracker.volume);
             break;
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
             status = avrcp_target_supported_events(media_tracker.avrcp_cid, events_num, events, sizeof(events));
@@ -873,8 +877,9 @@ static void show_usage(void){
     printf("e      - reconfigure stream for 48000 Hz\n");
     printf("t      - volume up\n");
     printf("T      - volume down\n");
-    printf("v      - absolute volume of 50 percent\n");
-
+    printf("v      - volume up (via set absolute volume)\n");
+    printf("V      - volume down (via set absolute volume)\n");
+    
     printf("---\n");
 }
 
@@ -910,11 +915,26 @@ static void stdin_process(char cmd){
             printf(" - volume down\n");
             status = avrcp_controller_volume_down(media_tracker.avrcp_cid);
             break;
-        case 'v':
-            printf(" - absolute volume of 50%% (64)\n");
-            status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, 64);
-            break;
 
+        case 'v':
+            if (media_tracker.volume > 117){
+                media_tracker.volume = 127;
+            } else {
+                media_tracker.volume += 10;
+            }
+            printf(" - volume up (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 127/100,  media_tracker.volume);
+            status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, media_tracker.volume);
+            break;
+        case 'V':
+            if (media_tracker.volume < 10){
+                media_tracker.volume = 0;
+            } else {
+                media_tracker.volume -= 10;
+            }
+            printf(" - volume down (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 127/100,  media_tracker.volume);
+            status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, media_tracker.volume);
+            break;
+        
         case 'x':
             if (media_tracker.avrcp_cid){
                 avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
