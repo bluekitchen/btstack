@@ -302,6 +302,14 @@ static int btstack_audio_portaudio_source_init(
     return 0;
 }
 
+static void btstack_audio_portaudio_sink_set_volume(uint8_t volume){
+    UNUSED(volume);
+}
+
+static void btstack_audio_portaudio_source_set_gain(uint8_t gain){
+    UNUSED(gain);
+}
+
 static void btstack_audio_portaudio_sink_start_stream(void){
 
     if (!playback_callback) return;
@@ -409,7 +417,6 @@ static void btstack_audio_portaudio_sink_close(void){
     btstack_audio_portaudio_close_pa_if_not_needed();
 }
 
-
 static void btstack_audio_portaudio_source_close(void){
 
     if (!recording_callback) return;
@@ -430,6 +437,7 @@ static void btstack_audio_portaudio_source_close(void){
 
 static const btstack_audio_sink_t btstack_audio_portaudio_sink = {
     /* int (*init)(..);*/                                       &btstack_audio_portaudio_sink_init,
+    /* void (*set_volume)(uint8_t volume); */                   &btstack_audio_portaudio_sink_set_volume,
     /* void (*start_stream(void));*/                            &btstack_audio_portaudio_sink_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_sink_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_portaudio_sink_close
@@ -437,6 +445,7 @@ static const btstack_audio_sink_t btstack_audio_portaudio_sink = {
 
 static const btstack_audio_source_t btstack_audio_portaudio_source = {
     /* int (*init)(..);*/                                       &btstack_audio_portaudio_source_init,
+    /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_portaudio_source_set_gain,
     /* void (*start_stream(void));*/                            &btstack_audio_portaudio_source_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_portaudio_source_close

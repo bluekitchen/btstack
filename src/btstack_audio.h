@@ -63,7 +63,13 @@ typedef struct {
                 uint32_t samplerate, 
                 void (*playback) (int16_t * buffer, uint16_t num_samples));
 
-    /** 
+    /**
+     * @brief Set volume
+     * @param Volume 0..127
+     */
+    void (*set_volume)(uint8_t volume);
+
+    /**
      * @brief Start stream
      */
     void (*start_stream)(void);
@@ -94,7 +100,13 @@ typedef struct {
                 uint32_t samplerate, 
                 void (*recording)(const int16_t * buffer, uint16_t num_samples));
 
-    /** 
+    /**
+     * @brief Set Gain
+     * @param Gain 0..127
+     */
+    void (*set_gain)(uint8_t gain);
+
+    /**
      * @brief Start stream
      */
     void (*start_stream)(void);

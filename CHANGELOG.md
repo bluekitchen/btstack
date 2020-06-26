@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - CVSD PLC: treat zero frames as good and allow to mark data as bad, e.g. if reported by controller as erroneous
+- btstack_audio: add set_volume() to sink and set_gain() to source interfaces
 
 ## Changes May 2020
 
