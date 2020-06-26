@@ -735,7 +735,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
     uint8_t volume;
-    const btstack_audio_sink_t * audio;
 
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
