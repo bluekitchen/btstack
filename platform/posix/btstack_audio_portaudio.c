@@ -55,7 +55,8 @@
 #include <portaudio.h>
 
 // config
-static int                    num_channels;
+static int                    num_channels_sink;
+static int                    num_channels_source;
 static int                    num_bytes_per_sample_sink;
 static int                    num_bytes_per_sample_source;
 
@@ -67,6 +68,8 @@ static int source_initialized;
 static int sink_initialized;
 static int source_active;
 static int sink_active;
+
+static uint8_t sink_volume;
 
 static PaStream * stream_source;
 static PaStream * stream_sink;
@@ -110,8 +113,25 @@ static int portaudio_callback_sink( const void *                     inputBuffer
     (void) samples_per_buffer;
     (void) inputBuffer;
 
-    // fill from one of our buffers
-    memcpy(outputBuffer, output_buffers[output_buffer_to_play], NUM_FRAMES_PER_PA_BUFFER * num_bytes_per_sample_sink);
+    // simplified volume control
+    uint16_t index;
+    int16_t * from_buffer = output_buffers[output_buffer_to_play];
+    int16_t * to_buffer = (int16_t *) outputBuffer;
+
+#if 0
+    // up to 8 right shifts
+    int right_shift = 8 - btstack_min(8, ((sink_volume + 15) / 16));
+    for (index = 0; index < (NUM_FRAMES_PER_PA_BUFFER * num_channels_sink); index++){
+        *to_buffer++ = (*from_buffer++) >> right_shift;
+    }
+#else
+    // multiply with volume ^ 4
+    int16_t x2 = sink_volume * sink_volume;
+    int16_t x4 = (x2 * x2) >> 14;
+    for (index = 0; index < (NUM_FRAMES_PER_PA_BUFFER * num_channels_sink); index++){
+        *to_buffer++ = ((*from_buffer++) * x4) >> 14;
+    }
+#endif
 
     // next
     output_buffer_to_play = (output_buffer_to_play + 1 ) % NUM_OUTPUT_BUFFERS;
@@ -181,7 +201,7 @@ static int btstack_audio_portaudio_sink_init(
 ){
     PaError err;
 
-    num_channels = channels;
+    num_channels_sink = channels;
     num_bytes_per_sample_sink = 2 * channels;
 
     if (!playback){
@@ -234,6 +254,7 @@ static int btstack_audio_portaudio_sink_init(
     playback_callback  = playback;
 
     sink_initialized = 1;
+    sink_volume = 127;
 
     return 0;
 }
@@ -245,7 +266,7 @@ static int btstack_audio_portaudio_source_init(
 ){
     PaError err;
 
-    num_channels = channels;
+    num_channels_source = channels;
     num_bytes_per_sample_source = 2 * channels;
 
     if (!recording){
@@ -303,7 +324,7 @@ static int btstack_audio_portaudio_source_init(
 }
 
 static void btstack_audio_portaudio_sink_set_volume(uint8_t volume){
-    UNUSED(volume);
+    sink_volume = volume;
 }
 
 static void btstack_audio_portaudio_source_set_gain(uint8_t gain){
