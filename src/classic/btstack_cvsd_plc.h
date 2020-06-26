@@ -44,6 +44,7 @@
 #define BTSTACK_CVSD_PLC_H
 
 #include <stdint.h>
+#include "btstack_bool.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -79,7 +80,7 @@ typedef struct cvsd_plc_state {
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state);
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *out); 
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *in, int16_t *out);
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t num_samples, int16_t * out);
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, bool bad_frame, int16_t * in, uint16_t num_samples, int16_t * out);
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);
 
 // testing only

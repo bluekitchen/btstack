@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: Mutual authentication: request authentication after Classic connection got encrypted (BIAS)
 
 ### Changed
+- CVSD PLC: treat zero frames as good and allow to mark data as bad, e.g. if reported by controller as erroneous
 
 ## Changes May 2020
 

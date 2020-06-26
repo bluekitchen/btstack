@@ -415,7 +415,10 @@ static void sco_demo_receive_CVSD(uint8_t * packet, uint16_t size){
         audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
     }
 
-    btstack_cvsd_plc_process_data(&cvsd_plc_state, audio_frame_in, num_samples, audio_frame_out);
+    // treat packet as bad frame if controller does not report 'all good'
+    bool bad_frame = (packet[1] & 0x30) != 0;
+
+    btstack_cvsd_plc_process_data(&cvsd_plc_state, bad_frame, audio_frame_in, num_samples, audio_frame_out);
 
 #ifdef SCO_WAV_FILENAME
     // Samples in CVSD SCO packet are in little endian, ready for wav files (take shortcut)
