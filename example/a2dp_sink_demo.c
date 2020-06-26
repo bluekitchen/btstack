@@ -72,6 +72,9 @@
 #include "btstack_resample.h"
 
 //#define AVRCP_BROWSING_ENABLED
+
+// if volume control not supported by btstack_audio_sink, you can try to disable volume change notification
+// to force the A2DP Source to reduce volume by attenuating the audio stream
 #define SUPPORT_VOLUME_CHANGE_NOTIFICATION
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -717,6 +720,12 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     }  
 }
 
+static void avrcp_volume_changed(uint8_t volume){
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
+    if (audio){
+        audio->set_volume(volume);
+    }
+}
 
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -725,13 +734,15 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
-    int volume;
+    uint8_t volume;
+    const btstack_audio_sink_t * audio;
 
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
             volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
             volume_percentage = volume * 100 / 127;
             printf("AVRCP Target    : Volume set to %d%% (%d)\n", volume_percentage, volume);
+            avrcp_volume_changed(volume);
             break;
         
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
@@ -942,7 +953,8 @@ static void show_usage(void){
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
-    
+    uint8_t volume;
+
     switch (cmd){
         case 'b':
             status = a2dp_sink_establish_stream(device_addr, a2dp_local_seid, &a2dp_cid);
@@ -971,13 +983,17 @@ static void stdin_process(char cmd){
         // Volume Control
         case 't':
             volume_percentage = volume_percentage <= 90 ? volume_percentage + 10 : 100;
-            printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
-            status = avrcp_target_volume_changed(avrcp_cid, volume_percentage * 127 / 100);
+            volume = volume_percentage * 127 / 100;
+            printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume);
+            status = avrcp_target_volume_changed(avrcp_cid, volume);
+            avrcp_volume_changed(volume);
             break;
         case 'T':
             volume_percentage = volume_percentage >= 10 ? volume_percentage - 10 : 0;
-            printf(" - volume down for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
-            status = avrcp_target_volume_changed(avrcp_cid, volume_percentage * 127 / 100);
+            volume = volume_percentage * 127 / 100;
+            printf(" - volume down for 10 percent, %d%% (%d) \n", volume_percentage, volume);
+            status = avrcp_target_volume_changed(avrcp_cid, volume);
+            avrcp_volume_changed(volume);
             break;
 
         case 'O':
