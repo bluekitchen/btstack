@@ -78,7 +78,7 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 	}
 
 #ifdef LOG_XN
-	printf("%16s: ", "X1");
+	printf("%16s: ", "Xn");
 	printf_hexdump(Xn, 16);
 #endif
 
@@ -116,8 +116,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 		}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR bn");
-	printf_hexdump(pmsg, 16);
+    	printf("%16s: ", "Xn XOR bn");
+	    printf_hexdump(pmsg, 16);
 #endif
 
 		err = bt_encrypt_be(key, pmsg, Xn);
@@ -161,8 +161,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR bn");
-	printf_hexdump(pmsg, 16);
+            printf("%16s: ", "Xn XOR bn");
+            printf_hexdump(pmsg, 16);
 #endif
 
 			err = bt_encrypt_be(key, pmsg, Xn);
@@ -171,8 +171,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR bn");
-	printf_hexdump(pmsg, 16);
+            printf("%16s: ", "Xn XOR bn");
+            printf_hexdump(pmsg, 16);
 #endif
 
 			/* MIC = C_mic ^ X_1 */
@@ -181,8 +181,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "mic");
-	printf_hexdump(mic, 16);
+            printf("%16s: ", "mic");
+            printf_hexdump(mic, 16);
 #endif
 
 		} else {
@@ -192,8 +192,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			sys_put_be16(j + 1, pmsg + 14);
 
 #ifdef LOG_XN
-	printf("%16s: ", "Ai");
-	printf_hexdump(mic, 16);
+            printf("%16s: ", "Ai");
+            printf_hexdump(mic, 16);
 #endif
 
 			err = bt_encrypt_be(key, pmsg, cmsg);
@@ -202,8 +202,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Si");
-	printf_hexdump(mic, 16);
+            printf("%16s: ", "Si");
+            printf_hexdump(mic, 16);
 #endif
 
 			/* Encrypted = Payload[0-15] ^ C_1 */
@@ -214,8 +214,8 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			memcpy(out_msg + (j * 16), msg, 16);
 
 #ifdef LOG_XN
-	printf("%16s: ", "bn");
-	printf_hexdump(msg, 16);
+            printf("%16s: ", "bn");
+            printf_hexdump(msg, 16);
 #endif
 
 			/* X_1 = e(AppKey, X_0 ^ Payload[0-15]) */
@@ -229,10 +229,9 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn");
-	printf_hexdump(mic, 16);
+            printf("%16s: ", "Xn");
+            printf_hexdump(mic, 16);
 #endif
-
 
 		}
 	}
@@ -329,8 +328,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			i = 0;
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR bn (aad)");
-	printf_hexdump(pmsg, 16);
+            printf("%16s: ", "Xn XOR bn (aad)");
+            printf_hexdump(pmsg, 16);
 #endif
 
 			err = bt_encrypt_be(key, pmsg, Xn);
@@ -339,8 +338,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn+1 AAD");
-	printf_hexdump(Xn, 16);
+            printf("%16s: ", "Xn+1 AAD");
+            printf_hexdump(Xn, 16);
 #endif
 
 		}
@@ -354,8 +353,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 		}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR bn (aad)");
-	printf_hexdump(pmsg, 16);
+        printf("%16s: ", "Xn XOR bn (aad)");
+        printf_hexdump(pmsg, 16);
 #endif
 
 		err = bt_encrypt_be(key, pmsg, Xn);
@@ -363,8 +362,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			return err;
 		}
 #ifdef LOG_XN
-	printf("%16s: ", "Xn+1 AAD");
-	printf_hexdump(Xn, 16);
+        printf("%16s: ", "Xn+1 AAD");
+        printf_hexdump(Xn, 16);
 #endif
 
 	}
@@ -386,8 +385,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR Bn");
-	printf_hexdump(pmsg, 16);
+            printf("%16s: ", "Xn XOR Bn");
+            printf_hexdump(pmsg, 16);
 #endif
 
 			err = bt_encrypt_be(key, pmsg, Xn);
@@ -396,8 +395,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn+1");
-	printf_hexdump(Xn, 16);
+            printf("%16s: ", "Xn+1");
+            printf_hexdump(Xn, 16);
 #endif
 
 			/* MIC = C_mic ^ X_1 */
@@ -406,8 +405,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "mic");
-	printf_hexdump(mic, 16);
+            printf("%16s: ", "mic");
+            printf_hexdump(mic, 16);
 #endif
 
 			/* C_1 = e(AppKey, 0x01 || nonce || 0x0001) */
@@ -428,8 +427,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 		} else {
 
 #ifdef LOG_XN
-	printf("%16s: ", "bn");
-	printf_hexdump(msg, 16);
+            printf("%16s: ", "bn");
+            printf_hexdump(msg, 16);
 #endif
 
 			/* X_1 = e(AppKey, X_0 ^ Payload[0-15]) */
@@ -438,8 +437,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn XOR Bn");
-	printf_hexdump(pmsg, 16);
+            printf("%16s: ", "Xn XOR Bn");
+            printf_hexdump(pmsg, 16);
 #endif
 
 			err = bt_encrypt_be(key, pmsg, Xn);
@@ -448,8 +447,8 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 #ifdef LOG_XN
-	printf("%16s: ", "Xn+1");
-	printf_hexdump(Xn, 16);
+            printf("%16s: ", "Xn+1");
+            printf_hexdump(Xn, 16);
 #endif
 
 			/* C_1 = e(AppKey, 0x01 || nonce || 0x0001) */
