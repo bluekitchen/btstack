@@ -139,6 +139,7 @@ typedef enum {
     DEVICE_SEND_INPUT_COMPLETE,
     DEVICE_W4_PUB_KEY,
     DEVICE_SEND_PUB_KEY,
+    DEVICE_PUB_KEY_SENT,
     DEVICE_W4_CONFIRM,
     DEVICE_SEND_CONFIRM,
     DEVICE_W4_RANDOM,
@@ -405,6 +406,7 @@ static void provisioning_run(void){
             provisioning_send_input_complete();
             break;
         case DEVICE_SEND_PUB_KEY:
+            device_state = DEVICE_PUB_KEY_SENT;
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_public_key();
             provisioning_public_key_exchange_complete();
