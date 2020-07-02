@@ -2414,12 +2414,59 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x24
 
 /**
+ * @format 1214
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param playback_position_ms
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x25
+
+/*
+ * @format 12111
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param status
+ * @param event_id
+ */
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID                                0x26
+/*
+ * @format 1211
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param status
+ */
+#define AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE                           0x27
+
+/*
+ * @format 12113
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param status
+ * @param company_id
+ */
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID                              0x28
+/*
+ * @format 1211
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param status
+ */
+#define AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE                         0x29
+
+
+
+/**
  * @format 1B2
  * @param subevent_code
  * @param bd_addr
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION                          0x25
+#define AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION                          0x30
 
 /**
  * @format 11B2
@@ -2428,14 +2475,14 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED                        0x26
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED                        0x31
 
 /**
  * @format 12
  * @param subevent_code
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                           0x27
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                           0x32
 
 /**
  * @format 12211
@@ -2445,7 +2492,7 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_status
  * @param bluetooth_status
  */
-#define AVRCP_SUBEVENT_BROWSING_DONE                                          0x28
+#define AVRCP_SUBEVENT_BROWSING_DONE                                          0x33
 
 /**
  * @format 1214
@@ -2454,7 +2501,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param attr_bitmap
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x29
+#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x34
 
 /**
  * @format 121
@@ -2462,16 +2509,9 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_cid
  * @param scope
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x2A
+#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x35
 
-/**
- * @format 1214
- * @param subevent_code
- * @param avrcp_cid
- * @param command_type
- * @param playback_position_ms
- */
-#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x2B
+
 
 
 /**

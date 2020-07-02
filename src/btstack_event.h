@@ -6725,6 +6725,164 @@ static inline uint8_t avrcp_subevent_now_playing_info_done_get_status(const uint
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_playback_pos_changed_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_playback_pos_changed_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field playback_position_ms from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
+ * @param event packet
+ * @return playback_position_ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_get_capability_event_id_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_event_id_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_event_id_get_status(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field event_id from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID
+ * @param event packet
+ * @return event_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_event_id_get_event_id(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_get_capability_event_id_done_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_event_id_done_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_event_id_done_get_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_get_capability_company_id_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_company_id_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_company_id_get_status(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field company_id from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID
+ * @param event packet
+ * @return company_id
+ * @note: btstack_type 3
+ */
+static inline uint32_t avrcp_subevent_get_capability_company_id_get_company_id(const uint8_t * event){
+    return little_endian_read_24(event, 7);
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_get_capability_company_id_done_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_company_id_done_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_get_capability_company_id_done_get_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field bd_addr from event AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION
  * @param event packet
  * @param Pointer to storage for bd_addr
@@ -6863,34 +7021,6 @@ static inline uint16_t avrcp_subevent_browsing_get_total_num_items_get_browsing_
  */
 static inline uint8_t avrcp_subevent_browsing_get_total_num_items_get_scope(const uint8_t * event){
     return event[5];
-}
-
-/**
- * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
- * @param event packet
- * @return avrcp_cid
- * @note: btstack_type 2
- */
-static inline uint16_t avrcp_subevent_notification_playback_pos_changed_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
- * @param event packet
- * @return command_type
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_notification_playback_pos_changed_get_command_type(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field playback_position_ms from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
- * @param event packet
- * @return playback_position_ms
- * @note: btstack_type 4
- */
-static inline uint32_t avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(const uint8_t * event){
-    return little_endian_read_32(event, 6);
 }
 
 /**

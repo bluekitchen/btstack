@@ -572,19 +572,68 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos++];
                     uint8_t capability_count = packet[pos++];
                     int i;
+                                
                     switch (capability_id){
+                        int offset = 0;
+                        uint8_t event[10];
+                        
                         case AVRCP_CAPABILITY_ID_COMPANY:
                             for (i = 0; i < capability_count; i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
                                 log_info("  0x%06" PRIx32 ", ", company_id);
+
+                                offset = 0;
+                                event[offset++] = HCI_EVENT_AVRCP_META;
+                                event[offset++] = sizeof(event) - 2;
+                                event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID;
+                                little_endian_store_16(event, offset, connection->avrcp_cid);
+                                offset += 2;
+                                event[offset++] = ctype;
+                                event[offset++] = 0;
+                                little_endian_store_24(event, offset, company_id);
+                                offset += 3;
+                                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+                                break;
                             }
+                            
+                            offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = 0;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                             break;
+
                         case AVRCP_CAPABILITY_ID_EVENT:
                             for (i = 0; i < capability_count; i++){
                                 uint8_t event_id = packet[pos++];
                                 log_info("  0x%02x %s", event_id, avrcp_event2str(event_id));
+                                
+                                offset = 0;
+                                event[offset++] = HCI_EVENT_AVRCP_META;
+                                event[offset++] = sizeof(event) - 2;
+                                event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID;
+                                little_endian_store_16(event, offset, connection->avrcp_cid);
+                                offset += 2;
+                                event[offset++] = ctype;
+                                event[offset++] = 0;
+                                event[offset++] = event_id;
+                                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                             }
+
+                            offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = 0;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
                     }
                     break;
