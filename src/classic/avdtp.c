@@ -53,6 +53,9 @@
 #include "classic/sdp_client.h"
 #include "classic/sdp_util.h"
 
+avdtp_context_t * avdtp_source_context;
+avdtp_context_t * avdtp_sink_context;
+
 static int record_id = -1;
 static uint8_t   attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
@@ -432,6 +435,25 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
 
 }
 
+static void avdtp_finalize_connection(btstack_linked_list_t * avdtp_connections, avdtp_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->reconnect_timer);
+    btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
+    btstack_memory_avdtp_connection_free(connection);
+}
+
+static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8_t status){
+    if (connection == NULL) return;
+    avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, connection->avdtp_cid, connection->remote_addr, status);
+    avdtp_finalize_connection(&sdp_query_context->connections, connection);
+    log_info("SDP query failed with status 0x%02x.", status);
+}
+
+static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
+    if (connection == NULL) return;
+    connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+    connection->avdtp_l2cap_psm = sdp_query_context->avdtp_l2cap_psm;
+}
+
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(sdp_query_context->avdtp_cid, sdp_query_context);
     if (!connection) {
@@ -458,31 +480,24 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             }
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, status);
-                btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
-                btstack_memory_avdtp_connection_free(connection);
-                log_info("SDP query failed with status 0x%02x.", status);
+                avdtp_handle_sdp_query_failed(connection, status);
                 break;
             } 
             if (!sdp_query_context->role_supported){
-                btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
-                btstack_memory_avdtp_connection_free(connection);
-                avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, SDP_SERVICE_NOT_FOUND);
-                log_info("SDP query, remote device does not support required role.");
+                avdtp_handle_sdp_query_failed(connection, status);
                 break;
             }
             if (!sdp_query_context->avdtp_l2cap_psm) {
-                btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*)connection); 
-                btstack_memory_avdtp_connection_free(connection);
-                avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, L2CAP_SERVICE_DOES_NOT_EXIST);
-                log_info("SDP query, no l2cap psm found.");
+                avdtp_handle_sdp_query_failed(connection, status);
                 break;
             }
-            connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-            l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, sdp_query_context->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+            avdtp_handle_sdp_query_succeeded(connection);
+
+            l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
     }
 }
+
 
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avdtp_context_t * context){
@@ -567,17 +582,18 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             // incoming connection during sdp query, just accept it
                             accept_signaling_connection = 1;
                             break;
-                        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED:
-                            log_info("Reject incoming connection after creating outgoing");
-                            l2cap_decline_connection(local_cid);
-                            return;
                         case AVDTP_SIGNALING_CONNECTION_OPENED:
                             // handled below
                             break;
+                        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED:
                         case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED:
+                        case AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RECONNECT:
                             log_info("Reject incoming connection during disconnect");
                             l2cap_decline_connection(local_cid);
                             return;
+
+                        default: 
+                            break;
                     }
 
                     if (accept_signaling_connection){
@@ -718,7 +734,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                 avdtp_reset_stream_endpoint(_stream_endpoint);
                             }
                         }
-                        btstack_run_loop_remove_timer(&connection->configuration_timer);
                         avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
                         btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
                         btstack_memory_avdtp_connection_free(connection);

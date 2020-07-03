@@ -52,7 +52,6 @@
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_source.h"
 
-static avdtp_context_t * avdtp_source_context;
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

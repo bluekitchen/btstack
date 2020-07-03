@@ -100,6 +100,7 @@ extern "C" {
 
 #define AVDTP_INVALID_SEP_SEID 0xFF
 
+
 // Signal Identifier fields
 typedef enum {
     AVDTP_SI_NONE = 0x00,
@@ -344,6 +345,7 @@ typedef enum {
     AVDTP_SIGNALING_CONNECTION_IDLE,
     AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
+    AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RECONNECT,
     AVDTP_SIGNALING_CONNECTION_OPENED,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED
 } avdtp_connection_state_t;
@@ -394,6 +396,8 @@ typedef struct {
     uint16_t avdtp_cid;
     uint16_t l2cap_signaling_cid;
     avdtp_service_mode_t service_mode;
+    uint16_t l2cap_mtu;
+    uint16_t avdtp_l2cap_psm;
     
     avdtp_connection_state_t state;
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
@@ -429,8 +433,10 @@ typedef struct {
 
     // configuration state machine
     avtdp_configuration_state_t configuration_state;
-
-    btstack_timer_source_t configuration_timer;
+    // btstack_timer_source_t configuration_timer;
+    
+    bool incoming_declined;
+    btstack_timer_source_t reconnect_timer;
 } avdtp_connection_t;
 
 typedef enum {
@@ -544,6 +550,9 @@ typedef struct {
     uint16_t avdtp_version;
     uint8_t  role_supported;
 } avdtp_context_t; 
+
+extern avdtp_context_t * avdtp_source_context;
+extern avdtp_context_t * avdtp_sink_context;
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);
 void avdtp_register_reporting_category(avdtp_stream_endpoint_t * stream_endpoint);

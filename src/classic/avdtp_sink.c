@@ -52,8 +52,6 @@
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_util.h"
 
-static avdtp_context_t * avdtp_sink_context;
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void avdtp_sink_register_media_transport_category(uint8_t seid){
