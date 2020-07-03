@@ -180,7 +180,7 @@ avdtp_stream_endpoint_t *  a2dp_sink_create_stream_endpoint(avdtp_media_type_t m
 }
 
 uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
-    sc.local_stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_sink_context);
+    sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, &a2dp_sink_context);
     if (!sc.local_stream_endpoint){
         log_info("No local_stream_endpoint for seid %d", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;

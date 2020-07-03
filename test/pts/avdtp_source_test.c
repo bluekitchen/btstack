@@ -265,7 +265,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
         context->sbc_ready_to_send = 1;
 
         // a2dp_source_stream_endpoint_request_can_send_now(context->local_seid);
-        avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(context->local_seid, &a2dp_source_context);
+        avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(context->local_seid, &a2dp_source_context);
         if (!stream_endpoint) {
             printf("no stream_endpoint for seid %d\n", context->local_seid);
             return;
@@ -278,7 +278,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
 }
 
 // static int avdtp_max_media_payload_size(uint8_t local_seid){
-//     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
+//     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
 //     if (!stream_endpoint) {
 //         log_error("no stream_endpoint found for seid %d", local_seid);
 //         return 0;
