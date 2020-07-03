@@ -709,22 +709,6 @@ static void ll_radio_on(void){
     ll_state = LL_STATE_STANDBY;
 }
 
-/** BTstack LinkLayer Implementation */
-
-// command handler
-
-static void send_command_complete(uint16_t opcode, uint8_t status, const uint8_t * result, uint16_t len){
-    hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
-    /* num commands */ 1, opcode, status, len, result);
-    hci_outgoing_event_ready = true;
-}
-
-static void fake_command_complete(uint16_t opcode){
-    hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
-    /* num commands */ 1, opcode, ERROR_CODE_SUCCESS, 0, NULL);
-    hci_outgoing_event_ready = true;
-}
-
 static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     printf("Connect Req: ");
     printf_hexdump(&rx_packet->header, rx_packet->len + 2);
@@ -1011,6 +995,34 @@ static uint8_t ll_set_advertising_data(uint8_t adv_len, const uint8_t * adv_data
     return ERROR_CODE_SUCCESS;
 }
 
+static void ll_get_and_reset_num_completed(uint16_t * con_handle, uint16_t * num_packets){
+    /** critical section start */
+    hal_cpu_disable_irqs();
+    uint8_t num_completed = ctx.num_completed;
+    ctx.num_completed = 0;
+    hal_cpu_enable_irqs();
+    /** critical section end */
+
+    *con_handle  = HCI_CON_HANDLE;
+    *num_packets = num_completed;
+}
+
+/** BTstack Controller Implementation */
+
+// command handler
+
+static void send_command_complete(uint16_t opcode, uint8_t status, const uint8_t * result, uint16_t len){
+    hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
+            /* num commands */ 1, opcode, status, len, result);
+    hci_outgoing_event_ready = true;
+}
+
+static void fake_command_complete(uint16_t opcode){
+    hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
+            /* num commands */ 1, opcode, ERROR_CODE_SUCCESS, 0, NULL);
+    hci_outgoing_event_ready = true;
+}
+
 static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
 
     btstack_assert(hci_outgoing_event_ready == false);
@@ -1103,17 +1115,16 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
     }
 
     // send num completed
-    if (ctx.num_completed > 0){
-
-        /** critical section start */
-        hal_cpu_disable_irqs();
-        uint8_t num_completed = ctx.num_completed;
-        ctx.num_completed = 0;
-        hal_cpu_enable_irqs();
-        /** critical section end */
-
-        transport_emit_hci_event(&hci_event_number_of_completed_packets_1,
-            1,  HCI_CON_HANDLE, num_completed);
+    bool check_number_packets_completed = true;
+    while (check_number_packets_completed) {
+        uint16_t con_handle = 0;
+        uint16_t num_completed = 0;
+        ll_get_and_reset_num_completed(&con_handle, &num_completed);
+        if (num_completed > 0){
+            transport_emit_hci_event(&hci_event_number_of_completed_packets_1, 1, con_handle, num_completed);
+        } else {
+            check_number_packets_completed = false;
+        }
     }
 
     if (send_connection_complete){
