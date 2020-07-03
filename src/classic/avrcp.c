@@ -736,7 +736,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     if (decline_connection){
                         l2cap_decline_connection(local_cid);
                     } else {
-                        log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x", local_cid);
+                        log_info("AVRCP: L2CAP_EVENT_INCOMING_CONNECTION local cid 0x%02x", local_cid);
                         l2cap_accept_connection(local_cid);
                     }
                     break;
