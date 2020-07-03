@@ -297,7 +297,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-avrcp_connection_t * get_avrcp_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
+avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -309,7 +309,7 @@ avrcp_connection_t * get_avrcp_connection_for_bd_addr_for_role(avrcp_role_t role
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
+avrcp_connection_t * avrcp_get_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -321,7 +321,7 @@ avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid_for_role(avrcp
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid){
+avrcp_connection_t * avrcp_get_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -333,7 +333,7 @@ avrcp_connection_t * get_avrcp_connection_for_avrcp_cid_for_role(avrcp_role_t ro
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid){
+avrcp_connection_t * avrcp_get_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -345,7 +345,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid){
+avrcp_connection_t * avrcp_get_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -357,7 +357,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_
     return NULL;
 }
 
-avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
+avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -381,7 +381,7 @@ uint16_t avrcp_get_next_cid(avrcp_role_t role){
         } else {
             avrcp_cid_counter++;
         }
-    } while (get_avrcp_connection_for_avrcp_cid_for_role(role, avrcp_cid_counter) !=  NULL) ;
+    } while (avrcp_get_connection_for_avrcp_cid_for_role(role, avrcp_cid_counter) !=  NULL) ;
     return avrcp_cid_counter;
 }
 
@@ -579,8 +579,8 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
-    avrcp_connection_t * avrcp_target_connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, sdp_query_context->remote_addr);
-    avrcp_connection_t * avrcp_controller_connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, sdp_query_context->remote_addr);
+    avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, sdp_query_context->remote_addr);
+    avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, sdp_query_context->remote_addr);
     
     uint8_t status;
 
@@ -644,9 +644,9 @@ static void avrcp_handle_open_connection_for_role( avrcp_connection_t * connecti
 
 static void avrcp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t avrcp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (connection_controller == NULL) return;
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (connection_target == NULL) return;
 
     if (connection_controller->state == AVCTP_CONNECTION_W2_L2CAP_RECONNECT){
@@ -696,7 +696,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     outoing_active = false;
                     
-                    connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
+                    connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
                     if (connection_target != NULL){
                         if (connection_target->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED){
                             outoing_active = true;
@@ -704,7 +704,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                         }
                     }
                     
-                    connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
+                    connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
                     if (connection_controller != NULL){
                         if (connection_controller->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED) {
                             outoing_active = true;
@@ -747,8 +747,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
                     l2cap_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
 
-                    connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
-                    connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
+                    connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
+                    connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
 
                     // incoming: structs are already created in L2CAP_EVENT_INCOMING_CONNECTION
                     // outgoing: structs are cteated in avrcp_connect()
@@ -786,8 +786,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     
-                    connection_controller = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
-                    connection_target = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
+                    connection_controller = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    connection_target = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_controller == NULL) || (connection_target == NULL)) {
                         break;
                     }
@@ -799,14 +799,14 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
                     
-                    connection_target = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
+                    connection_target = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_target != NULL) && connection_target->wait_to_send){
                         connection_target->wait_to_send = false;
                         (*avrcp_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;    
                     }
 
-                    connection_controller = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    connection_controller = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     if ((connection_controller != NULL) && connection_controller->wait_to_send){
                         connection_controller->wait_to_send = false;
                         (*avrcp_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
@@ -837,11 +837,11 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 }
 
 uint8_t avrcp_disconnect(uint16_t avrcp_cid){
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection_controller){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection_target){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -871,11 +871,11 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
     
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
     if (connection_controller){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
     if (connection_target){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }

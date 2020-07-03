@@ -67,9 +67,9 @@ void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connectio
 
 static void avrcp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t avrcp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (connection_controller == NULL) return;
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (connection_target == NULL) return;
 
     if ((connection_controller->browsing_connection == NULL) || (connection_target->browsing_connection == NULL)) return;
@@ -236,8 +236,8 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     outoing_active = false;
 
-                    connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
-                    connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
+                    connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
+                    connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
                     
                     if (connection_target == NULL || connection_controller == NULL) {
                         l2cap_decline_connection(local_cid);
@@ -294,8 +294,8 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                     status = l2cap_event_channel_opened_get_status(packet);
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
                     
-                    connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
-                    connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
+                    connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
+                    connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
 
                     // incoming: structs are already created in L2CAP_EVENT_INCOMING_CONNECTION
                     // outgoing: structs are cteated in avrcp_connect() and avrcp_browsing_connect()
@@ -335,8 +335,8 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
         
-                    connection_controller = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
-                    connection_target = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_TARGET, local_cid);
+                    connection_controller = avrcp_get_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    connection_target = avrcp_get_connection_for_browsing_l2cap_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_controller == NULL) || (connection_target == NULL)) {
                         break;
                     }
@@ -350,13 +350,13 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    connection_target = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_TARGET, local_cid);
+                    connection_target = avrcp_get_connection_for_browsing_l2cap_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_target != NULL) && (connection_target->browsing_connection != NULL) && connection_target->browsing_connection->wait_to_send) {
                         connection_target->browsing_connection->wait_to_send = false;
                         (*avrcp_browsing_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;  
                     }
-                    connection_controller = get_avrcp_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
+                    connection_controller = avrcp_get_connection_for_browsing_l2cap_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     if ((connection_controller != NULL) && (connection_controller->browsing_connection != NULL) && connection_controller->browsing_connection->wait_to_send) {
                         connection_controller->browsing_connection->wait_to_send = false;
                         (*avrcp_browsing_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
@@ -387,8 +387,8 @@ static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, u
     UNUSED(channel);
     UNUSED(size);
 
-    avrcp_connection_t * avrcp_target_connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, avrcp_browsing_sdp_addr);
-    avrcp_connection_t * avrcp_controller_connection = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, avrcp_browsing_sdp_addr);
+    avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, avrcp_browsing_sdp_addr);
+    avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, avrcp_browsing_sdp_addr);
 
     uint8_t status;
     uint16_t browsing_l2cap_psm;
@@ -433,11 +433,11 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
     btstack_assert(avrcp_browsing_controller_packet_handler != NULL);
     btstack_assert(avrcp_browsing_target_packet_handler != NULL);
 
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, remote_addr);
     if (!connection_controller){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, remote_addr);
     if (!connection_target){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -483,11 +483,11 @@ uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uin
 }
 
 uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config){
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!connection_controller){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!connection_target){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -518,11 +518,11 @@ uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid
 
 
 uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!connection_controller){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!connection_target){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
@@ -546,11 +546,11 @@ uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
 }
 
 uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid){
-    avrcp_connection_t * connection_controller = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * connection_controller = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!connection_controller){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    avrcp_connection_t * connection_target = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    avrcp_connection_t * connection_target = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!connection_target){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
