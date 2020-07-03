@@ -72,7 +72,7 @@ static void message_24_upper_transport_decrypt(void){
 
 
 	uint8_t ciphertext[8];
-	parse_hex(ciphertext, "DE1547118463123E");
+	parse_hex(ciphertext, "c3c51d8e476b28e3");
 	printf("%16s: ", "ciphertext"); printf_hexdump(ciphertext, sizeof(ciphertext));
 
 	printf("Reference:\n");
