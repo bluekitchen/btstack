@@ -85,7 +85,7 @@ static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * con
     return context->initiator_transaction_id_counter;
 }
 
-static uint16_t avdtp_get_next_avdtp_cid(avdtp_context_t * context){
+static uint16_t avdtp_get_next_cid(avdtp_context_t * context){
     do {
         if (avdtp_cid_counter == 0xffff) {
             avdtp_cid_counter = 1;
@@ -120,54 +120,42 @@ static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
     return stream_endpoint_id;
 }
 
-
-uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * avdtp_context, uint16_t * avdtp_cid){
+static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, avdtp_context_t * avdtp_context, const uint8_t *remote_addr, uint16_t cid) {
     sdp_query_context = avdtp_context;
+    sdp_query_context->avdtp_l2cap_psm = 0;
+    sdp_query_context->avdtp_version  = 0;
+    sdp_query_context->avdtp_cid = cid;
+    memcpy(sdp_query_context->remote_addr, remote_addr, 6);
+
+    return sdp_client_query_uuid16(packet_handler, (uint8_t *) remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
+}
+
+uint8_t avdtp_connect(bd_addr_t remote, avdtp_context_t * avdtp_context, uint16_t * avdtp_cid){
+    btstack_assert(avdtp_context != NULL);
+    
+    // TODO: implement delayed SDP query
+    if (sdp_client_ready() == 0){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+
     avdtp_connection_t * connection = avdtp_connection_for_bd_addr(remote, avdtp_context);
-    if (!connection){
-        connection = avdtp_create_connection(remote, avdtp_context);
-        if (!connection){
-            log_error("Not enough memory to create connection.");
-            return BTSTACK_MEMORY_ALLOC_FAILED;
-        }
+    if (connection){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
+    uint16_t cid = avdtp_get_next_cid(sdp_query_context);
+
+    connection = avdtp_create_connection(remote, sdp_query_context);
+    if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
     
     if (avdtp_cid != NULL) {
-        *avdtp_cid = connection->avdtp_cid;
+        *avdtp_cid = cid;
     }
+            
+    connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
+    connection->avdtp_cid = cid;
 
-    avdtp_context->avdtp_cid = connection->avdtp_cid;
-            
-    uint8_t err;
-    switch (connection->state){
-        case AVDTP_SIGNALING_CONNECTION_IDLE:
-            connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
-            sdp_query_context = avdtp_context;
-            avdtp_context->avdtp_l2cap_psm = 0;
-            avdtp_context->avdtp_version = 0;
-            avdtp_context->query_role = query_role;
-            err = sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
-            if (err != ERROR_CODE_SUCCESS){
-                connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-                btstack_linked_list_remove(&avdtp_context->connections, (btstack_linked_item_t*) connection); 
-                btstack_memory_avdtp_connection_free(connection);
-            }
-            return err;
-        case AVDTP_SIGNALING_CONNECTION_OPENED:{
-            avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_signaling_cid(connection->l2cap_signaling_cid, avdtp_context);
-            if (stream_endpoint){
-                avdtp_streaming_emit_connection_established(avdtp_context->avdtp_callback, connection->avdtp_cid, remote, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), 0);
-                break;
-            }
-            avdtp_signaling_emit_connection_established(avdtp_context->avdtp_callback, connection->avdtp_cid, connection->remote_addr, ERROR_CODE_SUCCESS);
-            break;
-        }
-        default:
-            log_error("avdtp_connect: sink in wrong state");
-            return AVDTP_CONNECTION_IN_WRONG_STATE;
-            
-    }
-    return ERROR_CODE_SUCCESS;
+    return avdtp_start_sdp_query(&avdtp_handle_sdp_client_query_result, avdtp_context, remote, BLUETOOTH_PROTOCOL_AVDTP);
 }
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint){
@@ -310,7 +298,6 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     }
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
-    connection->avdtp_cid = avdtp_get_next_avdtp_cid(context);
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
     context->avdtp_cid = connection->avdtp_cid;
     (void)memcpy(connection->remote_addr, remote_addr, 6);
@@ -505,7 +492,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     uint16_t psm;
     uint16_t local_cid;
     uint8_t  status;
-    int accept_signaling_connection;
+    bool accept_signaling_connection;
+
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_connection_t * connection = NULL;
     btstack_linked_list_t * avdtp_connections = &context->connections;
@@ -559,10 +547,11 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     connection = avdtp_connection_for_bd_addr(event_addr, context);
                     log_info("L2CAP_EVENT_INCOMING_CONNECTION, local cid 0x%02x ", local_cid);
-                    if (!connection){
+                    
+                    if (connection == NULL){
                         // create connection struct for regular inconming connection request
                         connection = avdtp_create_connection(event_addr, context);
-                        if (!connection){
+                        if (connection == NULL){
                             log_error("Could not create connection, reject");
                             l2cap_decline_connection(local_cid);
                             break;                            
@@ -572,7 +561,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                     // connection exists, check states
                     log_info("Connection state %d", connection->state);
-                    accept_signaling_connection = 0;
+                    accept_signaling_connection = false;
                     switch (connection->state){
                         case AVDTP_SIGNALING_CONNECTION_IDLE:
                             // regular incoming connection

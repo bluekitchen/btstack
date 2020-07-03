@@ -545,6 +545,7 @@ typedef struct {
     avdtp_sep_type_t query_role;
     
     // SDP query
+    bd_addr_t remote_addr;
     uint16_t avdtp_cid;
     uint16_t avdtp_l2cap_psm;
     uint16_t avdtp_version;
@@ -568,7 +569,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context);
 
-uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * context, uint16_t * avdtp_cid);
+uint8_t avdtp_connect(bd_addr_t remote, avdtp_context_t * context, uint16_t * avdtp_cid);
 uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
 uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_context_t * context);
 uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);

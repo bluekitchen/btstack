@@ -116,6 +116,7 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context->stream_endpoints = NULL;
     avdtp_sink_context->connections = NULL;
     avdtp_sink_context->stream_endpoints_id_counter = 0;
+    avdtp_sink_context->query_role = AVDTP_SOURCE;
     avdtp_sink_context->packet_handler = packet_handler;
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
@@ -142,7 +143,7 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 uint8_t avdtp_sink_connect(bd_addr_t remote, uint16_t * avdtp_cid){
-    return avdtp_connect(remote, AVDTP_SOURCE, avdtp_sink_context, avdtp_cid);
+    return avdtp_connect(remote, avdtp_sink_context, avdtp_cid);
 }
 
 uint8_t avdtp_sink_disconnect(uint16_t avdtp_cid){
