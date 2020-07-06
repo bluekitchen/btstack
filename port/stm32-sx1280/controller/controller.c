@@ -39,6 +39,8 @@
 
 #include <string.h>
 
+#include "controller.h"
+
 #include "hw.h"
 #include "radio.h"
 #include "sx1280.h"
@@ -1204,6 +1206,23 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
     return 0;    
 }
 
+void controller_init(void){
+
+}
+
+const hci_transport_t * controller_get_hci_transport(void){
+    // setup hci transport wrapper
+    hci_transport.name                          = "SX1280-VHCI";
+    hci_transport.init                          = transport_init;
+    hci_transport.open                          = transport_open;
+    hci_transport.close                         = transport_close;
+    hci_transport.register_packet_handler       = transport_register_packet_handler;
+    hci_transport.can_send_packet_now           = NULL;
+    hci_transport.send_packet                   = transport_send_packet;
+    hci_transport.set_baudrate                  = NULL;
+    return &hci_transport;
+}
+
 void btstack_main(void);
 void ble_rx( void ){
 
@@ -1216,15 +1235,11 @@ void ble_rx( void ){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
-    // setup hci transport wrapper
-    hci_transport.name                          = "SX1280-VHCI";
-    hci_transport.init                          = transport_init;
-    hci_transport.open                          = transport_open;
-    hci_transport.close                         = transport_close;
-    hci_transport.register_packet_handler       = transport_register_packet_handler;
-    hci_transport.can_send_packet_now           = NULL;
-    hci_transport.send_packet                   = transport_send_packet;
-    hci_transport.set_baudrate                  = NULL;
+    // initialize controller
+    controller_init();
+
+    // get virtual HCI transpoft
+    const hci_transport_t * hci_transport = controller_get_hci_transport();
 
     // TODO: use flash storage
 
@@ -1236,7 +1251,7 @@ void ble_rx( void ){
     le_device_db_tlv_configure(btstack_tlv_impl, NULL);
 
     // init HCI
-    hci_init(&hci_transport, NULL);
+    hci_init(hci_transport, NULL);
     
     // enable full log output while porting
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
