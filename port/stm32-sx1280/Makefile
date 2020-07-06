@@ -100,6 +100,7 @@ Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi_ex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.c \
+port/btstack_port.c \
 SMTC_Drivers/sx1280-driver-c/sx1280-hal.c \
 SMTC_Drivers/sx1280-driver-c/sx1280.c \
 Src/main.c \

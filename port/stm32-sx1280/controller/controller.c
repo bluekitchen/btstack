@@ -60,6 +60,7 @@
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
 #include "ble/le_device_db_tlv.h"
+#include "hal_cpu.h"
 
 // access to timers
 extern TIM_HandleTypeDef   htim2;
@@ -347,21 +348,8 @@ static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t siz
 
 static btstack_data_source_t hci_transport_data_source;
 
-static hci_transport_t hci_transport;
 static uint8_t hci_outgoing_event[258];
 static bool    hci_outgoing_event_ready;
-
-void btstack_assert_failed(const char * file, uint16_t line_nr){
-    printf("Assert: file %s, line %u\n", file, line_nr);
-    while (1);
-}
-
-/** hal_cpu.h */
-
-// TODO: implement
-void hal_cpu_disable_irqs(void){}
-void hal_cpu_enable_irqs(void){}
-void hal_cpu_enable_irqs_and_sleep(void){}
 
 // memory pool for acl-le pdus
 static ll_pdu_t * btstack_memory_ll_pdu_get(void){
@@ -1210,57 +1198,19 @@ void controller_init(void){
 
 }
 
+static const hci_transport_t controller_transport = {
+        "sx1280-vhci",
+        &transport_init,
+        &transport_open,
+        &transport_close,
+        &transport_register_packet_handler,
+        NULL,
+        &transport_send_packet,
+        NULL, // set baud rate
+        NULL, // reset link
+        NULL, // set SCO config
+};
+
 const hci_transport_t * controller_get_hci_transport(void){
-    // setup hci transport wrapper
-    hci_transport.name                          = "SX1280-VHCI";
-    hci_transport.init                          = transport_init;
-    hci_transport.open                          = transport_open;
-    hci_transport.close                         = transport_close;
-    hci_transport.register_packet_handler       = transport_register_packet_handler;
-    hci_transport.can_send_packet_now           = NULL;
-    hci_transport.send_packet                   = transport_send_packet;
-    hci_transport.set_baudrate                  = NULL;
-    return &hci_transport;
-}
-
-void btstack_main(void);
-void ble_rx( void ){
-
-    // test code
-    // lptim1_calibration();
-
-    // Bring up BTstack
-    printf("BTstack Controller using Semtech SA1280\n");
-
-    btstack_memory_init();
-    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-
-    // initialize controller
-    controller_init();
-
-    // get virtual HCI transpoft
-    const hci_transport_t * hci_transport = controller_get_hci_transport();
-
-    // TODO: use flash storage
-
-    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_none_init_instance();
-    // setup global tlv
-    btstack_tlv_set_instance(btstack_tlv_impl, NULL);
-
-    // setup LE Device DB using TLV
-    le_device_db_tlv_configure(btstack_tlv_impl, NULL);
-
-    // init HCI
-    hci_init(hci_transport, NULL);
-    
-    // enable full log output while porting
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
-
-    // hand over to btstack embedded code 
-    btstack_main();
-
-    // go
-    btstack_run_loop_execute();
-
-    while (1){};
+    return &controller_transport;
 }
