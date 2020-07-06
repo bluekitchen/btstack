@@ -566,7 +566,6 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
 void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context);
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avdtp_context_t * context);
-avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context);
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_context_t * context, uint16_t * avdtp_cid);
