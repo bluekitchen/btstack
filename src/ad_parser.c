@@ -63,34 +63,39 @@ void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_
 
 bool ad_iterator_has_more(const ad_context_t * context){
     // assert chunk_len and chunk_type are withing buffer
-    if ((context->offset+1) >= context->length) return false;
+    if ((context->offset + (uint8_t) 1) >= context->length) {
+        return false;
+    }
 
     // assert chunk_len > 0
-    int chunk_len = context->data[context->offset];
-    if (chunk_len == 0)                                    return false;
-
+    uint8_t chunk_len = context->data[context->offset];
+    if (chunk_len == (uint8_t)  0){
+        return false;
+    }
+    
     // assert complete chunk fits into buffer
-    if ((context->offset + 1 + chunk_len) > context->length) return false;
-
+    if ((context->offset + (uint8_t) 1 + chunk_len) > context->length) {
+        return false;
+    }
     return true;
 }
 
 // pre: ad_iterator_has_more() == 1
 void ad_iterator_next(ad_context_t * context){
-    int chunk_len = context->data[context->offset];
-    context->offset += 1 + chunk_len;
+    uint8_t chunk_len = context->data[context->offset];
+    context->offset += (uint8_t) 1 + chunk_len;
 }
 
 uint8_t   ad_iterator_get_data_len(const ad_context_t * context){
-    return context->data[context->offset] - 1;
+    return context->data[context->offset] - (uint8_t)  1;
 }
 
 uint8_t   ad_iterator_get_data_type(const ad_context_t * context){
-    return context->data[context->offset + 1];
+    return context->data[context->offset + (uint8_t) 1];
 }
 
 const uint8_t * ad_iterator_get_data(const ad_context_t * context){
-    return &context->data[context->offset + 2];
+    return &context->data[context->offset + (uint8_t) 2];
 }
 
 bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t uuid16){
@@ -101,23 +106,27 @@ bool ad_data_contains_uuid16(uint8_t ad_len, const uint8_t * ad_data, uint16_t u
         uint8_t data_len     = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
         
-        int i;
+        uint8_t i;
         uint8_t ad_uuid128[16], uuid128_bt[16];
                 
         switch (data_type){
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0; (i+2) <= data_len; i+=2){
-                    uint16_t uuid = little_endian_read_16(data, i);
-                    if ( uuid == uuid16 ) return true;
+                for (i=0; (i + (uint8_t) 2) <= data_len; i+= (uint8_t) 2){
+                    uint16_t uuid = (uint16_t) little_endian_read_16(data, (int) i);
+                    if ( uuid == uuid16 ) {
+                        return true;
+                    }
                 }
                 break;
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
                 uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
                 reverse_128(ad_uuid128, uuid128_bt);
-                for (i=0; (i+16) <= data_len; i+=16){
-                    if (memcmp(uuid128_bt, &data[i], 16) == 0) return true;
+                for (i=0; (i + (uint8_t) 16) <= data_len; i += (uint8_t) 16){
+                  if (memcmp(uuid128_bt, &data[i], 16) == 0){
+                      return true;
+                  };
                 }
                 break;
             default:
@@ -139,24 +148,28 @@ bool ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uin
         uint8_t data_len  = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
         
-        int i;
+        uint8_t i;
         uint8_t ad_uuid128[16];
 
         switch (data_type){
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0; (i+2) <= data_len; i+=2){
-                    uint16_t uuid16 = little_endian_read_16(data, i);
+                for (i = (uint8_t) 0; (i+ (uint8_t) 2) <= data_len; i += (uint8_t) 2){
+                    uint16_t uuid16 = little_endian_read_16(data, (int) i);
                     uuid_add_bluetooth_prefix(ad_uuid128, uuid16);
                     
-                    if (memcmp(ad_uuid128, uuid128_le, 16) == 0) return true;
+                    if (memcmp(ad_uuid128, uuid128_le, 16) == 0) {
+                        return true;
+                    }
                 }
 
                 break;
             case BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS:
-                for (i=0; (i+16) <= data_len; i+=16){
-                    if (memcmp(uuid128_le, &data[i], 16) == 0) return true;
+                for (i = (uint8_t) 0; (i + (uint8_t) 16) <= data_len; i += (uint8_t) 16){
+                  if (memcmp(uuid128_le, &data[i], 16) == 0) {
+                      return true;
+                  }
                 }
                 break;
             default:
