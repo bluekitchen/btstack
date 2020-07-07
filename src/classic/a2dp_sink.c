@@ -251,6 +251,28 @@ static inline void a2dp_emit_cmd_rejected(btstack_packet_handler_t callback, uin
     (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
 }
 
+static void a2dp_sink_handle_signaling_accept(uint8_t * packet){
+    uint8_t signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
+    uint16_t cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
+    uint8_t loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
+
+    switch (signal_identifier){
+        case  AVDTP_SI_START:
+            a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_STARTED, loc_seid);
+            break;
+        case AVDTP_SI_SUSPEND:
+            a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_SUSPENDED, loc_seid);
+            break;
+        case AVDTP_SI_ABORT:
+        case AVDTP_SI_CLOSE:
+            a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_STOPPED, loc_seid);
+            break;
+        default:
+            // a2dp_emit_cmd_accepted(a2dp_sink_context.a2dp_callback, packet, size);
+            break;
+    }
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -313,25 +335,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
-            signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-            cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
-            
-            switch (signal_identifier){
-                case  AVDTP_SI_START:
-                    a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_STARTED, loc_seid);
-                    break;
-                case AVDTP_SI_SUSPEND:
-                    a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_SUSPENDED, loc_seid);
-                    break;
-                case AVDTP_SI_ABORT:
-                case AVDTP_SI_CLOSE:
-                    a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_STOPPED, loc_seid);
-                    break;
-                default:
-                    // a2dp_emit_cmd_accepted(a2dp_sink_context.a2dp_callback, packet, size);
-                    break;
-            }
+            a2dp_sink_handle_signaling_accept(packet);
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
