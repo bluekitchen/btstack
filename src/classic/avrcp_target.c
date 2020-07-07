@@ -38,8 +38,6 @@
 #define BTSTACK_FILE__ "avrcp_target.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -515,8 +513,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
     connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
-    // printf("avrcp_target_subunit_info  subunit_type %d\n", connection->subunit_type);
-    
+
     uint8_t page = offset / 4;
     uint8_t extension_code = 7;
     connection->cmd_operands_length = 5;
@@ -610,7 +607,6 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
     connection->now_playing_info[index].value = (uint8_t*)value;
     connection->now_playing_info[index].len   = strlen(value);
-    // printf("store %lu bytes, %s\n",  strlen(value), value);
     return ERROR_CODE_SUCCESS;
 }   
 
@@ -914,7 +910,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     pos += 8;
                     uint8_t attribute_count = pdu[pos++];
-                    // printf("AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES attribute count %d\n", attribute_count);
                     connection->next_attr_id = AVRCP_MEDIA_ATTR_NONE;
                     if (!attribute_count){
                         connection->now_playing_info_attr_bitmap = 0xFE;
@@ -1135,7 +1130,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     }
                     
                     else if (connection->notify_volume_percentage_changed){
-                        // printf("emit new volume %d\n", connection->volume_percentage);
                         connection->notify_volume_percentage_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED, &connection->volume_percentage, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);

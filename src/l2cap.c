@@ -58,8 +58,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <stdio.h>
-
 /*
  * @brief L2CAP Supervisory function in S-Frames
  */

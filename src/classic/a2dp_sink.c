@@ -278,7 +278,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     bd_addr_t address;
     uint8_t status;
-    uint8_t  signal_identifier;
     uint16_t cid;
     uint8_t loc_seid;
     uint8_t rem_seid;
@@ -340,7 +339,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-            signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
             loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
             a2dp_emit_cmd_rejected(a2dp_sink_context.a2dp_callback, packet, size);

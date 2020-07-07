@@ -46,8 +46,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "bluetooth_sdp.h"
@@ -138,7 +136,6 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
 
 static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, hfp_connection_t * connection){
     if (!callback) return;
-    printf("hfp_hf_emit_enhanced_call_status: %s \n", connection->bnip_number);
     uint8_t event[36];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -958,7 +955,6 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 
             switch (hfp_connection->hf_query_operator_state){
                 case HFP_HF_QUERY_OPERATOR_W4_SET_FORMAT_OK:
-                    // printf("Format set, querying name\n");
                     hfp_connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SEND_QUERY;
                     break;
                 case HPF_HF_QUERY_OPERATOR_W4_RESULT:

@@ -37,8 +37,6 @@
 #define BTSTACK_FILE__ "avdtp_acceptor.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "btstack.h"

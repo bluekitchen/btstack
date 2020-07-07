@@ -46,8 +46,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "bluetooth_sdp.h"
@@ -474,7 +472,6 @@ static void hsp_run(void){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);    // ok: no channel for HCI_EVENT_PACKET and only single active RFCOMM channel
     if (packet_type == RFCOMM_DATA_PACKET){
-        // printf("packet_handler type RFCOMM_DATA_PACKET %u, packet[0] %x\n", packet_type, packet[0]);
         // skip over leading newline
         while ((size > 0) && ((packet[0] == '\n') || (packet[0] == '\r'))){
             size--;

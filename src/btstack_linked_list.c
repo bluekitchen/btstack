@@ -45,8 +45,6 @@
 
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
-#include <stdlib.h>
-#include <stdio.h>
 
 /**
  * tests if list is empty

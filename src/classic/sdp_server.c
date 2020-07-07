@@ -41,7 +41,6 @@
  * Implementation of the Service Discovery Protocol Server 
  */
 
-#include <stdio.h>
 #include <string.h>
 
 #include "bluetooth.h"

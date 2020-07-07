@@ -43,9 +43,7 @@
 
 #include "gatt_sdp.h"
 
-#include <stdio.h>
 #include <string.h>
-
 #include "bluetooth_gatt.h"
 #include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"

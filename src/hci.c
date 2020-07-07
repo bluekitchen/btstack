@@ -63,7 +63,6 @@
 
 #include <stdarg.h>
 #include <string.h>
-#include <stdio.h>
 #include <inttypes.h>
 
 #include "btstack_debug.h"

@@ -38,8 +38,6 @@
 #define BTSTACK_FILE__ "avrcp_browsing_target.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #include "btstack.h"
@@ -149,7 +147,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                 case AVRCP_END_PACKET:
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
-                            printf("\n");
                             browsing_connection->scope = packet[pos++];
                             browsing_connection->start_item = big_endian_read_32(packet, pos);
                             pos += 4;
@@ -246,8 +243,7 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     }
     (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
     pos += attr_list_size;
-    connection->cmd_operands_length = pos;    
-    // printf_hexdump(connection->cmd_operands, connection->cmd_operands_length);
+    connection->cmd_operands_length = pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);

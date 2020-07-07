@@ -41,8 +41,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -821,7 +819,6 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
             hfp_connection->rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
             hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
-            // printf("RFCOMM channel %u requested for %s\n", hfp_connection->rfcomm_cid, bd_addr_to_str(hfp_connection->remote_addr));
             rfcomm_accept_connection(hfp_connection->rfcomm_cid);
             break;
 
@@ -841,16 +838,13 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                 bd_addr_copy(hfp_connection->remote_addr, event_addr);
-                // uint16_t mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                // printf("RFCOMM channel open succeeded. hfp_connection %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", hfp_connection, hfp_connection->rfcomm_cid, mtu);
-                        
+
                 switch (hfp_connection->state){
                     case HFP_W4_RFCOMM_CONNECTED:
                         hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
                         break;
                     case HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN:
                         hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                        // printf("Shutting down RFCOMM.\n");
                         break;
                     default:
                         break;
