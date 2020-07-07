@@ -997,6 +997,26 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
+void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection) {
+    uint16_t i;
+    for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
+        if (hfp_connection->ag_indicators[i].status_changed) {
+            if (strcmp(hfp_connection->ag_indicators[i].name, "callsetup") == 0){
+                hfp_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
+            } else if (strcmp(hfp_connection->ag_indicators[i].name, "callheld") == 0){
+                hfp_callheld_status = (hfp_callheld_status_t) hfp_connection->ag_indicators[i].status;
+                // avoid set but not used warning
+                (void) hfp_callheld_status;
+            } else if (strcmp(hfp_connection->ag_indicators[i].name, "call") == 0){
+                hfp_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
+            }
+            hfp_connection->ag_indicators[i].status_changed = 0;
+            hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
+            break;
+        }
+    }
+}
+
 static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
     int value;
     int i;
@@ -1056,22 +1076,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
-            for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
-                if (hfp_connection->ag_indicators[i].status_changed) {
-                    if (strcmp(hfp_connection->ag_indicators[i].name, "callsetup") == 0){
-                        hfp_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
-                    } else if (strcmp(hfp_connection->ag_indicators[i].name, "callheld") == 0){
-                        hfp_callheld_status = (hfp_callheld_status_t) hfp_connection->ag_indicators[i].status;
-                        // avoid set but not used warning
-                        (void) hfp_callheld_status;
-                    } else if (strcmp(hfp_connection->ag_indicators[i].name, "call") == 0){
-                        hfp_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
-                    }
-                    hfp_connection->ag_indicators[i].status_changed = 0;
-                    hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
-                    break;
-                }
-            }
+            hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
