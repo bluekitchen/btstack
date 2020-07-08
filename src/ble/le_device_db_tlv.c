@@ -115,7 +115,7 @@ static bool le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
     btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
     btstack_assert(index >= 0);
     btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
-
+    if (le_device_db_tlv_btstack_tlv_impl == NULL) return 0;
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     int size = le_device_db_tlv_btstack_tlv_impl->get_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
 	return size == sizeof(le_device_db_entry_t);
