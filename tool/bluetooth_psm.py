@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Scrape GATT UUIDs from Bluetooth SIG page
 # https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control/

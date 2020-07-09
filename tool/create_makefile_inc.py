@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Create Makefile.inc file for all source folders
 # Copyright 2017 BlueKitchen GmbH

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Scrape GATT UUIDs from Bluetooth SIG page
 # Copyright 2016 BlueKitchen GmbH

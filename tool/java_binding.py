@@ -1,9 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2014
-
-import glob
-import re
-import sys
 
 import btstack_parser as parser
 
@@ -361,7 +357,7 @@ def create_event_factory(events, subevents, defines):
         if not event_supported(event_name):
             continue
         class_name = class_name_for_event(event_name)
-        print class_name
+        print(class_name)
         subcases += java_event_factory_subevent.format(event_type, class_name)
 
     with open(outfile, 'wt') as fout:

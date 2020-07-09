@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 
@@ -113,8 +113,10 @@ def requiresCopyrightUpdate(file_name):
 	global copyrightString, onlyDumpDifferentCopyright
 	exactCopyrightFound = False
 
-	with open(file_name, "rb") as fin:
+	with open(file_name, "rt") as fin:
+		print("File: " + file_name)
 		for line in fin:
+			print("Line: " + line)
 			parts = re.match('.*('+copyrightString+').*',line)
 			if parts:
 				exactCopyrightFound = True

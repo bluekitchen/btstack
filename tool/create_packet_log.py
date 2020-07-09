@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2014
 
 # convert log output to PacketLogger format
@@ -91,7 +91,7 @@ if len(sys.argv) == 1:
 	print('BTstack Console to PacketLogger converter')
 	print('Copyright 2014, BlueKitchen GmbH')
 	print('')
-	print('Usage: ', sys.argv[0], 'asci-log-file.txt [hci_dump.pkgl]')
+	print('Usage: ', sys.argv[0], 'ascii-log-file.txt [hci_dump.pklg]')
 	print('Converted hci_dump.pklg can be viewed with Wireshark and OS X PacketLogger')
 	exit(0)
 

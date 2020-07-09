@@ -1,12 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2017
 
 # primitive dump for .tlv format
 
-import re
 import sys
-import time
-import datetime
 
 def read_net_32(f):
     a = f.read(1)
@@ -26,14 +23,14 @@ def read_net_32(f):
 def as_hex(data):
 	str_list = []
 	for byte in data:
-	    str_list.append("{0:02x} ".format(ord(byte)))
+	    str_list.append("{0:02x} ".format(byte))
 	return ''.join(str_list)
 
 if len(sys.argv) == 1:
-	print 'Dump TLV file'
-	print 'Copyright 2017, BlueKitchen GmbH'
-	print ''
-	print 'Usage: ', sys.argv[0], 'file.tlv'
+	print ('Dump TLV file')
+	print ('Copyright 2017, BlueKitchen GmbH')
+	print ('')
+	print ('Usage: ', sys.argv[0], 'file.tlv')
 	exit(0)
 
 infile = sys.argv[1]
@@ -65,4 +62,3 @@ with open (infile, 'rb') as fin:
 
 	except TypeError:
 		print ("Error parsing tlv at offset %u (%x)." % (pos, pos))
-
