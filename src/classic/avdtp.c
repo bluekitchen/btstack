@@ -423,7 +423,7 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
 }
 
 static void avdtp_finalize_connection(avdtp_connection_t * connection, avdtp_context_t * context){
-    btstack_run_loop_remove_timer(&connection->reconnect_timer);
+    btstack_run_loop_remove_timer(&connection->retry_timer);
     btstack_linked_list_remove(&context->connections, (btstack_linked_item_t*) connection); 
     btstack_memory_avdtp_connection_free(connection);
 }
@@ -493,7 +493,7 @@ static avdtp_connection_t * avdtp_handle_incoming_connection(avdtp_connection_t 
     if (connection) {
         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
         connection->l2cap_signaling_cid = local_cid;
-        btstack_run_loop_remove_timer(&connection->reconnect_timer);
+        btstack_run_loop_remove_timer(&connection->retry_timer);
     } 
     return connection;
 }
@@ -510,26 +510,26 @@ static avdtp_context_t * avdtp_get_active_contex(void){
     return context;
 }
 
-static void avdtp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer){
+static void avdtp_retry_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
 
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid, avdtp_get_active_contex());
     if (connection == NULL) return;
 
-    if (connection->state == AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RECONNECT){
+    if (connection->state == AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RETRY){
         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
         l2cap_create_channel(&avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
     } 
 }
 
-static void avdtp_reconnect_timer_start(avdtp_connection_t * connection){
-    btstack_run_loop_set_timer_handler(&connection->reconnect_timer, avdtp_reconnect_timer_timeout_handler);
-    btstack_run_loop_set_timer_context(&connection->reconnect_timer, (void *)(uintptr_t)connection->avdtp_cid);
+static void avdtp_retry_timer_start(avdtp_connection_t * connection){
+    btstack_run_loop_set_timer_handler(&connection->retry_timer, avdtp_retry_timer_timeout_handler);
+    btstack_run_loop_set_timer_context(&connection->retry_timer, (void *)(uintptr_t)connection->avdtp_cid);
 
     // add some jitter/randomness to reconnect delay
     uint32_t timeout = 100 + (btstack_run_loop_get_time_ms() & 0x7F);
-    btstack_run_loop_set_timer(&connection->reconnect_timer, timeout); 
-    btstack_run_loop_add_timer(&connection->reconnect_timer);
+    btstack_run_loop_set_timer(&connection->retry_timer, timeout); 
+    btstack_run_loop_add_timer(&connection->retry_timer);
 }
 
 
@@ -683,9 +683,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                 case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
                                     if (connection->incoming_declined == true) {
                                         log_info("Connection was declined, and the outgoing failed");
-                                        connection->state = AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RECONNECT;
+                                        connection->state = AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RETRY;
                                         connection->incoming_declined = false;
-                                        avdtp_reconnect_timer_start(connection);
+                                        avdtp_retry_timer_start(connection);
                                         return;
                                     }
                                     break;

@@ -345,7 +345,7 @@ typedef enum {
     AVDTP_SIGNALING_CONNECTION_IDLE,
     AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
-    AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RECONNECT,
+    AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RETRY,
     AVDTP_SIGNALING_CONNECTION_OPENED,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED
 } avdtp_connection_state_t;
@@ -436,7 +436,7 @@ typedef struct {
     // btstack_timer_source_t configuration_timer;
     
     bool incoming_declined;
-    btstack_timer_source_t reconnect_timer;
+    btstack_timer_source_t retry_timer;
 } avdtp_connection_t;
 
 typedef enum {
