@@ -288,7 +288,7 @@ typedef enum {
     AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
-    AVCTP_CONNECTION_W2_L2CAP_RECONNECT,
+    AVCTP_CONNECTION_W2_L2CAP_RETRY,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
     AVCTP_W2_SEND_RELEASE_COMMAND,
@@ -472,7 +472,7 @@ typedef struct {
     uint16_t  cmd_operands_fragmented_pos;
     uint16_t  cmd_operands_fragmented_len;
 
-    btstack_timer_source_t reconnect_timer;
+    btstack_timer_source_t retry_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
     uint8_t  continuous_fast_forward_cmd;
     uint16_t notifications_enabled;

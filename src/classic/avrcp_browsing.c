@@ -65,7 +65,7 @@ void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connectio
     l2cap_request_can_send_now_event(l2cap_cid);
 }
 
-static void avrcp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer){
+static void avrcp_retry_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t avrcp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
     avrcp_connection_t * connection_controller = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (connection_controller == NULL) return;
@@ -74,7 +74,7 @@ static void avrcp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer
 
     if ((connection_controller->browsing_connection == NULL) || (connection_target->browsing_connection == NULL)) return;
 
-    if (connection_controller->browsing_connection->state == AVCTP_CONNECTION_W2_L2CAP_RECONNECT){
+    if (connection_controller->browsing_connection->state == AVCTP_CONNECTION_W2_L2CAP_RETRY){
         connection_controller->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
         connection_target->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
 
@@ -85,20 +85,20 @@ static void avrcp_reconnect_timer_timeout_handler(btstack_timer_source_t * timer
     }
 }
 
-static void avrcp_reconnect_timer_start(avrcp_connection_t * connection){
-    btstack_run_loop_set_timer_handler(&connection->reconnect_timer, avrcp_reconnect_timer_timeout_handler);
-    btstack_run_loop_set_timer_context(&connection->reconnect_timer, (void *)(uintptr_t)connection->avrcp_cid);
+static void avrcp_retry_timer_start(avrcp_connection_t * connection){
+    btstack_run_loop_set_timer_handler(&connection->retry_timer, avrcp_retry_timer_timeout_handler);
+    btstack_run_loop_set_timer_context(&connection->retry_timer, (void *)(uintptr_t)connection->avrcp_cid);
 
     // add some jitter/randomness to reconnect delay
     uint32_t timeout = 100 + (btstack_run_loop_get_time_ms() & 0x7F);
-    btstack_run_loop_set_timer(&connection->reconnect_timer, timeout); 
+    btstack_run_loop_set_timer(&connection->retry_timer, timeout); 
     
-    btstack_run_loop_add_timer(&connection->reconnect_timer);
+    btstack_run_loop_add_timer(&connection->retry_timer);
 }
 
 // AVRCP Browsing Service functions
 static void avrcp_browsing_finalize_connection(avrcp_connection_t * connection){
-    btstack_run_loop_remove_timer(&connection->reconnect_timer);
+    btstack_run_loop_remove_timer(&connection->retry_timer);
     btstack_memory_avrcp_browsing_connection_free(connection->browsing_connection);
     connection->browsing_connection = NULL;
 }
@@ -182,7 +182,7 @@ static avrcp_browsing_connection_t * avrcp_browsing_handle_incoming_connection(a
     if (connection->browsing_connection) {
         connection->browsing_connection->l2cap_browsing_cid = local_cid;
         connection->browsing_connection->state = AVCTP_CONNECTION_W4_ERTM_CONFIGURATION;
-        btstack_run_loop_remove_timer(&connection->reconnect_timer);
+        btstack_run_loop_remove_timer(&connection->retry_timer);
     } 
     return connection->browsing_connection;
 }
@@ -315,11 +315,11 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
                         case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
                             if (connection_controller->browsing_connection->incoming_declined == true){
                                 log_info("Incoming browsing connection was declined, and the outgoing failed");
-                                connection_controller->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_RECONNECT;
+                                connection_controller->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_RETRY;
                                 connection_controller->browsing_connection->incoming_declined = false;
-                                connection_target->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_RECONNECT;
+                                connection_target->browsing_connection->state = AVCTP_CONNECTION_W2_L2CAP_RETRY;
                                 connection_target->browsing_connection->incoming_declined = false;
-                                avrcp_reconnect_timer_start(connection_controller);
+                                avrcp_retry_timer_start(connection_controller);
                                 return;
                             } 
                             break;
