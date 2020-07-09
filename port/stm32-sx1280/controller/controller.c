@@ -652,17 +652,17 @@ static void radio_on_rx_error(IrqErrorCode_t errorCode ){
 }
 
 const static RadioCallbacks_t Callbacks =
-        {
-                &radio_on_tx_done,     // txDone
-                &radio_on_rx_done,     // rxDone
-                NULL,                  // syncWordDone
-                NULL,                  // headerDone
-                &radio_on_tx_timeout,  // txTimeout
-                &radio_on_rx_timeout,  // rxTimeout
-                &radio_on_rx_error,    // rxError
-                NULL,                  // rangingDone
-                NULL,                  // cadDone
-        };
+{
+    &radio_on_tx_done,     // txDone
+    &radio_on_rx_done,     // rxDone
+    NULL,                  // syncWordDone
+    NULL,                  // headerDone
+    &radio_on_tx_timeout,  // txTimeout
+    &radio_on_rx_timeout,  // rxTimeout
+    &radio_on_rx_error,    // rxError
+    NULL,                  // rangingDone
+    NULL,                  // cadDone
+};
 
 // Link Layer
 
@@ -1017,47 +1017,44 @@ static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
 
     btstack_assert(hci_outgoing_event_ready == false);
 
+    const uint8_t local_supported_features[] = { 0, 0, 0, 0, 0x40, 0, 0, 0};
+    const uint8_t read_buffer_size_result[] = { 0x1b, 0, HCI_NUM_TX_BUFFERS_STACK };
+    uint8_t status;
+
     uint16_t opcode = little_endian_read_16(packet, 0);
-
-    if (opcode == hci_reset.opcode) {
-        fake_command_complete(opcode);
-        return;
+    switch (opcode){
+        case HCI_OPCODE_HCI_RESET:
+            fake_command_complete(opcode);
+            break;
+        case HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_FEATURES:
+            // No. 37, byte 4, bit 6 = LE Supported (Controller)
+            send_command_complete(opcode, 0, local_supported_features, 8);
+            break;
+        case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE:
+            send_command_complete(opcode, 0, read_buffer_size_result, 8);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_ADVERTISING_DATA:
+            status = ll_set_advertising_data(packet[3], &packet[4]);
+            send_command_complete(opcode, status, NULL, 0);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_ADVERTISE_ENABLE:
+            status = ll_set_advertise_enable(packet[3]);
+            send_command_complete(opcode, status, NULL, 0);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_SCAN_ENABLE:
+            ll_set_scan_enable(packet[3], packet[4]);
+            fake_command_complete(opcode);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_SCAN_PARAMETERS:
+            ll_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6), packet[8], packet[9]);
+            fake_command_complete(opcode);
+            break;
+        default:
+            log_debug("CMD opcode %02x not handled yet", opcode);
+            // try with "OK"
+            fake_command_complete(opcode);
+            break;
     }
-    if (opcode == hci_read_local_supported_features.opcode){
-        // No. 37, byte 4, bit 6 = LE Supported (Controller)
-        const uint8_t local_supported_features[] = { 0, 0, 0, 0, 0x40, 0, 0, 0};
-        send_command_complete(opcode, 0, local_supported_features, 8);
-        return;
-    }
-    if (opcode == hci_le_read_buffer_size.opcode){
-        const uint8_t read_buffer_size_result[] = { 0x1b, 0, HCI_NUM_TX_BUFFERS_STACK };
-        send_command_complete(opcode, 0, read_buffer_size_result, 8);
-        return;
-    }
-    if (opcode == hci_le_set_advertising_data.opcode){
-        uint8_t status = ll_set_advertising_data(packet[3], &packet[4]);
-        send_command_complete(opcode, status, NULL, 0);
-        return;
-    }
-    if (opcode == hci_le_set_advertise_enable.opcode){
-        uint8_t status = ll_set_advertise_enable(packet[3]);
-        send_command_complete(opcode, status, NULL, 0);
-        return;
-    }
-    if (opcode == hci_le_set_scan_enable.opcode){
-        ll_set_scan_enable(packet[3], packet[4]);
-        fake_command_complete(opcode);
-        return;
-    }
-    if (opcode == hci_le_set_scan_parameters.opcode){
-        ll_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6), packet[8], packet[9]);
-        fake_command_complete(opcode);
-        return;
-    }
-
-    // try with "OK" 
-    // printf("CMD opcode %02x not handled yet\n", opcode);
-    fake_command_complete(opcode);
 }
 
 // ACL handler

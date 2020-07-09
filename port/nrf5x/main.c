@@ -422,33 +422,24 @@ static void send_hardware_error(uint8_t error_code){
 // command handler
 static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
     uint16_t opcode = little_endian_read_16(packet, 0);
-#if 0
-    uint16_t ocf = READ_CMD_OCF(packet);
-    switch (READ_CMD_OGF(packet)){
-        case OGF_CONTROLLER_BASEBAND:
-            switch (ocf):
-                break;
+    switch(opcde){
+        case HCI_OPCODE_HCI_RESET:
+            fake_command_complete(opcode);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_SCAN_ENABLE:
+            ll_set_scan_enable(packet[3], packet[4]);
+            fake_command_complete(opcode);
+            break;
+        case HCI_OPCODE_HCI_LE_SET_SCAN_PARAMETERS:
+            ll_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6), packet[8], packet[9]);
+            fake_command_complete(opcode);
+            break;
         default:
+            // try with "OK"
+            log_debug("CMD opcode %02x not handled yet\n", opcode);
+            fake_command_complete(opcode);
             break;
     }
-#endif
-    if (opcode == hci_reset.opcode) {
-        fake_command_complete(opcode);
-        return;
-    }
-    if (opcode == hci_le_set_scan_enable.opcode){
-        ll_set_scan_enable(packet[3], packet[4]);
-        fake_command_complete(opcode);
-        return;
-    }
-    if (opcode == hci_le_set_scan_parameters.opcode){
-        ll_set_scan_parameters(packet[3], little_endian_read_16(packet, 4), little_endian_read_16(packet, 6), packet[8], packet[9]);
-        fake_command_complete(opcode);
-        return;
-    }
-    // try with "OK" 
-    printf("CMD opcode %02x not handled yet\n", opcode);
-    fake_command_complete(opcode);
 }
 
 // ACL handler
@@ -603,24 +594,6 @@ int main(void)
     btstack_run_loop_execute();
 
     while (1){};
-
-#if 0
-
-    // start listening
-    radio_receive_on_channel(37);
-
-    while (1){
-        if (NRF_RADIO->EVENTS_END){
-            NRF_RADIO->EVENTS_END = 0;
-            // process packet
-            radio_dump_packet();
-            // receive next packet
-            NRF_RADIO->TASKS_START = 1;
-        }
-    }
-
-    radio_disable();
-#endif
 }
 
 
