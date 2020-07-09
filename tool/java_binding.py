@@ -368,8 +368,8 @@ def create_event_factory(events, subevents, defines):
 # read defines from hci_cmds.h and hci.h
 defines = parser.parse_defines()
 
-# # parse commands
-commands = parser.parse_commands()
+# parse commands
+commands = parser.parse_daemon_commands()
 
 # parse bluetooth.h to get used events
 (events, le_events, event_types) = parser.parse_events()

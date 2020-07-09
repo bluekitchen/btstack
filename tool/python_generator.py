@@ -358,7 +358,7 @@ gen_path = btstack_root + '/platform/daemon/binding/python/btstack/'
 defines = parser.parse_defines()
 
 # parse commands
-commands = parser.parse_commands(camel_case=False)
+commands = parser.parse_daemon_commands(camel_case=False)
 
 # parse bluetooth.h to get used events
 (events, le_events, event_types) = parser.parse_events()
