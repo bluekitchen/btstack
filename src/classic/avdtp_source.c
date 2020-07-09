@@ -141,15 +141,15 @@ uint8_t avdtp_source_discover_stream_endpoints(uint16_t avdtp_cid){
 }
 
 uint8_t avdtp_source_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
-    return avdtp_get_capabilities(avdtp_cid, remote_seid, avdtp_source_context);
+    return avdtp_get_capabilities(avdtp_cid, remote_seid);
 }
 
 uint8_t avdtp_source_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
-    return avdtp_get_all_capabilities(avdtp_cid, remote_seid, avdtp_source_context);
+    return avdtp_get_all_capabilities(avdtp_cid, remote_seid);
 }
 
 uint8_t avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
-    return avdtp_get_configuration(avdtp_cid, remote_seid, avdtp_source_context);
+    return avdtp_get_configuration(avdtp_cid, remote_seid);
 }
 
 uint8_t avdtp_source_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
