@@ -4190,6 +4190,8 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 #ifdef ENABLE_CLASSIC
     bd_addr_t addr;
     hci_connection_t * conn;
+#endif
+#ifdef ENABLE_LE_CENTRAL
     uint8_t initiator_filter_policy;
 #endif
 
