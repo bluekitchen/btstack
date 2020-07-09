@@ -288,7 +288,7 @@ default_target: all
 
 # compile .gatt descriptions
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
 ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
