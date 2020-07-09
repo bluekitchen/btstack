@@ -1980,11 +1980,12 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
 
 static void handle_command_complete_event(uint8_t * packet, uint16_t size){
 
+    uint16_t manufacturer;
+#ifdef ENABLE_CLASSIC
     hci_con_handle_t handle;
     hci_connection_t * conn;
-    uint16_t manufacturer;
     uint8_t status;
-
+#endif
     // get num cmd packets - limit to 1 to reduce complexity
     hci_stack->num_cmd_packets = packet[2] ? 1 : 0;
 
@@ -4186,17 +4187,19 @@ static void hci_run(void){
 int hci_send_cmd_packet(uint8_t *packet, int size){
     // house-keeping
     
-    if (IS_COMMAND(packet, hci_write_loopback_mode)){
-        hci_stack->loopback_mode = packet[3];
-    }
-
 #ifdef ENABLE_CLASSIC
     bd_addr_t addr;
     hci_connection_t * conn;
     uint8_t initiator_filter_policy;
+#endif
 
     uint16_t opcode = little_endian_read_16(packet, 0);
     switch (opcode) {
+        case HCI_OPCODE_HCI_WRITE_LOOPBACK_MODE:
+            hci_stack->loopback_mode = packet[3];
+            break;
+
+#ifdef ENABLE_CLASSIC
         case HCI_OPCODE_HCI_CREATE_CONNECTION:
             reverse_bd_addr(&packet[3], addr);
             log_info("Create_connection to %s", bd_addr_to_str(addr));
@@ -4309,10 +4312,10 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
             hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
             break;
+#endif
+#endif
         default:
             break;
-#endif
-#endif
     }
 
     hci_stack->num_cmd_packets--;
