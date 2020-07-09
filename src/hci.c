@@ -2124,6 +2124,8 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_handle_read_encryption_key_size_complete(conn, key_size);
             break;
 #endif
+        default:
+            break;
     }
 }
 
@@ -4191,126 +4193,127 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 #ifdef ENABLE_CLASSIC
     bd_addr_t addr;
     hci_connection_t * conn;
+    uint8_t initiator_filter_policy;
 
-    // create_connection?
-    if (IS_COMMAND(packet, hci_create_connection)){
-        reverse_bd_addr(&packet[3], addr);
-        log_info("Create_connection to %s", bd_addr_to_str(addr));
-
-        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-        if (!conn){
-            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-            if (!conn){
-                // notify client that alloc failed
-                hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
-                return -1; // packet not sent to controller
-            }
-            conn->state = SEND_CREATE_CONNECTION;
-        }
-        log_info("conn state %u", conn->state);
-        switch (conn->state){
-            // if connection active exists
-            case OPEN:
-                // and OPEN, emit connection complete command
-                hci_emit_connection_complete(addr, conn->con_handle, 0);
-                return -1; // packet not sent to controller
-            case RECEIVED_DISCONNECTION_COMPLETE:
-                // create connection triggered in disconnect complete event, let's do it now
-                break;
-            case SEND_CREATE_CONNECTION:
-                // connection created by hci, e.g. dedicated bonding, but not executed yet, let's do it now
-                break;
-            default:
-                // otherwise, just ignore as it is already in the open process
-                return -1; // packet not sent to controller
-        }
-        conn->state = SENT_CREATE_CONNECTION;
-
-        // track outgoing connection
-        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_ACL;
-        (void)memcpy(hci_stack->outgoing_addr, addr, 6);
-    }
-
-    else if (IS_COMMAND(packet, hci_link_key_request_reply)){
-        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_REPLY);
-    }
-    else if (IS_COMMAND(packet, hci_link_key_request_negative_reply)){
-        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
-    }
-    
-    else if (IS_COMMAND(packet, hci_delete_stored_link_key)){
-        if (hci_stack->link_key_db){
+    uint16_t opcode = little_endian_read_16(packet, 0);
+    switch (opcode) {
+        case HCI_OPCODE_HCI_CREATE_CONNECTION:
             reverse_bd_addr(&packet[3], addr);
-            hci_stack->link_key_db->delete_link_key(addr);
-        }
-    }
+            log_info("Create_connection to %s", bd_addr_to_str(addr));
 
-    else if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
-    ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
-        reverse_bd_addr(&packet[3], addr);
-        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-        if (conn){
-            connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
-        }
-    }
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) {
+                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                if (!conn) {
+                    // notify client that alloc failed
+                    hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
+                    return -1; // packet not sent to controller
+                }
+                conn->state = SEND_CREATE_CONNECTION;
+            }
+            log_info("conn state %u", conn->state);
+            switch (conn->state) {
+                // if connection active exists
+                case OPEN:
+                    // and OPEN, emit connection complete command
+                    hci_emit_connection_complete(addr, conn->con_handle, 0);
+                    return -1; // packet not sent to controller
+                case RECEIVED_DISCONNECTION_COMPLETE:
+                    // create connection triggered in disconnect complete event, let's do it now
+                    break;
+                case SEND_CREATE_CONNECTION:
+                    // connection created by hci, e.g. dedicated bonding, but not executed yet, let's do it now
+                    break;
+                default:
+                    // otherwise, just ignore as it is already in the open process
+                    return -1; // packet not sent to controller
+            }
+            conn->state = SENT_CREATE_CONNECTION;
 
-    else if (IS_COMMAND(packet, hci_user_confirmation_request_negative_reply)
-    ||  IS_COMMAND(packet, hci_user_confirmation_request_reply)
-    ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
-    ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
-        reverse_bd_addr(&packet[3], addr);
-        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-        if (conn){
-            connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
-        }
-    }
+            // track outgoing connection
+            hci_stack->outgoing_addr_type = BD_ADDR_TYPE_ACL;
+            (void) memcpy(hci_stack->outgoing_addr, addr, 6);
+            break;
+        case HCI_OPCODE_HCI_LINK_KEY_REQUEST_REPLY:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_REPLY);
+            break;
+        case HCI_OPCODE_HCI_LINK_KEY_REQUEST_NEGATIVE_REPLY:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
+            break;
+        case HCI_OPCODE_HCI_DELETE_STORED_LINK_KEY:
+            if (hci_stack->link_key_db) {
+                reverse_bd_addr(&packet[3], addr);
+                hci_stack->link_key_db->delete_link_key(addr);
+            }
+            break;
+        case HCI_OPCODE_HCI_PIN_CODE_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_PIN_CODE_REQUEST_REPLY:
+            reverse_bd_addr(&packet[3], addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (conn) {
+                connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
+            }
+            break;
+        case HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_REPLY:
+        case HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_REPLY:
+            reverse_bd_addr(&packet[3], addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (conn) {
+                connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
+            }
+            break;
 
 #ifdef ENABLE_SCO_OVER_HCI
-    // setup_synchronous_connection? Voice setting at offset 22
-    else if (IS_COMMAND(packet, hci_setup_synchronous_connection)){
-        // TODO: compare to current setting if sco connection already active
-        hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
-    }
-    // accept_synchronus_connection? Voice setting at offset 18
-    else if (IS_COMMAND(packet, hci_accept_synchronous_connection)){
-        // TODO: compare to current setting if sco connection already active
-        hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
-    }
+        case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
+            // setup_synchronous_connection? Voice setting at offset 22
+            // TODO: compare to current setting if sco connection already active
+            hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 15);
+            break;
+        case HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION:
+            // accept_synchronus_connection? Voice setting at offset 18
+            // TODO: compare to current setting if sco connection already active
+            hci_stack->sco_voice_setting_active = little_endian_read_16(packet, 19);
+            break;
 #endif
 #endif
 
 #ifdef ENABLE_BLE
-    else if (IS_COMMAND(packet, hci_le_set_random_address)){
-        hci_stack->le_random_address_set = 1;
-        reverse_bd_addr(&packet[3], hci_stack->le_random_address);
-    }
+        case HCI_OPCODE_HCI_LE_SET_RANDOM_ADDRESS:
+            hci_stack->le_random_address_set = 1;
+            reverse_bd_addr(&packet[3], hci_stack->le_random_address);
+            break;
 #ifdef ENABLE_LE_PERIPHERAL
-    else if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
-        hci_stack->le_advertisements_active = packet[3];
-    }
+        case HCI_OPCODE_HCI_LE_SET_ADVERTISE_ENABLE:
+            hci_stack->le_advertisements_active = packet[3];
+            break;
 #endif
 #ifdef ENABLE_LE_CENTRAL
-    else if (IS_COMMAND(packet, hci_le_create_connection)){
-        // white list used?
-        uint8_t initiator_filter_policy = packet[7];
-        switch (initiator_filter_policy){
-            case 0:
-                // whitelist not used
-                hci_stack->le_connecting_state = LE_CONNECTING_DIRECT;
-                break;
-            case 1:
-                hci_stack->le_connecting_state = LE_CONNECTING_WHITELIST;
-                break;
-            default:
-                log_error("Invalid initiator_filter_policy in LE Create Connection %u", initiator_filter_policy);
-                break;
-        }
-    }
-    else if (IS_COMMAND(packet, hci_le_create_connection_cancel)){
-        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-    }
+        case HCI_OPCODE_HCI_LE_CREATE_CONNECTION:
+            // white list used?
+            initiator_filter_policy = packet[7];
+            switch (initiator_filter_policy) {
+                case 0:
+                    // whitelist not used
+                    hci_stack->le_connecting_state = LE_CONNECTING_DIRECT;
+                    break;
+                case 1:
+                    hci_stack->le_connecting_state = LE_CONNECTING_WHITELIST;
+                    break;
+                default:
+                    log_error("Invalid initiator_filter_policy in LE Create Connection %u", initiator_filter_policy);
+                    break;
+            }
+            break;
+        case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
+            hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+            break;
+        default:
+            break;
 #endif
 #endif
+    }
 
     hci_stack->num_cmd_packets--;
 
