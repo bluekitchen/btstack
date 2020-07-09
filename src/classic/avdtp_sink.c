@@ -104,7 +104,7 @@ void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentati
 // TODO remove
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    avdtp_packet_handler(packet_type, channel, packet, size, avdtp_sink_context);
+    avdtp_packet_handler(packet_type, channel, packet, size);
 }
 
 void avdtp_sink_init(avdtp_context_t * avdtp_context){

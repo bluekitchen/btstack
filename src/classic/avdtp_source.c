@@ -161,7 +161,7 @@ uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    avdtp_packet_handler(packet_type, channel, packet, size, avdtp_source_context);      
+    avdtp_packet_handler(packet_type, channel, packet, size);      
 }
 
 void avdtp_source_init(avdtp_context_t * avdtp_context){
