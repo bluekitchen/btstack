@@ -993,7 +993,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection) {
+static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection) {
     uint16_t i;
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         if (hfp_connection->ag_indicators[i].status_changed) {

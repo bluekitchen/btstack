@@ -1979,6 +1979,7 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
 #endif
 
 static void handle_command_complete_event(uint8_t * packet, uint16_t size){
+    UNUSED(size);
 
     uint16_t manufacturer;
 #ifdef ENABLE_CLASSIC
