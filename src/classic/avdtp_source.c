@@ -137,7 +137,7 @@ uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid){
 }
 
 uint8_t avdtp_source_discover_stream_endpoints(uint16_t avdtp_cid){
-    return avdtp_discover_stream_endpoints(avdtp_cid, avdtp_source_context);
+    return avdtp_discover_stream_endpoints(avdtp_cid);
 }
 
 uint8_t avdtp_source_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
@@ -171,10 +171,10 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     }
     avdtp_source_context = avdtp_context;
     avdtp_source_context->stream_endpoints = NULL;
-    avdtp_source_context->connections = NULL;
     avdtp_source_context->stream_endpoints_id_counter = 0;
     avdtp_source_context->query_role = AVDTP_SINK;
     avdtp_source_context->packet_handler = packet_handler;
+    avdtp_source_context->role = AVDTP_ROLE_SOURCE;
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }

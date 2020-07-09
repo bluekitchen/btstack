@@ -114,10 +114,10 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     }
     avdtp_sink_context = avdtp_context;
     avdtp_sink_context->stream_endpoints = NULL;
-    avdtp_sink_context->connections = NULL;
     avdtp_sink_context->stream_endpoints_id_counter = 0;
     avdtp_sink_context->query_role = AVDTP_SOURCE;
     avdtp_sink_context->packet_handler = packet_handler;
+    avdtp_sink_context->role = AVDTP_ROLE_SINK;
 
     l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
@@ -171,7 +171,7 @@ uint8_t avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t local_seid){
 }
 
 uint8_t avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid){
-    return avdtp_discover_stream_endpoints(avdtp_cid, avdtp_sink_context);
+    return avdtp_discover_stream_endpoints(avdtp_cid);
 }
 
 uint8_t avdtp_sink_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
@@ -195,7 +195,7 @@ uint8_t avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t r
 }
 
 uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_100us){
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid, avdtp_sink_context);
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         log_error("delay_report: no connection for signaling cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
