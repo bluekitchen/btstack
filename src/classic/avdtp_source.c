@@ -95,7 +95,7 @@ void avdtp_source_register_multiplexing_category(uint8_t seid, uint8_t fragmenta
 }
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
-    return avdtp_create_stream_endpoint(sep_type, media_type, avdtp_source_context);
+    return avdtp_create_stream_endpoint(sep_type, media_type);
 }
 
 uint8_t avdtp_source_connect(bd_addr_t remote, uint16_t * avdtp_cid){
@@ -107,23 +107,23 @@ uint8_t avdtp_source_disconnect(uint16_t avdtp_cid){
 }
 
 uint8_t avdtp_source_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){
-    return avdtp_open_stream(avdtp_cid, local_seid, remote_seid, avdtp_source_context);
+    return avdtp_open_stream(avdtp_cid, local_seid, remote_seid);
 }
 
 uint8_t avdtp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_start_stream(avdtp_cid, local_seid, avdtp_source_context);
+    return avdtp_start_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_stop_stream(avdtp_cid, local_seid, avdtp_source_context);
+    return avdtp_stop_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_source_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_abort_stream(avdtp_cid, local_seid, avdtp_source_context);
+    return avdtp_abort_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_suspend_stream(avdtp_cid, local_seid, avdtp_source_context);
+    return avdtp_suspend_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_source_discover_stream_endpoints(uint16_t avdtp_cid){

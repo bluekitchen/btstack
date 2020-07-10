@@ -618,11 +618,11 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uin
 }
 
 uint8_t a2dp_source_start_stream(uint16_t a2dp_cid, uint8_t local_seid){
-    return avdtp_start_stream(a2dp_cid, local_seid, &a2dp_source_context);
+    return avdtp_start_stream(a2dp_cid, local_seid);
 }
 
 uint8_t a2dp_source_pause_stream(uint16_t a2dp_cid, uint8_t local_seid){
-    return avdtp_suspend_stream(a2dp_cid, local_seid, &a2dp_source_context);
+    return avdtp_suspend_stream(a2dp_cid, local_seid);
 }
 
 void a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid){

@@ -425,7 +425,7 @@ void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_c
 /* END: tracking can send now requests pro l2cap cid */
 
 
-avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context){
+avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_memory_avdtp_stream_endpoint_get();
     if (!stream_endpoint){
         log_error("Not enough memory to create stream endpoint");
@@ -955,7 +955,7 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_context_t * context){
+uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         log_error("avdtp_media_connect: no connection for signaling cid 0x%02x found", avdtp_cid);
@@ -989,7 +989,7 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context){
+uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         log_error("avdtp_start_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
@@ -1023,7 +1023,7 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context){
+uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         log_error("avdtp_stop_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
@@ -1052,7 +1052,7 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context){
+uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         log_error("avdtp_abort_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
@@ -1081,7 +1081,7 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context){
+uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){
         log_error("avdtp_suspend_stream: no connection for signaling cid 0x%02x found", avdtp_cid);

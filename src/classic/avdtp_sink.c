@@ -108,7 +108,7 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
-    return avdtp_create_stream_endpoint(sep_type, media_type, avdtp_sink_context);
+    return avdtp_create_stream_endpoint(sep_type, media_type);
 }
 
 void avdtp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
@@ -126,23 +126,23 @@ uint8_t avdtp_sink_disconnect(uint16_t avdtp_cid){
 }
 
 uint8_t avdtp_sink_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){
-    return avdtp_open_stream(avdtp_cid, local_seid, remote_seid, avdtp_sink_context);
+    return avdtp_open_stream(avdtp_cid, local_seid, remote_seid);
 }
 
 uint8_t avdtp_sink_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_start_stream(avdtp_cid, local_seid, avdtp_sink_context);
+    return avdtp_start_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_sink_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_stop_stream(avdtp_cid, local_seid, avdtp_sink_context);
+    return avdtp_stop_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_sink_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_abort_stream(avdtp_cid, local_seid, avdtp_sink_context);
+    return avdtp_abort_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_suspend_stream(avdtp_cid, local_seid, avdtp_sink_context);
+    return avdtp_suspend_stream(avdtp_cid, local_seid);
 }
 
 uint8_t avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid){
