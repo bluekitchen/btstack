@@ -80,6 +80,7 @@ ${BTSTACK_ROOT}/src/l2cap_signaling.c \
 controller/controller.c \
 controller/hci_event.c \
 controller/hopping.c \
+controller/ll_sx1280.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma.c \
