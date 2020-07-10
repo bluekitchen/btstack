@@ -56,6 +56,7 @@
 avdtp_context_t * avdtp_source_context = NULL;
 avdtp_context_t * avdtp_sink_context = NULL;
 static avdtp_context_t * sdp_query_context = NULL;
+static uint16_t sdp_query_context_avdtp_cid = 0;
 
 static btstack_linked_list_t connections;
 static uint16_t initiator_transaction_id_counter = 0;
@@ -240,16 +241,13 @@ static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
     return stream_endpoint_id;
 }
 
-static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, avdtp_connection_t * connection, avdtp_context_t * avdtp_context) {
-    sdp_query_context = avdtp_context;
-
+static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, avdtp_connection_t * connection) {
     connection->avdtp_l2cap_psm = 0;
     connection->avdtp_version  = 0;
     connection->sink_supported = false;
     connection->source_supported = false;
+    sdp_query_context_avdtp_cid = connection->avdtp_cid;
     
-    sdp_query_context->avdtp_cid = connection->avdtp_cid;
-
     return sdp_client_query_uuid16(packet_handler, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
 }
 
@@ -285,7 +283,9 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, avdtp_context_t * avd
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    return avdtp_start_sdp_query(&avdtp_handle_sdp_client_query_result, connection, avdtp_context);
+    
+    sdp_query_context = avdtp_context;
+    return avdtp_start_sdp_query(&avdtp_handle_sdp_client_query_result, connection);
 }
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint){
@@ -542,6 +542,7 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
     if (connection == NULL) return;
     avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, connection->avdtp_cid, connection->remote_addr, status);
     avdtp_finalize_connection(connection);
+    sdp_query_context_avdtp_cid = 0;
     log_info("SDP query failed with status 0x%02x.", status);
 }
 
@@ -555,9 +556,9 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(sdp_query_context->avdtp_cid);
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(sdp_query_context_avdtp_cid);
     if (!connection) {
-        log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context->avdtp_cid);
+        log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context_avdtp_cid);
         return;
     }
     
