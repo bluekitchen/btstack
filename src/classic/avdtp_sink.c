@@ -115,7 +115,6 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context = avdtp_context;
     avdtp_sink_context->stream_endpoints = NULL;
     avdtp_sink_context->stream_endpoints_id_counter = 0;
-    avdtp_sink_context->query_role = AVDTP_SOURCE;
     avdtp_sink_context->packet_handler = packet_handler;
     avdtp_sink_context->role = AVDTP_ROLE_SINK;
 

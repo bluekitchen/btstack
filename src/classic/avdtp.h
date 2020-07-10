@@ -133,13 +133,13 @@ typedef enum {
     AVDTP_RESPONSE_REJECT_MSG
 } avdtp_message_type_t;
 
-typedef enum{
+typedef enum {
     AVDTP_AUDIO = 0,
     AVDTP_VIDEO,
     AVDTP_MULTIMEDIA 
 } avdtp_media_type_t;
 
-typedef enum{
+typedef enum {
     AVDTP_CODEC_SBC             = 0x00,
     AVDTP_CODEC_MPEG_1_2_AUDIO  = 0x01, 
     AVDTP_CODEC_MPEG_2_4_AAC    = 0x02,
@@ -147,23 +147,20 @@ typedef enum{
     AVDTP_CODEC_NON_A2DP        = 0xFF
 } avdtp_media_codec_type_t;
 
-typedef enum{
+typedef enum {
     AVDTP_CONTENT_PROTECTION_DTCP = 0x0001,
     AVDTP_CONTENT_PROTECTION_SCMS_T = 0x0002
 } avdtp_content_protection_type_t;
 
-typedef enum{
+typedef enum {
     AVDTP_SOURCE = 0,
     AVDTP_SINK
 } avdtp_sep_type_t;
 
-typedef enum{
+typedef enum {
     AVDTP_ROLE_SOURCE = 0,
-    AVDTP_ROLE_SINK,
-    AVDTP_ROLE_SINK_AND_SOURCE,
-    AVDTP_ROLE_UNKNOWN
+    AVDTP_ROLE_SINK
 } avdtp_role_t;
-
 
 typedef enum {
     AVDTP_SERVICE_CATEGORY_INVALID_0 = 0x00,
@@ -351,7 +348,8 @@ typedef struct {
 
 typedef enum {
     AVDTP_SIGNALING_CONNECTION_IDLE,
-    AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
+    AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE,
+    AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
     AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RETRY,
     AVDTP_SIGNALING_CONNECTION_OPENED,
@@ -551,7 +549,8 @@ typedef struct {
     void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
     btstack_packet_handler_t packet_handler;
     
-    avdtp_sep_type_t query_role;
+    //avdtp_sep_type_t query_role;
+    
     avdtp_role_t role;
 
     // SDP query
@@ -559,7 +558,8 @@ typedef struct {
     uint16_t avdtp_cid;
     uint16_t avdtp_l2cap_psm;
     uint16_t avdtp_version;
-    uint8_t  role_supported;
+    bool     sink_supported;
+    bool     source_supported;
 } avdtp_context_t; 
 
 extern avdtp_context_t * avdtp_source_context;

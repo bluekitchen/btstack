@@ -245,6 +245,8 @@ static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, av
     sdp_query_context->avdtp_l2cap_psm = 0;
     sdp_query_context->avdtp_version  = 0;
     sdp_query_context->avdtp_cid = cid;
+    sdp_query_context->sink_supported = false;
+    sdp_query_context->source_supported = false;
     memcpy(sdp_query_context->remote_addr, remote_addr, 6);
 
     return sdp_client_query_uuid16(packet_handler, (uint8_t *) remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
@@ -269,11 +271,18 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_context_t * avdtp_context, uint16_
 
     connection = avdtp_create_connection(remote, cid);
     if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
-            
-    connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
+    
     connection->avdtp_cid = cid;
-    avdtp_context->avdtp_cid = cid;
-
+    switch (avdtp_context->role){
+        case AVDTP_ROLE_SOURCE:
+            connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE;
+            break;
+        case AVDTP_ROLE_SINK:
+            connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE;
+            break;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
     return avdtp_start_sdp_query(&avdtp_handle_sdp_client_query_result, avdtp_context, remote, cid);
 }
 
@@ -456,6 +465,7 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
         if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
 
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+
                 case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
                     if (de_get_element_type(attribute_value) != DE_DES) break;
                     for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
@@ -464,20 +474,12 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
                         uint32_t uuid = de_get_uuid32(element);
                         switch (uuid){
                             case BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE:
-                                if (sdp_query_context->query_role == AVDTP_SOURCE) {
-                                    sdp_query_context->role_supported = 1;
-                                    break;
-                                }
-                                // log_info("SDP Attribute 0x%04x: AVDTP SOURCE protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                // avdtp_remote_uuid = uuid;
+                                sdp_query_context->source_supported = true;
+                                log_info("source_supported");
                                 break;
                             case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
-                                if (sdp_query_context->query_role == AVDTP_SINK) {
-                                    sdp_query_context->role_supported = 1;
-                                    break;
-                                }
-                                // log_info("SDP Attribute 0x%04x: AVDTP SINK protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                // avdtp_remote_uuid = uuid;
+                                sdp_query_context->sink_supported = true;
+                                log_info("sink_supported");
                                 break;
                             default:
                                 break;
@@ -485,7 +487,7 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
                     }
                     break;
 
-                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: 
                     // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
                     for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
@@ -502,10 +504,11 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
 
                         uuid = de_get_uuid32(element);
                         des_iterator_next(&prot_it);
+                        // we assume that the even if there are both roles supported, remote device uses the same psm and avdtp version for both
                         switch (uuid){
                             case BLUETOOTH_PROTOCOL_L2CAP:
                                 if (!des_iterator_has_more(&prot_it)) continue;
-                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_l2cap_psm);
+                                de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_l2cap_psm);                   
                                 break;
                             case BLUETOOTH_PROTOCOL_AVDTP:
                                 if (!des_iterator_has_more(&prot_it)) continue;
@@ -515,8 +518,8 @@ static void avdtp_handle_sdp_client_query_attribute_value(uint8_t *packet){
                                 break;
                         }
                     }
-                }
                     break;
+
                 default:
                     break;
             }
@@ -547,45 +550,64 @@ static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
 }
 
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(sdp_query_context->avdtp_cid);
     if (!connection) {
         log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context->avdtp_cid);
         return;
     }
-    if (connection->state != AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE) return;
-
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
-
+    
     uint8_t status;
-    switch (hci_event_packet_get_type(packet)){
-        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            avdtp_handle_sdp_client_query_attribute_value(packet);
+    bool query_succeded = false;
+    
+    switch (connection->state){
+        case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
+            switch (hci_event_packet_get_type(packet)){
+                case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+                    avdtp_handle_sdp_client_query_attribute_value(packet);
+                    return;        
+                case SDP_EVENT_QUERY_COMPLETE:
+                    status = sdp_event_query_complete_get_status(packet);
+                    if (status != ERROR_CODE_SUCCESS) break;
+                    if (!sdp_query_context->sink_supported) break;
+                    if (sdp_query_context->avdtp_l2cap_psm == 0) break;
+                    query_succeded = true;
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
+            }
             break;
-            
-        case SDP_EVENT_QUERY_COMPLETE:
-            if (connection->state != AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE){
-                // bail out, we must have had an incoming connection in the meantime;
-                break;
+        case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE:
+            switch (hci_event_packet_get_type(packet)){
+                case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+                    avdtp_handle_sdp_client_query_attribute_value(packet);
+                    return;              
+                case SDP_EVENT_QUERY_COMPLETE:
+                    status = sdp_event_query_complete_get_status(packet);
+                    if (status != ERROR_CODE_SUCCESS) break;
+                    if (!sdp_query_context->source_supported) break;
+                    if (sdp_query_context->avdtp_l2cap_psm == 0) break;
+                    query_succeded = true;
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
-            status = sdp_event_query_complete_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                avdtp_handle_sdp_query_failed(connection, status);
-                break;
-            } 
-            if (!sdp_query_context->role_supported){
-                avdtp_handle_sdp_query_failed(connection, status);
-                break;
-            }
-            if (!sdp_query_context->avdtp_l2cap_psm) {
-                avdtp_handle_sdp_query_failed(connection, status);
-                break;
-            }
-            avdtp_handle_sdp_query_succeeded(connection);
+            break;
+        default:
+            // bail out, we must have had an incoming connection in the meantime;
+            return;
+    }
 
-            l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
-            break;
+    if (query_succeded){
+        avdtp_handle_sdp_query_succeeded(connection);
+        l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+    } else {
+        avdtp_handle_sdp_query_failed(connection, status);
     }
 }
 

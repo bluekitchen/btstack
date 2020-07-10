@@ -240,7 +240,6 @@ static void a2dp_signaling_emit_reconfigured(btstack_packet_handler_t callback, 
 
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
-    log_info("a2dp_source_set_config_timer_handler, app state %u", app_state);
     if (app_state != A2DP_CONNECTED) return;
     app_state = A2DP_W2_DISCOVER_SEPS;
     avdtp_source_discover_stream_endpoints(sc.avdtp_cid);
@@ -278,12 +277,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             
             if (status != 0){
-                log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION failed status %d ---", status);
+                log_info("A2DP singnaling connection failed status %d", status);
                 app_state = A2DP_IDLE;
                 a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, status);
                 break;
             }
-            log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION established avdtp_cid 0x%02x ---", a2dp_source_context.avdtp_cid);
+            log_info("A2DP singnaling connection established avdtp_cid 0x%02x", a2dp_source_context.avdtp_cid);
 
             sc.avdtp_cid = cid;
             sc.active_remote_sep = NULL;
@@ -292,11 +291,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             memset(remote_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
 
             // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
-            log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION app_state %u", app_state);
             if (app_state == A2DP_W4_CONNECTED){
+                log_info("A2DP singnaling connection: discover seps");
                 app_state = A2DP_W2_DISCOVER_SEPS;
                 avdtp_source_discover_stream_endpoints(sc.avdtp_cid);
             } else {
+                log_info("A2DP singnaling connection: wait a bit, then discover seps");
                 app_state = A2DP_CONNECTED;
                 a2dp_source_set_config_timer_start();
             }

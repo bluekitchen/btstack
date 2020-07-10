@@ -172,7 +172,6 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     avdtp_source_context = avdtp_context;
     avdtp_source_context->stream_endpoints = NULL;
     avdtp_source_context->stream_endpoints_id_counter = 0;
-    avdtp_source_context->query_role = AVDTP_SINK;
     avdtp_source_context->packet_handler = packet_handler;
     avdtp_source_context->role = AVDTP_ROLE_SOURCE;
 
