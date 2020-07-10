@@ -341,12 +341,13 @@ static ll_pdu_t * ll_reserved_acl_buffer;
 static void (*controller_packet_handler)(uint8_t packet_type, uint8_t * packet, uint16_t size);
 
 static uint8_t empty_packet[2];
+static uint8_t ll_outgoing_hci_event[258];
+static bool ll_send_disconnected;
+static bool ll_send_connection_complete;
 
 //
 // Controller
 //
-static bool send_disconnected;
-static bool send_connection_complete;
 static uint8_t send_hardware_error;
 
 static btstack_data_source_t hci_transport_data_source;
@@ -481,7 +482,7 @@ static void ll_terminate(void){
     // disable auto tx
     Radio.StopAutoTx();
     // notify host stack
-    send_disconnected = true;
+    ll_send_disconnected = true;
 }
 
 static void sync_next_hop(void){
@@ -672,6 +673,14 @@ const static RadioCallbacks_t Callbacks =
 
 // Link Layer
 
+static void ll_emit_hci_event(const hci_event_t * event, ...){
+    va_list argptr;
+    va_start(argptr, event);
+    uint16_t length = hci_event_create_from_template_and_arglist(ll_outgoing_hci_event, event, argptr);
+    va_end(argptr);
+    controller_packet_handler(HCI_EVENT_PACKET, ll_outgoing_hci_event, length);
+}
+
 static void ll_init(void){
 
     // setup memory pools
@@ -792,7 +801,7 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     ll_state = LL_STATE_CONNECTED;
 
     receive_first_master();
-    send_connection_complete = true;
+    ll_send_connection_complete = true;
 }
 
 static void ll_handle_control(ll_pdu_t * rx_packet){
@@ -842,51 +851,6 @@ static void ll_handle_data(ll_pdu_t * rx_packet){
     little_endian_store_16(acl_packet, 2, rx_packet->len);
     memcpy(&acl_packet[4], rx_packet->payload, rx_packet->len);
     (*controller_packet_handler)(HCI_ACL_DATA_PACKET, acl_packet, rx_packet->len + 4);
-}
-
-static void ll_execute_once(void){
-    // process received packets
-    while (1){
-        ll_pdu_t * rx_packet = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.rx_queue);
-        if (rx_packet == NULL) break;
-        if (rx_packet->len > 0){
-            if ((rx_packet->flags & LL_PDU_FLAG_DATA_PDU) == 0){
-                // ADV PDU
-                // connect ind?
-                if ((rx_packet->header & 0x0f) == PDU_ADV_TYPE_CONNECT_IND){
-                    ll_handle_conn_ind(rx_packet);
-                }
-                else {
-                    radio_state = RADIO_LOWPOWER;
-                }
-            } else {
-                // DATA PDU
-                uint8_t ll_id = rx_packet->header & 3;
-                if (ll_id == PDU_DATA_LLID_CTRL) {
-                    ll_handle_control(rx_packet);
-                } else {
-                    ll_handle_data(rx_packet);
-                }
-            }
-        }
-        // free packet
-        btstack_memory_ll_pdu_free(rx_packet);
-    }
-
-    switch ( ll_state ){
-        case LL_STATE_ADVERTISING:
-            switch ( radio_state) {
-                case RADIO_RX_ERROR:
-                case RADIO_LOWPOWER:
-                    radio_state = RADIO_W4_TX_DONE_TO_RX;
-                    send_adv();
-                    break;
-                default:
-                    break;
-            }
-        default:
-            break;
-    }
 }
 
 static void ll_set_scan_parameters(uint8_t le_scan_type, uint16_t le_scan_interval, uint16_t le_scan_window, uint8_t own_address_type, uint8_t scanning_filter_policy){
@@ -1003,6 +967,77 @@ static void ll_get_and_reset_num_completed(uint16_t * con_handle, uint16_t * num
     *num_packets = num_completed;
 }
 
+static void ll_execute_once(void){
+    // process received packets
+    while (1){
+        ll_pdu_t * rx_packet = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.rx_queue);
+        if (rx_packet == NULL) break;
+        if (rx_packet->len > 0){
+            if ((rx_packet->flags & LL_PDU_FLAG_DATA_PDU) == 0){
+                // ADV PDU
+                // connect ind?
+                if ((rx_packet->header & 0x0f) == PDU_ADV_TYPE_CONNECT_IND){
+                    ll_handle_conn_ind(rx_packet);
+                }
+                else {
+                    radio_state = RADIO_LOWPOWER;
+                }
+            } else {
+                // DATA PDU
+                uint8_t ll_id = rx_packet->header & 3;
+                if (ll_id == PDU_DATA_LLID_CTRL) {
+                    ll_handle_control(rx_packet);
+                } else {
+                    ll_handle_data(rx_packet);
+                }
+            }
+        }
+        // free packet
+        btstack_memory_ll_pdu_free(rx_packet);
+    }
+
+    switch ( ll_state ){
+        case LL_STATE_ADVERTISING:
+            switch ( radio_state) {
+                case RADIO_RX_ERROR:
+                case RADIO_LOWPOWER:
+                    radio_state = RADIO_W4_TX_DONE_TO_RX;
+                    send_adv();
+                    break;
+                default:
+                    break;
+            }
+        default:
+            break;
+    }
+
+    // generate HCI events
+    // send num completed
+    bool check_number_packets_completed = true;
+    while (check_number_packets_completed) {
+        uint16_t con_handle = 0;
+        uint16_t num_completed = 0;
+        ll_get_and_reset_num_completed(&con_handle, &num_completed);
+        if (num_completed > 0){
+            ll_emit_hci_event(&hci_event_number_of_completed_packets_1, 1, con_handle, num_completed);
+        } else {
+            check_number_packets_completed = false;
+        }
+    }
+
+    if (ll_send_connection_complete){
+        ll_send_connection_complete = false;
+        ll_emit_hci_event(&hci_subevent_le_connection_complete,
+                                 ERROR_CODE_SUCCESS, HCI_CON_HANDLE, 0x01 /* slave */, ctx.peer_addr_type, ctx.peer_addr,
+                                 ctx.conn_interval_1250us, ctx.conn_latency, ctx.supervision_timeout_10ms, 0 /* master clock accuracy */);
+    }
+
+    if (ll_send_disconnected){
+        ll_send_disconnected = false;
+        ll_emit_hci_event(&hci_event_disconnection_complete,
+                                 ERROR_CODE_SUCCESS, HCI_CON_HANDLE, 0);
+    }
+}
 static bool ll_reserve_acl_packet(void){
     if (ll_reserved_acl_buffer == NULL){
         ll_reserved_acl_buffer = btstack_memory_ll_pdu_get();
@@ -1101,7 +1136,6 @@ static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
 
 // ACL handler
 static void controller_handle_acl_data(uint8_t * packet, uint16_t size){
-
     // so far, only single connection supported with fixed con handle
     hci_con_handle_t con_handle = little_endian_read_16(packet, 0) & 0xfff;
     btstack_assert(con_handle == HCI_CON_HANDLE);
@@ -1124,32 +1158,6 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
     if (hci_outgoing_event_ready){
         hci_outgoing_event_ready = false;
         hci_packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
-    }
-
-    // send num completed
-    bool check_number_packets_completed = true;
-    while (check_number_packets_completed) {
-        uint16_t con_handle = 0;
-        uint16_t num_completed = 0;
-        ll_get_and_reset_num_completed(&con_handle, &num_completed);
-        if (num_completed > 0){
-            transport_emit_hci_event(&hci_event_number_of_completed_packets_1, 1, con_handle, num_completed);
-        } else {
-            check_number_packets_completed = false;
-        }
-    }
-
-    if (send_connection_complete){
-        send_connection_complete = false;
-        transport_emit_hci_event(&hci_subevent_le_connection_complete,
-            ERROR_CODE_SUCCESS, HCI_CON_HANDLE, 0x01 /* slave */, ctx.peer_addr_type, ctx.peer_addr,
-            ctx.conn_interval_1250us, ctx.conn_latency, ctx.supervision_timeout_10ms, 0 /* master clock accuracy */);
-    }
-
-    if (send_disconnected){
-        send_disconnected = false;
-        transport_emit_hci_event(&hci_event_disconnection_complete,
-            ERROR_CODE_SUCCESS, HCI_CON_HANDLE, 0);
     }
 
     if (send_hardware_error != 0){
@@ -1239,7 +1247,6 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 }
 
 void controller_init(void){
-
 }
 
 static const hci_transport_t controller_transport = {
