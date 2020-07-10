@@ -648,7 +648,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     bool accept_streaming_connection;
     bool outoing_signaling_active;
     bool decline_connection;
-    uint16_t avdtp_cid;
 
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_connection_t * connection = NULL;
@@ -769,8 +768,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                     switch (connection->state){
                         case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED:
-                            avdtp_cid = connection->avdtp_cid;
-
                             switch (status){
                                 case ERROR_CODE_SUCCESS:
                                     connection->l2cap_signaling_cid = local_cid;
