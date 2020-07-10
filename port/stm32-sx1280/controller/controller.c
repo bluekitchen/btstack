@@ -337,19 +337,25 @@ static ll_state_t ll_state;
 static uint32_t ll_scan_interval_us;
 static uint32_t ll_scan_window_us;
 
-// Controller tasks
-static bool send_disconnected;
-static bool send_connection_complete;
-static uint8_t send_hardware_error;
+static ll_pdu_t * ll_reserved_acl_buffer;
+static void (*controller_packet_handler)(uint8_t packet_type, uint8_t * packet, uint16_t size);
 
 static uint8_t empty_packet[2];
 
-static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+//
+// Controller
+//
+static bool send_disconnected;
+static bool send_connection_complete;
+static uint8_t send_hardware_error;
 
 static btstack_data_source_t hci_transport_data_source;
 
 static uint8_t hci_outgoing_event[258];
 static bool    hci_outgoing_event_ready;
+
+static void (*hci_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+
 
 // memory pool for acl-le pdus
 static ll_pdu_t * btstack_memory_ll_pdu_get(void){
@@ -835,7 +841,7 @@ static void ll_handle_data(ll_pdu_t * rx_packet){
     acl_packet[1] = ll_id << 4;
     little_endian_store_16(acl_packet, 2, rx_packet->len);
     memcpy(&acl_packet[4], rx_packet->payload, rx_packet->len);
-    (*packet_handler)(HCI_ACL_DATA_PACKET, acl_packet, rx_packet->len + 4);
+    (*controller_packet_handler)(HCI_ACL_DATA_PACKET, acl_packet, rx_packet->len + 4);
 }
 
 static void ll_execute_once(void){
@@ -997,9 +1003,45 @@ static void ll_get_and_reset_num_completed(uint16_t * con_handle, uint16_t * num
     *num_packets = num_completed;
 }
 
+static bool ll_reserve_acl_packet(void){
+    if (ll_reserved_acl_buffer == NULL){
+        ll_reserved_acl_buffer = btstack_memory_ll_pdu_get();
+    }
+    return ll_reserved_acl_buffer != NULL;
+}
+
+static void ll_queue_acl_packet(const uint8_t * packet, uint16_t size){
+    btstack_assert(ll_reserved_acl_buffer != NULL);
+
+    ll_pdu_t * tx_packet = ll_reserved_acl_buffer;
+    ll_reserved_acl_buffer = NULL;
+
+    switch ((packet[1] >> 4) & 0x03){
+        case 0:
+        case 2:
+            tx_packet->header = PDU_DATA_LLID_DATA_START;
+            break;
+        case 1:
+            tx_packet->header = PDU_DATA_LLID_DATA_CONTINUE;
+            break;
+        case 3:
+            while(1);
+            break;
+        default:
+            break;
+    }
+    tx_packet->len = size - 4;
+    memcpy(tx_packet->payload, &packet[4], size - 4);
+    btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) tx_packet);
+}
+static void ll_register_packet_handler(void (*packet_handler)(uint8_t packet_type, uint8_t * packet, uint16_t size)){
+    controller_packet_handler = packet_handler;
+}
+
 /** BTstack Controller Implementation */
 
-// command handler
+// Controller State
+static bool controller_ll_acl_reserved;
 
 static void send_command_complete(uint16_t opcode, uint8_t status, const uint8_t * result, uint16_t len){
     hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
@@ -1059,30 +1101,13 @@ static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
 
 // ACL handler
 static void controller_handle_acl_data(uint8_t * packet, uint16_t size){
-    ll_pdu_t * tx_packet = (ll_pdu_t *) btstack_memory_ll_pdu_get();
-    btstack_assert (tx_packet != NULL);
 
-    // check connection handle
+    // so far, only single connection supported with fixed con handle
     hci_con_handle_t con_handle = little_endian_read_16(packet, 0) & 0xfff;
-    if (con_handle != HCI_CON_HANDLE) return;
+    btstack_assert(con_handle == HCI_CON_HANDLE);
 
-    switch ((packet[1] >> 4) & 0x03){
-        case 0:
-        case 2:
-            tx_packet->header = PDU_DATA_LLID_DATA_START;
-            break;
-        case 1:
-            tx_packet->header = PDU_DATA_LLID_DATA_CONTINUE;
-            break;
-        case 3:
-            while(1);
-            break;    
-        default:
-            break;
-    }
-    tx_packet->len = size - 4;
-    memcpy(tx_packet->payload, &packet[4], size - 4);
-    btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) tx_packet);
+    // just queue up
+    ll_queue_acl_packet(packet, size);
 }
 
 static void transport_emit_hci_event(const hci_event_t * event, ...){
@@ -1090,7 +1115,7 @@ static void transport_emit_hci_event(const hci_event_t * event, ...){
     va_start(argptr, event);
     uint16_t length = hci_event_create_from_template_and_arglist(hci_outgoing_event, event, argptr);
     va_end(argptr);
-    packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, length);
+    hci_packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, length);
 }
 
 static void transport_run(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
@@ -1098,7 +1123,7 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
     // deliver command complete events caused by command processor
     if (hci_outgoing_event_ready){
         hci_outgoing_event_ready = false;
-        packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
+        hci_packet_handler(HCI_EVENT_PACKET, hci_outgoing_event, hci_outgoing_event[1]+2);
     }
 
     // send num completed
@@ -1116,14 +1141,14 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
 
     if (send_connection_complete){
         send_connection_complete = false;
-        transport_emit_hci_event(&hci_subevent_le_connection_complete, 
+        transport_emit_hci_event(&hci_subevent_le_connection_complete,
             ERROR_CODE_SUCCESS, HCI_CON_HANDLE, 0x01 /* slave */, ctx.peer_addr_type, ctx.peer_addr,
             ctx.conn_interval_1250us, ctx.conn_latency, ctx.supervision_timeout_10ms, 0 /* master clock accuracy */);
     }
 
     if (send_disconnected){
         send_disconnected = false;
-        transport_emit_hci_event(&hci_event_disconnection_complete, 
+        transport_emit_hci_event(&hci_event_disconnection_complete,
             ERROR_CODE_SUCCESS, HCI_CON_HANDLE, 0);
     }
 
@@ -1136,12 +1161,18 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
     ll_execute_once();
 }
 
+static void transport_packet_handler(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    // just forward to hci
+    (*hci_packet_handler)(packet_type, packet, size);
+}
+
 /**
  * init transport
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
     UNUSED(transport_config);
+    ll_register_packet_handler(&transport_packet_handler);
 }
 
 /**
@@ -1173,7 +1204,23 @@ static int transport_close(void){
  * register packet handler for HCI packets: ACL, SCO, and Events
  */
 static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    packet_handler = handler;
+    hci_packet_handler = handler;
+}
+
+static int transport_can_send_packet_now(uint8_t packet_type){
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            return hci_outgoing_event_ready ? 1 : 0;
+        case HCI_ACL_DATA_PACKET:
+            if (controller_ll_acl_reserved == false){
+                controller_ll_acl_reserved = ll_reserve_acl_packet();
+            }
+            return controller_ll_acl_reserved ? 1 : 0;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return 0;
 }
 
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
@@ -1201,7 +1248,7 @@ static const hci_transport_t controller_transport = {
         &transport_open,
         &transport_close,
         &transport_register_packet_handler,
-        NULL,
+        &transport_can_send_packet_now,
         &transport_send_packet,
         NULL, // set baud rate
         NULL, // reset link
