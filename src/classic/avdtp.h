@@ -556,14 +556,11 @@ extern avdtp_context_t * avdtp_sink_context;
 
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t l2cap_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
+btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid);
-
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context);
-btstack_linked_list_t * avdtp_get_stream_endpoints(void);
-
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);
 void avdtp_register_reporting_category(avdtp_stream_endpoint_t * stream_endpoint);

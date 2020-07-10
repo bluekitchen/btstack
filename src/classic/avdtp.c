@@ -157,7 +157,7 @@ static avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_l2cap_cid(uint16_
     return NULL;
 }
 
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context){
+static avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -833,7 +833,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             break;
 
                         case AVDTP_SIGNALING_CONNECTION_OPENED:
-                            stream_endpoint = avdtp_get_stream_endpoint_for_signaling_cid(connection->l2cap_signaling_cid, context);
+                            stream_endpoint = avdtp_get_stream_endpoint_for_signaling_cid(connection->l2cap_signaling_cid);
                             if (!stream_endpoint){
                                 log_info("L2CAP_EVENT_CHANNEL_OPENED: stream_endpoint not found for signaling cid 0x%02x", connection->l2cap_signaling_cid);
                                 return;
