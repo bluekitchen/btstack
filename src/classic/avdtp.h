@@ -552,7 +552,6 @@ typedef struct {
     btstack_packet_handler_t avdtp_callback;
     btstack_packet_handler_t a2dp_callback;
     void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
-    btstack_packet_handler_t packet_handler;
     
     uint16_t avdtp_cid;
 } avdtp_context_t; 

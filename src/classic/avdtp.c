@@ -606,7 +606,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 
     if (query_succeded){
         avdtp_handle_sdp_query_succeeded(connection);
-        l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
+        l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
     } else {
         avdtp_handle_sdp_query_failed(connection, status);
     }
