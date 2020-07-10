@@ -653,6 +653,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     avdtp_connection_t * connection = NULL;
     
     avdtp_context_t * context = avdtp_get_active_contex();
+    handle_media_data = context->handle_media_data;
     
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
