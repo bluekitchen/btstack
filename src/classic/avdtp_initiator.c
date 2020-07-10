@@ -81,7 +81,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
     if (connection->initiator_connection_state == AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER) {
         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
     } else {
-        stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid, context);
+        stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
         if (!stream_endpoint){
             stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
         }
@@ -370,7 +370,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
     bool sent = avdtp_initiator_stream_config_subsm_run_signaling(connection);
     if (sent) return;
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
     if (!stream_endpoint){
         stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
     }

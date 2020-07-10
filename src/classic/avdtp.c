@@ -183,7 +183,7 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid){
     return NULL;
 }
 
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid, avdtp_context_t * context){
+avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
