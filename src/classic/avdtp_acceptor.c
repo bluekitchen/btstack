@@ -448,7 +448,7 @@ static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avd
 
 void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
     int sent = 1;
-    btstack_linked_list_t * stream_endpoints = &context->stream_endpoints;
+    btstack_linked_list_t * stream_endpoints = avdtp_get_stream_endpoints();
 
     switch (connection->acceptor_connection_state){
         case AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS:
@@ -477,7 +477,7 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
         return;      
     } 
     
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
     if (!stream_endpoint) return;
 
     uint8_t reject_service_category = connection->reject_service_category;

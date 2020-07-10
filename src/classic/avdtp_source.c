@@ -55,42 +55,42 @@
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 
 void avdtp_source_register_media_transport_category(uint8_t seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_media_transport_category(stream_endpoint);
 }
 
 void avdtp_source_register_reporting_category(uint8_t seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_reporting_category(stream_endpoint);
 }
 
 void avdtp_source_register_delay_reporting_category(uint8_t seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_delay_reporting_category(stream_endpoint);
 }
 
 void avdtp_source_register_recovery_category(uint8_t seid, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_recovery_category(stream_endpoint, maximum_recovery_window_size, maximum_number_media_packets);
 }
 
 void avdtp_source_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_content_protection_category(stream_endpoint, cp_type, cp_type_value, cp_type_value_len);
 }
 
 void avdtp_source_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_header_compression_category(stream_endpoint, back_ch, media, recovery);
 }
 
 void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_media_codec_category(stream_endpoint, media_type, media_codec_type, media_codec_info, media_codec_info_len);
 }
 
 void avdtp_source_register_multiplexing_category(uint8_t seid, uint8_t fragmentation){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_multiplexing_category(stream_endpoint, fragmentation);
 }
 
@@ -161,8 +161,6 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     btstack_assert(avdtp_context != NULL);
 
     avdtp_source_context = avdtp_context;
-    avdtp_source_context->stream_endpoints = NULL;
-
     l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
 
@@ -213,7 +211,7 @@ static void avdtp_source_copy_media_payload(uint8_t * media_packet, int size, in
 int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker){
     UNUSED(avdtp_cid);
     
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp source: no stream_endpoint with seid %d", local_seid);
         return 0;
@@ -240,7 +238,7 @@ int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_sei
 void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
     UNUSED(avdtp_cid);
     
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("AVDTP source: no stream_endpoint with seid %d", local_seid);
         return;
@@ -252,7 +250,7 @@ void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8
 int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid){
     UNUSED(avdtp_cid);
     
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, avdtp_source_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("A2DP source: no stream_endpoint with seid %d", local_seid);
         return 0;

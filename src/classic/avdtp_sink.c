@@ -53,42 +53,42 @@
 #include "classic/avdtp_util.h"
 
 void avdtp_sink_register_media_transport_category(uint8_t seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_media_transport_category(stream_endpoint);
 }
 
 void avdtp_sink_register_reporting_category(uint8_t seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_reporting_category(stream_endpoint);
 }
 
 void avdtp_sink_register_delay_reporting_category(uint8_t seid){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_delay_reporting_category(stream_endpoint);
 }
 
 void avdtp_sink_register_recovery_category(uint8_t seid, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_recovery_category(stream_endpoint, maximum_recovery_window_size, maximum_number_media_packets);
 }
 
 void avdtp_sink_register_content_protection_category(uint8_t seid, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_content_protection_category(stream_endpoint, cp_type, cp_type_value, cp_type_value_len);
 }
 
 void avdtp_sink_register_header_compression_category(uint8_t seid, uint8_t back_ch, uint8_t media, uint8_t recovery){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_header_compression_category(stream_endpoint, back_ch, media, recovery);
 }
 
 void avdtp_sink_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_media_codec_category(stream_endpoint, media_type, media_codec_type, media_codec_info, media_codec_info_len);
 }
 
 void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentation){
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid);
     avdtp_register_multiplexing_category(stream_endpoint, fragmentation);
 }
 /* END: tracking can send now requests pro l2cap cid */
@@ -103,9 +103,7 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
 void avdtp_sink_init(avdtp_context_t * avdtp_context){
     btstack_assert(avdtp_context != NULL);
 
-    avdtp_sink_context = avdtp_context;
-    avdtp_sink_context->stream_endpoints = NULL;
-    
+    avdtp_sink_context = avdtp_context;    
     l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
 

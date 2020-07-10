@@ -546,8 +546,6 @@ typedef struct {
 } avdtp_stream_endpoint_context_t;
 
 typedef struct {
-    btstack_linked_list_t stream_endpoints;
-
     btstack_packet_handler_t avdtp_callback;
     btstack_packet_handler_t a2dp_callback;
     void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
@@ -558,11 +556,14 @@ extern avdtp_context_t * avdtp_sink_context;
 
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t l2cap_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
+
+avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
+
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_l2cap_cid(uint16_t l2cap_cid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid, avdtp_context_t * context);
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context);
+btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);

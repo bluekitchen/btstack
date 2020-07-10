@@ -556,7 +556,7 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
 }
 
 uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, uint16_t * a2dp_cid){
-    sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(loc_seid, &a2dp_source_context);
+    sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(loc_seid);
     if (!sc.local_stream_endpoint){
         log_error(" no local_stream_endpoint for seid %d", loc_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
