@@ -83,7 +83,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
     } else {
         stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid, context);
         if (!stream_endpoint){
-            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid, context);
+            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
         }
         if (!stream_endpoint) {
             log_error("stream_endpoint for seid 0x%02x not found", connection->initiator_local_seid);
@@ -372,7 +372,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
 
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid, context);
     if (!stream_endpoint){
-        stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid, context);
+        stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
     }
     if (!stream_endpoint) return;
     

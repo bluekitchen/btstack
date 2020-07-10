@@ -182,7 +182,7 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid, avdtp_sink_context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
     if (!stream_endpoint) {
         log_error("delay_report: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;

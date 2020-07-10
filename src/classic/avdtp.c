@@ -139,7 +139,7 @@ avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap
     return NULL;
 }
 
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_l2cap_cid(uint16_t l2cap_cid, avdtp_context_t * context){
+static avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_l2cap_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -171,7 +171,7 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uint16_t l
     return NULL;
 }
 
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid, avdtp_context_t * context){
+avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -700,7 +700,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 break;
             }
             
-            stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(channel, context);
+            stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(channel);
             if (!stream_endpoint){
                 if (!connection) break;
                 handle_l2cap_data_packet_for_signaling_connection(connection, packet, size, context);
@@ -770,7 +770,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             decline_connection = true;
                         } else {
                             // now, we're only dealing with media connections that are created by remote side - we're acceptor here
-                            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->acceptor_local_seid, context);
+                            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->acceptor_local_seid);
                             if ((stream_endpoint == NULL) || (stream_endpoint->l2cap_media_cid != 0) ) {
                                 decline_connection = true;
                             }
@@ -870,7 +870,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(local_cid, context);
+                    stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(local_cid);
                     log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
 
                     connection = avdtp_get_connection_for_l2cap_signaling_cid(local_cid);
@@ -923,7 +923,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     log_debug("avdtp_packet_handler, L2CAP_EVENT_CAN_SEND_NOW l2cap_cid 0x%02x", channel);
                     connection = avdtp_get_connection_for_l2cap_signaling_cid(channel);
                     if (!connection) {
-                        stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(channel, context);
+                        stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(channel);
                         if (!stream_endpoint->connection) break;
                         connection = stream_endpoint->connection;
                     }
@@ -967,7 +967,7 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_media_connect: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
@@ -996,7 +996,7 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_start_stream: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
@@ -1030,7 +1030,7 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_stop_stream: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
@@ -1059,7 +1059,7 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_abort_stream: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
@@ -1087,7 +1087,7 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_conte
         log_error("avdtp_suspend_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_suspend_stream: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
