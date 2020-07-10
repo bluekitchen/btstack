@@ -55,7 +55,11 @@
 
 avdtp_context_t * avdtp_source_context = NULL;
 avdtp_context_t * avdtp_sink_context = NULL;
-static avdtp_context_t * sdp_query_context = NULL;
+
+static btstack_packet_handler_t avdtp_source_callback;
+static btstack_packet_handler_t avdtp_sink_callback;
+
+// static avdtp_context_t * sdp_query_context = NULL;
 static uint16_t sdp_query_context_avdtp_cid = 0;
 
 static btstack_linked_list_t connections;
@@ -251,8 +255,7 @@ static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, av
     return sdp_client_query_uuid16(packet_handler, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
 }
 
-uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, avdtp_context_t * avdtp_context, uint16_t * avdtp_cid){
-    btstack_assert(avdtp_context != NULL);
+uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid){
     // TODO: implement delayed SDP query
     if (sdp_client_ready() == 0){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -283,9 +286,18 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, avdtp_context_t * avd
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
-    sdp_query_context = avdtp_context;
     return avdtp_start_sdp_query(&avdtp_handle_sdp_client_query_result, connection);
+}
+
+
+void avdtp_register_sink_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    avdtp_sink_callback = callback;
+}
+
+void avdtp_register_source_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+    avdtp_source_callback = callback;
 }
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint){
@@ -539,15 +551,24 @@ static void avdtp_finalize_connection(avdtp_connection_t * connection){
 }
 
 static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8_t status){
-    if (connection == NULL) return;
-    avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, connection->avdtp_cid, connection->remote_addr, status);
+    printf("avdtp_handle_sdp_query_failed \n");
+    switch (connection->state){
+        case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
+            avdtp_signaling_emit_connection_established(avdtp_source_callback, connection->avdtp_cid, connection->remote_addr, status);
+            break;
+        case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE:
+            avdtp_signaling_emit_connection_established(avdtp_sink_callback, connection->avdtp_cid, connection->remote_addr, status);
+            break;
+        default:
+            return;
+    }
     avdtp_finalize_connection(connection);
     sdp_query_context_avdtp_cid = 0;
     log_info("SDP query failed with status 0x%02x.", status);
 }
 
 static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
-    if (connection == NULL) return;
+    printf("avdtp_handle_sdp_query_succeeded \n");
     connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
 }
 
@@ -772,7 +793,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    btstack_assert(context == NULL);
+                    btstack_assert(context != NULL);
 
                     psm = l2cap_event_channel_opened_get_psm(packet); 
                     if (psm != BLUETOOTH_PSM_AVDTP){

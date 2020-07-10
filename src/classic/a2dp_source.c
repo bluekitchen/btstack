@@ -282,7 +282,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, status);
                 break;
             }
-            log_info("A2DP singnaling connection established avdtp_cid 0x%02x", a2dp_source_context.avdtp_cid);
+            log_info("A2DP singnaling connection established avdtp_cid 0x%02x", cid);
 
             sc.avdtp_cid = cid;
             sc.active_remote_sep = NULL;

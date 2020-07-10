@@ -99,7 +99,7 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
 }
 
 uint8_t avdtp_source_connect(bd_addr_t remote, uint16_t * avdtp_cid){
-    return avdtp_connect(remote, AVDTP_ROLE_SOURCE, avdtp_source_context, avdtp_cid);
+    return avdtp_connect(remote, AVDTP_ROLE_SOURCE, avdtp_cid);
 }
 
 uint8_t avdtp_source_disconnect(uint16_t avdtp_cid){
@@ -151,18 +151,15 @@ uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t
 }
 
 void avdtp_source_register_packet_handler(btstack_packet_handler_t callback){
-    if (callback == NULL){
-        log_error("avdtp_source_register_packet_handler called with NULL callback");
-        return;
-    }
+    btstack_assert(callback != NULL);
+    
     avdtp_source_context->avdtp_callback = callback;
+    avdtp_register_source_packet_handler(callback);
 }
 
 void avdtp_source_init(avdtp_context_t * avdtp_context){
-    if (!avdtp_context){
-        log_error("avdtp_source_context is NULL");
-        return;
-    }
+    btstack_assert(avdtp_context != NULL);
+
     avdtp_source_context = avdtp_context;
     avdtp_source_context->stream_endpoints = NULL;
     avdtp_source_context->stream_endpoints_id_counter = 0;

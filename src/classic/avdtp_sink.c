@@ -91,21 +91,18 @@ void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentati
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
     avdtp_register_multiplexing_category(stream_endpoint, fragmentation);
 }
-
-// // media, reporting. recovery
-// void avdtp_sink_register_media_transport_identifier_for_multiplexing_category(uint8_t seid, uint8_t fragmentation){
-
-// }
-
-
 /* END: tracking can send now requests pro l2cap cid */
-// TODO remove
+
+void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
+    btstack_assert(callback != NULL);
+
+    avdtp_sink_context->avdtp_callback = callback;
+    avdtp_register_sink_packet_handler(callback);
+}
 
 void avdtp_sink_init(avdtp_context_t * avdtp_context){
-    if (!avdtp_context){
-        log_error("avdtp_source_context is NULL");
-        return;
-    }
+    btstack_assert(avdtp_context != NULL);
+
     avdtp_sink_context = avdtp_context;
     avdtp_sink_context->stream_endpoints = NULL;
     avdtp_sink_context->stream_endpoints_id_counter = 0;
@@ -118,23 +115,13 @@ avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep
 }
 
 void avdtp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
-    if (callback == NULL){
-        log_error("avdtp_sink_register_media_handler called with NULL callback");
-        return;
-    }
+    btstack_assert(callback != NULL);
+
     avdtp_sink_context->handle_media_data = callback;
 }
 
-void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
-    if (callback == NULL){
-        log_error("avdtp_sink_register_packet_handler called with NULL callback");
-        return;
-    }
-    avdtp_sink_context->avdtp_callback = callback;
-}
-
 uint8_t avdtp_sink_connect(bd_addr_t remote, uint16_t * avdtp_cid){
-    return avdtp_connect(remote, AVDTP_ROLE_SINK, avdtp_sink_context, avdtp_cid);
+    return avdtp_connect(remote, AVDTP_ROLE_SINK, avdtp_cid);
 }
 
 uint8_t avdtp_sink_disconnect(uint16_t avdtp_cid){
