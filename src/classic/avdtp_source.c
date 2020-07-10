@@ -54,8 +54,6 @@
 
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 void avdtp_source_register_media_transport_category(uint8_t seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_source_context);
     avdtp_register_media_transport_category(stream_endpoint);
@@ -160,10 +158,6 @@ uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t
     return avdtp_reconfigure(avdtp_cid, local_seid, remote_seid, configured_services_bitmap, configuration, avdtp_source_context);
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    avdtp_packet_handler(packet_type, channel, packet, size);      
-}
-
 void avdtp_source_init(avdtp_context_t * avdtp_context){
     if (!avdtp_context){
         log_error("avdtp_source_context is NULL");
@@ -172,10 +166,10 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
     avdtp_source_context = avdtp_context;
     avdtp_source_context->stream_endpoints = NULL;
     avdtp_source_context->stream_endpoints_id_counter = 0;
-    avdtp_source_context->packet_handler = packet_handler;
+    avdtp_source_context->packet_handler = avdtp_packet_handler;
     avdtp_source_context->role = AVDTP_ROLE_SOURCE;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
+    l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
 
 

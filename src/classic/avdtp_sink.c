@@ -52,8 +52,6 @@
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_util.h"
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 void avdtp_sink_register_media_transport_category(uint8_t seid){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(seid, avdtp_sink_context);
     avdtp_register_media_transport_category(stream_endpoint);
@@ -103,10 +101,6 @@ void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentati
 /* END: tracking can send now requests pro l2cap cid */
 // TODO remove
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    avdtp_packet_handler(packet_type, channel, packet, size);
-}
-
 void avdtp_sink_init(avdtp_context_t * avdtp_context){
     if (!avdtp_context){
         log_error("avdtp_source_context is NULL");
@@ -115,10 +109,10 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context = avdtp_context;
     avdtp_sink_context->stream_endpoints = NULL;
     avdtp_sink_context->stream_endpoints_id_counter = 0;
-    avdtp_sink_context->packet_handler = packet_handler;
+    avdtp_sink_context->packet_handler = avdtp_packet_handler;
     avdtp_sink_context->role = AVDTP_ROLE_SINK;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
+    l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
