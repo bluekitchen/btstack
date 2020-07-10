@@ -59,8 +59,9 @@ avdtp_context_t * avdtp_sink_context = NULL;
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
 
-// static avdtp_context_t * sdp_query_context = NULL;
 static uint16_t sdp_query_context_avdtp_cid = 0;
+
+static uint16_t stream_endpoints_id_counter = 0;
 
 static btstack_linked_list_t connections;
 static uint16_t initiator_transaction_id_counter = 0;
@@ -221,28 +222,13 @@ static uint16_t avdtp_get_next_cid(void){
     return avdtp_cid_counter;
 }
 
-static avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_id(avdtp_context_t * context, uint16_t stream_endpoint_id) {
-    btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) context->stream_endpoints; it ; it = it->next){
-        avdtp_stream_endpoint_t * stream_endpoint = ((avdtp_stream_endpoint_t *) it);
-
-        if (stream_endpoint->sep.seid == stream_endpoint_id) {
-            return stream_endpoint;
-        };
+static uint16_t avdtp_get_next_local_seid(void){
+    if (stream_endpoints_id_counter == 0xffff) {
+        stream_endpoints_id_counter = 1;
+    } else {
+        stream_endpoints_id_counter++;
     }
-    return NULL;
-}
-
-static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
-    uint16_t stream_endpoint_id = context->stream_endpoints_id_counter;
-    do {
-        if (stream_endpoint_id == 0xffff) {
-            stream_endpoint_id = 1;
-        } else {
-            stream_endpoint_id++;
-        }
-    } while (avdtp_get_stream_endpoint_for_id(context, stream_endpoint_id) !=  NULL) ;
-    return stream_endpoint_id;
+    return stream_endpoints_id_counter;
 }
 
 static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, avdtp_connection_t * connection) {
@@ -439,7 +425,7 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
         log_error("Not enough memory to create stream endpoint");
         return NULL;
     }
-    stream_endpoint->sep.seid = avdtp_get_next_local_seid(context);
+    stream_endpoint->sep.seid = avdtp_get_next_local_seid();
     stream_endpoint->sep.media_type = media_type;
     stream_endpoint->sep.type = sep_type;
     btstack_linked_list_add(&context->stream_endpoints, (btstack_linked_item_t *) stream_endpoint);

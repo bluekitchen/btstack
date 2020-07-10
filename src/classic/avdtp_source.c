@@ -162,7 +162,6 @@ void avdtp_source_init(avdtp_context_t * avdtp_context){
 
     avdtp_source_context = avdtp_context;
     avdtp_source_context->stream_endpoints = NULL;
-    avdtp_source_context->stream_endpoints_id_counter = 0;
 
     l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
