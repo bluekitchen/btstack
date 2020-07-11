@@ -40,7 +40,7 @@ The current Makefile project compiles the gatt_counter.c example.
 ### Low power mode - basically not implemented:
 - MCU does not sleep
 - SPI could be disabled during sleep
-- 1 ms sys tic is used for host stack, although full tick time is provided from LPTIM1
+- 1 ms SysTick is used for host stack although 64-bit tick time is provided from LPTIM1
 
 ## Getting Started
 
@@ -50,7 +50,6 @@ For the FMLR-80-P-STL4E module, just run make. You can upload the .elf file crea
 ## TODO
 
 ### General
-- split controller.c into port.c, hci_controller.c and ll_sx1280.c
 - advertise on all configured channels
 - only advertise with advertising interval
 - indicate random address in adertising pdus
