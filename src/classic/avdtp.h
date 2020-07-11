@@ -544,7 +544,6 @@ typedef struct {
 
 typedef struct {
     btstack_packet_handler_t avdtp_callback;
-    btstack_packet_handler_t a2dp_callback;
 } avdtp_context_t;
 
 extern avdtp_context_t * avdtp_source_context;
