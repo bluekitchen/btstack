@@ -608,6 +608,8 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 
 void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *stream_endpoint, uint16_t sequence_number);
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay);
+void avdtp_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+                              avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
 
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 

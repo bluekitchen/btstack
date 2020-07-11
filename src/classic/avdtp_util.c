@@ -861,21 +861,6 @@ void avdtp_emit_capabilities(btstack_packet_handler_t callback, uint16_t avdtp_c
     avdtp_signaling_emit_capability_done(callback, avdtp_cid, local_seid, remote_seid);
 }
 
-void avdtp_emit_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_capabilities_t * configuration, uint16_t configured_service_categories){
-    if (get_bit16(configured_service_categories, AVDTP_MEDIA_CODEC)){
-        switch (configuration->media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC: 
-                avdtp_signaling_emit_media_codec_sbc_configuration(callback, avdtp_cid, local_seid, remote_seid, 
-                    configuration->media_codec.media_type, configuration->media_codec.media_codec_information);
-                break;
-            default:
-                avdtp_signaling_emit_media_codec_other_configuration(callback, avdtp_cid, local_seid, remote_seid, configuration->media_codec);
-                break;
-        }
-    }
-}
-
-
 uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
     if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
     connection->wait_to_send_acceptor = 1;

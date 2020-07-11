@@ -125,8 +125,8 @@ static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *conn
         stream_endpoint->remote_sep = sep;
         log_info("ACP: add seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
     }
-    
-    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
+
+    avdtp_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
 }
 
@@ -295,7 +295,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     
                     log_info("ACP: update active remote seid %d", stream_endpoint->remote_sep.seid);
 
-                    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
+                    avdtp_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
                     break;
                 }
 

@@ -146,6 +146,26 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     (*avdtp_source_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void avdtp_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+                              avdtp_capabilities_t *configuration, uint16_t configured_service_categories) {
+
+    uint8_t local_seid = avdtp_local_seid(stream_endpoint);
+    uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+
+    if (get_bit16(configured_service_categories, AVDTP_MEDIA_CODEC)){
+        switch (configuration->media_codec.media_codec_type){
+            case AVDTP_CODEC_SBC:
+                avdtp_signaling_emit_media_codec_sbc_configuration(packet_handler, avdtp_cid, local_seid, remote_seid,
+                                                                   configuration->media_codec.media_type, configuration->media_codec.media_codec_information);
+                break;
+            default:
+                avdtp_signaling_emit_media_codec_other_configuration(packet_handler, avdtp_cid, local_seid, remote_seid, configuration->media_codec);
+                break;
+        }
+    }
+}
+
 btstack_linked_list_t * avdtp_get_stream_endpoints(void){
     return &stream_endpoints;
 }
