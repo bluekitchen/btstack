@@ -74,25 +74,66 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 static void (*avdtp_sink_handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 
-btstack_linked_list_t * avdtp_get_stream_endpoints(void){
-    return &stream_endpoints;
-}
-
-// typedef struct {
-//     btstack_linked_list_t * avdtp_connections;
-//     avdtp_connection_t * connection;
-//     btstack_packet_handler_t avdtp_callback;
-//     avdtp_sep_type_t query_role;
-//     btstack_packet_handler_t packet_handler;
-//     uint16_t avdtp_l2cap_psm;
-//     uint16_t avdtp_version;
-//     uint8_t  role_supported;
-// } avdtp_sdp_query_context_t;
-
 static uint16_t avdtp_cid_counter = 0;
 
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+btstack_packet_handler_t
+avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint) {
+    return (stream_endpoint->sep.type == AVDTP_SOURCE) ? avdtp_source_callback : avdtp_sink_callback;
+}
+
+static void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status) {
+    uint8_t event[14];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED;
+    little_endian_store_16(event, pos, stream_endpoint->connection->avdtp_cid);
+    pos += 2;
+    reverse_bd_addr(stream_endpoint->connection->remote_addr, &event[pos]);
+    pos += 6;
+    event[pos++] = avdtp_local_seid(stream_endpoint);
+    event[pos++] = avdtp_remote_seid(stream_endpoint);
+    event[pos++] = status;
+
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t local_seid) {
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = local_seid;
+
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *stream_endpoint, uint16_t sequence_number) {
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW;
+    little_endian_store_16(event, pos, stream_endpoint->connection->avdtp_cid);
+    pos += 2;
+    event[pos++] = avdtp_local_seid(stream_endpoint);
+    little_endian_store_16(event, pos, sequence_number);
+    pos += 2;
+
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+btstack_linked_list_t * avdtp_get_stream_endpoints(void){
+    return &stream_endpoints;
+}
 
 static avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
@@ -822,23 +863,21 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             if (status != ERROR_CODE_SUCCESS){
                                 log_info("AVDTP_STREAM_ENDPOINT_OPENED failed with status %d, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", status, connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
                                 stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                                avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, event_addr, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), status);
+                                avdtp_streaming_emit_connection_established(stream_endpoint, status);
                                 break;
                             }
                             switch (stream_endpoint->state){
                                 case AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED:
                                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
-                                    stream_endpoint->connection = connection;
                                     stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);
                                     stream_endpoint->media_con_handle = l2cap_event_channel_opened_get_handle(packet);
 
                                     log_info("AVDTP_STREAM_ENDPOINT_OPENED, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
-                                    avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, event_addr, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), 0);
-                                    
+                                    avdtp_streaming_emit_connection_established(stream_endpoint, ERROR_CODE_SUCCESS);
                                     break;
                                 default:
                                     log_info("AVDTP_STREAM_ENDPOINT_OPENED failed - stream endpoint in wrong state %d, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", stream_endpoint->state, connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
-                                    avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, event_addr, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE);
+                                    avdtp_streaming_emit_connection_established(stream_endpoint, AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE);
                                     break;
                             }
                             break;
@@ -860,7 +899,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         if (stream_endpoint->l2cap_media_cid == local_cid){
                             connection = stream_endpoint->connection;
                             if (connection) {
-                                avdtp_streaming_emit_connection_released(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint));
+                                avdtp_streaming_emit_connection_released(stream_endpoint,
+                                                                         connection->avdtp_cid,
+                                                                         avdtp_local_seid(stream_endpoint));
                             }
                             avdtp_reset_stream_endpoint(stream_endpoint);
                             break;

@@ -453,21 +453,6 @@ void avdtp_signaling_emit_connection_established(btstack_packet_handler_t callba
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_streaming_emit_can_send_media_packet_now(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t seid, uint16_t sequence_number){
-    btstack_assert(callback != NULL);
-    uint8_t event[8];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW;
-    little_endian_store_16(event, pos, avdtp_cid);
-    pos += 2;
-    event[pos++] = seid;
-    little_endian_store_16(event, pos, sequence_number);
-    pos += 2;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 void avdtp_signaling_emit_connection_released(btstack_packet_handler_t callback, uint16_t avdtp_cid){
     btstack_assert(callback != NULL);
     uint8_t event[5];
@@ -477,36 +462,6 @@ void avdtp_signaling_emit_connection_released(btstack_packet_handler_t callback,
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-void avdtp_streaming_emit_connection_released(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid){
-    btstack_assert(callback != NULL);
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED;
-    little_endian_store_16(event, pos, avdtp_cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-void avdtp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t avdtp_cid, bd_addr_t addr, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
-    btstack_assert(callback != NULL);
-    uint8_t event[14];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED;
-    little_endian_store_16(event, pos, avdtp_cid);
-    pos += 2;
-    reverse_bd_addr(addr,&event[pos]);
-    pos += 6;
-    event[pos++] = local_seid;
-    event[pos++] = remote_seid;
-    event[pos++] = status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
