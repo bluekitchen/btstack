@@ -131,7 +131,7 @@ static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *conn
 }
 
 void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset, avdtp_context_t * context){
-    avdtp_stream_endpoint_t * stream_endpoint;
+    avdtp_stream_endpoint_t * stream_endpoint = NULL;
     connection->acceptor_transaction_label = connection->acceptor_signaling_packet.transaction_label;
     if (!avdtp_acceptor_validate_msg_length(connection->acceptor_signaling_packet.signal_identifier, size)) {
         connection->error_code = BAD_LENGTH;
@@ -223,9 +223,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
             return;
     }
 
-    if (!stream_endpoint) {
-        return;
-    }
+    btstack_assert(stream_endpoint != NULL);
 
     if (!avdtp_acceptor_process_chunk(&connection->acceptor_signaling_packet, packet, size)) return;
     
@@ -239,7 +237,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                 case AVDTP_SI_DELAYREPORT:
                     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT, local seid %d", connection->acceptor_local_seid);
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT;
-                    avdtp_signaling_emit_delay(context->avdtp_callback, connection->avdtp_cid, connection->acceptor_local_seid, big_endian_read_16(packet, offset));
+                    avdtp_signaling_emit_delay(connection->avdtp_cid, connection->acceptor_local_seid,
+                                               big_endian_read_16(packet, offset));
                     break;
                 
                 case AVDTP_SI_GET_ALL_CAPABILITIES:

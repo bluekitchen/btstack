@@ -131,6 +131,21 @@ void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *str
     (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
+void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay) {
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    little_endian_store_16(event, pos, delay);
+    pos += 2;
+    (*avdtp_source_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 btstack_linked_list_t * avdtp_get_stream_endpoints(void){
     return &stream_endpoints;
 }

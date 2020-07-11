@@ -493,21 +493,6 @@ void avdtp_signaling_emit_sep_done(btstack_packet_handler_t callback, uint16_t a
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_signaling_emit_delay(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay){
-    btstack_assert(callback != NULL);
-    uint8_t event[8];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT;
-    little_endian_store_16(event, pos, avdtp_cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    little_endian_store_16(event, pos, delay);
-    pos += 2;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier, bool is_initiator){
     btstack_assert(callback != NULL);
     uint8_t event[8];

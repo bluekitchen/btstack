@@ -75,7 +75,6 @@ void avdtp_signaling_emit_connection_released(btstack_packet_handler_t callback,
 
 void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t avdtp_cid, avdtp_sep_t sep);
 void avdtp_signaling_emit_sep_done(btstack_packet_handler_t callback, uint16_t avdtp_cid);
-void avdtp_signaling_emit_delay(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay);
 
 void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t seid, avdtp_signal_identifier_t identifier, bool is_initiator);
 void avdtp_signaling_emit_general_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, avdtp_signal_identifier_t identifier, bool is_initiator);
