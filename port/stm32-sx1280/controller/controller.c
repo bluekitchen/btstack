@@ -216,7 +216,7 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
 static int transport_can_send_packet_now(uint8_t packet_type){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
-            return hci_outgoing_event_ready ? 1 : 0;
+            return hci_outgoing_event_ready ? 0 : 1;
         case HCI_ACL_DATA_PACKET:
             if (controller_ll_acl_reserved == false){
                 controller_ll_acl_reserved = ll_reserve_acl_packet();
@@ -229,13 +229,21 @@ static int transport_can_send_packet_now(uint8_t packet_type){
     return 0;
 }
 
+static void transport_notify_packet_send(void){
+    // notify upper stack that it might be possible to send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+}
+
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             controller_handle_hci_command(packet, size);
+            transport_notify_packet_send();
             break;
         case HCI_ACL_DATA_PACKET:
             controller_handle_acl_data(packet, size);
+            transport_notify_packet_send();
             break;
         default:
             send_hardware_error = 0x01; // invalid HCI packet
