@@ -567,7 +567,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
 }
 
 uint8_t a2dp_source_disconnect(uint16_t a2dp_cid){
-    return avdtp_disconnect(a2dp_cid, &a2dp_source_context);
+    return avdtp_disconnect(a2dp_cid);
 }
 
 uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uint32_t sampling_frequency){

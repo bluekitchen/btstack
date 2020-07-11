@@ -576,7 +576,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid);
-uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
+uint8_t avdtp_disconnect(uint16_t avdtp_cid);
 void    avdtp_register_sink_packet_handler(btstack_packet_handler_t callback);
 void    avdtp_register_source_packet_handler(btstack_packet_handler_t callback);
 

@@ -103,7 +103,7 @@ uint8_t avdtp_source_connect(bd_addr_t remote, uint16_t * avdtp_cid){
 }
 
 uint8_t avdtp_source_disconnect(uint16_t avdtp_cid){
-    return avdtp_disconnect(avdtp_cid, avdtp_source_context);
+    return avdtp_disconnect(avdtp_cid);
 }
 
 uint8_t avdtp_source_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){

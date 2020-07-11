@@ -191,7 +191,7 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
 }
 
 void a2dp_sink_disconnect(uint16_t a2dp_cid){
-    avdtp_disconnect(a2dp_cid, &a2dp_sink_context);
+    avdtp_disconnect(a2dp_cid);
 }
 
 static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
