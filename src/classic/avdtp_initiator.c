@@ -196,7 +196,11 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                             break;
                         default:
                             // TODO: we don\t have codec info to emit config
-                            avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid,  connection->initiator_remote_seid, sep.configuration.media_codec);
+                            avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint,
+                                                                                 connection->avdtp_cid,
+                                                                                 connection->initiator_local_seid,
+                                                                                 connection->initiator_remote_seid,
+                                                                                 sep.configuration.media_codec);
                             break;
                     }
                     break;

@@ -162,7 +162,9 @@ void avdtp_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t
                         configuration->media_codec.media_codec_information);
                 break;
             default:
-                avdtp_signaling_emit_media_codec_other_configuration(packet_handler, avdtp_cid, local_seid, remote_seid, configuration->media_codec);
+                avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint, avdtp_cid,
+                                                                     local_seid, remote_seid,
+                                                                     configuration->media_codec);
                 break;
         }
     }
@@ -259,6 +261,21 @@ void avdtp_signaling_emit_media_codec_sbc_reconfiguration(avdtp_stream_endpoint_
                                                           const uint8_t *media_codec_information) {
     avdtp_signaling_emit_media_codec_sbc(stream_endpoint, avdtp_cid, media_type,
                                          media_codec_information, 1);
+}
+
+void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+                                                          uint8_t local_seid, uint8_t remote_seid,
+                                                          adtvp_media_codec_capabilities_t media_codec) {
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    avdtp_signaling_emit_media_codec_other(packet_handler, avdtp_cid, local_seid, remote_seid, media_codec, 0);
+}
+
+void
+avdtp_signaling_emit_media_codec_other_reconfiguration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+                                                       uint8_t local_seid, uint8_t remote_seid,
+                                                       adtvp_media_codec_capabilities_t media_codec) {
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    avdtp_signaling_emit_media_codec_other(packet_handler, avdtp_cid, local_seid, remote_seid, media_codec, 1);
 }
 
 btstack_linked_list_t * avdtp_get_stream_endpoints(void){
