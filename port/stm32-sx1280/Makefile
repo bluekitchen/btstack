@@ -34,6 +34,9 @@ BUILD_DIR = build
 # BTstack Repo
 BTSTACK_ROOT ?= ../..
 
+# VPATH to find .gatt files
+VPATH += ${BTSTACK_ROOT}/example
+
 ######################################
 # source
 ######################################
@@ -44,7 +47,6 @@ ${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
-${BTSTACK_ROOT}/example/gatt_counter.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
 ${BTSTACK_ROOT}/src/ble/ancs_client.c \
@@ -168,6 +170,7 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
+-I $(BUILD_DIR) \
 -I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
 -I ${BTSTACK_ROOT}/3rd-party/rijndael \
 -I ${BTSTACK_ROOT}/3rd-party/segger-rtt \
@@ -185,7 +188,6 @@ C_INCLUDES =  \
 -I SMTC_Drivers/ \
 -I SMTC_Drivers/sx1280-driver-c/ \
 -I .
-
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -213,8 +215,26 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+EXAMPLES = 					\
+	gatt_counter            \
+	gatt_streamer_server    \
+#	hog_keyboard_demo       \
+#	hog_mouse_demo          \
 
+GATT_FILES = \
+	gatt_counter.gatt \
+	gatt_streamer_server.gatt \
+	hog_keyboard_demo.gatt \
+	hog_mouse_demo.gatt \
+
+# default action: build all
+all: \
+	$(OBJECTS) \
+	$(addprefix $(BUILD_DIR)/,$(GATT_FILES:.gatt=.h)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.elf)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.hex)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
 #######################################
 # build the application
@@ -226,14 +246,17 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
+$(BUILD_DIR)/%.h: %.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+$(BUILD_DIR)/%.elf: Makefile $(OBJECTS) $(BUILD_DIR)/%.o
+	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
 	$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
@@ -242,6 +265,9 @@ $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
 	
+$(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
+	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
+
 $(BUILD_DIR):
 	mkdir $@		
 
