@@ -151,7 +151,6 @@ void avdtp_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
-    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
 
     if (get_bit16(configured_service_categories, AVDTP_MEDIA_CODEC)){
         switch (configuration->media_codec.media_codec_type){
