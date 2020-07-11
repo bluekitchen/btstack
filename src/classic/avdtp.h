@@ -419,8 +419,6 @@ typedef struct {
     avdtp_signaling_packet_t acceptor_signaling_packet;
     avdtp_signaling_packet_t initiator_signaling_packet;
 
-    uint8_t disconnect;
-
     uint8_t initiator_local_seid;
     uint8_t initiator_remote_seid;
 
@@ -435,7 +433,6 @@ typedef struct {
     uint8_t acceptor_transaction_label;
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;
-    uint8_t wait_to_send_self;
     
     uint8_t suspended_seids[AVDTP_MAX_NUM_SEPS];
     uint8_t num_suspended_seids;

@@ -94,7 +94,6 @@ void avdtp_signaling_emit_media_codec_other_reconfiguration(btstack_packet_handl
 
 uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid);
 uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid);
-uint8_t avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid);
 
 void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 

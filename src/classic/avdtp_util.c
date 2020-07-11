@@ -950,13 +950,6 @@ uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, ui
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid){
-    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
-    connection->wait_to_send_self = 1;
-    l2cap_request_can_send_now_event(l2cap_cid);
-    return ERROR_CODE_SUCCESS;
-}
-
 uint8_t avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
     return stream_endpoint->sep.seid;

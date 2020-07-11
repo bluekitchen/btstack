@@ -391,32 +391,11 @@ void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_c
         log_debug("call avdtp_initiator_stream_config_subsm_run");
         connection->wait_to_send_initiator = 0;
         avdtp_initiator_stream_config_subsm_run(connection, context);
-    } else if (connection->wait_to_send_self){
-        log_debug("check for disconnect");
-        connection->wait_to_send_self = 0;
-        if (connection->disconnect){
-            btstack_linked_list_iterator_t it;    
-            btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
-            while (btstack_linked_list_iterator_has_next(&it)){
-                avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-                if (stream_endpoint->connection != connection) continue;
-                if ((stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED) && (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED)){
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
-                    avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
-                    l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
-                    return;
-                }
-            }
-            connection->disconnect = 0;
-            connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
-            l2cap_disconnect(connection->l2cap_signaling_cid, 0);
-            return;
-        }
     }
 
     // re-register
-    int more_to_send = connection->wait_to_send_acceptor || connection->wait_to_send_initiator || connection->wait_to_send_self;
-    log_debug("ask for more to send %d: acc-%d, ini-%d, self-%d",  more_to_send, connection->wait_to_send_acceptor, connection->wait_to_send_initiator, connection->wait_to_send_self);
+    bool more_to_send = connection->wait_to_send_acceptor || connection->wait_to_send_initiator;
+    log_debug("ask for more to send %d: acc-%d, ini-%d",  more_to_send, connection->wait_to_send_acceptor, connection->wait_to_send_initiator);
 
     if (more_to_send){
         l2cap_request_can_send_now_event(l2cap_cid);
@@ -871,10 +850,10 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(local_cid);
-                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
-
                     connection = avdtp_get_connection_for_l2cap_signaling_cid(local_cid);
                     
+                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
+
                     if (stream_endpoint){
                         if (stream_endpoint->l2cap_media_cid == local_cid){
                             connection = stream_endpoint->connection;
@@ -882,9 +861,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                 avdtp_streaming_emit_connection_released(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint));
                             }
                             avdtp_reset_stream_endpoint(stream_endpoint);
-                            if (connection && connection->disconnect){
-                                avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
-                            }
                             break;
                         }
                         if (stream_endpoint->l2cap_recovery_cid == local_cid){
@@ -904,9 +880,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         btstack_linked_list_iterator_t it;    
                         btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
                         while (btstack_linked_list_iterator_has_next(&it)){
-                            avdtp_stream_endpoint_t * _stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-                            if (_stream_endpoint->connection == connection){
-                                avdtp_reset_stream_endpoint(_stream_endpoint);
+                            stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+                            if (stream_endpoint->connection == connection){
+                                avdtp_reset_stream_endpoint(stream_endpoint);
                             }
                         }
                         avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
@@ -947,8 +923,26 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
 
     if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return ERROR_CODE_SUCCESS;
     
-    connection->disconnect = 1;
-    avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
+
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->connection != connection) continue;
+    
+        switch (stream_endpoint->state){
+            case AVDTP_STREAM_ENDPOINT_OPENED:
+            case AVDTP_STREAM_ENDPOINT_STREAMING:
+                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_DISCONNECTED;
+                l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                break;
+            default:
+                break;
+        } 
+    }
+
+    connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED;
+    l2cap_disconnect(connection->l2cap_signaling_cid, 0);
     return ERROR_CODE_SUCCESS;
 }
 
