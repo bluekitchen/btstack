@@ -139,6 +139,8 @@ static void controller_handle_acl_data(uint8_t * packet, uint16_t size){
     btstack_assert(con_handle == HCI_CON_HANDLE);
 
     // just queue up
+    btstack_assert(controller_ll_acl_reserved);
+    controller_ll_acl_reserved = false;
     ll_queue_acl_packet(packet, size);
 }
 
