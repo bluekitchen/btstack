@@ -112,9 +112,7 @@ avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep
 }
 
 void avdtp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
-    btstack_assert(callback != NULL);
-
-    avdtp_sink_context->handle_media_data = callback;
+    avdtp_register_media_handler(callback);
 }
 
 uint8_t avdtp_sink_connect(bd_addr_t remote, uint16_t * avdtp_cid){

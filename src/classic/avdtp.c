@@ -72,6 +72,8 @@ static int record_id = -1;
 static uint8_t   attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
+static void (*avdtp_sink_handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
+
 btstack_linked_list_t * avdtp_get_stream_endpoints(void){
     return &stream_endpoints;
 }
@@ -89,7 +91,6 @@ btstack_linked_list_t * avdtp_get_stream_endpoints(void){
 
 static uint16_t avdtp_cid_counter = 0;
 
-static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 
@@ -380,6 +381,9 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
     stream_endpoint->sep.capabilities.multiplexing_mode.fragmentation = fragmentation;
 }
 
+void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
+    avdtp_sink_handle_media_data = callback;
+}
 
 /* START: tracking can send now requests pro l2cap cid */
 void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context){
@@ -669,8 +673,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     avdtp_connection_t * connection = NULL;
     
     avdtp_context_t * context = avdtp_get_active_contex();
-    handle_media_data = context->handle_media_data;
-    
+
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
             connection = avdtp_get_connection_for_l2cap_signaling_cid(channel);
@@ -694,9 +697,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             if (channel == stream_endpoint->l2cap_media_cid){
-                if (handle_media_data){
-                    (*handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
-                }               
+                btstack_assert(avdtp_sink_handle_media_data);
+                (*avdtp_sink_handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
                 break;
             } 
 

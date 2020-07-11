@@ -545,8 +545,7 @@ typedef struct {
 typedef struct {
     btstack_packet_handler_t avdtp_callback;
     btstack_packet_handler_t a2dp_callback;
-    void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
-} avdtp_context_t; 
+} avdtp_context_t;
 
 extern avdtp_context_t * avdtp_source_context;
 extern avdtp_context_t * avdtp_sink_context;
@@ -568,6 +567,9 @@ void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream
 void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
 void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t fragmentation);
 void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context);
+
+// sink only
+void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
