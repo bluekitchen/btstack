@@ -290,6 +290,9 @@ static struct {
     uint8_t adv_len;
     uint8_t adv_data[31];
 
+    // adv param
+    uint8_t adv_map;
+
     // next expected sequence number
     volatile uint8_t next_expected_sequence_number;
 
@@ -397,8 +400,6 @@ static void next_channel(void){
 
 static void start_advertising(void){
 
-    printf("Start Advertising on Channel 37\n");
-
     Radio.SetAutoTx(AUTO_RX_TX_OFFSET);
 
     PacketParams_t packetParams;
@@ -417,11 +418,10 @@ static void start_advertising(void){
     // Set AccessAddress for ADV packets
     Radio.SetBleAdvertizerAccessAddress( );
 
-    // Set Channel
-    select_channel(37);
-
     ll_state = LL_STATE_ADVERTISING;
-    radio_state = RADIO_LOWPOWER;
+
+    // dummy channel
+    ctx.channel = 36;
 }
 
 static void start_hopping(void){
@@ -666,6 +666,9 @@ void ll_init(void){
 
     // set test bd addr 33:33:33:33:33:33
     memset(ctx.bd_addr_le, 0x33, 6);
+
+    // default channels
+    ctx.adv_map = 0x7;
 }
 
 void ll_radio_on(void){
@@ -902,6 +905,7 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
 static uint8_t ll_start_advertising(void){
     // COMMAND DISALLOWED if wrong state.
     if (ll_state != LL_STATE_STANDBY) return ERROR_CODE_COMMAND_DISALLOWED;
+    printf("Start Advertising on channels 0x0x\n", ctx.adv_map);
     start_advertising();
     return ERROR_CODE_SUCCESS;
 }
@@ -967,8 +971,20 @@ void ll_execute_once(void){
             switch ( radio_state) {
                 case RADIO_RX_ERROR:
                 case RADIO_LOWPOWER:
-                    radio_state = RADIO_W4_TX_DONE_TO_RX;
-                    send_adv();
+                    // find next channel
+                    while (ctx.adv_map != 0){
+                        ctx.channel++;
+                        if ((ctx.adv_map & (1 << (ctx.channel - 37))) != 0) {
+                            // Set Channel
+                            select_channel(ctx.channel);
+                            radio_state = RADIO_W4_TX_DONE_TO_RX;
+                            send_adv();
+                            break;
+                        }
+                        if (ctx.channel >= 40){
+                            ctx.channel = 36;
+                        }
+                    }
                     break;
                 default:
                     break;
