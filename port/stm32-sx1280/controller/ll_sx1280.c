@@ -905,7 +905,7 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
 static uint8_t ll_start_advertising(void){
     // COMMAND DISALLOWED if wrong state.
     if (ll_state != LL_STATE_STANDBY) return ERROR_CODE_COMMAND_DISALLOWED;
-    printf("Start Advertising on channels 0x0x\n", ctx.adv_map);
+    printf("Start Advertising on channels 0x%0x\n", ctx.adv_map);
     start_advertising();
     return ERROR_CODE_SUCCESS;
 }
@@ -924,6 +924,19 @@ uint8_t ll_set_advertise_enable(uint8_t le_adv_enable){
     } else {
         return ll_stop_advertising();
     }
+}
+
+uint8_t ll_set_advertising_parameters(uint16_t advertising_interval_min, uint16_t advertising_interval_max,
+                                      uint8_t advertising_type, uint8_t own_address_type, uint8_t peer_address_types, uint8_t * peer_address,
+                                      uint8_t advertising_channel_map, uint8_t advertising_filter_policy){
+    if (advertising_channel_map == 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if ((advertising_channel_map & 0xf8) != 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    ctx.adv_map = advertising_channel_map;
+
+    // TODO: validate other params
+    // TODO: process other params
+
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t ll_set_advertising_data(uint8_t adv_len, const uint8_t * adv_data){

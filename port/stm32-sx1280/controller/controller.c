@@ -108,6 +108,18 @@ static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
         case HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE:
             send_command_complete(opcode, 0, read_buffer_size_result, 8);
             break;
+        case HCI_OPCODE_HCI_LE_SET_ADVERTISING_PARAMETERS:
+            status = ll_set_advertising_parameters(
+                    little_endian_read_16(packet,3),
+                    little_endian_read_16(packet,5),
+                    packet[7],
+                    packet[8],
+                    packet[9],
+                    &packet[10],
+                    packet[16],
+                    packet[17]);
+            send_command_complete(opcode, status, NULL, 0);
+            break;
         case HCI_OPCODE_HCI_LE_SET_ADVERTISING_DATA:
             status = ll_set_advertising_data(packet[3], &packet[4]);
             send_command_complete(opcode, status, NULL, 0);

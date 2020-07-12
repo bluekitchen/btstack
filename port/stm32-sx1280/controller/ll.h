@@ -67,6 +67,10 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates);
 
 uint8_t ll_set_advertise_enable(uint8_t le_adv_enable);
 
+uint8_t ll_set_advertising_parameters(uint16_t advertising_interval_min, uint16_t advertising_interval_max,
+        uint8_t advertising_type, uint8_t own_address_type, uint8_t peer_address_types, uint8_t * peer_address,
+        uint8_t advertising_channel_map, uint8_t advertising_filter_policy);
+
 uint8_t ll_set_advertising_data(uint8_t adv_len, const uint8_t * adv_data);
 
 bool ll_reserve_acl_packet(void);

@@ -16,12 +16,11 @@ Uses 32.768 kHz crytstal as LSE for timing
 
 Support for Broadcaster and Peripheral roles.
 
-The current Makefile project compiles the gatt_counter.c example.
+The Makefile project compiles gatt_counter, gatt_streamer_server, hog_mouse and hog_keyboard examples.
 
 ## Limitation
 
 ### Advertising State:
-- Only advertises on Channel 37
 - Advertises as fast as possible, back to back
 - Only Connectable Advertising supported
 - Only fixed public BD_ADDR of 33:33:33:33:33:33 is used
@@ -50,8 +49,8 @@ For the FMLR-80-P-STL4E module, just run make. You can upload the .elf file crea
 ## TODO
 
 ### General
-- advertise on all configured channels
 - only advertise with advertising interval
+- support other adv types
 - indicate random address in adertising pdus
 - allow to set random BD_ADDR via HCI command
 - handle Connection Param Update
