@@ -720,7 +720,6 @@ static void avdtp_finalize_connection(avdtp_connection_t * connection){
 }
 
 static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8_t status){
-    printf("avdtp_handle_sdp_query_failed \n");
     switch (connection->state){
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
             avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr, status);
@@ -737,7 +736,6 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
 }
 
 static void avdtp_handle_sdp_query_succeeded(avdtp_connection_t * connection){
-    printf("avdtp_handle_sdp_query_succeeded \n");
     connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
 }
 
