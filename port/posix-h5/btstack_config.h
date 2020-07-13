@@ -31,7 +31,8 @@
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 
-#define NVM_NUM_DEVICE_DB_ENTRIES      4
+#define NVM_NUM_LINK_KEYS              16
+#define NVM_NUM_DEVICE_DB_ENTRIES      16
 
 
 // Mesh Configuration

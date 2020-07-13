@@ -48,7 +48,7 @@
 
 // NVM_NUM_LINK_KEYS defines number of stored link keys
 #ifndef NVM_NUM_LINK_KEYS
-#define NVM_NUM_LINK_KEYS 1
+#error "Please set NVM_NUM_LINK_KEYS in btstack_config.h - number of link keys that can be stored in TLV"
 #endif
 
 typedef struct {

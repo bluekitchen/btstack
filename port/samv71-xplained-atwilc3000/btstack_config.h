@@ -44,5 +44,7 @@
 #define MAX_NR_L2CAP_CHANNELS  0
 #define MAX_NR_L2CAP_SERVICES  0
 
+#define NVM_NUM_DEVICE_DB_ENTRIES      16
+
 #endif
 

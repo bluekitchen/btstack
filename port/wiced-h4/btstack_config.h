@@ -41,10 +41,10 @@
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
-// WICED DCT used to store:
-// - Num Classic Link Keys
 #define NVM_NUM_LINK_KEYS 10
-// - Num LE Device entries
-#define NVM_NUM_LE_DEVICES 10
+
+// TODO: only use NVM_NUM_LE_DEVICES
+#define NVM_NUM_LE_DEVICES             16
+#define NVM_NUM_DEVICE_DB_ENTRIES      16
 
 #endif

@@ -67,7 +67,7 @@
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
-// Link Key DB and LE Device DB using TLV on top of Flash Sector interface
-#define NVM_NUM_DEVICE_DB_ENTRIES 6
+// LE Device DB using TLV
+#define NVM_NUM_DEVICE_DB_ENTRIES 16
 
 #endif
