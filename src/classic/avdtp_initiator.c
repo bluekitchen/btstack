@@ -73,7 +73,7 @@ static int avdtp_initiator_send_signaling_cmd_delay_report(uint16_t cid, uint8_t
     return l2cap_send(cid, command, sizeof(command));
 }
 
-void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, int offset, avdtp_context_t * context){
+void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
     // int status = 0;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     
@@ -378,7 +378,7 @@ static void avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t 
     }
 }
 
-void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
+void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
 
     bool sent = avdtp_initiator_stream_config_subsm_run_signaling(connection);
     if (sent) return;

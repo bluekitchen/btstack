@@ -59,7 +59,7 @@ extern "C" {
 /**
  * @brief Set up AVDTP Sink device.
  */
-void avdtp_sink_init(avdtp_context_t * avdtp_context);
+void avdtp_sink_init(void);
 
 // returns avdtp_stream_endpoint_t *
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);

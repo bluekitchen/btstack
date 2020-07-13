@@ -156,10 +156,7 @@ void avdtp_source_register_packet_handler(btstack_packet_handler_t callback){
     avdtp_register_source_packet_handler(callback);
 }
 
-void avdtp_source_init(avdtp_context_t * avdtp_context){
-    btstack_assert(avdtp_context != NULL);
-
-    avdtp_source_context = avdtp_context;
+void avdtp_source_init(void) {
     l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
 }
 

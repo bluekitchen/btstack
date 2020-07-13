@@ -53,9 +53,6 @@
 #include "classic/sdp_client.h"
 #include "classic/sdp_util.h"
 
-avdtp_context_t * avdtp_source_context = NULL;
-avdtp_context_t * avdtp_sink_context = NULL;
-
 btstack_linked_list_t stream_endpoints;
 
 static btstack_packet_handler_t avdtp_source_callback;
@@ -582,15 +579,15 @@ void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *
 }
 
 /* START: tracking can send now requests pro l2cap cid */
-void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context){
+void avdtp_handle_can_send_now(avdtp_connection_t *connection, uint16_t l2cap_cid) {
     if (connection->wait_to_send_acceptor){
         log_debug("call avdtp_acceptor_stream_config_subsm_run");
         connection->wait_to_send_acceptor = 0;
-        avdtp_acceptor_stream_config_subsm_run(connection, context);
+        avdtp_acceptor_stream_config_subsm_run(connection);
     } else if (connection->wait_to_send_initiator){
         log_debug("call avdtp_initiator_stream_config_subsm_run");
         connection->wait_to_send_initiator = 0;
-        avdtp_initiator_stream_config_subsm_run(connection, context);
+        avdtp_initiator_stream_config_subsm_run(connection);
     }
 
     // re-register
@@ -617,7 +614,8 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
     return stream_endpoint;
 }
 
-static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, avdtp_context_t * context){
+static void
+handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection, uint8_t *packet, uint16_t size) {
     if (size < 2) return;
 
     uint16_t offset;
@@ -625,11 +623,11 @@ static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t
     switch (message_type){
         case AVDTP_CMD_MSG:
             offset = avdtp_read_signaling_header(&connection->acceptor_signaling_packet, packet, size);
-            avdtp_acceptor_stream_config_subsm(connection, packet, size, offset, context);
+            avdtp_acceptor_stream_config_subsm(connection, packet, size, offset);
             break;
         default:
             offset = avdtp_read_signaling_header(&connection->initiator_signaling_packet, packet, size);
-            avdtp_initiator_stream_config_subsm(connection, packet, size, offset, context);
+            avdtp_initiator_stream_config_subsm(connection, packet, size, offset);
             break;
     }
 }
@@ -819,18 +817,6 @@ static avdtp_connection_t * avdtp_handle_incoming_connection(avdtp_connection_t 
     return connection;
 }
 
-static avdtp_context_t * avdtp_get_active_contex(void){
-    // assume only one context is active
-    avdtp_context_t * context = NULL;
-    if (avdtp_sink_context != NULL){
-        context = avdtp_sink_context;
-    } else {
-        context = avdtp_source_context;
-    } 
-    btstack_assert(context != NULL);
-    return context;
-}
-
 static void avdtp_retry_timer_timeout_handler(btstack_timer_source_t * timer){
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
 
@@ -867,27 +853,25 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_connection_t * connection = NULL;
-    
-    avdtp_context_t * context = avdtp_get_active_contex();
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
             connection = avdtp_get_connection_for_l2cap_signaling_cid(channel);
             if (connection){
-                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size, context);
+                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
                 break;
             }
             
             stream_endpoint = avdtp_get_stream_endpoint_for_l2cap_cid(channel);
             if (!stream_endpoint){
                 if (!connection) break;
-                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size, context);
+                handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
                 break;
             }
             
             if (stream_endpoint->connection){
                 if (channel == stream_endpoint->connection->l2cap_signaling_cid){
-                    handle_l2cap_data_packet_for_signaling_connection(stream_endpoint->connection, packet, size, context);
+                    handle_l2cap_data_packet_for_signaling_connection(stream_endpoint->connection, packet, size);
                     break;
                 }
             }
@@ -1101,7 +1085,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         if (!stream_endpoint->connection) break;
                         connection = stream_endpoint->connection;
                     }
-                    avdtp_handle_can_send_now(connection, channel, context);
+                    avdtp_handle_can_send_now(connection, channel);
                     break;
                 default:
                     log_info("Unknown HCI event type %02x", hci_event_packet_get_type(packet));

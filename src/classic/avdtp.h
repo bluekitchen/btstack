@@ -542,13 +542,6 @@ typedef struct {
     avdtp_sep_t * active_remote_sep;
 } avdtp_stream_endpoint_context_t;
 
-typedef struct {
-    int dummy;
-} avdtp_context_t;
-
-extern avdtp_context_t * avdtp_source_context;
-extern avdtp_context_t * avdtp_sink_context;
-
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t l2cap_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
@@ -568,7 +561,7 @@ void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream
 void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t back_ch, uint8_t media, uint8_t recovery);
 void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
 void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t fragmentation);
-void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_cid, avdtp_context_t * context);
+void avdtp_handle_can_send_now(avdtp_connection_t *connection, uint16_t l2cap_cid);
 
 // sink only
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));

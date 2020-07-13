@@ -79,7 +79,8 @@ static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_i
     return msg_size >= minimal_msg_lenght;
 }
 
-static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, avdtp_context_t *context, int offset, uint16_t packet_size, avdtp_stream_endpoint_t *stream_endpoint) {
+static void
+avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int offset, uint16_t packet_size, avdtp_stream_endpoint_t *stream_endpoint) {
     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION connection %p", connection);
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
@@ -132,7 +133,7 @@ static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *conn
                                 connection->acceptor_signaling_packet.signal_identifier, false);
 }
 
-void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset, avdtp_context_t * context){
+void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     connection->acceptor_transaction_label = connection->acceptor_signaling_packet.transaction_label;
     if (!avdtp_acceptor_validate_msg_length(connection->acceptor_signaling_packet.signal_identifier, size)) {
@@ -255,7 +256,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     log_info("Received SET_CONFIGURATION cmd: config state %d", connection->configuration_state);
                     switch (connection->configuration_state){
                         case AVDTP_CONFIGURATION_STATE_IDLE:
-                            avdtp_acceptor_handle_configuration_command(connection, context, offset, packet_size, stream_endpoint);
+                            avdtp_acceptor_handle_configuration_command(connection, offset, packet_size,
+                                                                        stream_endpoint);
                             connection->configuration_state = AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED;
                             break;
                         case AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED:
@@ -447,7 +449,7 @@ static int avdtp_acceptor_send_response_reject_with_error_code(uint16_t cid, avd
     return l2cap_send(cid, command, sizeof(command));
 }
 
-void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
+void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
     int sent = 1;
     btstack_linked_list_t * stream_endpoints = avdtp_get_stream_endpoints();
 

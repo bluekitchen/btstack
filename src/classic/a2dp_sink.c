@@ -52,8 +52,6 @@
 static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service";
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
 
-static avdtp_context_t a2dp_sink_context;
-
 static a2dp_state_t app_state = A2DP_IDLE;
 static int send_stream_established_for_outgoing_connection;
 
@@ -162,7 +160,7 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 }
 
 void a2dp_sink_init(void){
-    avdtp_sink_init(&a2dp_sink_context);
+    avdtp_sink_init();
 }
 
 avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
