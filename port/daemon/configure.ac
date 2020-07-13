@@ -132,12 +132,12 @@ echo
 rm -f btstack_config.h
 echo "//"                                                  >> btstack_config.h
 echo "// btstack_config.h"                                 >> btstack_config.h
-echo "// created by configure for BTstack "                >> btstack_config.h
+echo "// created by configure for BTstack"                 >> btstack_config.h
 echo "//" `date`                                           >> btstack_config.h
 echo "//"                                                  >> btstack_config.h
 echo                                                       >> btstack_config.h
-echo "#ifndef __BTSTACK_CONFIG"                            >> btstack_config.h
-echo "#define __BTSTACK_CONFIG"                            >> btstack_config.h
+echo "#ifndef BTSTACK_CONFIG_H"                            >> btstack_config.h
+echo "#define BTSTACK_CONFIG_H"                            >> btstack_config.h
 echo                                                       >> btstack_config.h
 
 echo "// Port related features"                            >> btstack_config.h
@@ -168,7 +168,8 @@ echo                                                       >> btstack_config.h
 
 echo "// BTstack configuration. buffers, sizes, .."        >> btstack_config.h
 echo "#define HCI_ACL_PAYLOAD_SIZE 1021"                   >> btstack_config.h
-echo "#define NVM_NUM_DEVICE_DB_ENTRIES 20"                >> btstack_config.h
+echo "#define NVM_NUM_LINK_KEYS         20"                >> btstack_config.h
+echo "#define NVM_NUM_DEVICE_DB_ENTRIES 16"                >> btstack_config.h
 echo                                                       >> btstack_config.h
 
 echo "// Daemon configuration" >> btstack_config.h

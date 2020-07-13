@@ -33,7 +33,8 @@
 
 #define MAX_ATT_DB_SIZE 1024
 
-#define NVM_NUM_DEVICE_DB_ENTRIES     10
+#define NVM_NUM_LINK_KEYS     16
+#define NVM_NUM_DEVICE_DB_ENTRIES     16
 
 // Mesh Configuration
 #define ENABLE_MESH
