@@ -74,7 +74,18 @@ static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
 static bd_addr_t             local_addr;
-
+static char bd_addr_to_dash_str_buffer[6 * 3];  // 12-45-78-01-34-67\0
+static char* bd_addr_to_dash_str(bd_addr_t addr) {
+    char* p = bd_addr_to_dash_str_buffer;
+    int i;
+    for (i = 0; i < 6; i++) {
+        *p++ = char_for_nibble((addr[i] >> 4) & 0x0F);
+        *p++ = char_for_nibble((addr[i] >> 0) & 0x0F);
+        *p++ = '-';
+    }
+    *--p = 0;
+    return (char*)bd_addr_to_dash_str_buffer;
+}
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
@@ -82,7 +93,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     gap_local_bd_addr(local_addr);
     printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
     strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-    strcat(tlv_db_path, bd_addr_to_str(local_addr));
+    strcat(tlv_db_path, bd_addr_to_dash_str(local_addr));
     strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
     btstack_tlv_set_instance(tlv_impl, &tlv_context);
