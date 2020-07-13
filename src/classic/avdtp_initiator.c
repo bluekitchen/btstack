@@ -125,16 +125,18 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         sep.in_use = (packet[i] >> 1) & 0x01;
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
                         sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
-                        avdtp_signaling_emit_sep(context->avdtp_callback, connection->avdtp_cid, sep);
+                        avdtp_signaling_emit_sep(connection->avdtp_cid, sep);
                     }
-                    avdtp_signaling_emit_sep_done(context->avdtp_callback, connection->avdtp_cid);
+                    avdtp_signaling_emit_sep_done(connection->avdtp_cid);
                     break;
                 }
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
-                    avdtp_emit_capabilities(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_remote_seid, &sep.capabilities, sep.registered_service_categories);
+                    avdtp_emit_capabilities(connection->avdtp_cid, connection->initiator_local_seid,
+                                            connection->initiator_remote_seid, &sep.capabilities,
+                                            sep.registered_service_categories);
                     break;
                 case AVDTP_SI_DELAYREPORT:
                     avdtp_signaling_emit_delay(connection->avdtp_cid, connection->initiator_local_seid,
@@ -259,7 +261,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     log_info("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
                     break;
             }
-            avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
+            avdtp_signaling_emit_accept(connection->avdtp_cid, 0,
+                                        connection->initiator_signaling_packet.signal_identifier, true);
             connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
@@ -272,11 +275,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
             }
             log_info("    AVDTP_RESPONSE_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
-            avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier, true);
+            avdtp_signaling_emit_reject(connection->avdtp_cid, connection->initiator_local_seid,
+                                        connection->initiator_signaling_packet.signal_identifier, true);
             return;
         case AVDTP_GENERAL_REJECT_MSG:
             log_info("    AVDTP_GENERAL_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
-            avdtp_signaling_emit_general_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier, true);
+            avdtp_signaling_emit_general_reject(connection->avdtp_cid, connection->initiator_local_seid,
+                                                connection->initiator_signaling_packet.signal_identifier, true);
             return;
         default:
             break;

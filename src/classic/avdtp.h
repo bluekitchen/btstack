@@ -543,7 +543,7 @@ typedef struct {
 } avdtp_stream_endpoint_context_t;
 
 typedef struct {
-    btstack_packet_handler_t avdtp_callback;
+    int dummy;
 } avdtp_context_t;
 
 extern avdtp_context_t * avdtp_source_context;
@@ -558,6 +558,7 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid);
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
+void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);
 void avdtp_register_reporting_category(avdtp_stream_endpoint_t * stream_endpoint);

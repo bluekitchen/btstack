@@ -83,6 +83,15 @@ avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_e
     return (stream_endpoint->sep.type == AVDTP_SOURCE) ? avdtp_source_callback : avdtp_sink_callback;
 }
 
+void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size){
+    if (avdtp_source_callback != NULL){
+        (*avdtp_source_callback)(HCI_EVENT_PACKET, 0, packet, size);
+    }
+    if (avdtp_sink_callback != NULL){
+        (*avdtp_sink_callback)(HCI_EVENT_PACKET, 0, packet, size);
+    }
+}
+
 static void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status) {
     uint8_t event[14];
     int pos = 0;
@@ -716,10 +725,10 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
     printf("avdtp_handle_sdp_query_failed \n");
     switch (connection->state){
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
-            avdtp_signaling_emit_connection_established(avdtp_source_callback, connection->avdtp_cid, connection->remote_addr, status);
+            avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr, status);
             break;
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE:
-            avdtp_signaling_emit_connection_established(avdtp_sink_callback, connection->avdtp_cid, connection->remote_addr, status);
+            avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr, status);
             break;
         default:
             return;
@@ -981,7 +990,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                     connection->l2cap_mtu = l2cap_mtu;
                                     connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
                                     log_info("Connection opened l2cap_signaling_cid 0x%02x, avdtp_cid 0x%02x", connection->l2cap_signaling_cid, connection->avdtp_cid);
-                                    avdtp_signaling_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, event_addr, status);
+                                    avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr,
+                                                                                status);
                                     return;
                                 case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
                                     if (connection->incoming_declined == true) {
@@ -997,7 +1007,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                     break;
                             }
                             avdtp_finalize_connection(connection);
-                            avdtp_signaling_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, event_addr, status);
+                            avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr, status);
                             break;
 
                         case AVDTP_SIGNALING_CONNECTION_OPENED:
@@ -1074,11 +1084,10 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                 avdtp_reset_stream_endpoint(stream_endpoint);
                             }
                         }
-                        avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
+                        avdtp_signaling_emit_connection_released(connection->avdtp_cid);
                         avdtp_finalize_connection(connection);
                         break;
                     }
-
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:

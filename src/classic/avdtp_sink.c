@@ -96,7 +96,6 @@ void avdtp_sink_register_multiplexing_category(uint8_t seid, uint8_t fragmentati
 void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
 
-    avdtp_sink_context->avdtp_callback = callback;
     avdtp_register_sink_packet_handler(callback);
 }
 

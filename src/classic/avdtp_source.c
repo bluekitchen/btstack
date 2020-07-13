@@ -153,7 +153,6 @@ uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t
 void avdtp_source_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     
-    avdtp_source_context->avdtp_callback = callback;
     avdtp_register_source_packet_handler(callback);
 }
 
