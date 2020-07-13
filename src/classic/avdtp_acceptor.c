@@ -127,7 +127,8 @@ static void avdtp_acceptor_handle_configuration_command(avdtp_connection_t *conn
     }
 
     avdtp_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
-    avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    avdtp_signaling_emit_accept(packet_handler, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
 }
 
 void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset, avdtp_context_t * context){
@@ -613,11 +614,13 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
             log_info("ACP: NOT IMPLEMENTED");
             sent = 0;
             break;
-    } 
+    }
+
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
     if (emit_accept == true){
-        avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+        avdtp_signaling_emit_accept(packet_handler, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
     } else if (emit_reject == true){
-        avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
+        avdtp_signaling_emit_reject(packet_handler, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->acceptor_signaling_packet.signal_identifier, false);
     }
     // check fragmentation
     if ((connection->acceptor_signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->acceptor_signaling_packet.packet_type != AVDTP_END_PACKET)){
