@@ -38,8 +38,6 @@
 #define BTSTACK_FILE__ "avrcp_controller.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -123,7 +121,7 @@ static uint8_t request_pass_through_release_control_cmd(avrcp_connection_t * con
 }
 
 static inline uint8_t request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, uint8_t continuous_fast_forward_cmd){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp: could not find a connection. avrcp cid 0x%02x", avrcp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -572,19 +570,68 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos++];
                     uint8_t capability_count = packet[pos++];
                     int i;
+                                
                     switch (capability_id){
+                        int offset = 0;
+                        uint8_t event[10];
+                        
                         case AVRCP_CAPABILITY_ID_COMPANY:
                             for (i = 0; i < capability_count; i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
                                 log_info("  0x%06" PRIx32 ", ", company_id);
+
+                                offset = 0;
+                                event[offset++] = HCI_EVENT_AVRCP_META;
+                                event[offset++] = sizeof(event) - 2;
+                                event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID;
+                                little_endian_store_16(event, offset, connection->avrcp_cid);
+                                offset += 2;
+                                event[offset++] = ctype;
+                                event[offset++] = 0;
+                                little_endian_store_24(event, offset, company_id);
+                                offset += 3;
+                                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
+                                break;
                             }
+                            
+                            offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_COMPANY_ID_DONE;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = 0;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                             break;
+
                         case AVRCP_CAPABILITY_ID_EVENT:
                             for (i = 0; i < capability_count; i++){
                                 uint8_t event_id = packet[pos++];
                                 log_info("  0x%02x %s", event_id, avrcp_event2str(event_id));
+                                
+                                offset = 0;
+                                event[offset++] = HCI_EVENT_AVRCP_META;
+                                event[offset++] = sizeof(event) - 2;
+                                event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID;
+                                little_endian_store_16(event, offset, connection->avrcp_cid);
+                                offset += 2;
+                                event[offset++] = ctype;
+                                event[offset++] = 0;
+                                event[offset++] = event_id;
+                                (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, offset);
                             }
+
+                            offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = 0;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
                     }
                     break;
@@ -920,14 +967,14 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
-            connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
+            connection = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
         
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
+                    connection = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, channel);
                     avrcp_controller_handle_can_send_now(connection);
                     break;
             default:
@@ -950,7 +997,7 @@ void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback)
 }
 
 uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -970,7 +1017,7 @@ uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -991,7 +1038,7 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
 }
 
 static uint8_t avrcp_controller_get_capabilities(uint16_t avrcp_cid, uint8_t capability_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1071,7 +1118,7 @@ uint8_t avrcp_controller_rewind(uint16_t avrcp_cid){
 /* start cmds */
 
 uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_stop_play: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1115,7 +1162,7 @@ uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid){
 /* stop continuous cmds */
 
 uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_play_status: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1137,7 +1184,7 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_play_status: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1147,7 +1194,7 @@ uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notificat
 }
 
 uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_play_status: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1157,7 +1204,7 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
 }
 
 uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addressed_player_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1189,7 +1236,7 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
 }
 
 uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1225,7 +1272,7 @@ uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume){
-     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1255,7 +1302,7 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
 }
 
 uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1284,7 +1331,7 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
 }
 
 static uint8_t avrcp_controller_set_current_player_application_setting_value(uint16_t avrcp_cid, uint8_t attr_id, uint8_t attr_value){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1325,7 +1372,7 @@ uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t
 }
 
 uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("Could not find a connection with cid 0%02x.", avrcp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1365,7 +1412,7 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
 }
 
 uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("Could not find a connection with cid 0%02x.", avrcp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1405,7 +1452,7 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
 }
 
 uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_num_fragments){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_controller_play_item: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1415,7 +1462,7 @@ uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_n
 }
 
 uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_type_t command_type, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t command_opcode, const uint8_t * command_buffer, uint16_t command_len){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_controller_play_item: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

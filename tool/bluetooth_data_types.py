@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Scrape GAP Data Types from Bluetooth SIG page
 # Copyright 2016 BlueKitchen GmbH

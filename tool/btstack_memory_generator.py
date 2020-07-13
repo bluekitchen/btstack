@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import sys
 
@@ -107,8 +107,11 @@ hfile_header_end = """
 """
 
 cfile_header_begin = """
+#define BTSTACK_FILE__ "btstack_memory.c"
+
+
 /*
- *  btstack_memory.h
+ *  btstack_memory.c
  *
  *  @brief BTstack memory management via configurable memory pools
  *

@@ -38,8 +38,6 @@
 #define BTSTACK_FILE__ "avrcp_browsing_target.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #include "btstack.h"
@@ -122,7 +120,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:{
-            browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_TARGET, channel);
+            browsing_connection = avrcp_get_browsing_connection_for_l2cap_cid_for_role(AVRCP_TARGET, channel);
             if (!browsing_connection) break;
             int pos = 0;
             uint8_t transport_header = packet[pos++];
@@ -149,7 +147,6 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                 case AVRCP_END_PACKET:
                     switch(browsing_connection->pdu_id){
                         case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
-                            printf("\n");
                             browsing_connection->scope = packet[pos++];
                             browsing_connection->start_item = big_endian_read_32(packet, pos);
                             pos += 4;
@@ -187,7 +184,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_TARGET, channel);
+                    browsing_connection = avrcp_get_browsing_connection_for_l2cap_cid_for_role(AVRCP_TARGET, channel);
                     if (browsing_connection->state != AVCTP_W2_SEND_RESPONSE) return;
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
                     avrcp_browsing_target_handle_can_send_now(browsing_connection);
@@ -213,7 +210,7 @@ void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t call
 }
 
 uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -246,8 +243,7 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     }
     (void)memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
     pos += attr_list_size;
-    connection->cmd_operands_length = pos;    
-    // printf_hexdump(connection->cmd_operands, connection->cmd_operands_length);
+    connection->cmd_operands_length = pos;
 
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
@@ -256,7 +252,7 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
 
 
 uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint32_t total_num_items){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

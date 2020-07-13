@@ -214,20 +214,14 @@ static uint8_t  companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
 };
 
-static uint8_t events_num = 12;
+static uint8_t events_num = 6;
 static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END,
-    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START,
-    AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED,
     AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
     AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
-    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED
+    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED
 };
 
 typedef struct {
@@ -754,13 +748,13 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             }
             media_tracker.avrcp_cid = local_cid;
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-            
+
             avrcp_target_set_now_playing_info(media_tracker.avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
             avrcp_target_set_unit_info(media_tracker.avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
             avrcp_target_set_subunit_info(media_tracker.avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, (uint8_t *)subunit_info, sizeof(subunit_info));
             
-            // automatically enable notifications
-            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_get_supported_events(media_tracker.avrcp_cid);
+            
             printf("AVRCP: Channel successfully opened:  media_tracker.avrcp_cid 0x%02x\n", media_tracker.avrcp_cid);
             return;
         
@@ -848,11 +842,16 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
             
     switch (packet[2]){
-        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:{
-            int volume_percentage = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127;
-            printf("AVRCP Controller: notification absolute volume changed %d %%\n", volume_percentage);
-            return;
-        }
+        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
+            printf("AVRCP Controller: notification absolute volume changed %d %%\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet) * 100 / 127);
+            break;
+        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID:  
+            printf("Remote supports EVENT_ID 0x%02x\n", avrcp_subevent_get_capability_event_id_get_event_id(packet));
+            break;
+        case AVRCP_SUBEVENT_GET_CAPABILITY_EVENT_ID_DONE:  
+            printf("automatically enable notifications\n");
+            avrcp_controller_enable_notification(media_tracker.avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            break;
         default:
             break;
     }  

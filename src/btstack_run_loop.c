@@ -45,10 +45,6 @@
 
 #include "btstack_run_loop.h"
 
-#include <stdio.h>
-#include <stdlib.h>  // exit()
-
-
 #include "btstack_debug.h"
 #include "btstack_config.h"
 

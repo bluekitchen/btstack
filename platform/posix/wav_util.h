@@ -35,12 +35,19 @@
  *
  */
 
+#ifndef WAV_UIL_H
+#define WAV_UIL_H
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 // return 0 if ok
 
@@ -92,3 +99,8 @@ int wav_reader_read_int16(int num_samples, int16_t * data);
  */
 int wav_reader_close(void);
 
+#if defined __cplusplus
+}
+#endif
+
+#endif // WAV_UTIL_H

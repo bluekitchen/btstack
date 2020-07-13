@@ -38,8 +38,6 @@
 #define BTSTACK_FILE__ "avrcp_target.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -433,7 +431,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
 }
 
 static uint8_t avrcp_target_pass_through_response(uint16_t avrcp_cid, avrcp_command_type_t cmd_type, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("Could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -466,7 +464,7 @@ uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operati
 }
 
 void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_set_unit_info: could not find a connection.");
         return; 
@@ -476,7 +474,7 @@ void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_ty
 }
 
 void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_set_subunit_info: could not find a connection.");
         return; 
@@ -515,8 +513,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
     connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
-    // printf("avrcp_target_subunit_info  subunit_type %d\n", connection->subunit_type);
-    
+
     uint8_t page = offset / 4;
     uint8_t extension_code = 7;
     connection->cmd_operands_length = 5;
@@ -531,7 +528,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
 }
 
 static inline uint8_t avrcp_prepare_vendor_dependent_response(uint16_t avrcp_cid, avrcp_connection_t ** out_connection, avrcp_pdu_id_t pdu_id, uint16_t param_length){
-    *out_connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    *out_connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!*out_connection){
         log_error("avrcp tartget: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -610,12 +607,11 @@ static uint8_t avrcp_target_store_media_attr(avrcp_connection_t * connection, av
     if (!value) return AVRCP_STATUS_INVALID_PARAMETER;
     connection->now_playing_info[index].value = (uint8_t*)value;
     connection->now_playing_info[index].len   = strlen(value);
-    // printf("store %lu bytes, %s\n",  strlen(value), value);
     return ERROR_CODE_SUCCESS;
 }   
 
 uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -629,7 +625,7 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
 }
 
 void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection. cid 0x%02x\n", avrcp_cid);
         return; 
@@ -657,7 +653,7 @@ void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t *
 }
 
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_track_changed: could not find connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -673,7 +669,7 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
 }
 
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_target_playing_content_changed: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -686,7 +682,7 @@ uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
 }
 
 uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -699,7 +695,7 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
 }
 
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -714,7 +710,7 @@ uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_st
 }
 
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
+    avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, avrcp_cid);
     if (!connection){
         log_error("avrcp_unit_info: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
@@ -914,7 +910,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     pos += 8;
                     uint8_t attribute_count = pdu[pos++];
-                    // printf("AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES attribute count %d\n", attribute_count);
                     connection->next_attr_id = AVRCP_MEDIA_ATTR_NONE;
                     if (!attribute_count){
                         connection->now_playing_info_attr_bitmap = 0xFE;
@@ -1073,77 +1068,76 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     avrcp_connection_t * connection;
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
-            connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
+            connection = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:{
-                    connection = get_avrcp_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
+                    connection = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, channel);
                     
                     if (connection->accept_response){
                         connection->accept_response = 0;
                         avrcp_target_send_response(connection->l2cap_signaling_cid, connection);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
 
-                    else if (connection->abort_continue_response){
+                    if (connection->abort_continue_response){
                         connection->abort_continue_response = 0;
                         connection->now_playing_info_response = 0;
                         avrcp_target_abort_continue_response(connection->l2cap_signaling_cid, connection);
-                        break;
+                        return;
                     }
 
-                    else if (connection->now_playing_info_response){
+                    if (connection->now_playing_info_response){
                         connection->now_playing_info_response = 0;
                         avrcp_target_send_now_playing_info(connection->l2cap_signaling_cid, connection);
-                        break;
+                        return;
                     }
                     
-                    else if (connection->track_changed){
+                    if (connection->track_changed){
                         connection->track_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED, connection->track_id, 8);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
                     
-                    else if (connection->playback_status_changed){
+                    if (connection->playback_status_changed){
                         connection->playback_status_changed = 0;
                         uint8_t playback_status = (uint8_t) connection->playback_status;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED, &playback_status, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
                     
-                    else if (connection->playing_content_changed){
+                    if (connection->playing_content_changed){
                         connection->playing_content_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED, NULL, 0);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
                     
-                    else if (connection->battery_status_changed){
+                    if (connection->battery_status_changed){
                         connection->battery_status_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED, (uint8_t *)&connection->battery_status, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
                     
-                    else if (connection->notify_volume_percentage_changed){
-                        // printf("emit new volume %d\n", connection->volume_percentage);
+                    if (connection->notify_volume_percentage_changed){
                         connection->notify_volume_percentage_changed = 0;
                         avrcp_target_send_notification(connection->l2cap_signaling_cid, connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED, &connection->volume_percentage, 1);
                         avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
 
-                    else if (connection->reject_transport_header){
+                    if (connection->reject_transport_header){
                         connection->state = AVCTP_CONNECTION_OPENED;
                         connection->reject_transport_header = 0;
                         l2cap_reserve_packet_buffer();
@@ -1152,7 +1146,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         big_endian_store_16(out_buffer, 1, connection->invalid_pid);
                         l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-                        break;
+                        return;
                     }
 
                     switch (connection->state){

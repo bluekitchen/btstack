@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 # BlueKitchen GmbH (c) 2014
+#!/usr/bin/env python3
 
 import glob
 import re
@@ -308,10 +308,10 @@ def create_events(events):
                     else:
                         last_variable_length_field_pos = offset
                 if field_type in 'V':
-                    if last_variable_length_field_pos >= 0:
+                    if last_variable_length_field_pos != '':
                         if offset_is_number:
                             # convert to string
-                            offset = '%u' % offset
+                            offset = '((uint8_t) %u)' % offset
                             offset_is_number = 0
                         offset = offset + ' + event[%s]' % last_variable_length_field_pos
                     else:
@@ -320,7 +320,7 @@ def create_events(events):
                     if offset_is_number:
                         offset += size_for_type(field_type)
                     else:
-                        offset = offset + ' + %u' % size_for_type(field_type)
+                        offset = offset + ' + ((uint8_t) %u)' % size_for_type(field_type)
             if is_le_event(event_group):
                 fout.write("#endif\n")
             fout.write("\n")

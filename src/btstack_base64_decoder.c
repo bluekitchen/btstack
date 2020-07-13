@@ -43,7 +43,6 @@
 
 #include "btstack_base64_decoder.h"
 #include <string.h>
-#include <stdio.h>
 
 /**
  * @brief Initialize base99 decoder

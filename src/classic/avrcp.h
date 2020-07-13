@@ -288,7 +288,7 @@ typedef enum {
     AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
-    AVCTP_CONNECTION_W2_L2CAP_RECONNECT,
+    AVCTP_CONNECTION_W2_L2CAP_RETRY,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
     AVCTP_W2_SEND_RELEASE_COMMAND,
@@ -472,7 +472,7 @@ typedef struct {
     uint16_t  cmd_operands_fragmented_pos;
     uint16_t  cmd_operands_fragmented_len;
 
-    btstack_timer_source_t reconnect_timer;
+    btstack_timer_source_t retry_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
     uint8_t  continuous_fast_forward_cmd;
     uint16_t notifications_enabled;
@@ -575,13 +575,13 @@ void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_
 
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 
-avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid);
-avrcp_connection_t * get_avrcp_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr);
+avrcp_connection_t * avrcp_get_connection_for_l2cap_signaling_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
+avrcp_connection_t * avrcp_get_connection_for_avrcp_cid_for_role(avrcp_role_t role, uint16_t avrcp_cid);
+avrcp_connection_t * avrcp_get_connection_for_bd_addr_for_role(avrcp_role_t role, bd_addr_t addr);
 
-avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
-avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
-avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
+avrcp_connection_t * avrcp_get_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
+avrcp_connection_t * avrcp_get_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
+avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_role(avrcp_role_t role, uint16_t l2cap_cid);
 
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 uint16_t avrcp_get_next_cid(avrcp_role_t role);

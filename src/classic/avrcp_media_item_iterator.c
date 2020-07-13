@@ -45,8 +45,6 @@
 // *****************************************************************************
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "classic/avrcp_media_item_iterator.h"

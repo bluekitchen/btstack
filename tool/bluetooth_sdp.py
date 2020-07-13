@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Scrape SDP UUIDs from Bluetooth SIG page
 # Copyright 2017 BlueKitchen GmbH
@@ -69,11 +69,11 @@ def remove_newlines(remark):
 def process_rows(fout, rows, pattern):
     for row in rows:
         columns = row.getchildren()
-        name = columns[0].text_content().encode('ascii','ignore')
-        value = columns[1].text_content().encode('ascii','ignore')
+        name = columns[0].text_content().replace(u'\u2013','').replace(u'\u200b','')
+        value = columns[1].text_content().replace(u'\u200b','')
         remark = ''
         if (len(columns) > 2):
-            remark = columns[2].text_content().encode('ascii','ignore')
+            remark = columns[2].text_content().replace(u'\u200b','')
         # skip tbody headers
         if name in ["Protocol Name", "Service Class Name", "Attribute Name", "UUID Name", 
             "Reserved", 'Reserved for HID Attributes', 'Available for HID Language Strings']:
@@ -82,6 +82,11 @@ def process_rows(fout, rows, pattern):
         if value.startswith('(Max value '):
             continue 
         name = create_pretty_define(name)
+        print(name)
+        if name.endswith("DISPLAY"):
+            for c in name:
+                print("ord %c = 0x%x" % (c, ord(c)))
+
         # skip duplicate attributes
         if name in defines:
             continue

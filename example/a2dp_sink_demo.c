@@ -146,8 +146,10 @@ static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
 
 #ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
-static uint8_t events_num = 1;
+static uint8_t events_num = 3;
 static uint8_t events[] = {
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
 };
 #endif

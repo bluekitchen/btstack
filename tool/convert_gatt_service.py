@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Convert offical Bluetooth GATT Service definitions into BTstack's .gatt format
 # Copyright 2016 BlueKitchen GmbH

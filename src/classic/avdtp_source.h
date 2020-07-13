@@ -119,7 +119,7 @@ void avdtp_source_register_multiplexing_category(uint8_t seid, uint8_t fragmenta
 /**
  * @brief Initialize up AVDTP Source device.
  */
-void avdtp_source_init(avdtp_context_t * avdtp_context);
+void avdtp_source_init(void);
 
 /**
  * @brief Register callback for the AVDTP Source client. See btstack_defines.h for AVDTP_SUBEVENT_* events

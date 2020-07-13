@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 
@@ -70,7 +70,7 @@ def update_filename_tag(dir_name, file_name, has_tag):
 
 def get_filename_tag(file_path):
 	basename = os.path.basename(file_path)
-	with open(file_path, "rb") as fin:
+	with open(file_path, "rt") as fin:
 		for line in fin:
 			parts = re.match(filetag_re,line)
 			if not parts:

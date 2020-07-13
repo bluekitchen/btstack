@@ -38,8 +38,6 @@
 #define BTSTACK_FILE__ "avrcp_browsing_controller.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 #include "btstack.h"
@@ -378,7 +376,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
     int pos;
     switch (packet_type) {
         case L2CAP_DATA_PACKET:   
-            browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER, channel);
+            browsing_connection = avrcp_get_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER, channel);
             if (!browsing_connection) break;
             pos = 0;
             transport_header = packet[pos++];
@@ -492,7 +490,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER,channel);
+                    browsing_connection = avrcp_get_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER,channel);
                     avrcp_browsing_controller_handle_can_send_now(browsing_connection);
                     break;
                 default:
@@ -516,7 +514,7 @@ void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t 
 }
 
 uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap, avrcp_browsing_scope_t scope){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_get_item_attributes: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -546,7 +544,7 @@ uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_b
  * @param attribute_list
  **/
 static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -587,7 +585,7 @@ uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsin
 
 
 uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t browsed_player_id){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_change_path: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -611,7 +609,7 @@ uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid
  * @param folder_uid    8 bytes long
  **/
 uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_change_path: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -648,7 +646,7 @@ uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid,
 }
 
 uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t search_str_len, char * search_str){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_change_path: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -680,7 +678,7 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
 }
 
 uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope){
-    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_cid);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_change_path: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
