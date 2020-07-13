@@ -128,7 +128,6 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
     }
 
     avdtp_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
-    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
     avdtp_signaling_emit_accept(connection->avdtp_cid, avdtp_local_seid(stream_endpoint),
                                 connection->acceptor_signaling_packet.signal_identifier, false);
 }
@@ -619,7 +618,6 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             break;
     }
 
-    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
     if (emit_accept == true){
         avdtp_signaling_emit_accept(connection->avdtp_cid, avdtp_local_seid(stream_endpoint),
                                     connection->acceptor_signaling_packet.signal_identifier, false);
