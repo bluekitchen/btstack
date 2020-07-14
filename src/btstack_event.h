@@ -7254,7 +7254,7 @@ static inline const uint8_t * pbap_subevent_card_result_get_name(const uint8_t *
  * @note: btstack_type J
  */
 static inline uint8_t pbap_subevent_card_result_get_handle_len(const uint8_t * event){
-    return event[((uint8_t) 6) + event[5]];
+    return event[6u + event[5]];
 }
 /**
  * @brief Get field handle from event PBAP_SUBEVENT_CARD_RESULT
@@ -7263,7 +7263,7 @@ static inline uint8_t pbap_subevent_card_result_get_handle_len(const uint8_t * e
  * @note: btstack_type V
  */
 static inline const uint8_t * pbap_subevent_card_result_get_handle(const uint8_t * event){
-    return &event[((uint8_t) 6) + event[5] + ((uint8_t) 1)];
+    return &event[6u + event[5] + 1u];
 }
 
 /**

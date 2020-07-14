@@ -1,4 +1,3 @@
-# BlueKitchen GmbH (c) 2014
 #!/usr/bin/env python3
 
 import glob
@@ -311,7 +310,7 @@ def create_events(events):
                     if last_variable_length_field_pos != '':
                         if offset_is_number:
                             # convert to string
-                            offset = '((uint8_t) %u)' % offset
+                            offset = '%uu' % offset
                             offset_is_number = 0
                         offset = offset + ' + event[%s]' % last_variable_length_field_pos
                     else:
@@ -320,7 +319,7 @@ def create_events(events):
                     if offset_is_number:
                         offset += size_for_type(field_type)
                     else:
-                        offset = offset + ' + ((uint8_t) %u)' % size_for_type(field_type)
+                        offset = offset + ' + %uu' % size_for_type(field_type)
             if is_le_event(event_group):
                 fout.write("#endif\n")
             fout.write("\n")
