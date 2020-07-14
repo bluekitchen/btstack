@@ -21,9 +21,9 @@ The Makefile project compiles gatt_counter, gatt_streamer_server, hog_mouse and 
 ## Limitation
 
 ### Advertising State:
-- Advertises as fast as possible, back to back
 - Only Connectable Advertising supported
 - Only fixed public BD_ADDR of 33:33:33:33:33:33 is used
+- Scan response not supported
 
 ### Connection State:
 - Only a single packet is sent in each Connection Interval
@@ -49,12 +49,13 @@ For the FMLR-80-P-STL4E module, just run make. You can upload the .elf file crea
 ## TODO
 
 ### General
-- only advertise with advertising interval
-- support other adv types
-- indicate random address in adertising pdus
-- allow to set random BD_ADDR via HCI command
-- handle Connection Param Update
+- handle disconnect for gatt streamer demo
 - multiple packets per connection interval
+- handle Connection Param Update
+- indicate random address in advertising pdus
+- allow to set random BD_ADDR via HCI command
+- support other adv types
+- support scan requests
 - handle Encryption
 
 ## Low Power

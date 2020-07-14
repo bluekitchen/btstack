@@ -65,7 +65,7 @@ static void MX_SPI2_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_LPTIM1_Init(void);
 /* USER CODE BEGIN PFP */
-void ble_rx(void);
+void btstack_port(void);
 
 /* USER CODE END PFP */
 
@@ -118,7 +118,7 @@ int main(void)
   // Enable SX1280 Clock
   HAL_GPIO_WritePin(RF_TXCO_GPIO_Port, RF_TXCO_Pin, GPIO_PIN_SET);
 
-  ble_rx();
+  btstack_port();
 
   /* USER CODE END 2 */
 

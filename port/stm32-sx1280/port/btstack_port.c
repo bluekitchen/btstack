@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "btstack_port.c"
+
 #define DEBUG
 
 #include <string.h>
@@ -67,7 +69,7 @@ void hal_cpu_enable_irqs(void){}
 void hal_cpu_enable_irqs_and_sleep(void){}
 
 void btstack_main(void);
-void ble_rx( void ){
+void btstack_port(void){
 
     // test code
     // lptim1_calibration();

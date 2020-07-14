@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "ll_sx1280.c"
+
 #define DEBUG
 
 #include <string.h>
@@ -151,6 +153,7 @@ typedef enum {
     RADIO_RX_ERROR,
     RADIO_TX_TIMEOUT,
     RADIO_W4_TX_DONE_TO_RX,
+    RADIO_W4_TIMER,
 } radio_state_t;
 
 // Link Layer State
@@ -291,7 +294,8 @@ static struct {
     uint8_t adv_data[31];
 
     // adv param
-    uint8_t adv_map;
+    uint8_t  adv_map;
+    uint32_t adv_interval_us;
 
     // next expected sequence number
     volatile uint8_t next_expected_sequence_number;
@@ -337,6 +341,9 @@ static uint8_t empty_packet[2];
 static uint8_t ll_outgoing_hci_event[258];
 static bool ll_send_disconnected;
 static bool ll_send_connection_complete;
+
+// prototypes
+static void radio_set_timer(uint32_t anchor_offset_us);
 
 
 // memory pool for acl-le pdus
@@ -398,6 +405,32 @@ static void next_channel(void){
     select_channel(ctx.channel);
 }
 
+static void ll_advertising_statemachine(void){
+    switch ( radio_state) {
+        case RADIO_RX_ERROR:
+        case RADIO_LOWPOWER:
+            // find next channel
+            while (ctx.channel < 40){
+                ctx.channel++;
+                if ((ctx.adv_map & (1 << (ctx.channel - 37))) != 0) {
+                    // Set Channel
+                    select_channel(ctx.channel);
+                    radio_state = RADIO_W4_TX_DONE_TO_RX;
+                    send_adv();
+                    break;
+                }
+                if (ctx.channel >= 40){
+                    // Set timer
+                    radio_state = RADIO_W4_TIMER;
+                    radio_set_timer(ctx.adv_interval_us);
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void start_advertising(void){
 
     Radio.SetAutoTx(AUTO_RX_TX_OFFSET);
@@ -418,10 +451,15 @@ static void start_advertising(void){
     // Set AccessAddress for ADV packets
     Radio.SetBleAdvertizerAccessAddress( );
 
+    radio_state = RADIO_LOWPOWER;
     ll_state = LL_STATE_ADVERTISING;
 
-    // dummy channel
+    // prepare
     ctx.channel = 36;
+    ctx.anchor_ticks = HAL_LPTIM_ReadCounter(&hlptim1);
+
+    // and get started
+    ll_advertising_statemachine();
 }
 
 static void start_hopping(void){
@@ -434,16 +472,16 @@ static void start_hopping(void){
     Radio.SetPacketParams( &packetParams );
 
 }
-static void stop_timer_for_sync_hop(void){
+static void radio_stop_timer(void){
     __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
     __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_IT_CMPM);
 }
 
-static void set_timer_for_sync_hop(void){
+static void radio_set_timer(uint32_t anchor_offset_us){
     // stop
-    stop_timer_for_sync_hop();
-    // set timer
-    uint16_t timeout_ticks = ctx.anchor_ticks + US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
+    radio_stop_timer();
+    // set timer for next radio event relative to anchor
+    uint16_t timeout_ticks = ctx.anchor_ticks + US_TO_TICKS(anchor_offset_us);
     __HAL_LPTIM_COMPARE_SET(&hlptim1, timeout_ticks);
     __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_CMPM);
 }
@@ -451,7 +489,7 @@ static void set_timer_for_sync_hop(void){
 static void ll_terminate(void){
     ll_state = LL_STATE_STANDBY;
     // stop sync hop timer
-    stop_timer_for_sync_hop();
+    radio_stop_timer();
     // free outgoing tx packet
     if ((ctx.tx_pdu != NULL) && (ctx.tx_pdu != &ll_tx_packet)){
         btstack_memory_ll_pdu_free(ctx.tx_pdu);
@@ -463,58 +501,73 @@ static void ll_terminate(void){
     ll_send_disconnected = true;
 }
 
-static void sync_next_hop(void){
+static void radio_timer_handler(void){
 
     uint16_t t0 = HAL_LPTIM_ReadCounter(&hlptim1);
 
-    // check supervision timeout
-    ctx.time_without_any_packets_us += ctx.conn_interval_us;
-    if (ctx.time_without_any_packets_us > ctx.supervision_timeout_us) {
-        printf("Supervision timeout\n\n");
-        ll_terminate();
-        return;
+    switch (ll_state){
+        case LL_STATE_CONNECTED:
+            // check supervision timeout
+            ctx.time_without_any_packets_us += ctx.conn_interval_us;
+            if (ctx.time_without_any_packets_us > ctx.supervision_timeout_us) {
+                printf("Supervision timeout\n\n");
+                ll_terminate();
+                return;
+            }
+
+            // prepare next connection event
+            ctx.connection_event++;
+            ctx.anchor_ticks += US_TO_TICKS(ctx.conn_interval_us);
+
+            ctx.packet_nr_in_connection_event = 0;
+            next_channel();
+
+            if (ctx.channel_map_update_pending && (ctx.channel_map_update_instant == ctx.connection_event)) {
+                hopping_set_channel_map( &h, (const uint8_t *) &ctx.channel_map_update_map );
+                ctx.channel_map_update_pending = false;
+            }
+
+            if ( ctx.conn_param_update_pending && ((ctx.conn_param_update_instant) == ctx.connection_event) ) {
+                ctx.conn_interval_us        = ctx.conn_param_update_interval_us;
+                ctx.conn_latency            = ctx.conn_param_update_latency;
+                ctx.supervision_timeout_us  = ctx.conn_param_update_timeout_us;
+                ctx.conn_param_update_pending = false;
+
+                radio_stop_timer();
+                ctx.synced = false;
+            }
+
+            // restart radio timer (might get overwritten by first packet)
+            radio_set_timer(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
+
+            receive_master();
+
+            printf("--SYNC-Ch %02u-Event %04u - t %08u--\n", ctx.channel, ctx.connection_event, t0);
+            break;
+        case LL_STATE_ADVERTISING:
+            // send adv on all configured channels
+            ctx.channel = 36;
+            ctx.anchor_ticks = t0;
+            radio_stop_timer();
+            ll_advertising_statemachine();
+            radio_state = RADIO_LOWPOWER;
+            break;
+        default:
+            break;
     }
 
-    // prepare next connection event
-    ctx.connection_event++;
-    ctx.anchor_ticks += US_TO_TICKS(ctx.conn_interval_us);
-
-    ctx.packet_nr_in_connection_event = 0;
-    next_channel();
-
-    if (ctx.channel_map_update_pending && (ctx.channel_map_update_instant == ctx.connection_event)) {
-        hopping_set_channel_map( &h, (const uint8_t *) &ctx.channel_map_update_map );
-        ctx.channel_map_update_pending = false;
-    }
-
-    if ( ctx.conn_param_update_pending && ((ctx.conn_param_update_instant) == ctx.connection_event) ) {
-        ctx.conn_interval_us        = ctx.conn_param_update_interval_us;
-        ctx.conn_latency            = ctx.conn_param_update_latency;
-        ctx.supervision_timeout_us  = ctx.conn_param_update_timeout_us;
-        ctx.conn_param_update_pending = false;
-
-        stop_timer_for_sync_hop();
-        ctx.synced = false;
-    }
-
-    // restart sync next hop timer (might get overwritten by first packet)
-    set_timer_for_sync_hop();
-
-    receive_master();
-
-    printf("--SYNC-Ch %02u-Event %04u - t %08u--\n", ctx.channel, ctx.connection_event, t0);
 }
 
 void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim){
     UNUSED(hlptim);
-    sync_next_hop();
+    radio_timer_handler();
 }
 
 void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim){
     UNUSED(hlptim);
     static uint32_t time_seconds = 0;
     time_seconds += 2;
-    printf("Time: %4u s\n", time_seconds);
+    // printf("Time: %4u s\n", time_seconds);
 }
 
 /** Radio IRQ handlers */
@@ -602,7 +655,7 @@ static void radio_on_rx_done(void ){
         if (ctx.packet_nr_in_connection_event == 0){
             ctx.anchor_ticks = packet_start_ticks;
             ctx.synced = true;
-            set_timer_for_sync_hop();
+            radio_set_timer(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
         }
 
         ctx.packet_nr_in_connection_event++;
@@ -667,8 +720,9 @@ void ll_init(void){
     // set test bd addr 33:33:33:33:33:33
     memset(ctx.bd_addr_le, 0x33, 6);
 
-    // default channels
+    // default channels, advertising interval
     ctx.adv_map = 0x7;
+    ctx.adv_interval_us = 1280000;
 }
 
 void ll_radio_on(void){
@@ -737,7 +791,6 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     // convert to us
     ctx.conn_interval_us = ctx.conn_interval_1250us * 1250;
     ctx.supervision_timeout_us  = ctx.supervision_timeout_10ms  * 10000;
-
     ctx.connection_event = 0;
     ctx.packet_nr_in_connection_event = 0;
     ctx.next_expected_sequence_number = 0;
@@ -905,7 +958,7 @@ uint8_t ll_set_scan_enable(uint8_t le_scan_enable, uint8_t filter_duplicates){
 static uint8_t ll_start_advertising(void){
     // COMMAND DISALLOWED if wrong state.
     if (ll_state != LL_STATE_STANDBY) return ERROR_CODE_COMMAND_DISALLOWED;
-    printf("Start Advertising on channels 0x%0x\n", ctx.adv_map);
+    log_info("Start Advertising on channels 0x%0x, interval %lu us", ctx.adv_map, ctx.adv_interval_us);
     start_advertising();
     return ERROR_CODE_SUCCESS;
 }
@@ -929,9 +982,20 @@ uint8_t ll_set_advertise_enable(uint8_t le_adv_enable){
 uint8_t ll_set_advertising_parameters(uint16_t advertising_interval_min, uint16_t advertising_interval_max,
                                       uint8_t advertising_type, uint8_t own_address_type, uint8_t peer_address_types, uint8_t * peer_address,
                                       uint8_t advertising_channel_map, uint8_t advertising_filter_policy){
+
+    // validate channel map
     if (advertising_channel_map == 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
     if ((advertising_channel_map & 0xf8) != 0) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+
+    // validate advertising interval
+    if (advertising_interval_min < 0x20)   return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if (advertising_interval_min > 0x4000) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if (advertising_interval_max < 0x20)   return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if (advertising_interval_max > 0x4000) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    if (advertising_interval_min > advertising_interval_max) return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+
     ctx.adv_map = advertising_channel_map;
+    ctx.adv_interval_us = advertising_interval_max * 625;
 
     // TODO: validate other params
     // TODO: process other params
@@ -981,27 +1045,8 @@ void ll_execute_once(void){
 
     switch ( ll_state ){
         case LL_STATE_ADVERTISING:
-            switch ( radio_state) {
-                case RADIO_RX_ERROR:
-                case RADIO_LOWPOWER:
-                    // find next channel
-                    while (ctx.adv_map != 0){
-                        ctx.channel++;
-                        if ((ctx.adv_map & (1 << (ctx.channel - 37))) != 0) {
-                            // Set Channel
-                            select_channel(ctx.channel);
-                            radio_state = RADIO_W4_TX_DONE_TO_RX;
-                            send_adv();
-                            break;
-                        }
-                        if (ctx.channel >= 40){
-                            ctx.channel = 36;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
+            ll_advertising_statemachine();
+            break;
         default:
             break;
     }

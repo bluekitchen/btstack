@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "controller.c"
+
 #define DEBUG
 
 #include <string.h>
