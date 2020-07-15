@@ -3018,8 +3018,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Default / minimum security level = 2
     hci_stack->gap_security_level = LEVEL_2;
 
-    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
-    hci_stack->gap_required_encyrption_key_size = 16;
+    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3
+    hci_stack->gap_required_encyrption_key_size = 7;
 #endif
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
