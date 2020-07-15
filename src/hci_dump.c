@@ -64,7 +64,31 @@
 #include <fcntl.h>        // open
 #include <unistd.h>       // write 
 #include <time.h>
-#include <sys/time.h>     // for timestamps
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
+#ifdef WIN32
+int gettimeofday(struct timeval *tp, void *tzp)
+{
+    time_t clock;
+    struct tm tm;
+    SYSTEMTIME wtm;
+    GetLocalTime(&wtm);
+    tm.tm_year = wtm.wYear - 1900;
+    tm.tm_mon = wtm.wMonth - 1;
+    tm.tm_mday = wtm.wDay;
+    tm.tm_hour = wtm.wHour;
+    tm.tm_min = wtm.wMinute;
+    tm.tm_sec = wtm.wSecond;
+    tm.tm_isdst = -1;
+    clock = mktime(&tm);
+    tp->tv_sec = clock;
+    tp->tv_usec = wtm.wMilliseconds * 1000;
+    return (0);
+}
+#endif
 #include <sys/stat.h>     // for mode flags
 #endif
 
@@ -108,7 +132,18 @@ typedef struct {
 pktlog_hdr;
 #define PKTLOG_HDR_SIZE 13
 
-static int dump_file = -1;
+typedef struct {
+    uint32_t orig_len;
+    uint32_t incl_len;
+    uint32_t flags;
+    uint32_t cum_drops;
+    uint32_t ts_sec;
+    uint32_t ts_usec;
+}
+snoop_hdr;
+#define SNOOP_HDR_SIZE 24
+
+static FILE * dump_file;
 static int dump_format;
 #ifdef HAVE_POSIX_FILE_IO
 static char time_string[40];
@@ -129,16 +164,22 @@ void hci_dump_open(const char *filename, hci_dump_format_t format){
 
 #ifdef HAVE_POSIX_FILE_IO
     if (dump_format == HCI_DUMP_STDOUT) {
-        dump_file = fileno(stdout);
+        dump_file = stdout;
     } else {
-
-        int oflags = O_WRONLY | O_CREAT | O_TRUNC;
-#ifdef _WIN32
-        oflags |= O_BINARY;
-#endif
-        dump_file = open(filename, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
-        if (dump_file < 0){
+        dump_file = fopen(filename, "wb");
+        if (!dump_file){
             printf("hci_dump_open: failed to open file %s\n", filename);
+        }
+        if (dump_format == HCI_DUMP_SNOOP) {
+            uint8_t file_header[] = { 
+                /* Identification */
+                0x62,0x74,0x73,0x6E,0x6F,0x6F,0x70,0x00, 
+                /* Version */
+                0x00,0x00,0x00,0x01,
+                /* Datalink Type */
+                0x00,0x00,0x03,0xE9,
+            };
+            fwrite(&file_header, 1, sizeof(file_header), dump_file);
         }
     }
 #else
@@ -202,6 +243,18 @@ static void hci_dump_bluez_setup_header(uint8_t * buffer, uint32_t tv_sec, uint3
     buffer[12] = packet_type;
 }
 
+static void hci_dump_snoop_setup_header(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len) {
+    uint32_t flags = 0;
+    flags |= in ? 1 : 0;
+    flags |= (packet_type == 0x02 || packet_type == 0x03) ? 0 : 2;
+    big_endian_store_32(buffer,  0, len);//Original Length
+    big_endian_store_32(buffer,  4, len);//Included Length
+    big_endian_store_32(buffer,  8, flags);//Packet Flags
+    big_endian_store_32(buffer, 12, 0);//Cumulativ Drops
+    big_endian_store_32(buffer, 16, tv_sec);//Timestamp Microseconds
+    big_endian_store_32(buffer, 20, tv_us);//Timestamp Microseconds
+}
+
 static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
@@ -234,7 +287,7 @@ static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uin
 }
 
 static void printf_timestamp(void){
-#ifdef HAVE_POSIX_FILE_IO
+#ifdef HAVE_POSIX_TIME
     struct tm* ptm;
     struct timeval curr_time;
     gettimeofday(&curr_time, NULL);
@@ -267,18 +320,15 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     static union {
         uint8_t header_bluez[HCIDUMP_HDR_SIZE];
         uint8_t header_packetlogger[PKTLOG_HDR_SIZE];
+        uint8_t header_snoop[SNOOP_HDR_SIZE];
     } header;
 
-    if (dump_file < 0) return; // not activated yet
-
+    if (!dump_file) return; // not activated yet
 #ifdef HAVE_POSIX_FILE_IO
     // don't grow bigger than max_nr_packets
     if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
         if (nr_packets >= max_nr_packets){
-            lseek(dump_file, 0, SEEK_SET);
-            // avoid -Wunused-result
-            int res = ftruncate(dump_file, 0);
-            UNUSED(res);
+            fseek(dump_file, 0, SEEK_SET);
             nr_packets = 0;
         }
         nr_packets++;
@@ -290,12 +340,15 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         printf_packet(packet_type, in, packet, len);
         return;        
     }
+    if (packet_type == 0x04 && packet[0] != 0x0E) {
+        return;
+    }
 
     uint32_t tv_sec = 0;
     uint32_t tv_us  = 0;
 
     // get time
-#ifdef HAVE_POSIX_FILE_IO
+#ifdef HAVE_POSIX_TIME
     struct timeval curr_time;
     gettimeofday(&curr_time, NULL);
     tv_sec = curr_time.tv_sec;
@@ -330,6 +383,11 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             hci_dump_packetlogger_setup_header(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
             header_len = PKTLOG_HDR_SIZE;
             break;
+        case HCI_DUMP_SNOOP:
+            if (packet_type > HCI_EVENT_PACKET) return;
+            hci_dump_snoop_setup_header(header.header_snoop, tv_sec, tv_us, packet_type, in, len);
+            header_len = SNOOP_HDR_SIZE;
+            break;
         default:
             return;
     }
@@ -337,8 +395,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 #ifdef HAVE_POSIX_FILE_IO
     // avoid -Wunused-result
     int res = 0;
-    res = write (dump_file, &header, header_len);
-    res = write (dump_file, packet, len );
+    res = fwrite(&header, 1, header_len, dump_file);
+    res = fwrite (packet, 1, len, dump_file);
     UNUSED(res);
 #endif
 
@@ -369,7 +427,7 @@ void hci_dump_log_va_arg(int log_level, const char * format, va_list argptr){
     if (!hci_dump_log_level_active(log_level)) return;
 
 #if defined(HAVE_POSIX_FILE_IO) || defined (ENABLE_SEGGER_RTT)
-    if (dump_file >= 0){
+    if (dump_file){
         int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
         hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
         return;
@@ -403,9 +461,9 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 
 void hci_dump_close(void){
 #ifdef HAVE_POSIX_FILE_IO
-    close(dump_file);
+    fclose(dump_file);
 #endif
-    dump_file = -1;
+    dump_file = NULL;
 }
 
 void hci_dump_enable_log_level(int log_level, int enable){
