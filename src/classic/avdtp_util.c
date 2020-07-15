@@ -251,7 +251,11 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
     return pos;
 }
 
-int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities){
+static bool avdtp_is_basic_capability(int service_category){
+    return (AVDTP_MEDIA_TRANSPORT <= service_category) && (service_category <= AVDTP_MEDIA_CODEC);
+}
+
+int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category) {
     UNUSED(size);
 
     int i;
@@ -260,9 +264,7 @@ int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabiliti
     switch(category){
         case AVDTP_MEDIA_TRANSPORT:
         case AVDTP_REPORTING:
-            break;
         case AVDTP_DELAY_REPORTING:
-            if (!pack_all_capabilities) break;
             break;
         case AVDTP_RECOVERY:
             buffer[pos++] = caps.recovery.recovery_type; // 0x01=RFC2733
@@ -454,22 +456,20 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
     return registered_service_categories;
 }
 
-void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uint8_t transaction_label, uint16_t registered_service_categories, avdtp_capabilities_t capabilities, uint8_t identifier){
+void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uint8_t transaction_label, uint16_t service_categories, avdtp_capabilities_t capabilities, uint8_t identifier){
     if (signaling_packet->offset) return;
-    uint8_t pack_all_capabilities = 1;
+    bool basic_capabilities_only = false;
     signaling_packet->message_type = AVDTP_RESPONSE_ACCEPT_MSG;
     int i;
     
     signaling_packet->size = 0;
     memset(signaling_packet->command, 0 , sizeof(signaling_packet->command));
 
-    
     switch (identifier) {
         case AVDTP_SI_GET_CAPABILITIES:
-            pack_all_capabilities = 0;
+            basic_capabilities_only = true;
             break;
         case AVDTP_SI_GET_ALL_CAPABILITIES:
-            pack_all_capabilities = 1;
             break;
         case AVDTP_SI_SET_CONFIGURATION:
             signaling_packet->command[signaling_packet->size++] = signaling_packet->acp_seid << 2;
@@ -485,18 +485,24 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
             break;
     } 
     
-    for (i = 1; i < 9; i++){
-        int registered_category = get_bit16(registered_service_categories, i);
+    for (i = AVDTP_MEDIA_TRANSPORT; i <= AVDTP_DELAY_REPORTING; i++){
+        int registered_category = get_bit16(service_categories, i);
         if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION)){
             // TODO: introduce bitmap of mandatory categories
-            if (i == 1){
-                registered_category = 1;
+            if (i == AVDTP_MEDIA_TRANSPORT){
+                registered_category = true;
             }
-        }  
+        }
+        // AVDTP_SI_GET_CAPABILITIES reports only basic capabilities (i.e., it skips non-basic categories)
+        if (basic_capabilities_only && !avdtp_is_basic_capability(i)){
+            registered_category = false;
+        }
+
         if (registered_category){
             // service category
             signaling_packet->command[signaling_packet->size++] = i;
-            signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
+            signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command + signaling_packet->size,
+                    sizeof(signaling_packet->command) - signaling_packet->size, capabilities, (avdtp_service_category_t) i);
         }
     }
     signaling_packet->signal_identifier = (avdtp_signal_identifier_t)identifier;

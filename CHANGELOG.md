@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- AVDTP: fix invalid response for Get Capabilities request if Delay Reporting was supported
 
 ### Added
 - GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
