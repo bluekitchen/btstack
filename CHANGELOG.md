@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack by remote features and actual encryption type (BIAS) 
 - GAP: Mutual authentication: request authentication after Classic connection got encrypted (BIAS)
+- Windows port for Dialog DA14585 connected via serial port
 
 ### Changed
 - CVSD PLC: treat zero frames as good and allow to mark data as bad, e.g. if reported by controller as erroneous
