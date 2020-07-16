@@ -274,7 +274,7 @@ static void hog_connection_timeout(btstack_timer_source_t * ts){
 /**
  * Connect to remote device but set timer for timeout
  */
-static void hog_connect() {
+static void hog_connect(void) {
     // set timer
     btstack_run_loop_set_timer(&connection_timer, 10000);
     btstack_run_loop_set_timer_handler(&connection_timer, &hog_connection_timeout);
