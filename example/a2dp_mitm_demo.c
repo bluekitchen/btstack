@@ -390,9 +390,8 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
 
     switch (packet[2]){
          case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-             printf("A2DP Sink: A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, cid 0x%02x seid %d\n", a2dp_sink_cid, a2dp_sink_local_seid);
-            
              a2dp_subevent_signaling_connection_established_get_bd_addr(packet, event_addr);
+             if (memcmp(smartphone_addr, event_addr,  6) != 0) break;
              status = a2dp_subevent_signaling_connection_established_get_status(packet);
              if (status != ERROR_CODE_SUCCESS){
                  printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
@@ -462,6 +461,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
     switch (packet[2]){
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             a2dp_subevent_signaling_connection_established_get_bd_addr(packet, event_addr);
+            if (memcmp(headset_addr, event_addr,  6) != 0) break;
             status = a2dp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
@@ -570,9 +570,32 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
 
-    printf("\n");
-    printf("--- Bluetooth A2DP MITM Console on %s ---\n", bd_addr_to_str(iut_address));
+    // get pairing state
+    bool smartphone_paired = false;
+    bool headset_paired = false;
+    bd_addr_t addr;
+    link_key_t link_key;
+    link_key_type_t  type;
+    btstack_link_key_iterator_t it;
+    gap_link_key_iterator_init(&it);
+    while (gap_link_key_iterator_get_next(&it, addr, link_key, &type)){
+        printf("link key for %s\n", bd_addr_to_str(addr));
+        if (memcmp(addr, smartphone_addr, 6) == 0){
+            smartphone_paired = true;
+        }
+        if (memcmp(addr, headset_addr, 6) == 0){
+            headset_paired = true;
+        }
+    }
 
+    printf("\n");
+    printf("--- A2DP MITM Console on %s ---\n", bd_addr_to_str(iut_address));
+    printf("- Paired with smartphone: %s\n", smartphone_paired ? "yes" : "no");
+    printf("- Paired with headset:    %s\n", headset_paired ? "yes" : "no");
+    printf("- Smartphone connected:   %s\n", a2dp_sink_cid ? "yes" : "no");
+    printf("- Headset connected:      %s\n", a2dp_source_cid ? "yes" : "no");
+    printf("- Headset ready:          %s\n", headset_stream_ready ? "yes" : "no");
+    printf("\n");
     printf("p      - create connection to smartphone %s\n", bd_addr_to_str(smartphone_addr));
     printf("h      - create connection to headset    %s\n", bd_addr_to_str(headset_addr));
     printf("d      - disconnect all\n");
