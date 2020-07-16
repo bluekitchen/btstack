@@ -576,7 +576,7 @@ static void show_usage(void){
     printf("p      - create connection to smartphone %s\n", bd_addr_to_str(smartphone_addr));
     printf("h      - create connection to headset    %s\n", bd_addr_to_str(headset_addr));
     printf("d      - disconnect all\n");
-
+    printf("c      - delete all link keys\n");
     printf("\nTo setup MITM, please connect to Headphone using 'h',\n");
     printf("then connect from smartphone/laptop to BTstack.\n");
     printf("Ctrl-c - exit\n");
@@ -600,6 +600,10 @@ static void stdin_process(char cmd){
             printf("Disconnect all\n");
             a2dp_sink_disconnect(a2dp_sink_cid);
             a2dp_source_disconnect(a2dp_source_cid);
+            break;
+        case 'c':
+            printf("Deleting all link keys\n");
+            gap_delete_all_link_keys();
             break;
         default:
             show_usage();
