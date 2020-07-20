@@ -519,7 +519,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
             log_info("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
             switch (pdu_id){
-                case AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue:{
+                case AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE:{
                     uint8_t num_attributes = packet[pos++];
                     int i;
                     avrcp_repeat_mode_t  repeat_mode =  AVRCP_REPEAT_MODE_INVALID;
@@ -541,7 +541,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     avrcp_emit_repeat_and_shuffle_mode(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, repeat_mode, shuffle_mode);
                     break;
                 }
-                case AVRCP_PDU_ID_SetPlayerApplicationSettingValue:{
+                case AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE:{
                     uint8_t event[6];
                     int offset = 0;
                     event[offset++] = HCI_EVENT_AVRCP_META;
@@ -1316,7 +1316,7 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = AVRCP_SUBUNIT_ID;
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
-    connection->cmd_operands[3] = AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue; // PDU ID
+    connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE; // PDU ID
     connection->cmd_operands[4] = 0;
     big_endian_store_16(connection->cmd_operands, 5, 5); // parameter length
     connection->cmd_operands[7] = 4;                     // NumPlayerApplicationSettingAttributeID
@@ -1347,7 +1347,7 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
-    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SetPlayerApplicationSettingValue; // PDU ID
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE; // PDU ID
     connection->cmd_operands[pos++] = 0;
     // Parameter Length
     big_endian_store_16(connection->cmd_operands, pos, 3);
