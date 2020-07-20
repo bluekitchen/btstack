@@ -651,6 +651,9 @@ int btstack_main(int argc, const char * argv[]){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // assume Display and Yes/No buttons
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+
     l2cap_init();
     sdp_init();
 
