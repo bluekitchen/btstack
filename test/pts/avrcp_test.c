@@ -153,12 +153,9 @@ static uint8_t sdp_avrcp_target_service_buffer[200];
 static uint16_t avdtp_cid = 0;
 static avdtp_sep_t sep;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
-static avdtp_context_t a2dp_sink_context;
 static uint8_t  avrcp_value[100];
 static uint16_t browsing_uid_counter = 0;
 static avrcp_browsing_state_t browsing_state = AVRCP_BROWSING_STATE_IDLE;
-
-static avdtp_context_t a2dp_source_context;
 
 static bool auto_avrcp_browsing = false;
 static bool auto_avrcp_regular  = false;
@@ -1803,7 +1800,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_sink_init(&a2dp_sink_context);
+    avdtp_sink_init();
     avdtp_sink_register_packet_handler(&avdtp_sink_connection_establishment_packet_handler);
 
     local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
@@ -1816,7 +1813,7 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
-    avdtp_source_init(&a2dp_source_context);
+    avdtp_source_init();
     avdtp_source_register_packet_handler(&avdtp_source_connection_establishment_packet_handler);
     a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *) media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t*) media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
     

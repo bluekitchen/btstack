@@ -148,7 +148,6 @@ static uint8_t remote_seid;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
-static avdtp_context_t a2dp_sink_context;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 #if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
@@ -718,7 +717,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_sink_init(&a2dp_sink_context);
+    avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
     avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
@@ -734,7 +733,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_SF_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     // printf("BTstack AVDTP Sink, supported features 0x%04x\n", );
     gap_set_local_name("BTstack AVDTP Sink PTS 00:00:00:00:00:00");

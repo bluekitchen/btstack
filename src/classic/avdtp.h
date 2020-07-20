@@ -63,15 +63,15 @@ extern "C" {
 #define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
 
 // Supported Features
-#define AVDTP_SOURCE_SF_Player      0x0001
-#define AVDTP_SOURCE_SF_Microphone  0x0002
-#define AVDTP_SOURCE_SF_Tuner       0x0004
-#define AVDTP_SOURCE_SF_Mixer       0x0008
+#define AVDTP_SOURCE_SF_PLAYER      0x0001
+#define AVDTP_SOURCE_SF_MICROPHONE  0x0002
+#define AVDTP_SOURCE_SF_TUNER       0x0004
+#define AVDTP_SOURCE_SF_MIXER       0x0008
 
-#define AVDTP_SINK_SF_Headphone     0x0001
-#define AVDTP_SINK_SF_Speaker       0x0002
-#define AVDTP_SINK_SF_Recorder      0x0004
-#define AVDTP_SINK_SF_Amplifier     0x0008
+#define AVDTP_SINK_SF_HEADPHONE     0x0001
+#define AVDTP_SINK_SF_SPEAKER       0x0002
+#define AVDTP_SINK_SF_RECORDER      0x0004
+#define AVDTP_SINK_SF_AMPLIFIER     0x0008
 
 // ACP to INT, Signal Response Header Error Codes
 #define BAD_HEADER_FORMAT 0x01
