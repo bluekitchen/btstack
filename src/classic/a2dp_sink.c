@@ -183,7 +183,7 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
     sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!sc.local_stream_endpoint){
         log_info("No local_stream_endpoint for seid %d", local_seid);
-        return AVDTP_SEID_DOES_NOT_EXIST;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // remember to tell client
     send_stream_established_for_outgoing_connection = 1;

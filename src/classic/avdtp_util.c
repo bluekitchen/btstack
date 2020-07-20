@@ -778,14 +778,14 @@ void avdtp_emit_capabilities(uint16_t avdtp_cid, uint8_t local_seid, uint8_t rem
 }
 
 uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
-    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     connection->wait_to_send_acceptor = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid){
-    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     connection->wait_to_send_initiator = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
     return ERROR_CODE_SUCCESS;

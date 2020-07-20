@@ -548,7 +548,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
     sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(loc_seid);
     if (!sc.local_stream_endpoint){
         log_error(" no local_stream_endpoint for seid %d", loc_seid);
-        return AVDTP_SEID_DOES_NOT_EXIST;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     (void)memcpy(sc.remote_addr, remote_addr, 6);
     app_state = A2DP_W4_CONNECTED;
