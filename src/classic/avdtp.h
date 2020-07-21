@@ -542,6 +542,7 @@ typedef struct {
     avdtp_sep_t * active_remote_sep;
 } avdtp_stream_endpoint_context_t;
 
+void avdtp_init(void);
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t l2cap_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);

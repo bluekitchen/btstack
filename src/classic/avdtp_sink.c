@@ -100,7 +100,7 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 void avdtp_sink_init(void) {
-    l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
+    avdtp_init();
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){

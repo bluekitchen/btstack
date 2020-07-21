@@ -1550,3 +1550,11 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
     if (stream_endpoint->remote_sep.seid > 0x3E) return 0;
     return 1;
 }
+
+void avdtp_init(void){
+    static bool l2cap_registered = false;
+    if (!l2cap_registered){
+        l2cap_registered = true;
+        l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
+    }
+}
