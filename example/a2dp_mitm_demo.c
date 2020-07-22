@@ -130,6 +130,7 @@ static bd_addr_t headset_addr;
 #endif
 
 // audio through
+static uint16_t num_sbc_frames_in_ring_buffer;
 static btstack_ring_buffer_t ring_buffer;
 static uint8_t ring_buffer_storage[MAX_NUM_SBC_FRAMES * MAX_SBC_FRAME_SIZE];
 static int forward_active;
@@ -191,6 +192,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
+    num_sbc_frames_in_ring_buffer = 0;
     media_initialized = 1;
     return 0;
 }
@@ -349,6 +351,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
         btstack_ring_buffer_write(&ring_buffer, (uint8_t*) &frame_size, 2);
         btstack_ring_buffer_write(&ring_buffer, packet+pos, sbc_frame_size);
         pos += sbc_frame_size;
+        num_sbc_frames_in_ring_buffer++;
     }
 
     // printf("DEMO: Audio from smartphone, ringbuffer avail %u\n", btstack_ring_buffer_bytes_available(&ring_buffer));
@@ -514,11 +517,12 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             uint16_t payload_max_size = a2dp_max_media_payload_size(media_tracker.source_cid, media_tracker.source_local_seid);
             int max_sbc_frames = payload_max_size / sbc_frame_size;
 
-            for (num_frames = 0 ; num_frames < max_sbc_frames && btstack_ring_buffer_bytes_available(&ring_buffer); num_frames++){
+            for (num_frames = 0 ; num_frames < max_sbc_frames && num_sbc_frames_in_ring_buffer > 0; num_frames++){
                 btstack_ring_buffer_read(&ring_buffer, (uint8_t*) &len, 2, &bytes_read);
                 // log_info("RING: read frame of size %u", len);
                 btstack_ring_buffer_read(&ring_buffer, &media_tracker.sbc_storage[pos], len, &bytes_read);
                 pos += len;
+                num_sbc_frames_in_ring_buffer--;
             }
 
             a2dp_source_stream_send_media_payload(media_tracker.source_cid, media_tracker.source_local_seid, media_tracker.sbc_storage, pos, num_frames, 0);
