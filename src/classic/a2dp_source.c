@@ -409,7 +409,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
             sep.media_type = (avdtp_media_type_t) avdtp_subevent_signaling_sep_found_get_media_type(packet);
             sep.type = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-            log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %s (1-SNK), index %d",
+            log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %s, index %d",
                     sep.seid, sep.in_use, sep.media_type, sep.type == AVDTP_SOURCE ? "source" : "sink", num_remote_seps);
             if (sep.type == AVDTP_SINK){
                 remote_seps[num_remote_seps++] = sep;
@@ -510,9 +510,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             break;
         }
         default:
-            app_state = A2DP_IDLE;
-            log_info("not implemented");
-            break; 
+            break;
     }
 }
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){

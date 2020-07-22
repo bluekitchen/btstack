@@ -352,9 +352,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             app_state = A2DP_IDLE;
             break;
         default:
-            app_state = A2DP_IDLE;
-            log_info("not implemented");
-            break; 
+            break;
     }
 
 }
