@@ -64,7 +64,7 @@
 #include "btstack_stdin.h"
 #endif
 
-#define NUM_SBC_FRAMES_PER_PACKET 6
+#define NUM_SBC_FRAMES_PER_PACKET 5
 #define MAX_SBC_FRAME_SIZE 120
 #define MAX_NUM_SBC_FRAMES 100
 #define SBC_STORAGE_SIZE 1030
@@ -510,7 +510,6 @@ static void show_usage(void){
     btstack_link_key_iterator_t it;
     gap_link_key_iterator_init(&it);
     while (gap_link_key_iterator_get_next(&it, addr, link_key, &type)){
-        printf("link key for %s\n", bd_addr_to_str(addr));
         if (memcmp(addr, smartphone_addr, 6) == 0){
             smartphone_paired = true;
         }
