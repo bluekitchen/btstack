@@ -64,6 +64,7 @@
 #include "btstack_stdin.h"
 #endif
 
+#define NUM_SBC_FRAMES_PER_PACKET 6
 #define MAX_SBC_FRAME_SIZE 120
 #define MAX_NUM_SBC_FRAMES 100
 #define PREBUFFER_BYTES 10000
@@ -72,93 +73,62 @@
 
 #define SBC_STORAGE_SIZE 1030
 
-typedef struct {
-    // bitmaps
-    uint8_t sampling_frequency_bitmap;
-    uint8_t channel_mode_bitmap;
-    uint8_t block_length_bitmap;
-    uint8_t subbands_bitmap;
-    uint8_t allocation_method_bitmap;
-    uint8_t min_bitpool_value;
-    uint8_t max_bitpool_value;
-} adtvp_media_codec_information_sbc_t;
+// configuration
 
-typedef struct {
-    int reconfigure;
-    int num_channels;
-    int sampling_frequency;
-    int channel_mode;
-    int block_length;
-    int subbands;
-    int allocation_method;
-    int min_bitpool_value;
-    int max_bitpool_value;
-    int frames_per_buffer;
-} avdtp_media_codec_configuration_sbc_t;
-
-typedef struct {
-    uint16_t source_cid;
-    uint8_t  source_local_seid;
-    
-    // uint16_t sink_cid;
-    // uint8_t  sink_local_seid;
-    
-    uint32_t time_audio_data_sent; // ms
-    uint32_t acc_num_missed_samples;
-    uint32_t samples_ready;
-    btstack_timer_source_t fill_audio_buffer_timer;
-    uint8_t  streaming;
-                            
-    int      max_media_payload_size;
-    
-    uint8_t  sbc_storage[1030];
-    uint8_t  sbc_ready_to_send;
-} a2dp_media_sending_context_t;
-
-typedef enum {
-    AVDTP_SINK_APPLICATION_IDLE,
-    AVDTP_SINK_APPLICATION_CONNECTED,
-    AVDTP_SINK_APPLICATION_STREAMING
-} avdtp_sink_application_state_t;
-
+// iPhone SE
 static const char * smartphone_addr_string = "BC:EC:5D:E6:15:03";
-static const char * headset_addr_string    = "00:21:3C:AC:F7:38";
+// Jawbone static const char * headset_addr_string    = "00:21:3C:AC:F7:38";
+// Sony MDR330
+static const char * headset_addr_string    = "00:18:09:28:50:18";
 
-#ifdef HAVE_BTSTACK_STDIN
+static uint8_t media_sbc_codec_capabilities[] = {
+        (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+        0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+        2, 53
+};
+
+// gap
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 static bd_addr_t smartphone_addr;
 static bd_addr_t headset_addr;
-#endif
 
-// audio through
-static uint16_t num_sbc_frames_in_ring_buffer;
-static btstack_ring_buffer_t ring_buffer;
-static uint8_t ring_buffer_storage[MAX_NUM_SBC_FRAMES * MAX_SBC_FRAME_SIZE];
-static int forward_active;
-
-// generic
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-// sdp
+// sdp records
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 static uint8_t sdp_avdtp_source_service_buffer[150];
 
-static uint8_t sbc_frame_size;
-static avdtp_sep_t sep;
-static avdtp_media_codec_configuration_sbc_t sbc_configuration;
-static int media_initialized = 0;
+// stored sbc audio frames
+static btstack_ring_buffer_t ring_buffer;
+static uint8_t ring_buffer_storage[MAX_NUM_SBC_FRAMES * MAX_SBC_FRAME_SIZE];
 
-static uint16_t a2dp_sink_cid   = 0;
-static uint16_t a2dp_source_cid = 0;
+// prepare sbc packet
+static uint8_t  sbc_storage[1030];
 
-static avdtp_sink_application_state_t app_sink_state = AVDTP_SINK_APPLICATION_IDLE;
+// application context
+typedef struct {
+    uint16_t a2dp_sink_cid;
+    uint8_t  a2dp_sink_local_seid;
 
-static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size);
+    uint16_t a2dp_source_cid;
+    uint8_t  a2dp_source_local_seid;
 
-static uint8_t media_sbc_codec_capabilities[] = {
-    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 53
-}; 
+    uint16_t sbc_frame_size;
+    uint16_t num_sbc_frames_in_ring_buffer;
+
+    bool headset_stream_ready;
+    bool forward_active;
+    bool sbc_ready_to_send;
+
+    uint32_t time_audio_data_sent; // ms
+    uint32_t acc_num_missed_samples;
+    uint32_t samples_ready;
+
+    btstack_timer_source_t fill_audio_buffer_timer;
+
+    int      max_media_payload_size;
+
+} mitm_context_t;
+
+static mitm_context_t mitm_context;
 
 #ifdef HAVE_BTSTACK_STDIN
 static uint8_t media_sbc_codec_configuration[] = {
@@ -167,43 +137,30 @@ static uint8_t media_sbc_codec_configuration[] = {
     2, 53
 }; 
 
-// avdtp source
-static uint8_t a2dp_source_local_seid = 0;
-static uint8_t a2dp_sink_local_seid = 0;
-static a2dp_media_sending_context_t media_tracker;
-static int headset_stream_ready;
+// code start
 
+static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size);
 
-static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configuration){
-    printf("Received media codec configuration:\n");
-    printf("    - num_channels: %d\n", configuration.num_channels);
-    printf("    - sampling_frequency: %d\n", configuration.sampling_frequency);
-    printf("    - channel_mode: %d\n", configuration.channel_mode);
-    printf("    - block_length: %d\n", configuration.block_length);
-    printf("    - subbands: %d\n", configuration.subbands);
-    printf("    - allocation_method: %d\n", configuration.allocation_method);
-    printf("    - bitpool_value [%d, %d] \n", configuration.min_bitpool_value, configuration.max_bitpool_value);
+static void dump_sbc_configuration(const uint8_t * packet){
+    printf("    - num_channels: %d\n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet));
+    printf("    - sampling_frequency: %d\n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet));
+    printf("    - channel_mode: %d\n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet));
+    printf("    - block_length: %d\n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet));
+    printf("    - subbands: %d\n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet));
+    printf("    - allocation_method: %d\n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet));
+    printf("    - bitpool_value [%d, %d] \n", a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet),
+            a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet));
 }
 
-
-// avdtp sink
-static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
-    UNUSED(configuration);
-
+static int ring_buffer_init(void){
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
-    num_sbc_frames_in_ring_buffer = 0;
-    media_initialized = 1;
+    mitm_context.num_sbc_frames_in_ring_buffer = 0;
     return 0;
 }
 
-static void media_processing_close(void){
-    if (!media_initialized) return;
-    media_initialized = 0;
-}
-
 static void a2dp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * timer){
-    a2dp_media_sending_context_t * context = (a2dp_media_sending_context_t *) btstack_run_loop_get_timer_context(timer);
+    mitm_context_t * context = (mitm_context_t *) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&context->fill_audio_buffer_timer, FILL_AUDIO_BUFFER_TIMEOUT_MS); 
     btstack_run_loop_add_timer(&context->fill_audio_buffer_timer);
     uint32_t now = btstack_run_loop_get_time_ms();
@@ -228,11 +185,11 @@ static void a2dp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * time
     // do we have enough samples to send?
 
     // calculate num sbc frames per outgoing packet
-    uint16_t payload_max_size = a2dp_max_media_payload_size(context->source_cid, context->source_local_seid);
+    uint16_t payload_max_size = a2dp_max_media_payload_size(context->a2dp_source_cid, context->a2dp_source_local_seid);
     // a2dp_max_media_payload_size(media_tracker.source_local_seid);
     
 
-    int sbc_frames_per_packet = payload_max_size / sbc_frame_size;
+    int sbc_frames_per_packet = payload_max_size / mitm_context.sbc_frame_size;
 
     // calculate num frames "ready" - using hard-coded
     int num_samples_per_frame = 128;
@@ -242,17 +199,16 @@ static void a2dp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * time
 
     if (sbc_frames_ready >= sbc_frames_per_packet){
         // schedule sending
-        context->sbc_ready_to_send = 1;
-        a2dp_source_stream_endpoint_request_can_send_now(context->source_cid, context->source_local_seid);
+        context->sbc_ready_to_send = true;
+        a2dp_source_stream_endpoint_request_can_send_now(context->a2dp_source_cid, context->a2dp_source_local_seid);
     }
 }
 
-static void a2dp_fill_audio_buffer_timer_start(a2dp_media_sending_context_t * context){
+static void a2dp_fill_audio_buffer_timer_start(mitm_context_t * context){
     // context->max_media_payload_size = a2dp_max_media_payload_size(context->source_local_seid);
-    context->max_media_payload_size = btstack_min(a2dp_max_media_payload_size(context->source_cid, context->source_local_seid), SBC_STORAGE_SIZE);
+    context->max_media_payload_size = btstack_min(a2dp_max_media_payload_size(context->a2dp_source_cid, context->a2dp_source_local_seid), SBC_STORAGE_SIZE);
 
-    context->sbc_ready_to_send = 0;
-    context->streaming = 1;
+    context->sbc_ready_to_send = false;
     btstack_run_loop_remove_timer(&context->fill_audio_buffer_timer);
     btstack_run_loop_set_timer_handler(&context->fill_audio_buffer_timer, a2dp_fill_audio_buffer_timeout_handler);
     btstack_run_loop_set_timer_context(&context->fill_audio_buffer_timer, context);
@@ -260,26 +216,18 @@ static void a2dp_fill_audio_buffer_timer_start(a2dp_media_sending_context_t * co
     btstack_run_loop_add_timer(&context->fill_audio_buffer_timer);
 }
 
-static void a2dp_fill_audio_buffer_timer_stop(a2dp_media_sending_context_t * context){
+static void a2dp_fill_audio_buffer_timer_stop(mitm_context_t * context){
     context->time_audio_data_sent = 0;
     context->acc_num_missed_samples = 0;
     context->samples_ready = 0;
-    context->streaming = 1;
-    context->sbc_ready_to_send = 0;
+    context->sbc_ready_to_send = false;
     btstack_run_loop_remove_timer(&context->fill_audio_buffer_timer);
 } 
-
-#if 0
-static void a2dp_fill_audio_buffer_timer_pause(a2dp_media_sending_context_t * context){
-    // context->time_audio_data_sent = 0;
-    btstack_run_loop_remove_timer(&context->fill_audio_buffer_timer);
-} 
-#endif
 
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
     UNUSED(seid);
     // if no sink, drop data
-    if (!headset_stream_ready) {
+    if (!mitm_context.headset_stream_ready) {
         printf("DEMO: Audio from smartphone, but headset not ready -> dropping\n");
         return;
     }
@@ -334,14 +282,14 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     uint16_t num_frames = sbc_header.num_frames;
 
     // sbc frame size
-    sbc_frame_size = (size-pos)/ sbc_header.num_frames;
+    mitm_context.sbc_frame_size = (size - pos) / sbc_header.num_frames;
     
     // log_info("IN: Ringbuffer: %u bytes free", btstack_ring_buffer_bytes_free(&ring_buffer));
 
     // store individual framees: { len_16, frame }
     int i;
     for (i=0;i<num_frames;i++){
-        uint16_t frame_size = sbc_frame_size;
+        uint16_t frame_size = mitm_context.sbc_frame_size;
         if (btstack_ring_buffer_bytes_free(&ring_buffer) < (2 + frame_size)){
             log_info("RING: cannot store frame of size %u, only %u free", frame_size,
                      btstack_ring_buffer_bytes_free(&ring_buffer));
@@ -349,17 +297,17 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
         }
         // log_info("RING: store frame of size %u", frame_size);
         btstack_ring_buffer_write(&ring_buffer, (uint8_t*) &frame_size, 2);
-        btstack_ring_buffer_write(&ring_buffer, packet+pos, sbc_frame_size);
-        pos += sbc_frame_size;
-        num_sbc_frames_in_ring_buffer++;
+        btstack_ring_buffer_write(&ring_buffer, packet+pos, mitm_context.sbc_frame_size);
+        pos += mitm_context.sbc_frame_size;
+        mitm_context.num_sbc_frames_in_ring_buffer++;
     }
 
     // printf("DEMO: Audio from smartphone, ringbuffer avail %u\n", btstack_ring_buffer_bytes_available(&ring_buffer));
 
 
-    if (!forward_active && btstack_ring_buffer_bytes_available(&ring_buffer) > PREBUFFER_BYTES){
-        forward_active = 1;
-        a2dp_fill_audio_buffer_timer_start(&media_tracker);
+    if (!mitm_context.forward_active && btstack_ring_buffer_bytes_available(&ring_buffer) > PREBUFFER_BYTES){
+        mitm_context.forward_active = true;
+        a2dp_fill_audio_buffer_timer_start(&mitm_context);
     }
 }
 
@@ -400,29 +348,16 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
                  printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
                  break;
              }
-             a2dp_sink_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
-             printf("A2DP Sink: Connected to device with addr %s, a2dp cid 0x%02x.\n", bd_addr_to_str(event_addr), a2dp_sink_cid);
+             mitm_context.a2dp_sink_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
+             printf("A2DP Sink: Connected to device with addr %s, a2dp cid 0x%02x.\n", bd_addr_to_str(event_addr), mitm_context.a2dp_sink_cid);
              break;
 
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             printf("A2DP Sink: received SBC codec configuration.\n");
-            sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
-            sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
-            sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
-            sbc_configuration.block_length = a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-            sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sbc_configuration.allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
-            sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
-            sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
-            dump_sbc_configuration(sbc_configuration);
+            dump_sbc_configuration(packet);
 
-            if (sbc_configuration.reconfigure){
-                media_processing_close();
-            }
-            // prepare media processing
-            media_processing_init(sbc_configuration);
+            // init ring buffer to store sbc frames
+            ring_buffer_init();
             break;
         }  
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
@@ -430,20 +365,18 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             break;
        
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-            app_sink_state = AVDTP_SINK_APPLICATION_STREAMING;
-            a2dp_sink_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
-            a2dp_sink_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+            mitm_context.a2dp_sink_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+            mitm_context.a2dp_sink_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
             printf("A2DP Sink: stream established a2dp_cid 0x%02x, local seid %d, remote seid %d\n",
-                a2dp_sink_cid, a2dp_sink_local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
+                   mitm_context.a2dp_sink_cid, mitm_context.a2dp_sink_local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
             printf("A2DP Sink: stream released\n");
-            media_processing_close();
             break;
 
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            a2dp_sink_cid = 0;
+            mitm_context.a2dp_sink_cid = 0;
             printf("A2DP Sink: signaling connection released\n");
             break;
         default:
@@ -470,39 +403,25 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 printf("A2DP Sink: Connection failed with status 0x%02x\n", status);
                 break;
             }
-            a2dp_source_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
-            printf("A2DP Source: Connected to device with addr %s, a2dp cid 0x%02x.\n", bd_addr_to_str(event_addr), a2dp_source_cid);
+            mitm_context.a2dp_source_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
+            printf("A2DP Source: Connected to device with addr %s, a2dp_cid 0x%02x.\n", bd_addr_to_str(event_addr), mitm_context.a2dp_source_cid);
             break;
 
          case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             printf("A2DP Source: Received SBC codec configuration.\n");
-            sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
-            sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
-            sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
-            sbc_configuration.block_length = a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-            sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sbc_configuration.allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
-            sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
-            sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
+            dump_sbc_configuration(packet);
             break;
         }  
 
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-            media_tracker.source_local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
-            media_tracker.source_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            
-            printf("A2DP Source: stream established a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
-                media_tracker.source_cid, media_tracker.source_local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
-
+            printf("A2DP Source: stream established a2dp_cid 0x%02x, local seid %d, remote seid %d\n",
+                   mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
             printf("A2DP Source: start stream to headset\n");
-    
-            a2dp_source_start_stream(media_tracker.source_cid, media_tracker.source_local_seid);
+            a2dp_source_start_stream(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
             break;
         
         case A2DP_SUBEVENT_STREAM_STARTED:
-            headset_stream_ready = 1;
+            mitm_context.headset_stream_ready = 1;
             printf("A2DP Source: headset stream ready\n");
             break;       
 
@@ -514,24 +433,24 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             int pos = 0;
 
             // calculate max num sbc frames for outgoing earlier
-            uint16_t payload_max_size = a2dp_max_media_payload_size(media_tracker.source_cid, media_tracker.source_local_seid);
-            int max_sbc_frames = payload_max_size / sbc_frame_size;
+            uint16_t payload_max_size = a2dp_max_media_payload_size(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
+            int max_sbc_frames = payload_max_size / mitm_context.sbc_frame_size;
 
-            for (num_frames = 0 ; num_frames < max_sbc_frames && num_sbc_frames_in_ring_buffer > 0; num_frames++){
+            for (num_frames = 0 ; num_frames < max_sbc_frames && mitm_context.num_sbc_frames_in_ring_buffer > 0; num_frames++){
                 btstack_ring_buffer_read(&ring_buffer, (uint8_t*) &len, 2, &bytes_read);
                 // log_info("RING: read frame of size %u", len);
-                btstack_ring_buffer_read(&ring_buffer, &media_tracker.sbc_storage[pos], len, &bytes_read);
+                btstack_ring_buffer_read(&ring_buffer, &sbc_storage[pos], len, &bytes_read);
                 pos += len;
-                num_sbc_frames_in_ring_buffer--;
+                mitm_context.num_sbc_frames_in_ring_buffer--;
             }
 
-            a2dp_source_stream_send_media_payload(media_tracker.source_cid, media_tracker.source_local_seid, media_tracker.sbc_storage, pos, num_frames, 0);
-            
-            media_tracker.sbc_ready_to_send = 0;
+            a2dp_source_stream_send_media_payload(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid, sbc_storage, pos, num_frames, 0);
+
+            mitm_context.sbc_ready_to_send = false;
 
             int num_samples_per_frame = 128;
             int samples_consumed = num_frames * num_samples_per_frame;
-            media_tracker.samples_ready -= samples_consumed; 
+            mitm_context.samples_ready -= samples_consumed;
 
 
             // printf("DEMO: audio packet sent, ring buffer %u\n", btstack_ring_buffer_bytes_available(&ring_buffer));
@@ -539,26 +458,23 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             if (btstack_ring_buffer_bytes_available(&ring_buffer) == 0){
                 log_info("Stream dried out. stop");
                 printf("Stream dried out. restart\n");
-                forward_active = 0;
-                a2dp_fill_audio_buffer_timer_stop(&media_tracker);
+                mitm_context.forward_active = false;
+                a2dp_fill_audio_buffer_timer_stop(&mitm_context);
                 break;
             }
             break;
 
         }
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
-            printf(" A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", media_tracker.source_local_seid);
-            // a2dp_fill_audio_buffer_timer_pause(&media_tracker);
-            // TODO: ??
+            printf(" A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", mitm_context.a2dp_source_local_seid);
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
             printf("A2DP Source: stream released\n");
-            media_processing_close();
             break;
 
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            a2dp_source_cid = 0;
+            mitm_context.a2dp_source_cid = 0;
             printf("A2DP Source: signaling connection released\n");
             break;
 
@@ -596,9 +512,9 @@ static void show_usage(void){
     printf("--- A2DP MITM Console on %s ---\n", bd_addr_to_str(iut_address));
     printf("- Paired with smartphone: %s\n", smartphone_paired ? "yes" : "no");
     printf("- Paired with headset:    %s\n", headset_paired ? "yes" : "no");
-    printf("- Smartphone connected:   %s\n", a2dp_sink_cid ? "yes" : "no");
-    printf("- Headset connected:      %s\n", a2dp_source_cid ? "yes" : "no");
-    printf("- Headset ready:          %s\n", headset_stream_ready ? "yes" : "no");
+    printf("- Smartphone connected:   %s\n", mitm_context.a2dp_sink_cid ? "yes" : "no");
+    printf("- Headset connected:      %s\n", mitm_context.a2dp_source_cid ? "yes" : "no");
+    printf("- Headset ready:          %s\n", mitm_context.headset_stream_ready ? "yes" : "no");
     printf("\n");
     printf("p      - create connection to smartphone %s\n", bd_addr_to_str(smartphone_addr));
     printf("h      - create connection to headset    %s\n", bd_addr_to_str(headset_addr));
@@ -613,20 +529,21 @@ static void show_usage(void){
 
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
-    sep.seid = 1;
     switch (cmd){
         case 'p':
-            status = a2dp_sink_establish_stream(smartphone_addr, a2dp_sink_local_seid, &a2dp_sink_cid);
-            printf("Creating A2DP Connection to remote audio source (smartphone) %s, a2dp sink cid 0x%02x\n", bd_addr_to_str(smartphone_addr), a2dp_sink_cid);
+            status = a2dp_sink_establish_stream(smartphone_addr, mitm_context.a2dp_sink_local_seid, &mitm_context.a2dp_sink_cid);
+            printf("Creating A2DP Connection to remote audio source (smartphone) %s, a2dp sink cid 0x%02x\n",
+                    bd_addr_to_str(smartphone_addr), mitm_context.a2dp_sink_cid);
             break;
         case 'h':
-            status = a2dp_source_establish_stream(headset_addr, a2dp_source_local_seid, &a2dp_source_cid);
-            printf("Creating A2DP Connection to remote audio sink (headset) %s, a2dp source cid 0x%02x\n", bd_addr_to_str(headset_addr), a2dp_source_cid);
+            status = a2dp_source_establish_stream(headset_addr, mitm_context.a2dp_source_local_seid, &mitm_context.a2dp_source_cid);
+            printf("Creating A2DP Connection to remote audio sink (headset) %s, a2dp source cid 0x%02x\n",
+                    bd_addr_to_str(headset_addr), mitm_context.a2dp_source_cid);
             break;
         case 'd':
             printf("Disconnect all\n");
-            a2dp_sink_disconnect(a2dp_sink_cid);
-            a2dp_source_disconnect(a2dp_source_cid);
+            a2dp_sink_disconnect(mitm_context.a2dp_sink_cid);
+            a2dp_source_disconnect(mitm_context.a2dp_source_cid);
             break;
         case 'c':
             printf("Deleting all link keys\n");
@@ -676,7 +593,8 @@ int btstack_main(int argc, const char * argv[]){
         printf("A2DP Sink: not enough memory to create local stream endpoint\n");
         return 1;
     }
-    a2dp_sink_local_seid = avdtp_local_seid(local_sink_stream_endpoint);
+    mitm_context.a2dp_sink_local_seid = avdtp_local_seid(local_sink_stream_endpoint);
+    printf("A2DP Sink: created stream endpoint with seid %d\n", mitm_context.a2dp_sink_local_seid);
 
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
@@ -694,8 +612,8 @@ int btstack_main(int argc, const char * argv[]){
         printf("A2DP Source: not enough memory to create local stream endpoint\n");
         return 1;
     }
-    a2dp_source_local_seid = avdtp_local_seid(local_source_stream_endpoint);
-    printf("A2DP Source: created stream endpoint with seid %d\n", a2dp_source_local_seid);
+    mitm_context.a2dp_source_local_seid = avdtp_local_seid(local_source_stream_endpoint);
+    printf("A2DP Source: created stream endpoint with seid %d\n", mitm_context.a2dp_source_local_seid);
     
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
     a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
