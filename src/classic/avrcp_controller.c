@@ -49,7 +49,7 @@
 avrcp_context_t avrcp_controller_context;
 
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
-    return controller_supported_features & (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+    return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){

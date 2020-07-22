@@ -68,6 +68,15 @@ extern "C" {
 
 #define AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED    0xFFFFFFFF
 
+#define AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER          0x0001u
+#define AVRCP_FEATURE_MASK_CATEGORY_MONITOR_OR_AMPLIFIER        0x0002u
+#define AVRCP_FEATURE_MASK_CATEGORY_TUNER                       0x0004u
+#define AVRCP_FEATURE_MASK_CATEGORY_MENU                        0x0008u
+#define AVRCP_FEATURE_MASK_PLAYER_APPLICATION_SETTINGS          0x0010u   // AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER must be 1 for this feature to be set
+#define AVRCP_FEATURE_MASK_GROUP_NAVIGATION                     0x0020u   // AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER must be 1 for this feature to be set
+#define AVRCP_FEATURE_MASK_BROWSING                             0x0040u
+#define AVRCP_FEATURE_MASK_MULTIPLE_MEDIA_PLAYE_APPLICATIONS    0x0080u
+
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
     AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.

@@ -1848,11 +1848,11 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(sdp_avdtp_source_service_buffer);
 
     // setup AVRCP
-    uint16_t avrcp_controller_supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
-    uint16_t avrcp_target_supported_features     = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    uint16_t avrcp_controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
+    uint16_t avrcp_target_supported_features     = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
-    avrcp_controller_supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
-    avrcp_target_supported_features |= (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+    avrcp_controller_supported_features |= AVRCP_FEATURE_MASK_BROWSING;
+    avrcp_target_supported_features |= AVRCP_FEATURE_MASK_BROWSING;
 #endif
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, avrcp_controller_supported_features, NULL, NULL);

@@ -69,7 +69,7 @@ typedef enum {
  * @brief AVRCP Target service record. 
  * @param service
  * @param service_record_handle
- * @param supported_features 16-bit bitmap, see avrcp_target_supported_feature_t
+ * @param supported_features 16-bit bitmap, see AVRCP_FEATURE_MASK_* in avrcp.h
  * @param service_name
  * @param service_provider_name
  */

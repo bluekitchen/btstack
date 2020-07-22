@@ -52,7 +52,7 @@ static const uint8_t AVRCP_NOTIFICATION_TRACK_NOT_SELECTED[] = {0xFF,0xFF,0xFF,0
 avrcp_context_t avrcp_target_context;
 
 static int avrcp_target_supports_browsing(uint16_t target_supported_features){
-    return target_supported_features & (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+    return target_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
 void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
