@@ -334,14 +334,12 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         nr_packets++;
     }
 #endif
-
-    if (dump_format == HCI_DUMP_STDOUT){
+    if (dump_format == HCI_DUMP_STDOUT || packet_type > 0x04) {
         printf_timestamp();
         printf_packet(packet_type, in, packet, len);
-        return;        
     }
-    if (packet_type == 0x04 && packet[0] != 0x0E) {
-        return;
+    if (dump_format == HCI_DUMP_STDOUT){
+        return;        
     }
 
     uint32_t tv_sec = 0;
