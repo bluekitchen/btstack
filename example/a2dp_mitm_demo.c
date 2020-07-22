@@ -67,11 +67,10 @@
 #define NUM_SBC_FRAMES_PER_PACKET 6
 #define MAX_SBC_FRAME_SIZE 120
 #define MAX_NUM_SBC_FRAMES 100
+#define SBC_STORAGE_SIZE 1030
 #define PREBUFFER_BYTES 10000
 #define FILL_AUDIO_BUFFER_TIMEOUT_MS 5 
 #define A2DP_SAMPLE_RATE         44100
-
-#define SBC_STORAGE_SIZE 1030
 
 // configuration
 
@@ -113,18 +112,18 @@ typedef struct {
 
     uint16_t sbc_frame_size;
     uint16_t num_sbc_frames_in_ring_buffer;
+    int      max_media_payload_size;
 
     bool headset_stream_ready;
+
+#ifdef USE_TIMER_FOR_SENDING
     bool forward_active;
     bool sbc_ready_to_send;
-
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
     uint32_t samples_ready;
-
     btstack_timer_source_t fill_audio_buffer_timer;
-
-    int      max_media_payload_size;
+#endif
 
 } mitm_context_t;
 
@@ -159,6 +158,7 @@ static int ring_buffer_init(void){
     return 0;
 }
 
+#ifdef USE_TIMER_FOR_SENDING
 static void a2dp_fill_audio_buffer_timeout_handler(btstack_timer_source_t * timer){
     mitm_context_t * context = (mitm_context_t *) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&context->fill_audio_buffer_timer, FILL_AUDIO_BUFFER_TIMEOUT_MS); 
@@ -222,7 +222,23 @@ static void a2dp_fill_audio_buffer_timer_stop(mitm_context_t * context){
     context->samples_ready = 0;
     context->sbc_ready_to_send = false;
     btstack_run_loop_remove_timer(&context->fill_audio_buffer_timer);
-} 
+}
+
+static void a2dp_mitm_try_send(void){
+    if (!mitm_context.forward_active && btstack_ring_buffer_bytes_available(&ring_buffer) > PREBUFFER_BYTES){
+        mitm_context.forward_active = true;
+        a2dp_fill_audio_buffer_timer_start(&mitm_context);
+    }
+}
+#endif
+
+#ifndef USE_TIMER_FOR_SENDING
+static void a2dp_mitm_try_send(void){
+    if (mitm_context.num_sbc_frames_in_ring_buffer < NUM_SBC_FRAMES_PER_PACKET) return;
+    // schedule sending
+    a2dp_source_stream_endpoint_request_can_send_now(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
+}
+#endif
 
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
     UNUSED(seid);
@@ -286,7 +302,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     
     // log_info("IN: Ringbuffer: %u bytes free", btstack_ring_buffer_bytes_free(&ring_buffer));
 
-    // store individual framees: { len_16, frame }
+    // store individual frames: { len_16, frame }
     int i;
     for (i=0;i<num_frames;i++){
         uint16_t frame_size = mitm_context.sbc_frame_size;
@@ -302,13 +318,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
         mitm_context.num_sbc_frames_in_ring_buffer++;
     }
 
-    // printf("DEMO: Audio from smartphone, ringbuffer avail %u\n", btstack_ring_buffer_bytes_available(&ring_buffer));
-
-
-    if (!mitm_context.forward_active && btstack_ring_buffer_bytes_available(&ring_buffer) > PREBUFFER_BYTES){
-        mitm_context.forward_active = true;
-        a2dp_fill_audio_buffer_timer_start(&mitm_context);
-    }
+    a2dp_mitm_try_send();
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -434,7 +444,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
             // calculate max num sbc frames for outgoing earlier
             uint16_t payload_max_size = a2dp_max_media_payload_size(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
-            int max_sbc_frames = payload_max_size / mitm_context.sbc_frame_size;
+            int max_sbc_frames = btstack_min( payload_max_size / mitm_context.sbc_frame_size, NUM_SBC_FRAMES_PER_PACKET);
 
             for (num_frames = 0 ; num_frames < max_sbc_frames && mitm_context.num_sbc_frames_in_ring_buffer > 0; num_frames++){
                 btstack_ring_buffer_read(&ring_buffer, (uint8_t*) &len, 2, &bytes_read);
@@ -446,12 +456,12 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
 
             a2dp_source_stream_send_media_payload(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid, sbc_storage, pos, num_frames, 0);
 
+#ifdef USE_TIMER_FOR_SENDING
             mitm_context.sbc_ready_to_send = false;
 
             int num_samples_per_frame = 128;
             int samples_consumed = num_frames * num_samples_per_frame;
             mitm_context.samples_ready -= samples_consumed;
-
 
             // printf("DEMO: audio packet sent, ring buffer %u\n", btstack_ring_buffer_bytes_available(&ring_buffer));
             log_info("OUT: Ringbuffer: %u bytes available", btstack_ring_buffer_bytes_available(&ring_buffer));
@@ -462,6 +472,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 a2dp_fill_audio_buffer_timer_stop(&mitm_context);
                 break;
             }
+#endif
             break;
 
         }
