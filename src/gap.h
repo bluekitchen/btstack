@@ -604,11 +604,22 @@ int gap_read_rssi(hci_con_handle_t con_handle);
 
 /**
  * @brief Legacy Pairing Pin Code Response
+ * @note data is not copied, pointer has to stay valid
  * @param addr
  * @param pin
  * @return 0 if ok
  */
 int gap_pin_code_response(bd_addr_t addr, const char * pin);
+
+/**
+ * @brief Legacy Pairing Pin Code Response for binary data / non-strings
+ * @note data is not copied, pointer has to stay valid
+ * @param addr
+ * @param pin_data
+ * @param pin_len
+ * @return 0 if ok
+ */
+int gap_pin_code_response_binary(bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len);
 
 /**
  * @brief Abort Legacy Pairing

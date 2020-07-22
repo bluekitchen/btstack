@@ -859,8 +859,9 @@ typedef struct {
 
     bd_addr_t gap_pairing_addr;
     uint8_t   gap_pairing_state;    // see hci.c for state defines
+    uint8_t   gap_pairing_pin_len;
     union {
-        const char * gap_pairing_pin;
+        const uint8_t * gap_pairing_pin;
         uint32_t     gap_pairing_passkey;
     } gap_pairing_input;
     

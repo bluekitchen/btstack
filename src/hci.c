@@ -3564,7 +3564,7 @@ static bool hci_run_general_gap_classic(void){
         hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
         switch (state){
             case GAP_PAIRING_STATE_SEND_PIN:
-                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, strlen(hci_stack->gap_pairing_input.gap_pairing_pin), hci_stack->gap_pairing_input.gap_pairing_pin);
+                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_pin_len, hci_stack->gap_pairing_input.gap_pairing_pin);
                 break;
             case GAP_PAIRING_STATE_SEND_PIN_NEGATIVE:
                 hci_send_cmd(&hci_pin_code_request_negative_reply, hci_stack->gap_pairing_addr);
@@ -5338,15 +5338,27 @@ static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
 }
 
 /**
+ * @brief Legacy Pairing Pin Code Response for binary data / non-strings
+ * @param addr
+ * @param pin_data
+ * @param pin_len
+ * @return 0 if ok
+ */
+int gap_pin_code_response_binary(bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len){
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_input.gap_pairing_pin = pin_data;
+    hci_stack->gap_pairing_pin_len = pin_len;
+    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
+}
+
+/**
  * @brief Legacy Pairing Pin Code Response
  * @param addr
  * @param pin
  * @return 0 if ok
  */
 int gap_pin_code_response(bd_addr_t addr, const char * pin){
-    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
-    hci_stack->gap_pairing_input.gap_pairing_pin = pin;
-    return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
+    return gap_pin_code_response_binary(addr, (const uint8_t*) pin, strlen(pin));
 }
 
 /**
