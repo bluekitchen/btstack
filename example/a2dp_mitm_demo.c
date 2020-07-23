@@ -76,9 +76,9 @@
 
 // iPhone SE
 static const char * smartphone_addr_string = "BC:EC:5D:E6:15:03";
-// Jawbone static const char * headset_addr_string    = "00:21:3C:AC:F7:38";
-// Sony MDR330
-static const char * headset_addr_string    = "00:18:09:28:50:18";
+// Jawbone
+static const char * headset_addr_string    = "00:21:3C:AC:F7:38";
+// Sony MDR330 static const char * headset_addr_string    = "00:18:09:28:50:18";
 
 static uint8_t media_sbc_codec_capabilities[] = {
         (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
@@ -473,6 +473,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 break;
             }
 #endif
+            a2dp_mitm_try_send();
             break;
 
         }
