@@ -290,7 +290,7 @@ static void hci_transport_link_calc_header(uint8_t * header,
     uint16_t payload_length){
 
     header[0] = sequence_nr | (acknowledgement_nr << 3) | (data_integrity_check_present << 6) | (reliable_packet << 7);
-    header[1 = packet_type | ((payload_length & 0x0fu) << 4u);
+    header[1] = packet_type | ((payload_length & 0x0fu) << 4u);
     header[2] = payload_length >> 4;
     header[3] = 0xffu - (header[0u] + header[1u] + header[2u]);
 }
