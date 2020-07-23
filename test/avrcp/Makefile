@@ -13,7 +13,9 @@ CORE += \
 	main.c 	\
 	btstack_stdin_posix.c \
 	btstack_tlv.c \
-	btstack_tlv_posix.c \	
+	btstack_link_key_db_tlv.c \
+	btstack_tlv_posix.c \
+	le_device_db_tlv.c \
 
 COMMON += \
 	ad_parser.c 				\
@@ -27,7 +29,6 @@ COMMON += \
 	hci_transport_h2_libusb.c   \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
-	le_device_db_fs.c           \
 	sdp_server.c			    \
 	sdp_client.c 				\
 	sdp_util.c	                \
@@ -36,7 +37,6 @@ COMMON += \
 	sm.c 						\
 	btstack_crypto.c            \
 	uECC.c                      \
-	le_device_db_fs.c           \
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 #  -Wstrict-prototypes disabled because of portaudio headers
