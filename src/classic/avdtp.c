@@ -750,9 +750,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
         return;
     }
     
-    uint8_t status;
-    bool query_succeded = false;
-    
+    uint8_t status = ERROR_CODE_SUCCESS;
     switch (connection->state){
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
             switch (hci_event_packet_get_type(packet)){
@@ -762,13 +760,18 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 case SDP_EVENT_QUERY_COMPLETE:
                     status = sdp_event_query_complete_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS) break;
-                    if (!connection->sink_supported) break;
-                    if (connection->avdtp_l2cap_psm == 0) break;
-                    query_succeded = true;
+                    if (!connection->sink_supported) {
+                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                        break;
+                    }
+                    if (connection->avdtp_l2cap_psm == 0) {
+                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                        break;
+                    }
                     break;
                 default:
                     btstack_assert(false);
-                    break;
+                    return;
             }
             break;
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE:
@@ -779,13 +782,18 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 case SDP_EVENT_QUERY_COMPLETE:
                     status = sdp_event_query_complete_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS) break;
-                    if (!connection->source_supported) break;
-                    if (connection->avdtp_l2cap_psm == 0) break;
-                    query_succeded = true;
+                    if (!connection->source_supported) {
+                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                        break;
+                    }
+                    if (connection->avdtp_l2cap_psm == 0) {
+                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                        break;
+                    }
                     break;
                 default:
                     btstack_assert(false);
-                    break;
+                    return;
             }
             break;
         default:
@@ -793,7 +801,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             return;
     }
 
-    if (query_succeded){
+    if (status == ERROR_CODE_SUCCESS){
         avdtp_handle_sdp_query_succeeded(connection);
         l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, connection->avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
     } else {
