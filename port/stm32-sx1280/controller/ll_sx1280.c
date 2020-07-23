@@ -488,12 +488,23 @@ static void radio_set_timer(uint32_t anchor_offset_us){
 
 static void ll_terminate(void){
     ll_state = LL_STATE_STANDBY;
+    ctx.conn_param_update_pending = false;
+    ctx.channel_map_update_pending = false;
     // stop sync hop timer
     radio_stop_timer();
     // free outgoing tx packet
     if ((ctx.tx_pdu != NULL) && (ctx.tx_pdu != &ll_tx_packet)){
         btstack_memory_ll_pdu_free(ctx.tx_pdu);
         ctx.tx_pdu = NULL;
+    }
+    // free queued tx packets
+    while (true){
+        ll_pdu_t * tx_packet = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
+        if (tx_packet != NULL) {
+            btstack_memory_ll_pdu_free(tx_packet);
+        } else {
+            break;
+        }
     }
     // disable auto tx
     Radio.StopAutoTx();
@@ -527,20 +538,27 @@ static void radio_timer_handler(void){
                 ctx.channel_map_update_pending = false;
             }
 
-            if ( ctx.conn_param_update_pending && ((ctx.conn_param_update_instant) == ctx.connection_event) ) {
+            if (ctx.conn_param_update_pending && ((ctx.conn_param_update_instant) == ctx.connection_event) ) {
                 ctx.conn_interval_us        = ctx.conn_param_update_interval_us;
                 ctx.conn_latency            = ctx.conn_param_update_latency;
                 ctx.supervision_timeout_us  = ctx.conn_param_update_timeout_us;
                 ctx.conn_param_update_pending = false;
 
+                log_info("Conn param update now");
+
                 radio_stop_timer();
                 ctx.synced = false;
             }
 
-            // restart radio timer (might get overwritten by first packet)
-            radio_set_timer(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
+            if (ctx.synced){
+                // restart radio timer (might get overwritten by first packet)
+                radio_set_timer(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
 
-            receive_master();
+                receive_master();
+            } else {
+                // just wait longer
+                receive_first_master();
+            }
 
             printf("--SYNC-Ch %02u-Event %04u - t %08u--\n", ctx.channel, ctx.connection_event, t0);
             break;
@@ -862,9 +880,20 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             printf("Queue Feature Rsp\n");
             break;
         case PDU_DATA_LLCTRL_TYPE_CHAN_MAP_IND:
-            memcpy((uint8_t *) ctx.channel_map_update_map, &tx_packet->payload[1], 5);
-            ctx.channel_map_update_instant   = little_endian_read_16(tx_packet->payload, 6);
+            memcpy((uint8_t *) ctx.channel_map_update_map, &rx_packet->payload[1], 5);
+            ctx.channel_map_update_instant   = little_endian_read_16(rx_packet->payload, 6);
             ctx.channel_map_update_pending   = true;
+            break;
+        case PDU_DATA_LLCTRL_TYPE_CONN_UPDATE_IND:
+            ctx.conn_param_update_win_size    = tx_packet->payload[1];
+            ctx.conn_param_update_win_offset  = little_endian_read_16(rx_packet->payload, 2);
+            ctx.conn_param_update_interval_us = little_endian_read_16(rx_packet->payload, 4) * 1250;
+            ctx.conn_param_update_latency     = little_endian_read_16(rx_packet->payload, 6);
+            ctx.conn_param_update_timeout_us  = little_endian_read_16(rx_packet->payload, 8) * 10000;
+            ctx.conn_param_update_instant     = little_endian_read_16(rx_packet->payload, 10);
+            ctx.conn_param_update_pending     = true;
+            log_info("PDU_DATA_LLCTRL_TYPE_CONN_UPDATE_IND, conn interval %u us at instant %u",
+                     (unsigned int) ctx.conn_param_update_interval_us, ctx.conn_param_update_instant);
             break;
         case PDU_DATA_LLCTRL_TYPE_TERMINATE_IND:
             printf("Terminate!\n");
