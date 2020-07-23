@@ -238,7 +238,7 @@ static uint8_t att_find_by_type_value_request(uint16_t request_type, uint16_t at
     little_endian_store_16(request, 5, attribute_group_type);
     (void)memcpy(&request[7], value, value_size);
     
-    return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7+value_size);
+    return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7u+value_size);
 }
 
 // precondition: can_send_packet_now == TRUE
@@ -323,7 +323,7 @@ static uint8_t att_write_request(uint16_t request_type, uint16_t peripheral_hand
     little_endian_store_16(request, 1, attribute_handle);
     (void)memcpy(&request[3], value, value_length);
     
-    return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length);
+    return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3u + value_length);
 }
 
 // precondition: can_send_packet_now == TRUE
@@ -345,7 +345,7 @@ static uint8_t att_prepare_write_request(uint16_t request_type, uint16_t periphe
     little_endian_store_16(request, 3, value_offset);
     (void)memcpy(&request[5], &value[value_offset], blob_length);
     
-    return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5+blob_length);
+    return l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5u+blob_length);
 }
 
 static uint8_t att_exchange_mtu_request(uint16_t peripheral_handle){
@@ -359,7 +359,7 @@ static uint8_t att_exchange_mtu_request(uint16_t peripheral_handle){
 }
 
 static uint16_t write_blob_length(gatt_client_t * peripheral){
-    uint16_t max_blob_length = peripheral_mtu(peripheral) - 5;
+    uint16_t max_blob_length = peripheral_mtu(peripheral) - 5u;
     if (peripheral->attribute_offset >= peripheral->attribute_length) {
         return 0;
     }
@@ -464,12 +464,12 @@ static void send_gatt_signed_write_request(gatt_client_t * peripheral, uint32_t 
 
 static uint16_t get_last_result_handle_from_service_list(uint8_t * packet, uint16_t size){
     uint8_t attr_length = packet[1];
-    return little_endian_read_16(packet, size - attr_length + 2);
+    return little_endian_read_16(packet, size - attr_length + 2u);
 }
 
 static uint16_t get_last_result_handle_from_characteristics_list(uint8_t * packet, uint16_t size){
     uint8_t attr_length = packet[1];
-    return little_endian_read_16(packet, size - attr_length + 3);
+    return little_endian_read_16(packet, size - attr_length + 3u);
 }
 
 static uint16_t get_last_result_handle_from_included_services_list(uint8_t * packet, uint16_t size){
@@ -528,7 +528,7 @@ static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uin
     // @format HX
     uint8_t packet[24];
     packet[0] = GATT_EVENT_SERVICE_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2;
+    packet[1] = sizeof(packet) - 2u;
     little_endian_store_16(packet, 2, peripheral->con_handle);
     ///
     little_endian_store_16(packet, 4, start_group_handle);
@@ -541,7 +541,7 @@ static void emit_gatt_included_service_query_result_event(gatt_client_t * periph
     // @format HX
     uint8_t packet[26];
     packet[0] = GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2;
+    packet[1] = sizeof(packet) - 2u;
     little_endian_store_16(packet, 2, peripheral->con_handle);
     ///
     little_endian_store_16(packet, 4, include_handle);
@@ -557,7 +557,7 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * peripher
     // @format HY
     uint8_t packet[28];
     packet[0] = GATT_EVENT_CHARACTERISTIC_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2;
+    packet[1] = sizeof(packet) - 2u;
     little_endian_store_16(packet, 2, peripheral->con_handle);
     ///
     little_endian_store_16(packet, 4,  start_handle);
@@ -573,7 +573,7 @@ static void emit_gatt_all_characteristic_descriptors_result_event(
     // @format HZ
     uint8_t packet[22];
     packet[0] = GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
-    packet[1] = sizeof(packet) - 2;
+    packet[1] = sizeof(packet) - 2u;
     little_endian_store_16(packet, 2, peripheral->con_handle);
     ///
     little_endian_store_16(packet, 4,  descriptor_handle);
@@ -585,7 +585,7 @@ static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * peripheral, uin
     // @format H2
     uint8_t packet[6];
     packet[0] = GATT_EVENT_MTU;
-    packet[1] = sizeof(packet) - 2;
+    packet[1] = sizeof(packet) - 2u;
     little_endian_store_16(packet, 2, peripheral->con_handle);
     little_endian_store_16(packet, 4, new_mtu);
     att_dispatch_client_mtu_exchanged(peripheral->con_handle, new_mtu);
@@ -594,7 +594,7 @@ static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * peripheral, uin
 ///
 static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
     uint8_t attr_length = packet[1];
-    uint8_t uuid_length = attr_length - 4;
+    uint8_t uuid_length = attr_length - 4u;
     
     int i;
     for (i = 2; i < size; i += attr_length){
@@ -603,7 +603,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
         uint8_t  uuid128[16];
         uint16_t uuid16 = 0;
 
-        if (uuid_length == 2){
+        if (uuid_length == 2u){
             uuid16 = little_endian_read_16(packet, i+4);
             uuid_add_bluetooth_prefix((uint8_t*) &uuid128, uuid16);
         } else {
@@ -618,10 +618,10 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
 static void characteristic_start_found(gatt_client_t * peripheral, uint16_t start_handle, uint8_t properties, uint16_t value_handle, uint8_t * uuid, uint16_t uuid_length){
     uint8_t uuid128[16];
     uint16_t uuid16 = 0;
-    if (uuid_length == 2){
+    if (uuid_length == 2u){
         uuid16 = little_endian_read_16(uuid, 0);
         uuid_add_bluetooth_prefix((uint8_t*) uuid128, uuid16);
-    } else if (uuid_length == 16){
+    } else if (uuid_length == 16u){
         reverse_128(uuid, uuid128);
     } else {
         return;
@@ -651,16 +651,16 @@ static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_ha
 }
 
 static void report_gatt_characteristics(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
-    if (size < 2) return;
+    if (size < 2u) return;
     uint8_t attr_length = packet[1];
-    if ((attr_length != 7) && (attr_length != 21)) return;
-    uint8_t uuid_length = attr_length - 5;
+    if ((attr_length != 7u) && (attr_length != 21u)) return;
+    uint8_t uuid_length = attr_length - 5u;
     int i;
-    for (i = 2; (i + attr_length) <= size; i += attr_length){
+    for (i = 2u; (i + attr_length) <= size; i += attr_length){
         uint16_t start_handle = little_endian_read_16(packet, i);
         uint8_t  properties = packet[i+2];
         uint16_t value_handle = little_endian_read_16(packet, i+3);
-        characteristic_end_found(peripheral, start_handle-1);
+        characteristic_end_found(peripheral, start_handle-1u);
         characteristic_start_found(peripheral, start_handle, properties, value_handle, &packet[i+5], uuid_length);
     }
 }
@@ -748,7 +748,7 @@ static void report_gatt_long_characteristic_value_blob(gatt_client_t * periphera
 static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
     UNUSED(value_offset);
     uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->con_handle, descriptor_handle, value, value_length);
-    emit_event_new(peripheral->callback, packet, value_length + 8);
+    emit_event_new(peripheral->callback, packet, value_length + 8u);
 }
 
 static void report_gatt_long_characteristic_descriptor(gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t *blob, uint16_t blob_length, uint16_t value_offset){
@@ -759,11 +759,11 @@ static void report_gatt_long_characteristic_descriptor(gatt_client_t * periphera
 
 static void report_gatt_all_characteristic_descriptors(gatt_client_t * peripheral, uint8_t * packet, uint16_t size, uint16_t pair_size){
     int i;
-    for (i = 0; (i + pair_size) <= size; i += pair_size){
+    for (i = 0u; (i + pair_size) <= size; i += pair_size){
         uint16_t descriptor_handle = little_endian_read_16(packet,i);
         uint8_t uuid128[16];
         uint16_t uuid16 = 0;
-        if (pair_size == 4){
+        if (pair_size == 4u){
             uuid16 = little_endian_read_16(packet,i+2);
             uuid_add_bluetooth_prefix(uuid128, uuid16);
         } else {
@@ -785,7 +785,7 @@ static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_
         return;
     }
     // next
-    peripheral->start_group_handle = last_result_handle + 1;
+    peripheral->start_group_handle = last_result_handle + 1u;
     peripheral->gatt_client_state = next_query_state;
 }
 
@@ -821,7 +821,7 @@ static void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_cl
     peripheral->attribute_offset += write_blob_length(peripheral);
     uint16_t next_blob_length =  write_blob_length(peripheral);
     
-    if (next_blob_length == 0){
+    if (next_blob_length == 0u){
         peripheral->gatt_client_state = done_state;
         return;
     }
@@ -830,7 +830,7 @@ static void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_cl
 
 static void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint16_t received_blob_length){
     
-    uint16_t max_blob_length = peripheral_mtu(peripheral) - 1;
+    uint16_t max_blob_length = peripheral_mtu(peripheral) - 1u;
     if (received_blob_length < max_blob_length){
         gatt_client_handle_transaction_complete(peripheral);
         emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
@@ -848,7 +848,7 @@ static int is_value_valid(gatt_client_t *peripheral, uint8_t *packet, uint16_t s
     
     if (peripheral->attribute_handle != attribute_handle) return 0;
     if (peripheral->attribute_offset != value_offset) return 0;
-    return memcmp(&peripheral->attribute_value[peripheral->attribute_offset], &packet[5], size-5) == 0;
+    return memcmp(&peripheral->attribute_value[peripheral->attribute_offset], &packet[5], size-5u) == 0u;
 }
 
 // returns 1 if packet was sent
@@ -884,7 +884,7 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
     switch (peripheral->gatt_client_state){
         case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
         case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
-            if (peripheral->attribute_length <= (peripheral_mtu(peripheral) - 3)) break;
+            if (peripheral->attribute_length <= (peripheral_mtu(peripheral) - 3u)) break;
             log_error("gatt_client_run: value len %u > MTU %u - 3\n", peripheral->attribute_length, peripheral_mtu(peripheral));
             gatt_client_handle_transaction_complete(peripheral);
             emit_gatt_complete_event(peripheral, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
@@ -1079,7 +1079,7 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
         peripheral->write_without_response_callback = NULL;
         uint8_t event[4];
         event[0] = GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE;
-        event[1] = sizeof(event) - 2;
+        event[1] = sizeof(event) - 2u;
         little_endian_store_16(event, 2, peripheral->con_handle);
         packet_handler(HCI_EVENT_PACKET, peripheral->con_handle, event, sizeof(event));
         return 1; // to trigger requeueing (even if higher layer didn't sent)
@@ -1171,7 +1171,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     gatt_client_t * peripheral;
-    if (size < 1) return;
+    if (size < 1u) return;
 
     if (packet_type == HCI_EVENT_PACKET) {
         switch (packet[0]){
@@ -1180,7 +1180,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 break;
             // att_server has negotiated the mtu for this connection, cache if context exists
             case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                if (size < 6) break;
+                if (size < 6u) break;
                 peripheral = get_gatt_client_context_for_handle(handle);
                 if (peripheral == NULL) break;
                 peripheral->mtu = little_endian_read_16(packet, 4);
@@ -1196,8 +1196,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     // special cases: notifications don't need a context while indications motivate creating one
     switch (packet[0]){
         case ATT_HANDLE_VALUE_NOTIFICATION:
-            if (size < 3) return;
-            report_gatt_notification(handle, little_endian_read_16(packet,1), &packet[3], size-3);
+            if (size < 3u) return;
+            report_gatt_notification(handle, little_endian_read_16(packet,1u), &packet[3], size-3u);
             return;                
         case ATT_HANDLE_VALUE_INDICATION:
             peripheral = provide_context_for_conn_handle(handle);
@@ -1212,7 +1212,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     switch (packet[0]){
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
-            if (size < 3) break;
+            if (size < 3u) break;
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
             peripheral->mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
@@ -1232,8 +1232,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             }
             break;
         case ATT_HANDLE_VALUE_INDICATION:
-            if (size < 3) break;
-            report_gatt_indication(handle, little_endian_read_16(packet,1), &packet[3], size-3);
+            if (size < 3u) break;
+            report_gatt_indication(handle, little_endian_read_16(packet,1u), &packet[3], size-3u);
             peripheral->send_confirmation = 1;
             break;
             
@@ -1251,12 +1251,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
                 case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                 {
-                    if (size < 2) break;
+                    if (size < 2u) break;
                     uint16_t uuid16 = 0;
                     uint16_t pair_size = packet[1];
                     
-                    if (pair_size == 6){
-                        if (size < 8) break;
+                    if (pair_size == 6u){
+                        if (size < 8u) break;
                         // UUIDs not available, query first included service
                         peripheral->start_group_handle = little_endian_read_16(packet, 2); // ready for next query
                         peripheral->query_start_handle = little_endian_read_16(packet, 4);
@@ -1265,15 +1265,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         break;
                     }
 
-                    if (pair_size != 8) break;
+                    if (pair_size != 8u) break;
 
                     // UUIDs included, report all of them
                     uint16_t offset;
-                    for (offset = 2; (offset + 8) <= size; offset += pair_size){
+                    for (offset = 2u; (offset + 8u) <= size; offset += pair_size){
                         uint16_t include_handle = little_endian_read_16(packet, offset);
-                        peripheral->query_start_handle = little_endian_read_16(packet,offset+2);
-                        peripheral->query_end_handle = little_endian_read_16(packet,offset+4);
-                        uuid16 = little_endian_read_16(packet, offset+6);
+                        peripheral->query_start_handle = little_endian_read_16(packet,offset+2u);
+                        peripheral->query_end_handle = little_endian_read_16(packet,offset+4u);
+                        uuid16 = little_endian_read_16(packet, offset+6u);
                         report_gatt_included_service_uuid16(peripheral, include_handle, uuid16);
                     }
 
@@ -1293,7 +1293,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     uint16_t last_result_handle = 0;
                     for (offset = 2; offset < size ; offset += pair_size){
                         uint16_t value_handle = little_endian_read_16(packet, offset);
-                        report_gatt_characteristic_value(peripheral, value_handle, &packet[offset+2], pair_size-2);
+                        report_gatt_characteristic_value(peripheral, value_handle, &packet[offset+2u], pair_size-2u);
                         last_result_handle = value_handle;
                     }
                     trigger_next_read_by_type_query(peripheral, last_result_handle);
@@ -1315,13 +1315,13 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 }
                 case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    report_gatt_characteristic_value(peripheral, peripheral->attribute_handle, &packet[1], size-1);
+                    report_gatt_characteristic_value(peripheral, peripheral->attribute_handle, &packet[1], size-1u);
                     emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
 
                 case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:{
                     gatt_client_handle_transaction_complete(peripheral);
-                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, &packet[1], size-1, 0);
+                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, &packet[1], size-1u, 0u);
                     emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 }
@@ -1336,7 +1336,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             int i;
             uint16_t start_group_handle;
             uint16_t   end_group_handle= 0xffff; // asserts GATT_EVENT_QUERY_COMPLETE is emitted if no results 
-            for (i = 1; (i + pair_size) <= size; i += pair_size){
+            for (i = 1u; (i + pair_size) <= size; i += pair_size){
                 start_group_handle = little_endian_read_16(packet,i);
                 end_group_handle = little_endian_read_16(packet,i+2);
                 emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, peripheral->uuid128);
@@ -1347,10 +1347,10 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         }
         case ATT_FIND_INFORMATION_REPLY:
         {
-            if (size < 2) break;
+            if (size < 2u) break;
 
             uint8_t pair_size = 4;
-            if (packet[1] == 2){
+            if (packet[1u] == 2u){
                 pair_size = 18;
             }
             uint16_t offset = 2;
@@ -1384,7 +1384,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 break;
             }
 #endif
-            report_gatt_all_characteristic_descriptors(peripheral, &packet[2], size-2, pair_size);
+            report_gatt_all_characteristic_descriptors(peripheral, &packet[2], size-2u, pair_size);
             trigger_next_characteristic_descriptor_query(peripheral, last_descriptor_handle);
             // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
             break;
@@ -1410,7 +1410,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
             
         case ATT_READ_BLOB_RESPONSE:{
-            uint16_t received_blob_length = size-1;
+            uint16_t received_blob_length = size-1u;
             switch(peripheral->gatt_client_state){
                 case P_W4_READ_BLOB_RESULT:
                     report_gatt_long_characteristic_value_blob(peripheral, peripheral->attribute_handle, &packet[1], received_blob_length, peripheral->attribute_offset);
@@ -1494,7 +1494,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         case ATT_READ_MULTIPLE_RESPONSE:
             switch(peripheral->gatt_client_state){
                 case P_W4_READ_MULTIPLE_RESPONSE:
-                    report_gatt_characteristic_value(peripheral, 0, &packet[1], size-1);
+                    report_gatt_characteristic_value(peripheral, 0u, &packet[1], size-1u);
                     gatt_client_handle_transaction_complete(peripheral);
                     emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
@@ -1504,7 +1504,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
 
         case ATT_ERROR_RESPONSE:
-            if (size < 5) return;
+            if (size < 5u) return;
             switch (packet[4]){
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
                     switch(peripheral->gatt_client_state){
@@ -1803,7 +1803,7 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
         return ERROR_CODE_SUCCESS;
     }
     peripheral->callback = callback;
-    peripheral->start_group_handle = characteristic->value_handle + 1;
+    peripheral->start_group_handle = characteristic->value_handle + 1u;
     peripheral->end_group_handle   = characteristic->end_handle;
     peripheral->gatt_client_state = P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY;
     gatt_client_run();
@@ -1900,7 +1900,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
     
-    if (value_length > (peripheral_mtu(peripheral) - 3)) return GATT_CLIENT_VALUE_TOO_LONG;
+    if (value_length > (peripheral_mtu(peripheral) - 3u)) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;
 
     return att_write_request(ATT_WRITE_COMMAND, peripheral->con_handle, value_handle, value_length, value);
@@ -1960,11 +1960,11 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
-        ((characteristic->properties & ATT_PROPERTY_NOTIFY) == 0)) {
+        ((characteristic->properties & ATT_PROPERTY_NOTIFY) == 0u)) {
         log_info("gatt_client_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED");
         return GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED;
     } else if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) &&
-               ((characteristic->properties & ATT_PROPERTY_INDICATE) == 0)){
+               ((characteristic->properties & ATT_PROPERTY_INDICATE) == 0u)){
         log_info("gatt_client_write_client_characteristic_configuration: GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED");
         return GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED;
     }

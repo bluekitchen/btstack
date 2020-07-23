@@ -72,7 +72,7 @@
  */
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
     
-    hci_cmd_buffer[0] = cmd->opcode & 0xff;
+    hci_cmd_buffer[0] = cmd->opcode & 0xffu;
     hci_cmd_buffer[1] = cmd->opcode >> 8;
     int pos = 3;
     
@@ -86,7 +86,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case '2': // 16 bit value
             case 'H': // hci_handle
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                hci_cmd_buffer[pos++] = word & 0xff;
+                hci_cmd_buffer[pos++] = word & 0xffu;
                 if (*format == '2') {
                     hci_cmd_buffer[pos++] = word >> 8;
                 } else if (*format == 'H') {
@@ -128,13 +128,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case 'N': { // UTF-8 string, null terminated
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = strlen((const char*) ptr);
-                if (len > 248) {
+                if (len > 248u) {
                     len = 248;
                 }
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
-                if (len < 248) {
+                if (len < 248u) {
                     // fill remaining space with zeroes
-                    memset(&hci_cmd_buffer[pos+len], 0, 248-len);
+                    memset(&hci_cmd_buffer[pos+len], 0u, 248u-len);
                 }
                 pos += 248;
                 break;

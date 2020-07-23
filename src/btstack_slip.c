@@ -92,7 +92,7 @@ void btstack_slip_encoder_start(const uint8_t * data, uint16_t len){
  */
 int  btstack_slip_encoder_has_data(void){
 	if (encoder_state != SLIP_ENCODER_DEFAULT) return 1;
-	return encoder_len > 0;
+	return encoder_len > 0u;
 }
 
 /** 

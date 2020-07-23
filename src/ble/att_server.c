@@ -164,7 +164,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     uint8_t event[7];
     int pos = 0;
     event[pos++] = ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE;
-    event[pos++] = sizeof(event) - 2;
+    event[pos++] = sizeof(event) - 2u;
     event[pos++] = status;
     little_endian_store_16(event, pos, client_handle);
     pos += 2;
@@ -192,7 +192,7 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
-    event[pos++] = sizeof(event) - 2;
+    event[pos++] = sizeof(event) - 2u;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
@@ -216,7 +216,7 @@ static void att_emit_connected_event(att_server_t * att_server){
     uint8_t event[11];
     int pos = 0;
     event[pos++] = ATT_EVENT_CONNECTED;
-    event[pos++] = sizeof(event) - 2;
+    event[pos++] = sizeof(event) - 2u;
     event[pos++] = att_server->peer_addr_type;
     reverse_bd_addr(att_server->peer_address, &event[pos]);
     pos += 6;
@@ -232,7 +232,7 @@ static void att_emit_disconnected_event(uint16_t con_handle){
     uint8_t event[4];
     int pos = 0;
     event[pos++] = ATT_EVENT_DISCONNECTED;
-    event[pos++] = sizeof(event) - 2;
+    event[pos++] = sizeof(event) - 2u;
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
 
@@ -532,7 +532,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
 #endif
 
     // intercept "insufficient authorization" for authenticated connections to allow for user authorization
-    if ((att_response_size     >= 4)
+    if ((att_response_size     >= 4u)
     && (att_response_buffer[0] == ATT_ERROR_RESPONSE)
     && (att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION)
     && (att_server->connection.authenticated)){
@@ -551,7 +551,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
     }
 
     att_server->state = ATT_SERVER_IDLE;
-    if (att_response_size == 0) {
+    if (att_response_size == 0u) {
         l2cap_release_packet_buffer();
         return 0;
     }
@@ -840,7 +840,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 // ---------------------
 // persistent CCC writes
 static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
-    return ('B' << 24) | ('T' << 16) | ('C' << 8) | index;
+    return ('B' << 24u) | ('T' << 16u) | ('C' << 8u) | index;
 }
 
 static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t value){
@@ -880,7 +880,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
             highest_seq_nr = entry.seq_nr;
         }
         // find entry with lowest seq nr
-        if ((tag_for_lowest_seq_nr == 0) || (entry.seq_nr < lowest_seq_nr)){
+        if ((tag_for_lowest_seq_nr == 0u) || (entry.seq_nr < lowest_seq_nr)){
             tag_for_lowest_seq_nr = tag;
             lowest_seq_nr = entry.seq_nr;
         }
@@ -896,7 +896,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
                 return;
             }
             entry.value = value;
-            entry.seq_nr = highest_seq_nr + 1;
+            entry.seq_nr = highest_seq_nr + 1u;
             log_info("CCC Index %u: Store", index);
             int result = tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
             if (result != 0){
@@ -912,7 +912,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
 
     log_info("tag_for_empty %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
 
-    if (value == 0){
+    if (value == 0u){
         // done
         return;
     }
@@ -927,7 +927,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         return;
     }
     // store ccc tag
-    entry.seq_nr       = highest_seq_nr + 1;
+    entry.seq_nr       = highest_seq_nr + 1u;
     entry.device_index = le_device_index;
     entry.att_handle   = att_handle;
     entry.value        = value;
@@ -1071,7 +1071,7 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     }
 
     // track CCC writes
-    if (att_is_persistent_ccc(attribute_handle) && (offset == 0) && (buffer_size == 2)){
+    if (att_is_persistent_ccc(attribute_handle) && (offset == 0u) && (buffer_size == 2u)){
         att_server_persistent_ccc_write(con_handle, attribute_handle, little_endian_read_16(buffer, 0));
     }
 

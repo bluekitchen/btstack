@@ -68,7 +68,7 @@ uint32_t btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer
 
 // test if ring buffer is empty
 int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer){
-    return btstack_ring_buffer_bytes_available(ring_buffer) == 0;
+    return btstack_ring_buffer_bytes_available(ring_buffer) == 0u;
 }
 
 // 
@@ -83,7 +83,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     }
 
     // simplify logic below by asserting data_length > 0
-    if (data_length == 0) return 0;
+    if (data_length == 0u) return 0u;
 
     // copy first chunk
     unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_written_index;
@@ -119,7 +119,7 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     *number_of_bytes_read = data_length;
 
     // simplify logic below by asserting data_length > 0
-    if (data_length == 0) return;
+    if (data_length == 0u) return;
 
     // copy first chunk
     unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_read_index;

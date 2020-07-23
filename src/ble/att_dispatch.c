@@ -68,7 +68,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     switch (packet_type){
         case ATT_DATA_PACKET:
             // odd PDUs are sent from server to client - even PDUs are sent from client to server
-            index = packet[0] & 1;
+            index = packet[0u] & 1u;
             // log_info("att_data_packet with opcode 0x%x", packet[0]);
             if (!subscriptions[index].packet_handler) return;
             subscriptions[index].packet_handler(packet_type, handle, packet, size);
@@ -77,12 +77,12 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
             can_send_now_pending = 0;
             for (i = 0; i < ATT_MAX; i++){
-                index = (att_round_robin + i) & 1;
+                index = (att_round_robin + i) & 1u;
                 if (subscriptions[index].packet_handler && subscriptions[index].waiting_for_can_send){
                     subscriptions[index].waiting_for_can_send = 0;
                     subscriptions[index].packet_handler(packet_type, handle, packet, size);
                     // fairness: prioritize next service
-                    att_round_robin = (index + 1) % ATT_MAX;
+                    att_round_robin = (index + 1u) % ATT_MAX;
                     // stop if client cannot send anymore
                     if (!hci_can_send_acl_le_packet_now()) break;
                 }
@@ -170,7 +170,7 @@ static void emit_mtu_exchange_complete(btstack_packet_handler_t packet_handler, 
     if (!packet_handler) return;
     uint8_t packet[6];
     packet[0] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
-    packet[1] = sizeof(packet) - 2;
+    packet[1] = sizeof(packet) - 2u;
     little_endian_store_16(packet, 2, con_handle);
     little_endian_store_16(packet, 4, new_mtu);
     packet_handler(HCI_EVENT_PACKET, con_handle, packet, 1);

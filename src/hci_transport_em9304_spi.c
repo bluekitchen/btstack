@@ -269,7 +269,7 @@ static void em9304_spi_engine_run(void){
             // check slave status and em9304 rx buffer space
             log_debug("TX: STS2 0x%02X", sStas.bytes[0]);
             max_bytes_to_send = sStas.bytes[0];
-            if (max_bytes_to_send == 0){
+            if (max_bytes_to_send == 0u){
                 // done
                 em9304_engine_action_done();
                 // next
@@ -282,7 +282,7 @@ static void em9304_spi_engine_run(void){
 
             // send command
             em9304_spi_engine_state = SPI_EM9304_TX_W4_DATA_SENT;
-            if ( (((uintptr_t) em9304_spi_engine_tx_data) & 0x03) == 0){
+            if ( (((uintptr_t) em9304_spi_engine_tx_data) & 0x03u) == 0u){
                 // 4-byte aligned
                 btstack_em9304_spi->transmit( (uint8_t*) em9304_spi_engine_tx_data, em9304_spi_engine_tx_request_len);
             } else {
@@ -305,7 +305,7 @@ static void em9304_spi_engine_run(void){
             em9304_spi_engine_tx_request_len = 0;
 
             // notify higher layer when complete
-            if (em9304_spi_engine_tx_size == 0){
+            if (em9304_spi_engine_tx_size == 0u){
                 (*em9304_spi_engine_tx_done_handler)();
             }
 
@@ -412,14 +412,14 @@ static void hci_transport_em9304_spi_process_data(void){
         hci_transport_em9304_spi_read_pos      += bytes_to_copy;
         hci_transport_em9304_spi_bytes_to_read -= bytes_to_copy;
 
-        if (hci_transport_em9304_spi_bytes_to_read == 0){
+        if (hci_transport_em9304_spi_bytes_to_read == 0u){
             hci_transport_em9304_spi_block_read();
         }
     }
 }
 
 static void hci_transport_em9304_spi_packet_complete(void){
-    packet_handler(hci_packet[0], &hci_packet[1], hci_transport_em9304_spi_read_pos-1);
+    packet_handler(hci_packet[0u], &hci_packet[1u], hci_transport_em9304_spi_read_pos-1u);
     hci_transport_em9304_spi_reset_statemachine();
 }
 
@@ -450,7 +450,7 @@ static void hci_transport_em9304_spi_block_read(void){
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
             }
-            if (hci_transport_em9304_spi_bytes_to_read == 0){
+            if (hci_transport_em9304_spi_bytes_to_read == 0u){
                 hci_transport_em9304_spi_packet_complete();
                 break;
             }
@@ -465,7 +465,7 @@ static void hci_transport_em9304_spi_block_read(void){
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
             }
-            if (hci_transport_em9304_spi_bytes_to_read == 0){
+            if (hci_transport_em9304_spi_bytes_to_read == 0u){
                 hci_transport_em9304_spi_packet_complete();
                 break;
             }

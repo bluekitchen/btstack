@@ -106,7 +106,7 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
     static const char tag_1 = 'T';
     static const char tag_2 = 'D';
 
-    return (tag_0 << 24) | (tag_1 << 16) | (tag_2 << 8) | index;
+    return (tag_0 << 24u) | (tag_1 << 16u) | (tag_2 << 8u) | index;
 }
 
 // @returns success
@@ -181,7 +181,7 @@ int le_device_db_max_count(void){
 
 void le_device_db_remove(int index){
     // check if entry exists
-    if (entry_map[index] == 0) return; 
+    if (entry_map[index] == 0u) return; 
 
 	// delete entry in TLV
 	le_device_db_tlv_delete(index);
@@ -251,7 +251,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     entry.addr_type = addr_type;
     (void)memcpy(entry.addr, addr, 6);
     (void)memcpy(entry.irk, irk, 16);
-    entry.seq_nr = highest_seq_nr + 1;
+    entry.seq_nr = highest_seq_nr + 1u;
  #ifdef ENABLE_LE_SIGNED_WRITE
     entry.remote_counter = 0; 
 #endif

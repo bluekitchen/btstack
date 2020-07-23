@@ -81,7 +81,7 @@ int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uin
 
     // handle '='
     if (c == '='){
-        if ((context->pos == 2) || (context->pos == 3)){
+        if ((context->pos == 2u) || (context->pos == 3u)){
             context->pos++;
             return BTSTACK_BASE64_DECODER_MORE;
         }
@@ -91,7 +91,7 @@ int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uin
     uint8_t value = table[c];
 
     // invalid character
-    if (value == 99) {
+    if (value == 99u) {
         context->pos = 99;
     }
 
