@@ -733,7 +733,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_SF_HEADPHONE, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     // printf("BTstack AVDTP Sink, supported features 0x%04x\n", );
     gap_set_local_name("BTstack AVDTP Sink PTS 00:00:00:00:00:00");

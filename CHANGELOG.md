@@ -12,17 +12,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: Fix parsing of empty fields, e.g. phone number in +CLCC and other AT commands
 - sm: Fix validation of confirm value for secure connection Passkey entry
 - AVDTP: fix invalid response for Get Capabilities request if Delay Reporting was supported
- 
+
 ### Added
 - GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack by remote features and actual encryption type (BIAS) 
 - GAP: Mutual authentication: request authentication after Classic connection got encrypted (BIAS)
 - Windows port for Dialog DA14585 connected via serial port
 - AVRCP: introduced AVRCP_FEATURE_MASK_* as alternative to avrcp_controller_supported_feature_t and avrcp_target_supported_feature_t enums
+- AVDTP: renamed definition of supported features from AVDTP_SOURCE_SF_ and AVDTP_SINK_SF_ to AVDTP_SOURCE_FEATURE_MASK_ and AVDTP_SINK_FEATURE_MASK_ respectively. 
 
 ### Changed
 - CVSD PLC: treat zero frames as good and allow to mark data as bad, e.g. if reported by controller as erroneous
 - btstack_audio: add set_volume() to sink and set_gain() to source interfaces
-- GAP: set minium required encryption key size for Classic connections to 7, matching the Core spec
+- GAP: set minimum required encryption key size for Classic connections to 7, matching the Core spec
 
 ## Changes May 2020
 

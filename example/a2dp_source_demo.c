@@ -304,7 +304,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     
     // Create  A2DP Source service record and register it with SDP.
     memset(sdp_a2dp_source_service_buffer, 0, sizeof(sdp_a2dp_source_service_buffer));
-    a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, AVDTP_SOURCE_SF_PLAYER, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, AVDTP_SOURCE_FEATURE_MASK_PLAYER, NULL, NULL);
     sdp_register_service(sdp_a2dp_source_service_buffer);
     
     // Create AVRCP target service record and register it with SDP.
