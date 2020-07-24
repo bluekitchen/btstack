@@ -129,7 +129,7 @@ file(GLOB EXAMPLES_GATT "*.gatt")
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-	set (SOURCE_FILES ${EXAMPLE_FILE})
+	set (SOURCE_FILES ${EXAMPLE_FILE} btstack_stdin_pts.c)
 
 	# add GATT DB creation
 	if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
