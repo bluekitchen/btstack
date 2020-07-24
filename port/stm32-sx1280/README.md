@@ -43,15 +43,14 @@ The Makefile project compiles gatt_counter, gatt_streamer_server, hog_mouse and 
 
 ## Getting Started
 
-For the FMLR-80-P-STL4E module, just run make. You can upload the .elf file created in build folder e.g. with Ozone using the provided stm32-sx1280.jdebug and run it.
-
+For the FMLR-80-P-STL4E module, just run make. You can upload the EXAMPLE.elf file created in build folder,
+e.g. with Ozone using the provided EXAMPLE.jdebug, and run it.
 
 ## TODO
 
 ### General
 - handle disconnect for gatt streamer demo
 - multiple packets per connection interval
-- handle Connection Param Update
 - indicate random address in advertising pdus
 - allow to set random BD_ADDR via HCI command
 - support other adv types
