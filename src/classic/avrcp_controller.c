@@ -178,16 +178,17 @@ static uint16_t avrcp_get_max_payload_size_for_packet_type(avrcp_packet_type_t p
 static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t packet_type){
     uint8_t command[AVRCP_CMD_BUFFER_SIZE];
     int pos = 0; 
-    uint16_t max_bytes = sizeof(command) - 1;
 
-    // transport header
-    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+    // non-fragmented: transport header (1) + PID (2)
+    // fragmented:     transport header (1) + num packets (1) + PID (2)
+
+    // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     command[pos++] = (connection->transaction_label << 4) | (packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
     if (packet_type == AVRCP_START_PACKET){
-        // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header)
+        // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
+        // to get number of packets using integer division, we subtract 1 from the data e.g. len = 5, packet size 5 => need 1 packet
         command[pos++] = ((connection->cmd_operands_fragmented_len + 3 - 1) / (AVRCP_CMD_BUFFER_SIZE - 1)) + 1;
-        max_bytes -= 3;
     }
 
     if ((packet_type == AVRCP_SINGLE_PACKET) || (packet_type == AVRCP_START_PACKET)){
@@ -209,7 +210,9 @@ static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t p
                      connection->cmd_operands_length);
         pos += connection->cmd_operands_length;
     } else {
-        uint16_t bytes_to_copy = btstack_min(connection->cmd_operands_fragmented_len-connection->cmd_operands_fragmented_pos, max_bytes);
+        uint16_t bytes_free = AVRCP_CMD_BUFFER_SIZE - pos;
+        uint16_t bytes_to_store = connection->cmd_operands_fragmented_len-connection->cmd_operands_fragmented_pos;
+        uint16_t bytes_to_copy = btstack_min(bytes_to_store, bytes_free);
         (void)memcpy(command + pos,
                      &connection->cmd_operands_fragmented_buffer[connection->cmd_operands_fragmented_pos],
                      bytes_to_copy);
