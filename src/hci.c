@@ -829,9 +829,7 @@ int hci_send_sco_packet_buffer(int size){
 }
 #endif
 
-static void acl_handler(uint8_t *packet, int size){
-
-    // log_info("acl_handler: size %u", size);
+static void acl_handler(uint8_t *packet, uint16_t size){
 
     // get info
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
@@ -841,13 +839,13 @@ static void acl_handler(uint8_t *packet, int size){
 
     // ignore non-registered handle
     if (!conn){
-        log_error( "hci.c: acl_handler called with non-registered handle %u!" , con_handle);
+        log_error("acl_handler called with non-registered handle %u!" , con_handle);
         return;
     }
 
     // assert packet is complete    
     if ((acl_length + 4u) != size){
-        log_error("hci.c: acl_handler called with ACL packet of wrong size %d, expected %u => dropping packet", size, acl_length + 4);
+        log_error("acl_handler called with ACL packet of wrong size %d, expected %u => dropping packet", size, acl_length + 4);
         return;
     }
 
@@ -882,10 +880,7 @@ static void acl_handler(uint8_t *packet, int size){
             (void)memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + conn->acl_recombination_pos],
                          &packet[4], acl_length);
             conn->acl_recombination_pos += acl_length;
-            
-            // log_error( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u", acl_length,
-            //        conn->acl_recombination_pos, conn->acl_recombination_length);  
-            
+
             // forward complete L2CAP packet if complete. 
             if (conn->acl_recombination_pos >= (conn->acl_recombination_length + 4u + 4u)){ // pos already incl. ACL header
                 hci_emit_acl_packet(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], conn->acl_recombination_pos);
@@ -905,8 +900,6 @@ static void acl_handler(uint8_t *packet, int size){
 
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
-
-            // log_info( "ACL First Fragment: acl_len %u, l2cap_len %u", acl_length, l2cap_length);
 
             // compare fragment size to L2CAP packet size
             if (acl_length >= (l2cap_length + 4u)){
@@ -931,7 +924,7 @@ static void acl_handler(uint8_t *packet, int size){
             
         } 
         default:
-            log_error( "hci.c: acl_handler called with invalid packet boundary flags %u", acl_flags & 0x03);
+            log_error( "acl_handler called with invalid packet boundary flags %u", acl_flags & 0x03);
             return;
     }
     
@@ -1176,7 +1169,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             if (hci_stack->hci_transport->set_baudrate){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %"PRIu32"(timeout handler)", baud_rate);
+                log_info("Local baud rate change to %" PRIu32 "(timeout handler)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             // For CSR, HCI Reset is sent on new baud rate. Don't forget to reset link for H5/BCSP
@@ -1322,7 +1315,7 @@ static void hci_initializing_run(void){
                         && ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_main;
                     if (need_baud_change) {
                         uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
-                        log_info("Local baud rate change to %"PRIu32" after init script (bcm)", baud_rate);
+                        log_info("Local baud rate change to %" PRIu32 " after init script (bcm)", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
 
@@ -1699,7 +1692,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             // for others, baud rate gets changed now
             if ((hci_stack->manufacturer != BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS) && need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %"PRIu32"(w4_send_baud_change)", baud_rate);
+                log_info("Local baud rate change to %" PRIu32 "(w4_send_baud_change)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
@@ -1735,7 +1728,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM:
             if (need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %"PRIu32"(w4_send_baud_change_bcm))", baud_rate);
+                log_info("Local baud rate change to %" PRIu32 "(w4_send_baud_change_bcm))", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             if (need_addr_change){
@@ -2000,20 +1993,21 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_OPCODE_HCI_READ_BUFFER_SIZE:
             // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
-            if (hci_stack->state != HCI_STATE_INITIALIZING) break;
-            uint16_t acl_len = little_endian_read_16(packet, 6);
-            uint16_t sco_len = packet[8];
+            if (hci_stack->state == HCI_STATE_INITIALIZING) {
+                uint16_t acl_len = little_endian_read_16(packet, 6);
+                uint16_t sco_len = packet[8];
 
-            // determine usable ACL/SCO payload size
-            hci_stack->acl_data_packet_length = btstack_min(acl_len, HCI_ACL_PAYLOAD_SIZE);
-            hci_stack->sco_data_packet_length = btstack_min(sco_len, HCI_ACL_PAYLOAD_SIZE);
+                // determine usable ACL/SCO payload size
+                hci_stack->acl_data_packet_length = btstack_min(acl_len, HCI_ACL_PAYLOAD_SIZE);
+                hci_stack->sco_data_packet_length = btstack_min(sco_len, HCI_ACL_PAYLOAD_SIZE);
 
-            hci_stack->acl_packets_total_num  = little_endian_read_16(packet, 9);
-            hci_stack->sco_packets_total_num  = little_endian_read_16(packet, 11);
+                hci_stack->acl_packets_total_num = little_endian_read_16(packet, 9);
+                hci_stack->sco_packets_total_num = little_endian_read_16(packet, 11);
 
-            log_info("hci_read_buffer_size: ACL size module %u -> used %u, count %u / SCO size %u, count %u",
-                     acl_len, hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
-                     hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num);
+                log_info("hci_read_buffer_size: ACL size module %u -> used %u, count %u / SCO size %u, count %u",
+                         acl_len, hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
+                         hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num);
+            }
             break;
         case HCI_OPCODE_HCI_READ_RSSI:
             if (packet[5] == ERROR_CODE_SUCCESS){
@@ -2115,15 +2109,16 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
             handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
             conn   = hci_connection_for_handle(handle);
-            if (!conn) return;
-            uint8_t key_size = 0;
-            if (status == 0){
-                key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
-                log_info("Handle %x04x key Size: %u", handle, key_size);
-            } else {
-                log_info("Read Encryption Key Size failed 0x%02x-> assuming insecure connection with key size of 1", status);
+            if (conn != NULL) {
+                uint8_t key_size = 0;
+                if (status == 0){
+                    key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
+                    log_info("Handle %x04x key Size: %u", handle, key_size);
+                } else {
+                    log_info("Read Encryption Key Size failed 0x%02x-> assuming insecure connection with key size of 1", status);
+                }
+                hci_handle_read_encryption_key_size_complete(conn, key_size);
             }
-            hci_handle_read_encryption_key_size_complete(conn, key_size);
             break;
 #endif
         default:
@@ -2131,7 +2126,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     }
 }
 
-static void event_handler(uint8_t *packet, int size){
+static void event_handler(uint8_t *packet, uint16_t size){
 
     uint16_t event_length = packet[1];
 
