@@ -630,7 +630,7 @@ static avrcp_connection_t * avrcp_handle_incoming_connection_for_role(avrcp_role
     return connection;
 }
 
-static void avrcp_handle_open_connection_for_role( avrcp_connection_t * connection, uint16_t local_cid, uint16_t l2cap_mtu){
+static void avrcp_handle_open_connection(avrcp_connection_t * connection, uint16_t local_cid, uint16_t l2cap_mtu){
     connection->l2cap_signaling_cid = local_cid;
     connection->l2cap_mtu = l2cap_mtu;
     connection->incoming_declined = false;
@@ -758,8 +758,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                     switch (status){
                         case ERROR_CODE_SUCCESS:
-                            avrcp_handle_open_connection_for_role(connection_target, local_cid, l2cap_mtu);
-                            avrcp_handle_open_connection_for_role(connection_controller, local_cid, l2cap_mtu);
+                            avrcp_handle_open_connection(connection_target, local_cid, l2cap_mtu);
+                            avrcp_handle_open_connection(connection_controller, local_cid, l2cap_mtu);
                             avrcp_emit_connection_established(connection_controller->avrcp_cid, event_addr, status);
                             return;
                         case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
@@ -925,3 +925,18 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     avrcp_callback = callback;
 }
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#define FUZZ_CID 0x44
+static bd_addr_t remote_addr = { 0x33, 0x33, 0x33, 0x33, 0x33, 0x33 };
+void avrcp_init_fuzz(void){
+    // setup avrcp connections for cid
+    avrcp_connection_t * connection_controller = avrcp_create_connection(AVRCP_CONTROLLER, remote_addr);
+    avrcp_connection_t * connection_target     = avrcp_create_connection(AVRCP_TARGET, remote_addr);
+    avrcp_handle_open_connection(connection_controller, FUZZ_CID, 999);
+    avrcp_handle_open_connection(connection_target, FUZZ_CID, 999);
+}
+void avrcp_packet_handler_fuzz(uint8_t *packet, uint16_t size){
+    avrcp_packet_handler(L2CAP_DATA_PACKET, FUZZ_CID, packet, size);
+}
+#endif

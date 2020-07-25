@@ -685,6 +685,12 @@ void avrcp_browsing_register_controller_packet_handler(btstack_packet_handler_t 
 void avrcp_browsing_register_target_packet_handler(btstack_packet_handler_t callback);
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid);
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+void avrcp_init_fuzz(void);
+void avrcp_packet_handler_fuzz(uint8_t *packet, uint16_t size);
+#endif
+
+
 #if defined __cplusplus
 }
 #endif

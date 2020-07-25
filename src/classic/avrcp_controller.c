@@ -467,7 +467,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t operands[20];
     uint8_t opcode;
     int     pos = 3;
-    
+
+    if (size < 6u) return;
+
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     uint8_t byte_value = packet[pos++];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);

@@ -748,9 +748,8 @@ static uint8_t avrcp_is_receive_pass_through_cmd(uint8_t operation_id){
 }
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
-    UNUSED(connection);
-    UNUSED(packet);
-    UNUSED(size);
+
+    if (size < 6u) return;
 
     uint16_t pid = 0;
     uint8_t transport_header = packet[0];
