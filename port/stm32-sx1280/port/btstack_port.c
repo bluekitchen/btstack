@@ -41,9 +41,11 @@
 
 #include <string.h>
 
+// to get cpu intrinsics, .e.g __dissble_irq(), before BTstack includes to avoid re-defining UNUSED
+#include "stm32l4xx.h"
+
 #include "controller.h"
 
-//#include "debug.h"
 #include "btstack_config.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
@@ -56,6 +58,7 @@
 #include "btstack_tlv_none.h"
 #include "ble/le_device_db_tlv.h"
 
+
 void btstack_assert_failed(const char * file, uint16_t line_nr){
     printf("Assert: file %s, line %u\n", file, line_nr);
     while (1);
@@ -64,9 +67,18 @@ void btstack_assert_failed(const char * file, uint16_t line_nr){
 /** hal_cpu.h */
 
 // TODO: implement
-void hal_cpu_disable_irqs(void){}
-void hal_cpu_enable_irqs(void){}
-void hal_cpu_enable_irqs_and_sleep(void){}
+void hal_cpu_disable_irqs(void){
+    __disable_irq();
+}
+
+void hal_cpu_enable_irqs(void){
+    __enable_irq();
+}
+
+void hal_cpu_enable_irqs_and_sleep(void){
+    __enable_irq();
+    // __asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+}
 
 void btstack_main(void);
 void btstack_port(void){

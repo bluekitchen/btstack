@@ -49,7 +49,6 @@ e.g. with Ozone using the provided EXAMPLE.jdebug, and run it.
 ## TODO
 
 ### General
-- handle disconnect for gatt streamer demo
 - multiple packets per connection interval
 - indicate random address in advertising pdus
 - allow to set random BD_ADDR via HCI command
