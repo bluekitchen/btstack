@@ -952,7 +952,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    btstack_assert(context != NULL);
 
                     psm = l2cap_event_channel_opened_get_psm(packet); 
                     if (psm != BLUETOOTH_PSM_AVDTP){

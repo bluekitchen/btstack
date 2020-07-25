@@ -60,8 +60,11 @@
 extern "C" uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     return 1024;
 }
+extern "C" void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size){}
 extern "C" void l2cap_request_can_send_now_event(uint16_t local_cid){}
 // mock end
+
+
 
 static avdtp_connection_t connection;
 static avdtp_capabilities_t caps;
