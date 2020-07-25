@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-DIR=`dirname $0`
-BTSTACK_ROOT="/Projects/btstack/"
+LOCAL_DIR=`dirname $0`
+BTSTACK_ROOT=`realpath $LOCAL_DIR/../..`
 
 # build image if it doesn't exist
 if [[ "$(docker images -q fuzz 2> /dev/null)" == "" ]]; then
