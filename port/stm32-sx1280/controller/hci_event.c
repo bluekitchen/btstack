@@ -164,6 +164,10 @@ const hci_event_t hci_event_hardware_error = {
     HCI_EVENT_HARDWARE_ERROR, 0, "1"
 };
 
+const hci_event_t hci_event_transport_packet_sent = {
+        HCI_EVENT_TRANSPORT_PACKET_SENT, 0, ""
+};
+
 const hci_event_t hci_event_command_complete = {
     HCI_EVENT_COMMAND_COMPLETE, 0, "121KV"
 };

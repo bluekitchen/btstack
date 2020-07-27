@@ -84,6 +84,7 @@ const hci_event_t hci_event_hardware_error;
 const hci_event_t hci_event_command_complete;
 const hci_event_t hci_event_disconnection_complete;
 const hci_event_t hci_event_number_of_completed_packets_1;
+const hci_event_t hci_event_transport_packet_sent;
 
 /* LE Subevents */
 

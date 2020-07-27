@@ -65,6 +65,7 @@
 // Controller
 //
 static uint8_t send_hardware_error;
+static bool send_transport_sent;
 
 static btstack_data_source_t hci_transport_data_source;
 
@@ -151,6 +152,7 @@ static void controller_handle_acl_data(uint8_t * packet, uint16_t size){
     // so far, only single connection supported with fixed con handle
     hci_con_handle_t con_handle = little_endian_read_16(packet, 0) & 0xfff;
     btstack_assert(con_handle == HCI_CON_HANDLE);
+    btstack_assert( size > 4);
 
     // just queue up
     btstack_assert(controller_ll_acl_reserved);
@@ -178,6 +180,12 @@ static void transport_run(btstack_data_source_t *ds, btstack_data_source_callbac
         uint8_t error_code = send_hardware_error;
         send_hardware_error = 0;
         transport_emit_hci_event(&hci_event_hardware_error, error_code);
+    }
+
+    if (send_transport_sent){
+        send_transport_sent = false;
+        // notify upper stack that it might be possible to send again
+        transport_emit_hci_event(&hci_event_transport_packet_sent);
     }
 
     ll_execute_once();
@@ -230,6 +238,7 @@ static void transport_register_packet_handler(void (*handler)(uint8_t packet_typ
 }
 
 static int transport_can_send_packet_now(uint8_t packet_type){
+    if (send_transport_sent) return 0;
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             return hci_outgoing_event_ready ? 0 : 1;
@@ -245,21 +254,15 @@ static int transport_can_send_packet_now(uint8_t packet_type){
     return 0;
 }
 
-static void transport_notify_packet_send(void){
-    // notify upper stack that it might be possible to send again
-    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-    transport_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-}
-
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             controller_handle_hci_command(packet, size);
-            transport_notify_packet_send();
+            send_transport_sent = true;
             break;
         case HCI_ACL_DATA_PACKET:
             controller_handle_acl_data(packet, size);
-            transport_notify_packet_send();
+            send_transport_sent = true;
             break;
         default:
             send_hardware_error = 0x01; // invalid HCI packet
