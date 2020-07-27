@@ -784,6 +784,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
     }
 
+    if (packet_type != AVRCP_SINGLE_PACKET) return;
+    
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (packet[4] >> 3);
     avrcp_subunit_id_t   subunit_id   = (avrcp_subunit_id_t) (packet[4] & 0x07);
     

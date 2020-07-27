@@ -468,20 +468,38 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     uint8_t operands[20];
+
     uint8_t opcode;
     int     pos = 3;
 
     if (size < 6u) return;
 
+    uint8_t pdu_id;
+    
+    avrcp_frame_type_t  frame_type = (avrcp_frame_type_t)((packet[0] >> 1) & 0x01);
+    if (frame_type != AVRCP_RESPONSE_FRAME) return;
+
+    avrcp_packet_type_t packet_type = (avrcp_packet_type_t)((packet[0] >> 2) & 0x03);
+    switch (packet_type){
+        case AVRCP_SINGLE_PACKET:
+            break;
+        default:
+            log_info("Fragmentation is not supported");
+            return;
+    }
+    
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
+    
     uint8_t byte_value = packet[pos++];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
-    avrcp_subunit_type_t subunit_id = (avrcp_subunit_type_t)   (byte_value & 0x07);
-    opcode = packet[pos++];
+    avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t)   (byte_value & 0x07);
+    uint8_t opcode = packet[pos++];
+    // Company ID (3)
+    pos += 3;
 
-    uint8_t pdu_id;
     uint16_t param_length;
-    switch (avrcp_cmd_opcode(packet,size)){
+
+    switch (opcode){
         case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
@@ -849,7 +867,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    avrcp_packet_type_t packet_type = (avrcp_packet_type_t) (operands[4] & 0x03);
                     switch (packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:
