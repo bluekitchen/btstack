@@ -425,10 +425,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // TODO check cid
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            log_info("A2DP cmd %s accepted , cid 0x%2x, local seid %d", avdtp_si2str(signal_identifier), cid, avdtp_subevent_signaling_accept_get_local_seid(packet));
-            
-            if (avdtp_subevent_signaling_accept_get_is_initiator(packet) != 1) break;
-            
+            log_info("A2DP cmd %s accepted, state %x, is_initiator %u, cid 0x%2x, local seid %d", avdtp_si2str(signal_identifier), app_state,
+                     avdtp_subevent_signaling_accept_get_is_initiator(packet), cid, avdtp_subevent_signaling_accept_get_local_seid(packet));
+
             switch (app_state){
                 case A2DP_W2_GET_CAPABILITIES:
                     if (sc.active_remote_sep_index < num_remote_seps){
@@ -456,7 +455,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     break;
                 }
                 case A2DP_STREAMING_OPENED:
-                    if (!a2dp_source_packet_handler_user) return;
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
                             a2dp_signaling_emit_control_command(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_STARTED);
@@ -514,10 +512,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
     }
 }
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
-    if (callback == NULL){
-        log_error("a2dp_source_register_packet_handler called with NULL callback");
-        return;
-    }
+    btstack_assert(callback != NULL);
+
     avdtp_source_register_packet_handler(&a2dp_source_packet_handler_internal);
     a2dp_source_packet_handler_user = callback;
 }
