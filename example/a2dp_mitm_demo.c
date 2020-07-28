@@ -586,6 +586,12 @@ int btstack_main(int argc, const char * argv[]){
     // assume Display and Yes/No buttons
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
 
+    // allow for role switches
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
+
+    // try to become master on incoming connections
+    hci_set_master_slave_policy(0);
+
     l2cap_init();
     sdp_init();
 
