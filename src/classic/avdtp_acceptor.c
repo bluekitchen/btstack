@@ -260,10 +260,19 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                             connection->configuration_state = AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED;
                             break;
                         case AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED:
-                        case AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED:
+                        case AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED:
+                            log_info("Reject SET_CONFIGURATION BAD_STATE");
                             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                             connection->reject_service_category = 0;
                             connection->error_code = BAD_STATE;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+                            break;
+                        case AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED:
+                        case AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED:
+                            log_info("Reject SET_CONFIGURATION SEP_IN_USE");
+                            connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
+                            connection->reject_service_category = 0;
+                            connection->error_code = SEP_IN_USE;
                             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                             break;
                         default:
