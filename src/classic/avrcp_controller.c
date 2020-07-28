@@ -469,7 +469,6 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     uint8_t operands[20];
 
-    uint8_t opcode;
     int     pos = 3;
 
     if (size < 6u) return;
