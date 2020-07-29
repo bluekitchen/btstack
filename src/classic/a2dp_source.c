@@ -355,7 +355,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_signaling_emit_delay_report_capability(packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
-            a2dp_signaling_emit_capabilities_done(packet, size);
+            if (app_state == A2DP_W2_GET_CAPABILITIES){
+                // endpoint was not suitable, check next one
+                sc.active_remote_sep_index++;
+                if (sc.active_remote_sep_index >= num_remote_seps){
+                    // we didn't find a suitable SBC stream endpoint, sorry.
+                    app_state = A2DP_CONNECTED;
+                }
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
@@ -429,16 +436,13 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             switch (app_state){
                 case A2DP_W2_GET_CAPABILITIES:
-                    if (sc.active_remote_sep_index < num_remote_seps){
-                        sc.active_remote_sep_index++;
-                        uint8_t remote_seid = remote_seps[sc.active_remote_sep_index].seid;
-                        log_info("A2DP get capabilities for remote seid %d", remote_seid);
-                        avdtp_source_get_capabilities(cid, remote_seid);
-                    }
+                    remote_seid = remote_seps[sc.active_remote_sep_index].seid;
+                    log_info("A2DP get capabilities for remote seid %d", remote_seid);
+                    avdtp_source_get_capabilities(cid, remote_seid);
                     break;
                 case A2DP_W2_SET_CONFIGURATION:{
                     if (sc.local_stream_endpoint != NULL){
-                        uint8_t remote_seid = remote_seps[sc.active_remote_sep_index].seid;
+                        remote_seid = remote_seps[sc.active_remote_sep_index].seid;
                         log_info("A2DP initiate set configuration locally and wait for response ... local seid %d, remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid);
                         app_state = A2DP_IDLE;
                         avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
