@@ -99,7 +99,7 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
     }
     // find or add sep
 
-    log_info("ACP .. seid %d, remote sep seid %d", sep.seid, stream_endpoint->remote_sep.seid);
+    log_info("ACP .. local seid %d, remote sep seid %d", connection->acceptor_local_seid, sep.seid);
     
     if (is_avdtp_remote_seid_registered(stream_endpoint)){
         if (stream_endpoint->remote_sep.in_use){
