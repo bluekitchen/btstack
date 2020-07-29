@@ -1158,7 +1158,7 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED) return ERROR_CODE_COMMAND_DISALLOWED;
     
-    connection->initiator_transaction_label++;
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_remote_seid = remote_seid;
     connection->initiator_local_seid = local_seid;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_OPEN_STREAM;
@@ -1297,8 +1297,8 @@ uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid){
         (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
-    connection->initiator_transaction_label++;
+
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
@@ -1314,8 +1314,8 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
         (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
-    connection->initiator_transaction_label++;
+
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -1332,8 +1332,8 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
         (connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE)) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
-    connection->initiator_transaction_label++;
+
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -1350,7 +1350,7 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->initiator_transaction_label++;
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -1384,8 +1384,8 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
 
     connection->active_stream_endpoint = (void*) stream_endpoint;
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED;
-    
-    connection->initiator_transaction_label++;
+
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_remote_seid = remote_seid;
     connection->initiator_local_seid = local_seid;
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
@@ -1423,9 +1423,9 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     if (!is_avdtp_remote_seid_registered(stream_endpoint)){
         log_error("avdtp_reconfigure: no associated remote sep");
         return ERROR_CODE_COMMAND_DISALLOWED;
-    } 
+    }
 
-    connection->initiator_transaction_label++;
+    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
     connection->initiator_remote_seid = remote_seid;
     connection->initiator_local_seid = local_seid;
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
