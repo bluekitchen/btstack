@@ -52,9 +52,15 @@ static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transactio
     return l2cap_send(cid, command, sizeof(command));
 }
 
-static int avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_packet, uint8_t * packet, uint16_t size){
-    (void)memcpy(signaling_packet->command + signaling_packet->size, packet,
-                 size);
+// returns true if command complete
+static bool avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_packet, uint8_t * packet, uint16_t size){
+    if ((signaling_packet->size + size >= sizeof(signaling_packet->command)) {
+        log_info("Dropping incoming data, doesn't fit into command buffer");
+        signaling_packet->size = 0;
+        return false;
+    }
+
+    (void)memcpy(signaling_packet->command + signaling_packet->size, packet, size);
     signaling_packet->size += size;
     return (signaling_packet->packet_type == AVDTP_SINGLE_PACKET) || (signaling_packet->packet_type == AVDTP_END_PACKET);
 }
@@ -227,7 +233,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 
     btstack_assert(stream_endpoint != NULL);
 
-    if (!avdtp_acceptor_process_chunk(&connection->acceptor_signaling_packet, packet, size)) return;
+    bool command_complete = avdtp_acceptor_process_chunk(&connection->acceptor_signaling_packet, packet, size);
+    if (!command_complete) return;
     
     uint16_t packet_size = connection->acceptor_signaling_packet.size;
     connection->acceptor_signaling_packet.size = 0;

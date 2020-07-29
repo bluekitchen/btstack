@@ -401,8 +401,6 @@ typedef struct {
     
     uint16_t avdtp_cid;
 
-    // avdtp_role_t role;
-
     // SDP results
     uint16_t avdtp_l2cap_psm;
     uint16_t avdtp_version;
@@ -415,8 +413,11 @@ typedef struct {
     avdtp_connection_state_t state;
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
-    
+
+    // used to reassemble fragmented commands
     avdtp_signaling_packet_t acceptor_signaling_packet;
+
+    // used to prepare outgoing signaling packets
     avdtp_signaling_packet_t initiator_signaling_packet;
 
     uint8_t initiator_local_seid;
