@@ -138,24 +138,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                                             connection->initiator_remote_seid, &sep.capabilities,
                                             sep.registered_service_categories);
                     break;
-                case AVDTP_SI_DELAYREPORT:
-                    avdtp_signaling_emit_delay(connection->avdtp_cid, connection->initiator_local_seid,
-                                               little_endian_read_16(packet, offset));
-                    break;
-                case AVDTP_SI_GET_CONFIGURATION:
-                    // sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
-                    // if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                    //     switch (sep.configuration.media_codec.media_codec_type){
-                    //         case AVDTP_CODEC_SBC: 
-                    //             avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->remote_seid, 
-                    //                 sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
-                    //             break;
-                    //         default:
-                    //             avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid,  connection->remote_seid, sep.configuration.media_codec);
-                    //             break;
-                    //     }
-                    // }
-                    break;
                 
                 case AVDTP_SI_RECONFIGURE:
                     if (!stream_endpoint){
@@ -257,8 +239,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
+
+                case AVDTP_SI_DELAYREPORT:
+                    break;
+                case AVDTP_SI_GET_CONFIGURATION:
+                    break;
                 default:
-                    log_info("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
+                    log_info("AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
                     break;
             }
             avdtp_signaling_emit_accept(connection->avdtp_cid, 0,
