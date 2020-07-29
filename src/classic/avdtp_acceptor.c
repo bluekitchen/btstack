@@ -54,7 +54,7 @@ static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transactio
 
 // returns true if command complete
 static bool avdtp_acceptor_process_chunk(avdtp_signaling_packet_t * signaling_packet, uint8_t * packet, uint16_t size){
-    if ((signaling_packet->size + size >= sizeof(signaling_packet->command)) {
+    if ((signaling_packet->size + size) >= sizeof(signaling_packet->command)) {
         log_info("Dropping incoming data, doesn't fit into command buffer");
         signaling_packet->size = 0;
         return false;
