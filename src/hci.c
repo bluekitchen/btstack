@@ -4212,6 +4212,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                     return -1; // packet not sent to controller
                 }
                 conn->state = SEND_CREATE_CONNECTION;
+                conn->role  = HCI_ROLE_MASTER;
             }
             log_info("conn state %u", conn->state);
             switch (conn->state) {
