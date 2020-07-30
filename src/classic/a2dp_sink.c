@@ -297,7 +297,6 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-            if (app_state < A2DP_CONNECTED) return;
             a2dp_signaling_emit_media_codec_sbc(packet, size);
             break;
 
@@ -329,7 +328,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
             loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
             a2dp_emit_cmd_rejected(packet, size);
-            app_state = A2DP_IDLE;
+            app_state = A2DP_CONNECTED;
             break;
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);

@@ -477,14 +477,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     }
                     break;
                 default:
-                    app_state = A2DP_IDLE;
+                    app_state = A2DP_CONNECTED;
                     break;
             }
             
             break;
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-            app_state = A2DP_IDLE;
+            app_state = A2DP_CONNECTED;
             a2dp_signaling_emit_reject_cmd(packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:{
