@@ -130,6 +130,13 @@ uint8_t gap_disconnect(hci_con_handle_t handle);
  */
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
 
+/**
+ * @brief Get HCI connection role
+ * @param con_handle
+ * @result hci_role_t HCI_ROLE_MASTER / HCI_ROLE_SLAVE / HCI_ROLE_INVALID (if connection does not exist)
+ */
+hci_role_t gap_get_role(hci_con_handle_t connection_handle);
+
 // Classic
 
 /** 

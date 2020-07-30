@@ -194,6 +194,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     bd_addr_copy(conn->address, addr);
+    conn->role = HCI_ROLE_INVALID;
     conn->address_type = addr_type;
     conn->con_handle = 0xffff;
     conn->authentication_flags = AUTH_FLAGS_NONE;
@@ -5166,6 +5167,13 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
             return GAP_CONNECTION_INVALID;
     }
 }
+
+hci_role_t gap_get_role(hci_con_handle_t connection_handle){
+    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+    if (!conn) return HCI_ROLE_INVALID;
+    return (hci_role_t) conn->role;
+}
+
 
 #ifdef ENABLE_BLE
 

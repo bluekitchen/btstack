@@ -299,8 +299,11 @@ typedef enum {
 /* ENUM_END */
 
 // HCI roles
-#define HCI_ROLE_MASTER 0
-#define HCI_ROLE_SLAVE  1
+typedef enum {
+    HCI_ROLE_MASTER = 0,
+    HCI_ROLE_SLAVE  = 1,
+    HCI_ROLE_INVALID = 0xff,
+} hci_role_t;
 
 // packet sizes (max payload)
 #define HCI_ACL_DM1_SIZE            17
