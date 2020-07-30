@@ -106,9 +106,11 @@ static uint8_t  sbc_storage[1030];
 typedef struct {
     uint16_t a2dp_sink_cid;
     uint8_t  a2dp_sink_local_seid;
+    hci_con_handle_t a2dp_sink_con_handle;
 
     uint16_t a2dp_source_cid;
     uint8_t  a2dp_source_local_seid;
+    hci_con_handle_t a2dp_source_con_handle;
 
     uint16_t sbc_frame_size;
     uint16_t num_sbc_frames_in_ring_buffer;
@@ -335,6 +337,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             hci_event_pin_code_request_get_bd_addr(packet, event_addr);
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
             break;
+        case HCI_EVENT_CONNECTION_COMPLETE:
+            hci_event_connection_complete_get_bd_addr(packet, event_addr);
+            if (bd_addr_cmp(event_addr, smartphone_addr) == 0){
+                mitm_context.a2dp_sink_con_handle = hci_event_connection_complete_get_connection_handle(packet);
+            }
+            if (bd_addr_cmp(event_addr, headset_addr) == 0){
+                mitm_context.a2dp_source_con_handle = hci_event_connection_complete_get_connection_handle(packet);
+            }
+            break;
         default:
             break;
     }
@@ -498,10 +509,22 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
 }
 
 #ifdef HAVE_BTSTACK_STDIN
-static void show_usage(void){
-    bd_addr_t      iut_address;
-    gap_local_bd_addr(iut_address);
+static const char * get_role_for_connection(hci_con_handle_t con_handle){
+    hci_role_t role = HCI_ROLE_INVALID;
+    if (con_handle != HCI_CON_HANDLE_INVALID) {
+        role = gap_get_role(con_handle);
+    }
+    switch (role){
+        case HCI_ROLE_INVALID:
+            return "";
+        case HCI_ROLE_MASTER:
+            return "/ role: master";
+        case HCI_ROLE_SLAVE:
+            return "/ role: slave";
+    }
+}
 
+static void show_status(void){
     // get pairing state
     bool smartphone_paired = false;
     bool headset_paired = false;
@@ -518,17 +541,23 @@ static void show_usage(void){
             headset_paired = true;
         }
     }
-
-    printf("\n");
-    printf("--- A2DP MITM Console on %s ---\n", bd_addr_to_str(iut_address));
+    printf("--- Status ---\n");
     printf("- Paired with smartphone: %s\n", smartphone_paired ? "yes" : "no");
     printf("- Paired with headset:    %s\n", headset_paired ? "yes" : "no");
-    printf("- Smartphone connected:   %s\n", mitm_context.a2dp_sink_cid ? "yes" : "no");
-    printf("- Headset connected:      %s\n", mitm_context.a2dp_source_cid ? "yes" : "no");
+    printf("- Smartphone connected:   %s %s\n", mitm_context.a2dp_sink_cid   ? "yes" : "no", get_role_for_connection(mitm_context.a2dp_sink_con_handle));
+    printf("- Headset connected:      %s %s\n", mitm_context.a2dp_source_cid ? "yes" : "no", get_role_for_connection(mitm_context.a2dp_source_con_handle));
     printf("- Headset ready:          %s\n", mitm_context.headset_stream_ready ? "yes" : "no");
     printf("\n");
+}
+
+static void show_usage(void){
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n");
+    printf("--- A2DP MITM Console on %s ---\n", bd_addr_to_str(iut_address));
     printf("p      - create connection to smartphone %s\n", bd_addr_to_str(smartphone_addr));
     printf("h      - create connection to headset    %s\n", bd_addr_to_str(headset_addr));
+    printf("s      - show status\n");
     printf("d      - disconnect all\n");
     printf("c      - delete all link keys\n");
     printf("\nTo setup MITM, please connect to Headphone using 'h',\n");
@@ -541,6 +570,9 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
+        case 's':
+            show_status();
+            break;
         case 'p':
             status = a2dp_sink_establish_stream(smartphone_addr, mitm_context.a2dp_sink_local_seid, &mitm_context.a2dp_sink_cid);
             printf("Creating A2DP Connection to remote audio source (smartphone) %s, a2dp sink cid 0x%02x\n",
@@ -645,6 +677,10 @@ int btstack_main(int argc, const char * argv[]){
     // parse human readable Bluetooth address
     sscanf_bd_addr(smartphone_addr_string, smartphone_addr);
     sscanf_bd_addr(headset_addr_string, headset_addr);
+
+    //
+    mitm_context.a2dp_sink_con_handle = HCI_CON_HANDLE_INVALID;
+    mitm_context.a2dp_source_con_handle = HCI_CON_HANDLE_INVALID;
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
