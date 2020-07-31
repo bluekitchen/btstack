@@ -9,22 +9,43 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+### Added
+### Changed
+
+
+## Changes July 2020
+
+### Fixed
+- AVDTP: fix invalid response for Get Capabilities request if Delay Reporting was supported
+- AVDTP: handle concurrent signaling establishment with reject and retry
+
+### Added
+- example/hid_host_demo: support reconnect from HID device
+- Crypto: support software AES128 for AES-CCM operations
+- AVRCP: introduced AVRCP_FEATURE_MASK_* as alternative to avrcp_controller_supported_feature_t and avrcp_target_supported_feature_t enums
+- btstack_audio: add set_volume() to sink and set_gain() to source interfaces, minimal volume control for portaudio playback
+- AVDTP: renamed definition of supported features from AVDTP_SOURCE_SF_ and AVDTP_SINK_SF_ to AVDTP_SOURCE_FEATURE_MASK_ and AVDTP_SINK_FEATURE_MASK_ respectively
+- GAP: Provide gap_get_role to query master/slave role for HCI connection handle
+- GAP: Provide gap_pin_code_response_binary to use binary data as PIN, e.g. for pairing with Nintendo Wii Remote
+
+### Changed
+- GAP: set minimum required encryption key size for Classic connections back from 16 to 7, matching the Core spec
+
+
+## Changes June 2020
+
+### Fixed
 - HFP: Fix parsing of empty fields, e.g. phone number in +CLCC and other AT commands
 - sm: Fix validation of confirm value for secure connection Passkey entry
-- AVDTP: fix invalid response for Get Capabilities request if Delay Reporting was supported
+- AVRCP: handle concurrent signaling establishment with reject and retry
 
 ### Added
 - GAP: Detect Secure Connection -> Legacy Connection Downgrade Attack by remote features and actual encryption type (BIAS) 
 - GAP: Mutual authentication: request authentication after Classic connection got encrypted (BIAS)
 - Windows port for Dialog DA14585 connected via serial port
-- AVRCP: introduced AVRCP_FEATURE_MASK_* as alternative to avrcp_controller_supported_feature_t and avrcp_target_supported_feature_t enums
-- AVDTP: renamed definition of supported features from AVDTP_SOURCE_SF_ and AVDTP_SINK_SF_ to AVDTP_SOURCE_FEATURE_MASK_ and AVDTP_SINK_FEATURE_MASK_ respectively. 
-- GAP: Provide gap_get_role to query master/slave role for HCI connection handle
- 
-### Changed
-- CVSD PLC: treat zero frames as good and allow to mark data as bad, e.g. if reported by controller as erroneous
-- btstack_audio: add set_volume() to sink and set_gain() to source interfaces
-- GAP: set minimum required encryption key size for Classic connections to 7, matching the Core spec
+
+## Changes
+- CVSD PLC: treat zero frames as good and allow to mark data as bad, e.g. if reported by Controller as erroneous
 
 ## Changes May 2020
 
@@ -93,7 +114,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hid_host_mode: allow sniff mode
 
 ### Added
-- port/qt-usb and port/qt-h4: integrate BTstack Qt run loop for Unix- and Win32-based Qt application connected to Bluetooth module via H4 over serial port or USB.
+- port/qt-usb and port/qt-h4: integrate BTstack Qt run loop for Unix- and Win32-based Qt application connected to Bluetooth module via H4 over serial port or USB
 
 
 ## Changes January 2020
@@ -111,7 +132,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT Server: validate request pdu length
 
 ### Changed
-- btstack_crypto: update AES-CMAC implementation to access all message bytes sequentially
+- Crypto: update AES-CMAC implementation to access all message bytes sequentially
 
 
 ## Changes December 2019
@@ -188,7 +209,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: generate local nonce for confirm value in JW+NC+PK in Secure Connections Responder role
 
 ### Added
-- `btstack_run_loop_base`: portable implementation of timer and data source managment as base for platform specific implementations
+- `btstack_run_loop_base`: portable implementation of timer and data source management as base for platform specific implementations
 
 ## Changed
 - FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
