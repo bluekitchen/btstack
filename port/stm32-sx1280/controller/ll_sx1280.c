@@ -65,8 +65,8 @@ extern LPTIM_HandleTypeDef hlptim1;
 #define ADV_MAX_PAYLOAD    (6+6+22)
 #define LL_MAX_PAYLOAD      37
 
-// output power in dBM, range [-18..+13] dBm
-#define TX_OUTPUT_POWER                             13
+// set output power in dBM, range [-18..+13] dBm - Bluetooth LE max is 10 dBM
+#define TX_OUTPUT_POWER                             10
 
 // Mask of IRQs to listen in tx and rx mode
 #define RX_TX_IRQ_MASK (IRQ_RX_DONE | IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR)
