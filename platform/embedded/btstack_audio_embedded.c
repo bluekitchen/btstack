@@ -147,6 +147,14 @@ static int btstack_audio_embedded_source_init(
     return 0;
 }
 
+static void btstack_audio_embedded_sink_set_volume(uint8_t volume){
+    UNUSED(volume);
+}
+
+static void btstack_audio_embedded_source_set_gain(uint8_t gain){
+    UNUSED(gain);
+}
+
 static void btstack_audio_embedded_sink_start_stream(void){
     output_buffer_count   = hal_audio_sink_get_num_output_buffers();
     output_buffer_samples = hal_audio_sink_get_num_output_buffer_samples();
@@ -227,6 +235,7 @@ static void btstack_audio_embedded_source_close(void){
 
 static const btstack_audio_sink_t btstack_audio_embedded_sink = {
     /* int (*init)(..);*/                                       &btstack_audio_embedded_sink_init,
+    /* void (*set_volume)(uint8_t volume); */                   &btstack_audio_embedded_sink_set_volume,
     /* void (*start_stream(void));*/                            &btstack_audio_embedded_sink_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_embedded_sink_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_embedded_sink_close
@@ -234,6 +243,7 @@ static const btstack_audio_sink_t btstack_audio_embedded_sink = {
 
 static const btstack_audio_source_t btstack_audio_embedded_source = {
     /* int (*init)(..);*/                                       &btstack_audio_embedded_source_init,
+    /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_embedded_source_set_gain,
     /* void (*start_stream(void));*/                            &btstack_audio_embedded_source_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_embedded_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_embedded_source_close

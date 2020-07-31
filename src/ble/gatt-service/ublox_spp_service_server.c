@@ -150,7 +150,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     }
 
     if (attribute_handle == instance->fifo_client_configuration_descriptor_handle){
-        if (buffer_size < 2){
+        if (buffer_size < 2u){
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->fifo_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
@@ -176,7 +176,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     }
 
     if (attribute_handle == instance->credits_client_configuration_descriptor_handle){
-        if (buffer_size < 2){
+        if (buffer_size < 2u){
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->credits_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
@@ -267,7 +267,7 @@ void ublox_spp_service_server_request_can_send_now(btstack_context_callback_regi
 int ublox_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size){
     ublox_spp_service_t * instance = &ublox_spp;
     if (ublox_spp_service_flow_control_enabled(instance)){
-        if (instance->outgoing_credits > 0){
+        if (instance->outgoing_credits > 0u){
             instance->outgoing_credits--;
         }
     }

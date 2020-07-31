@@ -130,7 +130,7 @@ static avdtp_stream_endpoint_context_t sc;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
-static avdtp_context_t a2dp_source_context;
+// static avdtp_context_t a2dp_source_context;
 static btstack_sbc_encoder_state_t sbc_encoder_state;
 static uint8_t is_cmd_triggered_localy = 0;
 
@@ -144,7 +144,7 @@ static int a2dp_sample_rate(void){
     return sc.sampling_frequency;
 }
 
-
+#if 0
 static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
     if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
         log_error("small outgoing buffer");
@@ -188,6 +188,7 @@ static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int
     *offset = pos;
 }
 
+#endif
 
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
@@ -265,7 +266,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
         context->sbc_ready_to_send = 1;
 
         // a2dp_source_stream_endpoint_request_can_send_now(context->local_seid);
-        avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(context->local_seid, &a2dp_source_context);
+        avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(context->local_seid);
         if (!stream_endpoint) {
             printf("no stream_endpoint for seid %d\n", context->local_seid);
             return;
@@ -278,7 +279,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
 }
 
 // static int avdtp_max_media_payload_size(uint8_t local_seid){
-//     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
+//     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
 //     if (!stream_endpoint) {
 //         log_error("no stream_endpoint found for seid %d", local_seid);
 //         return 0;
@@ -748,7 +749,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_source_init(&a2dp_source_context);
+    avdtp_source_init();
     avdtp_source_register_packet_handler(&packet_handler);
 
     sc.local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *) media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t*) media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
@@ -760,7 +761,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
-    a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
+    a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, AVDTP_SOURCE_FEATURE_MASK_PLAYER, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
     
     gap_set_local_name("BTstack AVDTP Source PTS 00:00:00:00:00:00");

@@ -62,21 +62,29 @@
 #include "btstack_stdin.h"
 #include "btstack_chipset_zephyr.h"
 #include "hal_led.h"
+#include "btstack_tlv_posix.h"
+#include "ble/le_device_db_tlv.h"
 
 int btstack_main(int argc, const char * argv[]);
 
 static hci_transport_config_uart_t config = {
-    HCI_TRANSPORT_CONFIG_UART,
-    1000000,
-    0,  // main baudrate
-    1,  // flow control
-    NULL,
+        HCI_TRANSPORT_CONFIG_UART,
+        1000000,
+        0,  // main baudrate
+        1,  // flow control
+        NULL,
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
 static bd_addr_t static_address;
+
+#define TLV_DB_PATH_PREFIX "btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
@@ -85,6 +93,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
+            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+            strcat(tlv_db_path, bd_addr_to_str(static_address));
+            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+            btstack_tlv_set_instance(tlv_impl, &tlv_context);
+#ifdef ENABLE_BLE
+            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+#endif
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
@@ -100,7 +116,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void sigint_handler(int param){
     UNUSED(param);
 
-    printf("CTRL-C - SIGINT received, shutting down..\n");   
+    printf("CTRL-C - SIGINT received, shutting down..\n");
     log_info("sigint_handler: shutting down");
 
     // reset anyway
@@ -109,7 +125,7 @@ static void sigint_handler(int param){
     // power down
     hci_power_control(HCI_POWER_OFF);
     hci_close();
-    log_info("Good bye, see you.\n");    
+    log_info("Good bye, see you.\n");
     exit(0);
 }
 
@@ -121,10 +137,10 @@ void hal_led_toggle(void){
 
 int main(int argc, const char * argv[]){
 
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
-	    
+
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     const char * pklg_path = "hci_dump.pklg";
     hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
@@ -143,10 +159,10 @@ int main(int argc, const char * argv[]){
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_windows_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
-	hci_init(transport, (void*) &config);
+    const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    hci_init(transport, (void*) &config);
     hci_set_chipset(btstack_chipset_zephyr_instance());
-    
+
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -158,7 +174,7 @@ int main(int argc, const char * argv[]){
     btstack_main(argc, argv);
 
     // go
-    btstack_run_loop_execute();    
+    btstack_run_loop_execute();
 
     return 0;
 }

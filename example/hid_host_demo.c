@@ -141,6 +141,13 @@ static void hid_host_setup(void){
     // Initialize L2CAP 
     l2cap_init();
 
+    // register L2CAP Services for reconnections
+    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 0xffff, gap_get_security_level());
+    l2cap_register_service(packet_handler, PSM_HID_CONTROL, 0xffff, gap_get_security_level());
+
+    // Allow sniff mode requests by HID device
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE);
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -250,6 +257,14 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
+            if (sdp_event_query_complete_get_status(packet) != ERROR_CODE_SUCCESS){
+                printf("SDP Query failed\n");
+                break;
+            }
+            if ((l2cap_hid_interrupt_cid != 0) && (l2cap_hid_control_cid != 0)){
+                printf("HID device re-connected\n");
+                break;
+            }
             if (!hid_control_psm) {
                 hid_control_psm = BLUETOOTH_PSM_HID_CONTROL;
                 printf("HID Control PSM missing, using default 0x%04x\n", hid_control_psm);
@@ -363,7 +378,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("Start SDP HID query for remote HID Device.\n");
+                        printf("Start SDP HID query for remote HID Device %s.\n", bd_addr_to_str(remote_addr));
                         sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
                     }
                     break;
@@ -383,26 +398,64 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 /* LISTING_RESUME */
-
+                case L2CAP_EVENT_INCOMING_CONNECTION:
+                    l2cap_cid = l2cap_event_incoming_connection_get_local_cid(packet);
+                    switch (l2cap_event_incoming_connection_get_psm(packet)){
+                        case PSM_HID_CONTROL:
+                        case PSM_HID_INTERRUPT:
+                            l2cap_accept_connection(l2cap_cid);
+                            break;
+                        default:
+                            l2cap_decline_connection(l2cap_cid);
+                            break;
+                    }
+                    break;
                 case L2CAP_EVENT_CHANNEL_OPENED: 
                     status = packet[2];
                     if (status){
                         printf("L2CAP Connection failed: 0x%02x\n", status);
                         break;
                     }
-                    l2cap_cid  = little_endian_read_16(packet, 13);
-                    if (!l2cap_cid) break;
-                    if (l2cap_cid == l2cap_hid_control_cid){
-                        status = l2cap_create_channel(packet_handler, remote_addr, hid_interrupt_psm, 48, &l2cap_hid_interrupt_cid);
-                        if (status){
-                            printf("Connecting to HID Control failed: 0x%02x\n", status);
+                    l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    switch (l2cap_event_channel_opened_get_psm(packet)){
+                        case PSM_HID_CONTROL:
+                            if (l2cap_event_channel_opened_get_incoming(packet) == 0) {
+                                status = l2cap_create_channel(packet_handler, remote_addr, hid_interrupt_psm, 48, &l2cap_hid_interrupt_cid);
+                                if (status){
+                                    printf("Connecting to HID Interrupt failed: 0x%02x\n", status);
+                                    break;
+                                }
+                            }
+                            l2cap_hid_control_cid = l2cap_cid;
                             break;
+                        case PSM_HID_INTERRUPT:
+                            l2cap_hid_interrupt_cid = l2cap_cid;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if ((l2cap_hid_control_cid != 0) && (l2cap_hid_interrupt_cid != 0)){
+                        if (hid_descriptor_len == 0){
+                            printf("Start SDP HID query to get HID Descriptor\n");
+                            sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
+                        } else {
+                            printf("HID Connection established\n");
                         }
-                    }                        
-                    if (l2cap_cid == l2cap_hid_interrupt_cid){
-                        printf("HID Connection established\n");
                     }
                     break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    if ((l2cap_hid_control_cid != 0) && (l2cap_hid_interrupt_cid != 0)){
+                        printf("HID Connection closed\n");
+                        hid_descriptor_len = 0;
+                    }
+                    l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    if (l2cap_cid == l2cap_hid_control_cid){
+                        l2cap_hid_control_cid = 0;
+                    }
+                    if (l2cap_cid == l2cap_hid_interrupt_cid){
+                        l2cap_hid_interrupt_cid = 0;
+                    }
                 default:
                     break;
             }

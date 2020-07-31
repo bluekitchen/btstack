@@ -1,9 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2014
-
-import glob
-import re
-import sys
 
 import btstack_parser as parser
 
@@ -361,7 +357,7 @@ def create_event_factory(events, subevents, defines):
         if not event_supported(event_name):
             continue
         class_name = class_name_for_event(event_name)
-        print class_name
+        print(class_name)
         subcases += java_event_factory_subevent.format(event_type, class_name)
 
     with open(outfile, 'wt') as fout:
@@ -372,8 +368,8 @@ def create_event_factory(events, subevents, defines):
 # read defines from hci_cmds.h and hci.h
 defines = parser.parse_defines()
 
-# # parse commands
-commands = parser.parse_commands()
+# parse commands
+commands = parser.parse_daemon_commands()
 
 # parse bluetooth.h to get used events
 (events, le_events, event_types) = parser.parse_events()

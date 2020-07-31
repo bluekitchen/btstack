@@ -95,19 +95,18 @@ static uint16_t heart_rate_service_read_callback(hci_con_handle_t con_handle, ui
     UNUSED(buffer_size);
     
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
-        if (buffer && (buffer_size >= 2)){
+        if (buffer && (buffer_size >= 2u)){
             little_endian_store_16(buffer, 0, heart_rate.measurement_client_configuration_descriptor_notify);
         } 
         return 2;
     }
     
     if (attribute_handle == heart_rate.sensor_location_value_handle){
-        if (buffer && (buffer_size >= 1)){
+        if (buffer && (buffer_size >= 1u)){
             buffer[0] = heart_rate.sensor_location;
         }
         return 1;
     }
-    // printf("heart_rate_service_read_callback, not handeled read on handle 0x%02x\n", attribute_handle);
     return 0;
 }
 
@@ -117,16 +116,11 @@ static int heart_rate_service_write_callback(hci_con_handle_t con_handle, uint16
     UNUSED(buffer_size);
     
     if (attribute_handle == heart_rate.measurement_client_configuration_descriptor_handle){
-        if (buffer_size < 2){
+        if (buffer_size < 2u){
             return ATT_ERROR_INVALID_OFFSET;
         }
         heart_rate.measurement_client_configuration_descriptor_notify = little_endian_read_16(buffer, 0);
         heart_rate.con_handle = con_handle;
-        // if (heart_rate.measurement_client_configuration_descriptor_notify){
-        //     printf("notify enabled\n");
-        // } else {
-        //     printf("notify disabled\n");
-        // }
         return 0;
     }
     
@@ -142,8 +136,6 @@ static int heart_rate_service_write_callback(hci_con_handle_t con_handle, uint16
         }
         return 0;
     }
-
-    // printf("heart_rate_service_write_callback, not handeled write on handle 0x%02x\n", attribute_handle);
     return 0;
 }
 
@@ -187,12 +179,11 @@ static void heart_rate_service_can_send_now(void * context){
     uint8_t flags = (1 << HEART_RATE_SERVICE_VALUE_FORMAT);
     flags |= (instance->sensor_contact << HEART_RATE_SERVICE_SENSOR_CONTACT_STATUS);
     if (instance->energy_expended_supported){
-        flags |= (1 << HEART_RATE_SERVICE_ENERGY_EXPENDED_STATUS);
+        flags |= (1u << HEART_RATE_SERVICE_ENERGY_EXPENDED_STATUS);
     }
     if (instance->rr_interval_count){
-        flags |= (1 << HEART_RATE_SERVICE_RR_INTERVAL);
+        flags |= (1u << HEART_RATE_SERVICE_RR_INTERVAL);
     }
-    // printf("heart_rate_service_can_send_now: flags 0%2x\n", flags);
 
     uint8_t value[100];
     int pos = 0;
@@ -206,12 +197,12 @@ static void heart_rate_service_can_send_now(void * context){
     }
 
     // TODO: get actual MTU from ATT server
-    uint16_t bytes_left = btstack_min(sizeof(value), l2cap_max_mtu() - 3 - pos);
+    uint16_t bytes_left = btstack_min(sizeof(value), l2cap_max_mtu() - 3u - pos);
 
-    while ((bytes_left > 2) && instance->rr_interval_count){
+    while ((bytes_left > 2u) && instance->rr_interval_count){
         little_endian_store_16(value, pos, instance->rr_intervals[0]);
         pos +=2;
-        bytes_left -= 2;
+        bytes_left -= 2u;
         instance->rr_intervals++;
         instance->rr_interval_count--;
     }
@@ -228,7 +219,7 @@ static void heart_rate_service_can_send_now(void * context){
 void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ){
     heart_rate_t * instance = &heart_rate;
     // limit energy expended to 0xffff
-    if (instance->energy_expended_kJ <= (0xffff - energy_expended_kJ)){
+    if (instance->energy_expended_kJ <= (0xffffu - energy_expended_kJ)){
         instance->energy_expended_kJ += energy_expended_kJ;
     } else {
         instance->energy_expended_kJ = 0xffff;
@@ -239,8 +230,6 @@ void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm,
     heart_rate_service_sensor_contact_status_t sensor_contact, int rr_interval_count, uint16_t * rr_intervals){
     heart_rate_t * instance = &heart_rate;
 
-    // printf("update_heart_rate_values, notify %u con_handle %04x\n", instance->measurement_client_configuration_descriptor_notify, instance->con_handle);    
-    
     instance->measurement_bpm = heart_rate_bpm;
     instance->sensor_contact = sensor_contact;
     instance->rr_interval_count = rr_interval_count;

@@ -130,6 +130,13 @@ uint8_t gap_disconnect(hci_con_handle_t handle);
  */
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle);
 
+/**
+ * @brief Get HCI connection role
+ * @param con_handle
+ * @result hci_role_t HCI_ROLE_MASTER / HCI_ROLE_SLAVE / HCI_ROLE_INVALID (if connection does not exist)
+ */
+hci_role_t gap_get_role(hci_con_handle_t connection_handle);
+
 // Classic
 
 /** 
@@ -516,11 +523,17 @@ void gap_local_bd_addr(bd_addr_t address_buffer);
 /**
  * @brief Deletes link key for remote device with baseband address.
  * @param addr
+ * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
  */
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
 
 /**
  * @brief Delete all stored link keys
+ * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
  */
 void gap_delete_all_link_keys(void);
 
@@ -529,6 +542,9 @@ void gap_delete_all_link_keys(void);
  * @param addr
  * @param link_key
  * @param link_key_type
+ * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
  */
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
@@ -536,6 +552,9 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
  * @brief Setup Link Key iterator
  * @param it
  * @returns 1 on success
+ * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
  */
 int gap_link_key_iterator_init(btstack_link_key_iterator_t * it);
 
@@ -546,6 +565,7 @@ int gap_link_key_iterator_init(btstack_link_key_iterator_t * it);
  * @brief link_key
  * @brief type of link key
  * @returns 1, if valid link key found
+ * @see note on gap_link_key_iterator_init
  */
 int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type);
 
@@ -553,6 +573,7 @@ int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t b
  * @brief Frees resources allocated by iterator_init
  * @note Must be called after iteration to free resources
  * @param it
+ * @see note on gap_link_key_iterator_init
  */
 void gap_link_key_iterator_done(btstack_link_key_iterator_t * it);
 
@@ -590,11 +611,22 @@ int gap_read_rssi(hci_con_handle_t con_handle);
 
 /**
  * @brief Legacy Pairing Pin Code Response
+ * @note data is not copied, pointer has to stay valid
  * @param addr
  * @param pin
  * @return 0 if ok
  */
 int gap_pin_code_response(bd_addr_t addr, const char * pin);
+
+/**
+ * @brief Legacy Pairing Pin Code Response for binary data / non-strings
+ * @note data is not copied, pointer has to stay valid
+ * @param addr
+ * @param pin_data
+ * @param pin_len
+ * @return 0 if ok
+ */
+int gap_pin_code_response_binary(bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len);
 
 /**
  * @brief Abort Legacy Pairing

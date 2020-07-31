@@ -41,9 +41,6 @@ ecc_micro_ecc: ecc_micro_ecc.o ${MICROECC}
 aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o
 	gcc ${CFLAGS} $^ -o $@ 
 
-sm_mbedtls_allocator_test: sm_mbedtls_allocator.o hci_dump.o btstack_util.o sm_mbedtls_allocator_test.c
-	${CC} sm_mbedtls_allocator.o btstack_util.o hci_dump.o sm_mbedtls_allocator_test.c ${CFLAGS} ${CPPFLAGS}  ${LDFLAGS} -o $@ 
-
 test: all
 	./aes_cmac_test
 	./aestest

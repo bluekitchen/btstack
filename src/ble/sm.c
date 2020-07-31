@@ -191,9 +191,9 @@ static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
 static uint32_t sm_fixed_passkey_in_display_role;
 static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
-static bool sm_sc_only_mode;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+static bool sm_sc_only_mode;
 static uint8_t sm_sc_oob_random[16];
 static void (*sm_sc_oob_callback)(const uint8_t * confirm_value, const uint8_t * random_value);
 static sm_sc_oob_state_t sm_sc_oob_state;
@@ -757,7 +757,7 @@ static void sm_setup_tk(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     setup->sm_use_secure_connections = ( sm_pairing_packet_get_auth_req(setup->sm_m_preq)
                                        & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
-                                       & SM_AUTHREQ_SECURE_CONNECTION ) != 0;
+                                       & SM_AUTHREQ_SECURE_CONNECTION ) != 0u;
 #else
     setup->sm_use_secure_connections = 0;
 #endif
@@ -785,8 +785,8 @@ static void sm_setup_tk(void){
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used.
-    if (((sm_pairing_packet_get_auth_req(setup->sm_m_preq) & SM_AUTHREQ_MITM_PROTECTION) == 0)
-    &&  ((sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_MITM_PROTECTION) == 0)){
+    if (((sm_pairing_packet_get_auth_req(setup->sm_m_preq) & SM_AUTHREQ_MITM_PROTECTION) == 0u)
+        &&  ((sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_MITM_PROTECTION) == 0u)){
         log_info("SM: MITM not required by both -> JUST WORKS");
         return;
     }
@@ -889,7 +889,7 @@ static void sm_cmac_done_trampoline(void * arg){
 }
 
 int sm_cmac_ready(void){
-    return sm_cmac_active == 0;
+    return sm_cmac_active == 0u;
 }
 #endif
 
@@ -1121,7 +1121,7 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
 
     // check key size
     sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
-    if (sm_conn->sm_actual_encryption_key_size == 0) return SM_REASON_ENCRYPTION_KEY_SIZE;
+    if (sm_conn->sm_actual_encryption_key_size == 0u) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
     // decide on STK generation method / SC
     sm_setup_tk();
@@ -1257,7 +1257,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     // only store pairing information if both sides are bondable, i.e., the bonadble flag is set
     int bonding_enabed = ( sm_pairing_packet_get_auth_req(setup->sm_m_preq)
                          & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
-                         & SM_AUTHREQ_BONDING ) != 0;
+                         & SM_AUTHREQ_BONDING ) != 0u;
 
     if (bonding_enabed){
 
@@ -1400,7 +1400,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
             case PK_INIT_INPUT:
             case PK_RESP_INPUT:
             case PK_BOTH_INPUT:
-                if (setup->sm_passkey_bit < 20) {
+                if (setup->sm_passkey_bit < 20u) {
                     sm_sc_start_calculating_local_confirm(sm_conn);
                 } else {
                     sm_sc_prepare_dhkey_check(sm_conn);
@@ -1656,7 +1656,7 @@ static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
     if (sm_passkey_entry(setup->sm_stk_generation_method)){
         // some form of passkey
         uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
-        z = 0x80 | ((pk >> setup->sm_passkey_bit) & 1);
+        z = 0x80u | ((pk >> setup->sm_passkey_bit) & 1u);
         setup->sm_passkey_bit++;
     }
     f4_engine(sm_conn, ec_q, setup->sm_peer_q, setup->sm_local_nonce, z);
@@ -1678,7 +1678,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
         // some form of passkey
         uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
         // sm_passkey_bit was increased before sending confirm value
-        z = 0x80 | ((pk >> (setup->sm_passkey_bit-1)) & 1);
+        z = 0x80u | ((pk >> (setup->sm_passkey_bit-1u)) & 1u);
     }
     f4_engine(sm_conn, setup->sm_peer_q, ec_q, setup->sm_peer_nonce, z);
 }
@@ -1827,9 +1827,9 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
     setup->sm_local_ediv = sm_connection->sm_local_ediv;
     // re-establish used key encryption size
     // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
-    sm_connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
+    sm_connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7u] & 0x0fu) + 1u;
     // no db for authenticated flag hack: flag is stored in bit 4 of LSB
-    sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
+    sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7u] & 0x10u) >> 4u;
     // Legacy paring -> not SC
     sm_connection->sm_connection_sc = 0;
     log_info("sm: received ltk request with key size %u, authenticated %u",
@@ -2105,7 +2105,7 @@ static void sm_run_activate_connection(void){
                         // start using context by loading security info
                         sm_reset_setup();
                         sm_load_security_info(sm_connection);
-                        if ((setup->sm_peer_ediv == 0) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
+                        if ((setup->sm_peer_ediv == 0u) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
                             (void)memcpy(setup->sm_ltk,
                                          setup->sm_peer_ltk, 16);
                             sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
@@ -2217,11 +2217,11 @@ static void sm_run(void){
         // send keypress notifications
         if (setup->sm_keypress_notification){
             int i;
-            uint8_t flags       = setup->sm_keypress_notification & 0x1f;
+            uint8_t flags       = setup->sm_keypress_notification & 0x1fu;
             uint8_t num_actions = setup->sm_keypress_notification >> 5;
             uint8_t action = 0;
             for (i=SM_KEYPRESS_PASSKEY_ENTRY_STARTED;i<=SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED;i++){
-                if (flags & (1<<i)){
+                if (flags & (1u<<i)){
                     int clear_flag = 1;
                     switch (i){
                         case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
@@ -2232,7 +2232,7 @@ static void sm_run(void){
                         case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
                         case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
                             num_actions--;
-                            clear_flag = num_actions == 0;
+                            clear_flag = num_actions == 0u;
                             break;
                     }
                     if (clear_flag){
@@ -2442,7 +2442,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
                 log_info("stk method %u, num bits %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
-                if (sm_passkey_entry(setup->sm_stk_generation_method) && (setup->sm_passkey_bit < 20)){
+                if (sm_passkey_entry(setup->sm_stk_generation_method) && (setup->sm_passkey_bit < 20u)){
                     log_info("SM_SC_SEND_PAIRING_RANDOM A");
                     if (IS_RESPONDER(connection->sm_role)){
                         // responder
@@ -2983,14 +2983,14 @@ static void sm_handle_random_result_rau(void * arg){
         case GAP_RANDOM_ADDRESS_RESOLVABLE:
             // resolvable: use random as prand and calc address hash
             // "The two most significant bits of prand shall be equal to ‘0’ and ‘1"
-            sm_random_address[0] &= 0x3f;
-            sm_random_address[0] |= 0x40;
+            sm_random_address[0u] &= 0x3fu;
+            sm_random_address[0u] |= 0x40u;
             rau_state = RAU_GET_ENC;
             break;
         case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
         default:
             // "The two most significant bits of the address shall be equal to ‘0’""
-            sm_random_address[0] &= 0x3f;
+            sm_random_address[0u] &= 0x3fu;
             rau_state = RAU_SET_ADDRESS;
             break;
     }
@@ -3037,8 +3037,8 @@ static void sm_handle_random_result_ph2_tk(void * arg){
         // map random to 0-999999 without speding much cycles on a modulus operation
         tk = little_endian_read_32(sm_random_data,0);
         tk = tk & 0xfffff;  // 1048575
-        if (tk >= 999999){
-            tk = tk - 999999;
+        if (tk >= 999999u){
+            tk = tk - 999999u;
         }
     } else {
         // override with pre-defined passkey
@@ -3081,9 +3081,9 @@ static void sm_handle_random_result_ph3_random(void * arg){
 
     reverse_64(sm_random_data, setup->sm_local_rand);
     // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
-    setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xf0) + (connection->sm_actual_encryption_key_size - 1);
+    setup->sm_local_rand[7u] = (setup->sm_local_rand[7u] & 0xf0u) + (connection->sm_actual_encryption_key_size - 1u);
     // no db for authenticated flag hack: store flag in bit 4 of LSB
-    setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xef) + (connection->sm_connection_authenticated << 4);
+    setup->sm_local_rand[7u] = (setup->sm_local_rand[7u] & 0xefu) + (connection->sm_connection_authenticated << 4u);
     btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 2, &sm_handle_random_result_ph3_div, (void *)(uintptr_t) connection->sm_handle);
 }
 static void sm_validate_er_ir(void){
@@ -3106,7 +3106,7 @@ static void sm_handle_random_result_ir(void *arg){
     sm_persistent_keys_random_active = 0;
     if (arg){
         // key generated, store in tlv
-        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16);
+        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16u);
         log_info("Generated IR key. Store in TLV status: %d", status);
     }
     log_info_key("IR", sm_persistent_ir);
@@ -3124,13 +3124,13 @@ static void sm_handle_random_result_er(void *arg){
     sm_persistent_keys_random_active = 0;
     if (arg){
         // key generated, store in tlv
-        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16);
+        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
         log_info("Generated ER key. Store in TLV status: %d", status);
     }
     log_info_key("ER", sm_persistent_er);
 
     // try load ir
-    int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16);
+    int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16u);
     if (key_size == 16){
         // ok, let's continue
         log_info("IR from TLV");
@@ -3163,7 +3163,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         // setup IR/ER with TLV
                         btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
                         if (sm_tlv_impl){
-                            int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16);
+                            int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
                             if (key_size == 16){
                                 // ok, let's continue
                                 log_info("ER from TLV");
@@ -3257,7 +3257,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
                             // potentially stored LTK is from the master
-                            if ((sm_conn->sm_local_ediv != 0) || !sm_is_null_random(sm_conn->sm_local_rand)){
+                            if ((sm_conn->sm_local_ediv != 0u) || !sm_is_null_random(sm_conn->sm_local_rand)){
                                 if (sm_reconstruct_ltk_without_le_device_db_entry){
                                     sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
                                     break;
@@ -3386,7 +3386,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     if (!sm_conn) break;
 
                     // delete stored bonding on disconnect with authentication failure in ph0
-                    if ((sm_conn->sm_role == 0)
+                    if ((sm_conn->sm_role == 0u)
                         && (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED)
                         && (packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE)){
                         le_device_db_remove(sm_conn->sm_le_db_index);
@@ -3474,15 +3474,15 @@ static int sm_validate_stk_generation_method(void){
     // check if STK generation method is acceptable by client
     switch (setup->sm_stk_generation_method){
         case JUST_WORKS:
-            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0u;
         case PK_RESP_INPUT:
         case PK_INIT_INPUT:
         case PK_BOTH_INPUT:
-            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0u;
         case OOB:
-            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0u;
         case NUMERIC_COMPARISON:
-            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON) != 0;
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON) != 0u;
         default:
             return 0;
     }
@@ -3514,7 +3514,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     }
 
     if (packet_type != SM_DATA_PACKET) return;
-    if (size == 0) return;
+    if (size == 0u) return;
 
     uint8_t sm_pdu_code = packet[0];
 
@@ -3797,8 +3797,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // validate confirm value if Cb = f4(Pkb, Pka, Nb, z)
             // only check for JUST WORK/NC in initiator role OR passkey entry
+            log_info("SM_SC_W4_PAIRING_RANDOM, responder: %u, just works: %u, passkey used %u, passkey entry %u",
+                     IS_RESPONDER(sm_conn->sm_role), sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method),
+                     sm_passkey_used(setup->sm_stk_generation_method), sm_passkey_entry(setup->sm_stk_generation_method));
             if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)) 
-            ||   (sm_passkey_used(setup->sm_stk_generation_method)) ) {
+            ||   (sm_passkey_entry(setup->sm_stk_generation_method)) ) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
                  break;
             }
@@ -3809,7 +3812,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 // setup local random, set to zero if remote did not receive our data
                 log_info("Received nonce, setup local random ra/rb for dhkey check");
                 if (IS_RESPONDER(sm_conn->sm_role)){
-                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0){
+                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0u){
                         log_info("Reset rb as A does not have OOB data");
                         memset(setup->sm_rb, 0, 16);
                     } else {
@@ -3818,7 +3821,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         log_info_hexdump(setup->sm_rb, 16);
                     }
                 }  else {
-                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres) == 0){
+                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres) == 0u){
                         log_info("Reset ra as B does not have OOB data");
                         memset(setup->sm_ra, 0, 16);
                     } else {
@@ -4290,41 +4293,41 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
     if (!sm_conn) return;     // wrong connection
     if (action > SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED) return;
     uint8_t num_actions = setup->sm_keypress_notification >> 5;
-    uint8_t flags = setup->sm_keypress_notification & 0x1f;
+    uint8_t flags = setup->sm_keypress_notification & 0x1fu;
     switch (action){
         case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
         case SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED:
-            flags |= (1 << action);
+            flags |= (1u << action);
             break;
         case SM_KEYPRESS_PASSKEY_CLEARED:
             // clear counter, keypress & erased flags + set passkey cleared
-            flags = (flags & 0x19) | (1 << SM_KEYPRESS_PASSKEY_CLEARED);
+            flags = (flags & 0x19u) | (1u << SM_KEYPRESS_PASSKEY_CLEARED);
             break;
         case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
-            if (flags & (1 << SM_KEYPRESS_PASSKEY_DIGIT_ERASED)){
+            if (flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ERASED)){
                 // erase actions queued
                 num_actions--;
-                if (num_actions == 0){
+                if (num_actions == 0u){
                     // clear counter, keypress & erased flags
-                    flags &= 0x19;
+                    flags &= 0x19u;
                 }
                 break;
             }
             num_actions++;
-            flags |= (1 << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED);
+            flags |= (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED);
             break;
         case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
-            if (flags & (1 << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED)){
+            if (flags & (1u << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED)){
                 // enter actions queued
                 num_actions--;
-                if (num_actions == 0){
+                if (num_actions == 0u){
                     // clear counter, keypress & erased flags
-                    flags &= 0x19;
+                    flags &= 0x19u;
                 }
                 break;
             }
             num_actions++;
-            flags |= (1 << SM_KEYPRESS_PASSKEY_DIGIT_ERASED);
+            flags |= (1u << SM_KEYPRESS_PASSKEY_DIGIT_ERASED);
             break;
         default:
             break;

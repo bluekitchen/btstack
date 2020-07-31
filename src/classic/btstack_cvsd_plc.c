@@ -444,9 +444,8 @@ static int count_zeros(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
     return nr_zeros;
 }
 
-// note: a zero_frame is currently also a 'bad_frame'
 static int zero_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
-    return count_zeros(frame, size) > (size/2);
+    return count_zeros(frame, size) == size;
 }
 
 // more than half the samples are the same -> bad frame
@@ -456,23 +455,25 @@ static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPL
 }
 
 
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, bool is_bad_frame, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
     if (num_samples == 0) return;
 
     plc_state->frame_count++;
 
-    int is_zero_frame = zero_frame(in, num_samples);
-    int is_bad_frame  = bad_frame(plc_state, in, num_samples);
+    if (!is_bad_frame) {
+        bool is_zero_frame = zero_frame(in, num_samples);
+        if (is_zero_frame){
+            plc_state->zero_frames_nr++;
+        } else {
+            is_bad_frame = bad_frame(plc_state, in, num_samples);
+        }
+    }
 
     if (is_bad_frame){
         (void)memcpy(out, in, num_samples * 2);
         if (plc_state->good_samples > CVSD_LHIST){
             btstack_cvsd_plc_bad_frame(plc_state, num_samples, out);
-            if (is_zero_frame){
-                plc_state->zero_frames_nr++;
-            } else {
-                plc_state->bad_frames_nr++;
-            }
+            plc_state->bad_frames_nr++;
         } else {
             memset(out, 0, num_samples * 2);
         }

@@ -52,10 +52,10 @@ CFLAGS   = -g -Wall -Wmissing-prototypes -Wnarrowing
 # CFLAGS += -Werror
 CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
 # CFLAGS  += -D OCTAVE_OUTPUT
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
+# CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
 LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
 
-EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test
+EXAMPLES = hfp_at_parser_test hfp_ag_client_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test
 
 all: ${EXAMPLES}
 
@@ -63,10 +63,7 @@ clean:
 	rm -rf *.o $(EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM *.wav results/* pklg/*.wav
 	rm -f *.gcno *.gcda
 
-hfp_ag_parser_test: ${COMMON_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_parser_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
-
-hfp_hf_parser_test: ${COMMON_OBJ} hfp_hf.o hfp.o hfp_hf_parser_test.c  
+hfp_at_parser_test: ${COMMON_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_at_parser_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 hfp_hf_client_test: ${MOCK_OBJ} hfp_hf.o hfp.o hfp_hf_client_test.c  
@@ -83,9 +80,8 @@ pklg_cvsd_test: hci_dump.o btstack_util.o btstack_cvsd_plc.o wav_util.o pklg_cvs
 
 test: all
 	mkdir -p results
-	./hfp_ag_parser_test
+	./hfp_at_parser_test
 	./hfp_ag_client_test
-	./hfp_hf_parser_test
 	./hfp_hf_client_test
 	./cvsd_plc_test
 

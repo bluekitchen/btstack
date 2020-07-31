@@ -232,11 +232,11 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_controller_connect(device_addr, &avrcp_cid);
+            status = avrcp_connect(device_addr, &avrcp_cid);
             break;
         case 'B':
             printf(" - Disconnect\n");
-            status = avrcp_controller_disconnect(avrcp_cid);
+            status = avrcp_disconnect(avrcp_cid);
             break;
         case 'i':
             printf(" - get play status\n");
@@ -346,6 +346,9 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     
+    // Initialize AVRCP service.
+    avrcp_init();
+    avrcp_register_packet_handler(&packet_handler);
     // Initialize AVRCP COntroller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&packet_handler);
@@ -354,9 +357,9 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
 
-    uint16_t supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    uint16_t supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
-    supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+    supported_features |= AVRCP_FEATURE_MASK_BROWSING;
 #endif
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);

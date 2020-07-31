@@ -41,8 +41,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -156,6 +154,48 @@ static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
 
 static hfp_connection_t * sco_establishment_active;
+
+static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
+    uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+
+    if (index > HFP_MAX_NUM_INDICATORS){
+        log_info("ignoring invalid indicator index bigger then HFP_MAX_NUM_INDICATORS");
+        return HFP_MAX_NUM_INDICATORS - 1;
+    } 
+
+    // indicator index enumeration starts with 1, we substract 1 to store in array with starting index 0
+    if (index > 0){
+        index -= 1;
+    } else {
+        log_info("ignoring invalid indicator index 0");
+        return 0;
+    }
+    return index;
+}
+
+static void hfp_next_indicators_index(hfp_connection_t * hfp_connection){
+    if (hfp_connection->parser_item_index < HFP_MAX_NUM_INDICATORS - 1){
+        hfp_connection->parser_item_index++;
+    } else {
+        log_info("Ignoring additional indicator");
+    }
+}
+
+static void hfp_next_codec_index(hfp_connection_t * hfp_connection){
+    if (hfp_connection->parser_item_index < HFP_MAX_NUM_CODECS - 1){
+        hfp_connection->parser_item_index++;
+    } else {
+        log_info("Ignoring additional codec index");
+    }
+}
+
+static void hfp_next_remote_call_services_index(hfp_connection_t * hfp_connection){
+    if (hfp_connection->remote_call_services_index < HFP_MAX_NUM_CALL_SERVICES - 1){
+        hfp_connection->remote_call_services_index++;
+    } else {
+        log_info("Ignoring additional remote_call_services");
+    }
+}
 
 const char * hfp_hf_feature(int index){
     if (index > HFP_HF_FEATURES_SIZE){
@@ -379,7 +419,7 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
     hfp_connection->ok_pending = 0;
     hfp_connection->send_error = 0;
 
-    hfp_connection->keep_byte = 0;
+    hfp_connection->found_equal_sign = false;
 
     hfp_connection->change_status_update_for_individual_ag_indicators = 0; 
     hfp_connection->operator_name_changed = 0;      
@@ -779,7 +819,6 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
             hfp_connection->rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
             hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
-            // printf("RFCOMM channel %u requested for %s\n", hfp_connection->rfcomm_cid, bd_addr_to_str(hfp_connection->remote_addr));
             rfcomm_accept_connection(hfp_connection->rfcomm_cid);
             break;
 
@@ -799,16 +838,13 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                 bd_addr_copy(hfp_connection->remote_addr, event_addr);
-                // uint16_t mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                // printf("RFCOMM channel open succeeded. hfp_connection %p, RFCOMM Channel ID 0x%02x, max frame size %u\n", hfp_connection, hfp_connection->rfcomm_cid, mtu);
-                        
+
                 switch (hfp_connection->state){
                     case HFP_W4_RFCOMM_CONNECTED:
                         hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
                         break;
                     case HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN:
                         hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                        // printf("Shutting down RFCOMM.\n");
                         break;
                     default:
                         break;
@@ -836,199 +872,119 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     }
 }
 // translates command string into hfp_command_t CMD
+
+typedef struct {
+    const char * command;
+    hfp_command_t command_id;
+} hfp_command_entry_t;
+
+static hfp_command_entry_t hfp_ag_commmand_table[] = {
+    { "AT+BAC=",   HFP_CMD_AVAILABLE_CODECS },
+    { "AT+BCC",    HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP },
+    { "AT+BCS=",   HFP_CMD_HF_CONFIRMED_CODEC },
+    { "AT+BIA=",   HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, }, // +BIA:<enabled>,,<enabled>,,,<enabled>
+    { "AT+BIEV=",  HFP_CMD_HF_INDICATOR_STATUS },
+    { "AT+BIND=",  HFP_CMD_LIST_GENERIC_STATUS_INDICATORS },
+    { "AT+BIND=?", HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS },
+    { "AT+BIND?",  HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE },
+    { "AT+BINP",   HFP_CMD_HF_REQUEST_PHONE_NUMBER },
+    { "AT+BLDN",   HFP_CMD_REDIAL_LAST_NUMBER },
+    { "AT+BRSF=",  HFP_CMD_SUPPORTED_FEATURES },
+    { "AT+BTRH=",  HFP_CMD_RESPONSE_AND_HOLD_COMMAND },
+    { "AT+BTRH?",  HFP_CMD_RESPONSE_AND_HOLD_QUERY },
+    { "AT+BVRA=",  HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION },
+    { "AT+CCWA=",  HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION},
+    { "AT+CHLD=",  HFP_CMD_CALL_HOLD },
+    { "AT+CHLD=?", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
+    { "AT+CHUP",   HFP_CMD_HANG_UP_CALL },
+    { "AT+CIND=?", HFP_CMD_RETRIEVE_AG_INDICATORS },
+    { "AT+CIND?",  HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS },
+    { "AT+CLCC",   HFP_CMD_LIST_CURRENT_CALLS },
+    { "AT+CLIP=",  HFP_CMD_ENABLE_CLIP},
+    { "AT+CMEE=",  HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR},
+    { "AT+CMER=",  HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE },
+    { "AT+CNUM",   HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION },
+    { "AT+COPS=",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT },
+    { "AT+COPS?",  HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "AT+NREC=",  HFP_CMD_TURN_OFF_EC_AND_NR, },
+    { "AT+VGM=",   HFP_CMD_SET_MICROPHONE_GAIN },
+    { "AT+VGS=",   HFP_CMD_SET_SPEAKER_GAIN },
+    { "AT+VTS:",   HFP_CMD_TRANSMIT_DTMF_CODES },
+    { "ATA",       HFP_CMD_CALL_ANSWERED },
+};
+
+static hfp_command_entry_t hfp_hf_commmand_table[] = {
+    { "+BCS:",  HFP_CMD_AG_SUGGESTED_CODEC },
+    { "+BIND:", HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS },
+    { "+BINP",  HFP_CMD_AG_SENT_PHONE_NUMBER },
+    { "+BRSF:", HFP_CMD_SUPPORTED_FEATURES },
+    { "+BSIR:", HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING },
+    { "+BTRH:", HFP_CMD_RESPONSE_AND_HOLD_STATUS },
+    { "+BVRA:", HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION },
+    { "+CCWA:", HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE, },
+    { "+CHLD:", HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES },
+    { "+CIEV:", HFP_CMD_TRANSFER_AG_INDICATOR_STATUS},
+    { "+CIND:", HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC },
+    { "+CLCC:", HFP_CMD_LIST_CURRENT_CALLS },
+    { "+CLIP:", HFP_CMD_AG_SENT_CLIP_INFORMATION },
+    { "+CME ERROR:", HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR },
+    { "+CNUM:", HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION},
+    { "+COPS:", HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
+    { "+VGM:",  HFP_CMD_SET_MICROPHONE_GAIN },
+    { "+VGS:",  HFP_CMD_SET_SPEAKER_GAIN},
+    { "ERROR",  HFP_CMD_ERROR},
+    { "NOP",    HFP_CMD_NONE}, // dummy command used by unit tests
+    { "OK",     HFP_CMD_OK },
+    { "RING",   HFP_CMD_RING },
+};
+
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
-    log_info("command '%s', handsfree %u", line_buffer, isHandsFree);
-    int offset = isHandsFree ? 0 : 2;
 
-    if (strncmp(line_buffer+offset, HFP_LIST_CURRENT_CALLS, strlen(HFP_LIST_CURRENT_CALLS)) == 0){
-        return HFP_CMD_LIST_CURRENT_CALLS;
+    // table lookup based on role
+    uint16_t num_entries;
+    hfp_command_entry_t * table;
+    if (isHandsFree == 0){
+        table = hfp_ag_commmand_table;
+        num_entries = sizeof(hfp_ag_commmand_table) / sizeof(hfp_command_entry_t);
+    } else {
+        table = hfp_hf_commmand_table;
+        num_entries = sizeof(hfp_hf_commmand_table) / sizeof(hfp_command_entry_t);
+    }
+    // binary search
+    uint16_t left = 0;
+    uint16_t right = num_entries - 1;
+    while (left <= right){
+        uint16_t middle = left + (right - left) / 2;
+        hfp_command_entry_t *entry = &table[middle];
+        int match = strcmp(line_buffer, entry->command);
+        if (match < 0){
+            // search term is lower than middle element
+            if (right == 0) break;
+            right = middle - 1;
+        } else if (match == 0){
+            return entry->command_id;
+        } else {
+            // search term is higher than middle element
+            left = middle + 1;
+        }
     }
 
-    if (strncmp(line_buffer+offset, HFP_SUBSCRIBER_NUMBER_INFORMATION, strlen(HFP_SUBSCRIBER_NUMBER_INFORMATION)) == 0){
-        return HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_PHONE_NUMBER_FOR_VOICE_TAG, strlen(HFP_PHONE_NUMBER_FOR_VOICE_TAG)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SENT_PHONE_NUMBER;
-        return HFP_CMD_HF_REQUEST_PHONE_NUMBER;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TRANSMIT_DTMF_CODES, strlen(HFP_TRANSMIT_DTMF_CODES)) == 0){
-        return HFP_CMD_TRANSMIT_DTMF_CODES;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SET_MICROPHONE_GAIN, strlen(HFP_SET_MICROPHONE_GAIN)) == 0){
-        return HFP_CMD_SET_MICROPHONE_GAIN;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SET_SPEAKER_GAIN, strlen(HFP_SET_SPEAKER_GAIN)) == 0){
-        return HFP_CMD_SET_SPEAKER_GAIN;
-    }
-    
-    if (strncmp(line_buffer+offset, HFP_ACTIVATE_VOICE_RECOGNITION, strlen(HFP_ACTIVATE_VOICE_RECOGNITION)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
-        return HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TURN_OFF_EC_AND_NR, strlen(HFP_TURN_OFF_EC_AND_NR)) == 0){
-        return HFP_CMD_TURN_OFF_EC_AND_NR;
-    }
-
-    if (strncmp(line_buffer, HFP_ANSWER_CALL, strlen(HFP_ANSWER_CALL)) == 0){
-        return HFP_CMD_CALL_ANSWERED;
-    }
-
-    if (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
+    // note: if parser in CMD_HEADER state would treats digits and maybe '+' as separator, match on "ATD" would work.
+    // note: phone number is currently expected in line_buffer[3..]
+    // prefix match on 'ATD', AG only
+    if ((isHandsFree == 0) && (strncmp(line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0)){
         return HFP_CMD_CALL_PHONE_NUMBER;
     }
 
-    if (strncmp(line_buffer+offset, HFP_REDIAL_LAST_NUMBER, strlen(HFP_REDIAL_LAST_NUMBER)) == 0){
-        return HFP_CMD_REDIAL_LAST_NUMBER;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_CHANGE_IN_BAND_RING_TONE_SETTING, strlen(HFP_CHANGE_IN_BAND_RING_TONE_SETTING)) == 0){
-        return HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_HANG_UP_CALL, strlen(HFP_HANG_UP_CALL)) == 0){
-        return HFP_CMD_HANG_UP_CALL;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ERROR, strlen(HFP_ERROR)) == 0){
-        return HFP_CMD_ERROR;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_RING, strlen(HFP_RING)) == 0){
-        return HFP_CMD_RING;
-    }
-
-    if (isHandsFree && (strncmp(line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0)){
-        return HFP_CMD_OK;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
-        return HFP_CMD_SUPPORTED_FEATURES;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TRANSFER_HF_INDICATOR_STATUS, strlen(HFP_TRANSFER_HF_INDICATOR_STATUS)) == 0){
-        return HFP_CMD_HF_INDICATOR_STATUS;
-    }
-    
-    if (strncmp(line_buffer+offset, HFP_RESPONSE_AND_HOLD, strlen(HFP_RESPONSE_AND_HOLD)) == 0){
-        if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "?", 1) == 0){
-            return HFP_CMD_RESPONSE_AND_HOLD_QUERY;
-        }
-        if (strncmp(line_buffer+strlen(HFP_RESPONSE_AND_HOLD)+offset, "=", 1) == 0){
-            return HFP_CMD_RESPONSE_AND_HOLD_COMMAND;
-        }
-        return HFP_CMD_RESPONSE_AND_HOLD_STATUS;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "?", 1) == 0){
-            return HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
-        }
-
-        if (strncmp(line_buffer+strlen(HFP_INDICATOR)+offset, "=?", 2) == 0){
-            return HFP_CMD_RETRIEVE_AG_INDICATORS;
-        }
-    }
-
-    if (strncmp(line_buffer+offset, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
-        return HFP_CMD_AVAILABLE_CODECS;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
-        return HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ENABLE_CLIP, strlen(HFP_ENABLE_CLIP)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SENT_CLIP_INFORMATION;
-        return HFP_CMD_ENABLE_CLIP;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_ENABLE_CALL_WAITING_NOTIFICATION, strlen(HFP_ENABLE_CALL_WAITING_NOTIFICATION)) == 0){
-        if (isHandsFree) return HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE;
-        return HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
-        
-        if (isHandsFree) return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
-
-        if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=?", 2) == 0){
-            return HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
-        }
-        if (strncmp(line_buffer+strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)+offset, "=", 1) == 0){
-            return HFP_CMD_CALL_HOLD;    
-        }
-
-        return HFP_CMD_UNKNOWN;
-    } 
-
-    if (strncmp(line_buffer+offset, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        if (isHandsFree) {
-            return HFP_CMD_SET_GENERIC_STATUS_INDICATOR_STATUS;
-        }
-        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=?", 2) == 0){
-            return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-        } 
-        if (strncmp(line_buffer+strlen(HFP_GENERIC_STATUS_INDICATOR)+offset, "=", 1) == 0){
-            return HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;    
-        }
-        return HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-    } 
-
-    if (strncmp(line_buffer+offset, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
-        return HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
-    } 
-    
-
-    if (strncmp(line_buffer+offset, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
-        if (strncmp(line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+offset, "=", 1) == 0){
-            return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT;
-        } 
-        return HFP_CMD_QUERY_OPERATOR_SELECTION_NAME;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_TRANSFER_AG_INDICATOR_STATUS)) == 0){
-        return HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
-    } 
-
-    if (isHandsFree && (strncmp(line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
-        return HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
-    }
-
-    if (!isHandsFree && (strncmp(line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0)){
-        return HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
-    }
-
-    if (strncmp(line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
-        return HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
-    } 
-
-    if (strncmp(line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
-        if (isHandsFree){
-            return HFP_CMD_AG_SUGGESTED_CODEC;
-        } else {
-            return HFP_CMD_HF_CONFIRMED_CODEC;
-        }
-    } 
-
-    if (strncmp(line_buffer+offset, "AT+", 3) == 0){
-        log_info("process unknown HF command %s \n", line_buffer);
-        return HFP_CMD_UNKNOWN;
-    } 
-    
-    if (strncmp(line_buffer+offset, "+", 1) == 0){
-        log_info(" process unknown AG command %s \n", line_buffer);
+    // Valid looking, but unknown commands/responses
+    if ((isHandsFree == 0) && (strncmp(line_buffer, "AT+", 3) == 0)){
         return HFP_CMD_UNKNOWN;
     }
-    
-    if (strncmp(line_buffer+offset, "NOP", 3) == 0){
-        return HFP_CMD_NONE;
-    } 
-    
+
+    if ((isHandsFree != 0) && (strncmp(line_buffer, "+", 1) == 0)){
+        return HFP_CMD_UNKNOWN;
+    }
+
     return HFP_CMD_NONE;
 }
 
@@ -1045,34 +1001,132 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-static int hfp_parser_is_end_of_header(uint8_t byte){
-    return hfp_parser_is_end_of_line(byte) || (byte == ':') || (byte == '?');
-}
-
-static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t byte){
-    if (hfp_connection->keep_byte == 1) return 1;
-
-    int found_separator =   (byte == ',') || (byte == '\n')|| (byte == '\r')||
-                            (byte == ')') || (byte == '(') || (byte == ':') || 
-                            (byte == '-') || (byte == '"') ||  (byte == '?')|| (byte == '=');
-    return found_separator;
-}
-static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byte){
+static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
-    if (hfp_parser_is_end_of_line(byte)){
-        hfp_connection->parser_item_index = 0;
-        hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-        return;
-    }
-    switch (hfp_connection->parser_state){
-        case HFP_PARSER_CMD_HEADER:
-            hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
-            if (hfp_connection->keep_byte == 1){
-                hfp_parser_store_byte(hfp_connection, byte);
-                hfp_connection->keep_byte = 0;
-            }
+}
+
+static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
+    switch (byte){
+        case ',':
+        case ';':
+        case '(':
+        case ')':
+        case '\n':
+        case '\r':
             break;
+        default:
+            hfp_parser_store_byte(hfp_connection, byte);
+            break;
+    }
+}
+
+static bool hfp_parser_is_separator( uint8_t byte){
+    switch (byte){
+        case ',':
+        case ';':
+        case '\n':
+        case '\r':
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
+
+    // handle doubles quotes
+    if (byte == '"'){
+        hfp_connection->parser_quoted = !hfp_connection->parser_quoted;
+        return true;
+    }
+    if (hfp_connection->parser_quoted) {
+        hfp_parser_store_byte(hfp_connection, byte);
+        return true;
+    }
+
+    // ignore spaces outside command or double quotes (required e.g. for '+CME ERROR:..") command
+    if ((byte == ' ') && (hfp_connection->parser_state != HFP_PARSER_CMD_HEADER)) return true;
+
+    bool processed = true;
+
+    switch (hfp_connection->parser_state) {
+        case HFP_PARSER_CMD_HEADER:
+            switch (byte) {
+                case '\n':
+                case '\r':
+                case ';':
+                    // ignore separator
+                    break;
+                case ':':
+                case '?':
+                    // store separator
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    break;
+                case '=':
+                    // equal sign: remember and wait for next char to decided between '=?' and '=\?'
+                    hfp_connection->found_equal_sign = true;
+                    hfp_parser_store_byte(hfp_connection, byte);
+                    return true;
+                default:
+                    // store if not lookahead
+                    if (!hfp_connection->found_equal_sign) {
+                        hfp_parser_store_byte(hfp_connection, byte);
+                        return true;
+                    }
+                    // mark as lookahead
+                    processed = false;
+                    break;
+            }
+
+            // ignore empty tokens
+            if (hfp_parser_is_buffer_empty(hfp_connection)) return true;
+
+            // parse
+            hfp_connection->command = parse_command((char *)hfp_connection->line_buffer, isHandsFree);
+
+            // pick +CIND version based on connection state: descriptions during SLC vs. states later
+            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC){
+                switch(hfp_connection->state){
+                    case HFP_W4_RETRIEVE_INDICATORS_STATUS:
+                        hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
+                        break;
+                    case HFP_W4_RETRIEVE_INDICATORS:
+                        hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
+                        break;
+                    default:
+                        hfp_connection->command = HFP_CMD_UNKNOWN;
+                        break;
+                }
+            }
+
+            log_info("command string '%s', handsfree %u -> cmd id %u", (char *)hfp_connection->line_buffer, isHandsFree, hfp_connection->command);
+
+            // next state
+            hfp_connection->found_equal_sign = false;
+            hfp_parser_reset_line_buffer(hfp_connection);
+            hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
+
+            return processed;
+
         case HFP_PARSER_CMD_SEQUENCE:
+            // handle empty fields
+            if ((byte == ',' ) && (hfp_connection->line_size == 0)){
+                hfp_connection->line_buffer[0] = 0;
+                hfp_connection->ignore_value = 1;
+                parse_sequence(hfp_connection);
+                return true;
+            }
+
+            hfp_parser_store_if_token(hfp_connection, byte);
+            if (!hfp_parser_is_separator(byte)) return true;
+
+            // ignore empty tokens
+            if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) return true;
+
+            parse_sequence(hfp_connection);
+
+            hfp_parser_reset_line_buffer(hfp_connection);
+
             switch (hfp_connection->command){
                 case HFP_CMD_AG_SENT_PHONE_NUMBER:
                 case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
@@ -1088,113 +1142,13 @@ static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byt
                 default:
                     break;
             }
-            break;
+            return true;
+
         case HFP_PARSER_SECOND_ITEM:
-            hfp_connection->parser_state = HFP_PARSER_THIRD_ITEM;
-            break;
-        case HFP_PARSER_THIRD_ITEM:
-            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
-                hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                break;
-            }
-            hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-            break;
-    }
-}
 
-void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
-    // handle ATD<dial_string>;
-    if (strncmp((const char*)hfp_connection->line_buffer, HFP_CALL_PHONE_NUMBER, strlen(HFP_CALL_PHONE_NUMBER)) == 0){
-        // check for end-of-line or ';'
-        if ((byte == ';') || hfp_parser_is_end_of_line(byte)){
-            hfp_connection->line_buffer[hfp_connection->line_size] = 0;
-            hfp_connection->line_size = 0;
-            hfp_connection->command = HFP_CMD_CALL_PHONE_NUMBER;
-        } else {
-            if ((hfp_connection->line_size + 1) >= HFP_MAX_INDICATOR_DESC_SIZE) return;
-            hfp_connection->line_buffer[hfp_connection->line_size++] = byte;
-        }
-        return;
-    }
+            hfp_parser_store_if_token(hfp_connection, byte);
+            if (!hfp_parser_is_separator(byte)) return true;
 
-    // TODO: handle space inside word        
-    if ((byte == ' ') && (hfp_connection->parser_state > HFP_PARSER_CMD_HEADER)) return;
-    
-    if ((byte == ',') && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
-        if (hfp_connection->line_size == 0){
-            hfp_connection->line_buffer[0] = 0;
-            hfp_connection->ignore_value = 1;
-            parse_sequence(hfp_connection);
-            return;    
-        } 
-    }
-
-    if (!hfp_parser_found_separator(hfp_connection, byte)){
-        hfp_parser_store_byte(hfp_connection, byte);
-        return;
-    } 
-
-    if (hfp_parser_is_end_of_line(byte)) {
-        if (hfp_parser_is_buffer_empty(hfp_connection)){
-            hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
-        }
-    }
-    if (hfp_parser_is_buffer_empty(hfp_connection)) return;
-
-    switch (hfp_connection->parser_state){
-        case HFP_PARSER_CMD_HEADER: // header
-            if (byte == '='){
-                hfp_connection->keep_byte = 1;
-                hfp_parser_store_byte(hfp_connection, byte);
-                return;
-            }
-            
-            if (byte == '?'){
-                hfp_connection->keep_byte = 0;
-                hfp_parser_store_byte(hfp_connection, byte);
-                return;
-            }
-
-            if (byte == ','){
-                hfp_connection->resolve_byte = 1;
-            }
-
-            // printf(" parse header 2 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
-            if (hfp_parser_is_end_of_header(byte) || (hfp_connection->keep_byte == 1)){
-                // printf(" parse header 3 %s, keep separator $ %d\n", hfp_connection->line_buffer, hfp_connection->keep_byte);
-                char * line_buffer = (char *)hfp_connection->line_buffer;
-                hfp_connection->command = parse_command(line_buffer, isHandsFree);
-                
-                /* resolve command name according to hfp_connection */
-                if (hfp_connection->command == HFP_CMD_UNKNOWN){
-                    switch(hfp_connection->state){
-                        case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
-                            hfp_connection->command = HFP_CMD_LIST_GENERIC_STATUS_INDICATORS;
-                            break;
-                        case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-                            hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS;
-                            break;
-                        case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                            hfp_connection->command = HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE;
-                            break;
-                        case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-                            hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS;
-                            break;
-                        case HFP_W4_RETRIEVE_INDICATORS:
-                            hfp_connection->send_ag_indicators_segment = 0;
-                            hfp_connection->command = HFP_CMD_RETRIEVE_AG_INDICATORS;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            break;
-
-        case HFP_PARSER_CMD_SEQUENCE: 
-            parse_sequence(hfp_connection);
-            break;
-        case HFP_PARSER_SECOND_ITEM:
             switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                     log_info("format %s, ", hfp_connection->line_buffer);
@@ -1223,13 +1177,25 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                 case HFP_CMD_AG_SENT_CLIP_INFORMATION:
                     hfp_connection->bnip_type = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
                     break;
+                case HFP_CMD_HF_INDICATOR_STATUS:
+                    hfp_connection->parser_indicator_value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    break;
                 default:
                     break;
             }
-            break;
+
+            hfp_parser_reset_line_buffer(hfp_connection);
+
+            hfp_connection->parser_state = HFP_PARSER_THIRD_ITEM;
+
+            return true;
 
         case HFP_PARSER_THIRD_ITEM:
-             switch (hfp_connection->command){
+
+            hfp_parser_store_if_token(hfp_connection, byte);
+            if (!hfp_parser_is_separator(byte)) return true;
+
+            switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
                     strncpy(hfp_connection->network_operator.name, (char *)hfp_connection->line_buffer, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
                     hfp_connection->network_operator.name[HFP_MAX_NETWORK_OPERATOR_NAME_SIZE - 1] = 0;
@@ -1237,23 +1203,38 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].max_range = btstack_atoi((char *)hfp_connection->line_buffer);
-                    hfp_connection->parser_item_index++;
-                    hfp_connection->ag_indicators_nr++;
+                    hfp_next_indicators_index(hfp_connection);
+                    hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
                     log_info("%s)\n", hfp_connection->line_buffer);
                     break;
                 default:
                     break;
             }
-            break;
-    }
-    hfp_parser_next_state(hfp_connection, byte);
 
-    if (hfp_connection->resolve_byte && (hfp_connection->command == HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE)){
-        hfp_connection->resolve_byte = 0;
-        hfp_connection->ignore_value = 1;
-        parse_sequence(hfp_connection);
-        hfp_connection->line_buffer[0] = 0;
-        hfp_connection->line_size = 0;
+            hfp_parser_reset_line_buffer(hfp_connection);
+
+            if (hfp_connection->command == HFP_CMD_RETRIEVE_AG_INDICATORS){
+                hfp_connection->parser_state = HFP_PARSER_CMD_SEQUENCE;
+            } else {
+                hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
+            }
+            return true;
+
+        default:
+            btstack_assert(false);
+            return true;
+    }
+}
+
+void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree){
+    bool processed = false;
+    while (!processed){
+        processed = hfp_parse_byte(hfp_connection, byte, isHandsFree);
+    }
+    // reset parser state on end-of-line
+    if (hfp_parser_is_end_of_line(byte)){
+        hfp_connection->parser_item_index = 0;
+        hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     }
 }
 
@@ -1281,7 +1262,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             break;
 
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
@@ -1297,6 +1278,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
+            // index > 2 are ignored in switch above
             hfp_connection->parser_item_index++;
             break;            
         case HFP_CMD_LIST_CURRENT_CALLS:
@@ -1332,6 +1314,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
+            // index > 6 are ignored in switch above
             hfp_connection->parser_item_index++;
             break;
         case HFP_CMD_SET_MICROPHONE_GAIN:
@@ -1374,7 +1357,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AVAILABLE_CODECS:
             log_info("Parsed codec %s\n", hfp_connection->line_buffer);
             hfp_connection->remote_codecs[hfp_connection->parser_item_index] = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
-            hfp_connection->parser_item_index++;
+            hfp_next_codec_index(hfp_connection);
             hfp_connection->remote_codecs_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
@@ -1386,10 +1369,10 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             log_info("Parsed Indicator %d with status: %s\n", hfp_connection->parser_item_index+1, hfp_connection->line_buffer);
             hfp_connection->ag_indicators[hfp_connection->parser_item_index].status = btstack_atoi((char *) hfp_connection->line_buffer);
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             break;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             if (hfp_connection->parser_item_index != 4) break;
             log_info("Parsed Enable indicators: %s\n", hfp_connection->line_buffer);
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -1398,24 +1381,24 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
             log_info("Parsed Support call hold: %s\n", hfp_connection->line_buffer);
             if (hfp_connection->line_size > 2 ) break;
-            strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
-            hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
-            hfp_connection->remote_call_services_nr++;
+            strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
+            hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
+            hfp_next_remote_call_services_index(hfp_connection);
             break;
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
             log_info("Parsed Generic status indicator: %s\n", hfp_connection->line_buffer);
             hfp_connection->generic_status_indicators[hfp_connection->parser_item_index].uuid = (uint16_t)btstack_atoi((char*)hfp_connection->line_buffer);
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             hfp_connection->generic_status_indicators_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             // HF parses inital AG gen. ind. state
             log_info("Parsed List generic status indicator %s state: ", hfp_connection->line_buffer);
-            hfp_connection->parser_item_index = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->parser_item_index = hfp_parse_indicator_index(hfp_connection);
             break;
         case HFP_CMD_HF_INDICATOR_STATUS:
-            hfp_connection->parser_indicator_index = (uint8_t)btstack_atoi((char*)hfp_connection->line_buffer);
+            hfp_connection->parser_indicator_index = hfp_parse_indicator_index(hfp_connection);
             log_info("Parsed HF indicator index %u", hfp_connection->parser_indicator_index);
             break;
         case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
@@ -1434,11 +1417,11 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 log_info("Parsed Enable AG indicator pos %u('%s'): %u\n", hfp_connection->parser_item_index,
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].name, value);
             }
-            hfp_connection->parser_item_index++;
+            hfp_next_indicators_index(hfp_connection);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
             // indicators are indexed starting with 1
-            hfp_connection->parser_item_index = btstack_atoi((char *)&hfp_connection->line_buffer[0]) - 1;
+            hfp_connection->parser_item_index = hfp_parse_indicator_index(hfp_connection);
             log_info("Parsed status of the AG indicator %d, status ", hfp_connection->parser_item_index);
             break;
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
@@ -1469,6 +1452,24 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_SENT_CLIP_INFORMATION:
             strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
             hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
+            break;
+        case HFP_CMD_CALL_HOLD:
+            hfp_connection->ag_call_hold_action = hfp_connection->line_buffer[0] - '0';
+            if (hfp_connection->line_buffer[1] != '\0'){
+                hfp_connection->call_index = btstack_atoi((char *)&hfp_connection->line_buffer[1]);
+            }
+            break;
+        case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
+            hfp_connection->ag_response_and_hold_action = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+            break;
+        case HFP_CMD_TRANSMIT_DTMF_CODES:
+            hfp_connection->ag_dtmf_code = hfp_connection->line_buffer[0];
+            break;
+        case HFP_CMD_ENABLE_CLIP:
+            hfp_connection->clip_enabled = hfp_connection->line_buffer[0] != '0';
+            break;
+        case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
+            hfp_connection->call_waiting_notification_enabled = hfp_connection->line_buffer[0] != '0';
             break;
         default:
             break;

@@ -267,13 +267,6 @@ typedef enum {
 #define OBEX_NOT_FOUND                                     0xB3
 #define OBEX_NOT_ACCEPTABLE                                0xB4
 
-#define AVDTP_SEID_DOES_NOT_EXIST                          0xC0
-#define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
-#define AVDTP_CONNECTION_IN_WRONG_STATE                    0xC2
-#define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
-#define AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST               0xC4
-#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC5 
-
 #define MESH_ERROR_APPKEY_INDEX_INVALID                    0xD0
 /* ENUM_END */
 
@@ -306,8 +299,11 @@ typedef enum {
 /* ENUM_END */
 
 // HCI roles
-#define HCI_ROLE_MASTER 0
-#define HCI_ROLE_SLAVE  1
+typedef enum {
+    HCI_ROLE_MASTER = 0,
+    HCI_ROLE_SLAVE  = 1,
+    HCI_ROLE_INVALID = 0xff,
+} hci_role_t;
 
 // packet sizes (max payload)
 #define HCI_ACL_DM1_SIZE            17

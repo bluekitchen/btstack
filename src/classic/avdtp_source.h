@@ -119,7 +119,7 @@ void avdtp_source_register_multiplexing_category(uint8_t seid, uint8_t fragmenta
 /**
  * @brief Initialize up AVDTP Source device.
  */
-void avdtp_source_init(avdtp_context_t * avdtp_context);
+void avdtp_source_init(void);
 
 /**
  * @brief Register callback for the AVDTP Source client. See btstack_defines.h for AVDTP_SUBEVENT_* events
@@ -139,35 +139,35 @@ uint8_t avdtp_source_connect(bd_addr_t bd_addr, uint16_t * avdtp_cid);
 /**
  * @brief Disconnect from device with connection handle. 
  * @param avdtp_cid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER
  */
 uint8_t avdtp_source_disconnect(uint16_t avdtp_cid);
 
 /**
  * @brief Discover stream endpoints
  * @param avdtp_cid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_discover_stream_endpoints(uint16_t avdtp_cid);
 
 /**
  * @brief Get capabilities
  * @param avdtp_cid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
 
 /**
  * @brief Get all capabilities
  * @param avdtp_cid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
 
 /**
  * @brief Set configuration
  * @param avdtp_cid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE, AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST, AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
@@ -175,14 +175,14 @@ uint8_t avdtp_source_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uin
  * @brief Reconfigure stream
  * @param avdtp_cid
  * @param seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE, AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST, AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
 /**
  * @brief Get configuration
  * @param avdtp_cid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
 
@@ -191,35 +191,35 @@ uint8_t avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
  * @brief Open stream
  * @param avdtp_cid
  * @param seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_CONNECTION_IN_WRONG_STATE, AVDTP_SEID_DOES_NOT_EXIST, AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
 
 /**
  * @brief Start stream
  * @param local_seid
-* @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_SEID_DOES_NOT_EXIST, AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST
+* @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Abort stream
  * @param local_seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_SEID_DOES_NOT_EXIST, AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t avdtp_source_abort_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Start stream
  * @param local_seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_SEID_DOES_NOT_EXIST, AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST, 
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED 
  */
 uint8_t avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Suspend stream
  * @param local_seid
- * @return status ERROR_CODE_SUCCESS if succesful, otherwise AVDTP_CONNECTION_DOES_NOT_EXIST, AVDTP_SEID_DOES_NOT_EXIST, AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST 
+ * @return status ERROR_CODE_SUCCESS if succesful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED 
  */
 uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 

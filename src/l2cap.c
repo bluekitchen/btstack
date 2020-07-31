@@ -58,8 +58,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <stdio.h>
-
 /*
  * @brief L2CAP Supervisory function in S-Frames
  */
@@ -850,7 +848,7 @@ static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel)
 #ifdef L2CAP_USES_CHANNELS
 static uint16_t l2cap_next_local_cid(void){
     do {
-        if (local_source_cid == 0xffff) {
+        if (local_source_cid == 0xffffu) {
             local_source_cid = 0x40;
         } else {
             local_source_cid++;
@@ -861,7 +859,7 @@ static uint16_t l2cap_next_local_cid(void){
 #endif
 
 static uint8_t l2cap_next_sig_id(void){
-    if (sig_seq_nr == 0xff) {
+    if (sig_seq_nr == 0xffu) {
         sig_seq_nr = 1;
     } else {
         sig_seq_nr++;
@@ -955,11 +953,11 @@ void l2cap_release_packet_buffer(void){
 
 static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle, uint8_t packet_boundary, uint16_t remote_cid, uint16_t len){
     // 0 - Connection handle : PB=pb : BC=00 
-    little_endian_store_16(acl_buffer, 0, con_handle | (packet_boundary << 12) | (0 << 14));
+    little_endian_store_16(acl_buffer, 0u, con_handle | (packet_boundary << 12u) | (0u << 14u));
     // 2 - ACL length
-    little_endian_store_16(acl_buffer, 2,  len + 4);
+    little_endian_store_16(acl_buffer, 2u,  len + 4u);
     // 4 - L2CAP packet length
-    little_endian_store_16(acl_buffer, 4,  len + 0);
+    little_endian_store_16(acl_buffer, 4u,  len + 0u);
     // 6 - L2CAP channel DEST
     little_endian_store_16(acl_buffer, 6,  remote_cid);    
 }
@@ -982,7 +980,7 @@ int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     l2cap_setup_header(acl_buffer, con_handle, 0, cid, len);
     // send
-    return hci_send_acl_packet_buffer(len+8);
+    return hci_send_acl_packet_buffer(len+8u);
 }
 
 // assumption - only on LE connections
@@ -1005,7 +1003,7 @@ static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uin
     log_debug("L2CAP_EVENT_CHANNEL_CAN_SEND_NOW local_cid 0x%x", channel);
     uint8_t event[4];
     event[0] = L2CAP_EVENT_CAN_SEND_NOW;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2u;
     little_endian_store_16(event, 2, channel);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     packet_handler(HCI_EVENT_PACKET, channel, event, sizeof(event));
@@ -1019,7 +1017,7 @@ static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, ui
 static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t event_code){
     uint8_t event[4];
     event[0] = event_code;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2u;
     little_endian_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
@@ -1112,14 +1110,14 @@ static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
 
 // used for fixed channels in LE (ATT/SM) and Classic (Connectionless Channel). CID < 0x04
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid){
-    if (local_cid >= 0x40) return NULL;
+    if (local_cid >= 0x40u) return NULL;
     return (l2cap_fixed_channel_t*) l2cap_channel_item_by_cid(local_cid);
 }
 
 // used for Classic Channels + LE Data Channels. local_cid >= 0x40
 #ifdef L2CAP_USES_CHANNELS
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
-    if (local_cid < 0x40) return NULL;
+    if (local_cid < 0x40u) return NULL;
     return (l2cap_channel_t*) l2cap_channel_item_by_cid(local_cid);
 }
 
@@ -1381,7 +1379,7 @@ uint16_t l2cap_max_mtu(void){
 
 #ifdef ENABLE_BLE
 uint16_t l2cap_max_le_mtu(void){
-    if (l2cap_le_custom_max_mtu != 0) return l2cap_le_custom_max_mtu;
+    if (l2cap_le_custom_max_mtu != 0u) return l2cap_le_custom_max_mtu;
     return l2cap_max_mtu();
 }
 
@@ -2121,7 +2119,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
 #ifdef ENABLE_LE_DATA_CHANNELS
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
             if (channel->send_sdu_buffer == NULL) return false;
-            if (channel->credits_outgoing == 0) return false;
+            if (channel->credits_outgoing == 0u) return false;
             return hci_can_send_acl_le_packet_now() != 0;
 #endif
 #endif
@@ -2262,6 +2260,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
     
 #ifdef ENABLE_CLASSIC
     bd_addr_t address;
+    hci_connection_t * hci_connection;
     int hci_con_used;
 #endif
 #ifdef L2CAP_USES_CHANNELS
@@ -2372,7 +2371,11 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
+        case HCI_EVENT_READ_REMOTE_EXTENDED_FEATURES_COMPLETE:
             handle = little_endian_read_16(packet, 3);
+            hci_connection = hci_connection_for_handle(handle);
+            if (hci_connection == NULL) break;
+            if ((hci_connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) == 0) break;
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -3049,7 +3052,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
         case CONNECTION_PARAMETER_UPDATE_REQUEST:
             // check size
-            if (len < 8) return 0;
+            if (len < 8u) return 0u;
             connection = hci_connection_for_handle(handle);
             if (connection){
                 if (connection->role != HCI_ROLE_MASTER){
@@ -3089,7 +3092,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
         case CONNECTION_PARAMETER_UPDATE_RESPONSE:
             // check size
-            if (len < 2) return 0;
+            if (len < 2u) return 0u;
             result = little_endian_read_16(command, 4);
             l2cap_emit_connection_parameter_update_response(handle, result);
             break;
@@ -3125,7 +3128,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
         case LE_CREDIT_BASED_CONNECTION_REQUEST:
             // check size
-            if (len < 10) return 0;
+            if (len < 10u) return 0u;
 
             // get hci connection, bail if not found (must not happen)
             connection = hci_connection_for_handle(handle);
@@ -3137,7 +3140,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             source_cid = little_endian_read_16(command, 6);
                 
             if (service){
-                if (source_cid < 0x40){
+                if (source_cid < 0x40u){
                     // 0x0009 Connection refused - Invalid Source CID
                     l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0009);
                     return 1;
@@ -3222,7 +3225,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
         case LE_CREDIT_BASED_CONNECTION_RESPONSE:
             // check size
-            if (len < 10) return 0;
+            if (len < 10u) return 0u;
 
             // Find channel for this sig_id and connection handle
             channel = NULL;
@@ -3261,7 +3264,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
         case LE_FLOW_CONTROL_CREDIT:
             // check size
-            if (len < 4) return 0;
+            if (len < 4u) return 0u;
 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
@@ -3285,7 +3288,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
         case DISCONNECTION_REQUEST:
 
             // check size
-            if (len < 4) return 0;
+            if (len < 4u) return 0u;
 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
@@ -3573,7 +3576,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
         case L2CAP_CID_SIGNALING_LE: {
             uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
             uint16_t len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER + 2);
-            if ((COMPLETE_L2CAP_HEADER + 4 + len) > size) break;
+            if ((COMPLETE_L2CAP_HEADER + 4u + len) > size) break;
             int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
             if (!valid){
                 l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
@@ -3601,7 +3604,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
             l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
                 // credit counting
-                if (l2cap_channel->credits_incoming == 0){
+                if (l2cap_channel->credits_incoming == 0u){
                     log_error("LE Data Channel packet received but no incoming credits");
                     l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
                     break;
@@ -3620,8 +3623,8 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
                     if(sdu_len > l2cap_channel->local_mtu) break;   // SDU would be larger than our buffer
                     l2cap_channel->receive_sdu_len = sdu_len;
                     l2cap_channel->receive_sdu_pos = 0;                   
-                    pos  += 2;
-                    size -= 2;
+                    pos  += 2u;
+                    size -= 2u;
                 }
                 uint16_t fragment_size   = size-COMPLETE_L2CAP_HEADER;
                 uint16_t remaining_space = l2cap_channel->local_mtu - l2cap_channel->receive_sdu_pos;
@@ -3773,7 +3776,7 @@ static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel) {
              channel->address_type, bd_addr_to_str(channel->address), channel->con_handle,  channel->psm, channel->local_cid, channel->remote_cid, channel->remote_mtu);
     uint8_t event[19];
     event[0] = L2CAP_EVENT_LE_INCOMING_CONNECTION;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2u;
     event[2] = channel->address_type;
     reverse_bd_addr(channel->address, &event[3]);
     little_endian_store_16(event,  9, channel->con_handle);
@@ -3791,7 +3794,7 @@ static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t statu
              channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
     uint8_t event[23];
     event[0] = L2CAP_EVENT_LE_CHANNEL_OPENED;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2u;
     event[2] = status;
     event[3] = channel->address_type;
     reverse_bd_addr(channel->address, &event[4]);
@@ -3810,7 +3813,7 @@ static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel){
     log_info("L2CAP_EVENT_LE_CHANNEL_CLOSED local_cid 0x%x", channel->local_cid);
     uint8_t event[4];
     event[0] = L2CAP_EVENT_LE_CHANNEL_CLOSED;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2u;
     little_endian_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
@@ -3828,14 +3831,14 @@ static void l2cap_le_send_pdu(l2cap_channel_t *channel){
     uint16_t pos = 0;
     if (!channel->send_sdu_pos){
         // store SDU len
-        channel->send_sdu_pos += 2;
+        channel->send_sdu_pos += 2u;
         little_endian_store_16(l2cap_payload, pos, channel->send_sdu_len);
-        pos += 2;
+        pos += 2u;
     }
-    uint16_t payload_size = btstack_min(channel->send_sdu_len + 2 - channel->send_sdu_pos, channel->remote_mps - pos);
+    uint16_t payload_size = btstack_min(channel->send_sdu_len + 2u - channel->send_sdu_pos, channel->remote_mps - pos);
     log_info("len %u, pos %u => payload %u, credits %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size, channel->credits_outgoing);
     (void)memcpy(&l2cap_payload[pos],
-                 &channel->send_sdu_buffer[channel->send_sdu_pos - 2],
+                 &channel->send_sdu_buffer[channel->send_sdu_pos - 2u],
                  payload_size); // -2 for virtual SDU len
     pos += payload_size;
     channel->send_sdu_pos += payload_size;
@@ -3843,9 +3846,9 @@ static void l2cap_le_send_pdu(l2cap_channel_t *channel){
 
     channel->credits_outgoing--;
 
-    hci_send_acl_packet_buffer(8 + pos);
+    hci_send_acl_packet_buffer(8u + pos);
 
-    if (channel->send_sdu_pos >= (channel->send_sdu_len + 2)){
+    if (channel->send_sdu_pos >= (channel->send_sdu_len + 2u)){
         channel->send_sdu_buffer = NULL;
         // send done event
         l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_PACKET_SENT);
@@ -4015,7 +4018,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
     uint32_t total_credits = channel->credits_incoming;
     total_credits += channel->new_credits_incoming;
     total_credits += credits;
-    if (total_credits > 0xffff){
+    if (total_credits > 0xffffu){
         log_error("l2cap_le_provide_credits overrun: current %u, scheduled %u, additional %u", channel->credits_incoming,
             channel->new_credits_incoming, credits);
     }

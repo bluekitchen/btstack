@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import math
 import sys
 
@@ -33,8 +33,8 @@ if __name__ == "__main__":
         print(usage)
         sys.exit(1)
 
-    sine_num_samples = sine_sample_rate/sine_frequency        
-    
+    sine_num_samples = int(sine_sample_rate/sine_frequency)
+    print(type(sine_num_samples).__name__)
     print(sine_array.format(sine_sample_rate=sine_sample_rate, sine_frequency=sine_frequency))
     items = 0
     for sample in range(0,sine_num_samples):
@@ -42,9 +42,9 @@ if __name__ == "__main__":
         angle = (sample * 360.0) / sine_num_samples      
         sine = math.sin(math.radians(angle))
         rescaled = int(round(sine * 32767))
-        print ("%6d, " % rescaled),
+        print ("%6d, " % rescaled, end=''),
         if items == VALUES_PER_LINE:
             items = 0
-            print
+            print("")
     
     print( "};")

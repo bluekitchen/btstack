@@ -70,6 +70,15 @@ AVDTP += \
 	a2dp_sink.c  		\
 	btstack_ring_buffer.c \
 
+AVRCP += \
+	avrcp_media_item_iterator.c \
+	avrcp.c  \
+	avrcp_target.c  \
+	avrcp_controller.c  \
+	avrcp_browsing.c \
+	avrcp_browsing_target.c \
+	avrcp_browsing_controller.c \
+
 # include ${BTSTACK_ROOT}/example/Makefile.inc
 
 HXCMOD_PLAYER = \
@@ -128,11 +137,12 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
+AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_controller_test sm_test avrcp_target_test gatt_profiles hrp_col_test hrp_server_test
+EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test sm_test gatt_profiles hrp_col_test hrp_server_test
 # EXAMPLES += hog_demo_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
@@ -171,10 +181,7 @@ hrp_server_test: hrp_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_S
 hrp_col_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} hrp_col_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp.o avrcp_target.o avrcp_browsing_target.o btstack_stdin_pts.o  avrcp_target_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp_controller_test.o
+avrcp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVRCP_OBJ} ${AVDTP_OBJ} sdp_client.o btstack_stdin_pts.o avrcp_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o

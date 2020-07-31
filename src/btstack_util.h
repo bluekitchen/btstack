@@ -141,7 +141,7 @@ void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
  * @brief Swap bytes in 16 bit integer
  */
 static inline uint16_t btstack_flip_16(uint16_t value){
-    return (uint16_t)((value & 0xff) << 8) | (value >> 8);
+    return (uint16_t)((value & 0xffu) << 8) | (value >> 8);
 }
 
 /** 
@@ -150,7 +150,7 @@ static inline uint16_t btstack_flip_16(uint16_t value){
  */
 static inline int btstack_is_big_endian(void){
 	uint16_t sample = 0x0100;
-	return *(uint8_t*) &sample;
+	return (int) *(uint8_t*) &sample;
 }
 
 /** 
@@ -159,7 +159,7 @@ static inline int btstack_is_big_endian(void){
  */
 static inline int btstack_is_little_endian(void){
 	uint16_t sample = 0x0001;
-	return *(uint8_t*) &sample;
+	return (int) *(uint8_t*) &sample;
 }
 
 /**

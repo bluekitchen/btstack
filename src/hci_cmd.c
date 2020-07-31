@@ -72,7 +72,7 @@
  */
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
     
-    hci_cmd_buffer[0] = cmd->opcode & 0xff;
+    hci_cmd_buffer[0] = cmd->opcode & 0xffu;
     hci_cmd_buffer[1] = cmd->opcode >> 8;
     int pos = 3;
     
@@ -86,7 +86,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case '2': // 16 bit value
             case 'H': // hci_handle
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                hci_cmd_buffer[pos++] = word & 0xff;
+                hci_cmd_buffer[pos++] = word & 0xffu;
                 if (*format == '2') {
                     hci_cmd_buffer[pos++] = word >> 8;
                 } else if (*format == 'H') {
@@ -128,13 +128,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
             case 'N': { // UTF-8 string, null terminated
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = strlen((const char*) ptr);
-                if (len > 248) {
+                if (len > 248u) {
                     len = 248;
                 }
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
-                if (len < 248) {
+                if (len < 248u) {
                     // fill remaining space with zeroes
-                    memset(&hci_cmd_buffer[pos+len], 0, 248-len);
+                    memset(&hci_cmd_buffer[pos+len], 0u, 248u-len);
                 }
                 pos += 248;
                 break;
@@ -186,13 +186,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
  * @param num_responses
  */
 const hci_cmd_t hci_inquiry = {
-OPCODE(OGF_LINK_CONTROL, 0x01), "311"
+    HCI_OPCODE_HCI_INQUIRY, "311"
 };
 
 /**
  */
 const hci_cmd_t hci_inquiry_cancel = {
-OPCODE(OGF_LINK_CONTROL, 0x02), ""
+    HCI_OPCODE_HCI_INQUIRY_CANCEL, ""
 };
 
 /**
@@ -204,7 +204,7 @@ OPCODE(OGF_LINK_CONTROL, 0x02), ""
  * @param allow_role_switch
  */
 const hci_cmd_t hci_create_connection = {
-OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
+    HCI_OPCODE_HCI_CREATE_CONNECTION, "B21121"
 };
 
 /**
@@ -212,14 +212,14 @@ OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
  * @param reason (0x05, 0x13-0x15, 0x1a, 0x29, see Errors Codes in BT Spec Part D)
  */
 const hci_cmd_t hci_disconnect = {
-OPCODE(OGF_LINK_CONTROL, 0x06), "H1"
+    HCI_OPCODE_HCI_DISCONNECT, "H1"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_create_connection_cancel = {
-OPCODE(OGF_LINK_CONTROL, 0x08), "B"
+    HCI_OPCODE_HCI_CREATE_CONNECTION_CANCEL, "B"
 };
 
 /**
@@ -227,7 +227,7 @@ OPCODE(OGF_LINK_CONTROL, 0x08), "B"
  * @param role (become master, stay slave)
  */
 const hci_cmd_t hci_accept_connection_request = {
-OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
+    HCI_OPCODE_HCI_ACCEPT_CONNECTION_REQUEST, "B1"
 };
 
 /**
@@ -235,7 +235,7 @@ OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
  * @param reason (e.g. CONNECTION REJECTED DUE TO LIMITED RESOURCES (0x0d))
  */
 const hci_cmd_t hci_reject_connection_request = {
-OPCODE(OGF_LINK_CONTROL, 0x0a), "B1"
+    HCI_OPCODE_HCI_REJECT_CONNECTION_REQUEST, "B1"
 };
 
 /**
@@ -243,14 +243,14 @@ OPCODE(OGF_LINK_CONTROL, 0x0a), "B1"
  * @param link_key
  */
 const hci_cmd_t hci_link_key_request_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x0b), "BP"
+    HCI_OPCODE_HCI_LINK_KEY_REQUEST_REPLY, "BP"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_link_key_request_negative_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
+    HCI_OPCODE_HCI_LINK_KEY_REQUEST_NEGATIVE_REPLY, "B"
 };
 
 /**
@@ -259,14 +259,14 @@ OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
  * @param pin (c-string)
  */
 const hci_cmd_t hci_pin_code_request_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"
+    HCI_OPCODE_HCI_PIN_CODE_REQUEST_REPLY, "B1P"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_pin_code_request_negative_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x0e), "B"
+    HCI_OPCODE_HCI_PIN_CODE_REQUEST_NEGATIVE_REPLY, "B"
 };
 
 /**
@@ -274,14 +274,14 @@ OPCODE(OGF_LINK_CONTROL, 0x0e), "B"
  * @param packet_type
  */
 const hci_cmd_t hci_change_connection_packet_type = {
-OPCODE(OGF_LINK_CONTROL, 0x0f), "H2"
+    HCI_OPCODE_HCI_CHANGE_CONNECTION_PACKET_TYPE, "H2"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_authentication_requested = {
-OPCODE(OGF_LINK_CONTROL, 0x11), "H"
+    HCI_OPCODE_HCI_AUTHENTICATION_REQUESTED, "H"
 };
 
 /**
@@ -289,14 +289,14 @@ OPCODE(OGF_LINK_CONTROL, 0x11), "H"
  * @param encryption_enable
  */
 const hci_cmd_t hci_set_connection_encryption = {
-OPCODE(OGF_LINK_CONTROL, 0x13), "H1"
+    HCI_OPCODE_HCI_SET_CONNECTION_ENCRYPTION, "H1"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_change_connection_link_key = {
-OPCODE(OGF_LINK_CONTROL, 0x15), "H"
+    HCI_OPCODE_HCI_CHANGE_CONNECTION_LINK_KEY, "H"
 };
 
 /**
@@ -306,7 +306,7 @@ OPCODE(OGF_LINK_CONTROL, 0x15), "H"
  * @param clock_offset
  */
 const hci_cmd_t hci_remote_name_request = {
-OPCODE(OGF_LINK_CONTROL, 0x19), "B112"
+    HCI_OPCODE_HCI_REMOTE_NAME_REQUEST, "B112"
 };
 
 
@@ -314,28 +314,28 @@ OPCODE(OGF_LINK_CONTROL, 0x19), "B112"
  * @param bd_addr
  */
 const hci_cmd_t hci_remote_name_request_cancel = {
-OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
+    HCI_OPCODE_HCI_REMOTE_NAME_REQUEST_CANCEL, "B"
 };
 
  /**
  * @param handle
  */
 const hci_cmd_t hci_read_remote_supported_features_command = {
-OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
+    HCI_OPCODE_HCI_READ_REMOTE_SUPPORTED_FEATURES_COMMAND, "H"
 };
 
 /**
 * @param handle
 */
 const hci_cmd_t hci_read_remote_extended_features_command = {
-        OPCODE(OGF_LINK_CONTROL, 0x1C), "H1"
+    HCI_OPCODE_HCI_READ_REMOTE_EXTENDED_FEATURES_COMMAND, "H1"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_read_remote_version_information = {
-OPCODE(OGF_LINK_CONTROL, 0x1D), "H"
+    HCI_OPCODE_HCI_READ_REMOTE_VERSION_INFORMATION, "H"
 };
 
 /** 
@@ -348,7 +348,7 @@ OPCODE(OGF_LINK_CONTROL, 0x1D), "H"
  * @param packet_type        at least EV3 for eSCO
  */
 const hci_cmd_t hci_setup_synchronous_connection = {
-OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
+    HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION, "H442212"
 };
 
 /**
@@ -361,7 +361,7 @@ OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
  * @param packet_type
  */
 const hci_cmd_t hci_accept_synchronous_connection = {
-OPCODE(OGF_LINK_CONTROL, 0x0029), "B442212"
+    HCI_OPCODE_HCI_ACCEPT_SYNCHRONOUS_CONNECTION, "B442212"
 };
 
 /**
@@ -371,21 +371,21 @@ OPCODE(OGF_LINK_CONTROL, 0x0029), "B442212"
  * @param authentication_requirements
  */
 const hci_cmd_t hci_io_capability_request_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x2b), "B111"
+    HCI_OPCODE_HCI_IO_CAPABILITY_REQUEST_REPLY, "B111"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_user_confirmation_request_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x2c), "B"
+    HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_REPLY, "B"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_user_confirmation_request_negative_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x2d), "B"
+    HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY, "B"
 };
 
 /**
@@ -393,14 +393,14 @@ OPCODE(OGF_LINK_CONTROL, 0x2d), "B"
  * @param numeric_value
  */
 const hci_cmd_t hci_user_passkey_request_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x2e), "B4"
+    HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_REPLY, "B4"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_user_passkey_request_negative_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x2f), "B"
+    HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_NEGATIVE_REPLY, "B"
 };
 
 /**
@@ -409,14 +409,14 @@ OPCODE(OGF_LINK_CONTROL, 0x2f), "B"
  * @param r Simple Pairing Randomizer R
  */
 const hci_cmd_t hci_remote_oob_data_request_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x30), "BPP"
+    HCI_OPCODE_HCI_REMOTE_OOB_DATA_REQUEST_REPLY, "BPP"
 };
 
 /**
  * @param bd_addr
  */
 const hci_cmd_t hci_remote_oob_data_request_negative_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x33), "B"
+    HCI_OPCODE_HCI_REMOTE_OOB_DATA_REQUEST_NEGATIVE_REPLY, "B"
 };
 
 /**
@@ -424,7 +424,7 @@ OPCODE(OGF_LINK_CONTROL, 0x33), "B"
  * @param reason (Part D, Error codes)
  */
 const hci_cmd_t hci_io_capability_request_negative_reply = {
-OPCODE(OGF_LINK_CONTROL, 0x34), "B1"
+    HCI_OPCODE_HCI_IO_CAPABILITY_REQUEST_NEGATIVE_REPLY, "B1"
 };
 
 /**
@@ -462,7 +462,7 @@ OPCODE(OGF_LINK_CONTROL, 0x34), "B1"
  * @param retransmission_effort
  */
 const hci_cmd_t hci_enhanced_setup_synchronous_connection = {
-OPCODE(OGF_LINK_CONTROL, 0x3d), "H4412212222441221222211111111221" 
+    HCI_OPCODE_HCI_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION, "H4412212222441221222211111111221"
 };
 
 /**
@@ -500,7 +500,7 @@ OPCODE(OGF_LINK_CONTROL, 0x3d), "H4412212222441221222211111111221"
  * @param retransmission_effort
  */
 const hci_cmd_t hci_enhanced_accept_synchronous_connection = {
-OPCODE(OGF_LINK_CONTROL, 0x3e), "B4412212222441221222211111111221" 
+    HCI_OPCODE_HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION, "B4412212222441221222211111111221"
 };
 
 /**
@@ -515,14 +515,14 @@ OPCODE(OGF_LINK_CONTROL, 0x3e), "B4412212222441221222211111111221"
  * @param sniff_timeout
  */
 const hci_cmd_t hci_sniff_mode = {
-OPCODE(OGF_LINK_POLICY, 0x03), "H2222"
+    HCI_OPCODE_HCI_SNIFF_MODE, "H2222"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_exit_sniff_mode = {
-OPCODE(OGF_LINK_POLICY, 0x04), "H"
+    HCI_OPCODE_HCI_EXIT_SNIFF_MODE, "H"
 };
 
 /**
@@ -535,14 +535,14 @@ OPCODE(OGF_LINK_POLICY, 0x04), "H"
  * @param delay_variation (us)
  */
 const hci_cmd_t hci_qos_setup = {
-OPCODE(OGF_LINK_POLICY, 0x07), "H114444"
+    HCI_OPCODE_HCI_QOS_SETUP, "H114444"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_role_discovery = {
-OPCODE(OGF_LINK_POLICY, 0x09), "H"
+    HCI_OPCODE_HCI_ROLE_DISCOVERY, "H"
 };
 
 /**
@@ -550,14 +550,14 @@ OPCODE(OGF_LINK_POLICY, 0x09), "H"
  * @param role (0=master,1=slave)
  */
 const hci_cmd_t hci_switch_role_command= {
-OPCODE(OGF_LINK_POLICY, 0x0b), "B1"
+    HCI_OPCODE_HCI_SWITCH_ROLE_COMMAND, "B1"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_read_link_policy_settings = {
-OPCODE(OGF_LINK_POLICY, 0x0c), "H"
+    HCI_OPCODE_HCI_READ_LINK_POLICY_SETTINGS, "H"
 };
 
 /**
@@ -565,14 +565,14 @@ OPCODE(OGF_LINK_POLICY, 0x0c), "H"
  * @param settings
  */
 const hci_cmd_t hci_write_link_policy_settings = {
-OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
+    HCI_OPCODE_HCI_WRITE_LINK_POLICY_SETTINGS, "H2"
 };
 
 /**
  * @param policy
  */
 const hci_cmd_t hci_write_default_link_policy_setting = {
-    OPCODE(OGF_LINK_POLICY, 0x0F), "2"
+    HCI_OPCODE_HCI_WRITE_DEFAULT_LINK_POLICY_SETTING, "2"
 };
 
 
@@ -586,34 +586,34 @@ const hci_cmd_t hci_write_default_link_policy_setting = {
  * @param event_mask_higher_octets
  */
 const hci_cmd_t hci_set_event_mask = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x01), "44"
+    HCI_OPCODE_HCI_SET_EVENT_MASK, "44"
 };
 
 /**
  */
 const hci_cmd_t hci_reset = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
+    HCI_OPCODE_HCI_RESET, ""
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_flush = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x08), "H"
+    HCI_OPCODE_HCI_FLUSH, "H"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_read_pin_type = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x09), ""
+    HCI_OPCODE_HCI_READ_PIN_TYPE, ""
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_write_pin_type = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x0A), "1"
+    HCI_OPCODE_HCI_WRITE_PIN_TYPE, "1"
 };
 
 /**
@@ -621,7 +621,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x0A), "1"
  * @param delete_all_flags
  */
 const hci_cmd_t hci_delete_stored_link_key = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x12), "B1"
+    HCI_OPCODE_HCI_DELETE_STORED_LINK_KEY, "B1"
 };
 
 #ifdef ENABLE_CLASSIC
@@ -629,40 +629,40 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x12), "B1"
  * @param local_name (UTF-8, Null Terminated, max 248 octets)
  */
 const hci_cmd_t hci_write_local_name = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
+    HCI_OPCODE_HCI_WRITE_LOCAL_NAME, "N"
 };
 #endif
 
 /**
  */
 const hci_cmd_t hci_read_local_name = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x14), ""
+    HCI_OPCODE_HCI_READ_LOCAL_NAME, ""
 };
 
 /**
  */ 
 const hci_cmd_t hci_read_page_timeout = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x17), ""
+    HCI_OPCODE_HCI_READ_PAGE_TIMEOUT, ""
 };
 
 /**
  * @param page_timeout (* 0.625 ms)
  */
 const hci_cmd_t hci_write_page_timeout = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
+    HCI_OPCODE_HCI_WRITE_PAGE_TIMEOUT, "2"
 };
 
 /**
  * @param scan_enable (no, inq, page, inq+page)
  */
 const hci_cmd_t hci_write_scan_enable = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
+    HCI_OPCODE_HCI_WRITE_SCAN_ENABLE, "1"
 };
 
 /**
  */ 
 const hci_cmd_t hci_read_page_scan_activity = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1B), ""
+    HCI_OPCODE_HCI_READ_PAGE_SCAN_ACTIVITY, ""
 };
 
 /**
@@ -670,13 +670,13 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x1B), ""
  * @param page_scan_window (* 0.625 ms, must be <= page_scan_interval)
  */ 
 const hci_cmd_t hci_write_page_scan_activity = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1C), "22"
+    HCI_OPCODE_HCI_WRITE_PAGE_SCAN_ACTIVITY, "22"
 };
 
 /**
  */ 
 const hci_cmd_t hci_read_inquiry_scan_activity = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1D), ""
+    HCI_OPCODE_HCI_READ_INQUIRY_SCAN_ACTIVITY, ""
 };
 
 /**
@@ -684,34 +684,34 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x1D), ""
  * @param inquiry_scan_window (* 0.625 ms, must be <= inquiry_scan_interval)
  */ 
 const hci_cmd_t hci_write_inquiry_scan_activity = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1E), "22"
+    HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_ACTIVITY, "22"
 };
 
 /**
  * @param authentication_enable
  */
 const hci_cmd_t hci_write_authentication_enable = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x20), "1"
+    HCI_OPCODE_HCI_WRITE_AUTHENTICATION_ENABLE, "1"
 };
 
 /**
  * @param class_of_device
  */
 const hci_cmd_t hci_write_class_of_device = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x24), "3"
+    HCI_OPCODE_HCI_WRITE_CLASS_OF_DEVICE, "3"
 };
 
 /** 
  */
 const hci_cmd_t hci_read_num_broadcast_retransmissions = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x29), ""
+    HCI_OPCODE_HCI_READ_NUM_BROADCAST_RETRANSMISSIONS, ""
 };
 
 /**
  * @param num_broadcast_retransmissions (e.g. 0 for a single broadcast)
  */
 const hci_cmd_t hci_write_num_broadcast_retransmissions = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x2a), "1"
+    HCI_OPCODE_HCI_WRITE_NUM_BROADCAST_RETRANSMISSIONS, "1"
 };
 
 /**
@@ -719,14 +719,14 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x2a), "1"
  * @param type 0 = current transmit level, 1 = max transmit level
  */
 const hci_cmd_t hci_read_transmit_power_level = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x2D), "11"
+    HCI_OPCODE_HCI_READ_TRANSMIT_POWER_LEVEL, "11"
 };
 
 /**
  * @param synchronous_flow_control_enable - if yes, num completed packet everts are sent for SCO packets
  */
 const hci_cmd_t hci_write_synchronous_flow_control_enable = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x2f), "1"
+    HCI_OPCODE_HCI_WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE, "1"
 };
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
@@ -735,7 +735,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x2f), "1"
  * @param flow_control_enable - 0: off, 1: ACL only, 2: SCO only, 3: ACL + SCO
  */
 const hci_cmd_t hci_set_controller_to_host_flow_control = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x31), "1"
+    HCI_OPCODE_HCI_SET_CONTROLLER_TO_HOST_FLOW_CONTROL, "1"
 };
 
 /**
@@ -745,7 +745,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x31), "1"
  * @param host_total_num_synchronous_data_packets
  */
 const hci_cmd_t hci_host_buffer_size = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
+    HCI_OPCODE_HCI_HOST_BUFFER_SIZE, "2122"
 };
 
 
@@ -760,7 +760,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
  * @param host_num_of_completed_packets for the given connection handle
  */
 const hci_cmd_t hci_host_number_of_completed_packets = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x35), "1H2"
+    HCI_OPCODE_HCI_HOST_NUMBER_OF_COMPLETED_PACKETS, "1H2"
 };
 #endif
 
@@ -770,7 +770,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x35), "1H2"
  * @param handle
  */
 const hci_cmd_t hci_read_link_supervision_timeout = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
+    HCI_OPCODE_HCI_READ_LINK_SUPERVISION_TIMEOUT, "H"
 };
 
 /**
@@ -778,7 +778,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
  * @param timeout (0x0001 - 0xFFFF Time -> Range: 0.625ms - 40.9 sec)
  */
 const hci_cmd_t hci_write_link_supervision_timeout = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
+    HCI_OPCODE_HCI_WRITE_LINK_SUPERVISION_TIMEOUT, "H2"
 };
 
 /**
@@ -787,14 +787,14 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
  * @param iac_lap2
  */
 const hci_cmd_t hci_write_current_iac_lap_two_iacs = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x3A), "133"
+    HCI_OPCODE_HCI_WRITE_CURRENT_IAC_LAP_TWO_IACS, "133"
 };
 
 /**
  * @param inquiry_mode (0x00 = standard, 0x01 = with RSSI, 0x02 = extended)
  */
 const hci_cmd_t hci_write_inquiry_mode = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x45), "1"
+    HCI_OPCODE_HCI_WRITE_INQUIRY_MODE, "1"
 };
 
 /**
@@ -802,35 +802,35 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x45), "1"
  * @param exstended_inquiry_response
  */
 const hci_cmd_t hci_write_extended_inquiry_response = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x52), "1E"
+    HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_RESPONSE, "1E"
 };
 
 /**
  * @param mode (0 = off, 1 = on)
  */
 const hci_cmd_t hci_write_simple_pairing_mode = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
+    HCI_OPCODE_HCI_WRITE_SIMPLE_PAIRING_MODE, "1"
 };
 
 /**
  */
 const hci_cmd_t hci_read_local_oob_data = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x57), ""
-// return status, C, R
+    HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA, ""
+    // return status, C, R
 };
 
 /**
  * @param mode (0 = off, 1 = on)
  */
 const hci_cmd_t hci_write_default_erroneous_data_reporting = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x5B), "1"
+    HCI_OPCODE_HCI_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING, "1"
 };
 
 /**
  */
 const hci_cmd_t hci_read_le_host_supported = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x6c), ""
-// return: status, le supported host, simultaneous le host
+    HCI_OPCODE_HCI_READ_LE_HOST_SUPPORTED, ""
+    // return: status, le supported host, simultaneous le host
 };
 
 /**
@@ -838,23 +838,23 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x6c), ""
  * @param simultaneous_le_host
  */
 const hci_cmd_t hci_write_le_host_supported = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
-// return: status
+    HCI_OPCODE_HCI_WRITE_LE_HOST_SUPPORTED, "11"
+    // return: status
 };
 
 /**
  * @param secure_connections_host_support
  */
 const hci_cmd_t hci_write_secure_connections_host_support = {
-        OPCODE(OGF_CONTROLLER_BASEBAND, 0x7a), "1"
-// return: status
+    HCI_OPCODE_HCI_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT, "1"
+    // return: status
 };
 
 /**
  */
 const hci_cmd_t hci_read_local_extended_ob_data = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x7d), ""
-// return status, C_192, R_192, R_256, C_256
+    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OB_DATA, ""
+    // return status, C_192, R_192, R_256, C_256
 };
 
 
@@ -866,31 +866,31 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x7d), ""
 /**
  */
 const hci_cmd_t hci_read_loopback_mode = {
-OPCODE(OGF_TESTING, 0x01), ""
-// return: status, loopback mode (0 = off, 1 = local loopback, 2 = remote loopback)
+    HCI_OPCODE_HCI_READ_LOOPBACK_MODE, ""
+    // return: status, loopback mode (0 = off, 1 = local loopback, 2 = remote loopback)
 };
 
 /**
  * @param loopback_mode
  */
 const hci_cmd_t hci_write_loopback_mode = {
-OPCODE(OGF_TESTING, 0x02), "1"
-// return: status
+    HCI_OPCODE_HCI_WRITE_LOOPBACK_MODE, "1"
+    // return: status
 };
 
 /**
  */
 const hci_cmd_t hci_enable_device_under_test_mode = {
-OPCODE(OGF_TESTING, 0x03), ""
-// return: status
+    HCI_OPCODE_HCI_ENABLE_DEVICE_UNDER_TEST_MODE, ""
+    // return: status
 };
 
 /**
  * @param simple_pairing_debug_mode
  */
 const hci_cmd_t hci_write_simple_pairing_debug_mode = {
-OPCODE(OGF_TESTING, 0x04), "1"
-// return: status
+    HCI_OPCODE_HCI_WRITE_SIMPLE_PAIRING_DEBUG_MODE, "1"
+    // return: status
 };
 
 /**
@@ -899,8 +899,8 @@ OPCODE(OGF_TESTING, 0x04), "1"
  * @param esco_loopback_mode
  */
 const hci_cmd_t hci_write_secure_connections_test_mode = {
-OPCODE(OGF_TESTING, 0x0a), "H11"
-// return: status
+    HCI_OPCODE_HCI_WRITE_SECURE_CONNECTIONS_TEST_MODE, "H11"
+    // return: status
 };
 
 
@@ -909,19 +909,19 @@ OPCODE(OGF_TESTING, 0x0a), "H11"
  */
 
 const hci_cmd_t hci_read_local_version_information = {
-OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x01), ""
+    HCI_OPCODE_HCI_READ_LOCAL_VERSION_INFORMATION, ""
 };
 const hci_cmd_t hci_read_local_supported_commands = {
-OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x02), ""
+    HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_COMMANDS, ""
 };
 const hci_cmd_t hci_read_local_supported_features = {
-OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x03), ""
+    HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_FEATURES, ""
 };
 const hci_cmd_t hci_read_buffer_size = {
-OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x05), ""
+    HCI_OPCODE_HCI_READ_BUFFER_SIZE, ""
 };
 const hci_cmd_t hci_read_bd_addr = {
-OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
+    HCI_OPCODE_HCI_READ_BD_ADDR, ""
 };
 
 /**
@@ -932,14 +932,14 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
  * @param handle
  */
 const hci_cmd_t hci_read_rssi = {
-OPCODE(OGF_STATUS_PARAMETERS, 0x05), "H"
+    HCI_OPCODE_HCI_READ_RSSI, "H"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t hci_read_encryption_key_size = {
-OPCODE(OGF_STATUS_PARAMETERS, 0x08), "H"
+    HCI_OPCODE_HCI_READ_ENCRYPTION_KEY_SIZE, "H"
 };
 
 
@@ -953,25 +953,25 @@ OPCODE(OGF_STATUS_PARAMETERS, 0x08), "H"
  * @param event_mask_higher_octets
  */
 const hci_cmd_t hci_le_set_event_mask = {
-OPCODE(OGF_LE_CONTROLLER, 0x01), "44"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_EVENT_MASK, "44"
+    // return: status
 };
 
 const hci_cmd_t hci_le_read_buffer_size = {
-OPCODE(OGF_LE_CONTROLLER, 0x02), ""
-// return: status, le acl data packet len (16), total num le acl data packets(8)
+    HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE, ""
+    // return: status, le acl data packet len (16), total num le acl data packets(8)
 };
 const hci_cmd_t hci_le_read_supported_features = {
-OPCODE(OGF_LE_CONTROLLER, 0x03), ""
-// return: LE_Features See [Vol 6] Part B, Section 4.6
+    HCI_OPCODE_HCI_LE_READ_SUPPORTED_FEATURES, ""
+    // return: LE_Features See [Vol 6] Part B, Section 4.6
 };
 
 /**
  * @param random_bd_addr
  */
 const hci_cmd_t hci_le_set_random_address = {
-OPCODE(OGF_LE_CONTROLLER, 0x05), "B"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_RANDOM_ADDRESS, "B"
+    // return: status
 };
 
 /**
@@ -985,13 +985,13 @@ OPCODE(OGF_LE_CONTROLLER, 0x05), "B"
  * @param advertising_filter_policy (enum from 0: scan any conn any, scan whitelist, con any, scan any conn whitelist, scan whitelist, con whitelist)
  */
 const hci_cmd_t hci_le_set_advertising_parameters = {
-OPCODE(OGF_LE_CONTROLLER, 0x06), "22111B11"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_ADVERTISING_PARAMETERS, "22111B11"
+    // return: status
 };
 
 const hci_cmd_t hci_le_read_advertising_channel_tx_power = {
-OPCODE(OGF_LE_CONTROLLER, 0x07), ""
-// return: status, level [-20,10] signed int (8), units dBm
+    HCI_OPCODE_HCI_LE_READ_ADVERTISING_CHANNEL_TX_POWER, ""
+    // return: status, level [-20,10] signed int (8), units dBm
 };
 
 /**
@@ -999,8 +999,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x07), ""
  * @param advertising_data (31 bytes)
  */
 const hci_cmd_t hci_le_set_advertising_data= {
-OPCODE(OGF_LE_CONTROLLER, 0x08), "1A"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_ADVERTISING_DATA, "1A"
+    // return: status
 };
 
 /**
@@ -1008,16 +1008,16 @@ OPCODE(OGF_LE_CONTROLLER, 0x08), "1A"
  * @param scan_response_data (31 bytes)
  */
 const hci_cmd_t hci_le_set_scan_response_data= {
-OPCODE(OGF_LE_CONTROLLER, 0x09), "1A"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_SCAN_RESPONSE_DATA, "1A"
+    // return: status
 };
 
 /**
  * @param advertise_enable (off: 0, on: 1)
  */
 const hci_cmd_t hci_le_set_advertise_enable = {
-OPCODE(OGF_LE_CONTROLLER, 0x0a), "1"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_ADVERTISE_ENABLE, "1"
+    // return: status
 };
 
 /**
@@ -1028,8 +1028,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x0a), "1"
  * @param scanning_filter_policy (any (0), only whitelist (1))
  */
 const hci_cmd_t hci_le_set_scan_parameters = {
-OPCODE(OGF_LE_CONTROLLER, 0x0b), "12211"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_SCAN_PARAMETERS, "12211"
+    // return: status
 };
 
 /**
@@ -1037,8 +1037,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x0b), "12211"
  * @param filter_duplices (disabled (0), enabled (1))
  */
 const hci_cmd_t hci_le_set_scan_enable = {
-OPCODE(OGF_LE_CONTROLLER, 0x0c), "11"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_SCAN_ENABLE, "11"
+    // return: status
 };
 
 /**
@@ -1056,23 +1056,23 @@ OPCODE(OGF_LE_CONTROLLER, 0x0c), "11"
  * @param maximum_CE_length ([0x0000, 0xffff], unit: 0.625 msec)
  */
 const hci_cmd_t hci_le_create_connection= {
-OPCODE(OGF_LE_CONTROLLER, 0x0d), "2211B1222222"
-// return: none -> le create connection complete event
+    HCI_OPCODE_HCI_LE_CREATE_CONNECTION, "2211B1222222"
+    // return: none -> le create connection complete event
 };
 
 const hci_cmd_t hci_le_create_connection_cancel = {
-OPCODE(OGF_LE_CONTROLLER, 0x0e), ""
-// return: status
+    HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL, ""
+    // return: status
 };
 
 const hci_cmd_t hci_le_read_white_list_size = {
-OPCODE(OGF_LE_CONTROLLER, 0x0f), ""
-// return: status, number of entries in controller whitelist
+    HCI_OPCODE_HCI_LE_READ_WHITE_LIST_SIZE, ""
+    // return: status, number of entries in controller whitelist
 };
 
 const hci_cmd_t hci_le_clear_white_list = {
-OPCODE(OGF_LE_CONTROLLER, 0x10), ""
-// return: status
+    HCI_OPCODE_HCI_LE_CLEAR_WHITE_LIST, ""
+    // return: status
 };
 
 /**
@@ -1080,8 +1080,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x10), ""
  * @param bd_addr
  */
 const hci_cmd_t hci_le_add_device_to_white_list = {
-OPCODE(OGF_LE_CONTROLLER, 0x11), "1B"
-// return: status
+    HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_WHITE_LIST, "1B"
+    // return: status
 };
 
 /**
@@ -1089,8 +1089,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x11), "1B"
  * @param bd_addr
  */
 const hci_cmd_t hci_le_remove_device_from_white_list = {
-OPCODE(OGF_LE_CONTROLLER, 0x12), "1B"
-// return: status
+    HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_WHITE_LIST, "1B"
+    // return: status
 };
 
 /**
@@ -1103,8 +1103,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x12), "1B"
  * @param maximum_CE_length ([0x0000,0xffff], unit: 0.625 msec)
  */
 const hci_cmd_t hci_le_connection_update = {
-OPCODE(OGF_LE_CONTROLLER, 0x13), "H222222"
-// return: none -> le connection update complete event
+    HCI_OPCODE_HCI_LE_CONNECTION_UPDATE, "H222222"
+    // return: none -> le connection update complete event
 };
 
 /**
@@ -1112,24 +1112,24 @@ OPCODE(OGF_LE_CONTROLLER, 0x13), "H222222"
  * @param channel_map_higher_5bits
  */
 const hci_cmd_t hci_le_set_host_channel_classification = {
-OPCODE(OGF_LE_CONTROLLER, 0x14), "41"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_HOST_CHANNEL_CLASSIFICATION, "41"
+    // return: status
 };
 
 /**
  * @param conn_handle
  */
 const hci_cmd_t hci_le_read_channel_map = {
-OPCODE(OGF_LE_CONTROLLER, 0x15), "H"
-// return: status, connection handle, channel map (5 bytes, 37 used)
+    HCI_OPCODE_HCI_LE_READ_CHANNEL_MAP, "H"
+    // return: status, connection handle, channel map (5 bytes, 37 used)
 };
 
 /**
  * @param conn_handle
  */
 const hci_cmd_t hci_le_read_remote_used_features = {
-OPCODE(OGF_LE_CONTROLLER, 0x16), "H"
-// return: none -> le read remote used features complete event
+    HCI_OPCODE_HCI_LE_READ_REMOTE_USED_FEATURES, "H"
+    // return: none -> le read remote used features complete event
 };
 
 /**
@@ -1137,13 +1137,13 @@ OPCODE(OGF_LE_CONTROLLER, 0x16), "H"
  * @param plain_text (128) 
  */
 const hci_cmd_t hci_le_encrypt = {
-OPCODE(OGF_LE_CONTROLLER, 0x17), "PP"
-// return: status, encrypted data (128)
+    HCI_OPCODE_HCI_LE_ENCRYPT, "PP"
+    // return: status, encrypted data (128)
 };
 
 const hci_cmd_t hci_le_rand = {
-OPCODE(OGF_LE_CONTROLLER, 0x18), ""
-// return: status, random number (64)
+    HCI_OPCODE_HCI_LE_RAND, ""
+    // return: status, random number (64)
 };
 
 /**
@@ -1154,8 +1154,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x18), ""
  * @param long_term_key (128)
  */
 const hci_cmd_t hci_le_start_encryption = {
-OPCODE(OGF_LE_CONTROLLER, 0x19), "H442P"
-// return: none -> encryption changed or encryption key refresh complete event
+    HCI_OPCODE_HCI_LE_START_ENCRYPTION, "H442P"
+    // return: none -> encryption changed or encryption key refresh complete event
 };
 
 /**
@@ -1163,32 +1163,32 @@ OPCODE(OGF_LE_CONTROLLER, 0x19), "H442P"
  * @param long_term_key (128)
  */
 const hci_cmd_t hci_le_long_term_key_request_reply = {
-OPCODE(OGF_LE_CONTROLLER, 0x1a), "HP"
-// return: status, connection handle
+    HCI_OPCODE_HCI_LE_LONG_TERM_KEY_REQUEST_REPLY, "HP"
+    // return: status, connection handle
 };
 
 /**
  * @param conn_handle
  */
 const hci_cmd_t hci_le_long_term_key_negative_reply = {
-OPCODE(OGF_LE_CONTROLLER, 0x1b), "H"
-// return: status, connection handle
+    HCI_OPCODE_HCI_LE_LONG_TERM_KEY_NEGATIVE_REPLY, "H"
+    // return: status, connection handle
 };
 
 /**
  * @param conn_handle
  */
 const hci_cmd_t hci_le_read_supported_states = {
-OPCODE(OGF_LE_CONTROLLER, 0x1c), "H"
-// return: status, LE states (64)
+    HCI_OPCODE_HCI_LE_READ_SUPPORTED_STATES, "H"
+    // return: status, LE states (64)
 };
 
 /**
  * @param rx_frequency ([0x00 0x27], frequency (MHz): 2420 + N*2)
  */
 const hci_cmd_t hci_le_receiver_test = {
-OPCODE(OGF_LE_CONTROLLER, 0x1d), "1"
-// return: status
+    HCI_OPCODE_HCI_LE_RECEIVER_TEST, "1"
+    // return: status
 };
 
 /**
@@ -1197,16 +1197,16 @@ OPCODE(OGF_LE_CONTROLLER, 0x1d), "1"
  * @param packet_payload ([0,7] different patterns)
  */
 const hci_cmd_t hci_le_transmitter_test = {
-OPCODE(OGF_LE_CONTROLLER, 0x1e), "111"
-// return: status
+    HCI_OPCODE_HCI_LE_TRANSMITTER_TEST, "111"
+    // return: status
 };
 
 /**
  * @param end_test_cmd
  */
 const hci_cmd_t hci_le_test_end = {
-OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
-// return: status, number of packets (8)
+    HCI_OPCODE_HCI_LE_TEST_END, "1"
+    // return: status, number of packets (8)
 };
 
 /**
@@ -1219,8 +1219,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
  * @param maximum_CE_length ([0x0000,0xffff], unit: 0.625 msec)
  */
 const hci_cmd_t hci_le_remote_connection_parameter_request_reply = {
-OPCODE(OGF_LE_CONTROLLER, 0x20), "H222222"
-// return: status, connection handle
+    HCI_OPCODE_HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_REPLY, "H222222"
+    // return: status, connection handle
 };
 
 /**
@@ -1228,8 +1228,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x20), "H222222"
  * @param reason
  */
 const hci_cmd_t hci_le_remote_connection_parameter_request_negative_reply = {
-OPCODE(OGF_LE_CONTROLLER, 0x21), "H1"
-// return: status, connection handle
+    HCI_OPCODE_HCI_LE_REMOTE_CONNECTION_PARAMETER_REQUEST_NEGATIVE_REPLY, "H1"
+    // return: status, connection handle
 };
 
 /**
@@ -1238,15 +1238,15 @@ OPCODE(OGF_LE_CONTROLLER, 0x21), "H1"
  * @param tx_time
  */
 const hci_cmd_t hci_le_set_data_length = {
-OPCODE(OGF_LE_CONTROLLER, 0x22), "H22"
-// return: status, connection handle
+    HCI_OPCODE_HCI_LE_SET_DATA_LENGTH, "H22"
+    // return: status, connection handle
 };
 
 /**
  */
 const hci_cmd_t hci_le_read_suggested_default_data_length = {
-OPCODE(OGF_LE_CONTROLLER, 0x23), ""
-// return: status, suggested max tx octets, suggested max tx time
+    HCI_OPCODE_HCI_LE_READ_SUGGESTED_DEFAULT_DATA_LENGTH, ""
+    // return: status, suggested max tx octets, suggested max tx time
 };
 
 /**
@@ -1254,14 +1254,14 @@ OPCODE(OGF_LE_CONTROLLER, 0x23), ""
  * @param suggested_max_tx_time
  */
 const hci_cmd_t hci_le_write_suggested_default_data_length = {
-OPCODE(OGF_LE_CONTROLLER, 0x24), "22"
-// return: status
+    HCI_OPCODE_HCI_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH, "22"
+    // return: status
 };
 
 /**
  */
 const hci_cmd_t hci_le_read_local_p256_public_key = {
-OPCODE(OGF_LE_CONTROLLER, 0x25), ""
+    HCI_OPCODE_HCI_LE_READ_LOCAL_P256_PUBLIC_KEY, ""
 //  LE Read Local P-256 Public Key Complete is generated on completion
 };
 
@@ -1270,23 +1270,23 @@ OPCODE(OGF_LE_CONTROLLER, 0x25), ""
  * @param private key
  */
 const hci_cmd_t hci_le_generate_dhkey = {
-OPCODE(OGF_LE_CONTROLLER, 0x26), "QQ"
+    HCI_OPCODE_HCI_LE_GENERATE_DHKEY, "QQ"
 // LE Generate DHKey Complete is generated on completion
 };
 
 /**
  */
 const hci_cmd_t hci_le_read_maximum_data_length = {
-OPCODE(OGF_LE_CONTROLLER, 0x2F), ""
-// return: status, supported max tx octets, supported max tx time, supported max rx octets, supported max rx time
+    HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH, ""
+    // return: status, supported max tx octets, supported max tx time, supported max rx octets, supported max rx time
 };
 
 /**
  * @param con_handle
  */
 const hci_cmd_t hci_le_read_phy = {
-OPCODE(OGF_LE_CONTROLLER, 0x30), "H"
-// return: status, connection handler, tx phy, rx phy
+    HCI_OPCODE_HCI_LE_READ_PHY, "H"
+    // return: status, connection handler, tx phy, rx phy
 };
 
 /**
@@ -1295,8 +1295,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x30), "H"
  * @param rx_phys
  */
 const hci_cmd_t hci_le_set_default_phy = {
-OPCODE(OGF_LE_CONTROLLER, 0x31), "111"
-// return: status
+    HCI_OPCODE_HCI_LE_SET_DEFAULT_PHY, "111"
+    // return: status
 };
 
 /**
@@ -1307,7 +1307,7 @@ OPCODE(OGF_LE_CONTROLLER, 0x31), "111"
  * @param phy_options
  */
 const hci_cmd_t hci_le_set_phy = {
-OPCODE(OGF_LE_CONTROLLER, 0x32), "H1111"
+    HCI_OPCODE_HCI_LE_SET_PHY, "H1111"
 // LE PHY Update Complete is generated on completion
 };
 
@@ -1325,8 +1325,8 @@ OPCODE(OGF_LE_CONTROLLER, 0x32), "H1111"
  * @param clock_mode is 0 for slabe and 1 for master
  */
 const hci_cmd_t hci_bcm_write_sco_pcm_int = {
-OPCODE(0x3f, 0x1c), "11111"
-// return: status
+    HCI_OPCODE_HCI_BCM_WRITE_SCO_PCM_INT, "11111"
+    // return: status
 };
 
 /**
@@ -1345,7 +1345,7 @@ OPCODE(0x3f, 0x1c), "11111"
  * @param pulsed_host_wake (modes 1,12)
  */
 const hci_cmd_t hci_bcm_set_sleep_mode = {
-OPCODE(0x3f, 0x0027), "111111111111"
+    HCI_OPCODE_HCI_BCM_SET_SLEEP_MODE, "111111111111"
 };
 
 /**
@@ -1354,11 +1354,11 @@ OPCODE(0x3f, 0x0027), "111111111111"
  * @param chip_max_tx_pwr_db chip level max TX power in dBM 
  */
 const hci_cmd_t hci_bcm_write_tx_power_table = {
-OPCODE(0x3f, 0x1C9), "11"
+    HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE, "11"
 };
 
 const hci_cmd_t hci_bcm_set_tx_pwr = {
-OPCODE(0x3f, 0x1A5), "11H"
+    HCI_OPCODE_HCI_BCM_SET_TX_PWR, "11H"
 };
 
 /**
@@ -1396,4 +1396,3 @@ const hci_cmd_t hci_ti_drpb_tester_con_tx = {
 const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
     0xFD85, "1111112112"
 };
-

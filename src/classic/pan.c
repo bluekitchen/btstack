@@ -45,7 +45,6 @@
 
 #include "pan.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include "bluetooth_psm.h"

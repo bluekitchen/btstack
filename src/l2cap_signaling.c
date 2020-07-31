@@ -81,8 +81,8 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
     const char *format = NULL;
-    if ((cmd > 0) && (cmd <= num_l2cap_commands)) {
-        format = l2cap_signaling_commands_format[cmd-1];
+    if ((cmd > 0u) && (cmd <= num_l2cap_commands)) {
+        format = l2cap_signaling_commands_format[cmd-1u];
     }
     if (!format){
         log_error("l2cap_create_signaling_internal: invalid command id 0x%02x", cmd);
@@ -97,7 +97,7 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
 #endif
 
     // 0 - Connection handle : PB=pb : BC=00 
-    little_endian_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
+    little_endian_store_16(acl_buffer, 0u, handle | (pb << 12u) | (0u << 14u));
     // 6 - L2CAP channel = 1
     little_endian_store_16(acl_buffer, 6, cid);
     // 8 - Code
@@ -115,7 +115,7 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
             case '2': // 16 bit value
                 word = va_arg(argptr, int);
                 // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                acl_buffer[pos++] = word & 0xff;
+                acl_buffer[pos++] = word & 0xffu;
                 if (*format == '2') {
                     acl_buffer[pos++] = word >> 8;
                 }
@@ -137,11 +137,11 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     // - the l2cap payload length is counted after the following channel id (only payload) 
     
     // 2 - ACL length
-    little_endian_store_16(acl_buffer, 2,  pos - 4);
+    little_endian_store_16(acl_buffer, 2u,  pos - 4u);
     // 4 - L2CAP packet length
-    little_endian_store_16(acl_buffer, 4,  pos - 6 - 2);
+    little_endian_store_16(acl_buffer, 4u,  pos - 6u - 2u);
     // 10 - L2CAP signaling parameter length
-    little_endian_store_16(acl_buffer, 10, pos - 12);
+    little_endian_store_16(acl_buffer, 10u, pos - 12u);
     
     return pos;
 }

@@ -158,12 +158,12 @@ static void process_file(const char * pklg_path, const char * wav_path, int pack
 
             if (plc_enabled){
                 if (num_samples > 60){
-                    btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, 60, audio_frame_out);
+                    btstack_cvsd_plc_process_data(&plc_state, false, audio_frame_in, 60, audio_frame_out);
                     wav_writer_write_int16(60, audio_frame_out);
-                    btstack_cvsd_plc_process_data(&plc_state, &audio_frame_in[60], num_samples - 60, audio_frame_out);
+                    btstack_cvsd_plc_process_data(&plc_state, false, &audio_frame_in[60], num_samples - 60, audio_frame_out);
                     wav_writer_write_int16(num_samples - 60, audio_frame_out);
                 } else {
-                    btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, num_samples, audio_frame_out);
+                    btstack_cvsd_plc_process_data(&plc_state, false, audio_frame_in, num_samples, audio_frame_out);
                     wav_writer_write_int16(num_samples, audio_frame_out);
                 }
             } else {

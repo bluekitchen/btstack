@@ -108,12 +108,14 @@ extern "C" {
 #define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
 #define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
 
-#define HFP_MAX_NUM_CODECS 20
-#define HFP_MAX_NUM_AG_INDICATORS 20
-#define HFP_MAX_NUM_HF_INDICATORS 20
+#define HFP_MAX_NUM_INDICATORS                  10
+#define HFP_MAX_NUM_CALL_SERVICES               20
+#define HFP_CALL_SERVICE_SIZE                    3
+#define HFP_MAX_NUM_CODECS                      10
+
 #define HFP_MAX_INDICATOR_DESC_SIZE 20 
 #define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
-#define HFP_CALL_SERVICE_SIZE 3
+
     
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
@@ -168,7 +170,8 @@ typedef enum {
     HFP_CMD_RING,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
-    
+
+    HFP_CMD_RETRIEVE_AG_INDICATORS_GENERIC,
     HFP_CMD_RETRIEVE_AG_INDICATORS,
     HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS, 
     
@@ -198,7 +201,6 @@ typedef enum {
     HFP_CMD_HF_CONFIRMED_CODEC,
     HFP_CMD_CALL_ANSWERED,
     HFP_CMD_CALL_HOLD,
-    HFP_CMD_AG_ANSWER_CALL,
     HFP_CMD_HANG_UP_CALL,
     HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING,
     HFP_CMD_CALL_PHONE_NUMBER,
@@ -502,27 +504,28 @@ typedef struct hfp_connection {
     hfp_parser_state_t parser_state;
     int      parser_item_index;
     int      parser_indicator_index;
+    uint32_t parser_indicator_value;
+    bool     parser_quoted;
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
     int      line_size;
     
     uint32_t remote_supported_features;
 
-    // TODO: rename into hf_codecs_nr
-    int      remote_codecs_nr;
-    uint8_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint16_t remote_codecs_nr;
+    uint8_t  remote_codecs[HFP_MAX_NUM_CODECS];
 
-    int      ag_indicators_nr;
-    hfp_ag_indicator_t ag_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint16_t ag_indicators_nr;
+    hfp_ag_indicator_t ag_indicators[HFP_MAX_NUM_INDICATORS];
     uint32_t ag_indicators_status_update_bitmap;
     uint8_t  enable_status_update_for_ag_indicators;
 
-    int      remote_call_services_nr;
-    hfp_call_service_t remote_call_services[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint16_t remote_call_services_index;
+    hfp_call_service_t remote_call_services[HFP_MAX_NUM_CALL_SERVICES];
     
     // TODO: use bitmap.
-    int      generic_status_indicators_nr;
+    uint16_t generic_status_indicators_nr;
     uint32_t generic_status_update_bitmap;
-    hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
     hfp_network_opearator_t network_operator;
     
@@ -538,10 +541,9 @@ typedef struct hfp_connection {
     // uint8_t send_ok;
     uint8_t send_error;
 
-    uint8_t keep_byte;
+    bool found_equal_sign;
     uint8_t ignore_value;
-    uint8_t resolve_byte;
-    
+
     uint8_t change_status_update_for_individual_ag_indicators; 
     uint8_t operator_name_changed;      
 
@@ -583,6 +585,9 @@ typedef struct hfp_connection {
     uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
     uint8_t next_subscriber_number_to_send;
+    uint8_t ag_call_hold_action;
+    uint8_t ag_response_and_hold_action;
+    uint8_t ag_dtmf_code;
 
     int send_status_of_current_calls;
     int next_call_index;

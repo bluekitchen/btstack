@@ -194,7 +194,7 @@ static void hci_dump_packetlogger_setup_header(uint8_t * buffer, uint32_t tv_sec
 }
 
 static void hci_dump_bluez_setup_header(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len){
-    little_endian_store_16( buffer, 0, 1 + len);
+    little_endian_store_16( buffer, 0u, 1u + len);
     buffer[2] = in;
     buffer[3] = 0;
     little_endian_store_32( buffer, 4, tv_sec);
@@ -251,13 +251,13 @@ static void printf_timestamp(void){
     printf ("%s.%03u] ", time_string, milliseconds);
 #else
     uint32_t time_ms = btstack_run_loop_get_time_ms();
-    int      seconds = time_ms / 1000;
+    int      seconds = time_ms / 1000u;
     int      minutes = seconds / 60;
     unsigned int hours = minutes / 60;
 
-    uint16_t p_ms      = time_ms - (seconds * 1000);
+    uint16_t p_ms      = time_ms - (seconds * 1000u);
     uint16_t p_seconds = seconds - (minutes * 60);
-    uint16_t p_minutes = minutes - (hours   * 60);     
+    uint16_t p_minutes = minutes - (hours   * 60u);     
     printf("[%02u:%02u:%02u.%03u] ", hours, p_minutes, p_seconds, p_ms);
 #endif
 }
@@ -302,8 +302,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     tv_us  = curr_time.tv_usec;
 #else
     uint32_t time_ms = btstack_run_loop_get_time_ms();
-    tv_us   = time_ms * 1000;
-    tv_sec  = 946728000UL + (time_ms / 1000);
+    tv_us   = time_ms * 1000u;
+    tv_sec  = 946728000UL + (time_ms / 1000u);
 #endif
 
 #ifdef ENABLE_SEGGER_RTT

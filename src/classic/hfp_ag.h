@@ -359,6 +359,8 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl
 
 /* API_END */
 
+// testing
+hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 #if defined __cplusplus
 }

@@ -70,14 +70,14 @@ typedef enum {
  * @brief AVRCP Controller service record. 
  * @param service
  * @param service_record_handle
- * @param supported_features 16-bit bitmap, see avrcp_controller_supported_feature_t
+ * @param supported_features 16-bit bitmap, see AVRCP_FEATURE_MASK_* in avrcp.h
  * @param service_name
  * @param service_provider_name
  */
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
- * @brief Set up AVRCP Controller device.
+ * @brief Set up AVRCP Controller service.
  */
 void avrcp_controller_init(void);
 
@@ -86,21 +86,6 @@ void avrcp_controller_init(void);
  * @param callback
  */
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback);
-
-/**
- * @brief Connect to device with a Bluetooth address.
- * @param bd_addr
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
-
-/**
- * @brief Disconnect from AVRCP target
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid);
 
 /**
  * @brief Set max num fragments in whuch message can be transmited.

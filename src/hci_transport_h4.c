@@ -215,7 +215,7 @@ static void hci_transport_h4_packet_complete(void){
 #endif
             }
 #endif
-    uint16_t packet_len = read_pos-1;
+    uint16_t packet_len = read_pos-1u;
 
     // reset state machine before delivering packet to stack as it might close the transport
     hci_transport_h4_reset_statemachine();
@@ -309,7 +309,7 @@ static void hci_transport_h4_block_read(void){
 #endif
 
     // forward packet if payload size == 0
-    if (h4_state == H4_W4_PAYLOAD && bytes_to_read == 0) {
+    if (h4_state == H4_W4_PAYLOAD && bytes_to_read == 0u) {
         hci_transport_h4_packet_complete();
     }
 

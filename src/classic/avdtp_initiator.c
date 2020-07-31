@@ -73,7 +73,7 @@ static int avdtp_initiator_send_signaling_cmd_delay_report(uint16_t cid, uint8_t
     return l2cap_send(cid, command, sizeof(command));
 }
 
-void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_t *packet, uint16_t size, int offset, avdtp_context_t * context){
+void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
     // int status = 0;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     
@@ -81,9 +81,9 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
     if (connection->initiator_connection_state == AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER) {
         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
     } else {
-        stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid, context);
+        stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
         if (!stream_endpoint){
-            stream_endpoint = avdtp_stream_endpoint_with_seid(connection->initiator_local_seid, context);
+            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
         }
         if (!stream_endpoint) {
             log_error("stream_endpoint for seid 0x%02x not found", connection->initiator_local_seid);
@@ -125,33 +125,18 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         sep.in_use = (packet[i] >> 1) & 0x01;
                         sep.media_type = (avdtp_media_type_t)(packet[i+1] >> 4);
                         sep.type = (avdtp_sep_type_t)((packet[i+1] >> 3) & 0x01);
-                        avdtp_signaling_emit_sep(context->avdtp_callback, connection->avdtp_cid, sep);
+                        avdtp_signaling_emit_sep(connection->avdtp_cid, sep);
                     }
-                    avdtp_signaling_emit_sep_done(context->avdtp_callback, connection->avdtp_cid);
+                    avdtp_signaling_emit_sep_done(connection->avdtp_cid);
                     break;
                 }
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
-                    avdtp_emit_capabilities(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_remote_seid, &sep.capabilities, sep.registered_service_categories);
-                    break;
-                case AVDTP_SI_DELAYREPORT:
-                    avdtp_signaling_emit_delay(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, little_endian_read_16(packet, offset));
-                    break;
-                case AVDTP_SI_GET_CONFIGURATION:
-                    // sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
-                    // if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                    //     switch (sep.configuration.media_codec.media_codec_type){
-                    //         case AVDTP_CODEC_SBC: 
-                    //             avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->remote_seid, 
-                    //                 sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
-                    //             break;
-                    //         default:
-                    //             avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid,  connection->remote_seid, sep.configuration.media_codec);
-                    //             break;
-                    //     }
-                    // }
+                    avdtp_emit_capabilities(connection->avdtp_cid, connection->initiator_local_seid,
+                                            connection->initiator_remote_seid, &sep.capabilities,
+                                            sep.registered_service_categories);
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
@@ -186,13 +171,20 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     log_info("INT: configured remote seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
                    
                     switch (stream_endpoint->media_codec_type){
-                        case AVDTP_CODEC_SBC: 
-                            avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_remote_seid, 
-                                stream_endpoint->media_type, stream_endpoint->media_codec_sbc_info);
+                        case AVDTP_CODEC_SBC:
+                            avdtp_signaling_emit_media_codec_sbc_configuration(
+                                    stream_endpoint,
+                                    connection->avdtp_cid,
+                                    stream_endpoint->media_type,
+                                    stream_endpoint->media_codec_sbc_info);
                             break;
                         default:
                             // TODO: we don\t have codec info to emit config
-                            avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid,  connection->initiator_remote_seid, sep.configuration.media_codec);
+                            avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint,
+                                                                                 connection->avdtp_cid,
+                                                                                 connection->initiator_local_seid,
+                                                                                 connection->initiator_remote_seid,
+                                                                                 sep.configuration.media_codec);
                             break;
                     }
                     break;
@@ -209,7 +201,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->initiator_local_seid = stream_endpoint->sep.seid;
-                    l2cap_create_channel(context->packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, 0xffff, NULL);
+                    l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, 0xffff, NULL);
                     return;
                 case AVDTP_SI_START:
                     if (!stream_endpoint){
@@ -247,11 +239,17 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
+
+                case AVDTP_SI_DELAYREPORT:
+                    break;
+                case AVDTP_SI_GET_CONFIGURATION:
+                    break;
                 default:
-                    log_info("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
+                    log_info("AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
                     break;
             }
-            avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
+            avdtp_signaling_emit_accept(connection->avdtp_cid, 0,
+                                        connection->initiator_signaling_packet.signal_identifier, true);
             connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
@@ -264,11 +262,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
             }
             log_info("    AVDTP_RESPONSE_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
-            avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier, true);
+            avdtp_signaling_emit_reject(connection->avdtp_cid, connection->initiator_local_seid,
+                                        connection->initiator_signaling_packet.signal_identifier, true);
             return;
         case AVDTP_GENERAL_REJECT_MSG:
             log_info("    AVDTP_GENERAL_REJECT_MSG signal %s", avdtp_si2str(connection->initiator_signaling_packet.signal_identifier));
-            avdtp_signaling_emit_general_reject(context->avdtp_callback, connection->avdtp_cid, connection->initiator_local_seid, connection->initiator_signaling_packet.signal_identifier, true);
+            avdtp_signaling_emit_general_reject(connection->avdtp_cid, connection->initiator_local_seid,
+                                                connection->initiator_signaling_packet.signal_identifier, true);
             return;
         default:
             break;
@@ -278,27 +278,27 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
 static bool avdtp_initiator_stream_config_subsm_run_signaling(avdtp_connection_t * connection){
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
-            log_info("INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS");
+            log_info("INT: W2_DISCOVER_SEPS");
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER;
             avdtp_initiator_send_signaling_cmd(connection->l2cap_signaling_cid, AVDTP_SI_DISCOVER, connection->initiator_transaction_label);
             return true;
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES:
-            log_info("INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES");
+            log_info("INT: W2_GET_CAPABILITIES");
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER;
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_GET_CAPABILITIES, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return true;
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES:
-            log_info("INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES");
+            log_info("INT: W2_GET_ALL_CAPABILITIES");
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER;
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_GET_ALL_CAPABILITIES, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return true;
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION:
-            log_info("INT: AVDTP_INITIATOR_W4_GET_CONFIGURATION");
+            log_info("INT: W4_GET_CONFIGURATION");
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER;
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_GET_CONFIGURATION, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return true;
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT:
-            log_info("INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_DELAY_REPORT");
+            log_info("INT: W4_DELAY_REPORT");
             connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER;
             avdtp_initiator_send_signaling_cmd_delay_report(connection->l2cap_signaling_cid, connection->initiator_transaction_label,
                                                             connection->initiator_remote_seid, connection->delay_ms);
@@ -317,7 +317,7 @@ static void avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t 
                 log_info("initiator SM stop sending SET_CONFIGURATION cmd:");
                 break;
             }
-            log_info("INT: AVDTP_INITIATOR_W2_(RE)CONFIGURATION bitmap, local seid %d, remote seid 0x%02x", connection->initiator_local_seid, connection->initiator_remote_seid);
+            log_info("INT: W2_(RE)CONFIGURATION bitmap, local seid %d, remote seid 0x%02x", connection->initiator_local_seid, connection->initiator_remote_seid);
             // log_info_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
             connection->initiator_signaling_packet.acp_seid = connection->initiator_remote_seid;
             connection->initiator_signaling_packet.int_seid = connection->initiator_local_seid;
@@ -365,14 +365,14 @@ static void avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t 
     }
 }
 
-void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
+void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
 
     bool sent = avdtp_initiator_stream_config_subsm_run_signaling(connection);
     if (sent) return;
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid, context);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
     if (!stream_endpoint){
-        stream_endpoint = avdtp_stream_endpoint_with_seid(connection->initiator_local_seid, context);
+        stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
     }
     if (!stream_endpoint) return;
     
@@ -431,7 +431,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
         stream_endpoint->send_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
             stream_endpoint->state =  AVDTP_STREAM_ENDPOINT_STREAMING;
-            avdtp_streaming_emit_can_send_media_packet_now(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), stream_endpoint->sequence_number);
+            avdtp_streaming_emit_can_send_media_packet_now(stream_endpoint,
+                                                           stream_endpoint->sequence_number);
             return;
         }
     }

@@ -148,7 +148,6 @@ static uint8_t remote_seid;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
-static avdtp_context_t a2dp_sink_context;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 #if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
@@ -488,9 +487,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 remote_seid, avdtp_subevent_signaling_sep_found_get_in_use(packet), 
                 avdtp_subevent_signaling_sep_found_get_media_type(packet), avdtp_subevent_signaling_sep_found_get_sep_type(packet));
             break;
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
-            printf("Received SBC codec capabilities\n");
 
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
+            printf("CAPABILITY - MEDIA_CODEC_SBC: \n");
             sbc_capability.sampling_frequency_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet);
             sbc_capability.channel_mode_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet);
             sbc_capability.block_length_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet);
@@ -500,6 +499,45 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_capability.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet);
             dump_sbc_capability(sbc_capability);
             break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
+            printf("CAPABILITY - MEDIA_TRANSPORT supported on remote.\n");
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY:
+            printf("CAPABILITY - REPORTING supported on remote.\n");
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY:
+            printf("CAPABILITY - RECOVERY supported on remote: \n");
+            printf("    - recovery_type                %d\n", avdtp_subevent_signaling_recovery_capability_get_recovery_type(packet));
+            printf("    - maximum_recovery_window_size %d\n", avdtp_subevent_signaling_recovery_capability_get_maximum_recovery_window_size(packet));
+            printf("    - maximum_number_media_packets %d\n", avdtp_subevent_signaling_recovery_capability_get_maximum_number_media_packets(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY:
+            printf("CAPABILITY - CONTENT_PROTECTION supported on remote: \n");
+            printf("    - cp_type           %d\n", avdtp_subevent_signaling_content_protection_capability_get_cp_type(packet));
+            printf("    - cp_type_value_len %d\n", avdtp_subevent_signaling_content_protection_capability_get_cp_type_value_len(packet));
+            printf("    - cp_type_value     \'%s\'\n", avdtp_subevent_signaling_content_protection_capability_get_cp_type_value(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY:
+            printf("CAPABILITY - MULTIPLEXING supported on remote: \n");
+            printf("    - fragmentation                  %d\n", avdtp_subevent_signaling_multiplexing_capability_get_fragmentation(packet));
+            printf("    - transport_identifiers_num      %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_identifiers_num(packet));
+            printf("    - transport_session_identifier_1 %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_1(packet));
+            printf("    - transport_session_identifier_2 %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_2(packet));
+            printf("    - transport_session_identifier_3 %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_3(packet));
+            printf("    - tcid_1                         %d\n", avdtp_subevent_signaling_multiplexing_capability_get_tcid_1(packet));
+            printf("    - tcid_2                         %d\n", avdtp_subevent_signaling_multiplexing_capability_get_tcid_2(packet));
+            printf("    - tcid_3                         %d\n", avdtp_subevent_signaling_multiplexing_capability_get_tcid_3(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            printf("CAPABILITY - DELAY_REPORTING supported on remote.\n");
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
+            printf("CAPABILITY - HEADER_COMPRESSION supported on remote: \n");
+            printf("    - back_ch   %d\n", avdtp_subevent_signaling_header_compression_capability_get_back_ch(packet));
+            printf("    - media     %d\n", avdtp_subevent_signaling_header_compression_capability_get_media(packet));
+            printf("    - recovery  %d\n", avdtp_subevent_signaling_header_compression_capability_get_recovery(packet));
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             printf("Received SBC codec configuration\n");
             sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
@@ -718,7 +756,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_sink_init(&a2dp_sink_context);
+    avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
     avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
@@ -734,7 +772,7 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
+    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     // printf("BTstack AVDTP Sink, supported features 0x%04x\n", );
     gap_set_local_name("BTstack AVDTP Sink PTS 00:00:00:00:00:00");

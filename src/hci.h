@@ -200,10 +200,11 @@ typedef enum {
     SEND_USER_PASSKEY_REPLY        = 0x0400,
 
     // pairing status
-    LEGACY_PAIRING_ACTIVE          = 0x2000,
-    SSP_PAIRING_ACTIVE             = 0x4000,
+    LEGACY_PAIRING_ACTIVE          = 0x1000,
+    SSP_PAIRING_ACTIVE             = 0x2000,
 
     // connection status
+    CONNECTION_AUTHENTICATED       = 0x4000,
     CONNECTION_ENCRYPTED           = 0x8000,
 
     // errands
@@ -231,16 +232,22 @@ typedef enum {
 
 // bonding flags
 enum {
-    BONDING_REQUEST_REMOTE_FEATURES       = 0x01,
-    BONDING_RECEIVED_REMOTE_FEATURES      = 0x02,
-    BONDING_REMOTE_SUPPORTS_SSP           = 0x04,
-    BONDING_DISCONNECT_SECURITY_BLOCK     = 0x08,
-    BONDING_DISCONNECT_DEDICATED_DONE     = 0x10,
-    BONDING_SEND_AUTHENTICATE_REQUEST     = 0x20,
-    BONDING_SEND_ENCRYPTION_REQUEST       = 0x40,
-    BONDING_SEND_READ_ENCRYPTION_KEY_SIZE = 0x80,
-    BONDING_DEDICATED                     = 0x100,
-    BONDING_EMIT_COMPLETE_ON_DISCONNECT   = 0x200
+    BONDING_REQUEST_REMOTE_FEATURES_PAGE_0    = 0x0001,
+    BONDING_REQUEST_REMOTE_FEATURES_PAGE_1    = 0x0002,
+    BONDING_REQUEST_REMOTE_FEATURES_PAGE_2    = 0x0004,
+    BONDING_RECEIVED_REMOTE_FEATURES          = 0x0008,
+    BONDING_REMOTE_SUPPORTS_SSP_CONTROLLER    = 0x0010,
+    BONDING_REMOTE_SUPPORTS_SSP_HOST          = 0x0020,
+    BONDING_REMOTE_SUPPORTS_SC_CONTROLLER     = 0x0040,
+    BONDING_REMOTE_SUPPORTS_SC_HOST           = 0x0080,
+    BONDING_DISCONNECT_SECURITY_BLOCK         = 0x0100,
+    BONDING_DISCONNECT_DEDICATED_DONE         = 0x0200,
+    BONDING_SEND_AUTHENTICATE_REQUEST         = 0x0400,
+    BONDING_SEND_ENCRYPTION_REQUEST           = 0x0800,
+    BONDING_SEND_READ_ENCRYPTION_KEY_SIZE     = 0x1000,
+    BONDING_DEDICATED                         = 0x2000,
+    BONDING_EMIT_COMPLETE_ON_DISCONNECT       = 0x4000,
+    BONDING_SENT_AUTHENTICATE_REQUEST         = 0x8000
 };
 
 typedef enum {
@@ -502,7 +509,9 @@ typedef struct {
     link_key_type_t link_key_type;
 
     // remote supported features
-    uint8_t remote_supported_feature_eSCO;
+    /* bit 0 - eSCO */
+    /* bit 1 - extended features */
+    uint8_t remote_supported_features[1];
 
 #ifdef ENABLE_CLASSIC
     // connection mode, default ACL_CONNECTION_MODE_ACTIVE
@@ -850,8 +859,9 @@ typedef struct {
 
     bd_addr_t gap_pairing_addr;
     uint8_t   gap_pairing_state;    // see hci.c for state defines
+    uint8_t   gap_pairing_pin_len;
     union {
-        const char * gap_pairing_pin;
+        const uint8_t * gap_pairing_pin;
         uint32_t     gap_pairing_passkey;
     } gap_pairing_input;
     

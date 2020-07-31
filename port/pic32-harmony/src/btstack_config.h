@@ -41,4 +41,7 @@
 #define MAX_NR_AVDTP_CONNECTIONS 1
 #define MAX_NR_AVRCP_CONNECTIONS 1
 
+#define NVM_NUM_LINK_KEYS              16
+#define NVM_NUM_DEVICE_DB_ENTRIES      16
+
 #endif

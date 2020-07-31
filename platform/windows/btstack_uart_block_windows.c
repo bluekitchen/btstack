@@ -78,6 +78,9 @@ static HANDLE serial_port_handle;
 static OVERLAPPED overlapped_read;
 static OVERLAPPED overlapped_write;
 
+// fix for chipset drivers that need to download firmware before stack starts up
+bool serial_port_open = false;
+
 // -- engine that retries send/receive if not all bytes have been transferred
 
 static void btstack_uart_windows_send_engine(void){
@@ -321,6 +324,12 @@ static int btstack_uart_windows_set_flowcontrol(int flowcontrol){
 
 static int btstack_uart_windows_open(void){
 
+    // allow to call open again
+    if (serial_port_open){
+        log_info("Serial port already open");
+        return 0;
+    }
+
     const char * device_name = uart_config->device_name;
     const uint32_t baudrate  = uart_config->baudrate;
     const int flowcontrol    = uart_config->flowcontrol;
@@ -333,7 +342,7 @@ static int btstack_uart_windows_open(void){
                         FILE_FLAG_OVERLAPPED,
                         0);
 
-    if (device_name == INVALID_HANDLE_VALUE){
+    if (serial_port_handle == INVALID_HANDLE_VALUE){
         log_error("windows_open: Unable to open port %s", device_name);
         return -1;
     }
@@ -407,10 +416,14 @@ static int btstack_uart_windows_open(void){
     btstack_run_loop_add_data_source(&transport_data_source_read);
     btstack_run_loop_add_data_source(&transport_data_source_write);
 
+    serial_port_open = true;
+
     return 0;
 } 
 
 static int btstack_uart_windows_close_new(void){
+
+    serial_port_open = false;
 
     // first remove run loop handler
     btstack_run_loop_remove_data_source(&transport_data_source_read);

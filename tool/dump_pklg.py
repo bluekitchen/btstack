@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2014
 
 # primitive dump for PacketLogger format
@@ -11,9 +11,7 @@
 # 	uint8_t		type;   // 0xfc for note
 # }
 
-import re
 import sys
-import time
 import datetime
 
 packet_types = [ "CMD =>", "EVT <=", "ACL =>", "ACL <="]
@@ -36,14 +34,14 @@ def read_net_32(f):
 def as_hex(data):
 	str_list = []
 	for byte in data:
-	    str_list.append("{0:02x} ".format(ord(byte)))
+	    str_list.append("{0:02x} ".format(byte))
 	return ''.join(str_list)
 
 if len(sys.argv) == 1:
-	print 'Dump PacketLogger file'
-	print 'Copyright 2014, BlueKitchen GmbH'
-	print ''
-	print 'Usage: ', sys.argv[0], 'hci_dump.pklg'
+	print ('Dump PacketLogger file')
+	print ('Copyright 2014, BlueKitchen GmbH')
+	print ('')
+	print ('Usage: ', sys.argv[0], 'hci_dump.pklg')
 	exit(0)
 
 infile = sys.argv[1]
@@ -66,10 +64,9 @@ with open (infile, 'rb') as fin:
 			pos     = pos + 4 + len
 			time    = "[%s.%03u]" % (datetime.datetime.fromtimestamp(ts_sec).strftime("%Y-%m-%d %H:%M:%S"), ts_usec / 1000)
 			if type == 0xfc:
-				print time, "LOG", packet
+				print (time, "LOG", packet.decode('ascii'))
 				continue
 			if type <= 0x03:
-				print time, packet_types[type], as_hex(packet)
+				print (time, packet_types[type], as_hex(packet))
 	except TypeError:
 		print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
-

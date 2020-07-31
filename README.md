@@ -74,6 +74,7 @@ No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/mas
 No build server | [qt-h4](https://github.com/bluekitchen/btstack/tree/master/port/qt-h4) | Unix- or Win32-based [Qt application](https://qt.io) connected to Bluetooth module via H4 over serial port 
 No build server | [qt-usb](https://github.com/bluekitchen/btstack/tree/master/port/qt-usb) | Unix- or Win32-based [Qt application](https://qt.io) with dedicated USB Bluetooth dongle
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/master/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
+No build server | [windows-h4-da14585](https://github.com/bluekitchen/btstack/tree/master/port/windows-h4-da14585) | Win32-based system connected to Dialog Semiconductor DA14585 via H4 over serial port   
 No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/master/port/windows-winusb) | Win32-based system with dedicated USB Bluetooth dongle
 No build server | [windows-winusb-intel](https://github.com/bluekitchen/btstack/tree/master/port/windows-winusb-intel) | Win32-based system with Intel Wireless 8260/8265 Controller
 No build server | [raspi](https://github.com/bluekitchen/btstack/tree/master/port/raspi) | Raspberry Pi 3 or Raspberry Pi Zero W with built-in BCM4343 Bluetooth/Wifi Controller
@@ -101,6 +102,7 @@ Espressif ESP32              | Dual mode | VHCI            | Not yet          | 
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
+Renesas RX23W                | LE        | H4              | n.a.             |                | HCI Firmware part of BTTS
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
 STM32-WB5x                   | LE        | VHCI            | n.a.             |                | SoC with multi-protocol Radio co-processor
 Toshiba TC35661              | Dual mode | H4              | No               | tc3566         |

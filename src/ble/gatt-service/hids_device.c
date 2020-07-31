@@ -197,7 +197,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
     }
     
     if (att_handle == instance->hid_control_point_value_handle){
-        if (buffer && (buffer_size >= 1)){
+        if (buffer && (buffer_size >= 1u)){
             buffer[0] = instance->hid_control_point_suspend;
         } 
         return 1;
@@ -252,15 +252,15 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     }
     
     if (att_handle == instance->hid_control_point_value_handle){
-        if (buffer_size < 1){
+        if (buffer_size < 1u){
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->hid_control_point_suspend = buffer[0];
         instance->con_handle = con_handle;
         log_info("Set suspend tp: %u", instance->hid_control_point_suspend );
-        if (instance->hid_control_point_suspend == 0){
+        if (instance->hid_control_point_suspend == 0u){
             hids_device_emit_event(HIDS_SUBEVENT_SUSPEND, con_handle);
-        } else if (instance->hid_control_point_suspend == 1){ 
+        } else if (instance->hid_control_point_suspend == 1u){ 
             hids_device_emit_event(HIDS_SUBEVENT_EXIT_SUSPEND, con_handle);
         }
     }
@@ -306,10 +306,10 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
     instance->hid_report_input_value_handle                       = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
     instance->hid_report_input_client_configuration_handle        = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
 
-    instance->hid_report_output_value_handle                      = gatt_server_get_value_handle_for_characteristic_with_uuid16(instance->hid_report_input_client_configuration_handle+1, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
+    instance->hid_report_output_value_handle                      = gatt_server_get_value_handle_for_characteristic_with_uuid16(instance->hid_report_input_client_configuration_handle+1u, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
     instance->hid_report_output_client_configuration_handle       = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(instance->hid_report_input_client_configuration_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
 
-    instance->hid_report_feature_value_handle                     = gatt_server_get_value_handle_for_characteristic_with_uuid16(instance->hid_report_output_client_configuration_handle+1, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
+    instance->hid_report_feature_value_handle                     = gatt_server_get_value_handle_for_characteristic_with_uuid16(instance->hid_report_output_client_configuration_handle+1u, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
     instance->hid_report_feature_client_configuration_handle      = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(instance->hid_report_output_client_configuration_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
 
     instance->hid_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_HID_CONTROL_POINT);

@@ -51,50 +51,50 @@
 
 // BTstack commands
 const hci_cmd_t btstack_get_state = {
-OPCODE(OGF_BTSTACK, BTSTACK_GET_STATE), ""
+    DAEMON_OPCODE_BTSTACK_GET_STATE, ""
 };
 
 /**
  * @param power_mode (0 = off, 1 = on)
  */
 const hci_cmd_t btstack_set_power_mode = {
-OPCODE(OGF_BTSTACK, BTSTACK_SET_POWER_MODE), "1"
+    DAEMON_OPCODE_BTSTACK_SET_POWER_MODE, "1"
 };
 
 /**
  * @param acl_capture_mode (0 = off, 1 = on)
  */
 const hci_cmd_t btstack_set_acl_capture_mode = {
-OPCODE(OGF_BTSTACK, BTSTACK_SET_ACL_CAPTURE_MODE), "1"
+    DAEMON_OPCODE_BTSTACK_SET_ACL_CAPTURE_MODE, "1"
 };
 
 const hci_cmd_t btstack_get_version = {
-OPCODE(OGF_BTSTACK, BTSTACK_GET_VERSION), ""
+    DAEMON_OPCODE_BTSTACK_GET_VERSION, ""
 };
 
 const hci_cmd_t btstack_get_system_bluetooth_enabled = {
-OPCODE(OGF_BTSTACK, BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED), ""
+    DAEMON_OPCODE_BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED, ""
 };
 
 /**
  * @param bluetooth_enabled_flag (0 = off, 1 = on, only used by btstack config)
  */
 const hci_cmd_t btstack_set_system_bluetooth_enabled = {
-OPCODE(OGF_BTSTACK, BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED), "1"
+    DAEMON_OPCODE_BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED, "1"
 };
 
 /**
  * @param discoverable_flag (0 = off, 1 = on)
  */
 const hci_cmd_t btstack_set_discoverable = {
-OPCODE(OGF_BTSTACK, BTSTACK_SET_DISCOVERABLE), "1"
+    DAEMON_OPCODE_BTSTACK_SET_DISCOVERABLE, "1"
 };
 
 /**
  * @param bluetooth_enabled_flag (0 = off, 1 = on, only used by btstack config)
  */
 const hci_cmd_t btstack_set_bluetooth_enabled = {
-OPCODE(OGF_BTSTACK, BTSTACK_SET_BLUETOOTH_ENABLED), "1"
+    DAEMON_OPCODE_BTSTACK_SET_BLUETOOTH_ENABLED, "1"
 };
 
 /**
@@ -102,7 +102,7 @@ OPCODE(OGF_BTSTACK, BTSTACK_SET_BLUETOOTH_ENABLED), "1"
  * @param psm (16)
  */
 const hci_cmd_t l2cap_create_channel_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
+    DAEMON_OPCODE_L2CAP_CREATE_CHANNEL, "B2"
 };
 
 /**
@@ -111,7 +111,7 @@ OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
  * @param mtu (16)
  */
 const hci_cmd_t l2cap_create_channel_mtu_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL_MTU), "B22"
+    DAEMON_OPCODE_L2CAP_CREATE_CHANNEL_MTU, "B22"
 // @param bd_addr(48), psm (16), mtu (16)
 };
 
@@ -120,7 +120,7 @@ OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL_MTU), "B22"
  * @param reason (16)
  */
 const hci_cmd_t l2cap_disconnect_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
+    DAEMON_OPCODE_L2CAP_DISCONNECT, "21"
 };
 
 /**
@@ -128,21 +128,21 @@ OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
  * @param mtu (16)
  */
 const hci_cmd_t l2cap_register_service_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_REGISTER_SERVICE), "22"
+    DAEMON_OPCODE_L2CAP_REGISTER_SERVICE, "22"
 };
 
 /**
  * @param psm (16)
  */
 const hci_cmd_t l2cap_unregister_service_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_UNREGISTER_SERVICE), "2"
+    DAEMON_OPCODE_L2CAP_UNREGISTER_SERVICE, "2"
 };
 
 /**
  * @param source_cid (16)
  */
 const hci_cmd_t l2cap_accept_connection_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
+    DAEMON_OPCODE_L2CAP_ACCEPT_CONNECTION, "2"
 };
 
 /**
@@ -150,7 +150,7 @@ OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
  * @param reason (deprecated)
  */
 const hci_cmd_t l2cap_decline_connection_cmd = {
-OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
+    DAEMON_OPCODE_L2CAP_DECLINE_CONNECTION, "21"
 };
 
 
@@ -158,14 +158,14 @@ OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
  * @param service_record
  */
 const hci_cmd_t sdp_register_service_record_cmd = {
-OPCODE(OGF_BTSTACK, SDP_REGISTER_SERVICE_RECORD), "S"
+    DAEMON_OPCODE_SDP_REGISTER_SERVICE_RECORD, "S"
 };
 
 /**
  * @param service_record_handle
  */
 const hci_cmd_t sdp_unregister_service_record_cmd = {
-OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
+    DAEMON_OPCODE_SDP_UNREGISTER_SERVICE_RECORD, "4"
 };
 
 /**
@@ -173,7 +173,7 @@ OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
  * @param service_search_pattern
  */
 const hci_cmd_t sdp_client_query_rfcomm_services_cmd = {
-OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
+    DAEMON_OPCODE_SDP_CLIENT_QUERY_RFCOMM_SERVICES, "BS"
 };
 
 /**
@@ -182,7 +182,7 @@ OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
  * @param attribute_ID_list
  */
 const hci_cmd_t sdp_client_query_services_cmd = {
-OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BSS"
+    DAEMON_OPCODE_SDP_CLIENT_QUERY_SERVICES, "BSS"
 };
 
 /**
@@ -190,7 +190,7 @@ OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BSS"
  * @param server_channel
  */
 const hci_cmd_t rfcomm_create_channel_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL), "B1"
+    DAEMON_OPCODE_RFCOMM_CREATE_CHANNEL, "B1"
 };
 
 /**
@@ -200,7 +200,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL), "B1"
  * @param credits
  */
 const hci_cmd_t rfcomm_create_channel_with_initial_credits_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL_WITH_CREDITS), "B121"
+    DAEMON_OPCODE_RFCOMM_CREATE_CHANNEL_WITH_INITIAL_CREDITS, "B121"
 };
 
 /**
@@ -208,7 +208,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL_WITH_CREDITS), "B121"
  * @param credits
  */
 const hci_cmd_t rfcomm_grants_credits_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_GRANT_CREDITS), "21"
+    DAEMON_OPCODE_RFCOMM_GRANTS_CREDITS, "21"
 };
 
 /**
@@ -216,7 +216,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_GRANT_CREDITS), "21"
  * @param reason
  */
 const hci_cmd_t rfcomm_disconnect_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
+    DAEMON_OPCODE_RFCOMM_DISCONNECT, "21"
 };
 
 /**
@@ -224,7 +224,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
  * @param mtu
  */
 const hci_cmd_t rfcomm_register_service_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
+    DAEMON_OPCODE_RFCOMM_REGISTER_SERVICE, "12"
 };
 
 /**
@@ -233,21 +233,21 @@ OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
  * @param initial_credits
  */
 const hci_cmd_t rfcomm_register_service_with_initial_credits_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE_WITH_CREDITS), "121"
+    DAEMON_OPCODE_RFCOMM_REGISTER_SERVICE_WITH_INITIAL_CREDITS, "121"
 };
 
 /**
  * @param service_channel
  */
 const hci_cmd_t rfcomm_unregister_service_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_UNREGISTER_SERVICE), "2"
+    DAEMON_OPCODE_RFCOMM_UNREGISTER_SERVICE, "2"
 };
 
 /**
  * @param source_cid
  */
 const hci_cmd_t rfcomm_accept_connection_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_ACCEPT_CONNECTION), "2"
+    DAEMON_OPCODE_RFCOMM_ACCEPT_CONNECTION, "2"
 };
 
 
@@ -256,7 +256,7 @@ OPCODE(OGF_BTSTACK, RFCOMM_ACCEPT_CONNECTION), "2"
  * @param reason
  */
 const hci_cmd_t rfcomm_decline_connection_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
+    DAEMON_OPCODE_RFCOMM_DECLINE_CONNECTION, "21"
 };
 
 // request persistent rfcomm channel number for named service
@@ -264,26 +264,26 @@ OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
  * @param named_service
  */
 const hci_cmd_t rfcomm_persistent_channel_for_service_cmd = {
-OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
+    DAEMON_OPCODE_RFCOMM_PERSISTENT_CHANNEL_FOR_SERVICE, "N"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t gap_disconnect_cmd = {
-OPCODE(OGF_BTSTACK, GAP_DISCONNECT), "H"
+    DAEMON_OPCODE_GAP_DISCONNECT, "H"
 };
 
 /**
  */
 const hci_cmd_t gap_le_scan_start = {
-OPCODE(OGF_BTSTACK, GAP_LE_SCAN_START), ""
+    DAEMON_OPCODE_GAP_LE_SCAN_START, ""
 };
 
 /**
  */
 const hci_cmd_t gap_le_scan_stop = {
-OPCODE(OGF_BTSTACK, GAP_LE_SCAN_STOP), ""
+    DAEMON_OPCODE_GAP_LE_SCAN_STOP, ""
 };
 
 /**
@@ -292,7 +292,7 @@ OPCODE(OGF_BTSTACK, GAP_LE_SCAN_STOP), ""
  * @param scan_window
  */
 const hci_cmd_t gap_le_set_scan_parameters = {
-OPCODE(OGF_BTSTACK, GAP_LE_SET_SCAN_PARAMETERS), "122"
+    DAEMON_OPCODE_GAP_LE_SET_SCAN_PARAMETERS, "122"
 };
 
 /**
@@ -300,7 +300,7 @@ OPCODE(OGF_BTSTACK, GAP_LE_SET_SCAN_PARAMETERS), "122"
  * @param peer_address
  */
 const hci_cmd_t gap_le_connect_cmd = {
-OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "1B"
+    DAEMON_OPCODE_GAP_LE_CONNECT, "1B"
 };
 
 /**
@@ -308,14 +308,14 @@ OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "1B"
  * @param peer_address
  */
 const hci_cmd_t gap_le_connect_cancel_cmd = {
-OPCODE(OGF_BTSTACK, GAP_LE_CONNECT_CANCEL), ""
+    DAEMON_OPCODE_GAP_LE_CONNECT_CANCEL, ""
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t gatt_discover_primary_services_cmd = {
-OPCODE(OGF_BTSTACK, GATT_DISCOVER_ALL_PRIMARY_SERVICES), "H"
+    DAEMON_OPCODE_GATT_DISCOVER_PRIMARY_SERVICES, "H"
 };
 
 /**
@@ -323,7 +323,7 @@ OPCODE(OGF_BTSTACK, GATT_DISCOVER_ALL_PRIMARY_SERVICES), "H"
  * @param uuid16
  */
 const hci_cmd_t gatt_discover_primary_services_by_uuid16_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16), "H2"
+    DAEMON_OPCODE_GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16, "H2"
 };
 
 /**
@@ -331,7 +331,7 @@ const hci_cmd_t gatt_discover_primary_services_by_uuid16_cmd = {
  * @param uuid128
  */
 const hci_cmd_t gatt_discover_primary_services_by_uuid128_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128), "HU"
+    DAEMON_OPCODE_GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128, "HU"
 };
 
 /**
@@ -339,7 +339,7 @@ const hci_cmd_t gatt_discover_primary_services_by_uuid128_cmd = {
  * @param service
  */
 const hci_cmd_t gatt_find_included_services_for_service_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE), "HX"
+    DAEMON_OPCODE_GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE, "HX"
 };
 
 /**
@@ -347,7 +347,7 @@ const hci_cmd_t gatt_find_included_services_for_service_cmd = {
  * @param service
  */
 const hci_cmd_t gatt_discover_characteristics_for_service_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE), "HX"
+    DAEMON_OPCODE_GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE, "HX"
 };
 
 /**
@@ -356,7 +356,7 @@ const hci_cmd_t gatt_discover_characteristics_for_service_cmd = {
  * @param uuid128
  */
 const hci_cmd_t gatt_discover_characteristics_for_service_by_uuid128_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128), "HXU"
+    DAEMON_OPCODE_GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128, "HXU"
 };
 
 /**
@@ -364,7 +364,7 @@ const hci_cmd_t gatt_discover_characteristics_for_service_by_uuid128_cmd = {
  * @param characteristic
  */
 const hci_cmd_t gatt_discover_characteristic_descriptors_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS), "HY"
+    DAEMON_OPCODE_GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS, "HY"
 };
 
 /**
@@ -372,7 +372,7 @@ const hci_cmd_t gatt_discover_characteristic_descriptors_cmd = {
  * @param characteristic
  */
 const hci_cmd_t gatt_read_value_of_characteristic_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_READ_VALUE_OF_CHARACTERISTIC), "HY"
+    DAEMON_OPCODE_GATT_READ_VALUE_OF_CHARACTERISTIC, "HY"
 };
 
 /**
@@ -380,7 +380,7 @@ const hci_cmd_t gatt_read_value_of_characteristic_cmd = {
  * @param characteristic
  */
 const hci_cmd_t gatt_read_long_value_of_characteristic_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_READ_LONG_VALUE_OF_CHARACTERISTIC), "HY"
+    DAEMON_OPCODE_GATT_READ_LONG_VALUE_OF_CHARACTERISTIC, "HY"
 };
 
 /**
@@ -390,7 +390,7 @@ const hci_cmd_t gatt_read_long_value_of_characteristic_cmd = {
  * @param data
  */
 const hci_cmd_t gatt_write_value_of_characteristic_without_response_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE), "HYLV"
+    DAEMON_OPCODE_GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE, "HYLV"
 };
 
 /**
@@ -400,7 +400,7 @@ const hci_cmd_t gatt_write_value_of_characteristic_without_response_cmd = {
  * @param data
  */
 const hci_cmd_t gatt_write_value_of_characteristic_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_WRITE_VALUE_OF_CHARACTERISTIC), "HYLV"
+    DAEMON_OPCODE_GATT_WRITE_VALUE_OF_CHARACTERISTIC, "HYLV"
 };
 
 /**
@@ -410,7 +410,7 @@ const hci_cmd_t gatt_write_value_of_characteristic_cmd = {
  * @param data
  */
 const hci_cmd_t gatt_write_long_value_of_characteristic_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC), "HYLV"
+    DAEMON_OPCODE_GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC, "HYLV"
 };
 
 /**
@@ -420,7 +420,7 @@ const hci_cmd_t gatt_write_long_value_of_characteristic_cmd = {
  * @param data
  */
 const hci_cmd_t gatt_reliable_write_long_value_of_characteristic_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC), "HYLV"
+    DAEMON_OPCODE_GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC, "HYLV"
 };
 
 /**
@@ -428,7 +428,7 @@ const hci_cmd_t gatt_reliable_write_long_value_of_characteristic_cmd = {
  * @param descriptor
  */
 const hci_cmd_t gatt_read_characteristic_descriptor_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_READ_CHARACTERISTIC_DESCRIPTOR), "HZ"
+    DAEMON_OPCODE_GATT_READ_CHARACTERISTIC_DESCRIPTOR, "HZ"
 };
 
 /**
@@ -436,7 +436,7 @@ const hci_cmd_t gatt_read_characteristic_descriptor_cmd = {
  * @param descriptor
  */
 const hci_cmd_t gatt_read_long_characteristic_descriptor_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR), "HZ"
+    DAEMON_OPCODE_GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR, "HZ"
 };
 
 /**
@@ -446,7 +446,7 @@ const hci_cmd_t gatt_read_long_characteristic_descriptor_cmd = {
  * @param data
  */
 const hci_cmd_t gatt_write_characteristic_descriptor_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_WRITE_CHARACTERISTIC_DESCRIPTOR), "HZLV"
+    DAEMON_OPCODE_GATT_WRITE_CHARACTERISTIC_DESCRIPTOR, "HZLV"
 };
 
 /**
@@ -456,7 +456,7 @@ const hci_cmd_t gatt_write_characteristic_descriptor_cmd = {
  * @param data
  */
 const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR), "HZLV"
+    DAEMON_OPCODE_GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR, "HZLV"
 };
 
 /**
@@ -465,14 +465,14 @@ const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd = {
  * @param configuration
  */
 const hci_cmd_t gatt_write_client_characteristic_configuration_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION), "HY2"
+    DAEMON_OPCODE_GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION, "HY2"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t gatt_get_mtu = {
-    OPCODE(OGF_BTSTACK, GATT_GET_MTU), "H"
+    DAEMON_OPCODE_GATT_GET_MTU, "H"
 };
 
 /**
@@ -480,7 +480,7 @@ const hci_cmd_t gatt_get_mtu = {
  * @param auth_req OR combination of SM_AUTHREQ_ flags
  */
 const hci_cmd_t sm_set_authentication_requirements_cmd = {
-    OPCODE(OGF_BTSTACK, SM_SET_AUTHENTICATION_REQUIREMENTS), "1"
+    DAEMON_OPCODE_SM_SET_AUTHENTICATION_REQUIREMENTS, "1"
 };
 
 /**
@@ -488,7 +488,7 @@ const hci_cmd_t sm_set_authentication_requirements_cmd = {
  * @param io_capabilities
  */
 const hci_cmd_t sm_set_io_capabilities_cmd = {
-    OPCODE(OGF_BTSTACK, SM_SET_IO_CAPABILITIES), "1"
+    DAEMON_OPCODE_SM_SET_IO_CAPABILITIES, "1"
 };
 
 /**
@@ -496,7 +496,7 @@ const hci_cmd_t sm_set_io_capabilities_cmd = {
  * @param con_handle
  */
 const hci_cmd_t sm_bonding_decline_cmd = {
-    OPCODE(OGF_BTSTACK, SM_BONDING_DECLINE), "H"
+    DAEMON_OPCODE_SM_BONDING_DECLINE, "H"
 };
 
 /**
@@ -504,7 +504,7 @@ const hci_cmd_t sm_bonding_decline_cmd = {
  * @param con_handle
  */
 const hci_cmd_t sm_just_works_confirm_cmd = {
-    OPCODE(OGF_BTSTACK, SM_JUST_WORKS_CONFIRM), "H"
+    DAEMON_OPCODE_SM_JUST_WORKS_CONFIRM, "H"
 };
 
 /**
@@ -512,7 +512,7 @@ const hci_cmd_t sm_just_works_confirm_cmd = {
  * @param con_handle
  */
 const hci_cmd_t sm_numeric_comparison_confirm_cmd = {
-    OPCODE(OGF_BTSTACK, SM_NUMERIC_COMPARISON_CONFIRM), "H"
+    DAEMON_OPCODE_SM_NUMERIC_COMPARISON_CONFIRM, "H"
 };
 
 /**
@@ -521,5 +521,5 @@ const hci_cmd_t sm_numeric_comparison_confirm_cmd = {
  * @param passkey in [0..999999]
  */
 const hci_cmd_t sm_passkey_input_cmd = {
-    OPCODE(OGF_BTSTACK, SM_PASSKEY_INPUT), "H4"
+    DAEMON_OPCODE_SM_PASSKEY_INPUT, "H4"
 };

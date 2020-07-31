@@ -46,8 +46,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "hci_cmd.h"
@@ -92,10 +90,10 @@ static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static int  hfp_ag_indicators_nr = 0;
-static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
+static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_INDICATORS];
 
 static int hfp_generic_status_indicators_nr = 0;
-static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
+static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
 static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
@@ -640,6 +638,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
             if (hfp_connection->state == HFP_W4_RETRIEVE_INDICATORS) {
                 // HF requested AG Indicators and we did expect it
+                hfp_connection->send_ag_indicators_segment = 0;
                 hfp_connection->state = HFP_RETRIEVE_INDICATORS;
                 // continue below in state switch
             }
@@ -1859,7 +1858,6 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
         // parse until end of line
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
 
-        int value;
         hfp_generic_status_indicator_t * indicator;
         switch(hfp_connection->command){
             case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
@@ -1869,9 +1867,7 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                 hfp_connection->ok_pending = 1;
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
-                value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-                log_info("HF Response and Hold: %u", value);
-                switch(value){
+                switch(hfp_connection->ag_response_and_hold_action){
                     case HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD:
                         hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF, hfp_connection);
                         break;
@@ -1894,24 +1890,23 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                     hfp_connection->send_error = 1;
                     break;
                 }
-                value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                 switch (indicator->uuid){
                     case 1: // enhanced security
-                        if (value > 1) {
+                        if (hfp_connection->parser_indicator_value > 1) {
                             hfp_connection->send_error = 1;
                             return;
                         }
-                        log_info("HF Indicator 'enhanced security' set to %u", value);
+                        log_info("HF Indicator 'enhanced security' set to %u", hfp_connection->parser_indicator_value);
                         break;
                     case 2: // battery level
-                        if (value > 100){
+                        if (hfp_connection->parser_indicator_value > 100){
                             hfp_connection->send_error = 1;
                             return;
                         }
-                        log_info("HF Indicator 'battery' set to %u", value);
+                        log_info("HF Indicator 'battery' set to %u", hfp_connection->parser_indicator_value);
                         break;
                     default:
-                        log_info("HF Indicator unknown set to %u", value);
+                        log_info("HF Indicator unknown set to %u", hfp_connection->parser_indicator_value);
                         break;
                 }
                 hfp_connection->ok_pending = 1;
@@ -1936,9 +1931,14 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                 hfp_connection->send_subscriber_number = 1;
                 break;
             case HFP_CMD_TRANSMIT_DTMF_CODES:
+            {
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, (const char *) &hfp_connection->line_buffer[0]);
+                char buffer[2];
+                buffer[0] = (char) hfp_connection->ag_dtmf_code;
+                buffer[1] = 0;
+                hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_TRANSMIT_DTMF_CODES, buffer);
                 break;
+            }
             case HFP_CMD_HF_REQUEST_PHONE_NUMBER:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG);
@@ -1964,38 +1964,31 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                 hfp_ag_call_sm(HFP_AG_TERMINATE_CALL_BY_HF, hfp_connection);
                 break;
             case HFP_CMD_CALL_HOLD: {
-                // TODO: fully implement this
-                log_error("HFP: unhandled call hold type %c", hfp_connection->line_buffer[0]);
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_connection->ok_pending = 1;
-                hfp_connection->call_index = 0;
-                
-                if (hfp_connection->line_buffer[1] != '\0'){
-                    hfp_connection->call_index = btstack_atoi((char *)&hfp_connection->line_buffer[1]);
-                }
 
-                switch (hfp_connection->line_buffer[0]){
-                    case '0':
+                switch (hfp_connection->ag_call_hold_action){
+                    case 0:
                         // Releases all held calls or sets User Determined User Busy (UDUB) for a waiting call.
                         hfp_ag_call_sm(HFP_AG_CALL_HOLD_USER_BUSY, hfp_connection);
                         break;
-                    case '1':
+                    case 1:
                         // Releases all active calls (if any exist) and accepts the other (held or waiting) call.
                         // Where both a held and a waiting call exist, the above procedures shall apply to the
                         // waiting call (i.e., not to the held call) in conflicting situation.
                         hfp_ag_call_sm(HFP_AG_CALL_HOLD_RELEASE_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL, hfp_connection);
                         break;
-                    case '2':
+                    case 2:
                         // Places all active calls (if any exist) on hold and accepts the other (held or waiting) call.
                         // Where both a held and a waiting call exist, the above procedures shall apply to the
                         // waiting call (i.e., not to the held call) in conflicting situation.
                         hfp_ag_call_sm(HFP_AG_CALL_HOLD_PARK_ACTIVE_ACCEPT_HELD_OR_WAITING_CALL, hfp_connection);
                         break;
-                    case '3':
+                    case 3:
                         // Adds a held call to the conversation.
                         hfp_ag_call_sm(HFP_AG_CALL_HOLD_ADD_HELD_CALL, hfp_connection);
                         break;
-                    case '4':
+                    case 4:
                         // Connects the two calls and disconnects the subscriber from both calls (Explicit Call Transfer).
                         hfp_ag_call_sm(HFP_AG_CALL_HOLD_EXIT_AND_JOIN_CALLS, hfp_connection);
                         break;
@@ -2003,6 +1996,7 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                         break;
                 }
                 break;
+                hfp_connection->call_index = 0;
             }
             case HFP_CMD_CALL_PHONE_NUMBER:
                 hfp_connection->command = HFP_CMD_NONE;
@@ -2014,13 +2008,11 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                 break;
             case HFP_CMD_ENABLE_CLIP:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->clip_enabled = hfp_connection->line_buffer[8] != '0';
                 log_info("hfp: clip set, now: %u", hfp_connection->clip_enabled);
                 hfp_connection->ok_pending = 1;
                 break;
             case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_connection->call_waiting_notification_enabled = hfp_connection->line_buffer[8] != '0';
                 log_info("hfp: call waiting notification set, now: %u", hfp_connection->call_waiting_notification_enabled);
                 hfp_connection->ok_pending = 1;
                 break;
@@ -2102,7 +2094,7 @@ void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_ind
 }
 
 void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators){
-    if (hf_indicators_nr > HFP_MAX_NUM_HF_INDICATORS) return;
+    if (hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
     hfp_generic_status_indicators_nr = hf_indicators_nr;
     (void)memcpy(hfp_generic_status_indicators, hf_indicators,
                  hf_indicators_nr * sizeof(hfp_generic_status_indicator_t));

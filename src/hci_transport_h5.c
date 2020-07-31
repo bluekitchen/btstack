@@ -166,8 +166,8 @@ static uint16_t crc16_ccitt_update (uint16_t crc, uint8_t ch){
             0xc60c, 0xd68d, 0xe70e, 0xf78f
     };
 
-    crc = (crc >> 4) ^ crc16_ccitt_table[(crc ^ ch) & 0x000f];
-    crc = (crc >> 4) ^ crc16_ccitt_table[(crc ^ (ch >> 4)) & 0x000f];
+    crc = (crc >> 4u) ^ crc16_ccitt_table[(crc ^ ch) & 0x000fu];
+    crc = (crc >> 4u) ^ crc16_ccitt_table[(crc ^ (ch >> 4u)) & 0x000fu];
     return crc;
 }
 
@@ -176,7 +176,7 @@ static uint16_t btstack_reverse_bits_16(uint16_t value){
     int i;
     for (i = 0; i < 16; i++) { 
         reverse = reverse << 1;
-        reverse |= value & 1;
+        reverse |= value & 1u;
         value = value >> 1;
     }
     return reverse;
@@ -255,7 +255,7 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
     
     // store data integrity check info
     slip_outgoing_dic         = data_integrity_check;
-    slip_outgoing_dic_present = header[0] & 0x40;
+    slip_outgoing_dic_present = header[0] & 0x40u;
 
     // Start of Frame
     slip_outgoing_buffer[pos++] = BTSTACK_SLIP_SOF;
@@ -290,9 +290,9 @@ static void hci_transport_link_calc_header(uint8_t * header,
     uint16_t payload_length){
 
     header[0] = sequence_nr | (acknowledgement_nr << 3) | (data_integrity_check_present << 6) | (reliable_packet << 7);
-    header[1] = packet_type | ((payload_length & 0x0f) << 4);
+    header[1] = packet_type | ((payload_length & 0x0fu) << 4u);
     header[2] = payload_length >> 4;
-    header[3] = 0xff - (header[0] + header[1] + header[2]);
+    header[3] = 0xffu - (header[0u] + header[1u] + header[2u]);
 }
 
 static void hci_transport_link_send_control(const uint8_t * message, int message_len){
@@ -511,7 +511,7 @@ static void hci_transport_h5_emit_sleep_state(int sleep_active){
     log_info("emit_sleep_state: %u", sleep_active);
     uint8_t event[3];
     event[0] = HCI_EVENT_TRANSPORT_SLEEP_MODE;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2u;
     event[2] = sleep_active;
     packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
 }
@@ -521,17 +521,17 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     static const uint8_t link_control_config_prefix_len  = 2;
     static const uint8_t link_control_config_response_prefix_len  = 2;
 
-    if (frame_size < 4) return;
+    if (frame_size < 4u) return;
 
     uint8_t * slip_header  = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
     uint8_t * slip_payload = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 4];
-    int       frame_size_without_header = frame_size - 4;
+    int       frame_size_without_header = frame_size - 4u;
 
-    uint8_t  seq_nr =  slip_header[0] & 0x07;
-    uint8_t  ack_nr = (slip_header[0] >> 3)    & 0x07;
-    uint8_t  data_integrity_check_present = (slip_header[0] & 0x40) != 0;
-    uint8_t  reliable_packet  = (slip_header[0] & 0x80) != 0;
-    uint8_t  link_packet_type = slip_header[1] & 0x0f;
+    uint8_t  seq_nr =  slip_header[0u] & 0x07u;
+    uint8_t  ack_nr = (slip_header[0u] >> 3u)    & 0x07u;
+    uint8_t  data_integrity_check_present = (slip_header[0u] & 0x40u) != 0u;
+    uint8_t  reliable_packet  = (slip_header[0u] & 0x80u) != 0u;
+    uint8_t  link_packet_type = slip_header[1u] & 0x0fu;
     uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 4);
 
     log_debug("process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u , dic %u, payload 0x%04x bytes", reliable_packet, link_packet_type, seq_nr, ack_nr, data_integrity_check_present, frame_size_without_header);
@@ -549,7 +549,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 
     // validate header checksum
     uint8_t header_checksum = slip_header[0] + slip_header[1] + slip_header[2] + slip_header[3];
-    if (header_checksum != 0xff){
+    if (header_checksum != 0xffu){
         log_info("header checksum 0x%02x (instead of 0xff)", header_checksum);
         return;
     }
@@ -610,7 +610,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
             }
             if (memcmp(slip_payload, link_control_config_response, link_control_config_response_prefix_len) == 0){
                 uint8_t config = slip_payload[2];
-                link_peer_supports_data_integrity_check = (config & 0x10) != 0;
+                link_peer_supports_data_integrity_check = (config & 0x10u) != 0u;
                 log_info("link received config response 0x%02x, data integrity check supported %u", config, link_peer_supports_data_integrity_check);
                 link_state = LINK_ACTIVE;
                 btstack_run_loop_remove_timer(&link_timer);
@@ -717,10 +717,10 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 // recommendet time until resend: 3 * time of largest packet
 static uint16_t hci_transport_link_calc_resend_timeout(uint32_t baudrate){
     uint32_t max_packet_size_in_bit = (HCI_INCOMING_PACKET_BUFFER_SIZE + 6) << 3;
-    uint32_t t_max_x3_ms = max_packet_size_in_bit * 3000 / baudrate;
+    uint32_t t_max_x3_ms = max_packet_size_in_bit * 3000u / baudrate;
 
     // allow for BTstack logging and other delays
-    t_max_x3_ms += 50;
+    t_max_x3_ms += 50u;
 
     log_info("resend timeout for %"PRIu32" baud: %u ms", baudrate, (int) t_max_x3_ms);
     return t_max_x3_ms;
@@ -745,7 +745,7 @@ static void hci_transport_h5_block_received(void){
     if (hci_transport_h5_active == 0) return;
 
     // track start time when receiving first byte // a bit hackish
-    if ((hci_transport_h5_receive_start == 0) && (hci_transport_link_read_byte != BTSTACK_SLIP_SOF)){
+    if ((hci_transport_h5_receive_start == 0u) && (hci_transport_link_read_byte != BTSTACK_SLIP_SOF)){
         hci_transport_h5_receive_start = btstack_run_loop_get_time_ms();
     }
     btstack_slip_decoder_process(hci_transport_link_read_byte);
@@ -753,7 +753,7 @@ static void hci_transport_h5_block_received(void){
     if (frame_size) {
         // track time
         uint32_t packet_receive_time = btstack_run_loop_get_time_ms() - hci_transport_h5_receive_start;
-        uint32_t nominal_time = (frame_size + 6) * 10 * 1000 / uart_config.baudrate;
+        uint32_t nominal_time = (frame_size + 6u) * 10u * 1000u / uart_config.baudrate;
         UNUSED(nominal_time);
         UNUSED(packet_receive_time);
         log_info("slip frame time %u ms for %u decoded bytes. nomimal time %u ms", (int) packet_receive_time, frame_size, (int) nominal_time);

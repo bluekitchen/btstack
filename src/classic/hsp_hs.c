@@ -46,8 +46,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "bluetooth_sdp.h"
@@ -358,6 +356,47 @@ void hsp_hs_set_speaker_gain(uint8_t gain){
     hsp_run();
 }  
     
+static void hsp_run_handle_state(void){
+    switch (hsp_state){
+        case HSP_SDP_QUERY_RFCOMM_CHANNEL:
+            hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
+            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
+            break;
+
+        case HSP_AUDIO_CONNECTION_ESTABLISHED:
+        case HSP_RFCOMM_CONNECTION_ESTABLISHED:
+
+            if (hs_microphone_gain >= 0){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
+                char buffer[20];
+                sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
+                hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
+                hs_microphone_gain = -1;
+                break;
+            }
+
+            if (hs_speaker_gain >= 0){
+                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
+                    rfcomm_request_can_send_now_event(rfcomm_cid);
+                    return;
+                }
+                char buffer[20];
+                sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
+                hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
+                hs_speaker_gain = -1;
+                break;
+            }
+            break;
+        case HSP_W4_RFCOMM_DISCONNECTED:
+            rfcomm_disconnect(rfcomm_cid);
+            break;
+        default:
+            break;
+    }
+}
 
 static void hsp_run(void){
 
@@ -426,52 +465,13 @@ static void hsp_run(void){
         return;
     }
 
-    switch (hsp_state){
-        case HSP_SDP_QUERY_RFCOMM_CHANNEL:
-            hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
-            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
-            break;
-        
-        case HSP_AUDIO_CONNECTION_ESTABLISHED:
-        case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-
-            if (hs_microphone_gain >= 0){
-                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
-                    rfcomm_request_can_send_now_event(rfcomm_cid);
-                    return;
-                }
-                char buffer[20];
-                sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
-                hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
-                hs_microphone_gain = -1;
-                break;
-            }
-
-            if (hs_speaker_gain >= 0){
-                if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
-                    rfcomm_request_can_send_now_event(rfcomm_cid);
-                    return;
-                }
-                char buffer[20];
-                sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
-                hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
-                hs_speaker_gain = -1;
-                break;
-            }
-            break;
-        case HSP_W4_RFCOMM_DISCONNECTED:
-            rfcomm_disconnect(rfcomm_cid);
-            break;
-        default:
-            break;
-    }
+    hsp_run_handle_state();
 }
 
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);    // ok: no channel for HCI_EVENT_PACKET and only single active RFCOMM channel
     if (packet_type == RFCOMM_DATA_PACKET){
-        // printf("packet_handler type RFCOMM_DATA_PACKET %u, packet[0] %x\n", packet_type, packet[0]);
         // skip over leading newline
         while ((size > 0) && ((packet[0] == '\n') || (packet[0] == '\r'))){
             size--;

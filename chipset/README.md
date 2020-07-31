@@ -70,6 +70,7 @@ EM 9304              | LE        | SPI, H4        | Yes          | n.a.         
 Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | Don't know     | intel          | Firmware size: 400 kB 
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           | n.a.           |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | Don't know       | n.a    |         n.a.         | No             | stlc2500d      | Custom deep sleep management not supported
+Renesas RX23W        | LE        | H4             | No           | n.a.             | Yes    |        Yes           | n.a .          |                | HCI Firmware part of BTTS
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | No             | tc3566         | Only -007/009 models provide full HCI. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | No             | cc256x         | Also WL185x, WL187x, and WL189x
 
@@ -224,6 +225,27 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
 
    * For the nRF51 Dev Kit, use `make BOARD=nrf51_pca10028` and `./flash_nrf51_10028.sh` with the nRF51 kit.
    * The nRF5 dev kit acts as an LE HCI Controller with H4 interface.
+
+## Renesas Electronics
+
+Renesas currently has 3 LE-only SoCs: the older 16-bit RL78 and the newer RX23W and the RA4W1. 
+For the newer SoCs, Renesas provides a pre-compiled HCI firmware as well as an HCI project for their e2 Studio IDE.
+The HCI firmware needs to be programmed into the SoC Flash.
+
+Both newer SoC provide the newer Bluetooth 5.0 features like DLE, 2M-PHY, Long Range, and Multiple Roles.
+
+To install the HCI Firmware on the [Target Board for RX23W](https://www.renesas.com/us/en/products/software-tools/boards-and-kits/eval-kits/rx-family-target-board.html):
+	
+  * Download [Bluetooth Test Tool Suite](https://www.renesas.com/eu/en/software/D6004348.html)
+  * Install [Renesas Flash Programmer](https://www.renesas.com/tw/en/products/software-tools/tools/programmer/renesas-flash-programmer-programming-gui.html)
+  * Follow instruction in [Target Board for RX23W Quick Start Guide](https://www.renesas.com/us/en/doc/products/mpumcu/apn/rx/013/r20qs0014ej0100-23wtbqsg.pdf) to flash `rx23w_uart_hci_sci8_br2000k_v1.00.mot`
+
+**BD Addr** fixed to 74:90:50:FF:FF:FF. A Windows tool in the BTTS suite allows to set a public Bluetooth Address.
+
+**Baud rate**: The baud rate is fixed at 115200 resp. 2000000 with the provided firmware images. With 2 mbps, there's no need to update the baudrate at run-time.
+
+**BTstack integration**: No special support needed.
+
 
 ## STMicroelectronics
 

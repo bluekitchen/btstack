@@ -393,7 +393,7 @@ uint32_t btstack_atoi(const char *str){
         char chr = *str;
         if (!chr || (chr < '0') || (chr > '9'))
             return val;
-        val = (val * 10) + (uint8_t)(chr - '0');
+        val = (val * 10u) + (uint8_t)(chr - '0');
         str++;
     }
 }
@@ -471,5 +471,5 @@ uint8_t btstack_crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum){
 /*-----------------------------------------------------------------------------------*/
 uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len){
     /* Ones complement */
-    return 0xFF - crc8(data, len);
+    return 0xFFu - crc8(data, len);
 }

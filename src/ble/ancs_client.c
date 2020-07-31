@@ -102,14 +102,14 @@ static void notify_client_text(int event_type){
     if (!client_handler) return;
     uint8_t event[7 + sizeof(ancs_notification_buffer) + 1];
     event[0] = HCI_EVENT_ANCS_META;
-    event[1] = 5 + ancs_attribute_len;
+    event[1] = 5u + ancs_attribute_len;
     event[2] = event_type;
     little_endian_store_16(event, 3, gc_handle);
     little_endian_store_16(event, 5, ancs_attribute_id);
     (void)memcpy(&event[7], ancs_notification_buffer, ancs_attribute_len);
     // we're nice
-    event[7+ancs_attribute_len] = 0;
-    (*client_handler)(HCI_EVENT_PACKET, 0, event, event[1] + 2);
+    event[7u+ancs_attribute_len] = 0u;
+    (*client_handler)(HCI_EVENT_PACKET, 0u, event, event[1u] + 2u);
 }
 
 static void notify_client_simple(int event_type){
@@ -149,16 +149,16 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
     if (ancs_bytes_received < ancs_bytes_needed) return;
     switch (chunk_parser_state){
         case W4_ATTRIBUTE_ID:
-            ancs_attribute_id   = ancs_notification_buffer[ancs_bytes_received-1];
+            ancs_attribute_id   = ancs_notification_buffer[ancs_bytes_received-1u];
             ancs_bytes_received = 0;
             ancs_bytes_needed   = 2;
             chunk_parser_state  = W4_ATTRIBUTE_LEN;
             break;
         case W4_ATTRIBUTE_LEN:
-            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, ancs_bytes_received-2);
+            ancs_attribute_len  = little_endian_read_16(ancs_notification_buffer, ancs_bytes_received-2u);
             ancs_bytes_received = 0;
             ancs_bytes_needed   = ancs_attribute_len;
-            if (ancs_attribute_len == 0) {
+            if (ancs_attribute_len == 0u) {
                 ancs_bytes_needed   = 1;
                 chunk_parser_state  = W4_ATTRIBUTE_ID;
                 break;

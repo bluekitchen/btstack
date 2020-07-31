@@ -1,7 +1,8 @@
-hfp_hf_client_test
-hfp_ag_client_test
-hfp_hf_parser_test
-hfp_ag_parser_test
 cvsd_plc_test
-results/*
+hfp_ag_client_test
+hfp_ag_parser_test
+hfp_at_parser_test
+hfp_hf_client_test
+hfp_hf_parser_test
 pklg_cvsd_test
+results/*
