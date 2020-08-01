@@ -9,6 +9,7 @@ CFLAGS = -march=armv7-a -mfloat-abi=softfp -I$(SYSROOT)/usr/include -fpie -fpic 
 LDFLAGS = -Wl,--fix-cortex-a8 -L$(SYSROOT)/usr/lib -fpie -fpic -fPIE -pie
 
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	MTK
 
 CFLAGS += -I$(BTSTACK_ROOT)/include
 CFLAGS += -I$(BTSTACK_ROOT)/src/
@@ -87,10 +88,10 @@ libbluetoothdrv.so: bluetoothdrv_stub.o
 install:
 	./installer.sh
 
-run: 
+run:
 	$(ADB) shell le_scan
 
-shell: 
+shell:
 	$(ADB) shell
 
 version:
@@ -119,10 +120,10 @@ le_scan: le_scan.o
 # minimal_peripheral: minimal_peripheral.o
 # 	$(GCC) $(LDFLAGS) libs/libbluetoothdrv.so  -o $@ minimal_peripheral.o
 
-hci_dump: 
+hci_dump:
 	killall PacketLogger
 	$(ADB) shell su root chmod 666 /data/btstack/hci_dump.pklg
 	$(ADB) pull /data/btstack/hci_dump.pklg 2> /dev/null
 	open hci_dump.pklg
-	
+
 log: hci_dump

@@ -9,6 +9,7 @@ CC2564B = bluetooth_init_cc2564B_1.8_BT_Spec_4.1.o
 CC2567  = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
 
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	MSP430F5229LP_CC2564B
 VPATH += example
 VPATH += firmware
 VPATH += src
@@ -86,7 +87,7 @@ BLE = \
 
 LCD = hal_lcd.c hal_lcd_fonts.c
 
-	
+
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
 SPP_OBJ    = $(SPP:.c=.o)
@@ -94,12 +95,12 @@ BLE_OBJ    = $(BLE:.c=.o)
 
 # create .hex file from .out
 %.hex: %.out
-	msp430-objcopy -O ihex $< $@    
+	msp430-objcopy -O ihex $< $@
 
 # create firmware image from common objects and example source file
 
 all: led_counter.hex spp_counter.hex gap_inquiry.hex spp_flowcontrol.hex \
-	 sdp_rfcomm_query.hex sdp_general_query.hex 
+	 sdp_rfcomm_query.hex sdp_general_query.hex
 # ble_server.hex
 
 # fetch and convert init scripts
@@ -113,10 +114,10 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compile GATT database
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 
-led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 
+led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h ant_cmds.o ${CC2567} ant-test.o
@@ -148,8 +149,7 @@ clean:
 
 size: all
 	msp430-size *.o
-	msp430-size *.out 
+	msp430-size *.out
 
 %.flash: %.hex
 	mspdebug tilib --force-reset "prog $^"
-

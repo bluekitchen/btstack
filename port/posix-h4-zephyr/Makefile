@@ -1,5 +1,6 @@
 # Makefile for posix-h4 based examples
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	POSIX_H4_ZEPHYR
 
 CORE += \
 	btstack_run_loop_posix.c \
@@ -19,10 +20,9 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/chipset/zephyr \
 	-I${BTSTACK_ROOT}/3rd-party/tinydir
-	
+
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 all: ${EXAMPLES_LE_ONLY}
-

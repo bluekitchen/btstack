@@ -8,6 +8,7 @@ OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
 BTSTACK_ROOT ?= ../..
+BTSTACK_SYSTEM	?=	STM32_F103RB_NUCLEO
 VPATH  = $(BTSTACK_ROOT)/example
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
@@ -72,7 +73,7 @@ include libopencm3.stm32f1.mk
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 clean:
-	rm -f *.map *.o *.d *.out *.elf *.bin *.hex 
+	rm -f *.map *.o *.d *.out *.elf *.bin *.hex
 
 distclean: clean
 	make -C libopencm3 clean
@@ -85,5 +86,4 @@ libopencm3/lib/libopencm3_stm32f1.a:
 
 # compile GATT database
 spp_and_gatt_counter.h: spp_and_gatt_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
-
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
