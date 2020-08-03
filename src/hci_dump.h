@@ -66,6 +66,7 @@ extern "C" {
 typedef enum {
     HCI_DUMP_BLUEZ = 0,
     HCI_DUMP_PACKETLOGGER,
+    HCI_DUMP_SNOOP,
     HCI_DUMP_STDOUT
 } hci_dump_format_t;
 
