@@ -116,7 +116,7 @@ void pb_gatt_init(void){}
 
 void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){}
 
-void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
+void pb_adv_register_provisioner_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
 }
 
