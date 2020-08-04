@@ -1129,11 +1129,12 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
     network_pdu->len += 2;
     big_endian_store_16(network_pdu->data, network_pdu->len, dest);
     network_pdu->len += 2;
+    btstack_assert((network_pdu->len + transport_pdu_len) <= MESH_NETWORK_PAYLOAD_MAX);
     (void)memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data,
                  transport_pdu_len);
     network_pdu->len += transport_pdu_len;
     // zero rest of packet
-    memset(&network_pdu->data[network_pdu->len], 0, MESH_NETWORK_PAYLOAD_MAX - transport_pdu_len);
+    memset(&network_pdu->data[network_pdu->len], 0, MESH_NETWORK_PAYLOAD_MAX - network_pdu->len);
 }
 
 /*
