@@ -1019,6 +1019,10 @@ void mesh_lower_transport_reset(void){
         }
         lower_transport_outgoing_message = NULL;
     }
+    while (!btstack_linked_list_empty(&lower_transport_outgoing_waiting)){
+        mesh_segmented_pdu_t * segmented_pdu = (mesh_segmented_pdu_t *) btstack_linked_list_pop(&lower_transport_outgoing_waiting);
+        btstack_memory_mesh_segmented_pdu_free(segmented_pdu);
+    }
     mesh_network_pdu_free(lower_transport_outgoing_segment);
     lower_transport_outgoing_segment_at_network_layer = false;
     lower_transport_outgoing_segment = NULL;
