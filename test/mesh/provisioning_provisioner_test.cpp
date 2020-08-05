@@ -42,8 +42,8 @@
 #include "mesh/pb_adv.h"
 #include "mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
-#include "provisioning.h"
-#include "provisioning_provisioner.h"
+#include "mesh/provisioning.h"
+#include "mesh/provisioning_provisioner.h"
 #include "hci_dump.h"
 
 #include "CppUTest/TestHarness.h"

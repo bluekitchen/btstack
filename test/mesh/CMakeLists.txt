@@ -77,9 +77,9 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)
 
-# create mesh_message_test target
+## hard-coded tests that use CPPUtest
 
-## hard-coded to use CPPUtest
+message("example mesh_message_test")
 include_directories( /usr/local/include)
 link_directories( /usr/local/lib)
 link_libraries(CppUTest CppUTestExt)
@@ -107,5 +107,41 @@ mock.c
 mesh_message_test.cpp
 )
 
+message("example provisioning_device_test")
+add_executable(provisioning_device_test
+provisioning_device_test.cpp
+mock.c
+../../3rd-party/micro-ecc/uECC.c
+../../3rd-party/rijndael/rijndael.c
+../../src/mesh/mesh_crypto.c
+../../src/mesh/provisioning_device.c
+../../src/mesh/mesh_node.c
+../../src/btstack_crypto.c
+../../src/btstack_util.c
+../../src/btstack_linked_list.c
+../../src/hci_cmd.c
+../../src/hci_dump.c
+)
 
+message("example provisioning_provisioner_test")
+add_executable(provisioning_provisioner_test
+provisioning_provisioner_test.cpp
+mock.c
+../../3rd-party/micro-ecc/uECC.c
+../../3rd-party/rijndael/rijndael.c
+../../src/btstack_crypto.c
+../../src/mesh/provisioning_provisioner.c
+ ../../src/mesh/mesh_crypto.c
+../../src/btstack_crypto.c
+../../src/btstack_util.c
+../../src/btstack_linked_list.c
+../../src/hci_cmd.c
+../../src/hci_dump.c
+)
 
+message("example mesh_configuration_composition_data_message_test")
+add_executable(mesh_configuration_composition_data_message_test
+mesh_configuration_composition_data_message_test.cpp 
+../../src/mesh/mesh_configuration_client.c
+)
+target_link_libraries(mesh_configuration_composition_data_message_test btstack)
