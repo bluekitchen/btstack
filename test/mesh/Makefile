@@ -86,8 +86,11 @@ EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_pr
 
 all: ${EXAMPLES}
 
-test: mesh_message_test
+test: mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
 	./mesh_message_test
+	./provisioning_device_test
+	./provisioning_provisioner_test
+	./mesh_configuration_composition_data_message_test
 
 clean:
 	rm -f  *.o *.out *.exe
