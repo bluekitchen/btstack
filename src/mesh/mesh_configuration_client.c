@@ -100,6 +100,7 @@ void mesh_composition_data_iterator_init(mesh_composite_data_iterator_t * it, co
 }
 
 bool mesh_composition_data_iterator_has_next_element(mesh_composite_data_iterator_t * it){
+    if ((it->offset + 3) >= it->size) return false;
     return (it->offset + mesh_composition_data_iterator_element_len(it)) <= it->size;
 }
 
