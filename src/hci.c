@@ -1896,6 +1896,8 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
     if (status == ERROR_CODE_AUTHENTICATION_FAILURE) {
         gap_drop_link_key_for_bd_addr(bd_address);
     }
+#else
+    UNUSED(status);
 #endif
 }
 
