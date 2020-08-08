@@ -89,8 +89,9 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
 
 // test
 void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu);
-void mesh_lower_transport_dump(void);
 void mesh_lower_transport_reset(void);
+void mesh_lower_transport_dump_network_pdus(const char *name, btstack_linked_list_t *list);
+void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

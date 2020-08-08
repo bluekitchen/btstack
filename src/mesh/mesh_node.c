@@ -155,11 +155,11 @@ uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model){
 // Model Identifier utilities
 
 uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id){
-    return (vendor_id << 16) | model_id;
+    return (((uint32_t) vendor_id << 16)) | model_id;
 }
 
 uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id){
-    return (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | model_id;
+    return ((uint32_t) BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | model_id;
 }
 
 uint16_t mesh_model_get_model_id(uint32_t model_identifier){

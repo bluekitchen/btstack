@@ -37,8 +37,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "btstack_memory.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "hci_dump.h"
 #include "mesh/mesh_node.h"
@@ -49,6 +48,8 @@
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
+
+#include "mock.h"
 
 static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
     int i;
@@ -61,37 +62,6 @@ static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
         BYTES_EQUAL(expected[i], actual[i]);
     }
 }
-
-void dump_data(uint8_t * buffer, uint16_t size){
-    static int data_counter = 1;
-    char var_name[80];
-    sprintf(var_name, "test_data_%02u", data_counter);
-    printf("uint8_t %s[] = { ", var_name);
-    for (int i = 0; i < size ; i++){
-        if ((i % 16) == 0) printf("\n    ");
-        printf ("0x%02x, ", buffer[i]);
-    }
-    printf("};\n");
-    data_counter++;
-}
-
-int parse_hex(uint8_t * buffer, const char * hex_string){
-    int len = 0;
-    while (*hex_string){
-        if (*hex_string == ' '){
-            hex_string++;
-            continue;
-        }
-        int high_nibble = nibble_for_char(*hex_string++);
-        int low_nibble = nibble_for_char(*hex_string++);
-        *buffer++ = (high_nibble << 4) | low_nibble;
-        len++;
-    }
-    return len;
-}
-
-// returns if anything was done
-extern "C" int mock_process_hci_cmd(void);
 
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
@@ -114,8 +84,14 @@ void pb_gatt_init(void){}
  * @param con_handle
  * @param reason 0 = success, 1 = timeout, 2 = fail
  */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){}
-void pb_adv_close_link(hci_con_handle_t con_handle, uint8_t reason){}
+void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
+    UNUSED(con_handle);
+    UNUSED(reason);
+}
+void pb_adv_close_link(hci_con_handle_t con_handle, uint8_t reason){
+    UNUSED(con_handle);
+    UNUSED(reason);
+}
 
 
 /**
@@ -138,7 +114,11 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t _pdu_size){
+    UNUSED(con_handle);
+    UNUSED(pdu);
+    UNUSED(_pdu_size);
+}
  
 uint16_t mesh_network_key_get_free_index(void){
     return 0;

@@ -384,6 +384,7 @@ static void mesh_upper_transport_process_access_message_done(mesh_access_pdu_t *
 }
 
 static void mesh_upper_transport_process_control_message_done(mesh_control_pdu_t * control_pdu){
+    UNUSED(control_pdu);
     crypto_active = 0;
     incoming_control_pdu = NULL;
     mesh_upper_transport_run();
@@ -856,8 +857,7 @@ static void mesh_upper_transport_run(void){
                     mesh_lower_transport_message_processed_by_higher_layer(pdu);
 
                     btstack_assert(mesh_control_message_handler != NULL);
-                    mesh_pdu_t * pdu = (mesh_pdu_t*) incoming_control_pdu;
-                    mesh_control_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
+                    mesh_control_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t*) incoming_control_pdu);
 
                 } else {
 
@@ -905,8 +905,7 @@ static void mesh_upper_transport_run(void){
                     mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)segmented_pdu);
 
                     btstack_assert(mesh_control_message_handler != NULL);
-                    mesh_pdu_t * pdu = (mesh_pdu_t*) incoming_control_pdu;
-                    mesh_control_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, pdu);
+                    mesh_control_message_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t*) incoming_control_pdu);
 
                 } else {
 
@@ -1037,7 +1036,6 @@ static mesh_upper_transport_pdu_t * mesh_upper_transport_find_and_remove_pdu_for
 
 static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     mesh_upper_transport_pdu_t * upper_pdu;
-    mesh_network_pdu_t * network_pdu;
     mesh_segmented_pdu_t * segmented_pdu;
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
@@ -1052,8 +1050,8 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
                     segmented_pdu = (mesh_segmented_pdu_t *) pdu;
                     // free chunks
                     while (!btstack_linked_list_empty(&segmented_pdu->segments)){
-                        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&segmented_pdu->segments);
-                        mesh_network_pdu_free(network_pdu);
+                        mesh_network_pdu_t * chunk_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&segmented_pdu->segments);
+                        mesh_network_pdu_free(chunk_pdu);
                     }
                     // free segmented pdu
                     btstack_memory_mesh_segmented_pdu_free(segmented_pdu);

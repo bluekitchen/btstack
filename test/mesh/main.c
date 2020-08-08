@@ -87,7 +87,11 @@ static hci_transport_config_uart_t config = {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
+
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
@@ -123,12 +127,6 @@ static void sigint_handler(int param){
     hci_close();
     log_info("Good bye, see you.\n");    
     exit(0);
-}
-
-static int led_state = 0;
-void hal_led_toggle(void){
-    led_state = 1 - led_state;
-    printf("LED State %u\n", led_state);
 }
 
 static void local_version_information_handler(uint8_t * packet){

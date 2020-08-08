@@ -275,20 +275,6 @@ static void mesh_network_send_complete(mesh_network_pdu_t * network_pdu){
     }
 }
 
-static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
-
-#ifdef LOG_NETWORK
-    printf("TX-D-NetworkPDU (%p): ", network_pdu);
-    printf_hexdump(network_pdu->data, network_pdu->len);
-#endif
-
-    // add to queue
-    btstack_linked_list_add_tail(&network_pdus_outgoing_gatt, (btstack_linked_item_t *) network_pdu);
-
-    // go
-    mesh_network_run();
-}
-
 // new
 static void mesh_network_send_c(void *arg){
     UNUSED(arg);
@@ -1088,9 +1074,6 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
 
     // go
     mesh_network_run();
-}
-static void mesh_network_encrypt_proxy_configuration_encrypted(mesh_network_pdu_t * network_pdu){
-    (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_ENCRYPTED, network_pdu);
 }
 
 void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu){

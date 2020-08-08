@@ -147,6 +147,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
 
     uint8_t public_oob  = 0;
@@ -240,7 +243,11 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
 static uint8_t device_uuid[16];
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != MESH_BEACON_PACKET) return;
+
     uint16_t oob;
     memcpy(device_uuid, &packet[1], 16);
     oob = big_endian_read_16(packet, 17);

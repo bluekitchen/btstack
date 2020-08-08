@@ -913,7 +913,6 @@ static void mesh_lower_transport_run(void){
 
     while(!btstack_linked_list_empty(&lower_transport_outgoing_ready)) {
         // get next message
-        mesh_network_pdu_t   * network_pdu;
         mesh_segmented_pdu_t   * message_pdu;
         mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&lower_transport_outgoing_ready);
         switch (pdu->pdu_type) {
@@ -962,7 +961,7 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     mesh_lower_transport_run();
 }
 
-static void mesh_lower_transport_dump_network_pdus(const char *name, btstack_linked_list_t *list){
+void mesh_lower_transport_dump_network_pdus(const char *name, btstack_linked_list_t *list){
     printf("List: %s:\n", name);
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, list);
@@ -971,7 +970,8 @@ static void mesh_lower_transport_dump_network_pdus(const char *name, btstack_lin
         printf("- %p: ", network_pdu); printf_hexdump(network_pdu->data, network_pdu->len);
     }
 }
-static void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list){
+
+void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list){
     while (!btstack_linked_list_empty(list)){
         mesh_network_pdu_t * pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(list);
         btstack_memory_mesh_network_pdu_free(pdu);
@@ -1006,9 +1006,6 @@ bool mesh_lower_transport_can_send_to_dest(uint16_t dest){
 }
 
 void mesh_lower_transport_reserve_slot(void){
-}
-
-void mesh_lower_transport_dump(void){
 }
 
 void mesh_lower_transport_reset(void){

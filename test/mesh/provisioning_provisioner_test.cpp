@@ -45,6 +45,7 @@
 #include "mesh/provisioning.h"
 #include "mesh/provisioning_provisioner.h"
 #include "hci_dump.h"
+#include "mock.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -60,37 +61,6 @@ static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
         BYTES_EQUAL(expected[i], actual[i]);
     }
 }
-
-void dump_data(uint8_t * buffer, uint16_t size){
-    static int data_counter = 1;
-    char var_name[80];
-    sprintf(var_name, "test_data_%02u", data_counter);
-    printf("uint8_t %s[] = { ", var_name);
-    for (int i = 0; i < size ; i++){
-        if ((i % 16) == 0) printf("\n    ");
-        printf ("0x%02x, ", buffer[i]);
-    }
-    printf("};\n");
-    data_counter++;
-}
-
-int parse_hex(uint8_t * buffer, const char * hex_string){
-    int len = 0;
-    while (*hex_string){
-        if (*hex_string == ' '){
-            hex_string++;
-            continue;
-        }
-        int high_nibble = nibble_for_char(*hex_string++);
-        int low_nibble = nibble_for_char(*hex_string++);
-        *buffer++ = (high_nibble << 4) | low_nibble;
-        len++;
-    }
-    return len;
-}
-
-// returns if anything was done
-extern "C" int mock_process_hci_cmd(void);
 
 // pb-adv mock for testing
 
@@ -114,7 +84,10 @@ static void pb_adv_emit_pdu_sent(uint8_t status){
 void pb_adv_init(void){}
 void pb_gatt_init(void){}
 
-void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){}
+void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){
+    UNUSED(pb_adv_cid);
+    UNUSED(reason);
+}
 
 void pb_adv_register_provisioner_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
@@ -131,9 +104,14 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t _pdu_size){
+    UNUSED(con_handle);
+    UNUSED(pdu);
+    UNUSED(_pdu_size);
+}
 
 uint16_t pb_adv_create_link(const uint8_t * device_uuid){
+    UNUSED(device_uuid);
     // just simluate opened
     pb_adv_emit_link_open(0, 1);
     return 1;
@@ -185,6 +163,8 @@ static uint8_t      prov_static_oob_data[16];
 static const char * prov_static_oob_string = "00000000000000000102030405060708";
 
 static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
     switch(packet[0]){
         case HCI_EVENT_MESH_META:

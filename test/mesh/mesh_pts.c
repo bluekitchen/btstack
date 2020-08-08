@@ -90,8 +90,6 @@ static const char * prov_public_key_string = "F465E43FF23D3F1B9DC7DFC04DA8758184
 static uint8_t      prov_private_key_data[32];
 static const char * prov_private_key_string = "529AA0670D72CD6497502ED473502B037E8803B5C60829A5A3CAA219505530BA";
 
-static mesh_transport_key_t pts_application_key;
-
 // pin entry (pts)
 static int ui_chars_for_pin; 
 static uint8_t ui_pin[17];
@@ -154,6 +152,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     mesh_provisioning_data_t provisioning_data;
 
     switch(packet[0]){
@@ -204,6 +206,9 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 }
 
 static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
    
     switch(packet[0]){
@@ -227,6 +232,9 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
 }
 
 static void mesh_configuration_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
    
     switch(packet[0]){
@@ -242,48 +250,6 @@ static void mesh_configuration_message_handler(uint8_t packet_type, uint16_t cha
     }
 }
 // PTS
-
-// helper network layer, temp
-static void mesh_pts_received_network_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu){
-    switch (callback_type){
-        case MESH_NETWORK_PDU_RECEIVED:
-            printf("Received network message. SRC %04x, DST %04x, SEQ %04x\n",
-                   mesh_network_src(network_pdu), mesh_network_dst(network_pdu),  mesh_network_seq(network_pdu));
-            printf_hexdump(mesh_network_pdu_data(network_pdu), mesh_network_pdu_len(network_pdu));
-            mesh_network_message_processed_by_higher_layer(network_pdu);
-            break;
-        default:
-            break;
-    }
-}
-
-static uint8_t mesh_network_send(uint8_t ttl, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
-
-    uint16_t netkey_index = 0;
-    uint8_t  ctl = 0;
-    uint16_t src = mesh_node_get_primary_element_address();
-    uint32_t seq = mesh_sequence_number_next();
-
-    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
-    // if (ttl <= 1) return 0;
-
-    // TODO: check transport_pdu_len depending on ctl
-
-    // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 0;
-
-    // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-    if (!network_pdu) return 0;
-
-    // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
-
-    // send network_pdu
-    mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
-    return 0;
-}
 
 static void printf_hex(const uint8_t * data, uint16_t len){
     while (len){
@@ -323,6 +289,9 @@ static void mesh_pts_dump_mesh_options(void){
 }
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != MESH_BEACON_PACKET) return;
     static uint8_t  device_uuid[16];
     uint16_t oob;
@@ -370,16 +339,6 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
         }
     }
     printf("\n");
-}
-
-static void load_pts_tspx_application_key(void){
-    // PTS app key
-    btstack_parse_hex("3216D1509884B533248541792B877F98", 16, pts_application_key.key);
-    pts_application_key.aid = 0x38;
-    pts_application_key.internal_index = mesh_transport_key_get_free_index();
-    mesh_transport_key_add(&pts_application_key);
-    printf("PTS Application Key (AID %02x): ", 0x38);
-    printf_hexdump(pts_application_key.key, 16);
 }
 
 static void send_pts_network_messsage(uint16_t dst_addr, uint8_t ttl){

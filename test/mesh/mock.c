@@ -1,6 +1,7 @@
+
+#include "mock.h"
+
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "ble/att_db.h"
@@ -48,10 +49,14 @@ static void dump_packet(int packet_type, uint8_t * buffer, uint16_t size){
 	}
 	printf("};\n");
 	packet_counter++;
+#else
+UNUSED(packet_type);
+UNUSED(buffer);
+UNUSED(size);
 #endif
 }
 
-void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
+static void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
 	uint32_t rk[RKLENGTH(KEYBITS)];
 	int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
 	rijndaelEncrypt(rk, nrounds, plaintext, cyphertext);
@@ -152,19 +157,27 @@ HCI_STATE hci_get_state(void){
 }
 
 void btstack_run_loop_add_timer(btstack_timer_source_t * ts){
+    UNUSED(ts);
 }
 int btstack_run_loop_remove_timer(btstack_timer_source_t * ts){
+    UNUSED(ts);
 	return 0;
 }
 void btstack_run_loop_set_timer(btstack_timer_source_t * ts, uint32_t timeout){
+    UNUSED(ts);
+    UNUSED(timeout);
 }
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t * ts, void (*fn)(btstack_timer_source_t * ts)){
+    UNUSED(ts);
+    UNUSED(fn);
 }
 static void * timer_context;
 void btstack_run_loop_set_timer_context(btstack_timer_source_t * ts, void * context){
+    UNUSED(ts);
 	timer_context = context;
 }
 void * btstack_run_loop_get_timer_context(btstack_timer_source_t * ts){
+    UNUSED(ts);
 	return timer_context;
 }
 void hci_halting_defer(void){
