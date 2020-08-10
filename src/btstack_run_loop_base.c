@@ -40,7 +40,7 @@
 /*
  *  btstack_run_loop_base.h
  *
- *  Portable implementation of timer and data source managment as base for platform specific implementations
+ *  Portable implementation of timer and data source management as base for platform specific implementations
  */
 
 #include "btstack_debug.h"
@@ -74,7 +74,6 @@ void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t *
     ds->flags &= ~callback_types;
 }
 
-
 bool btstack_run_loop_base_remove_timer(btstack_timer_source_t *ts){
     return btstack_linked_list_remove(&btstack_run_loop_base_timers, (btstack_linked_item_t *) ts);
 }
@@ -96,7 +95,7 @@ void btstack_run_loop_base_add_timer(btstack_timer_source_t *ts){
     it->next = (btstack_linked_item_t *) ts;
 }
 
-void  btstack_run_loop_base_process_timers(uint32_t now){
+void btstack_run_loop_base_process_timers(uint32_t now){
     // process timers, exit when timeout is in the future
     while (btstack_run_loop_base_timers) {
         btstack_timer_source_t * ts = (btstack_timer_source_t *) btstack_run_loop_base_timers;
@@ -107,6 +106,17 @@ void  btstack_run_loop_base_process_timers(uint32_t now){
     }
 }
 
+void btstack_run_loop_base_dump_timer(void){
+#ifdef ENABLE_LOG_INFO
+    btstack_linked_item_t *it;
+    uint16_t i = 0;
+    for (it = (btstack_linked_item_t *) btstack_run_loop_base_timers; it ; it = it->next){
+        btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
+        log_info("timer %u (%p): timeout %u\n", i, ts, ts->timeout);
+    }
+#endif
+
+}
 /**
  * @brief Get time until first timer fires
  * @returns -1 if no timers, time until next timeout otherwise

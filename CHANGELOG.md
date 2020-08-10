@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
+## Changes August 2020
+
+### Fixed
+
+### Added
+- `btstack_run_loop_base`: added `btstack_run_loop_base_dump_timer`
+
+### Changed
+
 
 ## Changes July 2020
 
