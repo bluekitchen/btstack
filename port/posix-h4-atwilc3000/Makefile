@@ -3,7 +3,6 @@ BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_chipset_atwilc3000.c \
-	btstack_link_key_db_tlv.c \
 	btstack_run_loop_posix.c \
 	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \

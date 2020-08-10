@@ -104,9 +104,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
-#ifdef ENABLE_CLASSIC
-            hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-#endif
 #ifdef ENABLE_BLE
             le_device_db_tlv_configure(tlv_impl, &tlv_context);
 #endif
