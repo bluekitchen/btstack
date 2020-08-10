@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2012-2014
 
 # avr-objcopy -I ihex -O binary hci_581_active_uart.hex hci_581_active_uart.bin
@@ -8,6 +8,7 @@
 
 from intelhex import IntelHex
 import glob
+import sys
 
 usage = '''This script converts the HCI Firmware in .hex format for Dialog Semiconductor
 into C files to be used with BTstack.
@@ -49,14 +50,14 @@ const uint32_t da14581_fw_size = sizeof(da14581_fw_data);
 
 def convert_hex(basename):
 	hex_name = basename + '.hex'
-	print ('Reading %s' % hex_name)
+	print('Reading %s' % hex_name)
 	ih = IntelHex(hex_name)
 	# f = open(basename + '.txt', 'w') # open file for writing
 	# ih.dump(f)                    # dump to file object
 	# f.close()                     # close file
 	size = 	ih.maxaddr() - ih.minaddr() + 1
-	print '- Start: %x' % ih.minaddr()
-	print '- End:   %x' % ih.maxaddr()
+	print('- Start: %x' % ih.minaddr())
+	print('- End:   %x' % ih.maxaddr())
 
 	with open(basename + '.h', 'w') as fout:
 		fout.write(header.replace('BASENAME',basename));
@@ -66,7 +67,7 @@ def convert_hex(basename):
 		fout.write('    ')
 		for i in range(0,size):
 			if i % 1000 == 0:
-				print ('- Write %05u/%05u' % (i, size))
+				print('- Write %05u/%05u' % (i, size))
 			byte = ih[ih.minaddr() + i]
 			fout.write("0x{0:02x}, ".format(byte))
 			if (i & 0x0f) == 0x0f:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2018
 import sys
 
@@ -70,7 +70,7 @@ def convert_emp(basename):
 			for i in range(0,size):
 				if i % 1000 == 0:
 					print ('- Write %05u/%05u' % (i, size))
-				byte = ord(firm[i])
+				byte = firm[i]
 				fout.write("0x{0:02x}, ".format(byte))
 				if (i & 0x0f) == 0x0f:
 					fout.write('\n    ')

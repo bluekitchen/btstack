@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2019
 
 import sys
@@ -66,7 +66,7 @@ if len(sys.argv) != 2:
 prs_file = sys.argv[1]
 fout     = sys.stdout
 
-with open (prs_file, 'rb') as fin:
+with open (prs_file, 'rt') as fin:
     for line_with_nl in fin:
         line = line_with_nl.strip()
         if line.startswith('&'):
