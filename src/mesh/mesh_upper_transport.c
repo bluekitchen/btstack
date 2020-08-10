@@ -732,7 +732,8 @@ static void mesh_upper_transport_send_access(mesh_upper_transport_pdu_t * upper_
     // flatten segmented pdu into crypto buffer
     uint16_t payload_len = mesh_upper_pdu_flatten(upper_pdu, incoming_pdu_singleton.access.data, sizeof(incoming_pdu_singleton.access.data));
     btstack_assert(payload_len == upper_pdu->len);
-
+    UNUSED(payload_len);
+    
     // Dump PDU
     printf("[+] Upper transport, send upper (un)segmented Access PDU - dest %04x, seq %06x\n", upper_pdu->dst, upper_pdu->seq);
     mesh_print_hex("Access Payload", incoming_pdu_singleton.access.data, upper_pdu->len);

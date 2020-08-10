@@ -416,6 +416,7 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
 
     uint8_t net_mic_len = ctl_in_bit_7 ? 8 : 4;
     btstack_assert((network_pdu->len + net_mic_len) <= 29);
+    UNUSED(net_mic_len);
 
     // queue up
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
