@@ -402,7 +402,7 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
             // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
             break;
         case MESH_NETWORK_PDU_ENCRYPTED:
-            request_can_send_now_proxy_configuration_callback_handler(network_pdu);
+            request_can_send_now_proxy_configuration_callback_handler(received_network_pdu);
             break;
         default:
             break;

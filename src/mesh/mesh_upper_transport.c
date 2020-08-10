@@ -967,14 +967,14 @@ static void mesh_upper_transport_run(void){
                 // segmented access pdus required a mesh-segmented-pdu
                 upper_pdu = (mesh_upper_transport_pdu_t *) pdu;
                 if (upper_pdu->lower_pdu == NULL){
-                    segmented_pdu = btstack_memory_mesh_segmented_pdu_get();
+                    upper_pdu->lower_pdu  = (mesh_pdu_t *) btstack_memory_mesh_segmented_pdu_get();
                 }
-                if (segmented_pdu == NULL) {
+                if (upper_pdu->lower_pdu == NULL){
                     mesh_upper_transport_need_pdu_for_run_outgoing();
                     abort_outgoing_loop = true;
                     break;
                 }
-                upper_pdu->lower_pdu = (mesh_pdu_t *) segmented_pdu;
+                segmented_pdu = (mesh_segmented_pdu_t *) upper_pdu->lower_pdu;
                 segmented_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_SEGMENTED;
                 // and a mesh-network-pdu for each segment in upper pdu
                 transmic_len = ((upper_pdu->flags & MESH_TRANSPORT_FLAG_TRANSMIC_64) != 0) ? 8 : 4;
