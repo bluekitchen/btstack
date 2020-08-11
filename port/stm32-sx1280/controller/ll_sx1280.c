@@ -65,6 +65,12 @@ extern LPTIM_HandleTypeDef hlptim1;
 #define ADV_MAX_PAYLOAD    (6+6+22)
 #define LL_MAX_PAYLOAD      37
 
+// split 256 bytes data buffer into 2 rx and 2 tx buffers
+#define SX1280_RX0_OFFSET 0
+#define SX1280_RX1_OFFSET 64
+#define SX1280_TX0_OFFSET 128
+#define SX1280_TX1_OFFSET 192
+
 // set output power in dBM, range [-18..+13] dBm - Bluetooth LE max is 10 dBM
 #define TX_OUTPUT_POWER                             10
 
@@ -376,7 +382,8 @@ static void send_adv(void){
     memcpy(&adv_buffer[2], ctx.bd_addr_le, 6);
     memcpy(&adv_buffer[8], ctx.adv_data, ctx.adv_len);
     uint16_t packet_size = 2 + adv_buffer[1];
-    Radio.SendPayload( adv_buffer, packet_size, ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
+    SX1280HalWriteBuffer( SX1280_TX0_OFFSET, adv_buffer, packet_size );
+    SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
 }
 
 static void receive_adv_response(void){
@@ -617,12 +624,16 @@ static void radio_on_rx_done(void ){
     }
 
     // Read complete buffer
-    SX1280HalReadBuffer( 0, &rx_packet->header, 2 + LL_MAX_PAYLOAD );
-
+    uint16_t max_packet_len;
     if (ll_state == LL_STATE_CONNECTED){
         // mark as data packet
         rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
+        max_packet_len = 2 + 27;
+    } else {
+        rx_packet->flags = 0;
+        max_packet_len = 2 + LL_MAX_PAYLOAD;
     }
+    SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
 
     // queue received packet
     btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
@@ -655,11 +666,11 @@ static void radio_on_rx_done(void ){
         if (ctx.tx_pdu == NULL){
             empty_packet[0] = (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | PDU_DATA_LLID_DATA_CONTINUE;
             empty_packet[1] = 0;
-            Radio.SetPayload(empty_packet, 2);
+            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, empty_packet, 2 );
         } else {
             uint8_t md = btstack_linked_queue_empty(&ctx.tx_queue) ? 0 : 1;
             ctx.tx_pdu->header |= (md << 4) | (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2);
-            Radio.SetPayload((uint8_t *) &ctx.tx_pdu->header, 2 + ctx.tx_pdu->len);
+            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, (uint8_t *) &ctx.tx_pdu->header, 2 + ctx.tx_pdu->len );
         }
 
         // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 50 us
@@ -758,7 +769,7 @@ void ll_radio_on(void){
     Radio.SetStandby( STDBY_RC );
     Radio.SetPacketType( modulationParams.PacketType );
     Radio.SetModulationParams( &modulationParams );
-    Radio.SetBufferBaseAddresses( 0x00, 0x00 );
+    Radio.SetBufferBaseAddresses( SX1280_TX0_OFFSET, SX1280_RX0_OFFSET );
     Radio.SetTxParams( TX_OUTPUT_POWER, RADIO_RAMP_02_US );
     
     // Go back to Frequcency Synthesis Mode, reduces transition time between Rx<->TX
