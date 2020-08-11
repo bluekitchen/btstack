@@ -145,15 +145,15 @@ static void hid_host_setup(void){
     l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 0xffff, gap_get_security_level());
     l2cap_register_service(packet_handler, PSM_HID_CONTROL, 0xffff, gap_get_security_level());
 
-    // Allow sniff mode requests by HID device
-    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE);
+    // Allow sniff mode requests by HID device and support role switch
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
+
+    // try to become master on incoming connections
+    hci_set_master_slave_policy(HCI_ROLE_MASTER);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // Allow sniff mode requests by HID device
-    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE);
 
     // Disable stdout buffering
     setbuf(stdout, NULL);
