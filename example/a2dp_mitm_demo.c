@@ -574,11 +574,15 @@ static void stdin_process(char cmd){
             show_status();
             break;
         case 'p':
+            // allow role switches for outgoing connections to smartphone
+            gap_set_allow_role_switch(true);
             status = a2dp_sink_establish_stream(smartphone_addr, mitm_context.a2dp_sink_local_seid, &mitm_context.a2dp_sink_cid);
             printf("Creating A2DP Connection to remote audio source (smartphone) %s, a2dp sink cid 0x%02x\n",
                     bd_addr_to_str(smartphone_addr), mitm_context.a2dp_sink_cid);
             break;
         case 'h':
+            // don't allow role switches for outgoing connections to headset
+            gap_set_allow_role_switch(false);
             status = a2dp_source_establish_stream(headset_addr, mitm_context.a2dp_source_local_seid, &mitm_context.a2dp_source_cid);
             printf("Creating A2DP Connection to remote audio sink (headset) %s, a2dp source cid 0x%02x\n",
                     bd_addr_to_str(headset_addr), mitm_context.a2dp_source_cid);
