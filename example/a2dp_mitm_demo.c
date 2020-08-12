@@ -596,6 +596,10 @@ static void stdin_process(char cmd){
             printf("Deleting all link keys\n");
             gap_delete_all_link_keys();
             break;
+        case 'w':
+            printf("Pause stream.\n");
+            status = a2dp_source_pause_stream(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
+            break;
         default:
             show_usage();
             break;
