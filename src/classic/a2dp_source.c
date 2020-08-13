@@ -57,13 +57,18 @@
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 
+static btstack_timer_source_t a2dp_source_set_config_timer;
+
+static bool discover_seps_in_process = false;
+static bool stream_endpoint_configured = false;
+
 static avdtp_stream_endpoint_context_t sc;
 static avdtp_sep_t remote_seps[AVDTP_MAX_SEP_NUM];
 static int num_remote_seps = 0;
-static btstack_timer_source_t a2dp_source_set_config_timer;
 static btstack_packet_handler_t a2dp_source_packet_handler_user;
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void a2dp_try_discovering_seps_with_next_waiting_connection(void);
 
 void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
@@ -222,16 +227,22 @@ static void a2dp_signaling_emit_reconfigured(uint16_t cid, uint8_t local_seid, u
     (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer){
+    if (stream_endpoint_configured) return;
+
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
 
-    if (connection == NULL) return;
-    if (connection->a2dp_source_state != A2DP_CONNECTED) return;
+    if (connection == NULL || connection->a2dp_source_state != A2DP_CONNECTED) {
+        a2dp_try_discovering_seps_with_next_waiting_connection();
+        return;
+    }
 
     connection->a2dp_source_state = A2DP_W2_DISCOVER_SEPS;
     avdtp_source_discover_stream_endpoints(avdtp_cid);
 }
+
 static void a2dp_source_set_config_timer_start(uint16_t avdtp_cid){
     log_info("a2dp_source_set_config_timer_start cid 0%02x", avdtp_cid);
     btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
@@ -240,9 +251,40 @@ static void a2dp_source_set_config_timer_start(uint16_t avdtp_cid){
     btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, (void *)(uintptr_t)avdtp_cid);
     btstack_run_loop_add_timer(&a2dp_source_set_config_timer);
 }
+
 static void a2dp_source_set_config_timer_stop(void){
     log_info("a2dp_source_set_config_timer_stop");
     btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
+}
+
+static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
+    discover_seps_in_process = true;
+    sc.active_remote_sep_index = 0;
+    num_remote_seps = 0;
+    memset(remote_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
+
+    // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
+    if (connection->a2dp_source_state == A2DP_W4_CONNECTED){
+        log_info("A2DP singnaling connection: discover seps");
+        connection->a2dp_source_state = A2DP_W2_DISCOVER_SEPS;
+        avdtp_source_discover_stream_endpoints(connection->avdtp_cid);
+    } else {
+        log_info("A2DP singnaling connection: wait a bit, then discover seps");
+        connection->a2dp_source_state = A2DP_CONNECTED;
+        a2dp_source_set_config_timer_start(connection->avdtp_cid);
+    }
+}
+
+static void a2dp_try_discovering_seps_with_next_waiting_connection(void){
+    discover_seps_in_process = false;
+                    
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, avdtp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_connection_t * next_connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (!next_connection->a2dp_source_discover_seps) continue;
+        a2dp_start_discovering_seps(next_connection);
+    }
 }
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -262,8 +304,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
     
     switch (packet[2]){
-        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:{
-            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, sc.remote_addr);
+        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             
             connection = avdtp_get_connection_for_avdtp_cid(cid);
@@ -273,32 +315,21 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (status != 0){
                 log_info("A2DP singnaling connection failed status %d", status);
                 connection->a2dp_source_state = A2DP_IDLE;
-                a2dp_signaling_emit_connection_established(cid, sc.remote_addr, status);
+                a2dp_signaling_emit_connection_established(cid, address, status);
                 break;
             }
             log_info("A2DP singnaling connection established avdtp_cid 0x%02x", cid);
-            
 
-            sc.avdtp_cid = cid;
-            sc.active_remote_sep_index = 0;
-            num_remote_seps = 0;
-            memset(remote_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
+            if (stream_endpoint_configured) return;
+            if (discover_seps_in_process){
+                connection->a2dp_source_discover_seps = true;
+                break;
+            } 
 
-            // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
-            if (connection->a2dp_source_state == A2DP_W4_CONNECTED){
-                log_info("A2DP singnaling connection: discover seps");
-                connection->a2dp_source_state = A2DP_W2_DISCOVER_SEPS;
-                avdtp_source_discover_stream_endpoints(sc.avdtp_cid);
-            } else {
-                log_info("A2DP singnaling connection: wait a bit, then discover seps");
-                connection->a2dp_source_state = A2DP_CONNECTED;
-                a2dp_source_set_config_timer_start(cid);
-            }
-            
+            a2dp_start_discovering_seps(connection);
             // notify app
-            a2dp_signaling_emit_connection_established(cid, sc.remote_addr, ERROR_CODE_SUCCESS);
+            a2dp_signaling_emit_connection_established(connection->avdtp_cid, address, ERROR_CODE_SUCCESS);
             break;
-        }
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
             log_info("A2DP received SBC capability, received: local seid %d, remote seid %d, expected: local seid %d, remote seid %d",
@@ -375,6 +406,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 if (sc.active_remote_sep_index >= num_remote_seps){
                     // we didn't find a suitable SBC stream endpoint, sorry.
                     connection->a2dp_source_state = A2DP_CONNECTED;
+                    connection->a2dp_source_discover_seps = false;
+
+                    a2dp_try_discovering_seps_with_next_waiting_connection();
                 }
             }
             break;
@@ -401,6 +435,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             log_info("A2DP received SBC Config: sample rate %u, max bitpool %u., remote seid %d", sc.sampling_frequency, sc.max_bitpool_value, avdtp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet));
             connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             a2dp_signaling_emit_media_codec_sbc(packet, size);
+
+            discover_seps_in_process = false;
+            stream_endpoint_configured = true;
             break;
         
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
@@ -450,8 +487,15 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            connection->a2dp_source_state = A2DP_W2_GET_CAPABILITIES;
-            sc.active_remote_sep_index = 0;
+            if (num_remote_seps > 0){
+                connection->a2dp_source_state = A2DP_W2_GET_CAPABILITIES;
+                sc.active_remote_sep_index = 0;
+            } else {
+                connection->a2dp_source_state = A2DP_CONNECTED; 
+                connection->a2dp_source_discover_seps = false;
+
+                a2dp_try_discovering_seps_with_next_waiting_connection();
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
@@ -532,6 +576,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:{
+            stream_endpoint_configured = false;
+            
             uint8_t event[6];
             int pos = 0;
             event[pos++] = HCI_EVENT_A2DP_META;
@@ -550,7 +596,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
             
             connection->a2dp_source_state = A2DP_CONFIGURED;
-            
             uint8_t event[6];
             int pos = 0;
             event[pos++] = HCI_EVENT_A2DP_META;
@@ -601,8 +646,6 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    (void)memcpy(sc.remote_addr, remote_addr, 6);
-   
     uint8_t status = avdtp_source_connect(remote_addr, avdtp_cid);
     if (status != ERROR_CODE_SUCCESS) return status;
 
