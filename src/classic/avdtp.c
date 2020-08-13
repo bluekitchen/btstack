@@ -287,6 +287,10 @@ btstack_linked_list_t * avdtp_get_stream_endpoints(void){
     return &stream_endpoints;
 }
 
+btstack_linked_list_t * avdtp_get_connections(void){
+    return &connections;
+}
+
 static avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &connections);
@@ -406,6 +410,9 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label();
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
+    connection->a2dp_source_state = A2DP_IDLE;
+    connection->a2dp_source_discover_seps = false;
+    connection->a2dp_sink_state = A2DP_IDLE;
     connection->avdtp_cid = cid;
     (void)memcpy(connection->remote_addr, remote_addr, 6);
    

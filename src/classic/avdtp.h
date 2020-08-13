@@ -436,9 +436,6 @@ typedef struct {
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
 
-    a2dp_state_t a2dp_source_state;
-    a2dp_state_t a2dp_sink_state;
-
     // used to reassemble fragmented commands
     avdtp_signaling_packet_t acceptor_signaling_packet;
 
@@ -473,6 +470,12 @@ typedef struct {
     
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
+
+    a2dp_state_t a2dp_source_state;
+    bool a2dp_source_discover_seps;
+
+    a2dp_state_t a2dp_sink_state;
+
 } avdtp_connection_t;
 
 
@@ -551,6 +554,7 @@ typedef struct {
 void avdtp_init(void);
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
+btstack_linked_list_t * avdtp_get_connections(void);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
