@@ -995,8 +995,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                     log_info("Connection to %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
                                     break;
                             }
-                            avdtp_finalize_connection(connection);
                             avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr, status);
+                            avdtp_finalize_connection(connection);
                             break;
 
                         case AVDTP_SIGNALING_CONNECTION_OPENED:
