@@ -318,6 +318,9 @@ static struct {
     // current outgoing packet
     ll_pdu_t * tx_pdu;
 
+    // current incomoing packet
+    ll_pdu_t * rx_pdu;
+
     // tx queue
     btstack_linked_queue_t tx_queue;
 
@@ -365,14 +368,37 @@ static void btstack_memory_ll_pdu_free(ll_pdu_t *acl_le_pdu){
     btstack_memory_pool_free(&ll_pdu_pool, acl_le_pdu);
 }
 
-//
+
+static bool receive_prepare_rx_bufffer(void){
+    if (ctx.rx_pdu == NULL){
+        ctx.rx_pdu = btstack_memory_ll_pdu_get();
+    }
+    if (ctx.rx_pdu == NULL){
+        printf("No free RX buffer\n");
+        return false;
+    } else {
+        return true;
+    }
+}
+
+static void receive_adv_response(void){
+    if (receive_prepare_rx_bufffer()) {
+        Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 10 } );  // 220 us
+    }
+}
+
 static void receive_first_master(void){
-    Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_1000_US, 1000 } );
+    if (receive_prepare_rx_bufffer()){
+        Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_1000_US, 1000 } );
+    }
 }
 
 static void receive_master(void){
-    Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_1000_US, 1 } );
+    if (receive_prepare_rx_bufffer()) {
+        Radio.SetRx((TickTime_t) {RADIO_TICK_SIZE_1000_US, 1});
+    }
 }
+
 
 static void send_adv(void){
     // setup advertisement: header (2) + addr (6) + data (31)
@@ -386,9 +412,6 @@ static void send_adv(void){
     SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
 }
 
-static void receive_adv_response(void){
-    Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 10 } );  // 220 us
-}
 
 static void select_channel(uint8_t channel){
     // Set Whitening seed
@@ -615,13 +638,10 @@ static void radio_on_rx_done(void ){
     uint8_t next_expected_sequence_number;
     // uint8_t more_data;
 
-    rx_packet = btstack_memory_ll_pdu_get();
-
-    // if no buffer ready, just drop it
-    if (rx_packet == NULL) {
-        printf("No free RX buffer\n");
-        return;
-    }
+    // fetch reserved rx pdu
+    rx_packet = ctx.rx_pdu;
+    btstack_assert(rx_packet != NULL);
+    ctx.rx_pdu = NULL;
 
     // Read complete buffer
     uint16_t max_packet_len;
