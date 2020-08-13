@@ -5191,6 +5191,7 @@ uint8_t gap_request_role(bd_addr_t addr, hci_role_t role){
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     conn->request_role = role;
     hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 #ifdef ENABLE_BLE
