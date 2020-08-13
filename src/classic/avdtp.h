@@ -120,7 +120,7 @@ typedef enum {
 } avdtp_signal_identifier_t;
 
 typedef enum {
-    AVDTP_SINGLE_PACKET= 0,
+    AVDTP_SINGLE_PACKET = 0,
     AVDTP_START_PACKET    ,
     AVDTP_CONTINUE_PACKET ,
     AVDTP_END_PACKET
@@ -279,12 +279,12 @@ typedef struct {
 } avdtp_media_packet_header_t;
 
 typedef enum {
-    AVDTP_BASIC_SERVICE_MODE,
+    AVDTP_BASIC_SERVICE_MODE = 0,
     AVDTP_MULTIPLEXING_SERVICE_MODE
 } avdtp_service_mode_t;
 
 typedef enum {
-    AVDTP_STREAM_ENDPOINT_IDLE,
+    AVDTP_STREAM_ENDPOINT_IDLE = 0,
     AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE,
     AVDTP_STREAM_ENDPOINT_CONFIGURED,
 
@@ -300,7 +300,7 @@ typedef enum {
 } avdtp_stream_endpoint_state_t;
 
 typedef enum {
-    AVDTP_INITIATOR_STREAM_CONFIG_IDLE,
+    AVDTP_INITIATOR_STREAM_CONFIG_IDLE = 0,
     AVDTP_INITIATOR_W2_SET_CONFIGURATION,
     AVDTP_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID,
     AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID,
@@ -313,7 +313,7 @@ typedef enum {
 } avdtp_initiator_stream_endpoint_state_t;
 
 typedef enum {
-    AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE,
+    AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE = 0,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT,
@@ -347,7 +347,7 @@ typedef struct {
 
 
 typedef enum {
-    AVDTP_SIGNALING_CONNECTION_IDLE,
+    AVDTP_SIGNALING_CONNECTION_IDLE = 0,
     AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE,
     AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
@@ -357,7 +357,7 @@ typedef enum {
 } avdtp_connection_state_t;
 
 typedef enum {
-    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE,
+    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE = 0,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE,
@@ -365,7 +365,7 @@ typedef enum {
 } avdtp_acceptor_connection_state_t;
 
 typedef enum {
-    AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE = 0,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES,
@@ -388,12 +388,34 @@ typedef struct {
 } avdtp_signaling_packet_t;
 
 typedef enum {
-    AVDTP_CONFIGURATION_STATE_IDLE,
+    AVDTP_CONFIGURATION_STATE_IDLE = 0,
     AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED,
     AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED,
     AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED,
     AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED,
 } avtdp_configuration_state_t;
+
+typedef enum {
+    A2DP_IDLE = 0,
+    A2DP_W4_CONNECTED,
+    A2DP_CONNECTED,
+    A2DP_W2_DISCOVER_SEPS,
+    A2DP_W2_GET_CAPABILITIES,
+    A2DP_W2_GET_ALL_CAPABILITIES,
+    A2DP_W2_SET_CONFIGURATION,      //5
+    A2DP_W4_GET_CONFIGURATION,
+    A2DP_W4_SET_CONFIGURATION,
+    A2DP_CONFIGURED,
+    A2DP_W2_SUSPEND_STREAM_WITH_SEID,
+    A2DP_W2_RECONFIGURE_WITH_SEID,
+    A2DP_W2_OPEN_STREAM_WITH_SEID,   //10
+    A2DP_W4_OPEN_STREAM_WITH_SEID,
+    A2DP_W2_START_STREAM_WITH_SEID,
+    A2DP_W2_ABORT_STREAM_WITH_SEID,
+    A2DP_W2_STOP_STREAM_WITH_SEID,
+    A2DP_STREAMING_OPENED
+} a2dp_state_t;
+
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -413,6 +435,9 @@ typedef struct {
     avdtp_connection_state_t state;
     avdtp_acceptor_connection_state_t  acceptor_connection_state;
     avdtp_initiator_connection_state_t initiator_connection_state;
+
+    a2dp_state_t a2dp_source_state;
+    a2dp_state_t a2dp_sink_state;
 
     // used to reassemble fragmented commands
     avdtp_signaling_packet_t acceptor_signaling_packet;
@@ -450,25 +475,6 @@ typedef struct {
     btstack_timer_source_t retry_timer;
 } avdtp_connection_t;
 
-typedef enum {
-    A2DP_IDLE,
-    A2DP_W4_CONNECTED,
-    A2DP_CONNECTED,
-    A2DP_W2_DISCOVER_SEPS,
-    A2DP_W2_GET_CAPABILITIES,
-    A2DP_W2_GET_ALL_CAPABILITIES,
-    A2DP_W2_SET_CONFIGURATION,      //5
-    A2DP_W4_GET_CONFIGURATION,
-    A2DP_W4_SET_CONFIGURATION,
-    A2DP_W2_SUSPEND_STREAM_WITH_SEID,
-    A2DP_W2_RECONFIGURE_WITH_SEID,
-    A2DP_W2_OPEN_STREAM_WITH_SEID,   //10
-    A2DP_W4_OPEN_STREAM_WITH_SEID,
-    A2DP_W2_START_STREAM_WITH_SEID,
-    A2DP_W2_ABORT_STREAM_WITH_SEID,
-    A2DP_W2_STOP_STREAM_WITH_SEID,
-    A2DP_STREAMING_OPENED
-} a2dp_state_t;
 
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
@@ -543,7 +549,7 @@ typedef struct {
 } avdtp_stream_endpoint_context_t;
 
 void avdtp_init(void);
-avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t l2cap_cid);
+avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
