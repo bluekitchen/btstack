@@ -139,6 +139,15 @@ hci_role_t gap_get_role(hci_con_handle_t connection_handle);
 
 // Classic
 
+/**
+ * @brief Request role switch
+ * @note this only requests the role switch. A HCI_EVENT_ROLE_CHANGE is emitted and its status field will indicate if the switch was succesful
+ * @param addr
+ * @param hci_role_t HCI_ROLE_MASTER / HCI_ROLE_SLAVE
+ * @result status
+ */
+uint8_t gap_request_role(bd_addr_t addr, hci_role_t role);
+
 /** 
  * @brief Sets local name.
  * @note has to be done before stack starts up
@@ -695,7 +704,7 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 
 
 /**
- * @brief Get state of connection re-encryptiong for bonded devices when in central role
+ * @brief Get state of connection re-encryption for bonded devices when in central role
  * @note used by gatt_client and att_server to wait for re-encryption
  * @param con_handle
  * @return 1 if security setup is active

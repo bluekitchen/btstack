@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - `btstack_run_loop_base`: added `btstack_run_loop_base_dump_timer`
-
+- GAP: request role change for classic connection via `gap_request_role`
 ### Changed
 
 

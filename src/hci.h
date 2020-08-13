@@ -530,7 +530,10 @@ typedef struct {
 
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;
-    
+
+    // request role switch
+    hci_role_t request_role;
+
     btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 

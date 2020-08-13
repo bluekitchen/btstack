@@ -201,6 +201,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
 #ifdef ENABLE_CLASSIC
+    conn->request_role = HCI_ROLE_INVALID;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
@@ -3737,7 +3738,7 @@ static bool hci_run_general_gap_le(void){
 }
 #endif
 
-static bool hci_run_general_pending_commmands(void){
+static bool hci_run_general_pending_commands(void){
     btstack_linked_item_t * it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it != NULL; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
@@ -3960,6 +3961,13 @@ static bool hci_run_general_pending_commmands(void){
                 hci_send_cmd(&hci_sniff_mode, connection->con_handle, connection->sniff_max_interval, sniff_min_interval, connection->sniff_attempt, connection->sniff_timeout);
                 return true;
         }
+
+        if (connection->request_role != HCI_ROLE_INVALID){
+            hci_role_t  role = connection->request_role;
+            connection->request_role = HCI_ROLE_INVALID;
+            hci_send_cmd(&hci_switch_role_command, connection->address, role);
+            return true;
+        }
 #endif
 
 #ifdef ENABLE_BLE
@@ -4030,7 +4038,7 @@ static void hci_run(void){
 #endif
 
     // send pending HCI commands
-    done = hci_run_general_pending_commmands();
+    done = hci_run_general_pending_commands();
     if (done) return;
 
     // stack state sub statemachines
@@ -5177,6 +5185,13 @@ hci_role_t gap_get_role(hci_con_handle_t connection_handle){
     return (hci_role_t) conn->role;
 }
 
+
+uint8_t gap_request_role(bd_addr_t addr, hci_role_t role){
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    conn->request_role = role;
+    hci_run();
+}
 
 #ifdef ENABLE_BLE
 
