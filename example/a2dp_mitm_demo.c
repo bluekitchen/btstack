@@ -426,6 +426,13 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             }
             mitm_context.a2dp_source_cid = a2dp_subevent_signaling_connection_established_get_a2dp_cid(packet);
             printf("A2DP Source: Connected to device with addr %s, a2dp_cid 0x%02x.\n", bd_addr_to_str(event_addr), mitm_context.a2dp_source_cid);
+
+            // check role
+            if (gap_get_role(mitm_context.a2dp_source_con_handle) == HCI_ROLE_SLAVE){
+                printf("A2DP Source: In slave role, request master role\n");
+                gap_request_role(headset_addr, HCI_ROLE_MASTER);
+            }
+
             break;
 
          case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
