@@ -286,6 +286,16 @@ int  gap_mitm_protection_required_for_security_level(gap_security_level_t level)
 
 /**
  * @brief Set parameters for LE Scan
+ * @param scan_type 0 = passive, 1 = active
+ * @param scan_interval range 0x0004..0x4000, unit 0.625 ms
+ * @param scan_window range 0x0004..0x4000, unit 0.625 ms
+ * @param scanning_filter_policy 0 = all devices, 1 = all from whitelist
+ */
+void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window, uint8_t scanning_filter_policy);
+
+/**
+ * @brief Set parameters for LE Scan
+ * @deprecated Use gap_set_scan_params instead
  */
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 

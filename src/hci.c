@@ -2966,7 +2966,8 @@ static void hci_state_reset(void){
 #endif
 #ifdef ENABLE_LE_CENTRAL
     hci_stack->le_scanning_active  = 0;
-    hci_stack->le_scan_type = 0xff; 
+    hci_stack->le_scan_type = 0xff;
+    hci_stack->le_scan_filter_policy = 0;
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
@@ -3623,7 +3624,8 @@ static bool hci_run_general_gap_le(void){
         } else {
             int scan_type = (int) hci_stack->le_scan_type;
             hci_stack->le_scan_type = 0xff;
-            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
+            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
+                         hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
         }
         return true;
     }
