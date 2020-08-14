@@ -3616,37 +3616,52 @@ static bool hci_run_general_gap_le(void){
     if ( (hci_stack->le_own_addr_type != BD_ADDR_TYPE_LE_PUBLIC) && (hci_stack->le_random_address_set == 0u) ) return false;
 
 #ifdef ENABLE_LE_CENTRAL
-    // parameter change requires scanning to be stopped first
-    if (hci_stack->le_scan_type != 0xffu) {
-        if (hci_stack->le_scanning_active){
-            hci_stack->le_scanning_active = 0;
-            hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
-        } else {
-            int scan_type = (int) hci_stack->le_scan_type;
-            hci_stack->le_scan_type = 0xff;
-            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
-                         hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
+    // scanning control
+    bool scanning_stop = false;
+    if (hci_stack->le_scanning_active) {
+        // parameter change requires scanning to be off, or, it might be disabled
+        if ((hci_stack->le_scan_type != 0xffu) || !hci_stack->le_scanning_enabled){
+            scanning_stop = false;
         }
+    }
+
+    if (scanning_stop){
+        hci_stack->le_scanning_active = 0;
+        hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
         return true;
     }
-    // finally, we can enable/disable le scan
-    if ((hci_stack->le_scanning_enabled != hci_stack->le_scanning_active)){
-        hci_stack->le_scanning_active = hci_stack->le_scanning_enabled;
-        hci_send_cmd(&hci_le_set_scan_enable, hci_stack->le_scanning_enabled, 0);
+
+    if (hci_stack->le_scan_type != 0xffu){
+        int scan_type = (int) hci_stack->le_scan_type;
+        hci_stack->le_scan_type = 0xff;
+        hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
+                     hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
+        return true;
+    }
+
+    // finally, we can start scanning
+    if ((hci_stack->le_scanning_enabled && !hci_stack->le_scanning_active)){
+        hci_stack->le_scanning_active = true;
+        hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
         return true;
     }
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
     // le advertisement control
-
-    // disable advertisements if changes are required
-    if (hci_stack->le_advertisements_active && (hci_stack->le_advertisements_todo != 0)){
-        if (hci_stack->le_advertisements_active){
-            hci_stack->le_advertisements_active = 0;
-            hci_send_cmd(&hci_le_set_advertise_enable, 0);
-            return true;
+    bool advertising_stop = false;
+    if (hci_stack->le_advertisements_active){
+        // parameter change requires scanning to be off, or, it might be disabled
+        if ((hci_stack->le_advertisements_todo != 0) && !hci_stack->le_advertisements_enabled_for_current_roles) {
+            advertising_stop = true;
         }
     }
+
+    if (advertising_stop){
+        hci_stack->le_advertisements_active = 0;
+        hci_send_cmd(&hci_le_set_advertise_enable, 0);
+        return true;
+    }
+
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
         hci_send_cmd(&hci_le_set_advertising_parameters,
@@ -3707,8 +3722,14 @@ static bool hci_run_general_gap_le(void){
     if (whitelist_modification_pending){
 
 #ifdef ENABLE_LE_CENTRAL
+        bool connecting_stop = false;
+
         // stop connecting if modification pending
-        if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
+        if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE) {
+            connecting_stop = true;
+        }
+
+        if (connecting_stop){
             hci_send_cmd(&hci_le_create_connection_cancel);
             return true;
         }
@@ -4893,12 +4914,12 @@ void gap_set_local_name(const char * local_name){
 
 #ifdef ENABLE_LE_CENTRAL
 void gap_start_scan(void){
-    hci_stack->le_scanning_enabled = 1;
+    hci_stack->le_scanning_enabled = true;
     hci_run();
 }
 
 void gap_stop_scan(void){
-    hci_stack->le_scanning_enabled = 0;
+    hci_stack->le_scanning_enabled = false;
     hci_run();
 }
 

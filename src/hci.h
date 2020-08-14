@@ -890,8 +890,8 @@ typedef struct {
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
-    uint8_t   le_scanning_enabled;
-    uint8_t   le_scanning_active;
+    bool   le_scanning_enabled;
+    bool   le_scanning_active;
 
     le_connecting_state_t le_connecting_state;
     le_connecting_state_t le_connecting_request;
