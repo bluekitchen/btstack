@@ -1113,8 +1113,8 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
-static void hci_reenable_advertisements_if_needed(void){
-    if (!hci_stack->le_advertisements_active && hci_stack->le_advertisements_enabled){
+static void hci_update_advertisements_enabled_for_current_roles(void){
+    if (hci_stack->le_advertisements_enabled){
         // get number of active le slave connections
         int num_slave_connections = 0;
         btstack_linked_list_iterator_t it;
@@ -1128,9 +1128,9 @@ static void hci_reenable_advertisements_if_needed(void){
             num_slave_connections++;
         }
         log_info("Num LE Peripheral roles: %u of %u", num_slave_connections, hci_stack->le_max_number_peripheral_connections);
-        if (num_slave_connections < hci_stack->le_max_number_peripheral_connections){
-            hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
-        }
+        hci_stack->le_advertisements_enabled_for_current_roles = num_slave_connections < hci_stack->le_max_number_peripheral_connections;
+    } else {
+        hci_stack->le_advertisements_enabled_for_current_roles = false;
     }
 }
 #endif
@@ -2564,7 +2564,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_LE_PERIPHERAL
             // re-enable advertisements for le connections if active
             if (hci_is_le_connection(conn)){
-                hci_reenable_advertisements_if_needed();
+                hci_update_advertisements_enabled_for_current_roles();
             }
 #endif
 #endif
@@ -2703,7 +2703,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_LE_PERIPHERAL
                     if (packet[6] == HCI_ROLE_SLAVE){
-                        hci_reenable_advertisements_if_needed();
+                        hci_update_advertisements_enabled_for_current_roles();
                     }
 #endif
 
@@ -3638,13 +3638,14 @@ static bool hci_run_general_gap_le(void){
 #endif
 #ifdef ENABLE_LE_PERIPHERAL
     // le advertisement control
-    if (hci_stack->le_advertisements_todo){
-        log_info("hci_run: gap_le: adv todo: %x", hci_stack->le_advertisements_todo );
-    }
-    if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_DISABLE){
-        hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_DISABLE;
-        hci_send_cmd(&hci_le_set_advertise_enable, 0);
-        return true;
+
+    // disable advertisements if changes are required
+    if (hci_stack->le_advertisements_active && (hci_stack->le_advertisements_todo != 0)){
+        if (hci_stack->le_advertisements_active){
+            hci_stack->le_advertisements_active = 0;
+            hci_send_cmd(&hci_le_set_advertise_enable, 0);
+            return true;
+        }
     }
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
@@ -3679,8 +3680,9 @@ static bool hci_run_general_gap_le(void){
         hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, scan_data_clean);
         return true;
     }
-    if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){
-        hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_ENABLE;
+    if (hci_stack->le_advertisements_enabled_for_current_roles && (hci_stack->le_advertisements_active == 0)){
+        // check if advertisements should be enabled given
+        hci_stack->le_advertisements_active = 1;
         hci_send_cmd(&hci_le_set_advertise_enable, 1);
         return true;
     }
@@ -5072,14 +5074,6 @@ int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_
 
 #ifdef ENABLE_LE_PERIPHERAL
 
-static void gap_advertisments_changed(void){
-    // disable advertisements before updating adv, scan data, or adv params
-    if (hci_stack->le_advertisements_active){
-        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
-    }
-    hci_run();
-}
-
 /**
  * @brief Set Advertisement Data
  * @param advertising_data_length
@@ -5090,7 +5084,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     hci_stack->le_advertisements_data_len = advertising_data_length;
     hci_stack->le_advertisements_data = advertising_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
-    gap_advertisments_changed();
+    hci_run();
 }
 
 /** 
@@ -5103,7 +5097,7 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     hci_stack->le_scan_response_data_len = scan_response_data_length;
     hci_stack->le_scan_response_data = scan_response_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
-    gap_advertisments_changed();
+    hci_run();
 }
 
 /**
@@ -5132,7 +5126,7 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
                  6);
 
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-    gap_advertisments_changed();
+    hci_run();
  }
 
 /**
@@ -5141,12 +5135,7 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
  */
 void gap_advertisements_enable(int enabled){
     hci_stack->le_advertisements_enabled = enabled;
-    if (enabled && !hci_stack->le_advertisements_active){
-        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
-    }
-    if (!enabled && hci_stack->le_advertisements_active){
-        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE;
-    }
+    hci_update_advertisements_enabled_for_current_roles();
     hci_run();
 }
 
@@ -5160,7 +5149,7 @@ void hci_le_set_own_address_type(uint8_t own_address_type){
 #ifdef ENABLE_LE_PERIPHERAL
     // update advertisement parameters, too
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
-    gap_advertisments_changed();
+    hci_run();
 #endif
 #ifdef ENABLE_LE_CENTRAL
     // note: we don't update scan parameters or modify ongoing connection attempts

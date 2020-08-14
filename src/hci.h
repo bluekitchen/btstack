@@ -712,11 +712,9 @@ typedef enum hci_init_state{
 } hci_substate_t;
 
 enum {
-    LE_ADVERTISEMENT_TASKS_DISABLE       = 1 << 0,
-    LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 1,
-    LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 2,
-    LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 3,
-    LE_ADVERTISEMENT_TASKS_ENABLE        = 1 << 4,
+    LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
+    LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
+    LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
 };
 
 enum {
@@ -926,6 +924,7 @@ typedef struct {
 
     uint8_t  le_advertisements_active;
     uint8_t  le_advertisements_enabled;
+    bool     le_advertisements_enabled_for_current_roles;
     uint8_t  le_advertisements_todo;
 
     uint16_t le_advertisements_interval_min;
