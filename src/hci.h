@@ -885,6 +885,10 @@ typedef struct {
     uint8_t   le_own_addr_type;
     bd_addr_t le_random_address;
     uint8_t   le_random_address_set;
+
+    // LE Whitelist Management
+    uint8_t               le_whitelist_capacity;
+    btstack_linked_list_t le_whitelist;
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
@@ -899,10 +903,6 @@ typedef struct {
     uint8_t  le_scan_filter_policy;
     uint16_t le_scan_interval;
     uint16_t le_scan_window;
-
-    // LE Whitelist Management
-    uint8_t               le_whitelist_capacity;
-    btstack_linked_list_t le_whitelist;
 
     // Connection parameters
     uint16_t le_connection_interval_min;

@@ -3686,7 +3686,6 @@ static bool hci_run_general_gap_le(void){
     }
 #endif
 
-#ifdef ENABLE_LE_CENTRAL
     //
     // LE Whitelist Management
     //
@@ -3704,11 +3703,14 @@ static bool hci_run_general_gap_le(void){
     }
 
     if (modification_pending){
+
+#ifdef ENABLE_LE_CENTRAL
         // stop connnecting if modification pending
         if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
             hci_send_cmd(&hci_le_create_connection_cancel);
             return true;
         }
+#endif
 
         // add/remove entries
         btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
@@ -3731,6 +3733,7 @@ static bool hci_run_general_gap_le(void){
         }
     }
 
+#ifdef ENABLE_LE_CENTRAL
     // start connecting
     if ( (hci_stack->le_connecting_state == LE_CONNECTING_IDLE) &&
          !btstack_linked_list_empty(&hci_stack->le_whitelist)){
