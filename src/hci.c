@@ -5186,6 +5186,7 @@ hci_role_t gap_get_role(hci_con_handle_t connection_handle){
 }
 
 
+#ifdef ENABLE_CLASSIC
 uint8_t gap_request_role(bd_addr_t addr, hci_role_t role){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -5193,6 +5194,7 @@ uint8_t gap_request_role(bd_addr_t addr, hci_role_t role){
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
+#endif
 
 #ifdef ENABLE_BLE
 
