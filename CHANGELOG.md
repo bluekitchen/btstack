@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
+## Changes August 2020
+
+### Fixed
+- ESP32: fix authentication for incoming Secure Connections
+
+### Changed
+- GAP: treat AES-CCM encrypted connection as mutually authenticated (BIAS)
 
 ## Changes July 2020
 

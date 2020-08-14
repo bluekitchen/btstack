@@ -2114,7 +2114,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 uint8_t key_size = 0;
                 if (status == 0){
                     key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
-                    log_info("Handle %x04x key Size: %u", handle, key_size);
+                    log_info("Handle %04x key Size: %u", handle, key_size);
                 } else {
                     log_info("Read Encryption Key Size failed 0x%02x-> assuming insecure connection with key size of 1", status);
                 }
@@ -2466,6 +2466,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             log_info("SC during pairing, but only E0 now -> abort");
                             conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
                             break;
+                        }
+
+                        // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
+                        if (connected_uses_aes_ccm){
+                            conn->authentication_flags |= CONNECTION_AUTHENTICATED;
                         }
 
                         if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
