@@ -165,7 +165,7 @@ static int hci_have_usb_transport(void);
 #ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
-static void hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address);
+static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address);
 static hci_connection_t * gap_get_outgoing_connection(void);
 #endif
 #endif
@@ -5288,7 +5288,7 @@ static uint8_t hci_whitelist_add(bd_addr_type_t address_type, bd_addr_t address)
     return ERROR_CODE_SUCCESS;
 }
 
-static void hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address){
+static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -5298,12 +5298,14 @@ static void hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address)
         if (entry->state & LE_WHITELIST_ON_CONTROLLER){
             // remove from controller if already present
             entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER;
-            continue;
+        }  else {
+            // directly remove entry from whitelist
+            btstack_linked_list_iterator_remove(&it);
+            btstack_memory_whitelist_entry_free(entry);
         }
-        // directly remove entry from whitelist
-        btstack_linked_list_iterator_remove(&it);
-        btstack_memory_whitelist_entry_free(entry);
+        return ERROR_CODE_SUCCESS;
     }
+    return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 }
 
 static void hci_whitelist_clear(void){
@@ -5320,6 +5322,46 @@ static void hci_whitelist_clear(void){
         btstack_linked_list_iterator_remove(&it);
         btstack_memory_whitelist_entry_free(entry);
     }
+}
+
+/**
+ * @brief Clear Whitelist
+ * @returns 0 if ok
+ */
+uint8_t gap_whitelist_clear(void){
+    hci_whitelist_clear();
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+/**
+ * @brief Add Device to Whitelist
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+uint8_t gap_whitelist_add(bd_addr_type_t address_type, bd_addr_t address){
+    uint8_t status = hci_whitelist_add(address_type, address);
+    if (status){
+        return status;
+    }
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+/**
+ * @brief Remove Device from Whitelist
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+uint8_t gap_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address){
+    uint8_t status = hci_whitelist_remove(address_type, address);
+    if (status){
+        return status;
+    }
+    hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 #ifdef ENABLE_LE_CENTRAL

@@ -443,6 +443,28 @@ int gap_connection_parameter_range_included(le_connection_parameter_range_t * ex
 void gap_set_max_number_peripheral_connections(int max_peripheral_connections);
 
 /**
+ * @brief Add Device to Whitelist
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+uint8_t gap_whitelist_add(bd_addr_type_t address_type, bd_addr_t address);
+
+/**
+ * @brief Remove Device from Whitelist
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+uint8_t gap_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address);
+
+/**
+ * @brief Clear Whitelist
+ * @returns 0 if ok
+ */
+uint8_t gap_whitelist_clear(void);
+
+/**
  * @brief Connect to remote LE device
  */
 uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type);
@@ -461,6 +483,7 @@ uint8_t gap_connect_cancel(void);
 
 /**
  * @brief Auto Connection Establishment - Start Connecting to device
+ * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @param address_typ
  * @param address
  * @returns 0 if ok
@@ -469,6 +492,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_typ, bd_addr_t address)
 
 /**
  * @brief Auto Connection Establishment - Stop Connecting to device
+ * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @param address_typ
  * @param address
  * @returns 0 if ok
@@ -477,6 +501,7 @@ uint8_t gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop everything
+ * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
  * @note  Convenience function to stop all active auto connection attempts
  */
 uint8_t gap_auto_connection_stop_all(void);
