@@ -305,20 +305,20 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
     
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
-            
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
+            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
+            
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
-            if (status != 0){
-                log_info("A2DP singnaling connection failed status %d", status);
+            if (status != ERROR_CODE_SUCCESS){
+                log_info("A2DP source singnaling connection failed status %d", status);
                 connection->a2dp_source_state = A2DP_IDLE;
                 a2dp_signaling_emit_connection_established(cid, address, status);
                 break;
             }
-            log_info("A2DP singnaling connection established avdtp_cid 0x%02x", cid);
+            log_info("A2DP source singnaling connection established avdtp_cid 0x%02x", cid);
 
             if (stream_endpoint_configured) return;
             if (discover_seps_in_process){
@@ -343,7 +343,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             }
 
             cid = avdtp_subevent_signaling_media_codec_sbc_capability_get_avdtp_cid(packet);
-            
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
@@ -419,7 +418,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
             cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
-            
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
@@ -448,7 +446,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
-            
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
@@ -458,12 +455,12 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             
             if (status != 0){
-                log_info("A2DP streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
+                log_info("A2DP source streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
                 a2dp_streaming_emit_connection_established(a2dp_source_packet_handler_user, cid, address, local_seid, remote_seid, status);
                 break;
             }
             
-            log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
+            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
             connection->a2dp_source_state = A2DP_STREAMING_OPENED;
             a2dp_streaming_emit_connection_established(a2dp_source_packet_handler_user, cid, address, local_seid, remote_seid, 0);
             break;
@@ -483,7 +480,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         }
         case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:
             cid = avdtp_subevent_signaling_sep_dicovery_done_get_avdtp_cid(packet);
-            
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
@@ -500,7 +496,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
@@ -575,38 +570,25 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_signaling_emit_reject_cmd(packet, size);
             break;
 
-        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:{
-            stream_endpoint_configured = false;
-            
-            uint8_t event[6];
-            int pos = 0;
-            event[pos++] = HCI_EVENT_A2DP_META;
-            event[pos++] = sizeof(event) - 2;
-            event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
-            little_endian_store_16(event, pos, avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet));
-            pos += 2;
-            event[pos++] = avdtp_subevent_streaming_connection_released_get_local_seid(packet);
-            (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            break;
-        }
-
-        case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:{
+        case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
             
             connection->a2dp_source_state = A2DP_CONFIGURED;
-            uint8_t event[6];
-            int pos = 0;
-            event[pos++] = HCI_EVENT_A2DP_META;
-            event[pos++] = sizeof(event) - 2;
-            event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
-            little_endian_store_16(event, pos, avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet));
-            pos += 2;
-            event[pos++] = avdtp_subevent_streaming_connection_released_get_local_seid(packet);
-            (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
-        }
+
+        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+            cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
+            stream_endpoint_configured = false;
+            connection->a2dp_source_state = A2DP_IDLE;
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
+            break;
+
         default:
             break;
     }
