@@ -2180,16 +2180,24 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
             if (create_connection_cmd) {
                 uint8_t status = hci_event_command_status_get_status(packet);
-                conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, hci_stack->outgoing_addr_type);
-                log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), hci_stack->outgoing_addr_type);
+                bd_addr_type_t addr_type = hci_stack->outgoing_addr_type;
+                conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
+                log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), addr_type);
 
                 // reset outgoing address info
                 memset(hci_stack->outgoing_addr, 0, 6);
                 hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
 
-                // error => outgoing connection failed
-                if ((conn != NULL) && (status != 0u)){
-                    hci_handle_connection_failed(conn, status);
+                // on error
+                if (status != ERROR_CODE_SUCCESS){
+                    if (hci_is_le_connection_type(addr_type)){
+                        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+                    }
+                    // error => outgoing connection failed
+                    if (conn != NULL){
+                        hci_handle_connection_failed(conn, status);
+                    }
                 }
             }
             break;
@@ -2650,16 +2658,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         //  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
                         //  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
                         if (packet[3] == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
-                            conn = gap_get_outgoing_connection();
-                        }
-
-                        // remove entry
-                        if (conn){
-                            // outgoing le connection establishment is done
-                            if (hci_is_le_connection(conn)){
+                            // whitelist connect
+                            if (hci_is_le_connection_type(addr_type)){
                                 hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
                                 hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
                             }
+                            // get outgoing connection conn struct for direct connect
+                            conn = gap_get_outgoing_connection();
+                        }
+
+                        // outgoing le connection establishment is done
+                        if (conn){
+                            // remove entry
                             btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
                             btstack_memory_hci_connection_free( conn );
                         }
@@ -3663,8 +3673,10 @@ static bool hci_run_general_gap_le(void){
     }
 
     if (connecting_stop){
-        hci_send_cmd(&hci_le_create_connection_cancel);
-        return true;
+        if (hci_stack->le_connecting_state != LE_CONNECTING_CANCEL){
+            hci_send_cmd(&hci_le_create_connection_cancel);
+            return true;
+        }
     }
 #endif
 
@@ -3723,11 +3735,10 @@ static bool hci_run_general_gap_le(void){
     }
 #endif
 
-    //
     // LE Whitelist Management
-    //
-
-    if (whitelist_modification_pending){
+    // if connect with whitelist is active, it will be cancelled, but we still get here until it is stopped
+    bool cancel_active = hci_stack->le_connecting_state == LE_CONNECTING_CANCEL;
+    if (whitelist_modification_pending && !cancel_active){
 
         // add/remove entries
         btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
@@ -4376,7 +4387,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             reverse_bd_addr( &packet[9], hci_stack->outgoing_addr); // peer address
             break;
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
-            hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+            hci_stack->le_connecting_state = LE_CONNECTING_CANCEL;
             break;
 #endif
 #endif

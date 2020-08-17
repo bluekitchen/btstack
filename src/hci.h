@@ -258,6 +258,7 @@ typedef enum {
 
 typedef enum {
     LE_CONNECTING_IDLE,
+    LE_CONNECTING_CANCEL,
     LE_CONNECTING_DIRECT,
     LE_CONNECTING_WHITELIST,
 } le_connecting_state_t;
