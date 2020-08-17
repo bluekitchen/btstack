@@ -53,7 +53,7 @@ static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service"
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
 
 static a2dp_state_t app_state = A2DP_IDLE;
-static int send_stream_established_for_outgoing_connection;
+static bool send_stream_established_for_outgoing_connection = false;
 
 static avdtp_stream_endpoint_context_t sc;
 
@@ -186,7 +186,7 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // remember to tell client
-    send_stream_established_for_outgoing_connection = 1;
+    send_stream_established_for_outgoing_connection = true;
     return avdtp_sink_connect(bd_addr, avdtp_cid);
 }
 
@@ -250,8 +250,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                 app_state = A2DP_IDLE;
 
                 // only care for outgoing connections
-                if (send_stream_established_for_outgoing_connection == 0) break;
-                send_stream_established_for_outgoing_connection = 0;
+                if (!send_stream_established_for_outgoing_connection) break;
+                send_stream_established_for_outgoing_connection = false;
 
                 log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION failed status %d ---", status);
                 a2dp_streaming_emit_connection_established(a2dp_sink_packet_handler_user, cid, address, 0, 0, status);
@@ -277,8 +277,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             
             // about to notify client
-            send_stream_established_for_outgoing_connection = 0;
-
+            send_stream_established_for_outgoing_connection = false;
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status){
                 log_info("A2DP sink streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
@@ -309,7 +308,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
 
             // for outgoing connections, suppress release event and report stream established failed
             if (send_stream_established_for_outgoing_connection){
-                send_stream_established_for_outgoing_connection = 0;
+                send_stream_established_for_outgoing_connection = false;
                 log_info("A2DP sink outgoing connnection failed - disconnect");
                 a2dp_streaming_emit_connection_established(a2dp_sink_packet_handler_user, cid, address, 0, 0, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                 break;
