@@ -5324,13 +5324,27 @@ static void hci_whitelist_clear(void){
 
 #ifdef ENABLE_LE_CENTRAL
 /**
+ *  @brief Connect with Whitelist
+ *  @note Explicit whitelist management and this connect with whitelist replace deprecated gap_auto_connection_* functions
+ *  @returns - if ok
+ */
+uint8_t gap_connect_with_whitelist(void){
+    if (hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hci_stack->le_connecting_request = LE_CONNECTING_WHITELIST;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+/**
  * @brief Auto Connection Establishment - Start Connecting to device
  * @param address_typ
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
-    if (hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
+uint8_t gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
+    if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -5342,7 +5356,7 @@ int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
     hci_stack->le_connecting_request = LE_CONNECTING_WHITELIST;
 
     hci_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
@@ -5351,8 +5365,15 @@ int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
+uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
+    if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     hci_whitelist_remove(address_type, address);
+    if (btstack_linked_list_empty(&hci_stack->le_whitelist)){
+        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+    }
     hci_run();
     return 0;
 }
@@ -5361,10 +5382,14 @@ int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
  * @brief Auto Connection Establishment - Stop everything
  * @note  Convenience function to stop all active auto connection attempts
  */
-void gap_auto_connection_stop_all(void){
+uint8_t gap_auto_connection_stop_all(void){
+    if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
     hci_whitelist_clear();
     hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
     hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle){
