@@ -4905,6 +4905,12 @@ void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t
 uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
+        // disallow if le connection is already outgoing
+        if (hci_is_le_connection_type(addr_type) && hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
+            log_error("le connection already active");
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
+
         log_info("gap_connect: no connection exists yet, creating context");
         conn = create_connection_for_bd_addr_and_type(addr, addr_type);
         if (!conn){
@@ -5243,6 +5249,10 @@ uint8_t gap_le_set_phy(hci_con_handle_t connection_handle, uint8_t all_phys, uin
  * @returns 0 if ok
  */
 int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
+    if (hci_stack->le_connecting_request != LE_CONNECTING_IDLE){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     // check capacity
     int num_entries = btstack_linked_list_count(&hci_stack->le_whitelist);
     if (num_entries >= hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
