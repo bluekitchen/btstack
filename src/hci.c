@@ -2658,21 +2658,28 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             conn = gap_get_outgoing_connection();
                         }
 
-                        // outgoing connection establishment is done
-                        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
                         // remove entry
                         if (conn){
+                            // outgoing le connection establishment is done
+                            if (hci_is_le_connection(conn)){
+                                hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+                                hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+                            }
                             btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
                             btstack_memory_hci_connection_free( conn );
                         }
                         break;
                     }
 #endif
+
                     // on success, both hosts receive connection complete event
                     if (packet[6] == HCI_ROLE_MASTER){
 #ifdef ENABLE_LE_CENTRAL
-                        // if we're master, it was an outgoing connection and we're done with it
-                        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                        // if we're master on an le connection, it was an outgoing connection and we're done with it
+                        if (hci_is_le_connection(conn)){
+                            hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+                            hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+                        }
 #endif
                     } else {
 #ifdef ENABLE_LE_PERIPHERAL
@@ -2961,6 +2968,7 @@ static void hci_state_reset(void){
     hci_stack->le_scanning_active  = 0;
     hci_stack->le_scan_type = 0xff; 
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+    hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
 #endif
@@ -4905,6 +4913,12 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
             log_info("gap_connect: failed to alloc hci_connection_t");
             return GATT_CLIENT_NOT_CONNECTED; // don't sent packet to controller
         }
+
+        // set le connecting state
+        if (hci_is_le_connection_type(addr_type)){
+            hci_stack->le_connecting_request = LE_CONNECTING_DIRECT;
+        }
+
         conn->state = SEND_CREATE_CONNECTION;
         log_info("gap_connect: send create connection next");
         hci_run();
@@ -4928,7 +4942,7 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
     }
 
     log_info("gap_connect: context exists with state %u", conn->state);
-    hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, 0);
+    hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, ERROR_CODE_SUCCESS);
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
@@ -5238,6 +5252,9 @@ int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
     (void)memcpy(entry->address, address, 6);
     entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
     btstack_linked_list_add(&hci_stack->le_whitelist, (btstack_linked_item_t*) entry);
+
+    hci_stack->le_connecting_request = LE_CONNECTING_WHITELIST;
+
     hci_run();
     return 0;
 }

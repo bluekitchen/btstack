@@ -892,6 +892,7 @@ typedef struct {
     uint8_t   le_scanning_active;
 
     le_connecting_state_t le_connecting_state;
+    le_connecting_state_t le_connecting_request;
 
     // buffer for le scan type command - 0xff not set
     uint8_t  le_scan_type;
