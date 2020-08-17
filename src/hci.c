@@ -5278,6 +5278,21 @@ uint8_t gap_le_set_phy(hci_con_handle_t connection_handle, uint8_t all_phys, uin
 }
 
 static uint8_t hci_whitelist_add(bd_addr_type_t address_type, bd_addr_t address){
+    // check if already in list
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        whitelist_entry_t *entry = (whitelist_entry_t *) btstack_linked_list_iterator_next(&it);
+        if (entry->address_type != address_type) {
+            continue;
+        }
+        if (memcmp(entry->address, address, 6) != 0) {
+            continue;
+        }
+        // already in there
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    // alloc and add to list
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = address_type;
@@ -5292,8 +5307,12 @@ static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t addre
     btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (btstack_linked_list_iterator_has_next(&it)){
         whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&it);
-        if (entry->address_type != address_type) continue;
-        if (memcmp(entry->address, address, 6) != 0) continue;
+        if (entry->address_type != address_type) {
+            continue;
+        }
+        if (memcmp(entry->address, address, 6) != 0) {
+            continue;
+        }
         if (entry->state & LE_WHITELIST_ON_CONTROLLER){
             // remove from controller if already present
             entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER;
