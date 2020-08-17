@@ -2642,10 +2642,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
 
 #ifdef ENABLE_LE_CENTRAL
-                    // if auto-connect, remove from whitelist in both roles
-                    if (hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST){
-                        hci_whitelist_remove(addr_type, addr);
-                    }
                     // handle error: error is reported only to the initiator -> outgoing connection
                     if (packet[3]){
 
@@ -2675,7 +2671,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     if (packet[6] == HCI_ROLE_MASTER){
 #ifdef ENABLE_LE_CENTRAL
                         // if we're master on an le connection, it was an outgoing connection and we're done with it
-                        if (hci_is_le_connection(conn)){
+                        // note: no hci_connection_t object exists yet for connect with whitelist
+                        if (hci_is_le_connection_type(addr_type)){
                             hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
                             hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
                         }
