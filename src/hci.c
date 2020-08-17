@@ -1531,9 +1531,8 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_le_read_white_list_size);
             break;
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
-            // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, own address type, accept all advs
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
-            hci_send_cmd(&hci_le_set_scan_parameters, 1, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
+            hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
             break;
 #endif
         default:
@@ -2966,11 +2965,8 @@ static void hci_state_reset(void){
 #endif
 #ifdef ENABLE_LE_CENTRAL
     hci_stack->le_scanning_active  = 0;
-    hci_stack->le_scan_type = 0xff;
-    hci_stack->le_scan_filter_policy = 0;
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-    hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
 #endif
 }
@@ -3063,8 +3059,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
 
     // default LE Scanning
-    hci_stack->le_scan_interval = 0x1e0;
-    hci_stack->le_scan_window   =  0x30;
+    hci_stack->le_scan_type     =   0x1; // active
+    hci_stack->le_scan_interval = 0x1e0; // 300 ms
+    hci_stack->le_scan_window   =  0x30; //  30 ms
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
@@ -3636,7 +3633,7 @@ static bool hci_run_general_gap_le(void){
         // - it's disabled
         // - whitelist change required but used for scanning
         bool scanning_uses_whitelist = (hci_stack->le_scan_filter_policy & 1) == 1;
-        if ((hci_stack->le_scan_type != 0xffu) || !hci_stack->le_scanning_enabled || scanning_uses_whitelist){
+        if ((hci_stack->le_scanning_param_update) || !hci_stack->le_scanning_enabled || scanning_uses_whitelist){
             scanning_stop = false;
         }
     }
@@ -3647,10 +3644,9 @@ static bool hci_run_general_gap_le(void){
         return true;
     }
 
-    if (hci_stack->le_scan_type != 0xffu){
-        int scan_type = (int) hci_stack->le_scan_type;
-        hci_stack->le_scan_type = 0xff;
-        hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
+    if (hci_stack->le_scanning_param_update){
+        hci_stack->le_scanning_param_update = false;
+        hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
                      hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
         return true;
     }
@@ -4947,6 +4943,7 @@ void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t sca
     hci_stack->le_scan_filter_policy = scanning_filter_policy;
     hci_stack->le_scan_interval      = scan_interval;
     hci_stack->le_scan_window        = scan_window;
+    hci_stack->le_scanning_param_update = true;
     hci_run();
 }
 
@@ -5281,9 +5278,6 @@ uint8_t gap_le_set_phy(hci_con_handle_t connection_handle, uint8_t all_phys, uin
 }
 
 static uint8_t hci_whitelist_add(bd_addr_type_t address_type, bd_addr_t address){
-    // check capacity
-    int num_entries = btstack_linked_list_count(&hci_stack->le_whitelist);
-    if (num_entries >= hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = address_type;
