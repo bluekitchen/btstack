@@ -3812,10 +3812,6 @@ static bool hci_run_general_pending_commands(void){
                     default:
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
-                        // track outgoing connection
-                        hci_stack->outgoing_addr_type = connection->address_type;
-                        (void)memcpy(hci_stack->outgoing_addr,
-                                     connection->address, 6);
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
                                      hci_stack->le_connection_scan_interval,    // conn scan interval
@@ -4375,6 +4371,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                     log_error("Invalid initiator_filter_policy in LE Create Connection %u", initiator_filter_policy);
                     break;
             }
+            // track outgoing connection
+            hci_stack->outgoing_addr_type = packet[8];              // peer addres type
+            reverse_bd_addr( &packet[9], hci_stack->outgoing_addr); // peer address
             break;
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
             hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
