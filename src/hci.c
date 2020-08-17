@@ -3660,8 +3660,11 @@ static bool hci_run_general_gap_le(void){
     // connecting control
     bool connecting_stop = false;
     if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
-        // stop connecting if modification pending
-        if (whitelist_modification_pending) {
+        // stop connecting if:
+        // - connecting uses white and whitelist modification pending
+        // - if it got disabled
+        bool connecting_uses_whitelist = hci_stack->le_connecting_request == LE_CONNECTING_WHITELIST;
+        if ((connecting_uses_whitelist && whitelist_modification_pending) || (hci_stack->le_connecting_request == LE_CONNECTING_IDLE)) {
             connecting_stop = true;
         }
     }
@@ -3755,6 +3758,7 @@ static bool hci_run_general_gap_le(void){
     }
 
 #ifdef ENABLE_LE_PERIPHERAL
+    // re-start advertising
     if (hci_stack->le_advertisements_enabled_for_current_roles && (hci_stack->le_advertisements_active == 0)){
         // check if advertisements should be enabled given
         hci_stack->le_advertisements_active = 1;
@@ -3764,7 +3768,7 @@ static bool hci_run_general_gap_le(void){
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
-    // finally, we can start scanning
+    // re-start scanning
     if ((hci_stack->le_scanning_enabled && !hci_stack->le_scanning_active)){
         hci_stack->le_scanning_active = true;
         hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
@@ -3773,9 +3777,8 @@ static bool hci_run_general_gap_le(void){
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
-    // start connecting
-    if ( (hci_stack->le_connecting_state == LE_CONNECTING_IDLE) &&
-         !btstack_linked_list_empty(&hci_stack->le_whitelist)){
+    // re-start connecting
+    if ( (hci_stack->le_connecting_state == LE_CONNECTING_IDLE) && (hci_stack->le_connecting_request == LE_CONNECTING_WHITELIST)){
         bd_addr_t null_addr;
         memset(null_addr, 0, 6);
         hci_send_cmd(&hci_le_create_connection,
