@@ -194,20 +194,6 @@ void a2dp_sink_disconnect(uint16_t a2dp_cid){
     avdtp_disconnect(a2dp_cid);
 }
 
-static inline void a2dp_signaling_emit_media_codec_sbc(uint8_t * event, uint16_t event_size){
-    if (event_size < 18) return;
-    event[0] = HCI_EVENT_A2DP_META;
-    event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, event_size);
-}
-
-static inline void a2dp_signaling_emit_media_codec_other(uint8_t * event, uint16_t event_size){
-    if (event_size < 113) return;
-    event[0] = HCI_EVENT_A2DP_META;
-    event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, event_size);
-}
-
 static inline void a2dp_emit_stream_event(uint16_t a2dp_cid, uint8_t eventID, uint8_t local_seid){
     uint8_t event[6];
     int pos = 0;
@@ -218,24 +204,6 @@ static inline void a2dp_emit_stream_event(uint16_t a2dp_cid, uint8_t eventID, ui
     pos += 2;
     event[pos++] = local_seid;
     (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
-}
-
-static inline void a2dp_emit_signaling_connection_released(uint16_t a2dp_cid){
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
-    little_endian_store_16(event, pos, a2dp_cid);
-    pos += 2;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
-}
-
-static inline void a2dp_emit_cmd_rejected(uint8_t * packet, uint16_t size){
-    UNUSED(size);
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = A2DP_SUBEVENT_COMMAND_REJECTED;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, packet, size); 
 }
 
 static void a2dp_sink_handle_signaling_accept(uint8_t * packet){
@@ -293,11 +261,11 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            a2dp_signaling_emit_media_codec_other(packet, size);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-            a2dp_signaling_emit_media_codec_sbc(packet, size);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION);
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
@@ -334,7 +302,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);
             loc_seid = avdtp_subevent_streaming_connection_released_get_local_seid(packet);
             app_state = A2DP_IDLE;
-            a2dp_emit_stream_event(cid, A2DP_SUBEVENT_STREAM_RELEASED, loc_seid);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
@@ -347,8 +315,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                 break;
             }
 
-            a2dp_emit_signaling_connection_released(cid);
             app_state = A2DP_IDLE;
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
             break;
         default:
             break;
