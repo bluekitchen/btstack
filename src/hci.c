@@ -4942,11 +4942,16 @@ void gap_stop_scan(void){
     hci_run();
 }
 
-void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
-    hci_stack->le_scan_type     = scan_type;
-    hci_stack->le_scan_interval = scan_interval;
-    hci_stack->le_scan_window   = scan_window;
+void gap_set_scan_params(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window, uint8_t scanning_filter_policy){
+    hci_stack->le_scan_type          = scan_type;
+    hci_stack->le_scan_filter_policy = scanning_filter_policy;
+    hci_stack->le_scan_interval      = scan_interval;
+    hci_stack->le_scan_window        = scan_window;
     hci_run();
+}
+
+void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
+    gap_set_scan_params(scan_type, scan_interval, scan_window, 0);
 }
 
 uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
