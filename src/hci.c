@@ -3738,10 +3738,14 @@ static bool hci_run_general_gap_le(void){
 #endif
 
     // LE Whitelist Management
-    // if connect with whitelist is active, it will be cancelled, but we still get here until it is stopped
-    bool cancel_active = hci_stack->le_connecting_state == LE_CONNECTING_CANCEL;
-    if (whitelist_modification_pending && !cancel_active){
+    bool cancel_active = false;
 
+#ifdef ENABLE_LE_CENTRAL
+    // if connect with whitelist is active, it will be cancelled, but we still get here until it is stopped
+    cancel_active = hci_stack->le_connecting_state == LE_CONNECTING_CANCEL;
+#endif
+
+    if (whitelist_modification_pending && !cancel_active){
         // add/remove entries
         btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
         while (btstack_linked_list_iterator_has_next(&lit)){
