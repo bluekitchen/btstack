@@ -429,16 +429,20 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
 }
 #endif
 
-static int hci_is_le_connection(hci_connection_t * connection){
-    switch (connection->address_type){
+static bool hci_is_le_connection_type(bd_addr_type_t address_type){
+    switch (address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
         case BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC:
         case BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM:
-            return 1;
+            return true;
         default:
-            return 0;
+            return false;
     }
+}
+
+static int hci_is_le_connection(hci_connection_t * connection){
+    return hci_is_le_connection_type(connection->address_type);
 }
 
 /**
