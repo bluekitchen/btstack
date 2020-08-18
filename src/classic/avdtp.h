@@ -625,8 +625,6 @@ void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_
 
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 
-void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t a2dp_packet_handler, uint8_t * packet, uint16_t size, uint8_t subevent_id);
-
 #if defined __cplusplus
 }
 #endif

@@ -1572,10 +1572,3 @@ void avdtp_init(void){
         l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
     }
 }
-
-void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t a2dp_packet_handler, uint8_t * packet, uint16_t size, uint8_t subevent_id){
-    UNUSED(size);
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = subevent_id;
-    (*a2dp_packet_handler)(HCI_EVENT_PACKET, 0, packet, size); 
-}

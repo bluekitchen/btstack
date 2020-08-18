@@ -802,19 +802,38 @@ uint8_t avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint){
     return stream_endpoint->remote_sep.seid;
 }
 
-void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, bd_addr_t addr, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
+void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
+    UNUSED(size);
     btstack_assert(callback != NULL);
-    uint8_t event[14];
+    packet[0] = HCI_EVENT_A2DP_META;
+    packet[2] = subevent_id;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
+}
+
+void a2dp_emit_streaming_connection_established(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t status){
+    btstack_assert(callback != NULL);
+    packet[0] = HCI_EVENT_A2DP_META;
+    packet[2] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
+    packet[12] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
+void a2dp_emit_signaling_connection_established(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t status){
+    btstack_assert(callback != NULL);
+    packet[0] = HCI_EVENT_A2DP_META;
+    packet[2] = A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
+    packet[10] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
+void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t cmd){
+    uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
+    event[pos++] = cmd;
     little_endian_store_16(event, pos, cid);
     pos += 2;
-    reverse_bd_addr(addr,&event[pos]);
-    pos += 6;
     event[pos++] = local_seid;
-    event[pos++] = remote_seid;
-    event[pos++] = status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
