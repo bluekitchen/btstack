@@ -59,6 +59,7 @@ static const char * default_a2dp_source_service_provider_name = "BTstack A2DP So
 
 static btstack_timer_source_t a2dp_source_set_config_timer;
 
+static bool send_stream_established_for_outgoing_connection = false;
 static bool discover_seps_in_process = false;
 static bool stream_endpoint_configured = false;
 
@@ -250,8 +251,12 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                log_info("A2DP source singnaling connection failed status %d", status);
                 connection->a2dp_source_state = A2DP_IDLE;
+
+                // only care for outgoing connections
+                if (!send_stream_established_for_outgoing_connection) break;
+                send_stream_established_for_outgoing_connection = false;
+                log_info("A2DP source singnaling connection failed status %d", status);
                 a2dp_emit_signaling_connection_established(a2dp_source_packet_handler_user, packet, size, status);
                 break;
             }
@@ -381,17 +386,18 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            avdtp_subevent_streaming_connection_established_get_bd_addr(packet, address);
+            // about to notify client
+            send_stream_established_for_outgoing_connection = false;
+
             remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             local_seid  = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
-            
-            if (status != 0){
+            if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP source streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
                 a2dp_emit_streaming_connection_established(a2dp_source_packet_handler_user, packet, size, status);
                 break;
             }
-            
+
             log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
             connection->a2dp_source_state = A2DP_STREAMING_OPENED;
             a2dp_emit_streaming_connection_established(a2dp_source_packet_handler_user, packet, size, status);
@@ -518,8 +524,15 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            connection->a2dp_source_state = A2DP_IDLE;
             stream_endpoint_configured = false;
+            if (send_stream_established_for_outgoing_connection){
+                send_stream_established_for_outgoing_connection = false;
+                log_info("A2DP source outgoing connnection failed - disconnect");
+                a2dp_emit_signaling_connection_established(a2dp_source_packet_handler_user, packet, size, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+                break;
+            }
+
+            connection->a2dp_source_state = A2DP_IDLE;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
             break;
 
@@ -568,8 +581,8 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(*avdtp_cid);
     btstack_assert(connection != NULL);
 
+    send_stream_established_for_outgoing_connection = true;
     connection->a2dp_source_state = A2DP_W4_CONNECTED;
-
     return ERROR_CODE_SUCCESS;
 }
 
