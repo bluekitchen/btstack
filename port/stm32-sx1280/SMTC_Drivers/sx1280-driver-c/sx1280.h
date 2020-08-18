@@ -1662,4 +1662,9 @@ int8_t SX1280ParseHexFileLine( char* line );
  */
 int8_t SX1280GetHexFileLineFields( char* line, uint8_t *bytes, uint16_t *addr, uint16_t *num, uint8_t *code );
 
+/*!
+ *  /\brief Update operating mode to tx - used to let SX1280ProcessIrqs know that TX is/was active and call the correct handlers
+ */
+void SX1280AutoTxWillStart(void);
+
 #endif // __SX1280_H__

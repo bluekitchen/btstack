@@ -1199,6 +1199,10 @@ void SX1280OnDioIrq( void )
     }
 }
 
+void SX1280AutoTxWillStart( void ){
+    OperatingMode = MODE_TX;
+}
+
 void SX1280ProcessIrqs( void )
 {
     RadioPacketTypes_t packetType = PACKET_TYPE_NONE;
