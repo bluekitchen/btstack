@@ -939,13 +939,11 @@ static void mesh_lower_transport_run(void){
 }
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
-    mesh_network_pdu_t * network_pdu;
     mesh_segmented_pdu_t * segmented_pdu;
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
         case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
-            network_pdu = (mesh_network_pdu_t *) pdu;
-            btstack_assert(network_pdu->len >= 9);
+            btstack_assert(((mesh_network_pdu_t *) pdu)->len >= 9);
             break;
         case MESH_PDU_TYPE_SEGMENTED:
             // set num retries, set of segments to send

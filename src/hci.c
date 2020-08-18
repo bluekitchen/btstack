@@ -4389,7 +4389,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                     break;
             }
             // track outgoing connection
-            hci_stack->outgoing_addr_type = packet[8];              // peer addres type
+            hci_stack->outgoing_addr_type = (bd_addr_type_t) packet[8]; // peer addres type
             reverse_bd_addr( &packet[9], hci_stack->outgoing_addr); // peer address
             break;
         case HCI_OPCODE_HCI_LE_CREATE_CONNECTION_CANCEL:
