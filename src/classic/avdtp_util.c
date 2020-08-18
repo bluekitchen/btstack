@@ -826,12 +826,12 @@ void a2dp_emit_signaling_connection_established(btstack_packet_handler_t callbac
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t cmd){
+void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = cmd;
+    event[pos++] = subevent_id;
     little_endian_store_16(event, pos, cid);
     pos += 2;
     event[pos++] = local_seid;
