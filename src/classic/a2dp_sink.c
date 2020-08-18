@@ -53,6 +53,7 @@ static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service"
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
 
 static bool send_stream_established_for_outgoing_connection = false;
+static bool stream_endpoint_configured = false;
 
 static avdtp_stream_endpoint_context_t sc;
 
@@ -210,6 +211,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
 
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+            if (stream_endpoint_configured) return;
+            
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
@@ -233,10 +236,12 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
+            stream_endpoint_configured = true;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
+            stream_endpoint_configured = true;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION);
             break;
 
@@ -316,6 +321,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
+            stream_endpoint_configured = false;
             // for outgoing connections, suppress release event and report stream established failed
             if (send_stream_established_for_outgoing_connection){
                 send_stream_established_for_outgoing_connection = false;
