@@ -408,6 +408,7 @@ typedef enum {
     A2DP_CONFIGURED,
     A2DP_W2_SUSPEND_STREAM_WITH_SEID,
     A2DP_W2_RECONFIGURE_WITH_SEID,
+    A2DP_W4_RECONFIGURE_WITH_SEID,
     A2DP_W2_OPEN_STREAM_WITH_SEID,   //10
     A2DP_W4_OPEN_STREAM_WITH_SEID,
     A2DP_W2_START_STREAM_WITH_SEID,
@@ -473,6 +474,7 @@ typedef struct {
 
     a2dp_state_t a2dp_source_state;
     bool a2dp_source_discover_seps;
+    uint8_t supported_codecs_bitmap;
 
     a2dp_state_t a2dp_sink_state;
 
