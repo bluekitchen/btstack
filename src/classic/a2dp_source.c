@@ -240,7 +240,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             if (stream_endpoint_configured) return;
-            
+            if (sc.local_stream_endpoint == NULL) return; 
+
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
@@ -267,16 +268,13 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
+            btstack_assert(sc.local_stream_endpoint != NULL);
+
             log_info("A2DP received SBC capability, received: local seid %d, remote seid %d, expected: local seid %d, remote seid %d",
                 avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet), 
                 avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet),
                 avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seps[sc.active_remote_sep_index].seid );
             
-            if (!sc.local_stream_endpoint) {
-                log_error("invalid local seid %d", avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet));
-                return;
-            }
-
             cid = avdtp_subevent_signaling_media_codec_sbc_capability_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
@@ -433,7 +431,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
-
+            btstack_assert(sc.local_stream_endpoint != NULL);
+                    
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             
             log_info("A2DP cmd %s accepted, state %x, is_initiator %u, cid 0x%2x, local seid %d", avdtp_si2str(signal_identifier), connection->a2dp_source_state,
@@ -445,26 +444,26 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     log_info("A2DP get capabilities for remote seid %d", remote_seid);
                     avdtp_source_get_capabilities(cid, remote_seid);
                     break;
-                case A2DP_W2_SET_CONFIGURATION:{
-                    if (sc.local_stream_endpoint != NULL){
-                        remote_seid = remote_seps[sc.active_remote_sep_index].seid;
-                        log_info("A2DP initiate set configuration locally and wait for response ... local seid %d, remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid);
-                        connection->a2dp_source_state = A2DP_IDLE;
-                        avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
-                    }
+
+                case A2DP_W2_SET_CONFIGURATION:
+                    remote_seid = remote_seps[sc.active_remote_sep_index].seid;
+                    log_info("A2DP initiate set configuration locally and wait for response ... local seid %d, remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid);
+                    connection->a2dp_source_state = A2DP_CONNECTED;
+                    avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
                     break;
-                }
+            
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     log_info("A2DP reconfigured ... local seid %d, active remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
                     a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), ERROR_CODE_SUCCESS);
                     connection->a2dp_source_state = A2DP_STREAMING_OPENED;
                     break;
-                case A2DP_W2_OPEN_STREAM_WITH_SEID:{
+
+                case A2DP_W2_OPEN_STREAM_WITH_SEID:
                     log_info("A2DP open stream ... local seid %d, active remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
                     connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
                     avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
                     break;
-                }
+                
                 case A2DP_STREAMING_OPENED:
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
@@ -579,6 +578,8 @@ uint8_t a2dp_source_disconnect(uint16_t avdtp_cid){
 }
 
 uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, uint32_t sampling_frequency){
+    btstack_assert(sc.local_stream_endpoint != NULL);
+    
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (connection == NULL) ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
