@@ -305,6 +305,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
     
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+            if (stream_endpoint_configured) return;
+            
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
@@ -320,7 +322,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             }
             log_info("A2DP source singnaling connection established avdtp_cid 0x%02x", cid);
 
-            if (stream_endpoint_configured) return;
             if (discover_seps_in_process){
                 connection->a2dp_source_discover_seps = true;
                 break;
@@ -331,7 +332,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_signaling_emit_connection_established(connection->avdtp_cid, address, ERROR_CODE_SUCCESS);
             break;
 
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
             log_info("A2DP received SBC capability, received: local seid %d, remote seid %d, expected: local seid %d, remote seid %d",
                 avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet), 
                 avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet),
@@ -367,7 +367,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             connection->a2dp_source_state = A2DP_W2_SET_CONFIGURATION;
             break;
-        }
+        
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
             log_info("received non SBC codec. not implemented");
             break;
