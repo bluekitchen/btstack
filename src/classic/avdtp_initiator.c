@@ -76,7 +76,8 @@ static int avdtp_initiator_send_signaling_cmd_delay_report(uint16_t cid, uint8_t
 void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t *packet, uint16_t size, int offset) {
     // int status = 0;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
-    
+    avdtp_stream_endpoint_t * stream_endpoint_for_event = NULL;
+
     avdtp_sep_t sep;
     if (connection->initiator_connection_state == AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER) {
         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
@@ -144,6 +145,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_RECONFIGURE: stream endpoint is null");
                         break;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     // copy sbc media codec info
                     stream_endpoint->remote_sep.configured_service_categories |= stream_endpoint->remote_configuration_bitmap;
                     stream_endpoint->remote_sep.configuration = stream_endpoint->remote_configuration;
@@ -159,6 +161,9 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
                         break;
                     }
+
+                    stream_endpoint_for_event = stream_endpoint;
+
                     sep.configured_service_categories = stream_endpoint->remote_configuration_bitmap;
                     sep.configuration = stream_endpoint->remote_configuration;
                     sep.in_use = 1;
@@ -197,6 +202,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_OPEN in wrong stream endpoint state");
                         return;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->initiator_local_seid = stream_endpoint->sep.seid;
                     l2cap_create_channel(avdtp_packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, 0xffff, NULL);
@@ -210,6 +216,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_START in wrong stream endpoint state");
                         return;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
                     break;
                 case AVDTP_SI_SUSPEND:
@@ -221,6 +228,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_SUSPEND in wrong stream endpoint state");
                         return;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
                 case AVDTP_SI_CLOSE:
@@ -228,6 +236,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_CLOSE: stream endpoint is null");
                         break;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
                     break;
                 case AVDTP_SI_ABORT:
@@ -235,6 +244,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_ABORT: stream endpoint is null");
                         break;
                     }
+                    stream_endpoint_for_event = stream_endpoint;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
 
@@ -246,8 +256,12 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     log_info("AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->initiator_signaling_packet.signal_identifier);
                     break;
             }
-            avdtp_signaling_emit_accept(connection->avdtp_cid, 0,
-                                        connection->initiator_signaling_packet.signal_identifier, true);
+            if (stream_endpoint_for_event != NULL){
+                avdtp_signaling_emit_accept_for_stream_endpoint(stream_endpoint_for_event, connection->initiator_local_seid,
+                                                                connection->initiator_signaling_packet.signal_identifier, true);
+            } else {
+                avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
+            }
             connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
