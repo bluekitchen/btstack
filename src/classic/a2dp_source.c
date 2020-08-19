@@ -264,14 +264,15 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             }
             log_info("A2DP source signaling connection established avdtp_cid 0x%02x", cid);
 
-            if (discover_seps_in_process){
-                connection->a2dp_source_discover_seps = true;
-                break;
-            }
-
-            a2dp_start_discovering_seps(connection);
             // notify app
             a2dp_emit_signaling_connection_established(a2dp_source_packet_handler_user, packet, size, status);
+
+            // discover seps
+            if (discover_seps_in_process){
+                connection->a2dp_source_discover_seps = true;
+            } else {
+                a2dp_start_discovering_seps(connection);
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:{
