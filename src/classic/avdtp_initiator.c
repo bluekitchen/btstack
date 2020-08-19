@@ -169,7 +169,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED;
 
                     log_info("INT: configured remote seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
-                   
+
                     switch (stream_endpoint->media_codec_type){
                         case AVDTP_CODEC_SBC:
                             avdtp_signaling_emit_media_codec_sbc_configuration(
@@ -182,7 +182,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                             // TODO: we don\t have codec info to emit config
                             avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint,
                                                                                  connection->avdtp_cid,
-                                                                                 sep.configuration.media_codec);
+                                                                                 &sep.configuration.media_codec);
                             break;
                     }
                     break;

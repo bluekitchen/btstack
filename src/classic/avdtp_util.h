@@ -96,7 +96,7 @@ void avdtp_signaling_emit_media_codec_sbc_configuration(avdtp_stream_endpoint_t 
                                                         avdtp_media_type_t media_type,
                                                         const uint8_t *media_codec_information);
 void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                          adtvp_media_codec_capabilities_t media_codec);
+                                                          adtvp_media_codec_capabilities_t * media_codec);
 
 void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status);
 
