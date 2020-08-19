@@ -294,7 +294,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            connection->a2dp_source_state = A2DP_CONNECTED;
+            connection->a2dp_sink_state = A2DP_CONNECTED;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
@@ -303,7 +303,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            connection->a2dp_source_state = A2DP_CONNECTED;
+            connection->a2dp_sink_state = A2DP_CONNECTED;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
@@ -312,7 +312,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
             
-            connection->a2dp_source_state = A2DP_CONFIGURED;
+            connection->a2dp_sink_state = A2DP_CONFIGURED;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
         
