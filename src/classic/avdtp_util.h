@@ -79,6 +79,9 @@ void avdtp_signaling_emit_sep_done(uint16_t avdtp_cid);
 
 void avdtp_signaling_emit_accept(uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier,
                                  bool is_initiator);
+void avdtp_signaling_emit_accept_for_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint, uint8_t local_seid,
+                                                     avdtp_signal_identifier_t identifier, bool is_initiator);
+
 void avdtp_signaling_emit_general_reject(uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier,
                                          bool is_initiator);
 void avdtp_signaling_emit_reject(uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier,

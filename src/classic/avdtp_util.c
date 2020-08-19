@@ -546,6 +546,22 @@ void avdtp_signaling_emit_accept(uint16_t avdtp_cid, uint8_t local_seid, avdtp_s
     avdtp_emit_sink_and_source(event, pos);
 }
 
+void avdtp_signaling_emit_accept_for_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint, uint8_t local_seid,  avdtp_signal_identifier_t identifier, bool is_initiator){
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_ACCEPT;
+    little_endian_store_16(event, pos, stream_endpoint->connection->avdtp_cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    event[pos++] = is_initiator ? 1 : 0;
+    event[pos++] = identifier;
+
+    btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 void avdtp_signaling_emit_reject(uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier, bool is_initiator) {
     uint8_t event[8];
     int pos = 0;
