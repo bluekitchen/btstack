@@ -399,10 +399,10 @@ typedef enum {
     A2DP_IDLE = 0,
     A2DP_W4_CONNECTED,
     A2DP_CONNECTED,
-    A2DP_W2_DISCOVER_SEPS,
-    A2DP_W2_GET_CAPABILITIES,
+    A2DP_DISCOVER_SEPS,
+    A2DP_GET_CAPABILITIES,
     A2DP_W2_GET_ALL_CAPABILITIES,
-    A2DP_W2_SET_CONFIGURATION,      //5
+    A2DP_SET_CONFIGURATION,      //5
     A2DP_W4_GET_CONFIGURATION,
     A2DP_W4_SET_CONFIGURATION,
     A2DP_CONFIGURED,
@@ -472,8 +472,7 @@ typedef struct {
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
 
-    a2dp_state_t a2dp_source_state;
-    bool a2dp_source_discover_seps;
+    bool    a2dp_source_discover_seps;
     uint8_t supported_codecs_bitmap;
 
     a2dp_state_t a2dp_sink_state;
