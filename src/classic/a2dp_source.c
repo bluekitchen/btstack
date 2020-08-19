@@ -162,6 +162,10 @@ static void a2dp_signaling_emit_reconfigured(uint16_t cid, uint8_t local_seid, u
     (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void a2dp_source_discover_stream_endpoints(uint16_t avdtp_cid){
+    avdtp_source_discover_stream_endpoints(avdtp_cid);
+}
+
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer){
     if (stream_endpoint_configured) return;
 
@@ -174,7 +178,7 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
     }
 
     connection->a2dp_source_state = A2DP_W2_DISCOVER_SEPS;
-    avdtp_source_discover_stream_endpoints(avdtp_cid);
+    a2dp_source_discover_stream_endpoints(avdtp_cid);
 }
 
 static void a2dp_source_set_config_timer_start(uint16_t avdtp_cid){
@@ -201,7 +205,7 @@ static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
     if (connection->a2dp_source_state == A2DP_W4_CONNECTED){
         log_info("A2DP singnaling connection: discover seps");
         connection->a2dp_source_state = A2DP_W2_DISCOVER_SEPS;
-        avdtp_source_discover_stream_endpoints(connection->avdtp_cid);
+        a2dp_source_discover_stream_endpoints(connection->avdtp_cid);
     } else {
         log_info("A2DP singnaling connection: wait a bit, then discover seps");
         connection->a2dp_source_state = A2DP_CONNECTED;
