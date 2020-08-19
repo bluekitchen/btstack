@@ -392,8 +392,16 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
                    mitm_context.a2dp_sink_cid, mitm_context.a2dp_sink_local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
             break;
 
+        case A2DP_SUBEVENT_STREAM_STARTED:
+            printf("A2DP Sink: phone stream started\n");
+            break;
+
+        case A2DP_SUBEVENT_STREAM_SUSPENDED:
+            printf("A2DP Sink: phone stream paused\n");
+            break;
+
         case A2DP_SUBEVENT_STREAM_RELEASED:
-            printf("A2DP Sink: stream released\n");
+            printf("A2DP Sink: phone stream released\n");
             break;
 
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
@@ -450,8 +458,16 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
         
         case A2DP_SUBEVENT_STREAM_STARTED:
             mitm_context.headset_stream_ready = 1;
-            printf("A2DP Source: headset stream ready\n");
-            break;       
+            printf("A2DP Source: headset stream started\n");
+            break;
+
+        case A2DP_SUBEVENT_STREAM_SUSPENDED:
+            printf("A2DP Source: headset stream paused\n");
+            break;
+
+        case A2DP_SUBEVENT_STREAM_RELEASED:
+            printf("A2DP Source: headset stream released\n");
+            break;
 
         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: {
 
@@ -495,13 +511,6 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
         }
-        case A2DP_SUBEVENT_STREAM_SUSPENDED:
-            printf(" A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", mitm_context.a2dp_source_local_seid);
-            break;
-
-        case A2DP_SUBEVENT_STREAM_RELEASED:
-            printf("A2DP Source: stream released\n");
-            break;
 
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             mitm_context.a2dp_source_cid = 0;
@@ -509,8 +518,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
         default:
-            // printf("A2DP Source: event %d not parsed\n", packet[2]);
-            break; 
+            break;
     }
        
 }
