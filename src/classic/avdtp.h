@@ -475,8 +475,6 @@ typedef struct {
     bool    a2dp_source_discover_seps;
     uint8_t supported_codecs_bitmap;
 
-    a2dp_state_t a2dp_sink_state;
-
 } avdtp_connection_t;
 
 
