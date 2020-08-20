@@ -2489,9 +2489,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         }
 
                         // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
-                        if (connected_uses_aes_ccm){
+//                        if (connected_uses_aes_ccm){
                             conn->authentication_flags |= CONNECTION_AUTHENTICATED;
-                        }
+//                        }
 
                         if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
                             // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
