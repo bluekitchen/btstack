@@ -575,6 +575,8 @@ static void show_usage(void){
     printf("s      - show status\n");
     printf("d      - disconnect all\n");
     printf("c      - delete all link keys\n");
+    printf("w      - pause headset stream\n");
+    printf("W      - resume headset stream\n");
     printf("\nTo setup MITM, please connect to Headphone using 'h',\n");
     printf("then connect from smartphone/laptop to BTstack.\n");
     printf("Ctrl-c - exit\n");
@@ -612,8 +614,12 @@ static void stdin_process(char cmd){
             gap_delete_all_link_keys();
             break;
         case 'w':
-            printf("Pause stream.\n");
+            printf("Pause headset stream.\n");
             status = a2dp_source_pause_stream(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
+            break;
+        case 'W':
+            printf("Resume headset stream.\n");
+            status = a2dp_source_start_stream(mitm_context.a2dp_source_cid, mitm_context.a2dp_source_local_seid);
             break;
         default:
             show_usage();
