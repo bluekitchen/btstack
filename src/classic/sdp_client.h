@@ -65,9 +65,9 @@ int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 /** 
  * @brief Checks if the SDP Client is ready
  * @deprecated Please use sdp_client_register_query_callback instead
- * @return 1 when no query is active
+ * @return true when no query is active
  */
-int sdp_client_ready(void);
+bool sdp_client_ready(void);
 
 /**
  * @brief Requests a callback, when the SDP Client is ready and can be used

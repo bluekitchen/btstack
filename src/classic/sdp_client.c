@@ -312,7 +312,7 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
 #endif
 
 static void sdp_client_notify_callbacks(void){
-    if (!sdp_client_ready) {
+    if (sdp_client_ready() == false) {
         return;
     }
     btstack_context_callback_registration_t * callback = btstack_linked_list_pop(&sdp_client_query_requests);
@@ -702,7 +702,7 @@ void sdp_client_reset(void){
 
 // Public API
 
-int sdp_client_ready(void){
+bool sdp_client_ready(void){
     return sdp_client_state == INIT;
 }
 
