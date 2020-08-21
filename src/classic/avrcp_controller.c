@@ -564,8 +564,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_SET_PLAYER_APPLICATION_SETTING_VALUE:{
+                    uint16_t offset = 0;
                     uint8_t event[6];
-                    int offset = 0;
                     event[offset++] = HCI_EVENT_AVRCP_META;
                     event[offset++] = sizeof(event) - 2;
                     event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE;
@@ -576,8 +576,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME:{
+                    uint16_t offset = 0;
                     uint8_t event[7];
-                    int offset = 0;
                     event[offset++] = HCI_EVENT_AVRCP_META;
                     event[offset++] = sizeof(event) - 2;
                     event[offset++] = AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE;
@@ -591,12 +591,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos++];
                     uint8_t capability_count = packet[pos++];
-                    int i;
-                                
+                    uint16_t i;
+                    uint16_t offset = 0;
+                    uint8_t event[10];
+
                     switch (capability_id){
-                        int offset = 0;
-                        uint8_t event[10];
-                        
+
                         case AVRCP_CAPABILITY_ID_COMPANY:
                             for (i = 0; i < capability_count; i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
@@ -711,8 +711,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:{
                             uint32_t song_position = big_endian_read_32(packet, pos);
+                            uint16_t offset = 0;
                             uint8_t event[10];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED;
@@ -725,8 +725,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[7];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED;
@@ -738,8 +738,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[6];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED;
@@ -750,8 +750,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[6];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED;
@@ -762,8 +762,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[6];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED;
@@ -774,8 +774,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[7];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED;
@@ -788,8 +788,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         }
                         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
                             uint8_t event[8];
+                            uint16_t offset = 0;
                             uint16_t uuid = big_endian_read_16(packet, pos);
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_UIDS_CHANGED;
@@ -803,8 +803,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         }
 
                         case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END:{
+                            uint16_t offset = 0;
                             uint8_t event[6];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END;
@@ -815,8 +815,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START:{
+                            uint16_t offset = 0;
                             uint8_t event[6];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_START;
@@ -827,8 +827,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[7];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_BATT_STATUS_CHANGED;
@@ -841,8 +841,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         }
 
                         case AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED:{
+                            uint16_t offset = 0;
                             uint8_t event[7];
-                            int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED;

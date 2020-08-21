@@ -271,7 +271,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
     uint8_t local_seid;
     uint8_t remote_seid;
     bd_addr_t address;
-    avdtp_sep_t sep;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
@@ -318,17 +317,18 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
             cid = avdtp_subevent_signaling_sep_found_get_avdtp_cid(packet);
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_DISCOVER_SEPS) break;
-
-            sep.seid       = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
-            sep.in_use     = avdtp_subevent_signaling_sep_found_get_in_use(packet);
-            sep.media_type = (avdtp_media_type_t) avdtp_subevent_signaling_sep_found_get_media_type(packet);
-            sep.type       = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-            log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %s, index %d",
-                     sep.seid, sep.in_use, sep.media_type, sep.type == AVDTP_SOURCE ? "source" : "sink",
-                     num_remote_seps);
-            if (sep.type == AVDTP_SINK) {
-                remote_seps[num_remote_seps++] = sep;
+            if (a2dp_source_state == A2DP_DISCOVER_SEPS) {
+                avdtp_sep_t sep;
+                sep.seid       = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
+                sep.in_use     = avdtp_subevent_signaling_sep_found_get_in_use(packet);
+                sep.media_type = (avdtp_media_type_t) avdtp_subevent_signaling_sep_found_get_media_type(packet);
+                sep.type       = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
+                log_info("A2DP Found sep: remote seid %u, in_use %d, media type %d, sep type %s, index %d",
+                         sep.seid, sep.in_use, sep.media_type, sep.type == AVDTP_SOURCE ? "source" : "sink",
+                         num_remote_seps);
+                if (sep.type == AVDTP_SINK) {
+                    remote_seps[num_remote_seps++] = sep;
+                }
             }
             break;
 
@@ -360,38 +360,38 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_sbc_capability_get_avdtp_cid(packet);
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (a2dp_source_state == A2DP_GET_CAPABILITIES) {
 
-            log_info("A2DP received SBC capability, received: local seid %d, remote seid %d, expected: local seid %d, remote seid %d",
-                avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet),
-                avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet),
-                avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seps[sc.active_remote_sep_index].seid );
+                log_info("A2DP received SBC capability, received: local seid %d, remote seid %d, expected: local seid %d, remote seid %d",
+                    avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet),
+                    avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet),
+                    avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seps[sc.active_remote_sep_index].seid );
 
-            connection = avdtp_get_connection_for_avdtp_cid(cid);
-            btstack_assert(connection != NULL);
+                connection = avdtp_get_connection_for_avdtp_cid(cid);
+                btstack_assert(connection != NULL);
 
-            uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-            uint8_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-            uint8_t block_length = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-            uint8_t subbands = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
+                uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
+                uint8_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
+                uint8_t block_length = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
+                uint8_t subbands = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
 
-            uint8_t allocation_method = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
-            uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-            uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
+                uint8_t allocation_method = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+                uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+                uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[0] = (sampling_frequency << 4) | channel_mode;
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[1] = (block_length << 4) | (subbands << 2) | allocation_method;
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[3] = max_bitpool_value;
 
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[0] = (sampling_frequency << 4) | channel_mode;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[1] = (block_length << 4) | (subbands << 2) | allocation_method;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[3] = max_bitpool_value;
+                sc.local_stream_endpoint->remote_configuration_bitmap = store_bit16(sc.local_stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
 
-            sc.local_stream_endpoint->remote_configuration_bitmap = store_bit16(sc.local_stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
-
-            // suitable Sink SEP found, configure SEP
-            a2dp_source_state = A2DP_SET_CONFIGURATION;
-            connection->supported_codecs_bitmap |= (1 << AVDTP_CODEC_SBC);
+                // suitable Sink SEP found, configure SEP
+                a2dp_source_state = A2DP_SET_CONFIGURATION;
+                connection->supported_codecs_bitmap |= (1 << AVDTP_CODEC_SBC);
+            }
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
