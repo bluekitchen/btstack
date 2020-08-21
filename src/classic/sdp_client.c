@@ -315,7 +315,7 @@ static void sdp_client_notify_callbacks(void){
     if (sdp_client_ready() == false) {
         return;
     }
-    btstack_context_callback_registration_t * callback = btstack_linked_list_pop(&sdp_client_query_requests);
+    btstack_context_callback_registration_t * callback = (btstack_context_callback_registration_t*) btstack_linked_list_pop(&sdp_client_query_requests);
     if (callback == NULL) {
         return;
     }
