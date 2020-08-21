@@ -317,7 +317,6 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            if (cid != a2dp_sink_cid) break;
             cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
             if (cid != a2dp_sink_cid) break;
 
