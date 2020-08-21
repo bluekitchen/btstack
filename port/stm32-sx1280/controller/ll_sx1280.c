@@ -582,7 +582,7 @@ static void radio_timer_handler(void){
 
             if (ctx.synced){
                 // restart radio timer (might get overwritten by first packet)
-                uint32_t conn_interval_ticks = US_TO_TICKS(ctx.conn_interval_us);
+                uint32_t conn_interval_ticks = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
                 radio_set_timer_ticks(conn_interval_ticks);
 
                 receive_master();
@@ -683,6 +683,19 @@ static void radio_on_rx_done(void ){
             ctx.tx_pdu = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
         }
 
+        // restart supervision timeout
+        ctx.time_without_any_packets_us = 0;
+
+        // check clock if we can sent a full packet before sync hop
+        int16_t event_time = packet_end_ticks - ctx.anchor_ticks;
+        uint16_t max_packet_time_incl_ifs_us = 500;
+        if (event_time > (ctx.conn_interval_us - SYNC_HOP_DELAY_US - max_packet_time_incl_ifs_us)){
+            // abort sending of next packet / AutoTx
+            Radio.SetFs();
+            printf("Close to Sync hop\n");
+            return;
+        }
+
         // tx packet ready?
         if (ctx.tx_pdu == NULL){
             empty_packet[0] = (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | PDU_DATA_LLID_DATA_CONTINUE;
@@ -697,15 +710,13 @@ static void radio_on_rx_done(void ){
         // update operating state
         SX1280AutoTxWillStart();
 
-        // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 35 us
-        uint16_t timestamp_delay = (10 + rx_packet->len) * 8 - 35;
-        uint16_t packet_start_ticks = packet_end_ticks - US_TO_TICKS(timestamp_delay);
-
-        // restart supervision timeout
-        ctx.time_without_any_packets_us = 0;
-
         // set anchor on first packet in connection event
         if (ctx.packet_nr_in_connection_event == 0){
+
+            // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 35 us
+            uint16_t timestamp_delay = (10 + rx_packet->len) * 8 - 35;
+            uint16_t packet_start_ticks = packet_end_ticks - US_TO_TICKS(timestamp_delay);
+
             ctx.anchor_ticks = packet_start_ticks;
             ctx.synced = true;
             uint32_t sync_hop_timeout_ticks = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
