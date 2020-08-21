@@ -696,8 +696,8 @@ static void radio_on_rx_done(void ){
         // update operating state
         SX1280AutoTxWillStart();
 
-        // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 50 us
-        uint16_t timestamp_delay = (10 + rx_packet->len) * 8 - 50;
+        // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 35 us
+        uint16_t timestamp_delay = (10 + rx_packet->len) * 8 - 35;
         uint16_t packet_start_ticks = packet_end_ticks - US_TO_TICKS(timestamp_delay);
 
         // restart supervision timeout
