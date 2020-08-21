@@ -319,7 +319,7 @@ static void sdp_client_notify_callbacks(void){
     if (callback == NULL) {
         return;
     }
-    (*callback->callback)(callback->callback);
+    (*callback->callback)(callback->context);
 }
 
 void sdp_parser_handle_done(uint8_t status){
