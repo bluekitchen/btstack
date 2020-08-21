@@ -2180,7 +2180,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #endif
             if (create_connection_cmd) {
                 uint8_t status = hci_event_command_status_get_status(packet);
-                bd_addr_type_t addr_type = hci_stack->outgoing_addr_type;
+                addr_type = hci_stack->outgoing_addr_type;
                 conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, addr_type);
                 log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), addr_type);
 
