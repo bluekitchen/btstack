@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `btstack_run_loop_base`: added `btstack_run_loop_base_dump_timer`
 - GAP: request role change for classic connection via `gap_request_role`
 - GAP: LE Whitelist API with 'gap_le_whitelist_x' with x = add, remove, clear and new `gap_connect_with_whitelist`
+- SDP Client: add sdp_client_register_query_callback() allows to register query request instead of polling sdp_client_ready()
 
 ### Changed
 - GAP: treat AES-CCM encrypted connection as mutually authenticated (BIAS)
