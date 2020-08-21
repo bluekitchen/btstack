@@ -444,8 +444,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
-            if (a2dp_source_cid != cid) break;
             cid = avdtp_subevent_signaling_delay_report_get_avdtp_cid(packet);
+            if (a2dp_source_cid != cid) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORT);
             break;
 
