@@ -26,16 +26,16 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 all: sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query
 
-sdp_rfcomm_query: ${COMMON_OBJ} sdp_client_rfcomm.c sdp_rfcomm_query.c
+sdp_rfcomm_query: ${COMMON_OBJ} sdp_client_rfcomm.c sdp_rfcomm_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-general_sdp_query: ${COMMON_OBJ} general_sdp_query.c
+general_sdp_query: ${COMMON_OBJ} general_sdp_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-service_attribute_search_query: ${COMMON_OBJ} service_attribute_search_query.c
+service_attribute_search_query: ${COMMON_OBJ} service_attribute_search_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-service_search_query: ${COMMON_OBJ} service_search_query.c
+service_search_query: ${COMMON_OBJ} service_search_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
