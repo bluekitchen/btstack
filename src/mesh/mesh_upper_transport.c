@@ -284,6 +284,13 @@ void mesh_upper_transport_dump(void){
 void mesh_upper_transport_reset(void){
     crypto_active = 0;
     mesh_upper_transport_reset_pdus(&upper_transport_incoming);
+    mesh_upper_transport_reset_pdus(&upper_transport_outgoing);
+    message_builder_num_network_pdus_reserved = 0;
+    mesh_upper_transport_reset_pdus(&message_builder_reserved_network_pdus);
+    if (message_builder_reserved_upper_pdu != NULL){
+        btstack_memory_mesh_upper_transport_pdu_free(message_builder_reserved_upper_pdu);
+        message_builder_reserved_upper_pdu = NULL;
+    }
 }
 
 static mesh_transport_key_t * mesh_upper_transport_get_outgoing_appkey(uint16_t netkey_index, uint16_t appkey_index){
@@ -439,7 +446,7 @@ static void mesh_upper_transport_schedule_send_requests(void){
 
         if (message_builder_ready == false){
             // waiting for free upper pdu, we will get called again on pdu free
-            if (message_builder_reserved_upper_pdu == false){
+            if (message_builder_reserved_upper_pdu == NULL){
                 return;
             }
             // request callback on network pdu free
