@@ -270,8 +270,11 @@ static void test_proxy_server_callback_handler(mesh_network_callback_type_t call
 static void test_upper_transport_access_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     UNUSED(status);
 
-    // ignore pdu sent
-    if (callback_type == MESH_TRANSPORT_PDU_SENT) return;
+    // free sent pdus
+    if (callback_type == MESH_TRANSPORT_PDU_SENT) {
+        mesh_upper_transport_pdu_free(pdu);
+        return;
+    }
 
     // process pdu received
     mesh_access_pdu_t    * access_pdu;
@@ -397,9 +400,19 @@ static void test_receive_network_pdus(int count, char ** network_pdus, char ** l
         received_network_pdu = NULL;
     }
 
-    // wait for tranport pdu
+    // wait for transport pdu
     while (recv_upper_transport_pdu_len == 0) {
         mock_process_hci_cmd();
+
+        // check for acks
+        if (outgoing_gatt_network_pdu_len != 0){
+            outgoing_gatt_network_pdu_len = 0;
+            gatt_bearer_emit_sent();
+        }
+        if (outgoing_adv_network_pdu_len != 0){
+            outgoing_adv_network_pdu_len = 0;
+            adv_bearer_emit_sent();
+        }
     }
 
     transport_pdu_len = strlen(access_pdu) / 2;
@@ -490,6 +503,7 @@ static void test_send_access_message(uint16_t netkey_index, uint16_t appkey_inde
         expect_adv_network_pdu();
 #endif
     }
+    // mesh_upper_transport_pdu_free(pdu);
 }
 
 static void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
