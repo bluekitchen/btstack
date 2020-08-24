@@ -21,11 +21,15 @@ static uint8_t aes128_cyphertext[16];
 static int report_aes128;
 static int report_random;
 
+static uint32_t lfsr_random;
 // #define ENABLE_PACKET_LOGGER
 // #define ENABLE_AES128_LOGGER
 
+/* taps: 32 31 29 1; characteristic polynomial: x^32 + x^31 + x^29 + x + 1 */
+#define LFSR(a) ((a >> 1) ^ (uint32_t)((0 - (a & 1u)) & 0xd0000001u))
+
 void mock_init(void){
-	 srand(0);
+    lfsr_random = 0x12345678;
 }
 
 uint8_t * mock_packet_buffer(void){
@@ -88,7 +92,8 @@ static void random_report_result(void){
 	memcpy (le_rand_result, rand_complete, 6);
 	int i;
 	for (i=0;i<8;i++){
-		le_rand_result[6+i]= rand();
+        lfsr_random = LFSR(lfsr_random);
+		le_rand_result[6+i]= lfsr_random;
 	}
 	mock_simulate_hci_event(le_rand_result, sizeof(le_rand_result));
 }
