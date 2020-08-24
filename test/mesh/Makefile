@@ -88,7 +88,7 @@ all: ${EXAMPLES}
 
 test: mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
 	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
-    ASAN_OPTIONS=detect_leaks=0 ./mesh_message_test
+	ASAN_OPTIONS=detect_leaks=0 ./mesh_message_test
 	./provisioning_device_test
 	./provisioning_provisioner_test
 	./mesh_configuration_composition_data_message_test
