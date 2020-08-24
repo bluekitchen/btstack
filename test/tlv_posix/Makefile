@@ -43,6 +43,6 @@ test: all
 	@echo Run all test
 	@set -e; \
 	for test in $(TESTS); do \
-	  ./$$test; \
+	  ASAN_OPTIONS=detect_leaks=0 ./$$test; \
 	done
 

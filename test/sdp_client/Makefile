@@ -39,7 +39,7 @@ service_search_query: ${COMMON_OBJ} service_search_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./sdp_rfcomm_query
+	ASAN_OPTIONS=detect_leaks=0 ./sdp_rfcomm_query
 	./general_sdp_query
 	./service_attribute_search_query
 	./service_search_query
