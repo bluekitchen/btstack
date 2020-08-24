@@ -51,11 +51,11 @@
 
 #include "mock.h"
 
-static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
+static void CHECK_EQUAL_ARRAY(const char * name, uint8_t * expected, uint8_t * actual, int size){
     int i;
     for (i=0; i<size; i++){
         if (expected[i] != actual[i]) {
-            printf("offset %u wrong\n", i);
+            printf("%s: offset %u wrong\n", name, i);
             printf("expected: "); printf_hexdump(expected, size);
             printf("actual:   "); printf_hexdump(actual, size);
         }
@@ -182,6 +182,10 @@ static const char * prov_static_oob_string = "00000000000000000102030405060708";
 
 TEST_GROUP(Provisioning){
     void setup(void){
+        mock_init();
+        for (unsigned int i = 0 ; i < 4 ; i ++){
+            printf("rand: %08x\n", rand());
+        }
         btstack_crypto_init();
         provisioning_device_init();
         mesh_node_set_device_uuid(device_uuid);
@@ -214,29 +218,29 @@ TEST(Provisioning, Prov1){
     // send prov inviate
     send_prov_pdu(prov_invite, sizeof(prov_invite));        
     // check for prov cap
-    CHECK_EQUAL_ARRAY(prov_capabilities, pdu_data, sizeof(prov_capabilities));
+    CHECK_EQUAL_ARRAY("prov_capabilities", prov_capabilities, pdu_data, sizeof(prov_capabilities));
     pb_adv_emit_pdu_sent(0);
     // send prov start
     send_prov_pdu(prov_start, sizeof(prov_start));        
     // send public key
     send_prov_pdu(prov_public_key, sizeof(prov_public_key));
     // check for public key
-    CHECK_EQUAL_ARRAY(prov_public_key, pdu_data, sizeof(prov_public_key));
+    CHECK_EQUAL_ARRAY("prov_public_key", prov_public_key, pdu_data, sizeof(prov_public_key));
     pb_adv_emit_pdu_sent(0);
     // send prov confirm
     send_prov_pdu(prov_confirm, sizeof(prov_confirm));
     // check for prov confirm
-    CHECK_EQUAL_ARRAY(prov_confirm, pdu_data, sizeof(prov_confirm));
+    CHECK_EQUAL_ARRAY("prov_confirm", prov_confirm, pdu_data, sizeof(prov_confirm));
     pb_adv_emit_pdu_sent(0);
     // send prov random
     send_prov_pdu(prov_random, sizeof(prov_random));
     // check for prov random
-    CHECK_EQUAL_ARRAY(prov_random, pdu_data, sizeof(prov_random));
+    CHECK_EQUAL_ARRAY("prov_random", prov_random, pdu_data, sizeof(prov_random));
     pb_adv_emit_pdu_sent(0);
     // send prov data
     send_prov_pdu(prov_data, sizeof(prov_data));
     // check prov complete
-    CHECK_EQUAL_ARRAY(prov_complete, pdu_data, sizeof(prov_complete));
+    CHECK_EQUAL_ARRAY("prov_complete", prov_complete, pdu_data, sizeof(prov_complete));
     pb_adv_emit_pdu_sent(0);
 }
 
