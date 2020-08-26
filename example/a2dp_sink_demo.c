@@ -709,11 +709,11 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         
         case AVRCP_SUBEVENT_OPERATION_COMPLETE:
-            printf("AVRCP Controller: %s done\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+            printf("AVRCP Controller: %s complete\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
             break;
         
         case AVRCP_SUBEVENT_OPERATION_START:
-            printf("AVRCP Controller: Start %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+            printf("AVRCP Controller: %s start\n", avrcp_operation2str(avrcp_subevent_operation_start_get_operation_id(packet)));
             break;
         
         default:

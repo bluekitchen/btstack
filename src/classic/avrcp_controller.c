@@ -121,13 +121,17 @@ static uint8_t request_pass_through_release_control_cmd(avrcp_connection_t * con
 }
 
 static inline uint8_t request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, uint8_t continuous_fast_forward_cmd){
+    log_info("Send command %d", opid);
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
-        log_error("avrcp: could not find a connection. avrcp cid 0x%02x", avrcp_cid);
+        log_error("Could not find a connection. avrcp cid 0x%02x", avrcp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        log_error("Connection in wrong state %d, expected %d. avrcp cid 0x%02x", connection->state, AVCTP_CONNECTION_OPENED, avrcp_cid);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
     connection->command_opcode =  AVRCP_CMD_OPCODE_PASS_THROUGH;
     connection->command_type = AVRCP_CTYPE_CONTROL;
@@ -467,12 +471,9 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
 }
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
-    uint8_t operands[20];
-
-    int     pos = 3;
-
     if (size < 6u) return;
-
+    
+    int     pos = 3;
     uint8_t pdu_id;
     
     avrcp_frame_type_t  frame_type = (avrcp_frame_type_t)((packet[0] >> 1) & 0x01);
@@ -493,8 +494,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
     avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t)   (byte_value & 0x07);
     uint8_t opcode = packet[pos++];
-    // Company ID (3)
-    pos += 3;
 
     uint16_t param_length;
 
@@ -502,34 +501,41 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
-            // operands:
-            (void)memcpy(operands, packet + pos, 5);
-            uint8_t unit_type = operands[1] >> 3;
-            uint8_t max_subunit_ID = operands[1] & 0x07;
-            log_info("    SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
+            // page, extention code (1)
+            pos++;
+            uint8_t unit_type = packet[pos] >> 3;
+            uint8_t max_subunit_ID = packet[pos] & 0x07;
+            log_info("SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
             break;
         }
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
-            // operands:
-            (void)memcpy(operands, packet + pos, 5);
-            uint8_t unit_type = operands[1] >> 3;
-            uint8_t unit = operands[1] & 0x07;
-            uint32_t company_id = (operands[2] << 16) | (operands[3] << 8) | operands[4];
-            log_info("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
+            // byte value 7 (1)
+            pos++;
+            uint8_t unit_type = packet[pos] >> 3;
+            uint8_t unit = packet[pos] & 0x07;
+            pos++;
+            uint32_t company_id = big_endian_read_24(packet, pos);
+            log_info("UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
                 ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id);
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
-            if ((size - pos) < 7) {
-                log_error("avrcp: wrong packet size");
+            // Company ID (3)
+            pos += 3;
+            pdu_id = packet[pos++];
+            // packet type (1)
+            pos++;
+            param_length = big_endian_read_16(packet, pos);
+            pos += 2;
+            log_info("operands length %d, remaining size %d", param_length, size - pos);
+                
+            if ((size - pos) < param_length) {
+                printf_hexdump(packet, size);
+                log_error("Wrong packet size %d < %d", size - pos, param_length);
                 return;
             };
-            // operands:
-            (void)memcpy(operands, packet + pos, 7);
-            pos += 7;
-            pdu_id = operands[3];
 
             if ((connection->state != AVCTP_W2_RECEIVE_RESPONSE) && (pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION)){
                 log_info("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d", connection->state);
@@ -537,9 +543,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             } 
             connection->state = AVCTP_CONNECTION_OPENED;
 
-            param_length = big_endian_read_16(operands, 5);
-
-            log_info("        VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
+            log_info("VENDOR DEPENDENT response: pdu id 0x%02x, param_length %d, status %s", pdu_id, param_length, avrcp_ctype2str(ctype));
             switch (pdu_id){
                 case AVRCP_PDU_ID_GET_CURRENT_PLAYER_APPLICATION_SETTING_VALUE:{
                     uint8_t num_attributes = packet[pos++];
@@ -900,7 +904,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             }
             break;
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
-            // 0x80 | connection->cmd_operands[0]
             uint8_t operation_id = packet[pos++];
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
