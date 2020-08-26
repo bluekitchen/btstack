@@ -671,6 +671,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
     // setup state
     a2dp_source_state = A2DP_W4_CONNECTED;
     a2dp_source_cid   = outgoing_cid;
+    *avdtp_cid = outgoing_cid;
 
     return ERROR_CODE_SUCCESS;
 }
