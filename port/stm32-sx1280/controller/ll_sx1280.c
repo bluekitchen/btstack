@@ -57,6 +57,18 @@
 #include "hci_event.h"
 #include "hopping.h"
 
+//
+// configuration
+//
+
+#define AUTO_RX_TX_TIME_US 86
+
+#define TX_PARAMS_RAMP_TIME RADIO_RAMP_02_US
+
+// set output power in dBM, range [-18..+13] dBm - Bluetooth LE max is 10 dBM
+#define TX_PARAMS_OUTPUT_POWER 10
+
+
 // access to timers
 extern TIM_HandleTypeDef   htim2;
 extern LPTIM_HandleTypeDef hlptim1;
@@ -71,8 +83,6 @@ extern LPTIM_HandleTypeDef hlptim1;
 #define SX1280_TX0_OFFSET 128
 #define SX1280_TX1_OFFSET 192
 
-// set output power in dBM, range [-18..+13] dBm - Bluetooth LE max is 10 dBM
-#define TX_OUTPUT_POWER                             10
 
 // Mask of IRQs to listen in tx and rx mode
 #define RX_TX_IRQ_MASK (IRQ_RX_DONE | IRQ_TX_DONE | IRQ_RX_TX_TIMEOUT | IRQ_CRC_ERROR)
@@ -464,7 +474,7 @@ static void ll_advertising_statemachine(void){
 
 static void start_advertising(void){
 
-    Radio.SetAutoTx(AUTO_RX_TX_OFFSET);
+    Radio.StopAutoTx();
 
     PacketParams_t packetParams;
     packetParams.PacketType = PACKET_TYPE_BLE;
@@ -806,7 +816,7 @@ void ll_radio_on(void){
     Radio.SetPacketType( modulationParams.PacketType );
     Radio.SetModulationParams( &modulationParams );
     Radio.SetBufferBaseAddresses( SX1280_TX0_OFFSET, SX1280_RX0_OFFSET );
-    Radio.SetTxParams( TX_OUTPUT_POWER, RADIO_RAMP_02_US );
+    Radio.SetTxParams( TX_PARAMS_OUTPUT_POWER, TX_PARAMS_RAMP_TIME );
     
     // Go back to Frequcency Synthesis Mode, reduces transition time between Rx<->TX
     Radio.SetAutoFS(1);
@@ -894,7 +904,12 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     
     // Enable Rx->Tx in 150 us for BLE
     // Note: Driver subtracts AUTO_RX_TX_OFFSET (33) from it and 150 should be correct, Raccoon reports 181 us then, so -31
-    Radio.SetAutoTx(119);
+    // Radio.SetAutoTx(119);
+
+    // SetAutoTX(100) - direct write / ignore compensation
+    uint8_t buf[2];
+    big_endian_store_16(buf, 0, AUTO_RX_TX_TIME_US);
+    SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
 
     // get next packet
     ll_state = LL_STATE_CONNECTED;
