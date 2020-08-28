@@ -59,7 +59,7 @@ test:
 	  $(MAKE) -C $$dir test; \
 	done
 
-coverage:
+test-coverage:
 	# delete trace data
 	rm -f coverage.info
 	find . -name "*.gcda" -type f -delete
@@ -68,9 +68,23 @@ coverage:
 	# run tests
 	make test
 	# collect traces
-	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/3rd-party/tinydir/*" --exclude "*/platform/posix/*" --exclude "*/test/*" --output-file coverage.info
+	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
+
+coverage: test-coverage
+
+	# TODO: download pts coverage
+	# ...
+	# combine unit and pts
+	# lcov --rc lcov_branch_coverage=1  -a coverage-pts.info -a coverage-unit.info --output-file coverage.info
+	cp coverage-unit.info coverage.info
+
+	# create bat subset
+	./coverage_subset_bat.py coverage.info coverage-bat.info
+
 	# generate html output
-	genhtml coverage.info --branch-coverage --output-directory coverage-html
+	genhtml coverage-unit.info --branch-coverage --output-directory coverage-unit
+	genhtml coverage-bat.info  --branch-coverage --output-directory coverage-bat
+	genhtml coverage.info      --branch-coverage --output-directory coverage
 
 coverage-freertos-ble:
 	./coverage_filter.py src/mesh src/classic
