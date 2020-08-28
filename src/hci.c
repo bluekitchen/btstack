@@ -5422,7 +5422,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address
     }
 
     uint8_t status = hci_whitelist_add(address_type, address);
-    if (status != ERROR_CODE_SUCCESS) {
+    if (status == BTSTACK_MEMORY_ALLOC_FAILED) {
         return status;
     }
 
