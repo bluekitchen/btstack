@@ -71,8 +71,8 @@ test-coverage:
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
 
 coverage: test-coverage
-	# download pts coverage
-	curl -O http://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info
+	# download pts coverage and fix paths
+    curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed -e 's|/Users/mringwal/buildbot-worker/auto-pts/btstack|/root/buildbot-worker/test-develop/build|' > coverage-pts.info
 
 	# combine unit and pts
 	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit.info --output-file coverage.info
