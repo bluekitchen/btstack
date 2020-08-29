@@ -54,6 +54,11 @@
 #include "btp.h"
 #include "btp_socket.h"
 
+#ifdef COVERAGE
+// guesswork:
+void __gcov_flush(void);
+#endif
+
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
 #define BT_LE_AD_LIMITED  (1U << 0)
@@ -134,6 +139,9 @@ static void heartbeat_handler(btstack_timer_source_t *ts){
     btstack_run_loop_set_timer_handler(&heartbeat, &heartbeat_handler);
     btstack_run_loop_set_timer(&heartbeat, 5000);
     btstack_run_loop_add_timer(&heartbeat);
+#ifdef COVERAGE
+    __gcov_flush();
+#endif
 }
 
 static void btp_send(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
@@ -650,6 +658,9 @@ static void btp_core_handler(uint8_t opcode, uint8_t controller_index, uint16_t 
             status = data[0];
             if (status == BTP_ERROR_NOT_READY){
                 // connection stopped, abort
+#ifdef COVERAGE
+                __gcov_flush();
+#endif
                 exit(10);
             }
             break;

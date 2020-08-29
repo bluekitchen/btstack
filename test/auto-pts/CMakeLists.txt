@@ -64,6 +64,7 @@ set(SOURCES
 
 add_compile_options( -fsanitize=address --coverage)
 add_link_options(    -fsanitize=address --coverage)
+add_definitions(     -DCOVERAGE)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
