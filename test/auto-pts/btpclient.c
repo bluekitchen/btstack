@@ -245,7 +245,9 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                             if (gap_delete_bonding){
                                 MESSAGE("Delete all bonding information");
                                 gap_delete_bonding = false;
+#ifdef ENABLE_CLASSIC
                                 gap_delete_all_link_keys();
+#endif
                                 le_device_delete_all();
                             }
 
@@ -809,9 +811,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             MESSAGE("BTP_GAP_OP_SET_DISCOVERABLE");
             if (controller_index == 0){
                 uint8_t discoverable = data[0];
-                // Classic
+#ifdef ENABLE_CLASSIC                // Classic
                 gap_discoverable_control(discoverable > 0);
-
+#endif
                 switch (discoverable) {
                     case BTP_GAP_DISCOVERABLE_NON:
                         ad_flags &= ~(BT_LE_AD_GENERAL | BT_LE_AD_LIMITED);
@@ -992,7 +994,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 }
                 if (flags & BTP_GAP_DISCOVERY_FLAG_BREDR){
                     gap_inquriy_scan_active = 1;
+#ifdef ENABLE_CLASSIC
                     gap_inquiry_start(15);
+#endif
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
@@ -1003,7 +1007,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 gap_stop_scan();
                 if (gap_inquriy_scan_active){
                     gap_inquriy_scan_active = 0;
+#ifdef ENABLE_CLASSIC
                     gap_inquiry_stop();
+#endif
                 }
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
@@ -1040,7 +1046,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             MESSAGE("BTP_GAP_OP_SET_IO_CAPA");
             if (controller_index == 0){
                 uint8_t io_capabilities = data[0];
+#ifdef ENABLE_CLASSIC
                 gap_ssp_set_io_capability(io_capabilities);
+#endif
                 sm_set_io_capabilities( (io_capability_t) io_capabilities);
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
@@ -1059,7 +1067,9 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 // uint8_t   command_addr_type = data[0];
                 bd_addr_t command_addr;
                 reverse_bd_addr(&data[1], command_addr);
+#ifdef ENABLE_CLASSIC
                 gap_drop_link_key_for_bd_addr(command_addr);
+#endif
                 le_device_delete_all();
                 btp_send(BTP_SERVICE_ID_GAP, opcode, controller_index, 0, NULL);
             }
@@ -1864,8 +1874,10 @@ int btstack_main(int argc, const char * argv[])
     (void)argv;
 
     l2cap_init();
+#ifdef ENABLE_CLASSIC
     rfcomm_init();
     sdp_init();
+#endif
 
     le_device_db_init();
     sm_init();
@@ -1885,7 +1897,9 @@ int btstack_main(int argc, const char * argv[])
     sm_add_event_handler(&sm_event_callback_registration);
 
     // configure GAP
+#ifdef ENABLE_CLASSIC
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+#endif
 
     strcpy(gap_name, "iut 00:00:00:00:00:00");
     gap_set_local_name(gap_name);
@@ -1893,8 +1907,9 @@ int btstack_main(int argc, const char * argv[])
     strcpy(gap_short_name, "iut");
 
     gap_cod = 0x007a020c;   // smartphone
+#ifdef ENABLE_CLASSIC
     gap_set_class_of_device(gap_cod);
-
+#endif
     // delete all bonding information on start
     gap_delete_bonding = true;
 
