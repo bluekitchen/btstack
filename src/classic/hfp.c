@@ -164,6 +164,9 @@ static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
 
 static hfp_connection_t * sco_establishment_active;
 
+// HFP_SCO_PACKET_TYPES_NONE == no choice/override
+static uint16_t hfp_accept_sco_packet_types;
+
 static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
     uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
 
@@ -1624,6 +1627,15 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 }
 
 void hfp_init(void){
+    hfp_accept_sco_packet_types = HFP_SCO_PACKET_TYPES_NONE;
+}
+
+void hfp_set_sco_packet_types(uint16_t packet_types){
+    hfp_accept_sco_packet_types = packet_types;
+}
+
+uint16_t hfp_get_sco_packet_types(void){
+    return hfp_accept_sco_packet_types;
 }
 
 void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported){

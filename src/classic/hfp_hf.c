@@ -613,13 +613,18 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
             retransmission_effort = 0xff;
             packet_types = 0x003f;
         }
-        
+
+        // packet type override
+        if (hfp_get_sco_packet_types() != HFP_SCO_PACKET_TYPES_NONE){
+            packet_types = hfp_get_sco_packet_types();
+        }
+
         uint16_t sco_voice_setting = hci_get_sco_voice_setting();
         if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
             sco_voice_setting = 0x0043; // Transparent data
         }
         
-        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting 0x%02x", sco_voice_setting);
+        log_info("HFP: sending hci_accept_connection_request, packet types 0x%04x, sco_voice_setting 0x%02x", packet_types, sco_voice_setting);
         hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency, 
                         sco_voice_setting, retransmission_effort, packet_types);
         return;

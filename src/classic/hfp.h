@@ -156,6 +156,12 @@ extern "C" {
 #define HFP_CODEC_CVSD 0x01
 #define HFP_CODEC_MSBC 0x02
 
+#define HFP_SCO_PACKET_TYPES_NONE  0x3c0
+#define HFP_SCO_PACKET_TYPES_HV1   0x3C1
+#define HFP_SCO_PACKET_TYPES_HV3   0x3C4
+#define HFP_SCO_PACKET_TYPES_EV3   0x3C8
+#define HFP_SCO_PACKET_TYPES_2EV3  0x380
+
 typedef enum {
     HFP_ROLE_INVALID = 0,
     HFP_ROLE_AG,
@@ -697,6 +703,18 @@ const char * hfp_enhanced_call_dir2str(uint16_t index);
 const char * hfp_enhanced_call_status2str(uint16_t index);
 const char * hfp_enhanced_call_mode2str(uint16_t index);
 const char * hfp_enhanced_call_mpty2str(uint16_t index);
+
+/**
+ * @brief Set packet types used to accept incoming SCO connection requests
+ * @param common single packet_types: HFP_SCO_PACKET_TYPES_*
+ */
+void hfp_set_sco_packet_types(uint16_t packet_types);
+
+/**
+ * @brief Get packet types used to accept incoming SCO connection requests
+ * @returns packet_types
+ */
+uint16_t hfp_get_sco_packet_types(void);
 
 #if defined __cplusplus
 }
