@@ -26,9 +26,23 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 	tlv_posix \
-
 # not testing anything in source tree
 #	maths \
+
+# flash_tlv also contains btstack_linked_key_db tests
+
+SUBDIRS_BLE = \
+	att_db \
+	ble_client \
+	crypto \
+	gatt_client \
+	gatt_server \
+	gap \
+	hid_parser \
+	linked_list \
+	ring_buffer \
+	security_manager \
+#	tlv_posix \
 
 # test fails
 
@@ -59,31 +73,43 @@ test:
 	  $(MAKE) -C $$dir test; \
 	done
 
-test-coverage:
+test-ble:
+	echo Run all BLE tests
+	@set -e; \
+	for dir in $(SUBDIRS_BLE); do \
+	  $(MAKE) -C $$dir test; \
+	done
+
+test-coverage-ble: subdirs
 	# delete trace data
-	rm -f coverage.info
 	find . -name "*.gcda" -type f -delete
-	# collect all files
-	# lcov --capture --initial --directory .  --output-file coverage.info
 	# run tests
-	make test
+	$(MAKE) test-ble
+	# collect traces
+	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
+
+test-coverage: subdirs
+	# delete trace data
+	find . -name "*.gcda" -type f -delete
+	# run tests
+	$(MAKE) test
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
 
-coverage: test-coverage
+coverage: test-coverage test-coverage-ble
 	# download pts coverage and fix paths
-    curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed -e 's|/Users/mringwal/buildbot-worker/auto-pts/btstack|/root/buildbot-worker/test-develop/build|' > coverage-pts.info
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed -e 's|/Users/mringwal/buildbot-worker/auto-pts/btstack|/root/buildbot-worker/test-develop/build|' > coverage-pts.info
 
-	# combine unit and pts
-	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit.info --output-file coverage.info
+	# combine unit[-ble] and pts
+	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit.info     --output-file coverage.info
+	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit-ble.info --output-file coverage-ble.info
 
-	# create bat subset
-	./coverage_subset_bat.py coverage.info coverage-bat.info
+	# create bat subset from ble subset
+	./coverage_subset_bat.py coverage-ble.info      coverage-bat.info
+	./coverage_subset_bat.py coverage-unit-ble.info coverage-unit-bat.info
 
 	# generate html output
-	genhtml coverage-unit.info --branch-coverage --output-directory coverage-unit
-	genhtml coverage-bat.info  --branch-coverage --output-directory coverage-bat
-	genhtml coverage.info      --branch-coverage --output-directory coverage
-
-coverage-freertos-ble:
-	./coverage_filter.py src/mesh src/classic
+	genhtml coverage-unit.info     --branch-coverage --output-directory coverage-unit
+	genhtml coverage-unit-bat.info --branch-coverage --output-directory coverage-unit-bat
+	genhtml coverage-bat.info      --branch-coverage --output-directory coverage-bat
+	genhtml coverage.info          --branch-coverage --output-directory coverage

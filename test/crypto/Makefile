@@ -6,7 +6,7 @@ BTSTACK_ROOT =  ../..
 
 CFLAGS  = -DUNIT_TEST -g
 CPPFLAGS =  -x c++ -Wall -Wno-unused -fno-exceptions
-CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael

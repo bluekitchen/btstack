@@ -15,6 +15,7 @@ blacklist = [
     'platform/embedded/btstack_em9304_spi_embedded.c',
     'platform/libusb',
     'platform/posix',
+    'port/libusb',
     'src/ble/ancs_client.c',
     'src/ble/le_device_db_memory.c',
     'src/ble/gatt-service/cycling_power_service_server.c',
