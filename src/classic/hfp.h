@@ -439,8 +439,9 @@ typedef enum {
     HFP_LINK_SETTINGS_S3,
     HFP_LINK_SETTINGS_S4,
     HFP_LINK_SETTINGS_T1,
-    HFP_LINK_SETTINGS_T2
-} hfp_link_setttings_t;
+    HFP_LINK_SETTINGS_T2,
+    HFP_LINK_SETTINGS_NONE,
+} hfp_link_settings_t;
 
 typedef enum{
     HFP_NONE_SM,
@@ -556,7 +557,7 @@ typedef struct hfp_connection {
     uint8_t codec_confirmed;
     uint8_t sco_for_msbc_failed;
     
-    hfp_link_setttings_t link_setting;
+    hfp_link_settings_t link_setting;
 
     uint8_t trigger_codec_exchange;
     uint8_t establish_audio_connection; 
