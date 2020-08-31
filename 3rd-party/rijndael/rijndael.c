@@ -350,6 +350,7 @@ static const u32 Te4[256] =
   0xb0b0b0b0U, 0x54545454U, 0xbbbbbbbbU, 0x16161616U,
 };
 
+#ifdef ENABLE_RIJNDAEL_DECRYPT
 static const u32 Td0[256] =
 {
   0x51f4a750U, 0x7e416553U, 0x1a17a4c3U, 0x3a275e96U,
@@ -689,6 +690,7 @@ static const u32 Td4[256] =
   0xe1e1e1e1U, 0x69696969U, 0x14141414U, 0x63636363U,
   0x55555555U, 0x21212121U, 0x0c0c0c0cU, 0x7d7d7d7dU,
 };
+#endif
 
 static const u32 rcon[] =
 {
@@ -797,6 +799,7 @@ int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
   return 0;
 }
 
+#ifdef ENABLE_RIJNDAEL_DECRYPT
 /**
  * Expand the cipher key into the decryption key schedule.
  *
@@ -844,6 +847,7 @@ int rijndaelSetupDecrypt(u32 *rk, const u8 *key, int keybits)
   }
   return nrounds;
 }
+#endif
 
 void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
   u8 ciphertext[16])
@@ -1030,6 +1034,7 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
 
 }
 
+#ifdef ENABLE_RIJNDAEL_DECRYPT
 void rijndaelDecrypt(const u32 *rk, int nrounds, const u8 ciphertext[16],
   u8 plaintext[16])
 {
@@ -1218,3 +1223,4 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
 	
 
 }
+#endif
