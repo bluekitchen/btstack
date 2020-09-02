@@ -79,11 +79,10 @@ ${BTSTACK_ROOT}/src/hci_dump.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
-controller/controller.c \
-controller/hci_event.c \
-controller/hopping.c \
-controller/ll_sx1280.c \
-controller/hal_timer.c \
+${BTSTACK_ROOT}/chipset/sx128x/controller.c \
+${BTSTACK_ROOT}/chipset/sx128x/hci_event.c \
+${BTSTACK_ROOT}/chipset/sx128x//hopping.c \
+${BTSTACK_ROOT}/chipset/sx128x//ll_sx1280.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_cortex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma.c \
@@ -104,6 +103,7 @@ Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi_ex.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.c \
+port/hal_timer.c \
 port/btstack_port.c \
 SMTC_Drivers/sx1280-driver-c/sx1280-hal.c \
 SMTC_Drivers/sx1280-driver-c/sx1280.c \
@@ -179,6 +179,7 @@ C_INCLUDES =  \
 -I ${BTSTACK_ROOT}/src \
 -I ${BTSTACK_ROOT}/src/ble \
 -I ${BTSTACK_ROOT}/src/ble/gatt-service \
+-I ${BTSTACK_ROOT}/chipset/sx128x \
 -I controller \
 -I Drivers/CMSIS/Device/ST/STM32L4xx/Include \
 -I Drivers/CMSIS/Include \
