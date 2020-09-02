@@ -1,6 +1,8 @@
 #ifndef __BOARD__MIROMICO__L451RE_H__
 #define __BOARD__MIROMICO__L451RE_H__
 
+#define RADIO_SPI_HANDLE    hspi2
+
 #define RADIO_NSS_PIN       GPIO_PIN_12
 #define RADIO_NSS_PORT      GPIOB
 

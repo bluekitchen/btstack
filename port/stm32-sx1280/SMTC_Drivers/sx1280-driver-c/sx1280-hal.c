@@ -20,7 +20,6 @@ Maintainer: Miguel Luis, Matthieu Verdy and Benjamin Boulet
 
 // logging on
 #include "SEGGER_RTT.h"
-extern TIM_HandleTypeDef htim2;
 #define printf(format, ...) SEGGER_RTT_printf(0, format,  ## __VA_ARGS__)
 
 /*!
@@ -125,8 +124,7 @@ static DioIrqHandler **dioIrqHandlers;
 
 #ifdef USE_BK_SPI
 
-extern SPI_HandleTypeDef hspi2;
-
+extern SPI_HandleTypeDef RADIO_SPI_HANDLE;
 
 static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
 
@@ -219,7 +217,7 @@ void SX1280HalClearInstructionRam( void )
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, halSize, NULL, 0);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
 #else
     SpiIn( halTxBuffer, halSize );
 #endif
@@ -240,7 +238,7 @@ void SX1280HalWakeup( void )
     halTxBuffer[1] = 0x00;
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, halSize, NULL, 0);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
 #else
     SpiIn( halTxBuffer, halSize );
 #endif
@@ -264,7 +262,7 @@ void SX1280HalWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t s
     memcpy( halTxBuffer + 1, ( uint8_t * )buffer, size * sizeof( uint8_t ) );
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, halSize, NULL, 0);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
 #else
     SpiIn( halTxBuffer, halSize );
 #endif
@@ -295,7 +293,7 @@ void SX1280HalReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t si
 
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, 2, buffer, size);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, 2, buffer, size);
 #else
     SpiInOut( halTxBuffer, halRxBuffer, halSize );
 #endif
@@ -322,7 +320,7 @@ void SX1280HalWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, halSize, NULL, 0);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
 #else
     SpiIn( halTxBuffer, halSize );
 #endif
@@ -353,7 +351,7 @@ void SX1280HalReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, 4, buffer, size);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, 4, buffer, size);
 #else
     uint16_t halSize = 4 + size;
     SpiInOut( halTxBuffer, halRxBuffer, halSize );
@@ -386,7 +384,7 @@ void SX1280HalWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, halSize, NULL, 0);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
 #else
     SpiIn( halTxBuffer, halSize );
 #endif
@@ -414,7 +412,7 @@ void SX1280HalReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
 #ifdef USE_BK_SPI
-    spi_tx_then_rx( &hspi2, halTxBuffer, 3, buffer, size);
+    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, 3, buffer, size);
 #else
     SpiInOut( halTxBuffer, halRxBuffer, halSize );
     memcpy( buffer, halRxBuffer + 3, size );
