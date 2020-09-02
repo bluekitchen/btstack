@@ -56,6 +56,8 @@
 #include "hal_cpu.h"
 #include "hci_event.h"
 #include "hopping.h"
+#include "hal_timer.h"
+
 
 //
 // configuration
@@ -69,9 +71,6 @@
 #define TX_PARAMS_OUTPUT_POWER 10
 
 
-// access to timers
-extern TIM_HandleTypeDef   htim2;
-extern LPTIM_HandleTypeDef hlptim1;
 
 #define ACL_LE_MAX_PAYLOAD 31
 #define ADV_MAX_PAYLOAD    (6+6+22)
@@ -497,7 +496,7 @@ static void start_advertising(void){
 
     // prepare
     ctx.channel = 36;
-    ctx.anchor_ticks = HAL_LPTIM_ReadCounter(&hlptim1);
+    ctx.anchor_ticks = hal_timer_get_ticks();
 
     // and get started
     ll_advertising_statemachine();
@@ -513,17 +512,16 @@ static void start_hopping(void){
     Radio.SetPacketParams( &packetParams );
 
 }
+
 static void radio_stop_timer(void){
-    __HAL_LPTIM_DISABLE_IT(&hlptim1, LPTIM_IT_CMPM);
-    __HAL_LPTIM_CLEAR_FLAG(&hlptim1, LPTIM_IT_CMPM);
+    hal_timer_stop();
 }
 
 static void radio_set_timer_ticks(uint32_t anchor_offset_ticks){
     radio_stop_timer();
     // set timer for next radio event relative to anchor
     uint16_t timeout_ticks = (uint16_t) (ctx.anchor_ticks + anchor_offset_ticks);
-    __HAL_LPTIM_COMPARE_SET(&hlptim1, timeout_ticks);
-    __HAL_LPTIM_ENABLE_IT(&hlptim1, LPTIM_IT_CMPM);
+    hal_timer_start(timeout_ticks);
 }
 
 static void ll_terminate(void){
@@ -554,7 +552,7 @@ static void ll_terminate(void){
 
 static void radio_timer_handler(void){
 
-    uint16_t t0 = HAL_LPTIM_ReadCounter(&hlptim1);
+    uint16_t t0 = hal_timer_get_ticks();
 
     switch (ll_state){
         case LL_STATE_CONNECTED:
@@ -617,18 +615,6 @@ static void radio_timer_handler(void){
 
 }
 
-void HAL_LPTIM_CompareMatchCallback(LPTIM_HandleTypeDef *hlptim){
-    UNUSED(hlptim);
-    radio_timer_handler();
-}
-
-void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim){
-    UNUSED(hlptim);
-    static uint32_t time_seconds = 0;
-    time_seconds += 2;
-    // printf("Time: %4u s\n", time_seconds);
-}
-
 /** Radio IRQ handlers */
 static void radio_on_tx_done(void ){
     switch (radio_state){
@@ -641,7 +627,7 @@ static void radio_on_tx_done(void ){
 }
 
 static void radio_on_rx_done(void ){
-    uint16_t packet_end_ticks =   HAL_LPTIM_ReadCounter(&hlptim1);
+    uint16_t packet_end_ticks = hal_timer_get_ticks();
     ll_pdu_t * rx_packet;
     bool tx_acked;
 
@@ -798,6 +784,10 @@ void ll_init(void){
     // default channels, advertising interval
     ctx.adv_map = 0x7;
     ctx.adv_interval_us = 1280000;
+
+    // init timer
+    hal_timer_init();
+    hal_timer_set_callback(&radio_timer_handler);
 }
 
 void ll_radio_on(void){
