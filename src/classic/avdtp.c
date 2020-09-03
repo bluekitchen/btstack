@@ -57,6 +57,7 @@ btstack_linked_list_t stream_endpoints;
 
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
+static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
 
 static uint16_t sdp_query_context_avdtp_cid = 0;
 
@@ -248,22 +249,31 @@ static uint16_t avdtp_get_next_local_seid(void){
     return stream_endpoints_id_counter;
 }
 
-static uint8_t avdtp_start_sdp_query(btstack_packet_handler_t packet_handler, avdtp_connection_t * connection) {
-    connection->avdtp_l2cap_psm = 0;
-    connection->avdtp_version  = 0;
-    connection->sink_supported = false;
-    connection->source_supported = false;
-    sdp_query_context_avdtp_cid = connection->avdtp_cid;
-    
-    return sdp_client_query_uuid16(packet_handler, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
+static void avdtp_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
+        
+        switch (connection->state){
+            case AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SOURCE:
+                connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE;
+                break;
+            case AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SINK:
+                connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE;
+                break;
+            default:
+                continue;
+        }
+        sdp_query_context_avdtp_cid = connection->avdtp_cid;
+        sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
+        return;
+    }
 }
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid){
-    // TODO: implement delayed SDP query
-    if (sdp_client_ready() == 0){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    } 
-
     avdtp_connection_t * connection = avdtp_get_connection_for_bd_addr(remote);
     if (connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -278,18 +288,28 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid)
     if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
     
     connection->avdtp_cid = cid;
+
+    connection->avdtp_l2cap_psm = 0;
+    connection->avdtp_version  = 0;
+    connection->sink_supported = false;
+    connection->source_supported = false;
     
     switch (role){
         case AVDTP_ROLE_SOURCE:
-            connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE;
+            connection->state = AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SINK;
             break;
         case AVDTP_ROLE_SINK:
-            connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE;
+            connection->state = AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SOURCE;
             break;
         default:
+            btstack_assert(false);
             return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    return avdtp_start_sdp_query(&avdtp_handle_sdp_client_query_result, connection);
+
+    avdtp_handle_sdp_client_query_request.callback = &avdtp_handle_start_sdp_client_query;
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
+    return ERROR_CODE_SUCCESS;
 }
 
 
@@ -624,6 +644,10 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     } else {
         avdtp_handle_sdp_query_failed(connection, status);
     }
+
+    // register the SDP Query request to check if there is another connection waiting for the query
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
 }
 
 static avdtp_connection_t * avdtp_handle_incoming_connection(avdtp_connection_t * connection, bd_addr_t event_addr, uint16_t local_cid){
