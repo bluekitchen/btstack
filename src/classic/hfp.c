@@ -644,6 +644,9 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
         case HFP_LINK_SETTINGS_T2:
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_T1;
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
     log_info("e)SCO Connection: try new link_setting %d", sco_establishment_active->link_setting);
     sco_establishment_active->establish_audio_connection = 1;
