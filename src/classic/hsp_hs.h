@@ -172,6 +172,12 @@ int hsp_hs_send_result(const char * result);
 
 /* API_END */
 
+/**
+ * @brief Set packet types used for incoming SCO connection requests
+ * @param common single packet_types: SCO_PACKET_TYPES_*
+ */
+void hsp_hs_set_sco_packet_types(uint16_t packet_types);
+
 #if defined __cplusplus
 }
 #endif

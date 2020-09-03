@@ -95,6 +95,8 @@ static uint8_t ag_support_custom_commands = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
 static uint8_t hsp_release_audio_connection = 0;
 
+static uint16_t hsp_ag_sco_packet_types;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 typedef enum {
@@ -276,6 +278,7 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
 
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
+    hsp_ag_sco_packet_types = SCO_PACKET_TYPES_ALL;
     hsp_ag_reset_state();
 }
 
@@ -390,6 +393,7 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
+    uint16_t packet_types;
 
     if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
@@ -450,7 +454,9 @@ static void hsp_run(void){
         case HSP_W2_CONNECT_SCO:
             if (!hci_can_send_command_packet_now()) return;
             hsp_state = HSP_W4_SCO_CONNECTED;
-            hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
+            // bits 6-9 are 'don't use'
+            packet_types = hsp_ag_sco_packet_types ^ 0x3c0;
+            hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, packet_types);
             break;
         
         case HSP_W2_DISCONNECT_SCO:
@@ -681,4 +687,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+void hsp_ag_set_sco_packet_types(uint16_t packet_types){
+    hsp_ag_sco_packet_types = packet_types;
+}
 
