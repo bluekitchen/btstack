@@ -692,6 +692,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
+                if (sco_establishment_active == NULL) break;
                 status = hci_event_command_status_get_status(packet);
                 if (status == ERROR_CODE_SUCCESS) break;
                 
@@ -704,6 +705,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            if (sco_establishment_active == NULL) break;
             hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection) {
