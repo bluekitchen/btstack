@@ -715,7 +715,9 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_OPERATION_START:
             printf("AVRCP Controller: %s start\n", avrcp_operation2str(avrcp_subevent_operation_start_get_operation_id(packet)));
             break;
-        
+        case AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END:
+            printf("AVRCP Controller: Track reached end\n");
+            break;
         default:
             printf("AVRCP Controller: Event 0x%02x is not parsed\n", packet[2]);
             break;
@@ -963,7 +965,7 @@ static void stdin_process(char cmd){
             break;
         case 'B':
             printf(" - AVDTP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-            status = avdtp_sink_disconnect(a2dp_cid);
+            a2dp_sink_disconnect(a2dp_cid);
             break;
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
@@ -1095,7 +1097,7 @@ static void stdin_process(char cmd){
             return;
     }
     if (status != ERROR_CODE_SUCCESS){
-        printf("Could not perform command, status 0x%2x\n", status);
+        printf("Could not perform command, status 0x%02x\n", status);
     }
 }
 #endif
