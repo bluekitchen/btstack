@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
+## Changes September 2020
+
+### Fixed
+
+### Added
+- `btstack_ring_buffer`: add `btstack_ring_buffer_reset` to reset it to initial state/empty
+
+### Changed
+
 ## Changes August 2020
 
 ### Fixed
