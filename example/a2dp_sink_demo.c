@@ -715,9 +715,16 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_OPERATION_START:
             printf("AVRCP Controller: %s start\n", avrcp_operation2str(avrcp_subevent_operation_start_get_operation_id(packet)));
             break;
+       
         case AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END:
             printf("AVRCP Controller: Track reached end\n");
             break;
+
+        case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
+            printf("A2DP  Sink      : Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
+            break;
+            
+       
         default:
             printf("AVRCP Controller: Event 0x%02x is not parsed\n", packet[2]);
             break;
