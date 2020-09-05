@@ -146,7 +146,7 @@ hci_role_t gap_get_role(hci_con_handle_t connection_handle);
  * @param hci_role_t HCI_ROLE_MASTER / HCI_ROLE_SLAVE
  * @result status
  */
-uint8_t gap_request_role(bd_addr_t addr, hci_role_t role);
+uint8_t gap_request_role(const bd_addr_t addr, hci_role_t role);
 
 /** 
  * @brief Sets local name.
@@ -331,7 +331,7 @@ gap_random_address_type_t gap_random_address_get_mode(void);
  * @param addr
  * @note Sets random address mode to type off
  */
-void gap_random_address_set(bd_addr_t addr);
+void gap_random_address_set(const bd_addr_t addr);
 
 /**
  * @brief Set Advertisement Data
@@ -448,7 +448,7 @@ void gap_set_max_number_peripheral_connections(int max_peripheral_connections);
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_whitelist_add(bd_addr_type_t address_type, bd_addr_t address);
+uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Remove Device from Whitelist
@@ -456,7 +456,7 @@ uint8_t gap_whitelist_add(bd_addr_type_t address_type, bd_addr_t address);
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address);
+uint8_t gap_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Clear Whitelist
@@ -467,7 +467,7 @@ uint8_t gap_whitelist_clear(void);
 /**
  * @brief Connect to remote LE device
  */
-uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type);
+uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type);
 
 /**
  *  @brief Connect with Whitelist
@@ -488,7 +488,7 @@ uint8_t gap_connect_cancel(void);
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_start(bd_addr_type_t address_typ, bd_addr_t address);
+uint8_t gap_auto_connection_start(bd_addr_type_t address_typ, const bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop Connecting to device
@@ -497,7 +497,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_typ, bd_addr_t address)
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
+uint8_t gap_auto_connection_stop(bd_addr_type_t address_typ, const bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop everything
@@ -651,7 +651,7 @@ int gap_inquiry_stop(void);
  * @param clock_offset only used when bit 15 is set - pass 0 if not known
  * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
-int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
+int gap_remote_name_request(const bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
 
 /**
  * @brief Read RSSI
@@ -667,7 +667,7 @@ int gap_read_rssi(hci_con_handle_t con_handle);
  * @param pin
  * @return 0 if ok
  */
-int gap_pin_code_response(bd_addr_t addr, const char * pin);
+int gap_pin_code_response(const bd_addr_t addr, const char * pin);
 
 /**
  * @brief Legacy Pairing Pin Code Response for binary data / non-strings
@@ -677,7 +677,7 @@ int gap_pin_code_response(bd_addr_t addr, const char * pin);
  * @param pin_len
  * @return 0 if ok
  */
-int gap_pin_code_response_binary(bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len);
+int gap_pin_code_response_binary(const bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len);
 
 /**
  * @brief Abort Legacy Pairing
@@ -693,7 +693,7 @@ int gap_pin_code_negative(bd_addr_t addr);
  * @param passkey [0..999999]
  * @return 0 if ok
  */
-int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey);
+int gap_ssp_passkey_response(const bd_addr_t addr, uint32_t passkey);
 
 /**
  * @brief Abort SSP Passkey Entry/Pairing
@@ -701,7 +701,7 @@ int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey);
  * @param pin
  * @return 0 if ok
  */
-int gap_ssp_passkey_negative(bd_addr_t addr);
+int gap_ssp_passkey_negative(const bd_addr_t addr);
 
 /**
  * @brief Accept SSP Numeric Comparison
@@ -709,7 +709,7 @@ int gap_ssp_passkey_negative(bd_addr_t addr);
  * @param passkey
  * @return 0 if ok
  */
-int gap_ssp_confirmation_response(bd_addr_t addr);
+int gap_ssp_confirmation_response(const bd_addr_t addr);
 
 /**
  * @brief Abort SSP Numeric Comparison/Pairing
@@ -717,7 +717,7 @@ int gap_ssp_confirmation_response(bd_addr_t addr);
  * @param pin
  * @return 0 if ok
  */
-int gap_ssp_confirmation_negative(bd_addr_t addr);
+int gap_ssp_confirmation_negative(const bd_addr_t addr);
 
 /**
  * @brief Enter Sniff mode

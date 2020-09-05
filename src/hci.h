@@ -1133,7 +1133,7 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 /**
  * Get internal hci_connection_t for given Bluetooth addres. Called by L2CAP
  */
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type);
 
 /**
  * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c

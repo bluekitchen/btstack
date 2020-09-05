@@ -165,7 +165,7 @@ static int hci_have_usb_transport(void);
 #ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
-static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address);
+static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address);
 static hci_connection_t * gap_get_outgoing_connection(void);
 #endif
 #endif
@@ -189,7 +189,7 @@ static uint8_t disable_l2cap_timeouts = 0;
  *
  * @return connection OR NULL, if no memory left
  */
-static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
     log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
@@ -304,7 +304,7 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
  *
  * @return connection OR NULL, if not found
  */
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_type_t addr_type){
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t  addr, bd_addr_type_t addr_type){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -4645,7 +4645,7 @@ static void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
-static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
+static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
     uint8_t event[21];
     event[0] = HCI_EVENT_LE_META;
     event[1] = sizeof(event) - 2u;
@@ -4964,7 +4964,7 @@ void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t
     gap_set_scan_params(scan_type, scan_interval, scan_window, 0);
 }
 
-uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
+uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
         // disallow if le connection is already outgoing
@@ -5265,7 +5265,7 @@ hci_role_t gap_get_role(hci_con_handle_t connection_handle){
 
 
 #ifdef ENABLE_CLASSIC
-uint8_t gap_request_role(bd_addr_t addr, hci_role_t role){
+uint8_t gap_request_role(const bd_addr_t addr, hci_role_t role){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     conn->request_role = role;
@@ -5290,7 +5290,7 @@ uint8_t gap_le_set_phy(hci_con_handle_t connection_handle, uint8_t all_phys, uin
     return 0;
 }
 
-static uint8_t hci_whitelist_add(bd_addr_type_t address_type, bd_addr_t address){
+static uint8_t hci_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address){
     // check if already in list
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
@@ -5315,7 +5315,7 @@ static uint8_t hci_whitelist_add(bd_addr_type_t address_type, bd_addr_t address)
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address){
+static uint8_t hci_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -5371,7 +5371,7 @@ uint8_t gap_whitelist_clear(void){
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_whitelist_add(bd_addr_type_t address_type, bd_addr_t address){
+uint8_t gap_whitelist_add(bd_addr_type_t address_type, const bd_addr_t address){
     uint8_t status = hci_whitelist_add(address_type, address);
     if (status){
         return status;
@@ -5386,7 +5386,7 @@ uint8_t gap_whitelist_add(bd_addr_type_t address_type, bd_addr_t address){
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_whitelist_remove(bd_addr_type_t address_type, bd_addr_t address){
+uint8_t gap_whitelist_remove(bd_addr_type_t address_type, const bd_addr_t address){
     uint8_t status = hci_whitelist_remove(address_type, address);
     if (status){
         return status;
@@ -5416,7 +5416,7 @@ uint8_t gap_connect_with_whitelist(void){
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
+uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t address){
     if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -5438,7 +5438,7 @@ uint8_t gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
+uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t address){
     if (hci_stack->le_connecting_request == LE_CONNECTING_DIRECT){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -5525,7 +5525,7 @@ int gap_inquiry_stop(void){
  * @param clock_offset only used when bit 15 is set
  * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
-int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset){
+int gap_remote_name_request(const bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset){
     if (hci_stack->remote_name_state != GAP_REMOTE_NAME_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     (void)memcpy(hci_stack->remote_name_addr, addr, 6);
     hci_stack->remote_name_page_scan_repetition_mode = page_scan_repetition_mode;
@@ -5535,7 +5535,7 @@ int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, u
     return 0;
 }
 
-static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
+static int gap_pairing_set_state_and_run(const bd_addr_t addr, uint8_t state){
     hci_stack->gap_pairing_state = state;
     (void)memcpy(hci_stack->gap_pairing_addr, addr, 6);
     hci_run();
@@ -5549,7 +5549,7 @@ static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
  * @param pin_len
  * @return 0 if ok
  */
-int gap_pin_code_response_binary(bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len){
+int gap_pin_code_response_binary(const bd_addr_t addr, const uint8_t * pin_data, uint8_t pin_len){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     hci_stack->gap_pairing_input.gap_pairing_pin = pin_data;
     hci_stack->gap_pairing_pin_len = pin_len;
@@ -5562,7 +5562,7 @@ int gap_pin_code_response_binary(bd_addr_t addr, const uint8_t * pin_data, uint8
  * @param pin
  * @return 0 if ok
  */
-int gap_pin_code_response(bd_addr_t addr, const char * pin){
+int gap_pin_code_response(const bd_addr_t addr, const char * pin){
     return gap_pin_code_response_binary(addr, (const uint8_t*) pin, strlen(pin));
 }
 
@@ -5583,7 +5583,7 @@ int gap_pin_code_negative(bd_addr_t addr){
  * @param passkey
  * @return 0 if ok
  */
-int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
+int gap_ssp_passkey_response(const bd_addr_t addr, uint32_t passkey){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     hci_stack->gap_pairing_input.gap_pairing_passkey = passkey;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY);
@@ -5595,7 +5595,7 @@ int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
  * @param pin
  * @return 0 if ok
  */
-int gap_ssp_passkey_negative(bd_addr_t addr){
+int gap_ssp_passkey_negative(const bd_addr_t addr){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE);
 }
@@ -5606,7 +5606,7 @@ int gap_ssp_passkey_negative(bd_addr_t addr){
  * @param passkey
  * @return 0 if ok
  */
-int gap_ssp_confirmation_response(bd_addr_t addr){
+int gap_ssp_confirmation_response(const bd_addr_t addr){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION);
 }
@@ -5617,7 +5617,7 @@ int gap_ssp_confirmation_response(bd_addr_t addr){
  * @param pin
  * @return 0 if ok
  */
-int gap_ssp_confirmation_negative(bd_addr_t addr){
+int gap_ssp_confirmation_negative(const bd_addr_t addr){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
