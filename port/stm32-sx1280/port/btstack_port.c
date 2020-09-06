@@ -64,6 +64,12 @@ void btstack_assert_failed(const char * file, uint16_t line_nr){
     while (1);
 }
 
+/** hal_time_ms.h */
+#include "hal_time_ms.h"
+uint32_t hal_time_ms(void){
+    return HAL_GetTick();
+}
+
 /** hal_cpu.h */
 
 // TODO: implement

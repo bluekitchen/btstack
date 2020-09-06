@@ -71,9 +71,6 @@ void btstack_port(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint32_t hal_time_ms(void){
-  return HAL_GetTick();
-}
 
 /* USER CODE END 0 */
 
