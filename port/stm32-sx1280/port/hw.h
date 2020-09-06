@@ -18,6 +18,8 @@
 #include "sx1280.h"
 #include "sx1280-hal.h"
 
+#define USE_BK_SPI
+
 /* Define the board */
 #define BOARD_MIROMICO_L451RE
 #include "boards/boards.h"

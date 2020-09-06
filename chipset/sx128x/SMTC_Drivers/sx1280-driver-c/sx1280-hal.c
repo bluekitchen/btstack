@@ -35,8 +35,6 @@ Maintainer: Miguel Luis, Matthieu Verdy and Benjamin Boulet
 
 #define IRQ_HIGH_PRIORITY  0
 
-#define USE_BK_SPI
-
 /*!
  * Radio driver structure initialization
  */
