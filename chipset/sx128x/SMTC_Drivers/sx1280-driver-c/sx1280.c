@@ -20,7 +20,6 @@ Maintainer: Miguel Luis, Matthieu Verdy and Benjamin Boulet
 
 // logging on
 #include "SEGGER_RTT.h"
-extern TIM_HandleTypeDef htim2;
 #define printf(format, ...) SEGGER_RTT_printf(0, format,  ## __VA_ARGS__)
 
 

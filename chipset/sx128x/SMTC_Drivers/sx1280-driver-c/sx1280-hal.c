@@ -22,6 +22,25 @@ Maintainer: Miguel Luis, Matthieu Verdy and Benjamin Boulet
 #include "SEGGER_RTT.h"
 #define printf(format, ...) SEGGER_RTT_printf(0, format,  ## __VA_ARGS__)
 
+// make CubeMX defines usable
+#ifndef RADIO_BUSY_PORT
+#define RADIO_BUSY_PORT RADIO_BUSY_GPIO_Port
+#endif
+#ifndef RADIO_BUSY_PIN
+#define RADIO_BUSY_PIN RADIO_BUSY_Pin
+#endif
+#ifndef RADIO_nRESET_PORT
+#define RADIO_nRESET_PORT RADIO_nRESET_GPIO_Port
+#endif
+#ifndef RADIO_nRESET_PIN
+#define RADIO_nRESET_PIN RADIO_nRESET_Pin
+#endif
+#ifndef RADIO_NSS_PORT
+#define RADIO_NSS_PORT RADIO_NSS_GPIO_Port
+#endif
+#ifndef RADIO_NSS_PIN
+#define RADIO_NSS_PIN RADIO_NSS_Pin
+#endif
 /*!
  * \brief Define the size of tx and rx hal buffers
  *
@@ -120,9 +139,9 @@ static uint8_t halTxBuffer[MAX_HAL_BUFFER_SIZE] = {0x00};
 
 static DioIrqHandler **dioIrqHandlers;
 
-#ifdef USE_BK_SPI
-
 extern SPI_HandleTypeDef RADIO_SPI_HANDLE;
+
+#ifdef USE_BK_SPI
 
 static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
 
@@ -160,7 +179,19 @@ static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uin
         *rx_buffer++ = *(__IO uint8_t *)&hspi->Instance->DR;
     }
 }
-
+#else
+// map onto standard hal functions
+void SpiIn( uint8_t *txBuffer, uint16_t size ){
+    HAL_SPI_Transmit( &RADIO_SPI_HANDLE, txBuffer, size, HAL_MAX_DELAY );
+}
+void SpiInOut( uint8_t *txBuffer, uint8_t *rxBuffer, uint16_t size )
+{
+#ifdef STM32L4XX_FAMILY
+    // Comment For STM32L0XX and STM32L1XX Intégration, uncomment for STM32L4XX Intégration
+    HAL_SPIEx_FlushRxFifo( &RADIO_SPI_HANDLERADIO_SPI_HANDLE );
+#endif
+    HAL_SPI_TransmitReceive( &RADIO_SPI_HANDLE, txBuffer, rxBuffer, size, HAL_MAX_DELAY );
+}
 #endif
 
 /*!
