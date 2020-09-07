@@ -98,6 +98,10 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
     return avdtp_create_stream_endpoint(sep_type, media_type);
 }
 
+void avdtp_sink_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+    avdtp_finalize_stream_endpoint(stream_endpoint);
+}
+
 uint8_t avdtp_source_connect(bd_addr_t remote, uint16_t * avdtp_cid){
     return avdtp_connect(remote, AVDTP_ROLE_SOURCE, avdtp_cid);
 }

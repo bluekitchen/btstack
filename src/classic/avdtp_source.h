@@ -232,6 +232,12 @@ uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
 /**
+ *  @brief Unregister stream endpoint and free it's memory
+ *  @param stream_endpoint created by avdtp_sink_create_stream_endpoint
+ */
+void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
+
+/**
  * @brief Send media payload.
  * @param avdtp_cid         AVDTP channel identifyer.
  * @param local_seid        ID of a local stream endpoint.

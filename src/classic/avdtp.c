@@ -451,6 +451,11 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
     return stream_endpoint;
 }
 
+void avdtp_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+    btstack_linked_list_remove(avdtp_get_stream_endpoints(), (btstack_linked_item_t* ) stream_endpoint);
+    btstack_memory_avdtp_stream_endpoint_free(stream_endpoint);
+}
+
 static void
 handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t *connection, uint8_t *packet, uint16_t size) {
     if (size < 2) return;

@@ -577,6 +577,7 @@ void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
+void avdtp_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid);
 uint8_t avdtp_disconnect(uint16_t avdtp_cid);

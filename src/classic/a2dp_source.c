@@ -638,6 +638,10 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
     return local_stream_endpoint;
 }
 
+void a2dp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+    avdtp_source_finalize_stream_endpoint(stream_endpoint);
+}
+
 uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, uint16_t * avdtp_cid){
     if (outgoing_active || stream_endpoint_configured) {
         return ERROR_CODE_COMMAND_DISALLOWED;
