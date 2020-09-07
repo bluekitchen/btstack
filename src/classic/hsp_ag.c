@@ -562,11 +562,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     switch (event) {
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            if (hsp_state != HSP_W4_SCO_CONNECTED) break;
             uint8_t status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
-                if (hsp_state == HSP_W4_SCO_CONNECTED){
-                    hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
-                }
+                hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 log_error("(e)SCO Connection failed, status %u", status);
                 emit_event_audio_connected(status, sco_handle);
                 break;
