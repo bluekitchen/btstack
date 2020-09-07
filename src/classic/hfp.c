@@ -53,6 +53,7 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
+#include "classic/sdp_client.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
@@ -140,6 +141,14 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index){
     if (index <= HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL) return hfp_enhanced_call_mpty[index];
     return "not defined";
 }
+
+typedef struct {
+    uint16_t  local_role;
+    bd_addr_t remote_address;
+} hfp_sdp_query_context_t;
+
+static hfp_sdp_query_context_t sdp_query_context;
+static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
 
 static void parse_sequence(hfp_connection_t * context);
 
@@ -560,27 +569,24 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
 
-static hfp_connection_t * connection_doing_sdp_query = NULL;
-
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: handling own sdp events
     UNUSED(channel);        // ok: no channel
     UNUSED(size);           // ok: handling own sdp events
-    hfp_connection_t * hfp_connection = connection_doing_sdp_query;
-    if (!hfp_connection) {
-        log_error("handle_query_rfcomm_event, no connection");
+    
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(sdp_query_context.remote_address, sdp_query_context.local_role);
+    if (hfp_connection == NULL) {
+        log_info("connection with %s and local role %d not found", sdp_query_context.remote_address, sdp_query_context.local_role);
         return;
     }
-
+    
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             hfp_connection->rfcomm_channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             break;
         case SDP_EVENT_QUERY_COMPLETE:
-            connection_doing_sdp_query = NULL;
             if (hfp_connection->rfcomm_channel_nr > 0){
                 hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
-                log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
                 btstack_packet_handler_t packet_handler;
                 switch (hfp_connection->local_role){
                     case HFP_ROLE_AG:
@@ -590,15 +596,21 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                         packet_handler = hfp_hf_rfcomm_packet_handler;
                         break;
                     default:
-                        log_error("Role %x", hfp_connection->local_role);
+                        btstack_assert(false);
                         return;
                 }
+
                 rfcomm_create_channel(packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
-                break;
+
+            } else {
+                hfp_connection->state = HFP_IDLE;
+                hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+                log_info("rfcomm service not found, status 0x%02x", sdp_event_query_complete_get_status(packet));
             }
-            hfp_connection->state = HFP_IDLE;
-            hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
-            log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
+
+            // register the SDP Query request to check if there is another connection waiting for the query
+            // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
             break;
         default:
             break;
@@ -1481,6 +1493,24 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
     }  
 }
 
+static void hfp_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &hfp_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        
+        if (connection->state != HFP_W2_SEND_SDP_QUERY) continue;
+        
+        connection->state = HFP_W4_SDP_QUERY_COMPLETE;
+        sdp_query_context.local_role = connection->local_role;
+        (void)memcpy(sdp_query_context.remote_address, connection->remote_addr, 6);
+        sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
+        return;
+    }
+}
+
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
     hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     log_info("hfp_connect %s, hfp_connection %p", bd_addr_to_str(bd_addr), hfp_connection);
@@ -1498,10 +1528,12 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             return;
         case HFP_IDLE:
             (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
-            hfp_connection->state = HFP_W4_SDP_QUERY_COMPLETE;
-            connection_doing_sdp_query = hfp_connection;
+            hfp_connection->state = HFP_W2_SEND_SDP_QUERY;
             hfp_connection->service_uuid = service_uuid;
-            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, hfp_connection->remote_addr, service_uuid);
+
+            hfp_handle_sdp_client_query_request.callback = &hfp_handle_start_sdp_client_query;
+            // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
             break;
         default:
             break;
