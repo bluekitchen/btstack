@@ -285,6 +285,8 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
 
 static void hsp_ag_handle_start_sdp_client_query(void * context){
     UNUSED(context);
+    if (hsp_state != HSP_W2_SEND_SDP_QUERY) return;
+    
     hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
     log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET);
     sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);

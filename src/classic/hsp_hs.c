@@ -57,6 +57,7 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
+#include "classic/sdp_client.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
@@ -100,7 +101,7 @@ static uint8_t hsp_release_audio_connection = 0;
 
 typedef enum {
     HSP_IDLE,
-    HSP_SDP_QUERY_RFCOMM_CHANNEL,
+    HSP_W2_SEND_SDP_QUERY,
     HSP_W4_SDP_QUERY_COMPLETE,
     HSP_W4_RFCOMM_CONNECTED,
     
@@ -118,6 +119,8 @@ typedef enum {
     HSP_W4_RFCOMM_DISCONNECTED,  
     HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hsp_state_t;
+
+static btstack_context_callback_registration_t hsp_hs_handle_sdp_client_query_request;
 
 static hsp_state_t hsp_state = HSP_IDLE;
 
@@ -289,12 +292,23 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
     hsp_hs_reset_state();
 }
 
+static void hsp_hs_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    if (hsp_state != HSP_W2_SEND_SDP_QUERY) return;
+    
+    hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
+    log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
+}
 
 void hsp_hs_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
-    hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
+
     (void)memcpy(remote, bd_addr, 6);
-    hsp_run();
+    hsp_state = HSP_W2_SEND_SDP_QUERY;
+    hsp_hs_handle_sdp_client_query_request.callback = &hsp_hs_handle_start_sdp_client_query;
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&hsp_hs_handle_sdp_client_query_request);
 }
 
 void hsp_hs_disconnect(void){
@@ -358,11 +372,6 @@ void hsp_hs_set_speaker_gain(uint8_t gain){
     
 static void hsp_run_handle_state(void){
     switch (hsp_state){
-        case HSP_SDP_QUERY_RFCOMM_CHANNEL:
-            hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
-            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
-            break;
-
         case HSP_AUDIO_CONNECTION_ESTABLISHED:
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
 
