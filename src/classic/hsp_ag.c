@@ -57,6 +57,7 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
+#include "classic/sdp_client.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
@@ -100,8 +101,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 typedef enum {
     HSP_IDLE,
-    HSP_SDP_QUERY_RFCOMM_CHANNEL,
-    HSP_W4_SDP_EVENT_QUERY_COMPLETE,
+    HSP_W2_SEND_SDP_QUERY,
+    HSP_W4_SDP_QUERY_COMPLETE,
     HSP_W4_RFCOMM_CONNECTED,
 
     HSP_RFCOMM_CONNECTION_ESTABLISHED,
@@ -123,7 +124,7 @@ typedef enum {
 
 static hsp_state_t hsp_state = HSP_IDLE;
 
-
+static btstack_context_callback_registration_t hsp_ag_handle_sdp_client_query_request;
 static btstack_packet_handler_t hsp_ag_callback;
 
 static void hsp_run(void);
@@ -282,11 +283,21 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
     hsp_ag_reset_state();
 }
 
+static void hsp_ag_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
+    log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET);
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);
+}
+
 void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
-    hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
+    
     (void)memcpy(remote, bd_addr, 6);
-    hsp_run();
+    hsp_state = HSP_W2_SEND_SDP_QUERY;
+    hsp_ag_handle_sdp_client_query_request.callback = &hsp_ag_handle_start_sdp_client_query;
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&hsp_ag_handle_sdp_client_query_request);
 }
 
 void hsp_ag_disconnect(void){
@@ -434,11 +445,6 @@ static void hsp_run(void){
     }
 
     switch (hsp_state){
-        case HSP_SDP_QUERY_RFCOMM_CHANNEL:
-            hsp_state = HSP_W4_SDP_EVENT_QUERY_COMPLETE;
-            log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET);
-            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);
-            break;
 
         case HSP_W4_RING_ANSWER:
             if (!ag_num_button_press_received) break;    
