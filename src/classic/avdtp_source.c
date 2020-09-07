@@ -98,7 +98,7 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
     return avdtp_create_stream_endpoint(sep_type, media_type);
 }
 
-void avdtp_sink_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     avdtp_finalize_stream_endpoint(stream_endpoint);
 }
 
