@@ -1657,12 +1657,16 @@ hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, b
     return HFP_LINK_SETTINGS_NONE;
 }
 
-void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported){
+static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported){
     bool local_eSCO_supported  = hci_extended_sco_link_supported();
     bool remote_eSCO_supported = hci_remote_esco_supported(hfp_connection->acl_handle);
     uint8_t negotiated_codec   = hfp_connection->negotiated_codec;
+    return  hfp_next_link_setting(current_setting, local_eSCO_supported, remote_eSCO_supported, eSCO_S4_supported, negotiated_codec);
+}
+
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported){
     // get highest possible link setting
-    hfp_connection->link_setting = hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, local_eSCO_supported, remote_eSCO_supported, eSCO_S4_supported, negotiated_codec);
+    hfp_connection->link_setting = hfp_next_link_setting_for_connection(HFP_LINK_SETTINGS_NONE, hfp_connection, eSCO_S4_supported);
     log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
 }
 
