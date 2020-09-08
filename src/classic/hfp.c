@@ -1582,15 +1582,17 @@ static const struct link_settings {
     const uint16_t max_latency;
     const uint8_t  retransmission_effort;
     const uint16_t packet_types;
+    const bool     eSCO;
+    const uint8_t  codec;
 } hfp_link_settings [] = {
-    { 0xffff, 0xff, 0x03c1 }, // HFP_LINK_SETTINGS_D0,   HV1
-    { 0xffff, 0xff, 0x03c4 }, // HFP_LINK_SETTINGS_D1,   HV3
-    { 0x0007, 0x01, 0x03c8 }, // HFP_LINK_SETTINGS_S1,   EV3
-    { 0x0007, 0x01, 0x0380 }, // HFP_LINK_SETTINGS_S2, 2-EV3
-    { 0x000a, 0x01, 0x0380 }, // HFP_LINK_SETTINGS_S3, 2-EV3
-    { 0x000c, 0x02, 0x0380 }, // HFP_LINK_SETTINGS_S4, 2-EV3
-    { 0x0008, 0x02, 0x03c8 }, // HFP_LINK_SETTINGS_T1,   EV3
-    { 0x000d, 0x02, 0x0380 }  // HFP_LINK_SETTINGS_T2, 2-EV3
+    { 0xffff, 0xff, 0x03c1, false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D0,   HV1
+    { 0xffff, 0xff, 0x03c4, false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D1,   HV3
+    { 0x0007, 0x01, 0x03c8, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S1,   EV3
+    { 0x0007, 0x01, 0x0380, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S2, 2-EV3
+    { 0x000a, 0x01, 0x0380, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S3, 2-EV3
+    { 0x000c, 0x02, 0x0380, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S4, 2-EV3
+    { 0x0008, 0x02, 0x03c8, true,  HFP_CODEC_MSBC }, // HFP_LINK_SETTINGS_T1,   EV3
+    { 0x000d, 0x02, 0x0380, true,  HFP_CODEC_MSBC }  // HFP_LINK_SETTINGS_T2, 2-EV3
 };
 
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
