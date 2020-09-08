@@ -167,6 +167,9 @@ static hfp_connection_t * sco_establishment_active;
 // HFP_SCO_PACKET_TYPES_NONE == no choice/override
 static uint16_t hfp_accept_sco_packet_types;
 
+// prototypes
+static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
+
 static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
     uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
 
@@ -624,47 +627,40 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 static int hfp_handle_failed_sco_connection(uint8_t status){
                    
     if (!sco_establishment_active){
-        log_error("(e)SCO Connection failed but not started by us");
+        log_info("(e)SCO Connection failed but not started by us");
         return 0;
     }
-    log_info("(e)SCO Connection failed status 0x%02x", status);
-    // invalid params / unspecified error
-    if ((status != 0x11) && (status != 0x1f) && (status != 0x0D)) return 0;
-                
-    switch (sco_establishment_active->link_setting){
-        case HFP_LINK_SETTINGS_D0:
-            return 0; // no other option left
-        case HFP_LINK_SETTINGS_D1:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D0;
+
+    log_info("(e)SCO Connection failed 0x%02x", status);
+    switch (status){
+        case ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE:
+        case ERROR_CODE_UNSPECIFIED_ERROR:
+        case ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES:
             break;
-        case HFP_LINK_SETTINGS_S1:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
-            break;                    
-        case HFP_LINK_SETTINGS_S2:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S1;
-            break;
-        case HFP_LINK_SETTINGS_S3:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S2;
-            break;
-        case HFP_LINK_SETTINGS_S4:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S3;
-            break;
-        case HFP_LINK_SETTINGS_T1:
-            log_info("T1 failed, fallback to CVSD - D1");
+        default:
+            return 0;
+    }
+
+    // note: eSCO_S4 supported flag not available, but it's only relevant for highest CVSD link setting (and the current failed)
+    hfp_link_settings_t next_setting = hfp_next_link_setting_for_connection(sco_establishment_active->link_setting, sco_establishment_active, false);
+
+    // handle no valid setting found
+    if (next_setting == HFP_LINK_SETTINGS_NONE) {
+        if (sco_establishment_active->negotiated_codec == HFP_CODEC_MSBC){
+            log_info("T2/T1 failed, fallback to CVSD - D1");
             sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
             sco_establishment_active->sco_for_msbc_failed = 1;
             sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
-            break;
-        case HFP_LINK_SETTINGS_T2:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_T1;
-            break;
-        default:
-            btstack_assert(false);
-            break;
+        } else {
+            // no other options
+            return 0;
+        }
     }
-    log_info("e)SCO Connection: try new link_setting %d", sco_establishment_active->link_setting);
+
+    log_info("e)SCO Connection: try new link_setting %d", next_setting);
     sco_establishment_active->establish_audio_connection = 1;
+    sco_establishment_active->link_setting = next_setting;
     sco_establishment_active = NULL;
     return 1;
 }
