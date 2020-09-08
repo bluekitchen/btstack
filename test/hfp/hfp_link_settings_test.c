@@ -12,6 +12,7 @@ TEST_GROUP(HFPLinkSettings){
         }
 };
 
+// initial setting
 TEST(HFPLinkSettings, NONE){
     CHECK_EQUAL(HFP_LINK_SETTINGS_NONE, hfp_next_link_setting(HFP_LINK_SETTINGS_D1, false, true, true, HFP_CODEC_MSBC));
 }
@@ -31,6 +32,27 @@ TEST(HFPLinkSettings, S4){
 
 TEST(HFPLinkSettings, T2){
     CHECK_EQUAL(HFP_LINK_SETTINGS_T2, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, true, HFP_CODEC_MSBC));
+}
+
+// regular transition
+TEST(HFPLinkSettings, T2_T1){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_T1, hfp_next_link_setting(HFP_LINK_SETTINGS_T2, true, true, true, HFP_CODEC_MSBC));
+}
+TEST(HFPLinkSettings, T1_NONE){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_NONE, hfp_next_link_setting(HFP_LINK_SETTINGS_T1, true, true, true, HFP_CODEC_MSBC));
+}
+TEST(HFPLinkSettings, S4_S3){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_S3, hfp_next_link_setting(HFP_LINK_SETTINGS_S4, true, true, true, HFP_CODEC_CVSD));
+}
+TEST(HFPLinkSettings, S3_S2){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_S2, hfp_next_link_setting(HFP_LINK_SETTINGS_S3, true, true, true, HFP_CODEC_CVSD));
+}
+TEST(HFPLinkSettings, S2_S1){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_S1, hfp_next_link_setting(HFP_LINK_SETTINGS_S2, true, true, true, HFP_CODEC_CVSD));
+}
+TEST(HFPLinkSettings, D1_D0){
+    CHECK_EQUAL(HFP_LINK_SETTINGS_D0, hfp_next_link_setting(HFP_LINK_SETTINGS_D1, false, true, true, HFP_CODEC_CVSD));
+    CHECK_EQUAL(HFP_LINK_SETTINGS_D0, hfp_next_link_setting(HFP_LINK_SETTINGS_D1, true, false, true, HFP_CODEC_CVSD));
 }
 
 int main (int argc, const char * argv[]){
