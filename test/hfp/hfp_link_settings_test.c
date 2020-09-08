@@ -7,7 +7,7 @@
 
 TEST_GROUP(HFPLinkSettings){
         void setup(void){
-            hfp_set_sco_packet_types(HFP_SCO_PACKET_TYPES_NONE);
+            hfp_set_sco_packet_types(SCO_PACKET_TYPES_ALL);
         }
         void teardown(void){
         }
@@ -58,24 +58,24 @@ TEST(HFPLinkSettings, D1_D0){
 
 // initial settings based on packet types
 TEST(HFPLinkSettings, HV1){
-    hfp_set_sco_packet_types(HFP_SCO_PACKET_TYPES_HV1);
+    hfp_set_sco_packet_types(SCO_PACKET_TYPES_HV1);
     CHECK_EQUAL(HFP_LINK_SETTINGS_D0, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, false, true, true, HFP_CODEC_CVSD));
     CHECK_EQUAL(HFP_LINK_SETTINGS_D0, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, false, true, HFP_CODEC_CVSD));
 }
 
 TEST(HFPLinkSettings, HV3){
-    hfp_set_sco_packet_types(HFP_SCO_PACKET_TYPES_HV3);
+    hfp_set_sco_packet_types(SCO_PACKET_TYPES_HV3);
     CHECK_EQUAL(HFP_LINK_SETTINGS_D1, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, false, HFP_CODEC_CVSD));
 }
 
 TEST(HFPLinkSettings, EV3){
-    hfp_set_sco_packet_types(HFP_SCO_PACKET_TYPES_EV3);
+    hfp_set_sco_packet_types(SCO_PACKET_TYPES_EV3);
     CHECK_EQUAL(HFP_LINK_SETTINGS_S1, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, true, HFP_CODEC_CVSD));
     CHECK_EQUAL(HFP_LINK_SETTINGS_T1, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, true, HFP_CODEC_MSBC));
 }
 
 TEST(HFPLinkSettings, 2EV3){
-    hfp_set_sco_packet_types(HFP_SCO_PACKET_TYPES_2EV3);
+    hfp_set_sco_packet_types(SCO_PACKET_TYPES_2EV3);
     CHECK_EQUAL(HFP_LINK_SETTINGS_S3, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, false, HFP_CODEC_CVSD));
     CHECK_EQUAL(HFP_LINK_SETTINGS_S4, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, true,  HFP_CODEC_CVSD));
     CHECK_EQUAL(HFP_LINK_SETTINGS_T2, hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, true, true, true,  HFP_CODEC_MSBC));

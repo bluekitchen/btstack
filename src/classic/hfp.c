@@ -1581,14 +1581,14 @@ static const struct link_settings {
     const bool     eSCO;
     const uint8_t  codec;
 } hfp_link_settings [] = {
-    { 0xffff, 0xff, 0x03c1, false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D0,   HV1
-    { 0xffff, 0xff, 0x03c4, false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D1,   HV3
-    { 0x0007, 0x01, 0x03c8, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S1,   EV3
-    { 0x0007, 0x01, 0x0380, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S2, 2-EV3
-    { 0x000a, 0x01, 0x0380, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S3, 2-EV3
-    { 0x000c, 0x02, 0x0380, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S4, 2-EV3
-    { 0x0008, 0x02, 0x03c8, true,  HFP_CODEC_MSBC }, // HFP_LINK_SETTINGS_T1,   EV3
-    { 0x000d, 0x02, 0x0380, true,  HFP_CODEC_MSBC }  // HFP_LINK_SETTINGS_T2, 2-EV3
+    { 0xffff, 0xff, SCO_PACKET_TYPES_HV1,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D0
+    { 0xffff, 0xff, SCO_PACKET_TYPES_HV3,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D1
+    { 0x0007, 0x01, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S1
+    { 0x0007, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S2
+    { 0x000a, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S3
+    { 0x000c, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S4
+    { 0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_MSBC }, // HFP_LINK_SETTINGS_T1
+    { 0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_MSBC }  // HFP_LINK_SETTINGS_T2
 };
 
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
@@ -1600,8 +1600,10 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
         sco_voice_setting = 0x0043; // Transparent data
     }
+    // get packet types - bits 6-9 are 'don't allow'
+    uint16_t packet_types = hfp_link_settings[setting].packet_types ^ 0x03c0;
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
-        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
+        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types);
 }
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
@@ -1625,7 +1627,7 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 }
 
 void hfp_init(void){
-    hfp_allowed_sco_packet_types = HFP_SCO_PACKET_TYPES_NONE;
+    hfp_allowed_sco_packet_types = SCO_PACKET_TYPES_ALL;
 }
 
 void hfp_set_sco_packet_types(uint16_t packet_types){
@@ -1648,9 +1650,9 @@ hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, b
         // skip wrong codec
         if ( hfp_link_settings[setting].codec != negotiated_codec) continue;
         // skip disabled packet types
-        uint16_t required_packet_types = hfp_link_settings[setting].packet_types ^ HFP_SCO_PACKET_TYPES_NONE;
-        uint16_t allowed_packet_types  = hfp_allowed_sco_packet_types ^HFP_SCO_PACKET_TYPES_NONE;
-        if ((allowed_packet_types != 0) && ((required_packet_types & allowed_packet_types) == 0)) continue;
+        uint16_t required_packet_types = hfp_link_settings[setting].packet_types;
+        uint16_t allowed_packet_types  = hfp_allowed_sco_packet_types;
+        if ((required_packet_types & allowed_packet_types) == 0) continue;
 
         // found matching setting
         return (hfp_link_settings_t) setting;
