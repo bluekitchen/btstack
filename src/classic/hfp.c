@@ -143,8 +143,8 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index){
 }
 
 typedef struct {
-    uint16_t  local_role;
-    bd_addr_t remote_address;
+    hfp_role_t local_role;
+    bd_addr_t  remote_address;
 } hfp_sdp_query_context_t;
 
 static hfp_sdp_query_context_t sdp_query_context;
