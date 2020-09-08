@@ -639,7 +639,10 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             }
             break;
         default:
-            // bail out, we must have had an incoming connection in the meantime;
+            // bail out, we must have had an incoming connection in the meantime; just trigger next sdp query on complete
+            if (hci_event_packet_get_type(packet) == SDP_EVENT_QUERY_COMPLETE){
+                (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
+            }
             return;
     }
 
