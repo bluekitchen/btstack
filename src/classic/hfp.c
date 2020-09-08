@@ -165,7 +165,7 @@ static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
 static hfp_connection_t * sco_establishment_active;
 
 // HFP_SCO_PACKET_TYPES_NONE == no choice/override
-static uint16_t hfp_accept_sco_packet_types;
+static uint16_t hfp_allowed_sco_packet_types;
 
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
@@ -1625,15 +1625,15 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 }
 
 void hfp_init(void){
-    hfp_accept_sco_packet_types = HFP_SCO_PACKET_TYPES_NONE;
+    hfp_allowed_sco_packet_types = HFP_SCO_PACKET_TYPES_NONE;
 }
 
 void hfp_set_sco_packet_types(uint16_t packet_types){
-    hfp_accept_sco_packet_types = packet_types;
+    hfp_allowed_sco_packet_types = packet_types;
 }
 
 uint16_t hfp_get_sco_packet_types(void){
-    return hfp_accept_sco_packet_types;
+    return hfp_allowed_sco_packet_types;
 }
 
 hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, bool local_eSCO_supported, bool remote_eSCO_supported, bool eSCO_S4_supported, uint8_t negotiated_codec){
@@ -1647,6 +1647,11 @@ hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, b
         if ((setting == (int8_t) HFP_LINK_SETTINGS_S4) && !eSCO_S4_supported) continue;
         // skip wrong codec
         if ( hfp_link_settings[setting].codec != negotiated_codec) continue;
+        // skip disabled packet types
+        uint16_t required_packet_types = hfp_link_settings[setting].packet_types ^ HFP_SCO_PACKET_TYPES_NONE;
+        uint16_t allowed_packet_types  = hfp_allowed_sco_packet_types ^HFP_SCO_PACKET_TYPES_NONE;
+        if ((allowed_packet_types != 0) && ((required_packet_types & allowed_packet_types) == 0)) continue;
+
         // found matching setting
         return (hfp_link_settings_t) setting;
     }
