@@ -597,26 +597,29 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
+    bool state_ok = true;
     avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_TARGET, sdp_query_context.avrcp_cid);
-    if (!avrcp_target_connection) {
-        log_error("SDP query, target connection with 0x%02x cid not found", sdp_query_context.avrcp_cid);
-        return;
+    if (!avrcp_target_connection || avrcp_target_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) {
+        state_ok = false;
     }
-    if (avrcp_target_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return;
-
     avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, sdp_query_context.avrcp_cid);
-    if (!avrcp_controller_connection) {
-        log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context.avrcp_cid);
+    if (!avrcp_controller_connection || avrcp_controller_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) {
+        state_ok = false;
+    }
+    if (!state_ok){
+        // something wrong, nevertheless, start next sdp query if this one is complete
+        if (hci_event_packet_get_type(packet) == SDP_EVENT_QUERY_COMPLETE){
+            (void) sdp_client_register_query_callback(&avrcp_handle_sdp_client_query_request);
+        }
         return;
     }
-    if (avrcp_controller_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return;
-    
+
     uint8_t status;
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             avrcp_handle_sdp_client_query_attribute_value(packet);
-            break;
+            return;
             
         case SDP_EVENT_QUERY_COMPLETE:
             status = sdp_event_query_complete_get_status(packet);
@@ -640,7 +643,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
        
         default:
-            break;
+            return;
     }
 
     // register the SDP Query request to check if there is another connection waiting for the query
