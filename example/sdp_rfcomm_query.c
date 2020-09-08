@@ -90,7 +90,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // BTstack activated, get started 
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                 handle_sdp_client_query_request.callback = &handle_start_sdp_client_query;
-                (void) sdp_client_register_query_callback(&handle_start_sdp_client_query);
+                (void) sdp_client_register_query_callback(&handle_sdp_client_query_request);
             }
             break;
         default:
