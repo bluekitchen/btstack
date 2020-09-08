@@ -1640,25 +1640,29 @@ uint16_t hfp_get_sco_packet_types(void){
     return hfp_accept_sco_packet_types;
 }
 
-void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported){
-    // determine highest possible link setting
-    hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-    // anything else requires eSCO support on both sides
-    if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
-        switch (hfp_connection->negotiated_codec){
-            case HFP_CODEC_CVSD:
-                hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
-                if (esco_s4_supported){
-                    hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
-                }
-                break;
-            case HFP_CODEC_MSBC:
-                hfp_connection->link_setting = HFP_LINK_SETTINGS_T2;
-                break;
-            default:
-                break;
-        }
+hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, bool local_eSCO_supported, bool remote_eSCO_supported, bool eSCO_S4_supported, uint8_t negotiated_codec){
+    int8_t setting = (int8_t) current_setting;
+    bool can_use_eSCO = local_eSCO_supported && remote_eSCO_supported;
+    while (setting > 0){
+        setting--;
+        // skip if eSCO required but not available
+        if (hfp_link_settings[setting].eSCO && !can_use_eSCO) continue;
+        // skip if S4 but not supported
+        if ((setting == (int8_t) HFP_LINK_SETTINGS_S4) && !eSCO_S4_supported) continue;
+        // skip wrong codec
+        if ( hfp_link_settings[setting].codec != negotiated_codec) continue;
+        // found matching setting
+        return (hfp_link_settings_t) setting;
     }
+    return HFP_LINK_SETTINGS_NONE;
+}
+
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported){
+    bool local_eSCO_supported  = hci_extended_sco_link_supported();
+    bool remote_eSCO_supported = hci_remote_esco_supported(hfp_connection->acl_handle);
+    uint8_t negotiated_codec   = hfp_connection->negotiated_codec;
+    // get highest possible link setting
+    hfp_connection->link_setting = hfp_next_link_setting(HFP_LINK_SETTINGS_NONE, local_eSCO_supported, remote_eSCO_supported, eSCO_S4_supported, negotiated_codec);
     log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
 }
 

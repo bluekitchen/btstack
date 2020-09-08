@@ -55,7 +55,7 @@ CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POS
 # CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
 LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
 
-EXAMPLES = hfp_at_parser_test hfp_ag_client_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test
+EXAMPLES = hfp_at_parser_test hfp_ag_client_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test hfp_link_settings_test
 
 all: ${EXAMPLES}
 
@@ -78,12 +78,16 @@ cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o cvsd_plc_test.c
 pklg_cvsd_test: hci_dump.o btstack_util.o btstack_cvsd_plc.o wav_util.o pklg_cvsd_test.o
 	${CC} $^ ${CFLAGS} -o $@
 
+hfp_link_settings_test: ${MOCK_OBJ} hfp_hf.o hfp.o hfp_link_settings_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
+
 test: all
 	mkdir -p results
 	./hfp_at_parser_test
 	./hfp_ag_client_test
 	./hfp_hf_client_test
 	./cvsd_plc_test
+	./hfp_link_settings_test
 
 pklg-test: pklg_cvsd_test
 	./pklg_cvsd_test pklg/test1

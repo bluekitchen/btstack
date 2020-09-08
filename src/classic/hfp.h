@@ -692,7 +692,8 @@ void hfp_release_audio_connection(hfp_connection_t * connection);
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
-void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported);
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
+hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, bool local_eSCO_supported, bool remote_eSCO_supported, bool eSCO_s4_supported, uint8_t negotiated_codec);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
