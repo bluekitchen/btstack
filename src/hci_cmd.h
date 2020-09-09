@@ -212,6 +212,14 @@ typedef enum {
     HCI_OPCODE_HCI_LE_WRITE_SUGGESTED_DEFAULT_DATA_LENGTH = HCI_OPCODE (OGF_LE_CONTROLLER, 0x24),
     HCI_OPCODE_HCI_LE_READ_LOCAL_P256_PUBLIC_KEY = HCI_OPCODE (OGF_LE_CONTROLLER, 0x25),
     HCI_OPCODE_HCI_LE_GENERATE_DHKEY = HCI_OPCODE (OGF_LE_CONTROLLER, 0x26),
+    HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_RESOLVING_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x27),
+    HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_RESOLVING_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x28),
+    HCI_OPCODE_HCI_LE_CLEAR_RESOLVING_LIST = HCI_OPCODE (OGF_LE_CONTROLLER, 0x29),
+    HCI_OPCODE_HCI_LE_READ_RESOLVING_LIST_SIZE = HCI_OPCODE (OGF_LE_CONTROLLER, 0x2A),
+    HCI_OPCODE_HCI_LE_READ_PEER_RESOLVABLE_ADDRESS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x2B),
+    HCI_OPCODE_HCI_LE_READ_LOCAL_RESOLVABLE_ADDRESS = HCI_OPCODE (OGF_LE_CONTROLLER, 0x2C),
+    HCI_OPCODE_HCI_LE_SET_ADDRESS_RESOLUTION_ENABLED = HCI_OPCODE (OGF_LE_CONTROLLER, 0x2D),
+    HCI_OPCODE_HCI_LE_SET_RESOLVABLE_PRIVATE_ADDRESS_TIMEOUT = HCI_OPCODE (OGF_LE_CONTROLLER, 0x2E),
     HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH = HCI_OPCODE (OGF_LE_CONTROLLER, 0x2F),
     HCI_OPCODE_HCI_LE_READ_PHY = HCI_OPCODE (OGF_LE_CONTROLLER, 0x30),
     HCI_OPCODE_HCI_LE_SET_DEFAULT_PHY = HCI_OPCODE (OGF_LE_CONTROLLER, 0x31),
@@ -312,7 +320,9 @@ extern const hci_cmd_t hci_write_simple_pairing_debug_mode;
 extern const hci_cmd_t hci_write_simple_pairing_mode;
 extern const hci_cmd_t hci_write_synchronous_flow_control_enable;
 
+extern const hci_cmd_t hci_le_add_device_to_resolving_list;
 extern const hci_cmd_t hci_le_add_device_to_white_list;
+extern const hci_cmd_t hci_le_clear_resolving_list;
 extern const hci_cmd_t hci_le_clear_white_list;
 extern const hci_cmd_t hci_le_connection_update;
 extern const hci_cmd_t hci_le_create_connection;
@@ -326,9 +336,12 @@ extern const hci_cmd_t hci_le_read_advertising_channel_tx_power;
 extern const hci_cmd_t hci_le_read_buffer_size ;
 extern const hci_cmd_t hci_le_read_channel_map;
 extern const hci_cmd_t hci_le_read_local_p256_public_key;
+extern const hci_cmd_t hci_le_read_local_resolvable_address;
 extern const hci_cmd_t hci_le_read_maximum_data_length;
+extern const hci_cmd_t hci_le_read_peer_resolvable_address;
 extern const hci_cmd_t hci_le_read_phy;
 extern const hci_cmd_t hci_le_read_remote_used_features;
+extern const hci_cmd_t hci_le_read_resolving_list_size;
 extern const hci_cmd_t hci_le_read_suggested_default_data_length;
 extern const hci_cmd_t hci_le_read_supported_features;
 extern const hci_cmd_t hci_le_read_supported_states;
@@ -336,7 +349,9 @@ extern const hci_cmd_t hci_le_read_white_list_size;
 extern const hci_cmd_t hci_le_receiver_test;
 extern const hci_cmd_t hci_le_remote_connection_parameter_request_negative_reply;
 extern const hci_cmd_t hci_le_remote_connection_parameter_request_reply;
+extern const hci_cmd_t hci_le_remove_device_from_resolving_list;
 extern const hci_cmd_t hci_le_remove_device_from_white_list;
+extern const hci_cmd_t hci_le_set_address_resolution_enabled;
 extern const hci_cmd_t hci_le_set_advertise_enable;
 extern const hci_cmd_t hci_le_set_advertising_data;
 extern const hci_cmd_t hci_le_set_advertising_parameters;
@@ -346,6 +361,7 @@ extern const hci_cmd_t hci_le_set_event_mask;
 extern const hci_cmd_t hci_le_set_host_channel_classification;
 extern const hci_cmd_t hci_le_set_phy;
 extern const hci_cmd_t hci_le_set_random_address;
+extern const hci_cmd_t hci_le_set_resolvable_private_address_timeout;
 extern const hci_cmd_t hci_le_set_scan_enable;
 extern const hci_cmd_t hci_le_set_scan_parameters;
 extern const hci_cmd_t hci_le_set_scan_response_data;
