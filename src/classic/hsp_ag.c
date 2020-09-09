@@ -91,7 +91,6 @@ static int ag_speaker_gain = -1;
 static uint8_t ag_ring = 0;
 static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
-static uint8_t ag_num_button_press_received = 0;
 static uint8_t ag_support_custom_commands = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
 static uint8_t hsp_establish_audio_connection = 0;
@@ -262,7 +261,6 @@ static void hsp_ag_reset_state(void){
     ag_send_error = 0;
     ag_ring = 0;
 
-    ag_num_button_press_received = 0;
     ag_support_custom_commands = 0;
 
     ag_microphone_gain = -1;
@@ -449,15 +447,12 @@ static void hsp_run(void){
     switch (hsp_state){
 
         case HSP_W4_RING_ANSWER:
-            if (!ag_num_button_press_received) break;    
-
             if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
                 rfcomm_request_can_send_now_event(rfcomm_cid);
                 return;
             }
 
             ag_send_ok = 0;
-            ag_num_button_press_received = 0;
             hsp_state = HSP_W2_CONNECT_SCO;
 
             hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
@@ -470,8 +465,6 @@ static void hsp_run(void){
             break;
         
         case HSP_W2_DISCONNECT_SCO:
-            ag_num_button_press_received = 0;
-        
             hsp_state = HSP_W4_SCO_DISCONNECTED;
             gap_disconnect(sco_handle);
             break;
