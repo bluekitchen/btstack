@@ -694,6 +694,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         hfp_connection->hf_accept_sco = 1;
                     }
                     log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
+                    sco_establishment_active = hfp_connection;
                     if (!hfp_hf_run_for_context) break;
                     (*hfp_hf_run_for_context)(hfp_connection);
                     break;
