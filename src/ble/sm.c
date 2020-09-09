@@ -1305,6 +1305,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         // if not found, add to db
         if (le_db_index < 0) {
             le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
+            hci_load_le_device_db_entry_into_resolving_list(le_db_index);
         }
 
         if (le_db_index >= 0){
