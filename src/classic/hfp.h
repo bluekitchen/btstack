@@ -650,6 +650,8 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
+void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec);
+
 void hfp_set_ag_callback(btstack_packet_handler_t callback);
 void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler);
 

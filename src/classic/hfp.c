@@ -345,7 +345,7 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-static void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
+void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
     uint8_t event[13];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
