@@ -72,6 +72,8 @@ const gpio_cfg_t PAN1326_SLOW_CLK = { PORT_1, PIN_7, GPIO_FUNC_GPIO,
 const gpio_cfg_t PAN1326_nSHUTD = { PORT_1, PIN_6, GPIO_FUNC_GPIO,
 		GPIO_PAD_NORMAL };
 const gpio_cfg_t PAN1326_HCIRTS = { PORT_0, PIN_3, GPIO_FUNC_GPIO,
+		GPIO_PAD_INPUT_PULLUP };
+const gpio_cfg_t PAN1326_HCICTS = { PORT_0, PIN_2, GPIO_FUNC_GPIO,
 		GPIO_PAD_NORMAL };
 
 static void dummy_handler(void) {};
@@ -250,10 +252,13 @@ int bt_comm_init() {
 
 	hal_tick_init();
 	hal_delay_us(1);
+
+	/* HCI module RTS as input with 25k pullup */
 	if ((error = GPIO_Config(&PAN1326_HCIRTS)) != E_NO_ERROR) {
 		printf("Error setting PAN1326_HCIRTS %d\n", error);
 	}
 	GPIO_OutSet(&PAN1326_HCIRTS);
+
 	init_slow_clock();
 	/*
 	 * when enabling the P1.7 RTC output, P1.6 will be hardcoded to an input with 25k pullup enabled.
@@ -261,6 +266,14 @@ int bt_comm_init() {
 	 * The PAN1326B data sheet says the NSHUTD pin is pulled down, but the input impedance is stated at 1Meg Ohm,
 	 * The so the 25k pullup should be enough to reach the minimum 1.42V to enable the device.
 	 * */
+
+	/* Force PAN1326 shutdown to be output and take it out of reset */
+	if ((error = GPIO_Config(&PAN1326_nSHUTD)) != E_NO_ERROR) {
+		printf("Error setting PAN1326_nSHUTD %d\n", error);
+	}
+	GPIO_OutSet(&PAN1326_nSHUTD);
+
+	/*Check the module is ready to receive data */
 	while (GPIO_InGet(&PAN1326_HCIRTS)) {
 		cnt++;
 	}
