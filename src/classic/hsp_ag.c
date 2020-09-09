@@ -93,7 +93,6 @@ static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 static uint8_t ag_support_custom_commands = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
-static uint8_t hsp_establish_audio_connection = 0;
 static uint8_t hsp_release_audio_connection = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -267,7 +266,6 @@ static void hsp_ag_reset_state(void){
     ag_speaker_gain = -1;
 
     hsp_disconnect_rfcomm = 0;
-    hsp_establish_audio_connection = 0;
     hsp_release_audio_connection = 0;
 }
 
@@ -318,8 +316,7 @@ void hsp_ag_disconnect(void){
 void hsp_ag_establish_audio_connection(void){
     switch (hsp_state){
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-            hsp_establish_audio_connection = 1;
-            hsp_state = HSP_W4_SCO_CONNECTED;
+            hsp_state = HSP_W2_CONNECT_SCO;
             break;
         case HSP_W4_RFCOMM_CONNECTED:
             hsp_state = HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
@@ -424,13 +421,6 @@ static void hsp_run(void){
         return;
     }
 
-    if (hsp_establish_audio_connection){
-        if (!hci_can_send_command_packet_now()) return;
-        hsp_establish_audio_connection = 0;
-        hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
-        return;
-    }
-
     if (hsp_release_audio_connection){
         hsp_release_audio_connection = 0;
         gap_disconnect(sco_handle);
@@ -439,7 +429,6 @@ static void hsp_run(void){
     
     if (hsp_disconnect_rfcomm){
         hsp_disconnect_rfcomm = 0;
-        hsp_establish_audio_connection = 0;
         rfcomm_disconnect(rfcomm_cid);
         return;
     }
@@ -525,7 +514,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     hsp_release_audio_connection = 1;
                     break;
                 case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-                    hsp_establish_audio_connection = 1;
+                    hsp_state = HSP_W2_CONNECT_SCO;
                     break;
                 default:
                     break;
