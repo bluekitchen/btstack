@@ -238,6 +238,8 @@ typedef enum {
 #define RFCOMM_AGGREGATE_FLOW_OFF                          0x73
 #define RFCOMM_DATA_LEN_EXCEEDS_MTU                        0x74
 
+#define HFP_REMOTE_REJECTS_AUDIO_CONNECTION                0x7F
+
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81
 #define SDP_SERVICE_NOT_FOUND                              0x82
