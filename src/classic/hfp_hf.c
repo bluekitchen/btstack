@@ -1063,6 +1063,19 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_connection->ok_pending = 0;
             hfp_reset_context_flags(hfp_connection);
             hfp_connection->command = HFP_CMD_NONE;
+            
+            switch (hfp_connection->state){
+                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    switch (hfp_connection->codecs_state){
+                        case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
+                            hfp_emit_sco_event(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION, 0, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
+                            return;
+                        default:
+                            break;
+                    }
+                default: 
+                    break;
+            }
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 1);
             break;
         case HFP_CMD_OK:
