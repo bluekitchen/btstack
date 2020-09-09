@@ -754,6 +754,11 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
 
 
+/**
+ * @brief Get local persistent IRK
+ */
+const uint8_t * gap_get_persistent_irk(void);
+
 /* API_END*/
 
 #if defined __cplusplus

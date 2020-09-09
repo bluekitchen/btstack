@@ -4474,3 +4474,7 @@ void sm_set_secure_connections_only_mode(bool enable){
     btstack_assert(enable == false);
 #endif
 }
+
+const uint8_t * gap_get_persistent_irk(void){
+    return sm_persistent_irk;
+}
