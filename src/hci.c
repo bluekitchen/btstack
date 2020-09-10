@@ -2094,17 +2094,18 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             break;
         case HCI_OPCODE_HCI_READ_LOCAL_SUPPORTED_COMMANDS:
             hci_stack->local_supported_commands[0] =
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+14u] & 0x80u) >> 7u) |  // bit 0 = Octet 14, bit 7 / Read Buffer Size
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+24u] & 0x40u) >> 5u) |  // bit 1 = Octet 24, bit 6 / Write Le Host Supported
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+10u] & 0x10u) >> 2u) |  // bit 2 = Octet 10, bit 4 / Write Synchronous Flow Control Enable
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+18u] & 0x08u)     ) |  // bit 3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x01u) << 4u) |  // bit 4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x08u) << 2u) |  // bit 5 = Octet 35, bit 3 / LE Read Maximum Data Length
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x20u) << 1u) |  // bit 6 = Octet 35, bit 5 / LE Set Default PHY
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+20u] & 0x10u) << 3u);   // bit 7 = Octet 20, bit 4 / Read Encryption Key Size
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+14u] & 0x80u) >> 7u) |  // bit  0 = Octet 14, bit 7 / Read Buffer Size
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+24u] & 0x40u) >> 5u) |  // bit  1 = Octet 24, bit 6 / Write Le Host Supported
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+10u] & 0x10u) >> 2u) |  // bit  2 = Octet 10, bit 4 / Write Synchronous Flow Control Enable
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+18u] & 0x08u)     )  |  // bit  3 = Octet 18, bit 3 / Write Default Erroneous Data Reporting
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x01u) << 4u) |  // bit  4 = Octet 34, bit 0 / LE Write Suggested Default Data Length
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x08u) << 2u) |  // bit  5 = Octet 35, bit 3 / LE Read Maximum Data Length
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x20u) << 1u) |  // bit  6 = Octet 35, bit 5 / LE Set Default PHY
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+20u] & 0x10u) << 3u);   // bit  7 = Octet 20, bit 4 / Read Encryption Key Size
             hci_stack->local_supported_commands[1] =
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+ 2u] & 0x40u) >> 6u) |  // bit 8 = Octet  2, bit 6 / Read Remote Extended Features
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x08u) >> 2u);   // bit 9 = Octet 32, bit 3 / Write Secure Connections Host
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+ 2u] & 0x40u) >> 6u) |  // bit  8 = Octet  2, bit 6 / Read Remote Extended Features
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x08u) >> 2u) |  // bit  9 = Octet 32, bit 3 / Write Secure Connections Host
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x02u) << 1u);   // bit 10 = Octet 35, bit 1 / LE Set Address Resolution Enable
             log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
             break;
 #ifdef ENABLE_CLASSIC
