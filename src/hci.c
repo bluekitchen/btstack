@@ -3657,7 +3657,7 @@ static bool hci_run_general_gap_le(void){
         // - it's disabled
         // - whitelist change required but used for scanning
         bool scanning_uses_whitelist = (hci_stack->le_scan_filter_policy & 1) == 1;
-        if ((hci_stack->le_scanning_param_update) || !hci_stack->le_scanning_enabled || scanning_uses_whitelist){
+        if ((hci_stack->le_scanning_param_update) || !hci_stack->le_scanning_enabled || (scanning_uses_whitelist && whitelist_modification_pending)){
             scanning_stop = true;
         }
     }
@@ -3682,9 +3682,9 @@ static bool hci_run_general_gap_le(void){
         // stop if:
         // - parameter change required
         // - it's disabled
-        // - whitelist change required but used for scanning
+        // - whitelist change required but used for advertisement filter policy
         bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy > 0;
-        if ((hci_stack->le_advertisements_todo != 0) || !hci_stack->le_advertisements_enabled_for_current_roles || advertising_uses_whitelist) {
+        if ((hci_stack->le_advertisements_todo != 0) || !hci_stack->le_advertisements_enabled_for_current_roles || (advertising_uses_whitelist & whitelist_modification_pending)) {
             advertising_stop = true;
         }
     }
