@@ -3622,6 +3622,21 @@ static bool hci_run_general_gap_le(void){
     if (hci_stack->state != HCI_STATE_WORKING) return false;
     if ( (hci_stack->le_own_addr_type != BD_ADDR_TYPE_LE_PUBLIC) && (hci_stack->le_random_address_set == 0u) ) return false;
 
+
+    // Phase 1: collect what to stop
+
+    bool scanning_stop = false;
+    bool connecting_stop = false;
+    bool advertising_stop = false;
+
+#ifndef ENABLE_LE_CENTRAL
+    UNUSED(scanning_stop);
+    UNUSED(connecting_stop)
+#endif
+#ifndef ENABLE_LE_PERIPHERAL
+    UNUSED(advertising_stop);
+#endif
+
     // check if whitelist needs modification
     bool whitelist_modification_pending = false;
     btstack_linked_list_iterator_t lit;
@@ -3636,7 +3651,6 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_CENTRAL
     // scanning control
-    bool scanning_stop = false;
     if (hci_stack->le_scanning_active) {
         // stop if:
         // - parameter change required
@@ -3647,24 +3661,10 @@ static bool hci_run_general_gap_le(void){
             scanning_stop = true;
         }
     }
-
-    if (scanning_stop){
-        hci_stack->le_scanning_active = 0;
-        hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
-        return true;
-    }
-
-    if (hci_stack->le_scanning_param_update){
-        hci_stack->le_scanning_param_update = false;
-        hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
-                     hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
-        return true;
-    }
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
     // connecting control
-    bool connecting_stop = false;
     if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
         // stop connecting if:
         // - connecting uses white and whitelist modification pending
@@ -3674,18 +3674,10 @@ static bool hci_run_general_gap_le(void){
             connecting_stop = true;
         }
     }
-
-    if (connecting_stop){
-        if (hci_stack->le_connecting_state != LE_CONNECTING_CANCEL){
-            hci_send_cmd(&hci_le_create_connection_cancel);
-            return true;
-        }
-    }
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
     // le advertisement control
-    bool advertising_stop = false;
     if (hci_stack->le_advertisements_active){
         // stop if:
         // - parameter change required
@@ -3696,13 +3688,48 @@ static bool hci_run_general_gap_le(void){
             advertising_stop = true;
         }
     }
+#endif
 
+
+    // Phase 2: stop everything that should be off during modifications
+
+#ifdef ENABLE_LE_CENTRAL
+    if (scanning_stop){
+        hci_stack->le_scanning_active = 0;
+        hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+        return true;
+    }
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
+    if (connecting_stop){
+        if (hci_stack->le_connecting_state != LE_CONNECTING_CANCEL){
+            hci_send_cmd(&hci_le_create_connection_cancel);
+            return true;
+        }
+    }
+#endif
+
+#ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
         hci_stack->le_advertisements_active = 0;
         hci_send_cmd(&hci_le_set_advertise_enable, 0);
         return true;
     }
+#endif
 
+    // Phase 3: modify
+
+#ifdef ENABLE_LE_CENTRAL
+    if (hci_stack->le_scanning_param_update){
+        hci_stack->le_scanning_param_update = false;
+        hci_send_cmd(&hci_le_set_scan_parameters, hci_stack->le_scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window,
+                     hci_stack->le_own_addr_type, hci_stack->le_scan_filter_policy);
+        return true;
+    }
+#endif
+
+#ifdef ENABLE_LE_PERIPHERAL
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
         hci_send_cmd(&hci_le_set_advertising_parameters,
@@ -3738,15 +3765,14 @@ static bool hci_run_general_gap_le(void){
     }
 #endif
 
-    // LE Whitelist Management
-    bool cancel_active = false;
 
 #ifdef ENABLE_LE_CENTRAL
-    // if connect with whitelist is active, it will be cancelled, but we still get here until it is stopped
-    cancel_active = hci_stack->le_connecting_state == LE_CONNECTING_CANCEL;
+    // if connect with whitelist was active and is not cancelled yet, wait until next time
+    if (hci_stack->le_connecting_state == LE_CONNECTING_CANCEL) return false;
 #endif
 
-    if (whitelist_modification_pending && !cancel_active){
+    // LE Whitelist Management
+    if (whitelist_modification_pending){
         // add/remove entries
         btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
         while (btstack_linked_list_iterator_has_next(&lit)){
@@ -3768,15 +3794,8 @@ static bool hci_run_general_gap_le(void){
         }
     }
 
-#ifdef ENABLE_LE_PERIPHERAL
-    // re-start advertising
-    if (hci_stack->le_advertisements_enabled_for_current_roles && (hci_stack->le_advertisements_active == 0)){
-        // check if advertisements should be enabled given
-        hci_stack->le_advertisements_active = 1;
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-        return true;
-    }
-#endif
+
+    // Phase 4: restore state
 
 #ifdef ENABLE_LE_CENTRAL
     // re-start scanning
@@ -3809,6 +3828,17 @@ static bool hci_run_general_gap_le(void){
         return true;
     }
 #endif
+
+#ifdef ENABLE_LE_PERIPHERAL
+    // re-start advertising
+    if (hci_stack->le_advertisements_enabled_for_current_roles && (hci_stack->le_advertisements_active == 0)){
+        // check if advertisements should be enabled given
+        hci_stack->le_advertisements_active = 1;
+        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+        return true;
+    }
+#endif
+
     return false;
 }
 #endif
