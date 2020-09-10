@@ -2693,7 +2693,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     } else {
 #ifdef ENABLE_LE_PERIPHERAL
                         // if we're slave, it was an incoming connection, advertisements have stopped
-                        hci_stack->le_advertisements_active = 0;
+                        hci_stack->le_advertisements_active = false;
 #endif
                     }
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
@@ -3695,7 +3695,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_CENTRAL
     if (scanning_stop){
-        hci_stack->le_scanning_active = 0;
+        hci_stack->le_scanning_active = false;
         hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
         return true;
     }
@@ -3712,7 +3712,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
     if (advertising_stop){
-        hci_stack->le_advertisements_active = 0;
+        hci_stack->le_advertisements_active = false;
         hci_send_cmd(&hci_le_set_advertise_enable, 0);
         return true;
     }
@@ -3831,9 +3831,9 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
     // re-start advertising
-    if (hci_stack->le_advertisements_enabled_for_current_roles && (hci_stack->le_advertisements_active == 0)){
+    if (hci_stack->le_advertisements_enabled_for_current_roles && hci_stack->le_advertisements_active){
         // check if advertisements should be enabled given
-        hci_stack->le_advertisements_active = 1;
+        hci_stack->le_advertisements_active = true;
         hci_send_cmd(&hci_le_set_advertise_enable, 1);
         return true;
     }
@@ -4400,7 +4400,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             break;
 #ifdef ENABLE_LE_PERIPHERAL
         case HCI_OPCODE_HCI_LE_SET_ADVERTISE_ENABLE:
-            hci_stack->le_advertisements_active = packet[3];
+            hci_stack->le_advertisements_active = packet[3] != 0;
             break;
 #endif
 #ifdef ENABLE_LE_CENTRAL
@@ -5220,7 +5220,7 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
  * @param enabled
  */
 void gap_advertisements_enable(int enabled){
-    hci_stack->le_advertisements_enabled = enabled;
+    hci_stack->le_advertisements_enabled = enabled != 0;
     hci_update_advertisements_enabled_for_current_roles();
     hci_run();
 }

@@ -924,8 +924,8 @@ typedef struct {
     uint8_t  * le_scan_response_data;
     uint8_t    le_scan_response_data_len;
 
-    uint8_t  le_advertisements_active;
-    uint8_t  le_advertisements_enabled;
+    bool     le_advertisements_active;
+    bool     le_advertisements_enabled;
     bool     le_advertisements_enabled_for_current_roles;
     uint8_t  le_advertisements_todo;
 
