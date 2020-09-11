@@ -731,6 +731,15 @@ typedef struct {
     uint8_t        state;   
 } whitelist_entry_t;
 
+#define MAX_NUM_RESOLVING_LIST_ENTRIES 64
+typedef enum {
+    LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION,
+    LE_RESOLVING_LIST_READ_SIZE,
+    LE_RESOLVING_LIST_SEND_CLEAR,
+    LE_RESOLVING_LIST_ADD_ENTRIES,
+    LE_RESOLVING_LIST_DONE
+} le_resolving_list_state_t;
+
 /**
  * main data structure
  */
@@ -957,6 +966,14 @@ typedef struct {
     // address and address_type of active create connection command (ACL, SCO, LE)
     bd_addr_t      outgoing_addr;
     bd_addr_type_t outgoing_addr_type;
+
+    // LE Resolving List
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    le_resolving_list_state_t le_resolving_list_state;
+    uint16_t                  le_resolving_list_size;
+    uint8_t                   le_resolving_list_entries[ (MAX_NUM_RESOLVING_LIST_ENTRIES+7) / 8];
+#endif
+
 } hci_stack_t;
 
 
@@ -1250,6 +1267,11 @@ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max
 void hci_le_set_own_address_type(uint8_t own_address_type);
 
 /**
+ * @note internal use by sm
+ */
+void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index);
+
+/**
  * @brief Get Manufactured
  * @return manufacturer id
  */
@@ -1285,6 +1307,7 @@ void hci_free_connections_fuzz(void);
 
 // simulate stack bootup
 void hci_simulate_working_fuzz(void);
+
 
 #if defined __cplusplus
 }

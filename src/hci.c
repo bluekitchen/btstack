@@ -59,6 +59,7 @@
 
 #ifdef ENABLE_BLE
 #include "gap.h"
+#include "ble/le_device_db.h"
 #endif
 
 #include <stdarg.h>
@@ -3648,6 +3649,13 @@ static bool hci_run_general_gap_le(void){
             break;
         }
     }
+    // check if resolving list needs modification
+    bool resolving_list_modification_pending = false;
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    if (hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
+        resolving_list_modification_pending = true;
+    }
+#endif
 
 #ifdef ENABLE_LE_CENTRAL
     // scanning control
@@ -3656,8 +3664,13 @@ static bool hci_run_general_gap_le(void){
         // - parameter change required
         // - it's disabled
         // - whitelist change required but used for scanning
+        // - resolving list modified
         bool scanning_uses_whitelist = (hci_stack->le_scan_filter_policy & 1) == 1;
-        if ((hci_stack->le_scanning_param_update) || !hci_stack->le_scanning_enabled || (scanning_uses_whitelist && whitelist_modification_pending)){
+        if ((hci_stack->le_scanning_param_update) ||
+            !hci_stack->le_scanning_enabled ||
+            scanning_uses_whitelist ||
+            resolving_list_modification_pending){
+
             scanning_stop = true;
         }
     }
@@ -3669,8 +3682,12 @@ static bool hci_run_general_gap_le(void){
         // stop connecting if:
         // - connecting uses white and whitelist modification pending
         // - if it got disabled
+        // - resolving list modified
         bool connecting_uses_whitelist = hci_stack->le_connecting_request == LE_CONNECTING_WHITELIST;
-        if ((connecting_uses_whitelist && whitelist_modification_pending) || (hci_stack->le_connecting_request == LE_CONNECTING_IDLE)) {
+        if ((connecting_uses_whitelist && whitelist_modification_pending) ||
+            (hci_stack->le_connecting_request == LE_CONNECTING_IDLE) ||
+            resolving_list_modification_pending) {
+
             connecting_stop = true;
         }
     }
@@ -3683,8 +3700,13 @@ static bool hci_run_general_gap_le(void){
         // - parameter change required
         // - it's disabled
         // - whitelist change required but used for advertisement filter policy
+        // - resolving list modified
         bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy > 0;
-        if ((hci_stack->le_advertisements_todo != 0) || !hci_stack->le_advertisements_enabled_for_current_roles || (advertising_uses_whitelist & whitelist_modification_pending)) {
+        if ((hci_stack->le_advertisements_todo != 0) ||
+            !hci_stack->le_advertisements_enabled_for_current_roles ||
+            (advertising_uses_whitelist & whitelist_modification_pending) ||
+            resolving_list_modification_pending) {
+
             advertising_stop = true;
         }
     }
@@ -3794,6 +3816,56 @@ static bool hci_run_general_gap_le(void){
         }
     }
 
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    // LE Resolving List Management
+    uint16_t i;
+    switch (hci_stack->le_resolving_list_state){
+        case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
+            // check if supported
+            if ((hci_stack->local_supported_commands[1] & (1 << 2)) == 0){
+                log_info("LE Address Resolution not supported");
+                break;
+            } else {
+                hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
+                hci_send_cmd(&hci_le_set_address_resolution_enabled, 1);
+                return true;
+            }
+            break;
+        case LE_RESOLVING_LIST_READ_SIZE:
+            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SEND_CLEAR;
+            hci_send_cmd(&hci_le_read_resolving_list_size);
+            return true;
+        case LE_RESOLVING_LIST_SEND_CLEAR:
+            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
+            (void) memset(hci_stack->le_resolving_list_entries, 0xff, sizeof(hci_stack->le_resolving_list_entries));
+            hci_send_cmd(&hci_le_clear_resolving_list);
+            return true;
+        case LE_RESOLVING_LIST_ADD_ENTRIES:
+            for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
+                uint8_t offset = i >> 3;
+                uint8_t mask = 1 << (i & 7);
+                if ((hci_stack->le_resolving_list_entries[offset] & mask) == 0) continue;
+                hci_stack->le_resolving_list_entries[offset] &= ~mask;
+                bd_addr_t peer_identity_addreses;
+                int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+                sm_key_t peer_irk;
+                le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
+                if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+                const uint8_t * local_irk = gap_get_persistent_irk();
+                // command uses format specifier 'P' that stores 16-byte value without flip
+                uint8_t local_irk_flipped[16];
+                uint8_t peer_irk_flipped[16];
+                reverse_128(local_irk, local_irk_flipped);
+                reverse_128(peer_irk, peer_irk_flipped);
+                hci_send_cmd(&hci_le_add_device_to_resolving_list, peer_identity_addr_type, peer_identity_addreses, peer_irk_flipped, local_irk_flipped);
+                return true;
+            }
+            break;
+        default:
+            break;
+    }
+    hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
+#endif
 
     // Phase 4: restore state
 
@@ -5868,6 +5940,19 @@ void hci_halting_defer(void){
             break;
     }
 }
+
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index){
+    if (le_device_db_index >= MAX_NUM_RESOLVING_LIST_ENTRIES) return;
+    if (le_device_db_index >= le_device_db_max_count()) return;
+    uint8_t offset = le_device_db_index >> 3;
+    uint8_t mask = 1 << (le_device_db_index & 7);
+    hci_stack->le_resolving_list_entries[offset] |= mask;
+    if (hci_stack->le_resolving_list_state == LE_RESOLVING_LIST_DONE){
+        hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
+    }
+}
+#endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void hci_setup_test_connections_fuzz(void){

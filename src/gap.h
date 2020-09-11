@@ -753,6 +753,16 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
  */
 int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
 
+/**
+ * LE Privacy 1.2 - requires support by Controller and ENABLE_LE_RESOLVING_LIST to be defined
+ */
+
+/**
+ * @brief Load LE Device DB entries into Controller Resolving List to allow filtering on
+ *        bonded devies with resolvable private addresses
+ * @return EROOR_CODE_SUCCESS if supported by Controller
+ */
+uint8_t gap_load_resolving_list_from_le_device_db(void);
 
 /**
  * @brief Get local persistent IRK
