@@ -1758,11 +1758,13 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             return;
 #endif
         case HCI_INIT_W4_READ_BD_ADDR:
+#ifdef ENABLE_CLASSIC
             // only read buffer size if supported
             if (hci_stack->local_supported_commands[0u] & 0x01u) {
                 hci_stack->substate = HCI_INIT_READ_BUFFER_SIZE;
                 return;
             }
+#endif
             // skipping read buffer size
             hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_FEATURES;
             return;
