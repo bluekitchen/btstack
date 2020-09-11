@@ -13,6 +13,7 @@ COMMON  += \
             rijndael.c \
 
 # examples
+CLASSIC =
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 # CC = gcc-fsf-4.9

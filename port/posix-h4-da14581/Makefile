@@ -14,6 +14,7 @@ CORE += \
 	btstack_stdin_posix.c \
 
 # examples
+CLASSIC =
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 CFLAGS  += -g -Wall -Werror \

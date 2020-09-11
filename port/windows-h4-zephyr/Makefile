@@ -11,6 +11,7 @@ COMMON  += \
 			le_device_db_tlv.c           \
 
 # examples
+CLASSIC=
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 # CC = gcc-fsf-4.9

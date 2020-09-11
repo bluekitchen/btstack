@@ -14,6 +14,7 @@ CORE += \
 	# hci_581_active_uart.c \
 
 # examples
+CLASSIC =
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 CFLAGS  += -g -Wall -Werror \

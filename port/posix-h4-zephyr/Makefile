@@ -12,6 +12,7 @@ CORE += \
 	btstack_chipset_zephyr.c \
 
 # examples
+CLASSIC =
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 CFLAGS  += -g -Wall -Werror \
