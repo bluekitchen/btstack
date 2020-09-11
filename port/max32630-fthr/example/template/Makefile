@@ -283,7 +283,7 @@ include $(PERIPH_DRIVER_DIR)/periphdriver.mk
 include $(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/$(COMPILER)/$(TARGET_LC).mk
 
 # fetch and convert init scripts
-# use bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c
+# use bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 rm-compiled-gatt-file:

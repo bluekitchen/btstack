@@ -13,7 +13,7 @@ CC256x Bluetooth module:
 - [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
 - [CC2564C Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/CC256XCQFN-EM-CC2564C-Dual-Mode-Bluetooth-Controller-Evaluation-Module-P51277.aspx)
 
-The module with the older CC2564B is around USD 20, while the one with the new CC2564C costs around USD 60. The projects are configured for the CC2564B. When using the CC2564C, *bluetooth_init_cc2564C_1.3.c* should be used as cc256x_init_script.
+The module with the older CC2564B is around USD 20, while the one with the new CC2564C costs around USD 60. The projects are configured for the CC2564B. When using the CC2564C, *bluetooth_init_cc2564C_1.4.c* should be used as cc256x_init_script.
 
 ## Software
 

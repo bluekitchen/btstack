@@ -12,7 +12,7 @@ import subprocess
 # init_script = 'bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c'
 
 # use for CC2564C
-init_script = 'bluetooth_init_cc2564C_1.3.c'
+init_script = 'bluetooth_init_cc2564C_1.4.c'
 
 gatt_update_bat_template = '''python.exe BTSTACK_ROOT\\tool\\compile_gatt.py BTSTACK_ROOT\\example\\EXAMPLE.gatt PROJECT_SRC\\EXAMPLE.h
 '''
