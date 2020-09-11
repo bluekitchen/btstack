@@ -207,8 +207,9 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
 
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
-
-    if (connection == NULL || connection->a2dp_source_discover_seps == false) {
+    
+    if (connection == NULL) {
+        log_info("a2dp_discover_seps_with_next_waiting_connection");
         a2dp_discover_seps_with_next_waiting_connection();
         return;
     }
@@ -239,10 +240,10 @@ static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
 
     // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
     if (outgoing_active && (a2dp_source_cid == connection->avdtp_cid)){
-        log_info("A2DP signaling connection: discover seps");
+        log_info("discover seps");
         a2dp_source_discover_stream_endpoints(connection->avdtp_cid);
     } else {
-        log_info("A2DP signaling connection: wait a bit, then discover seps");
+        log_info("wait a bit, then discover seps");
         a2dp_source_set_config_timer_start(connection->avdtp_cid);
     }
 }
@@ -306,10 +307,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // start discover seps now if:
             // - outgoing active: signaling for outgoing connection
             // - outgoing not active: incoming connection and no sep discover ongoing
+            log_info("outgoing_active %d, a2dp_source_cid 0x%02x, cid  0x%02x, a2dp_source_state %d", outgoing_active, a2dp_source_cid, cid, a2dp_source_state);
             if ((outgoing_active && (a2dp_source_cid == cid)) || (!outgoing_active && (a2dp_source_state == A2DP_IDLE))){
                 a2dp_start_discovering_seps(connection);
             } else {
-                 // post-pone sep discovery
+                // post-pone sep discovery
                 connection->a2dp_source_discover_seps = true;
             }
             break;
@@ -601,6 +603,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (a2dp_source_cid == cid){
                 stream_endpoint_configured = false;
                 a2dp_source_state = A2DP_IDLE;
+                a2dp_source_cid = 0;
             }
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
             break;
