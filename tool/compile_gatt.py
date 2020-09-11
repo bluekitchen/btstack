@@ -9,6 +9,8 @@
 
 # dependencies:
 # - pip3 install pycryptodomex
+# alternatively, the pycryptodome package can be used instead
+# - pip3 install pycryptodome
 
 import codecs
 import csv
@@ -20,15 +22,20 @@ import sys
 import argparse
 import tempfile
 
-# try to import Cryptodome
+have_crypto = True
+# try to import PyCryptodome independent from PyCrypto
 try:
     from Cryptodome.Cipher import AES
     from Cryptodome.Hash import CMAC
-    have_crypto = True
 except ImportError:
-    have_crypto = False
-    print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
-    print("[!] Please install PyCryptodome, e.g. 'pip install pycryptodomex'\n")
+    # fallback: try to import PyCryptodome as (an almost drop-in) replacement for the PyCrypto library
+    try:
+        from Crypto.Cipher import AES
+        from Crypto.Hash import CMAC
+    except ImportError:
+            have_crypto = False
+            print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
+            print("[!] Please install PyCryptodome, e.g. 'pip install pycryptodomex' or 'pip install pycryptodome'\n")
 
 header = '''
 // {0} generated from {1} for BTstack
