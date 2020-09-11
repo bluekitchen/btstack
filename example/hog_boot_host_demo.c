@@ -599,9 +599,6 @@ int btstack_main(int argc, const char * argv[]){
     // setup le device db
     le_device_db_init();
 
-    // allow for role switch in general and sniff mode
-    gap_set_default_link_policy_settings( LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE );
-
     //
     l2cap_init();
     sm_init();
