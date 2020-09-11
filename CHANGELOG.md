@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - `btstack_ring_buffer`: add `btstack_ring_buffer_reset` to reset it to initial state/empty
+- GAP: Support for address resolution of resolvable private addresses by Controller with `ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION`
 
 ### Changed
 
