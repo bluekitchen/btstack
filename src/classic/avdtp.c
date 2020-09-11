@@ -208,7 +208,7 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uin
 
 static uint16_t avdtp_get_next_initiator_transaction_label(void){
     initiator_transaction_id_counter++;
-    if (initiator_transaction_id_counter == 0){
+    if (initiator_transaction_id_counter == 16){
         initiator_transaction_id_counter = 1;
     }
     return initiator_transaction_id_counter;
