@@ -474,6 +474,19 @@ static int sm_is_null_key(uint8_t * key){
     return sm_is_null(key, 16);
 }
 
+// sm_trigger_run allows to schedule callback from main run loop // reduces stack depth
+static void sm_run_timer_handler(btstack_timer_source_t * ts){
+	UNUSED(ts);
+	sm_run();
+}
+static void sm_trigger_run(void){
+	static btstack_timer_source_t sm_run_timer;
+	btstack_run_loop_remove_timer(&sm_run_timer);
+	btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
+	btstack_run_loop_set_timer(&sm_run_timer, 0);
+	btstack_run_loop_add_timer(&sm_run_timer);
+}
+
 // Key utils
 static void sm_reset_tk(void){
     int i;
@@ -564,7 +577,7 @@ static void gap_random_address_trigger(void){
     log_info("gap_random_address_trigger, state %u", rau_state);
     if (rau_state != RAU_IDLE) return;
     rau_state = RAU_GET_RANDOM;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void gap_random_address_update_handler(btstack_timer_source_t * timer){
@@ -874,7 +887,7 @@ int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
     entry->address_type = (bd_addr_type_t) address_type;
     (void)memcpy(entry->address, address, 6);
     btstack_linked_list_add(&sm_address_resolution_general_queue, (btstack_linked_item_t *) entry);
-    sm_run();
+    sm_trigger_run();
     return 0;
 }
 
@@ -885,7 +898,7 @@ static void sm_cmac_done_trampoline(void * arg){
     UNUSED(arg);
     sm_cmac_active = 0;
     (*sm_cmac_done_callback)(sm_cmac_hash);
-    sm_run();
+    sm_trigger_run();
 }
 
 int sm_cmac_ready(void){
@@ -1524,7 +1537,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             log_error("sm_sc_cmac_done in state %u", sm_conn->sm_engine_state);
             break;
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 static void f4_engine(sm_connection_t * sm_conn, const sm_key256_t u, const sm_key256_t v, const sm_key_t x, uint8_t z){
@@ -1709,7 +1722,7 @@ static void sm_sc_dhkey_calculated(void * arg){
     if (sm_conn->sm_engine_state == SM_SC_W4_CALCULATE_DHKEY){
         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
@@ -1838,7 +1851,7 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
     log_info("sm: received ltk request with key size %u, authenticated %u",
             sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
     sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
-    sm_run();
+    sm_trigger_run();
 }
 #endif
 
@@ -2777,7 +2790,7 @@ static void sm_handle_encryption_result_enc_b(void *arg){
 
     log_info_key("c1!", setup->sm_local_confirm);
     connection->sm_engine_state = SM_PH2_C1_SEND_PAIRING_CONFIRM;
-    sm_run();
+    sm_trigger_run();
 }
 
 // sm_aes128_state stays active
@@ -2804,12 +2817,12 @@ static void sm_handle_encryption_result_enc_d(void * arg){
     if (memcmp(setup->sm_peer_confirm, sm_aes128_ciphertext, 16) != 0){
         setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
         connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-        sm_run();
+        sm_trigger_run();
         return;
     }
     if (IS_RESPONDER(connection->sm_role)){
         connection->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM;
-        sm_run();
+        sm_trigger_run();
     } else {
         sm_s1_r_prime(setup->sm_peer_random, setup->sm_local_random, sm_aes128_plaintext);
         sm_aes128_state = SM_AES128_ACTIVE;
@@ -2831,7 +2844,7 @@ static void sm_handle_encryption_result_enc_stk(void *arg){
     } else {
         connection->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 // sm_aes128_state stays active
@@ -2916,7 +2929,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             }
         }
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
@@ -2930,7 +2943,7 @@ static void sm_handle_encryption_result_enc_ph4_ltk(void *arg){
     sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
     log_info_key("ltk", setup->sm_ltk);
     connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
-    sm_run();
+    sm_trigger_run();
 }
 #endif
 
@@ -2944,12 +2957,12 @@ static void sm_handle_encryption_result_address_resolution(void *arg){
     if (memcmp(&sm_address_resolution_address[3], hash, 3) == 0){
         log_info("LE Device Lookup: matched resolvable private address");
         sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCEEDED);
-        sm_run();
+        sm_trigger_run();
         return;
     }
     // no match, try next
     sm_address_resolution_test++;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_encryption_result_dkg_irk(void *arg){
@@ -2958,7 +2971,7 @@ static void sm_handle_encryption_result_dkg_irk(void *arg){
 
     log_info_key("irk", sm_persistent_irk);
     dkg_state = DKG_CALC_DHK;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_encryption_result_dkg_dhk(void *arg){
@@ -2967,7 +2980,7 @@ static void sm_handle_encryption_result_dkg_dhk(void *arg){
 
     log_info_key("dhk", sm_persistent_dhk);
     dkg_state = DKG_READY;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_encryption_result_rau(void *arg){
@@ -2976,7 +2989,7 @@ static void sm_handle_encryption_result_rau(void *arg){
 
     (void)memcpy(&sm_random_address[3], &sm_aes128_ciphertext[13], 3);
     rau_state = RAU_SET_ADDRESS;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_random_result_rau(void * arg){
@@ -2997,7 +3010,7 @@ static void sm_handle_random_result_rau(void * arg){
             rau_state = RAU_SET_ADDRESS;
             break;
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -3007,7 +3020,7 @@ static void sm_handle_random_result_sc_next_send_pairing_random(void * arg){
     if (connection == NULL) return;
 
     connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_random_result_sc_next_w2_cmac_for_confirmation(void * arg){
@@ -3016,7 +3029,7 @@ static void sm_handle_random_result_sc_next_w2_cmac_for_confirmation(void * arg)
     if (connection == NULL) return;
 
     connection->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
-    sm_run();
+    sm_trigger_run();
 }
 #endif
 
@@ -3026,7 +3039,7 @@ static void sm_handle_random_result_ph2_random(void * arg){
     if (connection == NULL) return;
 
     connection->sm_engine_state = SM_PH2_C1_GET_ENC_A;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_random_result_ph2_tk(void * arg){
@@ -3062,7 +3075,7 @@ static void sm_handle_random_result_ph2_tk(void * arg){
             }
         }
     }   
-    sm_run(); 
+    sm_trigger_run(); 
 }
 
 static void sm_handle_random_result_ph3_div(void * arg){
@@ -3074,7 +3087,7 @@ static void sm_handle_random_result_ph3_div(void * arg){
     setup->sm_local_div = big_endian_read_16(sm_random_data, 0);
     log_info_hex16("div", setup->sm_local_div);
     connection->sm_engine_state = SM_PH3_Y_GET_ENC;
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_random_result_ph3_random(void * arg){
@@ -3120,7 +3133,7 @@ static void sm_handle_random_result_ir(void *arg){
         dkg_state = DKG_CALC_DHK;
     }
 
-    sm_run();
+    sm_trigger_run();
 }
 
 static void sm_handle_random_result_er(void *arg){
@@ -3984,8 +3997,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
     }
 
-    // try to send preparared packet
-    sm_run();
+    // try to send next pdu
+    sm_trigger_run();
 }
 
 // Security Manager Client API
@@ -4054,7 +4067,7 @@ static void sm_ec_generated(void * arg){
     UNUSED(arg);
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
     // trigger pairing if pending for ec key
-    sm_run();
+    sm_trigger_run();
 }
 static void sm_ec_generate_new_key(void){
     log_info("sm: generate new ec key");
@@ -4138,7 +4151,7 @@ static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
         case SM_GENERAL_IDLE:
         case SM_RESPONDER_IDLE:
             sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-            sm_run();
+            sm_trigger_run();
             break;
         default:
             break;
@@ -4193,7 +4206,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
             sm_conn->sm_pairing_requested = 1;
         }
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 // called by client app on authorization request
@@ -4243,7 +4256,7 @@ void sm_bonding_decline(hci_con_handle_t con_handle){
         default:
             break;
     }
-    sm_run();
+    sm_trigger_run();
 }
 
 void sm_just_works_confirm(hci_con_handle_t con_handle){
@@ -4264,7 +4277,7 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
     }
 #endif
 
-    sm_run();
+    sm_trigger_run();
 }
 
 void sm_numeric_comparison_confirm(hci_con_handle_t con_handle){
@@ -4288,7 +4301,7 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){
         sm_sc_start_calculating_local_confirm(sm_conn);
     }
 #endif
-    sm_run();
+    sm_trigger_run();
 }
 
 void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
@@ -4336,14 +4349,14 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
             break;
     }
     setup->sm_keypress_notification = (num_actions << 5) | flags;
-    sm_run();
+    sm_trigger_run();
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static void sm_handle_random_result_oob(void * arg){
     UNUSED(arg);
     sm_sc_oob_state = SM_SC_OOB_W2_CALC_CONFIRM;
-    sm_run();
+    sm_trigger_run();
 }
 uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value)){
 
@@ -4423,7 +4436,7 @@ void gap_random_address_set(const bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     (void)memcpy(sm_random_address, addr, 6);
     rau_state = RAU_SET_ADDRESS;
-    sm_run();
+    sm_trigger_run();
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
