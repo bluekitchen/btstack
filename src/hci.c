@@ -5952,6 +5952,17 @@ void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index
         hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
     }
 }
+
+uint8_t gap_load_resolving_list_from_le_device_db(void){
+	if ((hci_stack->local_supported_commands[1] & (1 << 2)) == 0) {
+		return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+	}
+	if (hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION){
+		// restart le resolving list update
+		hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
+	}
+	return ERROR_CODE_SUCCESS;
+}
 #endif
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
