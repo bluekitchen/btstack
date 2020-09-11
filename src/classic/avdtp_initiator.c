@@ -262,7 +262,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
             } else {
                 avdtp_signaling_emit_accept(connection->avdtp_cid, 0, connection->initiator_signaling_packet.signal_identifier, true);
             }
-            connection->initiator_transaction_label++;
+            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
             switch (connection->initiator_signaling_packet.signal_identifier){
@@ -396,7 +396,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_OPENED){
             connection->initiator_local_seid = stream_endpoint->sep.seid;
             connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_START, connection->initiator_transaction_label++, connection->initiator_remote_seid);
+            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_START, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return;            
         } 
     }
@@ -406,7 +407,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
         if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED){
             connection->initiator_local_seid = stream_endpoint->sep.seid;
             connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label++, connection->initiator_remote_seid);
+            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return;            
         }
     }
@@ -421,7 +423,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
                 connection->initiator_local_seid = stream_endpoint->sep.seid;
                 connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
                 stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
-                avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label++, connection->initiator_remote_seid);
+                connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+                avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label, connection->initiator_remote_seid);
                 return;
             default:
                 break;

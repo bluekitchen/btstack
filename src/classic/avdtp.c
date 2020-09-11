@@ -64,7 +64,7 @@ static uint16_t sdp_query_context_avdtp_cid = 0;
 static uint16_t stream_endpoints_id_counter = 0;
 
 static btstack_linked_list_t connections;
-static uint16_t initiator_transaction_id_counter = 0;
+static uint16_t transaction_id_counter = 0;
 
 static int record_id = -1;
 static uint8_t   attribute_value[45];
@@ -206,12 +206,12 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uin
     return NULL;
 }
 
-static uint16_t avdtp_get_next_initiator_transaction_label(void){
-    initiator_transaction_id_counter++;
-    if (initiator_transaction_id_counter == 16){
-        initiator_transaction_id_counter = 1;
+uint16_t avdtp_get_next_transaction_label(void){
+    transaction_id_counter++;
+    if (transaction_id_counter == 16){
+        transaction_id_counter = 1;
     }
-    return initiator_transaction_id_counter;
+    return transaction_id_counter;
 }
 
 static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint16_t cid){
@@ -221,7 +221,7 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
         return NULL;
     }
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-    connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label = avdtp_get_next_transaction_label();
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
     connection->a2dp_source_discover_seps = false;
     connection->avdtp_cid = cid;
@@ -1007,7 +1007,7 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED) return ERROR_CODE_COMMAND_DISALLOWED;
     
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_remote_seid = remote_seid;
     connection->initiator_local_seid = local_seid;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_OPEN_STREAM;
@@ -1147,7 +1147,7 @@ uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
@@ -1164,7 +1164,7 @@ uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -1182,7 +1182,7 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -1199,7 +1199,7 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION;
     connection->initiator_remote_seid = remote_seid;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -1234,7 +1234,7 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
     connection->active_stream_endpoint = (void*) stream_endpoint;
     connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED;
 
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_remote_seid = remote_seid;
     connection->initiator_local_seid = local_seid;
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
@@ -1274,7 +1274,7 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    connection->initiator_transaction_label= avdtp_get_next_initiator_transaction_label();
+    connection->initiator_transaction_label= avdtp_get_next_transaction_label();
     connection->initiator_remote_seid = remote_seid;
     connection->initiator_local_seid = local_seid;
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;

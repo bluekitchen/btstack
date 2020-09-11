@@ -614,6 +614,8 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 
+uint16_t avdtp_get_next_transaction_label(void);
+
 #if defined __cplusplus
 }
 #endif
