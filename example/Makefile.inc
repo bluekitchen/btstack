@@ -62,7 +62,7 @@ COMMON += \
 	uECC.c                      \
 	sm.c                        \
 
-CLASSIC += \
+CLASSIC ?= \
 	sdp_util.c	                \
 	gatt_sdp.c                  \
 	spp_server.c  				\
@@ -233,7 +233,6 @@ EXAMPLES_LE_ONLY=           \
 	nordic_spp_le_streamer  \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
-	spp_and_gatt_counter    \
 	ublox_spp_le_counter    \
 
 # List of Examples that use Bluetooth BR/EDR/LE = Dual Mode
