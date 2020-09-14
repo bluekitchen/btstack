@@ -273,6 +273,9 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 /* to dispatch sm event */
 static btstack_linked_list_t sm_event_handlers;
 
+/* to schedule calls to sm_run */
+static btstack_timer_source_t sm_run_timer;
+
 // LE Secure Connections
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static ec_key_generation_state_t ec_key_generation_state;
@@ -482,7 +485,6 @@ static void sm_run_timer_handler(btstack_timer_source_t * ts){
 	sm_run();
 }
 static void sm_trigger_run(void){
-	static btstack_timer_source_t sm_run_timer;
 	(void)btstack_run_loop_remove_timer(&sm_run_timer);
 	btstack_run_loop_set_timer(&sm_run_timer, 0);
 	btstack_run_loop_add_timer(&sm_run_timer);
