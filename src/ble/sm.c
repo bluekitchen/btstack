@@ -461,7 +461,9 @@ static inline void sm_pairing_packet_set_responder_key_distribution(sm_pairing_p
 static int sm_is_null(uint8_t * data, int size){
     int i;
     for (i=0; i < size ; i++){
-        if (data[i]) return 0;
+        if (data[i] != 0) {
+            return 0;
+        }
     }
     return 1;
 }
@@ -481,8 +483,7 @@ static void sm_run_timer_handler(btstack_timer_source_t * ts){
 }
 static void sm_trigger_run(void){
 	static btstack_timer_source_t sm_run_timer;
-	btstack_run_loop_remove_timer(&sm_run_timer);
-	btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
+	(void)btstack_run_loop_remove_timer(&sm_run_timer);
 	btstack_run_loop_set_timer(&sm_run_timer, 0);
 	btstack_run_loop_add_timer(&sm_run_timer);
 }
@@ -4113,6 +4114,8 @@ void sm_init(void){
     sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 
     test_use_fixed_local_csrk = false;
+
+    btstack_run_loop_set_timer_handler(&sm_run_timer, &sm_run_timer_handler);
 
     // register for HCI Events from HCI
     hci_event_callback_registration.callback = &sm_event_packet_handler;
