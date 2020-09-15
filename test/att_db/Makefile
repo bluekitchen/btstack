@@ -29,13 +29,17 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: att_db_util_test
+all: att_db_util_test att_db_test
 
 att_db_util_test: ${COMMON_OBJ} att_db_util_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+att_db_test: att_db_test.c att_db.c btstack_util.c hci_dump.c att_db_util.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 test: all
 	./att_db_util_test
+	./att_db_test
 
 clean:
 	rm -f  att_db_util_test
