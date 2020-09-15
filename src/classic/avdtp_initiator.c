@@ -329,7 +329,7 @@ static void avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t 
                 log_info("initiator SM stop sending SET_CONFIGURATION cmd:");
                 break;
             }
-            log_info("W2_(RE)CONFIGURATION bitmap, local seid %d, remote seid 0x%02x", connection->initiator_local_seid, connection->initiator_remote_seid);
+            log_info("W2_(RE)CONFIGURATION bitmap, local seid 0x%02x, remote seid 0x%02x", connection->initiator_local_seid, connection->initiator_remote_seid);
             // log_info_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
             connection->initiator_signaling_packet.acp_seid = connection->initiator_remote_seid;
             connection->initiator_signaling_packet.int_seid = connection->initiator_local_seid;
