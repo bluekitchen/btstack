@@ -463,9 +463,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
                     a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
                     break;
-                case A2DP_W4_RECONFIGURE_WITH_SEID:
-                    a2dp_source_state = A2DP_STREAMING_OPENED;
-                    break;
                 default:
                     return;
             }
@@ -546,7 +543,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
                     log_info("A2DP reconfigured ... local seid %d, active remote seid %d", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
                     a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), ERROR_CODE_SUCCESS);
-                    a2dp_source_state = A2DP_W4_RECONFIGURE_WITH_SEID;
+                    a2dp_source_state = A2DP_STREAMING_OPENED;
                     break;
 
                 case A2DP_STREAMING_OPENED:
