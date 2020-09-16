@@ -188,7 +188,7 @@ void SpiInOut( uint8_t *txBuffer, uint8_t *rxBuffer, uint16_t size )
 {
 #ifdef STM32L4XX_FAMILY
     // Comment For STM32L0XX and STM32L1XX Intégration, uncomment for STM32L4XX Intégration
-    HAL_SPIEx_FlushRxFifo( &RADIO_SPI_HANDLERADIO_SPI_HANDLE );
+    HAL_SPIEx_FlushRxFifo( &RADIO_SPI_HANDLE );
 #endif
     HAL_SPI_TransmitReceive( &RADIO_SPI_HANDLE, txBuffer, rxBuffer, size, HAL_MAX_DELAY );
 }
