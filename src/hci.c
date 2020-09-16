@@ -3838,16 +3838,36 @@ static bool hci_run_general_gap_le(void){
             hci_send_cmd(&hci_le_read_resolving_list_size);
             return true;
         case LE_RESOLVING_LIST_SEND_CLEAR:
-            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
-            (void) memset(hci_stack->le_resolving_list_entries, 0xff, sizeof(hci_stack->le_resolving_list_entries));
+            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
+            (void) memset(hci_stack->le_resolving_list_add_entries, 0xff, sizeof(hci_stack->le_resolving_list_add_entries));
+			(void) memset(hci_stack->le_resolving_list_remove_entries, 0, sizeof(hci_stack->le_resolving_list_remove_entries));
             hci_send_cmd(&hci_le_clear_resolving_list);
             return true;
-        case LE_RESOLVING_LIST_ADD_ENTRIES:
+		case LE_RESOLVING_LIST_REMOVE_ENTRIES:
+			for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
+				uint8_t offset = i >> 3;
+				uint8_t mask = 1 << (i & 7);
+				if ((hci_stack->le_resolving_list_remove_entries[offset] & mask) == 0) continue;
+				hci_stack->le_resolving_list_remove_entries[offset] &= ~mask;
+				bd_addr_t peer_identity_addreses;
+				int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+				sm_key_t peer_irk;
+				le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
+				if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+				hci_send_cmd(&hci_le_remove_device_from_resolving_list, peer_identity_addr_type, peer_identity_addreses);
+				return true;
+			}
+
+			hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
+
+			/* fall through */
+
+		case LE_RESOLVING_LIST_ADD_ENTRIES:
             for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
                 uint8_t offset = i >> 3;
                 uint8_t mask = 1 << (i & 7);
-                if ((hci_stack->le_resolving_list_entries[offset] & mask) == 0) continue;
-                hci_stack->le_resolving_list_entries[offset] &= ~mask;
+                if ((hci_stack->le_resolving_list_add_entries[offset] & mask) == 0) continue;
+                hci_stack->le_resolving_list_add_entries[offset] &= ~mask;
                 bd_addr_t peer_identity_addreses;
                 int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
                 sm_key_t peer_irk;
@@ -3862,8 +3882,10 @@ static bool hci_run_general_gap_le(void){
                 hci_send_cmd(&hci_le_add_device_to_resolving_list, peer_identity_addr_type, peer_identity_addreses, peer_irk_flipped, local_irk_flipped);
                 return true;
             }
-            break;
-        default:
+			hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
+			break;
+
+		default:
             break;
     }
     hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
@@ -5949,10 +5971,22 @@ void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index
     if (le_device_db_index >= le_device_db_max_count()) return;
     uint8_t offset = le_device_db_index >> 3;
     uint8_t mask = 1 << (le_device_db_index & 7);
-    hci_stack->le_resolving_list_entries[offset] |= mask;
+    hci_stack->le_resolving_list_add_entries[offset] |= mask;
     if (hci_stack->le_resolving_list_state == LE_RESOLVING_LIST_DONE){
-        hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
+    	// note: go back to remove entries, otherwise, a remove + add will skip the add
+        hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
     }
+}
+
+void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_index){
+	if (le_device_db_index >= MAX_NUM_RESOLVING_LIST_ENTRIES) return;
+	if (le_device_db_index >= le_device_db_max_count()) return;
+	uint8_t offset = le_device_db_index >> 3;
+	uint8_t mask = 1 << (le_device_db_index & 7);
+	hci_stack->le_resolving_list_remove_entries[offset] |= mask;
+	if (hci_stack->le_resolving_list_state == LE_RESOLVING_LIST_DONE){
+		hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
+	}
 }
 
 uint8_t gap_load_resolving_list_from_le_device_db(void){

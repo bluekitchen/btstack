@@ -1319,14 +1319,22 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         }
 
         // if not found, add to db
+        bool new_to_le_device_db = false;
         if (le_db_index < 0) {
             le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
-#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-			hci_load_le_device_db_entry_into_resolving_list(le_db_index);
-#endif
+			new_to_le_device_db = true;
         }
 
         if (le_db_index >= 0){
+
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+        	if (!new_to_le_device_db){
+				hci_remove_le_device_db_entry_from_resolving_list(le_db_index);
+        	}
+			hci_load_le_device_db_entry_into_resolving_list(le_db_index);
+#else
+			UNUSED(new_to_le_device_db);
+#endif
 
             sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
             sm_conn->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;

@@ -736,6 +736,7 @@ typedef enum {
     LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION,
     LE_RESOLVING_LIST_READ_SIZE,
     LE_RESOLVING_LIST_SEND_CLEAR,
+	LE_RESOLVING_LIST_REMOVE_ENTRIES,
     LE_RESOLVING_LIST_ADD_ENTRIES,
     LE_RESOLVING_LIST_DONE
 } le_resolving_list_state_t;
@@ -971,7 +972,8 @@ typedef struct {
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
     le_resolving_list_state_t le_resolving_list_state;
     uint16_t                  le_resolving_list_size;
-    uint8_t                   le_resolving_list_entries[ (MAX_NUM_RESOLVING_LIST_ENTRIES+7) / 8];
+    uint8_t                   le_resolving_list_add_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
+	uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
 #endif
 
 } hci_stack_t;
@@ -1270,6 +1272,11 @@ void hci_le_set_own_address_type(uint8_t own_address_type);
  * @note internal use by sm
  */
 void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index);
+
+/**
+ * @note internal use by sm
+ */
+void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_index);
 
 /**
  * @brief Get Manufactured
