@@ -253,7 +253,8 @@ TEST(SecurityManager, MainTest){
 	};
 	mock_simulate_hci_event(&read_public_key_event[0], sizeof(read_public_key_event));
 #endif
-
+#endif
+	
     // expect le encrypt commmand
     CHECK_HCI_COMMAND(test_command_packet_01);
     aes128_report_result();
