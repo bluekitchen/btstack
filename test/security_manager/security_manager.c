@@ -14,7 +14,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "btstack_run_loop_posix.h"
+#include "btstack_run_loop_embedded.h"
 
 #include "hci_cmd.h"
 #include "btstack_util.h"
@@ -244,7 +244,7 @@ TEST_GROUP(SecurityManager){
         if (first){
             first = 0;
             btstack_memory_init();
-            btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+            btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
         }
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
