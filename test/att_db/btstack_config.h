@@ -20,6 +20,7 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_SOFTWARE_AES128
+#define ENABLE_ATT_DELAYED_RESPONSE
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1024
