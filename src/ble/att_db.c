@@ -765,11 +765,6 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     log_info("ATT_READ_MULTIPLE_REQUEST: num handles %u", num_handles);
     uint8_t request_type = ATT_READ_MULTIPLE_REQUEST;
     
-    // TODO: figure out which error to respond with
-    // if (num_handles < 2){
-    //     return setup_error(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle, ???);
-    // }
-
     uint16_t offset   = 1;
 
     int i;
