@@ -131,7 +131,7 @@ TEST(AttDbUtil, LeCounterDb){
     printf("LE Counter DB\n");
     printf_hexdump(addr, size);
 
-    CHECK_EQUAL(size, (uint16_t)sizeof(profile_data));
+    CHECK_EQUAL((uint16_t)sizeof(profile_data), size);
     CHECK_EQUAL_ARRAY(profile_data, addr, size);
 }
 
@@ -156,7 +156,7 @@ TEST(AttDbUtil, GattHash){
     att_db_util_add_characteristic_uuid16(0x2a19, ATT_PROPERTY_READ, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)battery_level, sizeof(battery_level));
 
     uint16_t hash_len = att_db_util_hash_len();
-    CHECK_EQUAL(sizeof(gatt_database_hash_test_message), hash_len);
+    CHECK_EQUAL((uint16_t)sizeof(gatt_database_hash_test_message), hash_len);
 
     uint16_t i;
     att_db_util_hash_init();
