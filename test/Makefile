@@ -37,7 +37,6 @@ SUBDIRS_BLE = \
 	ble_client \
 	crypto \
 	gatt_client \
-	gatt_server \
 	gap \
 	hid_parser \
 	linked_list \
@@ -51,6 +50,8 @@ SUBDIRS_BLE = \
 # avrcp \
 # map_client \
 # sbc \
+#	gatt_server \
+
 .PHONY: coverage
 
 subdirs:
