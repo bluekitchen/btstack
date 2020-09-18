@@ -79,6 +79,8 @@ VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
 ATT_OBJ     = $(ATT:.c=.o)
@@ -104,3 +106,18 @@ myclean:
 	
 	
 clean: myclean
+
+test: sm_test
+	./sm_test
+
+coverage: sm_test
+	# delete trace data
+	# find . -name "*.gcda" -type f -delete
+	# run tests
+	#./sm_test
+	# collect traces
+	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-sm-sc.info
+	# strip path prefix such that paths start with 'btstack'
+	sed -i.bak -e 's|/Users/mringwal/buildbot-worker/test-develop/build|btstack|' coverage-sm-sc.info
+	# generate html output
+	genhtml coverage-sm-sc.info --branch-coverage --output-directory coverage-sm-sc
