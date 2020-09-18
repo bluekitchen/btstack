@@ -10,10 +10,8 @@ SUBDIRS =  \
 	btstack_link_key_db \
 	crypto \
 	des_iterator \
-	embedded \
 	flash_tlv \
 	gatt_client \
-	gatt_server \
 	gap \
 	hfp \
 	hid_parser \
@@ -28,6 +26,9 @@ SUBDIRS =  \
 	tlv_posix \
 # not testing anything in source tree
 #	maths \
+# no unit tests
+#	embedded \
+#	gatt_server \
 
 # flash_tlv also contains btstack_linked_key_db tests
 
