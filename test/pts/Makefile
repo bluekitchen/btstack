@@ -226,9 +226,6 @@ sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gsm_model.o iopt.c hfp.o a2dp_sink.o a2dp_source.o ${AVDTP_OBJ} avrcp_controller.o avrcp_target.o avrcp.o ${SDP_CLIENT}
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} sm_test.o
-	${CC} $(filter-out sm_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
 gatt_profiles.h: gatt_profiles.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 

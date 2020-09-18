@@ -77,7 +77,7 @@ const uint8_t adv_data_len = sizeof(adv_data);
 #include "sm_test.h"
 
 static uint8_t sm_have_oob_data = 0;
-static uint8_t sm_io_capabilities = 0;
+static io_capability_t sm_io_capabilities = IO_CAPABILITY_DISPLAY_ONLY;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_failure = 0;
 
@@ -445,7 +445,7 @@ int btstack_main(int argc, const char * argv[]){
         }
         if(!strcmp(argv[arg], "-i") || !strcmp(argv[arg], "--iocap")){
             arg++;
-            sm_io_capabilities = atoi(argv[arg++]);
+            sm_io_capabilities = (io_capability_t) atoi(argv[arg++]);
         }
         if(!strcmp(argv[arg], "-r") || !strcmp(argv[arg], "--authreq")){
             arg++;
@@ -463,8 +463,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // parse command line flags
 
-    printf("Security Managet Tester starting up...\n");
-    log_info("IO_CAPABILITIES: %u", sm_io_capabilities);
+    printf("Security Manager Tester starting up...\n");
+    log_info("IO_CAPABILITIES: %u", (int) sm_io_capabilities);
     log_info("AUTH_REQ: %u", sm_auth_req);
     log_info("HAVE_OOB: %u", sm_have_oob_data);
     log_info("FAILURE: %u", sm_failure);

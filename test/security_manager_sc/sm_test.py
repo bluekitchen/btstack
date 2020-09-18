@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Perform Security Manager Test Cases using two BTstack instances
 #
@@ -84,7 +84,7 @@ class Node:
         return self.stdout.fileno()
 
     def read_stdout(self):
-        c = os.read(self.stdout.fileno(), 1)
+        c = os.read(self.stdout.fileno(), 1).decode("utf-8")
         if len(c) == 0: 
             return
         if c in '\n\r':

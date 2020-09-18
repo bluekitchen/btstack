@@ -1,0 +1,106 @@
+# Makefile for libusb based PTS tests
+BTSTACK_ROOT = ../..
+
+CORE += \
+	btstack_memory.c            \
+	btstack_linked_list.c	    \
+	btstack_memory_pool.c       \
+	btstack_run_loop.c		    \
+	btstack_util.c 	            \
+	btstack_audio.c             \
+	main.c 						\
+	btstack_stdin_posix.c       \
+	btstack_tlv.c 		\
+	btstack_tlv_posix.c 		\
+	rijndael.c \
+
+COMMON += \
+	hci.c			            \
+	device_id_server.c          \
+	ad_parser.c                 \
+	hci_cmd.c		            \
+	hci_dump.c		            \
+	l2cap.c			            \
+	l2cap_signaling.c	        \
+	rfcomm.c                    \
+	hci_transport_h2_libusb.c 	\
+	btstack_run_loop_posix.c 	\
+	btstack_link_key_db_tlv.c 	\
+	le_device_db_tlv.c 			\
+	wav_util.c 					\
+	sdp_util.c	                \
+	sdp_server.c		        \
+	sdp_client.c 				\
+	sdp_client_rfcomm.c 		\
+	sm.c 						\
+	uECC.c 					    \
+	spp_server.c 				\
+	btstack_chipset_zephyr.c    \
+
+ATT	+= \
+	att_dispatch.c       	    \
+
+GATT_SERVER += \
+	att_db.c 				 	    \
+	att_server.c        	    \
+
+GATT_CLIENT += \
+	gatt_client.c        	    \
+
+SM += \
+	sm.c 				 	    \
+
+include ${BTSTACK_ROOT}/example/Makefile.inc
+
+CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
+CFLAGS += -D ENABLE_TESTING_SUPPORT
+CFLAGS += -D ENABLE_LE_SIGNED_WRITE
+
+# CFLAGS += -I..
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/eCC
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
+CFLAGS += -I${BTSTACK_ROOT}/chipset/zephyr
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
+CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I${BTSTACK_ROOT}/port/libusb
+
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/platform/libusb
+VPATH += ${BTSTACK_ROOT}/port/libusb
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
+VPATH += ${BTSTACK_ROOT}/chipset/zephyr
+
+# use pkg-config for libusb
+CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+
+CORE_OBJ    = $(CORE:.c=.o)
+COMMON_OBJ  = $(COMMON:.c=.o) 
+ATT_OBJ     = $(ATT:.c=.o)
+SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
+GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
+GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
+
+all: sm_test
+
+sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} sm_test.o
+	${CC} $(filter-out sm_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+myclean:
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
+	rm -rf hog_demo_test.h
+	rm -rf ble_central_test.h
+	rm -rf ble_peripheral_test.h
+	rm -rf csc_server_test.h
+	rm -rf cycling_power_server_test.h
+	rm -rf gatt_profiles.h
+	rm -rf hrp_server_test.h
+	rm -rf sm_test.h
+	
+	
+clean: myclean
