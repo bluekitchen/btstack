@@ -89,8 +89,6 @@ test-coverage-ble: subdirs
 	$(MAKE) test-ble
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
-	# strip path prefix such that paths start with 'btstack'
-	sed -i.bak -e 's|/Users/mringwal/buildbot-worker/test-develop/build|btstack|' coverage-unit-ble.info
 
 test-coverage: subdirs
 	# delete trace data
@@ -99,12 +97,10 @@ test-coverage: subdirs
 	$(MAKE) test
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
-	# strip path prefix such that paths start with 'btstack'
-	sed -i.bak -e 's|/Users/mringwal/buildbot-worker/test-develop/build|btstack|' coverage-unit.info
 
 coverage: test-coverage test-coverage-ble
 	# download pts coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info > coverage-pts.info
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed 's|buildbot-worker/auto-pts/btstack/|buildbot-worker/test-develop/build|' > coverage-pts.info
 
 	# combine unit[-ble] and pts
 	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit.info     --output-file coverage.info
