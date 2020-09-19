@@ -100,7 +100,7 @@ test-coverage: subdirs
 
 coverage: test-coverage test-coverage-ble
 	# download pts coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed 's|buildbot-worker/auto-pts/btstack/|buildbot-worker/test-develop/build|' > coverage-pts.info
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed 's|buildbot-worker/auto-pts/btstack|buildbot-worker/test-develop/build|' > coverage-pts.info
 
 	# combine unit[-ble] and pts
 	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit.info     --output-file coverage.info
