@@ -189,7 +189,6 @@ EXAMPLES_GENERAL =          \
 EXAMPLES_CLASSIC_ONLY =     \
 	a2dp_sink_demo          \
 	a2dp_source_demo        \
-	a2dp_mitm_demo			\
 	avrcp_browsing_client   \
 	dut_mode_classic        \
 	gap_dedicated_bonding   \
@@ -291,9 +290,6 @@ default_target: all
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
-
-a2dp_mitm_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_controller.o avrcp_target.o a2dp_mitm_demo.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
