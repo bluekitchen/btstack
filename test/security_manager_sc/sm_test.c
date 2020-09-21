@@ -62,7 +62,12 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_stdin.h"
- 
+
+#ifdef COVERAGE
+// guesswork:
+void __gcov_flush(void);
+#endif
+
 #define HEARTBEAT_PERIOD_MS 1000
 
 const uint8_t adv_data[] = {
@@ -343,6 +348,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 }
 
 static void stdin_process(char c){
+	log_info("stdin: %c (%02x)", c, c);
     // passkey input
     if (ui_digits_for_passkey && c >= '0' && c <= '9'){
         printf("%c", c);
@@ -422,7 +428,11 @@ static void stdin_process(char c){
             sm_request_pairing(connection_handle);
             break;
         case 'x':
-            printf("Exit\n");
+#ifdef COVERAGE
+			log_info("Flush gcov");
+			__gcov_flush();
+#endif
+			printf("EXIT\n");
             exit(0);
             break;
         default:

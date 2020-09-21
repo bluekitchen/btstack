@@ -49,7 +49,7 @@ failures = [
 debug      = False
 regenerate = False
 # usb_paths = ['4', '6']
-usb_paths = ['3', '5']
+usb_paths = ['1', '2']
 
 class Node:
 
@@ -117,7 +117,7 @@ class Node:
         args.append('-o')
         args.append(self.oob_data)
         print('%s - "%s"' % (self.name, ' '.join(args)))
-        self.p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.p = subprocess.Popen(args, bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (self.stdin, self.stdout) = (self.p.stdin, self.p.stdout)
         self.linebuffer = ''
 
@@ -137,10 +137,13 @@ class Node:
         self.peer_addr = addr
 
     def write(self, string):
-        self.stdin.write(string)
+        self.stdin.write(string.encode('utf-8'))
 
     def terminate(self):
         self.write('x')
+        # wait for 'EXIT' message indicating coverage data was written
+        while not self.got_line():
+            self.read_stdout()
         self.p.terminate()
 
 def run(test_descriptor, nodes):
