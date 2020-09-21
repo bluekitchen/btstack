@@ -1137,6 +1137,7 @@ void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_ACCESS:
             mesh_upper_transport_process_access_message_done((mesh_access_pdu_t *) pdu);
+            break;
         case MESH_PDU_TYPE_CONTROL:
             mesh_upper_transport_process_control_message_done((mesh_control_pdu_t *) pdu);
             break;
