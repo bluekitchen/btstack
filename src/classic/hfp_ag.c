@@ -1995,8 +1995,8 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                     default:
                         break;
                 }
+				hfp_connection->call_index = 0;
                 break;
-                hfp_connection->call_index = 0;
             }
             case HFP_CMD_CALL_PHONE_NUMBER:
                 hfp_connection->command = HFP_CMD_NONE;
