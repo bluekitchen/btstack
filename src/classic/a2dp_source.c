@@ -524,7 +524,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 case A2DP_GET_CAPABILITIES:
                     remote_seid = remote_seps[sc.active_remote_sep_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
-                    avdtp_source_get_capabilities(cid, remote_seid);
+                    avdtp_source_get_all_capabilities(cid, remote_seid);
                     return;
 
                 case A2DP_SET_CONFIGURATION:
