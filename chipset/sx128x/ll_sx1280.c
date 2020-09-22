@@ -726,14 +726,15 @@ static void radio_on_rx_done(void ){
         }
 
         // tx packet ready?
+		uint16_t max_packet_len = 2 + 27;
         if (ctx.tx_pdu == NULL){
             empty_packet[0] = (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | PDU_DATA_LLID_DATA_CONTINUE;
             empty_packet[1] = 0;
-            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, empty_packet, 2 );
+            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, empty_packet, max_packet_len );
         } else {
             uint8_t md = btstack_linked_queue_empty(&ctx.tx_queue) ? 0 : 1;
             ctx.tx_pdu->header |= (md << 4) | (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2);
-            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, (uint8_t *) &ctx.tx_pdu->header, 2 + ctx.tx_pdu->len );
+            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, (uint8_t *) &ctx.tx_pdu->header, max_packet_len );
         }
 
         // update operating state
