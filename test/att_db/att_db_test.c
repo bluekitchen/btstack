@@ -155,6 +155,9 @@ TEST_GROUP(AttDb){
 		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_MEASUREMENT, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_AUTHENTICATED, ATT_SECURITY_AUTHENTICATED, &battery_level, 1);
 		// 0x2A38
 		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BODY_SENSOR_LOCATION, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
+
+		const uint8_t uuid128[] = {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+		att_db_util_add_characteristic_uuid128(uuid128, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
 		
 		// set callbacks
 		att_set_db(att_db_util_get_address());
@@ -552,6 +555,23 @@ TEST(AttDb, handle_prepare_write_request){
 		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
 		CHECK_EQUAL(sizeof(expected_response), att_response_len);
 	}
+}
+
+TEST(AttDb, att_uuid_for_handle){
+	// existing attribute handle
+	uint16_t uuid = att_uuid_for_handle(0x0011);
+	uint16_t expected_response = 0x2A38;
+	CHECK_EQUAL(expected_response, uuid);
+
+	// unknown attribute handle
+	uuid = att_uuid_for_handle(0xFF00);
+	expected_response = 0;
+	CHECK_EQUAL(expected_response, uuid);
+
+	// attribute handle for uuid128
+	uuid = att_uuid_for_handle(0x0014);
+	expected_response = 0;
+	CHECK_EQUAL(expected_response, uuid);
 }
 
 int main (int argc, const char * argv[]){
