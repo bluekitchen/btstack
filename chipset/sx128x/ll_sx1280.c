@@ -722,6 +722,10 @@ static void radio_on_rx_done(void ){
             // abort sending of next packet / AutoTx
             Radio.SetFs();
             printf("Close to Sync hop\n");
+
+            // get rx pdu
+			radio_fetch_rx_pdu();
+
             return;
         }
 
