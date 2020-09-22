@@ -390,7 +390,7 @@ static bool receive_prepare_rx_bufffer(void){
     }
 }
 
-static void receive_adv_response(void){
+static void receive_response(void){
     if (receive_prepare_rx_bufffer()) {
         Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 10 } );  // 220 us
     }
@@ -616,6 +616,7 @@ static void radio_timer_handler(void){
 }
 
 static void radio_fetch_rx_pdu(void){
+
 	// fetch reserved rx pdu
 	ll_pdu_t * rx_packet = ctx.rx_pdu;
 	btstack_assert(rx_packet != NULL);
@@ -635,10 +636,17 @@ static void radio_fetch_rx_pdu(void){
 static void radio_on_tx_done(void ){
     switch (radio_state){
         case RADIO_W4_TX_DONE_TO_RX:
-            receive_adv_response();
+            receive_response();
             break;
         default:
             break;
+    }
+    switch (ll_state){
+    	case LL_STATE_CONNECTED:
+    		radio_fetch_rx_pdu();
+    		break;
+    	default:
+    		break;
     }
 }
 
@@ -723,8 +731,6 @@ static void radio_on_rx_done(void ){
 
         // update operating state
         SX1280AutoTxWillStart();
-
-		radio_fetch_rx_pdu();
 
         // set anchor on first packet in connection event
         if (ctx.packet_nr_in_connection_event == 0){
