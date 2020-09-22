@@ -113,6 +113,14 @@ static uint16_t att_write_request(uint16_t request_type, uint16_t attribute_hand
     (void)memcpy(&att_request[3], value, value_length);
     return 3 + value_length;
 }
+
+static uint16_t att_prepare_write_request(uint16_t request_type, uint16_t attribute_handle, uint16_t value_offset){
+    att_request[0] = request_type;
+    little_endian_store_16(att_request, 1, attribute_handle);
+    little_endian_store_16(att_request, 3, value_offset);
+    return 5;
+}
+
 // ignore for now
 extern "C" void btstack_crypto_aes128_cmac_generator(btstack_crypto_aes128_cmac_t * request, const uint8_t * key, uint16_t size, uint8_t (*get_byte_callback)(uint16_t pos), uint8_t * hash, void (* callback)(void * arg), void * callback_arg){
 }
@@ -147,9 +155,7 @@ TEST_GROUP(AttDb){
 		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BLOOD_PRESSURE_MEASUREMENT, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_AUTHENTICATED, ATT_SECURITY_AUTHENTICATED, &battery_level, 1);
 		// 0x2A38
 		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BODY_SENSOR_LOCATION, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
-		// 0x2A38
-		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BODY_SENSOR_LOCATION, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
-
+		
 		// set callbacks
 		att_set_db(att_db_util_get_address());
 		att_set_read_callback(&att_read_callback);
@@ -287,7 +293,6 @@ TEST(AttDb, handle_read_multiple_request){
 TEST(AttDb, handle_write_request){
 	uint16_t attribute_handle = 0x03;
 
-	// att_dump_attributes();
 	// not sufficient request length
 	{
 		att_request[0] = ATT_WRITE_REQUEST;
@@ -414,6 +419,136 @@ TEST(AttDb, handle_write_request){
 		CHECK_EQUAL(3 + sizeof(value), att_request_len);
 		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
 		const uint8_t expected_response[] = {ATT_WRITE_RESPONSE};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+	}
+}
+
+TEST(AttDb, handle_prepare_write_request){
+	uint16_t attribute_handle = 0x0011;
+	uint16_t value_offset = 0x10;
+	att_dump_attributes();
+
+	// not sufficient request length
+	{
+		att_request[0] = ATT_PREPARE_WRITE_REQUEST;
+		att_request_len = 1;
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response[] = {ATT_ERROR_RESPONSE, att_request[0], 0x00, 0x00, ATT_ERROR_INVALID_PDU};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+	}
+	
+	// write not permited: invalid write callback
+	{
+		att_set_write_callback(NULL);
+		
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response[] = {ATT_ERROR_RESPONSE, att_request[0], att_request[1], att_request[2], ATT_ERROR_WRITE_NOT_PERMITTED};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+		
+		att_set_write_callback(&att_write_callback);
+	}
+
+	// invalid handle
+	{
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, 0, 0);
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response[] = {ATT_ERROR_RESPONSE, att_request[0], att_request[1], att_request[2], ATT_ERROR_INVALID_HANDLE};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+	}
+
+	// write not permited: no ATT_PROPERTY_WRITE
+	{
+		attribute_handle = 0x000c; // 0x2A49
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		
+		const uint8_t expected_response[] = {ATT_ERROR_RESPONSE, att_request[0], att_request[1], att_request[2], ATT_ERROR_WRITE_NOT_PERMITTED};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+	}	
+
+
+	// write not permited: no ATT_PROPERTY_DYNAMIC
+	{
+		attribute_handle = 0x0003; 
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response[] = {ATT_ERROR_RESPONSE, att_request[0], att_request[1], att_request[2], ATT_ERROR_WRITE_NOT_PERMITTED};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+	}
+
+	// security validation 
+	{
+		attribute_handle = 0x000f; // 0x2A35
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response[] = {ATT_ERROR_RESPONSE, att_request[0], att_request[1], att_request[2], ATT_ERROR_INSUFFICIENT_AUTHENTICATION};
+		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response), att_response_len);
+	}
+
+	// some callback error other then ATT_INTERNAL_WRITE_RESPONSE_PENDING
+	{
+		write_callback_mode = WRITE_CALLBACK_MODE_RETURN_INVALID_ATTRIBUTE_VALUE_LENGTH;
+		
+		attribute_handle = 0x0011; // 0x2A38
+		
+		// prepare write
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response_prepare_write[] = {ATT_PREPARE_WRITE_RESPONSE, 0x11, 0x00, 0x10, 0x00};
+		MEMCMP_EQUAL(expected_response_prepare_write, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response_prepare_write), att_response_len);
+		
+		// execute write
+		att_request_len = att_prepare_write_request(ATT_EXECUTE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response_write_execute[] = {ATT_ERROR_RESPONSE, att_request[0], att_request[1], att_request[2], ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH};
+		MEMCMP_EQUAL(expected_response_write_execute, att_response, att_response_len);
+		CHECK_EQUAL(sizeof(expected_response_write_execute), att_response_len);
+		
+		write_callback_mode = WRITE_CALLBACK_MODE_RETURN_DEFAULT;
+	}
+
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+	// delayed response 
+	{
+		write_callback_mode = WRITE_CALLBACK_MODE_RETURN_ERROR_WRITE_RESPONSE_PENDING;
+		
+		attribute_handle = 0x0011; // 0x2A38
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		
+
+		CHECK_EQUAL(ATT_INTERNAL_WRITE_RESPONSE_PENDING, att_response_len);
+		
+		write_callback_mode = WRITE_CALLBACK_MODE_RETURN_DEFAULT;
+	}
+#endif
+
+	// correct write
+	{
+		attribute_handle = 0x0011;
+		att_request_len = att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, attribute_handle, value_offset); 
+		CHECK_EQUAL(5, att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		const uint8_t expected_response[] = {ATT_PREPARE_WRITE_RESPONSE, 0x11, 0x00, 0x10, 0x00};
 		MEMCMP_EQUAL(expected_response, att_response, att_response_len);
 		CHECK_EQUAL(sizeof(expected_response), att_response_len);
 	}
