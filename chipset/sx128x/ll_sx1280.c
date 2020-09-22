@@ -327,7 +327,7 @@ static struct {
     // current outgoing packet
     ll_pdu_t * tx_pdu;
 
-    // current incomoing packet
+    // current incoming packet
     ll_pdu_t * rx_pdu;
 
     // tx queue
@@ -628,34 +628,45 @@ static void radio_on_tx_done(void ){
 
 static void radio_on_rx_done(void ){
     uint16_t packet_end_ticks = hal_timer_get_ticks();
-    ll_pdu_t * rx_packet;
-    bool tx_acked;
 
-    uint8_t sequence_number;
-    uint8_t next_expected_sequence_number;
-    // uint8_t more_data;
+	if (ll_state == LL_STATE_ADVERTISING){
+		
+		// fetch reserved rx pdu
+		ll_pdu_t * rx_packet = ctx.rx_pdu;
+		btstack_assert(rx_packet != NULL);
+		ctx.rx_pdu = NULL;
 
-    // fetch reserved rx pdu
-    rx_packet = ctx.rx_pdu;
-    btstack_assert(rx_packet != NULL);
-    ctx.rx_pdu = NULL;
+		// no data packet
+		rx_packet->flags = 0;
+		uint16_t max_packet_len = 2 + LL_MAX_PAYLOAD;
 
-    // Read complete buffer
-    uint16_t max_packet_len;
-    if (ll_state == LL_STATE_CONNECTED){
-        // mark as data packet
-        rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
-        max_packet_len = 2 + 27;
-    } else {
-        rx_packet->flags = 0;
-        max_packet_len = 2 + LL_MAX_PAYLOAD;
-    }
-    SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
 
-    // queue received packet
-    btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+		// queue received packet
+		btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
 
-    if (ll_state == LL_STATE_CONNECTED){
+	} else if (ll_state == LL_STATE_CONNECTED){
+
+		bool tx_acked;
+
+		uint8_t sequence_number;
+		uint8_t next_expected_sequence_number;
+		// uint8_t more_data;
+
+		// fetch reserved rx pdu
+		ll_pdu_t * rx_packet = ctx.rx_pdu;
+		btstack_assert(rx_packet != NULL);
+		ctx.rx_pdu = NULL;
+
+		// mark as data packet
+		rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
+		uint16_t max_packet_len = 2 + 27;
+
+		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+
+		// queue received packet
+		btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+
         // parse header
         next_expected_sequence_number = (rx_packet->header >> 2) & 1;
         sequence_number = (rx_packet->header >> 3) & 1;
