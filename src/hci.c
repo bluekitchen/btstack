@@ -3632,7 +3632,7 @@ static bool hci_run_general_gap_le(void){
 
 #ifndef ENABLE_LE_CENTRAL
     UNUSED(scanning_stop);
-    UNUSED(connecting_stop)
+    UNUSED(connecting_stop);
 #endif
 #ifndef ENABLE_LE_PERIPHERAL
     UNUSED(advertising_stop);
