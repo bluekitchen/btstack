@@ -620,16 +620,23 @@ static void radio_fetch_rx_pdu(void){
 	// fetch reserved rx pdu
 	ll_pdu_t * rx_packet = ctx.rx_pdu;
 	btstack_assert(rx_packet != NULL);
-	ctx.rx_pdu = NULL;
 
-	// mark as data packet
-	rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
+	// read max packet
 	uint16_t max_packet_len = 2 + 27;
-
 	SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
 
-	// queue received packet
-	btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+	// queue if not empty
+	if (rx_packet->len != 0){
+
+		// packet used
+		ctx.rx_pdu = NULL;
+
+		// mark as data packet
+		rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
+
+		// queue received packet
+		btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+	}
 }
 
 /** Radio IRQ handlers */
