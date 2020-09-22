@@ -159,6 +159,12 @@ TEST_GROUP(AttDb){
 		const uint8_t uuid128[] = {0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 		att_db_util_add_characteristic_uuid128(uuid128, ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
 		
+		// 0x2AA7
+		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_CGM_MEASUREMENT, ATT_PROPERTY_WRITE_WITHOUT_RESPONSE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_AUTHENTICATED, ATT_SECURITY_AUTHENTICATED, &battery_level, 1);
+		
+		// 0x2AAB
+		att_db_util_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_CGM_SESSION_RUN_TIME, ATT_PROPERTY_WRITE_WITHOUT_RESPONSE | ATT_PROPERTY_DYNAMIC | ATT_PROPERTY_NOTIFY, ATT_SECURITY_NONE, ATT_SECURITY_NONE, &battery_level, 1);
+
 		// set callbacks
 		att_set_db(att_db_util_get_address());
 		att_set_read_callback(&att_read_callback);
@@ -430,7 +436,6 @@ TEST(AttDb, handle_write_request){
 TEST(AttDb, handle_prepare_write_request){
 	uint16_t attribute_handle = 0x0011;
 	uint16_t value_offset = 0x10;
-	att_dump_attributes();
 
 	// not sufficient request length
 	{
@@ -573,6 +578,92 @@ TEST(AttDb, att_uuid_for_handle){
 	expected_response = 0;
 	CHECK_EQUAL(expected_response, uuid);
 }
+
+TEST(AttDb, handle_write_command){
+	uint16_t attribute_handle = 0x03;	
+	att_dump_attributes();
+
+	// not sufficient request length
+	{
+		att_request[0] = ATT_WRITE_COMMAND;
+		att_request_len = 1;
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}
+
+	{
+		att_request[0] = ATT_WRITE_COMMAND;
+		att_request[1] = 0x03;
+		att_request_len = 2;
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}
+	
+	// invalid write callback
+	{
+		att_set_write_callback(NULL);
+		
+		const uint8_t value[] = {0x50};
+		att_request_len = att_write_request(ATT_WRITE_COMMAND, attribute_handle, sizeof(value), value); 
+		CHECK_EQUAL(3 + sizeof(value), att_request_len);
+		
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+
+		att_set_write_callback(&att_write_callback);
+	}
+
+	// invalid handle
+	{
+		att_request[0] = ATT_WRITE_COMMAND;
+		att_request[1] = 0;
+		att_request[2] = 0;
+		att_request_len = 3;
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}
+
+	// write not permited: no ATT_PROPERTY_DYNAMIC
+	{
+		const uint8_t value[] = {0x50};
+		attribute_handle = 0x0003; 
+		att_request_len = att_write_request(ATT_WRITE_COMMAND, attribute_handle, sizeof(value), value); 
+		CHECK_EQUAL(3 + sizeof(value), att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}
+
+	// write not permited: no ATT_PROPERTY_WRITE_WITHOUT_RESPONSE
+	{
+		const uint8_t value[] = {0x50};
+		attribute_handle = 0x000c; // 0x2A49
+		att_request_len = att_write_request(ATT_WRITE_COMMAND, attribute_handle, sizeof(value), value); 
+		CHECK_EQUAL(3 + sizeof(value), att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}	
+
+	// security validation 
+	{
+		const uint8_t value[] = {0x50};
+		attribute_handle = 0x0017; // 0x2AA7
+		att_request_len = att_write_request(ATT_WRITE_COMMAND, attribute_handle, sizeof(value), value); 
+		CHECK_EQUAL(3 + sizeof(value), att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}
+
+	// correct write 
+	{
+		const uint8_t value[] = {0x50};
+		attribute_handle = 0x001A; // 0x2AAB
+		att_request_len = att_write_request(ATT_WRITE_COMMAND, attribute_handle, sizeof(value), value); 
+		CHECK_EQUAL(3 + sizeof(value), att_request_len);
+		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
+		CHECK_EQUAL(0, att_response_len);
+	}
+}
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
