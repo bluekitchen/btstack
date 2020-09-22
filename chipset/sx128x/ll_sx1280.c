@@ -615,6 +615,22 @@ static void radio_timer_handler(void){
 
 }
 
+static void radio_fetch_rx_pdu(void){
+	// fetch reserved rx pdu
+	ll_pdu_t * rx_packet = ctx.rx_pdu;
+	btstack_assert(rx_packet != NULL);
+	ctx.rx_pdu = NULL;
+
+	// mark as data packet
+	rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
+	uint16_t max_packet_len = 2 + 27;
+
+	SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+
+	// queue received packet
+	btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+}
+
 /** Radio IRQ handlers */
 static void radio_on_tx_done(void ){
     switch (radio_state){
@@ -653,23 +669,14 @@ static void radio_on_rx_done(void ){
 		uint8_t next_expected_sequence_number;
 		// uint8_t more_data;
 
-		// fetch reserved rx pdu
-		ll_pdu_t * rx_packet = ctx.rx_pdu;
-		btstack_assert(rx_packet != NULL);
-		ctx.rx_pdu = NULL;
-
-		// mark as data packet
-		rx_packet->flags |= LL_PDU_FLAG_DATA_PDU;
-		uint16_t max_packet_len = 2 + 27;
-
-		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
-
-		// queue received packet
-		btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+		uint8_t rx_buffer[2];
+		SX1280HalReadBuffer( SX1280_RX0_OFFSET, rx_buffer, 2);
+		uint8_t rx_header = rx_buffer[0];
+		uint8_t rx_len    = rx_buffer[1];
 
         // parse header
-        next_expected_sequence_number = (rx_packet->header >> 2) & 1;
-        sequence_number = (rx_packet->header >> 3) & 1;
+        next_expected_sequence_number = (rx_header >> 2) & 1;
+        sequence_number = (rx_header >> 3) & 1;
         // more_data = (rx_packet->header >> 4) & 1;
 
         // update state
@@ -717,11 +724,13 @@ static void radio_on_rx_done(void ){
         // update operating state
         SX1280AutoTxWillStart();
 
+		radio_fetch_rx_pdu();
+
         // set anchor on first packet in connection event
         if (ctx.packet_nr_in_connection_event == 0){
 
             // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 35 us
-            uint16_t timestamp_delay = (10 + rx_packet->len) * 8 - 35;
+            uint16_t timestamp_delay = (10 + rx_len) * 8 - 35;
             uint16_t packet_start_ticks = packet_end_ticks - US_TO_TICKS(timestamp_delay);
 
             ctx.anchor_ticks = packet_start_ticks;
@@ -732,7 +741,7 @@ static void radio_on_rx_done(void ){
 
         ctx.packet_nr_in_connection_event++;
 
-        printf("RX %02x\n", rx_packet->header);
+        printf("RX %02x\n", rx_header);
     }
 }
 
