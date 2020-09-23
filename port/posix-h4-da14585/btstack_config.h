@@ -26,6 +26,10 @@
 // work around bug in Controller ACL fragmentation
 #define ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
 
+// work around bug in Controller
+#define ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE
+
+
 // BTstack configuration. buffers, sizes, ...
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)

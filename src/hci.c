@@ -3855,6 +3855,19 @@ static bool hci_run_general_gap_le(void){
 				sm_key_t peer_irk;
 				le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
 				if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+
+#ifdef ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE
+				// trigger whitelist entry 'update' (work around for controller bug)
+				btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+				while (btstack_linked_list_iterator_has_next(&lit)) {
+					whitelist_entry_t *entry = (whitelist_entry_t *) btstack_linked_list_iterator_next(&lit);
+					if (entry->address_type != peer_identity_addr_type) continue;
+					if (memcmp(entry->address, peer_identity_addreses, 6) != 0) continue;
+					log_info("trigger whitelist update %s", bd_addr_to_str(peer_identity_addreses));
+					entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER;
+				}
+#endif
+
 				hci_send_cmd(&hci_le_remove_device_from_resolving_list, peer_identity_addr_type, peer_identity_addreses);
 				return true;
 			}
