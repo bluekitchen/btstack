@@ -24,6 +24,8 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 	tlv_posix \
+	security_manager_sc \
+
 # not testing anything in source tree
 #	maths \
 # no unit tests
@@ -42,6 +44,7 @@ SUBDIRS_BLE = \
 	linked_list \
 	ring_buffer \
 	security_manager \
+	security_manager_sc \
 #	tlv_posix \
 
 # test fails

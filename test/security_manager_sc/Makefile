@@ -91,20 +91,9 @@ myclean:
 	rm -f  *.o
 	rm -rf *.dSYM
 	rm -f *.gcno *.gcda
-	
+	rm -rf SM_*
+
 clean: myclean
 
 test: sm_test
-	./sm_test
-
-coverage: sm_test
-	# delete trace data
-	# find . -name "*.gcda" -type f -delete
-	# run tests
-	#./sm_test
-	# collect traces
-	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-sm-sc.info
-	# strip path prefix such that paths start with 'btstack'
-	sed -i.bak -e 's|/Users/mringwal/buildbot-worker/test-develop/build|btstack|' coverage-sm-sc.info
-	# generate html output
-	genhtml coverage-sm-sc.info --branch-coverage --output-directory coverage-sm-sc
+	python3 ./sm_test.py
