@@ -11,6 +11,7 @@ blacklist = [
     '/opt/local',
     '3rd-party/yxml',
     '3rd-party/tinydir',
+    'chipset/zephyr',
     'platform/embedded/btstack_audio_embedded.c',
     'platform/embedded/btstack_em9304_spi_embedded.c',
     'platform/libusb',
