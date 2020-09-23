@@ -148,7 +148,7 @@ class Node:
         self.p.terminate()
 
 def run(test_descriptor, nodes):
-    state = 'W4_SLAVE_BD_ADDR'
+    state = 'W4_SLAVE_OOB_RANDOM'
     pairing_complete = []
     while True:
         # create map fd -> node
@@ -170,9 +170,16 @@ def run(test_descriptor, nodes):
                     addr = line.split(': ')[1]
                     node.set_bd_addr(addr)
                     print('%s started' % node.get_name())
-                    if state == 'W4_SLAVE_BD_ADDR':
+                elif line.startswith('LOCAL_OOB_CONFIRM:'):
+                    confirm = line.split('OOB_CONFIRM: ')[1]
+                    test_descriptor[node.get_name()+'_oob_confirm'] = confirm
+                elif line.startswith('LOCAL_OOB_RANDOM:'):
+                    random = line.split('OOB_RANDOM: ')[1]
+                    test_descriptor[node.get_name()+'_oob_random'] = random
+                    print('%s OOB Random: %s' % (node.get_name(), random))
+                    if state == 'W4_SLAVE_OOB_RANDOM':
                         # peripheral started, start central
-                        state = 'W4_MASTER_BD_ADDR'
+                        state = 'W4_MASTER_OOB_RANDOM'
                         master_role = test_descriptor['master_role']
                         master = Node()
                         # configure master
@@ -193,17 +200,11 @@ def run(test_descriptor, nodes):
                         else:
                             iut_node = master
                             tester_node = node
-                    elif state == 'W4_MASTER_BD_ADDR':
+                    elif state == 'W4_MASTER_OOB_RANDOM':
                         # central started, start connecting
                         node.write('c')
                         print('start to connect')
                         state = 'W4_CONNECTED'
-                elif line.startswith('LOCAL_OOB_CONFIRM:'):
-                    confirm = line.split('OOB_CONFIRM: ')[1]
-                    test_descriptor[node.get_name()+'_oob_confirm'] = confirm
-                elif line.startswith('LOCAL_OOB_RANDOM:'):
-                    random = line.split('OOB_RANDOM: ')[1]
-                    test_descriptor[node.get_name()+'_oob_random'] = random
                 elif line.startswith('CONNECTED:'):
                     print('%s connected' % node.get_name())
                     if state == 'W4_CONNECTED' and node == nodes[1]:
