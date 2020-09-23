@@ -3801,19 +3801,20 @@ static bool hci_run_general_gap_le(void){
         btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
         while (btstack_linked_list_iterator_has_next(&lit)){
             whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
+			if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
+				entry->state &= ~LE_WHITELIST_REMOVE_FROM_CONTROLLER;
+				hci_send_cmd(&hci_le_remove_device_from_white_list, entry->address_type, entry->address);
+				return true;
+			}
             if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
-                entry->state = LE_WHITELIST_ON_CONTROLLER;
+				entry->state &= ~LE_WHITELIST_ADD_TO_CONTROLLER;
+                entry->state |= LE_WHITELIST_ON_CONTROLLER;
                 hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
                 return true;
             }
-            if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
-                bd_addr_t address;
-                bd_addr_type_t address_type = entry->address_type;
-                (void)memcpy(address, entry->address, 6);
-                btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
-                btstack_memory_whitelist_entry_free(entry);
-                hci_send_cmd(&hci_le_remove_device_from_white_list, address_type, address);
-                return true;
+            if ((entry->state & LE_WHITELIST_ON_CONTROLLER) == 0){
+				btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
+				btstack_memory_whitelist_entry_free(entry);
             }
         }
     }
