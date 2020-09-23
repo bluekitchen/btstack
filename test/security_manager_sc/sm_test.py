@@ -137,6 +137,7 @@ class Node:
         self.peer_addr = addr
 
     def write(self, string):
+        print("CMD -> %s: %s" % (self.name, string))
         self.stdin.write(string.encode('utf-8'))
 
     def terminate(self):
