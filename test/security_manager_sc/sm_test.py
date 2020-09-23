@@ -346,13 +346,13 @@ def write_config(fout, test_descriptor):
 def run_test(test_descriptor):
     # shutdown previous sm_test instances
     try:
-        subprocess.call("killall sm_test", shell = True)
+        subprocess.run(['killall', 'sm_test'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except:
         pass
 
     # trash all bonding informatino
     try:
-        subprocess.call("rm /tmp/btstack_*", shell = True)
+        subprocess.call(['rm', '-f', '/tmp/btstack_*'])
     except:
         pass
 
