@@ -120,8 +120,8 @@ coverage: test-coverage test-coverage-ble
 	./coverage_subset_bat.py coverage-pts.info coverage-pts-bat.info
 
 	# generate html output
-	genhtml coverage-unit.info     --branch-coverage --demangle-cpp --output-directory coverage-unit
-	genhtml coverage-unit-bat.info --branch-coverage --demangle-cpp --output-directory coverage-unit-bat
-	genhtml coverage-bat.info      --branch-coverage --demangle-cpp --output-directory coverage-bat
-	genhtml coverage.info          --branch-coverage --demangle-cpp --output-directory coverage
-	genhtml coverage-pts-bat.info  --branch-coverage --demangle-cpp --output-directory coverage-pts-bat
+	genhtml coverage-unit.info     --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit
+	genhtml coverage-unit-bat.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit-bat
+	genhtml coverage-bat.info      --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-bat
+	genhtml coverage.info          --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage
+	genhtml coverage-pts-bat.info  --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-pts-bat

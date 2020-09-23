@@ -1,0 +1,3 @@
+# Coverage rate limits
+genhtml_med_limit = 50
+genhtml_hi_limit  = 80
