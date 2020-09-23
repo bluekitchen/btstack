@@ -96,4 +96,5 @@ myclean:
 clean: myclean
 
 test: sm_test
+	rm -rf SM_*
 	python3 ./sm_test.py
