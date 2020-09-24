@@ -150,6 +150,28 @@ TEST(LE_DEVICE_DB_TLV, AddOTwoRemoveOne){
     MEMCMP_EQUAL(addr_bb, addr, 6);
 }
 
+TEST(LE_DEVICE_DB_TLV, AddOTwoRemoveThree){
+	int index_a = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index_a >= 0);
+    int index_b = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_bb, sm_key_bb);
+    CHECK_TRUE(index_b >= 0);
+    CHECK_EQUAL(2, le_device_db_count());
+
+    le_device_db_remove((uint16_t) index_a);
+    CHECK_EQUAL(1, le_device_db_count());
+    le_device_db_remove((uint16_t) index_b);
+    CHECK_EQUAL(0, le_device_db_count());
+    le_device_db_remove((uint16_t) index_b);
+    CHECK_EQUAL(0, le_device_db_count());
+}
+
+TEST(LE_DEVICE_DB_TLV, RemoveOneFromEmpty){
+	CHECK_EQUAL(0, le_device_db_count());
+
+    le_device_db_remove(0);
+    CHECK_EQUAL(0, le_device_db_count());
+}
+
 TEST(LE_DEVICE_DB_TLV, AddTwoRemoveOneAddOne){
     int index_a = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
     CHECK_TRUE(index_a >= 0);
@@ -167,16 +189,16 @@ TEST(LE_DEVICE_DB_TLV, AddTwoRemoveOneAddOne){
     MEMCMP_EQUAL(addr_cc, addr, 6);
 }
 
-TEST(LE_DEVICE_DB_TLV, le_device_db_add){
-	uint8_t i;
-	
-	for (i=0; i < NVM_NUM_DEVICE_DB_ENTRIES; i++){
-		init_addr_and_key(i);
-	    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr, sm_key);
-	    CHECK_TRUE(index >= 0);
-	    CHECK_EQUAL(i+1, le_device_db_count());
-	}
+TEST(LE_DEVICE_DB_TLV, AddExisting){
+	int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index >= 0);
+    CHECK_EQUAL(1, le_device_db_count());
+
+    index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index >= 0);
+    CHECK_EQUAL(1, le_device_db_count());
 }
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
