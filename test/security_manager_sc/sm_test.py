@@ -357,7 +357,7 @@ def run_test(test_descriptor):
         pass
 
     test_name = test_descriptor['name']
-    print('Test: %s' % test_name)
+    print('Test: %s' % test_name,  file=sys.stderr)
 
     if '/SLA/' in test_descriptor['name']:
         iut_role    = 'responder'
