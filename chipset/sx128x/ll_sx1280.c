@@ -524,6 +524,11 @@ static void radio_set_timer_ticks(uint32_t anchor_offset_ticks){
     hal_timer_start(timeout_ticks);
 }
 
+static void ctx_set_conn_interval(uint16_t conn_interval_1250us){
+	ctx.conn_interval_1250us = conn_interval_1250us;
+	ctx.conn_interval_us     = conn_interval_1250us * 1250;
+}
+
 static void ll_terminate(void){
     ll_state = LL_STATE_STANDBY;
     ctx.conn_param_update_pending = false;
@@ -577,7 +582,7 @@ static void radio_timer_handler(void){
             }
 
             if (ctx.conn_param_update_pending && ((ctx.conn_param_update_instant) == ctx.connection_event) ) {
-                ctx.conn_interval_us        = ctx.conn_param_update_interval_1250us * 1250;
+            	ctx_set_conn_interval(ctx.conn_param_update_interval_1250us);
                 ctx.conn_latency            = ctx.conn_param_update_latency;
                 ctx.supervision_timeout_us  = ctx.conn_param_update_timeout_us;
                 ctx.conn_param_update_pending = false;
@@ -886,15 +891,15 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     // get params for HCI event
     const uint8_t * ll_data = &rx_packet->payload[12];
 
-    ctx.aa                       = little_endian_read_32(ll_data, 0);
-    uint8_t crc_init_0           = ll_data[4];
-    uint8_t crc_init_1           = ll_data[5];
-    uint8_t crc_init_2           = ll_data[6];
-    uint8_t win_size             = ll_data[7];
-    uint16_t win_offset          = little_endian_read_16(ll_data, 8);
-    ctx.conn_interval_1250us     = little_endian_read_16(ll_data, 10);
-    ctx.conn_latency             = little_endian_read_16(ll_data, 12);
-    ctx.supervision_timeout_10ms = little_endian_read_16(ll_data, 14);
+    ctx.aa                        = little_endian_read_32(ll_data, 0);
+    uint8_t crc_init_0            = ll_data[4];
+    uint8_t crc_init_1            = ll_data[5];
+    uint8_t crc_init_2            = ll_data[6];
+    uint8_t win_size              = ll_data[7];
+    uint16_t win_offset           = little_endian_read_16(ll_data, 8);
+    uint16_t conn_interval_1250us = little_endian_read_16(ll_data, 10);
+    ctx.conn_latency              = little_endian_read_16(ll_data, 12);
+    ctx.supervision_timeout_10ms  = little_endian_read_16(ll_data, 14);
     const uint8_t * channel_map = &ll_data[16];
     uint8_t hop = ll_data[21] & 0x1f;
     uint8_t sca = ll_data[21] >> 5;
@@ -903,8 +908,9 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     UNUSED(win_offset);
     UNUSED(win_size);
 
+	ctx_set_conn_interval(conn_interval_1250us);
+
     // convert to us
-    ctx.conn_interval_us = ctx.conn_interval_1250us * 1250;
     ctx.supervision_timeout_us  = ctx.supervision_timeout_10ms  * 10000;
     ctx.connection_event = 0;
     ctx.packet_nr_in_connection_event = 0;
