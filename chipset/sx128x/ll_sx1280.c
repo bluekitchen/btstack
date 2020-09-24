@@ -271,6 +271,9 @@ static struct {
     // start of current connection event
     volatile uint16_t anchor_ticks;
 
+	// latest time to send tx packet before sync hop
+	volatile uint16_t conn_latest_tx_ticks;
+
 	// timeout for sync relative to anchor
 	volatile uint16_t conn_sync_hop_ticks;
 
@@ -533,6 +536,10 @@ static void ctx_set_conn_interval(uint16_t conn_interval_1250us){
 	ctx.conn_interval_us     = ctx.conn_interval_1250us * 1250;
 	ctx.conn_interval_ticks  = US_TO_TICKS(ctx.conn_interval_us);
 	ctx.conn_sync_hop_ticks  = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
+
+	// latest time to send a packet before getting ready for next cnonection event
+	uint16_t max_packet_time_incl_ifs_us = 500;
+	ctx.conn_latest_tx_ticks = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US - max_packet_time_incl_ifs_us);
 }
 
 static void ll_terminate(void){
@@ -726,12 +733,11 @@ static void radio_on_rx_done(void ){
         ctx.time_without_any_packets_us = 0;
 
         // check clock if we can sent a full packet before sync hop
-        int16_t event_time = packet_end_ticks - ctx.anchor_ticks;
-        uint16_t max_packet_time_incl_ifs_us = 500;
-        if (event_time > (ctx.conn_interval_us - SYNC_HOP_DELAY_US - max_packet_time_incl_ifs_us)){
+		int16_t now_ticks = packet_end_ticks - ctx.anchor_ticks;
+        if (now_ticks > ctx.conn_latest_tx_ticks){
             // abort sending of next packet / AutoTx
             Radio.SetFs();
-            printf("Close to Sync hop\n");
+            printf("Close before Sync hop\n");
 
             // get rx pdu
 			radio_fetch_rx_pdu();
