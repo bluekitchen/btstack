@@ -87,8 +87,7 @@ test-ble:
 
 coverage-pts.info:
 	# download pts coverage and fix paths
-	export BTSTACK_ROOT=`realpath ..`
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed "s|/Users/mringwal/buildbot-worker/auto-pts/btstack|${BTSTACK_ROOT}|" > coverage-pts.info
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed "s|/Users/mringwal/buildbot-worker/auto-pts/btstack|`realpath ..`|" > coverage-pts.info
 
 
 coverage-unit.info: subdirs
