@@ -1433,7 +1433,9 @@ uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t *
 }
 
 #ifdef ENABLE_BTP
+// start of auto-PTS testing code, not used in production
 
+// LCOV_EXCL_START
 #include "btp.h"
 
 static uint8_t btp_permissions_for_flags(uint16_t flags){
@@ -1563,4 +1565,5 @@ uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t
     }
     return pos;
 }
+// LCOV_EXCL_STOP
 #endif
