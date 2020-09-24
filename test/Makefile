@@ -24,15 +24,16 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 	tlv_posix \
-	security_manager_sc \
 
 # not testing anything in source tree
 #	maths \
 # no unit tests
 #	embedded \
 #	gatt_server \
-
-# flash_tlv also contains btstack_linked_key_db tests
+# mixes classic with ble
+#    flash_tlv - contains btstack_linked_key_db tests
+# hangs on buildbot (no output for 20 minutes -> abort)
+#	security_manager_sc
 
 SUBDIRS_BLE = \
 	att_db \
@@ -44,8 +45,6 @@ SUBDIRS_BLE = \
 	linked_list \
 	ring_buffer \
 	security_manager \
-	security_manager_sc \
-#	tlv_posix \
 
 # test fails
 
