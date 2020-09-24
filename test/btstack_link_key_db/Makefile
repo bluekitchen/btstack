@@ -11,7 +11,7 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src \
 		  -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 

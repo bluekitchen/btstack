@@ -9,7 +9,7 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
+CFLAGS += -fprofile-arcs -ftest-coverage
 
 LDFLAGS += -lCppUTest -lCppUTestExt 
 

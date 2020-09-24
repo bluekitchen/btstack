@@ -38,7 +38,7 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \
 	-I$(BTSTACK_ROOT)/3rd-party/rijndael \
 
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 
 CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 

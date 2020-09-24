@@ -43,7 +43,7 @@ SM += \
 
 CFLAGS += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 CFLAGS += -D ENABLE_TESTING_SUPPORT
-
+CFLAGS += -DCOVERAGE
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
@@ -62,8 +62,8 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 # coverage
-CFLAGS  += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined -DCOVERAGE
-LDFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS  += -fprofile-arcs -ftest-coverage
+LDFLAGS += -fprofile-arcs -ftest-coverage
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)

@@ -5,7 +5,7 @@ CC = g++
 BTSTACK_ROOT =  ../..
 
 CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src

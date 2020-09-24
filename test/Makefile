@@ -46,7 +46,7 @@ SUBDIRS_BLE = \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
-	security_manager \
+    security_manager \
 
 # test fails
 

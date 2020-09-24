@@ -25,7 +25,7 @@ CFLAGS  = \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/posix \
 
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 TESTS = tlv_test
