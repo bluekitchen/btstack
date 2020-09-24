@@ -293,7 +293,7 @@ static struct {
     volatile uint16_t conn_param_update_instant;
     volatile uint8_t  conn_param_update_win_size;
     volatile uint16_t conn_param_update_win_offset;
-    volatile uint32_t conn_param_update_interval_us;
+    volatile uint16_t conn_param_update_interval_1250us;
     volatile uint16_t conn_param_update_latency;
     volatile uint32_t conn_param_update_timeout_us;
 
@@ -577,7 +577,7 @@ static void radio_timer_handler(void){
             }
 
             if (ctx.conn_param_update_pending && ((ctx.conn_param_update_instant) == ctx.connection_event) ) {
-                ctx.conn_interval_us        = ctx.conn_param_update_interval_us;
+                ctx.conn_interval_us        = ctx.conn_param_update_interval_1250us * 1250;
                 ctx.conn_latency            = ctx.conn_param_update_latency;
                 ctx.supervision_timeout_us  = ctx.conn_param_update_timeout_us;
                 ctx.conn_param_update_pending = false;
@@ -987,15 +987,15 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             ctx.channel_map_update_pending   = true;
             break;
         case PDU_DATA_LLCTRL_TYPE_CONN_UPDATE_IND:
-            ctx.conn_param_update_win_size    = tx_packet->payload[1];
-            ctx.conn_param_update_win_offset  = little_endian_read_16(rx_packet->payload, 2);
-            ctx.conn_param_update_interval_us = little_endian_read_16(rx_packet->payload, 4) * 1250;
-            ctx.conn_param_update_latency     = little_endian_read_16(rx_packet->payload, 6);
-            ctx.conn_param_update_timeout_us  = little_endian_read_16(rx_packet->payload, 8) * 10000;
-            ctx.conn_param_update_instant     = little_endian_read_16(rx_packet->payload, 10);
-            ctx.conn_param_update_pending     = true;
-            log_info("PDU_DATA_LLCTRL_TYPE_CONN_UPDATE_IND, conn interval %u us at instant %u",
-                     (unsigned int) ctx.conn_param_update_interval_us, ctx.conn_param_update_instant);
+            ctx.conn_param_update_win_size        = tx_packet->payload[1];
+            ctx.conn_param_update_win_offset      = little_endian_read_16(rx_packet->payload, 2);
+            ctx.conn_param_update_interval_1250us = little_endian_read_16(rx_packet->payload, 4);
+            ctx.conn_param_update_latency         = little_endian_read_16(rx_packet->payload, 6);
+            ctx.conn_param_update_timeout_us      = little_endian_read_16(rx_packet->payload, 8) * 10000;
+            ctx.conn_param_update_instant         = little_endian_read_16(rx_packet->payload, 10);
+            ctx.conn_param_update_pending         = true;
+            log_info("PDU_DATA_LLCTRL_TYPE_CONN_UPDATE_IND, conn interval %u 1250us at instant %u",
+                     (unsigned int) ctx.conn_param_update_interval_1250us, ctx.conn_param_update_instant);
             break;
         case PDU_DATA_LLCTRL_TYPE_TERMINATE_IND:
             printf("Terminate!\n");
