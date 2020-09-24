@@ -93,6 +93,10 @@ coverage-pts.info:
 	# download pts coverage and fix paths
 	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-pts.info | sed "s|/Users/mringwal/buildbot-worker/auto-pts/btstack|`realpath ..`|" > coverage-pts.info
 
+coverage-sm-sc.info:
+	# download pts coverage and fix paths
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/auto-pts/btstack|`realpath ..`|" > coverage-sm-sc.info
+
 
 coverage-unit.info: subdirs
 	# delete trace data
@@ -115,19 +119,19 @@ coverage-unit-ble.info: subdirs
 	python3 coverage_demangle.py coverage-unit-ble.info
 
 
-coverage-ble.info: coverage-pts.info coverage-unit-ble.info
+coverage-ble.info: coverage-pts.info coverage-sm-sc.info coverage-unit-ble.info
 	# combine unit-ble and pts
-	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit-ble.info --output-file coverage-ble.info
+	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-sm-sc.info -a coverage-unit-ble.info --output-file coverage-ble.info
 
 
 coverage-bat.info: coverage-ble.info
 	# create bat subset from ble subset
-	./coverage_subset_bat.py coverage-ble.info      coverage-bat.info
+	./coverage_subset_bat.py coverage-ble.info coverage-bat.info
 
 
-coverage.info: coverage-pts.info coverage-unit.info
+coverage.info: coverage-pts.info coverage-sm-sc.info coverage-unit.info
 	# combine unit-ble and pts
-	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-unit.info --output-file coverage.info
+	lcov --rc lcov_branch_coverage=1 -a coverage-pts.info -a coverage-sm-sc.info -a coverage-unit.info --output-file coverage.info
 
 
 coverage-all: coverage.info
