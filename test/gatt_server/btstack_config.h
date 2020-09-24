@@ -10,6 +10,7 @@
 #define HAVE_POSIX_TIME
 #define HAVE_POSIX_FILE_IO
 #define HAVE_BTSTACK_STDIN
+#define HAVE_ASSERT
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
@@ -26,6 +27,7 @@
 #define ENABLE_SDP_EXTRA_QUERIES
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 #define ENABLE_ATT_DELAYED_RESPONSE
+#define ENABLE_SOFTWARE_AES128
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52

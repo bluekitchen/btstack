@@ -11,12 +11,13 @@ SUBDIRS =  \
 	crypto \
 	des_iterator \
 	flash_tlv \
-	gatt_client \
 	gap \
+	gatt_client \
+	gatt_server \
 	hfp \
 	hid_parser \
-	linked_list \
 	le_device_db_tlv \
+	linked_list \
 	map_test \
 	mesh \
 	obex \
@@ -40,12 +41,13 @@ SUBDIRS_BLE = \
 	att_db \
 	ble_client \
 	crypto \
-	gatt_client \
 	gap \
+	gatt_client \
 	hid_parser \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
+    gatt_server \
     security_manager \
 
 # test fails

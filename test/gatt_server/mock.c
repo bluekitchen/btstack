@@ -11,6 +11,8 @@
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 
+#include "btstack_debug.h"
+
 static btstack_packet_handler_t att_packet_handler;
 static void (*registered_hci_event_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
@@ -69,6 +71,22 @@ static void att_init_connection(att_connection_t * att_connection){
 
 int hci_can_send_acl_le_packet_now(void){
 	return 1;
+}
+
+int hci_can_send_command_packet_now(void){
+	return 1;
+}
+
+HCI_STATE hci_get_state(void){
+	return HCI_STATE_WORKING;
+}
+
+int hci_send_cmd(const hci_cmd_t *cmd, ...){
+	btstack_assert(false);
+	return 0;
+}
+
+void hci_halting_defer(void){
 }
 
 int  l2cap_can_send_connectionless_packet_now(void){
