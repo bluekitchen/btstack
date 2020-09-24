@@ -733,11 +733,11 @@ static void radio_on_rx_done(void ){
         ctx.time_without_any_packets_us = 0;
 
         // check clock if we can sent a full packet before sync hop
-		int16_t now_ticks = packet_end_ticks - ctx.anchor_ticks;
-        if (now_ticks > ctx.conn_latest_tx_ticks){
+        int16_t now_ticks = packet_end_ticks - ctx.anchor_ticks;
+        if (ctx.synced && (now_ticks > ctx.conn_latest_tx_ticks)){
             // abort sending of next packet / AutoTx
             Radio.SetFs();
-            printf("Close before Sync hop\n");
+            printf("Close before Sync hop: now %u > %u\n", now_ticks, ctx.conn_latest_tx_ticks);
 
             // get rx pdu
 			radio_fetch_rx_pdu();
