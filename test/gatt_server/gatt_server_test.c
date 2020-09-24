@@ -51,10 +51,13 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 
 
-TEST_GROUP(ATT_SERVER){
+TEST_GROUP(ATT_SERVER){ 
+    uint16_t att_con_handle;
 
     void setup(void){
-                // init att db util and add a service and characteristic
+        att_con_handle = 0x00;
+        
+        // init att db util and add a service and characteristic
         att_db_util_init();
         // 0x180F
         att_db_util_add_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
@@ -132,19 +135,52 @@ TEST(ATT_SERVER, att_server_indicate){
 
     // L2CAP cannot send
     l2cap_can_send_fixed_channel_packet_now_set_status(0);
-    status = att_server_indicate(0x00, value_handle, &value[0], 0);
+    status = att_server_indicate(att_con_handle, value_handle, &value[0], 0);
     CHECK_EQUAL(BTSTACK_ACL_BUFFERS_FULL, status);
     l2cap_can_send_fixed_channel_packet_now_set_status(1);
 
     // correct command
-    status = att_server_indicate(0x00, value_handle, &value[0], 0);
+    status = att_server_indicate(att_con_handle, value_handle, &value[0], 0);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 
     // already in progress
-    status = att_server_indicate(0x00, value_handle, &value[0], 0);
+    status = att_server_indicate(att_con_handle, value_handle, &value[0], 0);
     CHECK_EQUAL(ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS, status);
 }
 
+TEST(ATT_SERVER, att_server_notify){
+    static uint8_t value[] = {0x55};
+    uint16_t value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(0, 0xffff, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+    uint8_t status;
+
+    // invalid conneciton handle
+    status = att_server_notify(0x50, value_handle, &value[0], 0);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+
+    // L2CAP cannot send
+    l2cap_can_send_fixed_channel_packet_now_set_status(0);
+    status = att_server_notify(att_con_handle, value_handle, &value[0], 0);
+    CHECK_EQUAL(BTSTACK_ACL_BUFFERS_FULL, status);
+    l2cap_can_send_fixed_channel_packet_now_set_status(1);
+
+    // correct command
+    status = att_server_notify(att_con_handle, value_handle, &value[0], 0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+}
+
+TEST(ATT_SERVER, att_server_get_mtu){
+    // invalid conneciton handle
+    uint8_t mtu = att_server_get_mtu(0x50);
+    CHECK_EQUAL(0, mtu);
+
+    mtu = att_server_get_mtu(att_con_handle);
+    CHECK_EQUAL(0, mtu);
+}
+
+
+TEST(ATT_SERVER, att_server_request_can_send_now_event){
+    att_server_request_can_send_now_event(0x00);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
