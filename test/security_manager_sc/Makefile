@@ -81,6 +81,8 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 %.h: %.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
+.PHONY: all coverage test
+
 all: sm_test
 
 sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} sm_test.o
@@ -98,3 +100,13 @@ clean: myclean
 test: sm_test
 	rm -rf SM_*
 	python3 ./sm_test.py
+
+coverage: sm_test
+	# delete trace data
+	find . -name "*.gcda" -type f -delete
+	# run tests
+	make test
+	# collect traces
+	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file security_manager_sc.info
+	# demangle
+	python3 ../coverage_demangle.py security_manager_sc.info
