@@ -180,6 +180,9 @@ int le_device_db_max_count(void){
 }
 
 void le_device_db_remove(int index){
+    btstack_assert(index >= 0);
+    btstack_assert(index < le_device_db_max_count());
+    
     // check if entry exists
     if (entry_map[index] == 0u) return; 
 
