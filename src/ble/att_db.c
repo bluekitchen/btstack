@@ -1405,9 +1405,14 @@ bool att_is_persistent_ccc(uint16_t handle){
 
 // att_read_callback helpers
 uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    btstack_assert(blob != NULL);
+    
     if (buffer){
-        uint16_t bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
-        (void)memcpy(buffer, &blob[offset], bytes_to_copy);
+        uint16_t bytes_to_copy = 0;
+        if (blob_size >= offset){
+            bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
+            (void)memcpy(buffer, &blob[offset], bytes_to_copy);
+        }
         return bytes_to_copy;
     } else {
         return blob_size;
@@ -1432,9 +1437,10 @@ uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t *
     return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
 }
 
-#ifdef ENABLE_BTP
-// start of auto-PTS testing code, not used in production
 
+#ifdef ENABLE_BTP
+
+// start of auto-PTS testing code, not used in production
 // LCOV_EXCL_START
 #include "btp.h"
 

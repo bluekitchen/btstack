@@ -129,8 +129,11 @@ TEST_GROUP(AttDb){
 	att_connection_t att_connection;
 	uint16_t att_request_len;
 	uint16_t att_response_len;
+	uint8_t  callback_buffer[10];
 
     void setup(void){
+    	memset(&callback_buffer, 0, sizeof(callback_buffer));
+
     	read_callback_mode = READ_CALLBACK_MODE_RETURN_ONE_BYTE;
     	memset(&att_connection, 0, sizeof(att_connection));
     	att_connection.max_mtu = 150;
@@ -171,7 +174,6 @@ TEST_GROUP(AttDb){
 		att_set_write_callback(&att_write_callback);
 	}
 };
-
 
 TEST(AttDb, MtuExchange){
 	// test some function
@@ -661,6 +663,117 @@ TEST(AttDb, handle_write_command){
 		CHECK_EQUAL(3 + sizeof(value), att_request_len);
 		att_response_len = att_handle_request(&att_connection, (uint8_t *) att_request, att_request_len, att_response);	
 		CHECK_EQUAL(0, att_response_len);
+	}
+}
+
+TEST(AttDb, att_read_callback_handle_blob){
+	{
+		const uint8_t blob[] = {0x44, 0x55};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 0, NULL, 0);
+		CHECK_EQUAL(2, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 0, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 10, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {0x55};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 0, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(1, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {0x55};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 10, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 0, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(10, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 1, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(9, blob_size);
+	}
+
+	{
+		const uint8_t blob[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA};
+		uint16_t blob_size = att_read_callback_handle_blob(blob, sizeof(blob), 10, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+}
+	
+TEST(AttDb, att_read_callback_handle_byte){
+	{
+		uint16_t blob_size = att_read_callback_handle_byte(0x55, 0, NULL, 0);
+		CHECK_EQUAL(1, blob_size);
+	}
+
+	{
+		uint16_t blob_size = att_read_callback_handle_byte(0x55, 10, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+	
+	{
+		uint16_t blob_size = att_read_callback_handle_byte(0x55, 0, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(1, blob_size);
+	}
+}
+
+TEST(AttDb, att_read_callback_handle_little_endian_16){
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_16(0x1122, 0, NULL, 0);
+		CHECK_EQUAL(2, blob_size);
+	}
+
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_16(0x1122, 10, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+	
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_16(0x1122, 1, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(1, blob_size);
+	}
+	
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_16(0x1122, 0, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(2, blob_size);
+	}
+}
+
+TEST(AttDb, att_read_callback_handle_little_endian_32){
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_32(0x11223344, 0, NULL, 0);
+		CHECK_EQUAL(4, blob_size);
+	}
+
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_32(0x11223344, 10, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(0, blob_size);
+	}
+	
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_32(0x11223344, 3, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(1, blob_size);
+	}
+	
+	{
+		uint16_t blob_size = att_read_callback_handle_little_endian_32(0x11223344, 0, callback_buffer, sizeof(callback_buffer));
+		CHECK_EQUAL(4, blob_size);
 	}
 }
 
