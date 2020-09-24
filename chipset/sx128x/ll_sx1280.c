@@ -255,6 +255,7 @@ static struct {
     
     volatile uint16_t conn_interval_1250us;
     volatile uint32_t conn_interval_us;
+	volatile uint16_t conn_interval_ticks;
 
     volatile uint16_t conn_latency;
 
@@ -269,6 +270,9 @@ static struct {
 
     // start of current connection event
     volatile uint16_t anchor_ticks;
+
+	// timeout for sync relative to anchor
+	volatile uint16_t conn_sync_hop_ticks;
 
     // current channel
     volatile uint8_t  channel;
@@ -526,7 +530,9 @@ static void radio_set_timer_ticks(uint32_t anchor_offset_ticks){
 
 static void ctx_set_conn_interval(uint16_t conn_interval_1250us){
 	ctx.conn_interval_1250us = conn_interval_1250us;
-	ctx.conn_interval_us     = conn_interval_1250us * 1250;
+	ctx.conn_interval_us     = ctx.conn_interval_1250us * 1250;
+	ctx.conn_interval_ticks  = US_TO_TICKS(ctx.conn_interval_us);
+	ctx.conn_sync_hop_ticks  = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
 }
 
 static void ll_terminate(void){
@@ -571,7 +577,7 @@ static void radio_timer_handler(void){
 
             // prepare next connection event
             ctx.connection_event++;
-            ctx.anchor_ticks += US_TO_TICKS(ctx.conn_interval_us);
+            ctx.anchor_ticks += ctx.conn_interval_ticks;
 
             ctx.packet_nr_in_connection_event = 0;
             next_channel();
@@ -595,8 +601,7 @@ static void radio_timer_handler(void){
 
             if (ctx.synced){
                 // restart radio timer (might get overwritten by first packet)
-                uint32_t conn_interval_ticks = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
-                radio_set_timer_ticks(conn_interval_ticks);
+                radio_set_timer_ticks(ctx.conn_sync_hop_ticks);
 
                 receive_master();
             } else {
@@ -758,8 +763,7 @@ static void radio_on_rx_done(void ){
 
             ctx.anchor_ticks = packet_start_ticks;
             ctx.synced = true;
-            uint32_t sync_hop_timeout_ticks = US_TO_TICKS(ctx.conn_interval_us - SYNC_HOP_DELAY_US);
-            radio_set_timer_ticks(sync_hop_timeout_ticks);
+            radio_set_timer_ticks(ctx.conn_sync_hop_ticks);
         }
 
         ctx.packet_nr_in_connection_event++;
