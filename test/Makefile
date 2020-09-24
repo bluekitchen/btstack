@@ -16,6 +16,7 @@ SUBDIRS =  \
 	hfp \
 	hid_parser \
 	linked_list \
+	le_device_db_tlv \
 	map_test \
 	mesh \
 	obex \
@@ -42,6 +43,7 @@ SUBDIRS_BLE = \
 	gatt_client \
 	gap \
 	hid_parser \
+	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
 	security_manager \

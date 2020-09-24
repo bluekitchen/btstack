@@ -29,7 +29,7 @@ CFLAGS  = \
 CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-TESTS = tlv_test tlv_le_test
+TESTS = tlv_test
 
 all: ${TESTS}
 
@@ -38,9 +38,6 @@ clean:
 	rm -f *.gcno *.gcda
 
 tlv_test: ${COMMON_OBJ} btstack_link_key_db_tlv.o tlv_test.o  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-tlv_le_test: ${COMMON_OBJ} le_device_db_tlv.o tlv_le_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
