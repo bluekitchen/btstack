@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "btstack_debug.h"
+
 typedef uint8_t sm_key24_t[3];
 typedef uint8_t sm_key56_t[7];
 typedef uint8_t sm_key_t[16];
@@ -222,7 +224,20 @@ int test_generate(void){
 }
 
 int main(void){
-    uECC_set_rng(&test_generate_f_rng);
+	// check configuration
+	btstack_assert(uECC_curve() == uECC_secp256r1);
+	btstack_assert(uECC_bytes() == 32);
+
+	// check zero key is invalid
+	uint8_t q[uECC_BYTES * 2];
+	memset(q, 0, sizeof(q));
+	btstack_assert(uECC_valid_public_key(q) == 0);
+
+	// check key genration without rng
+	uint8_t d[uECC_BYTES];
+	btstack_assert(uECC_make_key(q, d) == 0);
+
+	uECC_set_rng(&test_generate_f_rng);
     test_set1();
     test_set2();
     test_generate();

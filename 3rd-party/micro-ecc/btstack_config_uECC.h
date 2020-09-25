@@ -7,6 +7,7 @@
 #define BTSATCK_CONFIG_UECC_H__
 
 #define uECC_CURVE uECC_secp256r1
+#define uECC_NO_DEFAULT_RNG
 
 // optimization: size vs. speed: uECC_asm_none - uECC_asm_small - uECC_asm_fast
 #ifndef uECC_ASM
