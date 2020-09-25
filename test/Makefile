@@ -152,4 +152,8 @@ coverage-unit-ble: coverage-unit-ble.info
 	# generate html output
 	genhtml coverage-unit-ble.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-unit-ble
 
+coverage-sm-sc: coverage-sm-sc.info
+	# generate html output
+	genhtml coverage-sm-sc.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-sm-sc
+
 coverage: coverage-all coverage-ble coverage-bat
