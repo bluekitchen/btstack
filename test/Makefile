@@ -14,6 +14,7 @@ SUBDIRS =  \
 	gap \
 	gatt_client \
 	gatt_server \
+	gatt_service \
 	hfp \
 	hid_parser \
 	le_device_db_tlv \
@@ -43,6 +44,7 @@ SUBDIRS_BLE = \
 	crypto \
 	gap \
 	gatt_client \
+	gatt_service \
 	hid_parser \
 	le_device_db_tlv \
 	linked_list \
