@@ -53,6 +53,7 @@
 #include "hci_cmd.h"
 
 #include "btstack_memory.h"
+#include "bluetooth_data_types.h"
 #include "hci.h"
 #include "ad_parser.h"
 #include "l2cap.h"
@@ -69,8 +70,21 @@ typedef struct ad_event {
     uint8_t * data;
 } ad_event_t;
 
-static uint8_t ad_data[] =   {0x02, 0x01, 0x05, 0x03, 0x02, 0xF0, 0xFF};
-static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
+static const uint8_t ad_data[] =    { 0x02, 0x01, 0x05, /* -- */ 0x03, 0x02, 0xF0, 0xFF};
+static const uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
+static const uint8_t adv_data[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // Name
+    0x0c, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'L', 'E', ' ', 'S', 't', 'r', 'e', 'a', 'm', 'e', 'r', 
+    // Incomplete List of 16-bit Service Class UUIDs -- FF10 - only valid for testing!
+    0x03, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x10, 0xff,
+
+    17, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS, 0x9e, 0xca, 0xdc, 0x24, 0xe, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, 0x1, 0x0, 0x40, 0x6e,
+
+    17, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS, 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, /* - */ 0x00, 0x80, /* - */ 0x00, 0x10, /* - */ 0x00, 0x00, /* - */  0x10, 0xaa, 0x00, 0x00
+};
+
 
 static uint8_t expected_bt_addr[] = {0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B};
 static uint8_t adv_multi_packet[] = {
@@ -126,7 +140,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
     adv_index++;
 }
 
-bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * data){
+bool nameHasPrefix(const char * name_prefix, uint16_t data_length, const uint8_t * data){
     ad_context_t context;
     int name_prefix_len = strlen(name_prefix);
     for (ad_iterator_init(&context, data_length, data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
@@ -201,6 +215,54 @@ TEST(ADParser, TestMalformed){
     uint8_t data2[] = { 0x00, 0x01 };
     ad_iterator_init(&context, sizeof(data2), data2);
     CHECK_EQUAL(ad_iterator_has_more(&context), 0);
+}
+
+TEST(ADParser, ad_data_contains_uuid16){
+    bool contains_uuid;
+
+    contains_uuid = ad_data_contains_uuid16(sizeof(adv_data_2), adv_data_2, 0x00);
+    CHECK(!contains_uuid);
+
+    contains_uuid = ad_data_contains_uuid16(sizeof(adv_data), adv_data, 0x00);
+    CHECK(!contains_uuid);
+
+    contains_uuid = ad_data_contains_uuid16(sizeof(adv_data), adv_data,  0xff10);
+    CHECK(contains_uuid);
+
+    contains_uuid = ad_data_contains_uuid16(sizeof(adv_data), adv_data,  0xaa10);
+    CHECK(contains_uuid);
+}
+
+TEST(ADParser, ad_data_contains_uuid128){
+    bool contains_uuid;
+    {
+        uint8_t ad_uuid128[16];
+        memset(ad_uuid128, 0, 16);
+        contains_uuid = ad_data_contains_uuid128(sizeof(adv_data_2), adv_data_2, ad_uuid128);
+        CHECK(!contains_uuid);
+
+        contains_uuid = ad_data_contains_uuid128(sizeof(adv_data), adv_data, ad_uuid128);
+        CHECK(!contains_uuid);
+    }
+
+
+    {
+        uint8_t uuid128_le[] = {0x9e, 0xca, 0xdc, 0x24, 0xe, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, 0x1, 0x0, 0x40, 0x6e};
+        uint8_t ad_uuid128[16];
+        reverse_128(uuid128_le, ad_uuid128);
+
+        contains_uuid = ad_data_contains_uuid128(sizeof(adv_data), adv_data, ad_uuid128);
+        CHECK(contains_uuid);
+    }
+
+    {
+        uint8_t uuid128_le[] = {0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x10, 0xaa, 0x00, 0x00};
+        uint8_t ad_uuid128[16];
+        reverse_128(uuid128_le, ad_uuid128);
+
+        contains_uuid = ad_data_contains_uuid128(sizeof(adv_data), adv_data, ad_uuid128);
+        CHECK(contains_uuid);
+    }
 }
 
 int main (int argc, const char * argv[]){

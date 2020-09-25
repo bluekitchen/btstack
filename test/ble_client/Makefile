@@ -6,7 +6,7 @@ BTSTACK_ROOT =  ../..
 
 CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS += -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
+LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
 VPATH += ${BTSTACK_ROOT}/src
@@ -26,16 +26,16 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: ad_parser
+all: ad_parser_test
 
-ad_parser: ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c ${CFLAGS} ${LDFLAGS} -o $@
+ad_parser_test: ${CORE_OBJ} ${COMMON_OBJ} ad_parser_test.c
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser_test.c ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./ad_parser
+	./ad_parser_test
 
 clean:
-	rm -f  ad_parser le_central
+	rm -f  ad_parser_test
 	rm -f  *.o
 	rm -rf *.dSYM
 	rm -f *.gcno *.gcda
