@@ -53,6 +53,7 @@
 #include "ble/att_server.h"
 #include "btstack_util.h"
 #include "bluetooth_gatt.h"
+#include "btstack_debug.h"
 
 #include "ble/gatt-service/device_information_service_server.h"
 
@@ -117,7 +118,7 @@ void device_information_service_server_init(void){
 	uint16_t start_handle;
 	uint16_t end_handle;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION, &start_handle, &end_handle);
-	if (!service_found) return;
+	btstack_assert(service_found);
 
 	// set length for fixed size characateristics
 	device_information_fields[SYSTEM_ID].data = device_information_system_id;

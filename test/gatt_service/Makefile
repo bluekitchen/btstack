@@ -39,7 +39,7 @@ COMMON = \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: battery_service_test
+all: battery_service_test device_information_service_test
 
 battery_service_profile.h: battery_service_profile.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
@@ -47,11 +47,20 @@ battery_service_profile.h: battery_service_profile.gatt
 battery_service_test: battery_service_profile.h ${COMMON_OBJ} battery_service_test.o
 	${CC} ${COMMON_OBJ} battery_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
 
+device_information_service_profile.h: device_information_service.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+device_information_service_test: device_information_service_profile.h ${COMMON_OBJ} device_information_service_test.o
+	${CC} ${COMMON_OBJ} device_information_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
+
+
 test: all
 	./battery_service_test
+	./device_information_service_test
 		
 clean:
 	rm -f  battery_service_test battery_service_profile.h
+	rm -f  device_information_service_test device_information_service_profile.h
 	rm -f  *.o
 	rm -rf *.dSYM
 	rm -f *.gcno *.gcda

@@ -28,6 +28,7 @@ static uint8_t battery_level = 100;
 
 TEST_GROUP(BATTERY_SERVICE_SERVER){ 
     att_service_handler_t * service; 
+    uint16_t con_handle;
     uint16_t battery_value_handle_value;
     uint16_t battery_value_handle_client_configuration;
 
@@ -41,6 +42,7 @@ TEST_GROUP(BATTERY_SERVICE_SERVER){
         battery_service_server_init(battery_level);
 
         service = mock_att_server_get_service();
+        con_handle = 0x00;
     }
 
     void teardown(){
@@ -55,14 +57,14 @@ TEST(BATTERY_SERVICE_SERVER, lookup_attribute_handles){
 
 TEST(BATTERY_SERVICE_SERVER, set_battery_value){
     // battery_value_handle_client_configuration not set
-    mock().expectNCalls(0, "att_server_register_can_send_now_callback");
+    mock().expectNCalls(con_handle, "att_server_register_can_send_now_callback");
     battery_service_server_set_battery_value(60);
     mock().checkExpectations();
 
     // battery_value_handle_client_configuration set
     mock().expectOneCall("att_server_register_can_send_now_callback");
     const uint8_t enable_notify[]= { 0x1, 0x0 };
-    mock_att_service_write_callback(0, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
+    mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
     battery_service_server_set_battery_value(60);
     mock().checkExpectations();
 }
@@ -72,13 +74,13 @@ TEST(BATTERY_SERVICE_SERVER, read_battery_value){
     uint16_t response_len;
 
     // invalid attribute handle
-    response_len = mock_att_service_read_callback(0, 0xffff, 0xffff, response, sizeof(response));
+    response_len = mock_att_service_read_callback(con_handle, 0xffff, 0xffff, response, sizeof(response));
     CHECK_EQUAL(0, response_len);
 
-    response_len = mock_att_service_read_callback(0, battery_value_handle_value, 0, response, sizeof(response));
+    response_len = mock_att_service_read_callback(con_handle, battery_value_handle_value, 0, response, sizeof(response));
     CHECK_EQUAL(1, response_len);
 
-    response_len = mock_att_service_read_callback(0, battery_value_handle_client_configuration, 0, response, sizeof(response));
+    response_len = mock_att_service_read_callback(con_handle, battery_value_handle_client_configuration, 0, response, sizeof(response));
     CHECK_EQUAL(2, response_len);
 }
 
