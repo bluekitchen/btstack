@@ -117,7 +117,7 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compile GATT database
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 
 led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 

@@ -149,13 +149,13 @@ EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 all: ${EXAMPLES}
 
 cycling_power_server_test.h: cycling_power_server_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 cycling_power_server_test: cycling_power_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} cycling_power_server_test.c
 	${CC} $(filter-out cycling_power_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 csc_server_test.h: csc_server_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 csc_server_test: csc_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} csc_server_test.c
 	${CC} $(filter-out csc_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
@@ -173,7 +173,7 @@ hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVE
 	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hrp_server_test.h: hrp_server_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
 hrp_server_test: hrp_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} heart_rate_service_server.o hrp_server_test.c
 	${CC} $(filter-out hrp_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
@@ -191,10 +191,10 @@ avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDT
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral_test.h: ble_peripheral_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 ble_central_test.h: ble_central_test.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
 ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ble_peripheral_test.o
 	${CC} $(filter-out ble_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
@@ -227,7 +227,7 @@ iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gs
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gatt_profiles.h: gatt_profiles.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@

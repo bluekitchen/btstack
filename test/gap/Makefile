@@ -31,7 +31,7 @@ all: test_le_scan
 
 # compile .ble description
 profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 test_le_scan: ${COMMON_OBJ} test_le_scan.o
 	${CC} ${COMMON_OBJ} test_le_scan.o ${CFLAGS} ${LDFLAGS} -o $@

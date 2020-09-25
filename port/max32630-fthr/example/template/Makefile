@@ -269,7 +269,7 @@ PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
 # LINKERFILE=$(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/GCC/$(TARGET_LC).ld
 
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 all: spp_and_le_streamer.h
 

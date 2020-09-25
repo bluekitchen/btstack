@@ -42,7 +42,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 all: battery_service_test
 
 battery_service_profile.h: battery_service_profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 battery_service_test: battery_service_profile.h ${COMMON_OBJ} battery_service_test.o
 	${CC} ${COMMON_OBJ} battery_service_test.o ${CFLAGS} ${LDFLAGS} -o $@

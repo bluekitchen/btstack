@@ -85,5 +85,5 @@ libopencm3/lib/libopencm3_stm32f1.a:
 
 # compile GATT database
 spp_and_gatt_counter.h: spp_and_gatt_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 

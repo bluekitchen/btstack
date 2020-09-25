@@ -33,7 +33,7 @@ all: gatt_client_test le_central
 
 # compile .ble description
 profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 gatt_client_test: profile.h ${COMMON_OBJ} gatt_client_test.o expected_results.h
 	${CC} ${COMMON_OBJ} gatt_client_test.o ${CFLAGS} ${LDFLAGS} -o $@

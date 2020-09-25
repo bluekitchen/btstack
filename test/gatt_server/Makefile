@@ -48,7 +48,7 @@ all: gatt_server_test
 
 # compile .ble description
 profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 gatt_server_test: profile.h ${COMMON_OBJ} gatt_server_test.o
 	${CC} ${COMMON_OBJ} gatt_server_test.o ${CFLAGS} ${LDFLAGS} -o $@
