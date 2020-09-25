@@ -2,6 +2,7 @@
 # Makefile to build and run all tests
 
 SUBDIRS =  \
+	ad_parser \
 	att_db \
 	avdtp \
 	avdtp_util \
@@ -39,6 +40,7 @@ SUBDIRS =  \
 #	security_manager_sc
 
 SUBDIRS_BLE = \
+	ad_parser \
 	att_db \
 	ble_client \
 	crypto \
