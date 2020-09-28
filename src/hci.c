@@ -2797,17 +2797,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
 	hci_emit_event(packet, size, 0);   // don't dump, already happened in packet handler
 
     // moved here to give upper stack a chance to close down everything with hci_connection_t intact
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE){
-        if (!packet[2]){
-            handle = little_endian_read_16(packet, 3);
-            hci_connection_t * aConn = hci_connection_for_handle(handle);
-            if (aConn) {
-                // discard connection if app did not trigger a reconnect in the event handler
-                if (aConn->state == RECEIVED_DISCONNECTION_COMPLETE){
-                    hci_shutdown_connection(aConn);
-                }
-            }
-        }
+    if ((hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE) && (packet[2] == 0)){
+		handle = little_endian_read_16(packet, 3);
+		hci_connection_t * aConn = hci_connection_for_handle(handle);
+		// discard connection if app did not trigger a reconnect in the event handler
+		if (aConn && aConn->state == RECEIVED_DISCONNECTION_COMPLETE){
+			hci_shutdown_connection(aConn);
+		}
     }
 
 	// execute main loop
