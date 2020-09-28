@@ -2135,6 +2135,96 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
     }
 }
 
+#ifdef ENABLE_BLE
+static void event_handle_le_connection_complete(const uint8_t * packet){
+	bd_addr_t addr;
+	bd_addr_type_t addr_type;
+	hci_connection_t * conn;
+
+	// Connection management
+	reverse_bd_addr(&packet[8], addr);
+	addr_type = (bd_addr_type_t)packet[7];
+	log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
+	conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+
+#ifdef ENABLE_LE_CENTRAL
+	// handle error: error is reported only to the initiator -> outgoing connection
+	if (packet[3]){
+
+		// handle cancelled outgoing connection
+		// "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
+		//  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
+		//  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
+		if (packet[3] == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
+			// whitelist connect
+			if (hci_is_le_connection_type(addr_type)){
+				hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+				hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+			}
+			// get outgoing connection conn struct for direct connect
+			conn = gap_get_outgoing_connection();
+		}
+
+		// outgoing le connection establishment is done
+		if (conn){
+			// remove entry
+			btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
+			btstack_memory_hci_connection_free( conn );
+		}
+		return;
+	}
+#endif
+
+	// on success, both hosts receive connection complete event
+	if (packet[6] == HCI_ROLE_MASTER){
+#ifdef ENABLE_LE_CENTRAL
+		// if we're master on an le connection, it was an outgoing connection and we're done with it
+		// note: no hci_connection_t object exists yet for connect with whitelist
+		if (hci_is_le_connection_type(addr_type)){
+			hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+			hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
+		}
+#endif
+	} else {
+#ifdef ENABLE_LE_PERIPHERAL
+		// if we're slave, it was an incoming connection, advertisements have stopped
+		hci_stack->le_advertisements_active = false;
+#endif
+	}
+
+	// LE connections are auto-accepted, so just create a connection if there isn't one already
+	if (!conn){
+		conn = create_connection_for_bd_addr_and_type(addr, addr_type);
+	}
+
+	// no memory, sorry.
+	if (!conn){
+		return;
+	}
+
+	conn->state = OPEN;
+	conn->role  = packet[6];
+	conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
+	conn->le_connection_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+
+#ifdef ENABLE_LE_PERIPHERAL
+	if (packet[6] == HCI_ROLE_SLAVE){
+		hci_update_advertisements_enabled_for_current_roles();
+	}
+#endif
+
+	// TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
+
+	// restart timer
+	// btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
+	// btstack_run_loop_add_timer(&conn->timeout);
+
+	log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
+
+	hci_emit_nr_connections_changed();
+}
+#endif
+
 static void event_handler(uint8_t *packet, uint16_t size){
 
     uint16_t event_length = packet[1];
@@ -2647,85 +2737,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     break;
 #endif
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    // Connection management
-                    reverse_bd_addr(&packet[8], addr);
-                    addr_type = (bd_addr_type_t)packet[7];
-                    log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
-                    conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
-
-#ifdef ENABLE_LE_CENTRAL
-                    // handle error: error is reported only to the initiator -> outgoing connection
-                    if (packet[3]){
-
-                        // handle cancelled outgoing connection
-                        // "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
-                        //  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
-                        //  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
-                        if (packet[3] == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
-                            // whitelist connect
-                            if (hci_is_le_connection_type(addr_type)){
-                                hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-                                hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-                            }
-                            // get outgoing connection conn struct for direct connect
-                            conn = gap_get_outgoing_connection();
-                        }
-
-                        // outgoing le connection establishment is done
-                        if (conn){
-                            // remove entry
-                            btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
-                            btstack_memory_hci_connection_free( conn );
-                        }
-                        break;
-                    }
-#endif
-
-                    // on success, both hosts receive connection complete event
-                    if (packet[6] == HCI_ROLE_MASTER){
-#ifdef ENABLE_LE_CENTRAL
-                        // if we're master on an le connection, it was an outgoing connection and we're done with it
-                        // note: no hci_connection_t object exists yet for connect with whitelist
-                        if (hci_is_le_connection_type(addr_type)){
-                            hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-                            hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
-                        }
-#endif
-                    } else {
-#ifdef ENABLE_LE_PERIPHERAL
-                        // if we're slave, it was an incoming connection, advertisements have stopped
-                        hci_stack->le_advertisements_active = false;
-#endif
-                    }
-                    // LE connections are auto-accepted, so just create a connection if there isn't one already
-                    if (!conn){
-                        conn = create_connection_for_bd_addr_and_type(addr, addr_type);
-                    }
-                    // no memory, sorry.
-                    if (!conn){
-                        break;
-                    }
-                    
-                    conn->state = OPEN;
-                    conn->role  = packet[6];
-                    conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    conn->le_connection_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-
-#ifdef ENABLE_LE_PERIPHERAL
-                    if (packet[6] == HCI_ROLE_SLAVE){
-                        hci_update_advertisements_enabled_for_current_roles();
-                    }
-#endif
-
-                    // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
-
-                    // restart timer
-                    // btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
-                    // btstack_run_loop_add_timer(&conn->timeout);
-                    
-                    log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
-                    
-                    hci_emit_nr_connections_changed();
+					event_handle_le_connection_complete(packet);
                     break;
 
                 // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
