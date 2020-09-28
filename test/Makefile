@@ -9,6 +9,7 @@ SUBDIRS =  \
 	base64 \
 	ble_client \
 	btstack_link_key_db \
+	btstack_memory \
 	crypto \
 	des_iterator \
 	flash_tlv \
@@ -43,6 +44,7 @@ SUBDIRS_BLE = \
 	ad_parser \
 	att_db \
 	ble_client \
+	btstack_memory \
 	crypto \
 	gap \
 	gatt_client \
