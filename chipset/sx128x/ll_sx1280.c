@@ -244,6 +244,12 @@ static const struct {
         { 2480000000, 0x73 /* 01110011 */ },
 };
 
+// tx buffer offset
+static uint8_t tx_buffer_offset[] = {
+        SX1280_TX0_OFFSET,
+        SX1280_TX1_OFFSET
+};
+
 // hopping context
 static hopping_t h;
 
@@ -325,23 +331,26 @@ static struct {
     // transmit sequence number
     volatile uint8_t transmit_sequence_number;
 
-    // num queued tx buffers
-    volatile uint8_t num_tx_queued;
-
     // num completed packets
     volatile uint8_t num_completed;
 
-    // current outgoing packet
-    ll_pdu_t * tx_pdu;
+    // rx queue
+    btstack_linked_queue_t rx_queue;
 
     // current incoming packet
     ll_pdu_t * rx_pdu;
 
-    // tx queue
+    // tx queue of outgoing pdus
     btstack_linked_queue_t tx_queue;
 
-    // rx queue
-    btstack_linked_queue_t rx_queue; 
+    // pdus transferred into controller tx buffers
+    ll_pdu_t * tx_buffer_pdu[2];
+
+    // manage tx packets on controller
+    uint8_t num_tx_pdus_on_controller;
+
+    // index of next tx buffer to send
+    uint8_t next_tx_buffer;
 
 } ctx;
 
@@ -362,7 +371,6 @@ static uint32_t ll_scan_window_us;
 static ll_pdu_t * ll_reserved_acl_buffer;
 static void (*controller_packet_handler)(uint8_t packet_type, uint8_t * packet, uint16_t size);
 
-static uint8_t empty_packet[2];
 static uint8_t ll_outgoing_hci_event[258];
 static bool ll_send_disconnected;
 static bool ll_send_connection_complete;
@@ -548,10 +556,13 @@ static void ll_terminate(void){
     ctx.channel_map_update_pending = false;
     // stop sync hop timer
     radio_stop_timer();
-    // free outgoing tx packet
-    if ((ctx.tx_pdu != NULL) && (ctx.tx_pdu != &ll_tx_packet)){
-        btstack_memory_ll_pdu_free(ctx.tx_pdu);
-        ctx.tx_pdu = NULL;
+    // free outgoing tx packets
+    uint8_t i;
+    for (i=0;i<2;i++){
+        if ((ctx.tx_buffer_pdu[i] != NULL) && (ctx.tx_buffer_pdu[i] != &ll_tx_packet)){
+            btstack_memory_ll_pdu_free(ctx.tx_buffer_pdu[i]);
+            ctx.tx_buffer_pdu[i] = NULL;
+        }
     }
     // free queued tx packets
     while (true){
@@ -566,6 +577,22 @@ static void ll_terminate(void){
     Radio.StopAutoTx();
     // notify host stack
     ll_send_disconnected = true;
+}
+
+// load queued tx pdu into next free tx buffer
+static void preload_tx_buffer(void){
+    if (ctx.num_tx_pdus_on_controller >= 2) return;
+
+    ll_pdu_t * tx_pdu = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
+    if (tx_pdu == NULL) return;
+
+	const uint16_t max_packet_len = 2 + 27;
+    uint8_t index = (ctx.next_tx_buffer + ctx.num_tx_pdus_on_controller) & 1;
+    ctx.tx_buffer_pdu[index] = tx_pdu;
+    SX1280HalWriteBuffer( tx_buffer_offset[index], (uint8_t *) &ctx.tx_buffer_pdu[index]->header, max_packet_len);
+
+    ctx.num_tx_pdus_on_controller++;
+	// printf("preload %u bytes into %u\n", ctx.tx_buffer_pdu[index]->len, index);
 }
 
 static void radio_timer_handler(void){
@@ -605,6 +632,9 @@ static void radio_timer_handler(void){
                 radio_stop_timer();
                 ctx.synced = false;
             }
+
+            // preload tx pdu
+			preload_tx_buffer();
 
             if (ctx.synced){
                 // restart radio timer (might get overwritten by first packet)
@@ -666,11 +696,12 @@ static void radio_on_tx_done(void ){
             break;
     }
     switch (ll_state){
-    	case LL_STATE_CONNECTED:
-    		radio_fetch_rx_pdu();
-    		break;
-    	default:
-    		break;
+        case LL_STATE_CONNECTED:
+            radio_fetch_rx_pdu();
+            preload_tx_buffer();
+            break;
+        default:
+            break;
     }
 }
 
@@ -695,67 +726,69 @@ static void radio_on_rx_done(void ){
 
 	} else if (ll_state == LL_STATE_CONNECTED){
 
-		bool tx_acked;
-
-		uint8_t sequence_number;
-		uint8_t next_expected_sequence_number;
-		// uint8_t more_data;
-
+		// get and parse rx pdu header
 		uint8_t rx_buffer[2];
 		SX1280HalReadBuffer( SX1280_RX0_OFFSET, rx_buffer, 2);
 		uint8_t rx_header = rx_buffer[0];
 		uint8_t rx_len    = rx_buffer[1];
-
-        // parse header
-        next_expected_sequence_number = (rx_header >> 2) & 1;
-        sequence_number = (rx_header >> 3) & 1;
-        // more_data = (rx_packet->header >> 4) & 1;
+        uint8_t next_expected_sequence_number = (rx_header >> 2) & 1;
+        uint8_t sequence_number = (rx_header >> 3) & 1;
+        // more data field not used yet
+        // uint8_t more_data = (rx_packet->header >> 4) & 1;
 
         // update state
         ctx.next_expected_sequence_number = 1 - sequence_number;
 
-        // tx packet ack'ed?
-        tx_acked = ctx.transmit_sequence_number != next_expected_sequence_number;
+        // report outgoing packet as ack'ed and free if confirmed by peer
+        bool tx_acked = ctx.transmit_sequence_number != next_expected_sequence_number;
         if (tx_acked){
-            if ((ctx.tx_pdu != NULL) && (ctx.tx_pdu != &ll_tx_packet)){
-                btstack_memory_ll_pdu_free(ctx.tx_pdu);
-                ctx.num_completed++;
-            }
-            ctx.tx_pdu = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
+            if (ctx.num_tx_pdus_on_controller > 0){
+            	btstack_assert(ctx.tx_buffer_pdu[ctx.next_tx_buffer] != NULL);
+            	// if non link-layer packet, free buffer and report as completed
+				if (ctx.tx_buffer_pdu[ctx.next_tx_buffer] != &ll_tx_packet){
+					btstack_memory_ll_pdu_free(ctx.tx_buffer_pdu[ctx.next_tx_buffer]);
+					ctx.tx_buffer_pdu[ctx.next_tx_buffer] = NULL;
+					ctx.num_completed++;
+				}
+				// next buffer
+				ctx.num_tx_pdus_on_controller--;
+				ctx.next_tx_buffer = (ctx.next_tx_buffer + 1 ) & 1;
+			}
             ctx.transmit_sequence_number = next_expected_sequence_number;
-        }
-        // refill
-        if (ctx.tx_pdu == NULL){
-            ctx.tx_pdu = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
         }
 
         // restart supervision timeout
         ctx.time_without_any_packets_us = 0;
 
-        // check clock if we can sent a full packet before sync hop
+        // check if we can sent a full packet before sync hop
         int16_t now_ticks = packet_end_ticks - ctx.anchor_ticks;
         if (ctx.synced && (now_ticks > ctx.conn_latest_tx_ticks)){
-            // abort sending of next packet / AutoTx
+            // disable AutoTX to abort sending of next packet
             Radio.SetFs();
-            printf("Close before Sync hop: now %u > %u\n", now_ticks, ctx.conn_latest_tx_ticks);
+            log_info("Close before Sync hop: now %u > %u", now_ticks, ctx.conn_latest_tx_ticks);
 
-            // get rx pdu
+            // get rx pdu and
 			radio_fetch_rx_pdu();
-
             return;
         }
 
-        // tx packet ready?
-		uint16_t max_packet_len = 2 + 27;
-        if (ctx.tx_pdu == NULL){
-            empty_packet[0] = (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | PDU_DATA_LLID_DATA_CONTINUE;
-            empty_packet[1] = 0;
-            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, empty_packet, max_packet_len );
-        } else {
-            uint8_t md = btstack_linked_queue_empty(&ctx.tx_queue) ? 0 : 1;
-            ctx.tx_pdu->header |= (md << 4) | (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2);
-            SX1280HalWriteBuffer( SX1280_TX0_OFFSET, (uint8_t *) &ctx.tx_pdu->header, max_packet_len );
-        }
+        // setup empty packet in ll buffer if no tx packet was preloaded
+		if (ctx.num_tx_pdus_on_controller == 0) {
+			ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_tx_packet;
+			ctx.num_tx_pdus_on_controller++;
+			ll_tx_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
+			ll_tx_packet.len = 0;
+		}
+
+		// setup pdu header
+		uint8_t packet_header[2];
+		uint8_t md = btstack_linked_queue_empty(&ctx.tx_queue) ? 0 : 1;
+		packet_header[0] = (md << 4) | (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | ctx.tx_buffer_pdu[ctx.next_tx_buffer]->header;
+		packet_header[1] = ctx.tx_buffer_pdu[ctx.next_tx_buffer]->len;
+
+		// select outgoing tx buffer and update pdu header
+		SX1280SetBufferBaseAddresses( tx_buffer_offset[ctx.next_tx_buffer], SX1280_RX0_OFFSET);
+		SX1280HalWriteBuffer( tx_buffer_offset[ctx.next_tx_buffer], (uint8_t *) packet_header, sizeof(packet_header));
 
         // update operating state
         SX1280AutoTxWillStart();
@@ -774,7 +807,7 @@ static void radio_on_rx_done(void ){
 
         ctx.packet_nr_in_connection_event++;
 
-        printf("RX %02x\n", rx_header);
+		printf("RX %02x -- tx buffer %u, %02x %02x\n", rx_header, ctx.next_tx_buffer, packet_header[0], packet_header[1]);
     }
 }
 
@@ -966,6 +999,9 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     uint8_t buf[2];
     big_endian_store_16(buf, 0, AUTO_RX_TX_TIME_US);
     SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+
+	// pre-load tx pdu
+	preload_tx_buffer();
 
     // get next packet
     ll_state = LL_STATE_CONNECTED;
