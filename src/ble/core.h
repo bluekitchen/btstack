@@ -39,8 +39,8 @@
 //  Core header for all BLE protocols and profiles
 // *****************************************************************************
 
-#ifndef __BLE_CORE
-#define __BLE_CORE
+#ifndef BLE_CORE_H
+#define BLE_CORE_H
 
 #include "btstack_config.h"
 
