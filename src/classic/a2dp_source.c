@@ -206,8 +206,9 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
     if (stream_endpoint_configured) return;
 
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
-    
+	avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
+
     if (connection == NULL) {
         log_info("a2dp_discover_seps_with_next_waiting_connection");
         a2dp_discover_seps_with_next_waiting_connection();
@@ -229,6 +230,7 @@ static void a2dp_source_set_config_timer_start(uint16_t avdtp_cid){
 static void a2dp_source_set_config_timer_stop(void){
     log_info("a2dp_source_set_config_timer_stop");
     btstack_run_loop_remove_timer(&a2dp_source_set_config_timer);
+	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
 }
 
 static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
