@@ -1025,6 +1025,7 @@ static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
     switch (byte){
         case ',':
+		case '-':
         case ';':
         case '(':
         case ')':
@@ -1040,6 +1041,7 @@ static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t
 static bool hfp_parser_is_separator( uint8_t byte){
     switch (byte){
         case ',':
+		case '-':
         case ';':
         case '\n':
         case '\r':

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changes September 2020
 
 ### Fixed
+- HFP: fix parsing of ranges e.g. in +CIND responses
 
 ### Added
 - `btstack_ring_buffer`: add `btstack_ring_buffer_reset` to reset it to initial state/empty
