@@ -423,6 +423,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             cid = avdtp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(packet);
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+
+            sc.local_stream_endpoint->remote_configuration_bitmap = store_bit16(sc.local_stream_endpoint->remote_configuration_bitmap, AVDTP_DELAY_REPORTING, 1);
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY);
             break;
 
