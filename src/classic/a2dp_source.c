@@ -68,7 +68,7 @@
 
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
-
+static bool sep_found_w2_set_configuration = false;
 static btstack_timer_source_t a2dp_source_set_config_timer;
 
 //
@@ -309,6 +309,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // start discover seps now if:
             // - outgoing active: signaling for outgoing connection
             // - outgoing not active: incoming connection and no sep discover ongoing
+
             log_info("outgoing_active %d, a2dp_source_cid 0x%02x, cid  0x%02x, a2dp_source_state %d", outgoing_active, a2dp_source_cid, cid, a2dp_source_state);
             if ((outgoing_active && (a2dp_source_cid == cid)) || (!outgoing_active && (a2dp_source_state == A2DP_IDLE))){
                 a2dp_start_discovering_seps(connection);
@@ -393,7 +394,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
 
                 // suitable Sink SEP found, configure SEP
-                a2dp_source_state = A2DP_SET_CONFIGURATION;
+                sep_found_w2_set_configuration = true;
                 connection->supported_codecs_bitmap |= (1 << AVDTP_CODEC_SBC);
             }
             break;
@@ -437,6 +438,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
+            if (sep_found_w2_set_configuration){
+                a2dp_source_state = A2DP_SET_CONFIGURATION;
+                sep_found_w2_set_configuration = false;
+                break;
+            }
             // endpoint was not suitable, check next one
             sc.active_remote_sep_index++;
             if (sc.active_remote_sep_index >= num_remote_seps){
