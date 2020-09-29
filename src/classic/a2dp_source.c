@@ -423,6 +423,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
             cid = avdtp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(packet);
+            log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, a2dp_source_state);
+            
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
