@@ -415,7 +415,7 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->role = role;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;
-    log_info("avrcp_create_connection, role %d, avrcp cid 0x%02x", role, connection->avrcp_cid);
+    log_info("avrcp_create_connection, role %d", role);
     (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
     return connection;

@@ -534,8 +534,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             
-            log_info("A2DP cmd %s accepted, global state %d, cid 0x%2x, local seid 0x%02x", avdtp_si2str(signal_identifier), a2dp_source_state,
-                     cid, avdtp_subevent_signaling_accept_get_local_seid(packet));
+            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), a2dp_source_state, cid);
 
             switch (a2dp_source_state){
                 case A2DP_GET_CAPABILITIES:
