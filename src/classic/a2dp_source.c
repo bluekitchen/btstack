@@ -515,14 +515,22 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
 
-            if (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) break;
+			// reset discovery timer while remote is active
+			if (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) {
+				uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(&a2dp_source_set_config_timer);
+				if ((avdtp_cid == 0) || (avdtp_cid != cid)) break;
+				log_info("Reset discovery timer");
+				a2dp_source_set_config_timer_start(avdtp_cid);
+				break;
+			}
+
+            if (a2dp_source_cid != cid) break;
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             
-            log_info("A2DP cmd %s accepted, global state %d, is_initiator %u, cid 0x%2x, local seid 0x%02x", avdtp_si2str(signal_identifier), a2dp_source_state,
-                     avdtp_subevent_signaling_accept_get_is_initiator(packet), cid, avdtp_subevent_signaling_accept_get_local_seid(packet));
+            log_info("A2DP cmd %s accepted, global state %d, cid 0x%2x, local seid 0x%02x", avdtp_si2str(signal_identifier), a2dp_source_state,
+                     cid, avdtp_subevent_signaling_accept_get_local_seid(packet));
 
             switch (a2dp_source_state){
                 case A2DP_GET_CAPABILITIES:
