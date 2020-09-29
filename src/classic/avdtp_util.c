@@ -210,6 +210,7 @@ int avdtp_pack_service_capabilities(uint8_t *buffer, int size, avdtp_capabilitie
             pos += 2;
             (void)memcpy(buffer + pos, caps.content_protection.cp_type_value,
                          caps.content_protection.cp_type_value_len);
+            pos += caps.content_protection.cp_type_value_len;
             break;
         case AVDTP_HEADER_COMPRESSION:
             buffer[pos++] = (caps.header_compression.back_ch << 7) | (caps.header_compression.media << 6) | (caps.header_compression.recovery << 5);
