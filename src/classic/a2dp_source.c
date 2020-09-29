@@ -459,19 +459,19 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
             cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
 
-            switch (a2dp_source_state){
-                case A2DP_W4_SET_CONFIGURATION:
-                    // discovery and config of remote sink sep successful
-                    stream_endpoint_configured = true;
-                    a2dp_source_set_config_timer_stop();
-
-                    a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
-                    break;
-                default:
-                    return;
+            if ((a2dp_source_cid == cid) && (a2dp_source_state == A2DP_W4_SET_CONFIGURATION)){
+				// outgoing: discovery and config of remote sink sep successful, trigger stream open
+				a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
+            } else {
+				// incoming: accept cid and wait for stream open
+				a2dp_source_cid = cid;
+				a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
             }
+
+            // config set: stop timer
+			a2dp_source_set_config_timer_stop();
+            stream_endpoint_configured = true;
 
             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
             sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
@@ -497,10 +497,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
 
-            if (outgoing_active){
-                outgoing_active = false;
-            }
-
+			outgoing_active = false;
             remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             local_seid  = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
