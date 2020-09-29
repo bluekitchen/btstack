@@ -69,51 +69,159 @@ extern "C" btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(con
 }
 // mock end
 
-
-
-static avdtp_connection_t connection;
-static avdtp_capabilities_t caps;
-
-TEST_GROUP(AvdtpUtil){
+static uint8_t sbc_codec_capabilities[] = {
+    0xFF, // (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    0xFF, //(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    2, 53
 };
 
-// typedef enum {
-//     AVDTP_SERVICE_CATEGORY_INVALID_0 = 0x00,
-//     AVDTP_MEDIA_TRANSPORT = 0X01,
-//     AVDTP_REPORTING,
-//     AVDTP_RECOVERY,
-//     AVDTP_CONTENT_PROTECTION, //4
-//     AVDTP_HEADER_COMPRESSION, //5
-//     AVDTP_MULTIPLEXING,       //6
-//     AVDTP_MEDIA_CODEC,        //7
-//     AVDTP_DELAY_REPORTING,    //8
-//     AVDTP_SERVICE_CATEGORY_INVALID_FF = 0xFF
-// } avdtp_service_category_t;
+static uint8_t packed_capabilities[] = {
+    0x01, 0x00,
+    0x07, 0x06, 0x00, 0x00, 0xff, 0xff, 0x02, 0x35,
+    0x08, 0x00 
+};
 
-TEST(AvdtpUtil, avdtp_unpack_service_capabilities_test){
-    uint8_t packet[] = {
-        0x01, 0x00,
-        0x07, 0x06, 0x00, 0x00, 0xff, 0xff, 0x02, 0x35,
-        0x08, 0x00 
-    };
-    uint8_t expected_sbc_codec_capabilities[] = {
-        0xFF, // (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-        0xFF, //(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-        2, 53
-    };
+static uint16_t configuration_bitmap = (1 << AVDTP_MEDIA_TRANSPORT) | (1 << AVDTP_MEDIA_CODEC) | (1 << AVDTP_DELAY_REPORTING);
 
-    uint16_t expected_categories = (1 << AVDTP_MEDIA_TRANSPORT) | (1 << AVDTP_MEDIA_CODEC) | (1 << AVDTP_DELAY_REPORTING);
-    CHECK_EQUAL(expected_categories, avdtp_unpack_service_capabilities(&connection, AVDTP_SI_GET_CONFIGURATION, &caps, &packet[0], sizeof(packet)));
+TEST_GROUP(AvdtpUtil){
+    avdtp_connection_t connection;
+    avdtp_capabilities_t caps;
+    avdtp_signaling_packet_t signaling_packet;
 
-    // media codec:
-    CHECK_EQUAL(AVDTP_CODEC_SBC, caps.media_codec.media_codec_type);
-    CHECK_EQUAL(4,  caps.media_codec.media_codec_information_len);
-    int i;
-    for (i = 0; i < caps.media_codec.media_codec_information_len; i++){
-        CHECK_EQUAL(expected_sbc_codec_capabilities[i], caps.media_codec.media_codec_information[i]);
+    void setup(){
+        caps.recovery.recovery_type = 0x01;                  // 0x01 = RFC2733
+        caps.recovery.maximum_recovery_window_size = 0x01;   // 0x01 to 0x18, for a Transport Packet
+        caps.recovery.maximum_number_media_packets = 0x01;
+
+        caps.content_protection.cp_type = 0x1111;
+        caps.content_protection.cp_type_value_len = AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN;
+
+        int i;
+        for (i=0; i<AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN; i++){
+            caps.content_protection.cp_type_value[i] = i;
+        }
+        
+        caps.header_compression.back_ch = 0x01;  
+        caps.header_compression.media = 0x01;    
+        caps.header_compression.recovery = 0x01;
+       
+        caps.multiplexing_mode.fragmentation = 0x11; 
+        caps.multiplexing_mode.transport_identifiers_num = 3;
+        
+        for (i=0; i<3; i++){
+            caps.multiplexing_mode.transport_session_identifiers[i] = i;   
+            caps.multiplexing_mode.tcid[i] = (i | 0x20);  
+        }
+
+        caps.media_codec.media_type = AVDTP_AUDIO;
+        caps.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+        caps.media_codec.media_codec_information_len = 4;
+        caps.media_codec.media_codec_information = sbc_codec_capabilities;
+    }
+};
+
+
+TEST(AvdtpUtil, avdtp_pack_service_capabilities_test){
+    uint8_t packet[200];
+    {
+        // 0 - packet length
+        uint8_t packed_capabilities[] = {0x00};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_SERVICE_CATEGORY_INVALID_0);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+    
+    {
+        uint8_t packed_capabilities[] = {0x00};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_MEDIA_TRANSPORT);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+
+    {
+        uint8_t packed_capabilities[] = {0x00};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_MEDIA_TRANSPORT);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+
+    {
+        uint8_t packed_capabilities[] = {0x00};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_REPORTING);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+    
+    {
+        uint8_t packed_capabilities[] = {0x03, 0x01, 0x01, 0x01};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_RECOVERY);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+    
+    {
+        uint8_t packed_capabilities[] = {0x0D, 0x0A + 2, 0x11, 0x11, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_CONTENT_PROTECTION);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+
+    {
+        uint8_t packed_capabilities[] = {0x01, 0xE0};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_HEADER_COMPRESSION);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+
+    {
+        uint8_t packed_capabilities[] = {0x07, (uint8_t)(0x11 << 7), (uint8_t)(0x00 << 7), (uint8_t)(0x20 << 7), (uint8_t)(0x01 << 7), (uint8_t)(0x21 << 7), (uint8_t)(0x02 << 7), (uint8_t)(0x22 << 7)};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_MULTIPLEXING);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+
+    {
+        uint8_t packed_capabilities[] = {0x06, 0x00, 0x00, 0xff, 0xff, 0x02, 0x35};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_MEDIA_CODEC);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
+    }
+    
+    {
+        uint8_t packed_capabilities[] = {0x00};
+        memset(packet, 0, sizeof(packet));
+        uint16_t packet_length = avdtp_pack_service_capabilities(packet, sizeof(packet), caps, AVDTP_DELAY_REPORTING);
+        CHECK_EQUAL(sizeof(packed_capabilities), packet_length);
+        MEMCMP_EQUAL(packed_capabilities, packet, packet_length);
     }
 }
 
+TEST(AvdtpUtil, avdtp_prepare_capabilities){
+    avdtp_prepare_capabilities(&signaling_packet, 0x01, configuration_bitmap, caps, AVDTP_SI_GET_ALL_CAPABILITIES);
+    MEMCMP_EQUAL(packed_capabilities, signaling_packet.command, sizeof(packed_capabilities));
+}
+
+
+TEST(AvdtpUtil, avdtp_unpack_service_capabilities_test){
+    avdtp_capabilities_t capabilities;
+
+    CHECK_EQUAL(configuration_bitmap, avdtp_unpack_service_capabilities(&connection, AVDTP_SI_GET_CONFIGURATION, &capabilities, &packed_capabilities[0], sizeof(packed_capabilities)));
+    // media codec:
+    CHECK_EQUAL(AVDTP_CODEC_SBC, capabilities.media_codec.media_codec_type);
+    CHECK_EQUAL(4,  capabilities.media_codec.media_codec_information_len);
+    MEMCMP_EQUAL(sbc_codec_capabilities, capabilities.media_codec.media_codec_information, 4);
+
+    
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
