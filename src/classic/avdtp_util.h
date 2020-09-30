@@ -69,7 +69,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
 void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uint8_t transaction_label, uint16_t service_categories, avdtp_capabilities_t capabilities, uint8_t identifier);
 int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * signaling_packet, uint8_t * out_buffer);
 
-void avdtp_signaling_emit_connection_established(uint16_t avdtp_cid, bd_addr_t addr, uint8_t status);
+void avdtp_signaling_emit_connection_established(uint16_t avdtp_cid, bd_addr_t addr, hci_con_handle_t con_handle, uint8_t status);
 
 void avdtp_signaling_emit_connection_released(uint16_t avdtp_cid);
 

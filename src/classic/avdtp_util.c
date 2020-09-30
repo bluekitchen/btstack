@@ -482,8 +482,8 @@ int avdtp_signaling_create_fragment(uint16_t cid, avdtp_signaling_packet_t * sig
 }
 
 
-void avdtp_signaling_emit_connection_established(uint16_t avdtp_cid, bd_addr_t addr, uint8_t status) {
-    uint8_t event[12];
+void avdtp_signaling_emit_connection_established(uint16_t avdtp_cid, bd_addr_t addr, hci_con_handle_t con_handle, uint8_t status) {
+    uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
@@ -492,6 +492,8 @@ void avdtp_signaling_emit_connection_established(uint16_t avdtp_cid, bd_addr_t a
     pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
+    little_endian_store_16(event, pos, con_handle);
+    pos += 2;
     event[pos++] = status;
     avdtp_emit_sink_and_source(event, pos);
 }
@@ -1053,7 +1055,7 @@ void a2dp_emit_signaling_connection_established(btstack_packet_handler_t callbac
     btstack_assert(callback != NULL);
     packet[0] = HCI_EVENT_A2DP_META;
     packet[2] = A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
-    packet[10] = status;
+    packet[13] = status;
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 

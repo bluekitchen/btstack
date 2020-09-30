@@ -426,7 +426,8 @@ typedef struct {
     bd_addr_t remote_addr;
     
     uint16_t avdtp_cid;
-
+    hci_con_handle_t con_handle;
+    
     // SDP results
     uint16_t avdtp_l2cap_psm;
     uint16_t avdtp_version;

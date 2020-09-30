@@ -570,7 +570,7 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
     switch (connection->state){
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE:
         case AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE:
-            avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr, status);
+            avdtp_signaling_emit_connection_established(connection->avdtp_cid, connection->remote_addr, connection->con_handle, status);
             break;
 
         case AVDTP_SIGNALING_CONNECTION_OPENED:
@@ -698,7 +698,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     (void) sdp_client_register_query_callback(&avdtp_handle_sdp_client_query_request);
 }
 
-static avdtp_connection_t * avdtp_handle_incoming_connection(avdtp_connection_t * connection, bd_addr_t event_addr, uint16_t local_cid){
+static avdtp_connection_t * avdtp_handle_incoming_connection(avdtp_connection_t * connection, bd_addr_t event_addr, hci_con_handle_t con_handle, uint16_t local_cid){
     if (connection == NULL){
         uint16_t cid = avdtp_get_next_cid();
         connection = avdtp_create_connection(event_addr, cid); 
@@ -707,6 +707,7 @@ static avdtp_connection_t * avdtp_handle_incoming_connection(avdtp_connection_t 
     if (connection) {
         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
         connection->l2cap_signaling_cid = local_cid;
+        connection->con_handle = con_handle;
         btstack_run_loop_remove_timer(&connection->retry_timer);
     } 
     return connection;
@@ -741,6 +742,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     uint16_t local_cid;
     uint8_t  status;
     uint16_t l2cap_mtu;
+    hci_con_handle_t con_handle;
 
     bool accept_streaming_connection;
     bool outoing_signaling_active;
@@ -792,7 +794,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                    
+                    con_handle = l2cap_event_incoming_connection_get_handle(packet);
                     outoing_signaling_active = false;
                     accept_streaming_connection = false;
                     
@@ -817,7 +819,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     
                     decline_connection = outoing_signaling_active && !accept_streaming_connection;
                     if (outoing_signaling_active == false){
-                        connection = avdtp_handle_incoming_connection(connection, event_addr, local_cid);
+                        connection = avdtp_handle_incoming_connection(connection, event_addr, con_handle, local_cid);
                         if (connection == NULL){
                             decline_connection = true;
                         }
@@ -859,6 +861,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         break;
                     }
 
+                    con_handle = l2cap_event_channel_opened_get_handle(packet);
+
                     switch (connection->state){
                         case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED:
                             switch (status){
@@ -866,10 +870,10 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                     connection->l2cap_signaling_cid = local_cid;
                                     connection->incoming_declined = false;
                                     connection->l2cap_mtu = l2cap_mtu;
+                                    connection->con_handle = con_handle;
                                     connection->state = AVDTP_SIGNALING_CONNECTION_OPENED;
-                                    log_info("Connection opened l2cap_signaling_cid 0x%02x, avdtp_cid 0x%02x", connection->l2cap_signaling_cid, connection->avdtp_cid);
-                                    avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr,
-                                                                                status);
+                                    log_info("Connection opened l2cap_signaling_cid 0x%02x, avdtp_cid 0x%02x, con_handle 0x%02x", connection->l2cap_signaling_cid, connection->avdtp_cid, con_handle);
+                                    avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr, con_handle, status);
                                     return;
                                 case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
                                     if (connection->incoming_declined == true) {
@@ -884,7 +888,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                     log_info("Connection to %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
                                     break;
                             }
-                            avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr, status);
+                            avdtp_signaling_emit_connection_established(connection->avdtp_cid, event_addr, con_handle, status);
                             avdtp_finalize_connection(connection);
                             break;
 
