@@ -427,18 +427,20 @@ static void avrcp_finalize_connection(avrcp_connection_t * connection){
     btstack_memory_avrcp_connection_free(connection);
 }
 
-static void avrcp_emit_connection_established(uint16_t avrcp_cid, bd_addr_t addr, uint8_t status){
+static void avrcp_emit_connection_established(uint16_t avrcp_cid, bd_addr_t addr, hci_con_handle_t con_handle, uint8_t status){
     btstack_assert(avrcp_callback != NULL);
 
-    uint8_t event[12];
+    uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_CONNECTION_ESTABLISHED;
     event[pos++] = status;
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
-    little_endian_store_16(event, pos, avrcp_cid);
+    little_endian_store_16(event, pos, con_handle);
     pos += 2;
     (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -580,7 +582,7 @@ void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet){
 static void avrcp_handle_sdp_query_failed(avrcp_connection_t * connection, uint8_t status){
     if (connection == NULL) return;
     log_info("AVRCP: SDP query failed with status 0x%02x.", status);
-    avrcp_emit_connection_established(connection->avrcp_cid, connection->remote_addr, status);
+    avrcp_emit_connection_established(connection->avrcp_cid, connection->remote_addr, connection->con_handle, status);
     avrcp_finalize_connection(connection);
 }
 
@@ -652,7 +654,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 }
 
 
-static avrcp_connection_t * avrcp_handle_incoming_connection_for_role(avrcp_role_t role, avrcp_connection_t * connection, bd_addr_t event_addr, uint16_t local_cid, uint16_t avrcp_cid){
+static avrcp_connection_t * avrcp_handle_incoming_connection_for_role(avrcp_role_t role, avrcp_connection_t * connection, bd_addr_t event_addr, hci_con_handle_t con_handle, uint16_t local_cid, uint16_t avrcp_cid){
     if (connection == NULL){
         connection = avrcp_create_connection(role, event_addr);
     }
@@ -660,14 +662,16 @@ static avrcp_connection_t * avrcp_handle_incoming_connection_for_role(avrcp_role
         connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
         connection->l2cap_signaling_cid = local_cid;
         connection->avrcp_cid = avrcp_cid;
+        connection->con_handle = con_handle;
         btstack_run_loop_remove_timer(&connection->retry_timer);
     } 
     return connection;
 }
 
-static void avrcp_handle_open_connection(avrcp_connection_t * connection, uint16_t local_cid, uint16_t l2cap_mtu){
+static void avrcp_handle_open_connection(avrcp_connection_t * connection, hci_con_handle_t con_handle, uint16_t local_cid, uint16_t l2cap_mtu){
     connection->l2cap_signaling_cid = local_cid;
     connection->l2cap_mtu = l2cap_mtu;
+    connection->con_handle = con_handle;
     connection->incoming_declined = false;
     connection->song_length_ms = 0xFFFFFFFF;
     connection->song_position_ms = 0xFFFFFFFF;
@@ -715,6 +719,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     uint8_t  status;
     bool decline_connection;
     bool outoing_active;
+    hci_con_handle_t con_handle;
 
     avrcp_connection_t * connection_controller;
     avrcp_connection_t * connection_target;
@@ -729,8 +734,9 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
+                    con_handle = l2cap_event_incoming_connection_get_handle(packet);
+
                     outoing_active = false;
-                    
                     connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
                     if (connection_target != NULL){
                         if (connection_target->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED){
@@ -756,8 +762,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                             avrcp_cid = connection_controller->avrcp_cid;
                         }
                         // create two connection objects (both)
-                        connection_target     = avrcp_handle_incoming_connection_for_role(AVRCP_TARGET, connection_target, event_addr, local_cid, avrcp_cid);
-                        connection_controller = avrcp_handle_incoming_connection_for_role(AVRCP_CONTROLLER, connection_controller, event_addr, local_cid, avrcp_cid);
+                        connection_target     = avrcp_handle_incoming_connection_for_role(AVRCP_TARGET, connection_target, event_addr, con_handle, local_cid, avrcp_cid);
+                        connection_controller = avrcp_handle_incoming_connection_for_role(AVRCP_CONTROLLER, connection_controller, event_addr, con_handle, local_cid, avrcp_cid);
                         if ((connection_target == NULL) || (connection_controller == NULL)){
                             decline_connection = true;
                             if (connection_target) {
@@ -781,6 +787,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     status = l2cap_event_channel_opened_get_status(packet);
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
                     l2cap_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    con_handle = l2cap_event_channel_opened_get_handle(packet);
 
                     connection_controller = avrcp_get_connection_for_bd_addr_for_role(AVRCP_CONTROLLER, event_addr);
                     connection_target = avrcp_get_connection_for_bd_addr_for_role(AVRCP_TARGET, event_addr);
@@ -793,9 +800,9 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                     switch (status){
                         case ERROR_CODE_SUCCESS:
-                            avrcp_handle_open_connection(connection_target, local_cid, l2cap_mtu);
-                            avrcp_handle_open_connection(connection_controller, local_cid, l2cap_mtu);
-                            avrcp_emit_connection_established(connection_controller->avrcp_cid, event_addr, status);
+                            avrcp_handle_open_connection(connection_target, con_handle, local_cid, l2cap_mtu);
+                            avrcp_handle_open_connection(connection_controller, con_handle, local_cid, l2cap_mtu);
+                            avrcp_emit_connection_established(connection_controller->avrcp_cid, event_addr, con_handle, status);
                             return;
                         case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES: 
                             if (connection_controller->incoming_declined == true){
@@ -812,7 +819,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                             break;
                     }
                     log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
-                    avrcp_emit_connection_established(connection_controller->avrcp_cid, event_addr, status);
+                    avrcp_emit_connection_established(connection_controller->avrcp_cid, event_addr, con_handle, status);
                     avrcp_finalize_connection(connection_controller);
                     avrcp_finalize_connection(connection_target);
                     

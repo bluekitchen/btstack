@@ -2246,11 +2246,12 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x11
 
 /**
- * @format 11B2
+ * @format 112B2
  * @param subevent_code
  * @param status 0 == OK
- * @param bd_addr
  * @param avrcp_cid
+ * @param bd_addr
+ * @param con_handle
  */
 #define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x12
 

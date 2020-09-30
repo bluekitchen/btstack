@@ -449,6 +449,8 @@ typedef struct {
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
+    hci_con_handle_t con_handle;
+    
     bool incoming_declined;
 
     uint16_t avrcp_browsing_cid;
