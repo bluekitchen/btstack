@@ -340,6 +340,9 @@ static struct {
     // current incoming packet
     ll_pdu_t * rx_pdu;
 
+    // rx packet ready
+    bool rx_pdu_received;
+
     // tx queue of outgoing pdus
     btstack_linked_queue_t tx_queue;
 
@@ -432,7 +435,7 @@ static void send_adv(void){
     memcpy(&adv_buffer[2], ctx.bd_addr_le, 6);
     memcpy(&adv_buffer[8], ctx.adv_data, ctx.adv_len);
     uint16_t packet_size = 2 + adv_buffer[1];
-    SX1280HalWriteBuffer( SX1280_TX0_OFFSET, adv_buffer, packet_size );
+    SX1280HalWriteBuffer( tx_buffer_offset[ctx.next_tx_buffer], adv_buffer, packet_size );
     SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
 }
 
@@ -564,6 +567,7 @@ static void ll_terminate(void){
             ctx.tx_buffer_pdu[i] = NULL;
         }
     }
+    ctx.num_tx_pdus_on_controller = 0;
     // free queued tx packets
     while (true){
         ll_pdu_t * tx_packet = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
@@ -646,7 +650,7 @@ static void radio_timer_handler(void){
                 receive_first_master();
             }
 
-            printf("--SYNC-Ch %02u-Event %04u - t %08u--\n", ctx.channel, ctx.connection_event, t0);
+            // printf("--SYNC-Ch %02u-Event %04u - t %08u--\n", ctx.channel, ctx.connection_event, t0);
             break;
         case LL_STATE_ADVERTISING:
             // send adv on all configured channels
@@ -663,6 +667,9 @@ static void radio_timer_handler(void){
 }
 
 static void radio_fetch_rx_pdu(void){
+
+	if (!ctx.rx_pdu_received) return;
+	ctx.rx_pdu_received = false;
 
 	// fetch reserved rx pdu
 	ll_pdu_t * rx_packet = ctx.rx_pdu;
@@ -736,8 +743,14 @@ static void radio_on_rx_done(void ){
         // more data field not used yet
         // uint8_t more_data = (rx_packet->header >> 4) & 1;
 
-        // update state
-        ctx.next_expected_sequence_number = 1 - sequence_number;
+        // only accept packets where len <= payload size
+        if (rx_len <= LL_MAX_PAYLOAD){
+			// update state
+			ctx.next_expected_sequence_number = 1 - sequence_number;
+
+			// register pdu fetch
+			ctx.rx_pdu_received = true;
+        }
 
         // report outgoing packet as ack'ed and free if confirmed by peer
         bool tx_acked = ctx.transmit_sequence_number != next_expected_sequence_number;
@@ -807,7 +820,7 @@ static void radio_on_rx_done(void ){
 
         ctx.packet_nr_in_connection_event++;
 
-		printf("RX %02x -- tx buffer %u, %02x %02x\n", rx_header, ctx.next_tx_buffer, packet_header[0], packet_header[1]);
+		// printf("RX %02x -- tx buffer %u, %02x %02x\n", rx_header, ctx.next_tx_buffer, packet_header[0], packet_header[1]);
     }
 }
 
@@ -1001,6 +1014,8 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
 
 	// pre-load tx pdu
+	ctx.num_tx_pdus_on_controller = 0;
+	ctx.next_tx_buffer = 0;
 	preload_tx_buffer();
 
     // get next packet
@@ -1060,7 +1075,8 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
 
 static void ll_handle_data(ll_pdu_t * rx_packet){
     if (ll_state != LL_STATE_CONNECTED) return;
-    uint8_t acl_packet[40];
+    btstack_assert(rx_packet->len <= LL_MAX_PAYLOAD);
+    uint8_t acl_packet[4 + LL_MAX_PAYLOAD];
     // ACL Header
     uint8_t ll_id = rx_packet->header & 3;
     acl_packet[0] = 0x01;
