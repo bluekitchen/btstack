@@ -942,6 +942,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                                                                          avdtp_local_seid(stream_endpoint));
                             }
                             avdtp_reset_stream_endpoint(stream_endpoint);
+                            connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
                             break;
                         }
                         if (stream_endpoint->l2cap_recovery_cid == local_cid){
@@ -970,9 +971,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         avdtp_finalize_connection(connection);
                         break;
                     }
-                    break;
-
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
                     break;
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
