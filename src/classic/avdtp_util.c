@@ -1043,22 +1043,6 @@ void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, ui
     (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
 }
 
-void a2dp_emit_streaming_connection_established(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t status){
-    btstack_assert(callback != NULL);
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
-    packet[12] = status;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
-void a2dp_emit_signaling_connection_established(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t status){
-    btstack_assert(callback != NULL);
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
-    packet[13] = status;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id){
     uint8_t event[6];
     int pos = 0;

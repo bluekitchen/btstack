@@ -294,14 +294,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 if (outgoing_active && (a2dp_source_cid == cid)){
                     log_info("A2DP source signaling connection failed status 0x%02x", status);
                     outgoing_active = false;
-                    a2dp_emit_signaling_connection_established(a2dp_source_packet_handler_user, packet, size, status);
+                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
                 }
                 break;
             }
             log_info("A2DP source signaling connection established avdtp_cid 0x%02x", cid);
 
             // notify app
-            a2dp_emit_signaling_connection_established(a2dp_source_packet_handler_user, packet, size, status);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
 
             // we already have a valid setup
             if (stream_endpoint_configured) return;
@@ -509,13 +509,13 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP source streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
-                a2dp_emit_streaming_connection_established(a2dp_source_packet_handler_user, packet, size, status);
+                a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
                 break;
             }
 
             log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid, local_seid, remote_seid);
             a2dp_source_state = A2DP_STREAMING_OPENED;
-            a2dp_emit_streaming_connection_established(a2dp_source_packet_handler_user, packet, size, status);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:

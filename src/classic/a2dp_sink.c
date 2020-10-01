@@ -225,12 +225,12 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                 // only care for outgoing connections
                 if (!outgoing_active) break;
                 outgoing_active = false;
-                a2dp_emit_signaling_connection_established(a2dp_sink_packet_handler_user, packet, size, status);
+                a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
                 log_info("A2DP sink signaling connection failed status %d", status);
                 break;
             }
 
-            a2dp_emit_signaling_connection_established(a2dp_sink_packet_handler_user, packet, size, status);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
             log_info("A2DP sink signaling connection established avdtp_cid 0x%02x", cid);
             break;
 
@@ -264,12 +264,12 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP sink streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
-                a2dp_emit_streaming_connection_established(a2dp_sink_packet_handler_user, packet, size, status);
+                a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
                 break;
             }
 
             log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
-            a2dp_emit_streaming_connection_established(a2dp_sink_packet_handler_user, packet, size, status);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
@@ -325,13 +325,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             if (cid != a2dp_sink_cid) break;
 
             stream_endpoint_configured = false;
-            // for outgoing connections, suppress release event and report stream established failed
-            if (outgoing_active){
-                outgoing_active = false;
-                log_info("A2DP sink outgoing connection failed - disconnect");
-                a2dp_emit_signaling_connection_established(a2dp_sink_packet_handler_user, packet, size, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
-                break;
-            }
+            outgoing_active = false;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
             break;
