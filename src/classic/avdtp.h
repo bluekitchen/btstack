@@ -523,7 +523,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t media_disconnect;
     uint8_t media_connect;
     uint8_t start_stream;
-    uint8_t stop_stream;
+    uint8_t close_stream;
     uint8_t request_can_send_now;
     uint8_t abort_stream;
     uint8_t suspend_stream;

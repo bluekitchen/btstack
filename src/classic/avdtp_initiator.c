@@ -411,6 +411,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
             connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return;            
+    if (stream_endpoint->close_stream){
+        stream_endpoint->close_stream = 0;
         }
     }
     

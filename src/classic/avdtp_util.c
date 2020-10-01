@@ -126,7 +126,7 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->media_disconnect = 0;
     stream_endpoint->media_connect = 0;
     stream_endpoint->start_stream = 0;
-    stream_endpoint->stop_stream = 0;
+    stream_endpoint->close_stream = 0;
     stream_endpoint->request_can_send_now = 0;
     stream_endpoint->abort_stream = 0;
     stream_endpoint->suspend_stream = 0;

@@ -1112,11 +1112,11 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
-    if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->stop_stream){
+    if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->close_stream){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    stream_endpoint->stop_stream = 1;
+    stream_endpoint->close_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
