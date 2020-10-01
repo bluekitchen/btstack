@@ -100,7 +100,8 @@ void battery_service_server_init(uint8_t value){
 	uint16_t start_handle = 0;
 	uint16_t end_handle   = 0xfff;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE, &start_handle, &end_handle);
-	btstack_assert(service_found);
+	btstack_assert(service_found != 0);
+	UNUSED(service_found);
 
 	// get characteristic value handle and client configuration handle
 	battery_value_handle_value = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
