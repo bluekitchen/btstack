@@ -198,8 +198,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_OPEN: stream endpoint is null");
                         break;
                     }
-                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM) {
-                        log_error("AVDTP_SI_OPEN in wrong stream endpoint state");
+                    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_ACCEPT_OPEN_STREAM) {
+                        log_error("AVDTP_SI_OPEN in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
                     }
                     stream_endpoint_for_event = stream_endpoint;
@@ -213,7 +213,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         break;
                     }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED) {
-                        log_error("AVDTP_SI_START in wrong stream endpoint state");
+                        log_error("AVDTP_SI_START in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
                     }
                     stream_endpoint_for_event = stream_endpoint;
@@ -225,7 +225,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         break;
                     }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) {
-                        log_error("AVDTP_SI_SUSPEND in wrong stream endpoint state");
+                        log_error("AVDTP_SI_SUSPEND in wrong stream endpoint state %d", stream_endpoint->state);
                         return;
                     }
                     stream_endpoint_for_event = stream_endpoint;
@@ -365,6 +365,7 @@ static void avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t 
         case AVDTP_INITIATOR_W2_OPEN_STREAM:
             switch (stream_endpoint->state){
                 case AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM:
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_ACCEPT_OPEN_STREAM;
                     log_info("send AVDTP_SI_OPEN signaling to remote, transaction_label %d, remote seid 0x%02x", connection->initiator_transaction_label, connection->initiator_remote_seid);
                     avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_OPEN, connection->initiator_transaction_label, connection->initiator_remote_seid);
                     break;
