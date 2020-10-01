@@ -109,19 +109,23 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->l2cap_media_cid = 0;
     stream_endpoint->l2cap_reporting_cid = 0;
     stream_endpoint->l2cap_recovery_cid = 0;
-
-    stream_endpoint->connection = NULL;
+    
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
 
+    stream_endpoint->connection = NULL;
+
     stream_endpoint->sep.in_use = 0;
     memset(&stream_endpoint->remote_sep, 0, sizeof(avdtp_sep_t));
-    // memset(&stream_endpoint->remote_capabilities, 0, sizeof(avdtp_capabilities_t));
-    // memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
-    
+
     stream_endpoint->remote_capabilities_bitmap = 0;
+    memset(&stream_endpoint->remote_capabilities, 0, sizeof(avdtp_capabilities_t));
     stream_endpoint->remote_configuration_bitmap = 0;
+    memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
+    
+    // temporary reconfigure SBC config used by A2DP
+    memset(stream_endpoint->reconfigure_media_codec_sbc_info, 0, 4);
 
     stream_endpoint->media_disconnect = 0;
     stream_endpoint->media_connect = 0;
