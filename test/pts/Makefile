@@ -142,7 +142,7 @@ HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test sm_test gatt_profiles hrp_col_test hrp_server_test
+EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
 # EXAMPLES += hog_demo_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
@@ -241,7 +241,5 @@ myclean:
 	rm -rf cycling_power_server_test.h
 	rm -rf gatt_profiles.h
 	rm -rf hrp_server_test.h
-	rm -rf sm_test.h
-	
 	
 clean: myclean
