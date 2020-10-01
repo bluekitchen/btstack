@@ -437,7 +437,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
             connection->initiator_local_seid = stream_endpoint->sep.seid;
             connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
-            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
+            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
             avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_SUSPEND, connection->initiator_transaction_label, connection->initiator_remote_seid);
             return;
         }
