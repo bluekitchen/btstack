@@ -236,16 +236,34 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         log_error("AVDTP_SI_CLOSE: stream endpoint is null");
                         break;
                     }
-                    stream_endpoint_for_event = stream_endpoint;
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
+                    switch (stream_endpoint->state){
+                        case AVDTP_STREAM_ENDPOINT_OPENED:
+                        case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            stream_endpoint_for_event = stream_endpoint;
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
+                            l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 case AVDTP_SI_ABORT:
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_ABORT: stream endpoint is null");
                         break;
                     }
-                    stream_endpoint_for_event = stream_endpoint;
-                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
+                    switch (stream_endpoint->state){
+                        case AVDTP_STREAM_ENDPOINT_CONFIGURED:
+                        case AVDTP_STREAM_ENDPOINT_CLOSING:
+                        case AVDTP_STREAM_ENDPOINT_OPENED:
+                        case AVDTP_STREAM_ENDPOINT_STREAMING:
+                            stream_endpoint_for_event = stream_endpoint;
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
+                            l2cap_disconnect(stream_endpoint->l2cap_media_cid, 0);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
 
                 case AVDTP_SI_DELAYREPORT:
@@ -403,16 +421,18 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
         } 
     }
     
-    if (stream_endpoint->stop_stream){
-        stream_endpoint->stop_stream = 0;
-        if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED){
-            connection->initiator_local_seid = stream_endpoint->sep.seid;
-            connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
-            connection->initiator_transaction_label = avdtp_get_next_transaction_label();
-            avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label, connection->initiator_remote_seid);
-            return;            
     if (stream_endpoint->close_stream){
         stream_endpoint->close_stream = 0;
+        switch (stream_endpoint->state){
+            case AVDTP_STREAM_ENDPOINT_OPENED:
+            case AVDTP_STREAM_ENDPOINT_STREAMING:
+                connection->initiator_local_seid = stream_endpoint->sep.seid;
+                connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
+                connection->initiator_transaction_label = avdtp_get_next_transaction_label();
+                avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_CLOSE, connection->initiator_transaction_label, connection->initiator_remote_seid);
+                return;   
+            default:
+                break;         
         }
     }
     
@@ -425,7 +445,6 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
             case AVDTP_STREAM_ENDPOINT_STREAMING:
                 connection->initiator_local_seid = stream_endpoint->sep.seid;
                 connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
-                stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                 connection->initiator_transaction_label = avdtp_get_next_transaction_label();
                 avdtp_initiator_send_signaling_cmd_with_seid(connection->l2cap_signaling_cid, AVDTP_SI_ABORT, connection->initiator_transaction_label, connection->initiator_remote_seid);
                 return;
