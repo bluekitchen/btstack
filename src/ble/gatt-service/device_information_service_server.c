@@ -118,7 +118,8 @@ void device_information_service_server_init(void){
 	uint16_t start_handle;
 	uint16_t end_handle;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION, &start_handle, &end_handle);
-	btstack_assert(service_found);
+	btstack_assert(service_found != 0);
+	UNUSED(service_found);
 
 	// set length for fixed size characateristics
 	device_information_fields[SYSTEM_ID].data = device_information_system_id;
