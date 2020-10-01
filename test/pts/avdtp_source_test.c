@@ -271,7 +271,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
             printf("no stream_endpoint for seid %d\n", context->local_seid);
             return;
         }
-        stream_endpoint->send_stream = 1;
+        stream_endpoint->request_can_send_now = 1;
         if (stream_endpoint->connection){
             avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
         }

@@ -442,8 +442,8 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
         }
     }
     
-    if (stream_endpoint->send_stream){
-        stream_endpoint->send_stream = 0;
+    if (stream_endpoint->request_can_send_now){
+        stream_endpoint->request_can_send_now = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
             stream_endpoint->state =  AVDTP_STREAM_ENDPOINT_STREAMING;
             avdtp_streaming_emit_can_send_media_packet_now(stream_endpoint,
