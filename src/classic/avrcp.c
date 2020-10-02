@@ -232,7 +232,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
         uint8_t* avctpProtocol = de_push_sequence(attribute);
         {
             de_add_number(avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // avctpProtocol_service
-            de_add_number(avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
+            de_add_number(avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0106);    // version
         }
         de_pop_sequence(attribute, avctpProtocol);
     }
