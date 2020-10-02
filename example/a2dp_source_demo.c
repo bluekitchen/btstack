@@ -182,6 +182,7 @@ static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
 static uint8_t sdp_avrcp_target_service_buffer[200];
 static uint8_t sdp_avrcp_controller_service_buffer[200];
+static uint8_t device_id_sdp_service_buffer[100];
 
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static btstack_sbc_encoder_state_t sbc_encoder_state;
@@ -324,6 +325,9 @@ static int a2dp_source_and_avrcp_services_init(void){
     uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
+
+    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10004, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    sdp_register_service(device_id_sdp_service_buffer);
 
     // Set local name with a template Bluetooth address, that will be automatically
     // replaced with a actual address once it is available, i.e. when BTstack boots
