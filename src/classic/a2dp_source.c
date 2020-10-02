@@ -310,7 +310,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // - outgoing active: signaling for outgoing connection
             // - outgoing not active: incoming connection and no sep discover ongoing
 
-            log_info("outgoing_active %d, a2dp_source_cid 0x%02x, cid  0x%02x, a2dp_source_state %d", outgoing_active, a2dp_source_cid, cid, a2dp_source_state);
+            log_info("outgoing_active %d, current avdtp cid 0x%02x, a2dp_source_state %d", outgoing_active, cid, a2dp_source_state);
             if ((outgoing_active && (a2dp_source_cid == cid)) || (!outgoing_active && (a2dp_source_state == A2DP_IDLE))){
                 a2dp_start_discovering_seps(connection);
             } else {
