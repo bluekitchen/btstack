@@ -179,20 +179,35 @@ static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uin
         *rx_buffer++ = *(__IO uint8_t *)&hspi->Instance->DR;
     }
 }
+#endif
+
+// assert: tx_data == tx_buffer (local call)
+void SX1280HalSpiTxThenRx(uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
+
+#ifdef USE_BK_SPI
+	spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, rx_buffer, rx_len);
 #else
-// map onto standard hal functions
-void SpiIn( uint8_t *txBuffer, uint16_t size ){
-    HAL_SPI_Transmit( &RADIO_SPI_HANDLE, txBuffer, size, HAL_MAX_DELAY );
-}
-void SpiInOut( uint8_t *txBuffer, uint8_t *rxBuffer, uint16_t size )
-{
+	if (rx_len == 0){
+
+		// SPI Transfer
+		HAL_SPI_Transmit( &RADIO_SPI_HANDLE, halTxBuffer, size, HAL_MAX_DELAY );
+
+	} else {
+		// fill TX buffer with zeros
+		memset(&halTxBuffer[tx_len], 0, rx_len);
+
+		// SPI Transfer
 #ifdef STM32L4XX_FAMILY
-    // Comment For STM32L0XX and STM32L1XX Intégration, uncomment for STM32L4XX Intégration
-    HAL_SPIEx_FlushRxFifo( &RADIO_SPI_HANDLE );
+		// Comment For STM32L0XX and STM32L1XX Intégration, uncomment for STM32L4XX Intégration
+		HAL_SPIEx_FlushRxFifo( &RADIO_SPI_HANDLE );
 #endif
-    HAL_SPI_TransmitReceive( &RADIO_SPI_HANDLE, txBuffer, rxBuffer, size, HAL_MAX_DELAY );
+	    HAL_SPI_TransmitReceive( &RADIO_SPI_HANDLE, halTxBuffer, halRxBuffer, size, HAL_MAX_DELAY );
+
+		// return rx data
+	    memcpy( rx_buffer, &halRxBuffer[tx_len], size );
+	}
+#endif
 }
-#endif
 
 /*!
  * \brief Used to block execution waiting for low state on radio busy pin.
@@ -228,6 +243,8 @@ void SX1280HalReset( void )
     HAL_Delay( 20 );
 }
 
+#if 0
+// commented out as (3+IRAM_SIZE) > sizeof(halTxBuffer)
 void SX1280HalClearInstructionRam( void )
 {
     // Clearing the instruction RAM is writing 0x00s on every bytes of the
@@ -245,16 +262,13 @@ void SX1280HalClearInstructionRam( void )
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
-#else
-    SpiIn( halTxBuffer, halSize );
-#endif
+	SX1280HalSpiTxThenRx( halTxBuffer, halSize, NULL, 0);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
     SX1280HalWaitOnBusy( );
 }
+#endif
 
 void SX1280HalWakeup( void )
 {
@@ -266,11 +280,7 @@ void SX1280HalWakeup( void )
     halTxBuffer[0] = RADIO_GET_STATUS;
     halTxBuffer[1] = 0x00;
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
-#else
-    SpiIn( halTxBuffer, halSize );
-#endif
+	SX1280HalSpiTxThenRx( halSize, NULL, 0);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
@@ -290,11 +300,7 @@ void SX1280HalWriteCommand( RadioCommands_t command, uint8_t *buffer, uint16_t s
     halTxBuffer[0] = command;
     memcpy( halTxBuffer + 1, ( uint8_t * )buffer, size * sizeof( uint8_t ) );
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
-#else
-    SpiIn( halTxBuffer, halSize );
-#endif
+	SX1280HalSpiTxThenRx( halSize, NULL, 0);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
@@ -308,28 +314,12 @@ void SX1280HalReadCommand( RadioCommands_t command, uint8_t *buffer, uint16_t si
 {
     halTxBuffer[0] = command;
     halTxBuffer[1] = 0x00;
-#ifndef USE_BK_SPI
-    uint16_t halSize = 2 + size;
-    for( uint16_t index = 0; index < size; index++ )
-    {
-        halTxBuffer[2+index] = 0x00;
-    }
-#endif
 
     SX1280HalWaitOnBusy( );
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
-
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, 2, buffer, size);
-#else
-    SpiInOut( halTxBuffer, halRxBuffer, halSize );
-#endif
-
-#ifndef USE_BK_SPI
-    memcpy( buffer, halRxBuffer + 2, size );
-#endif
+	SX1280HalSpiTxThenRx( 2, buffer, size);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
@@ -348,11 +338,7 @@ void SX1280HalWriteRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
-#else
-    SpiIn( halTxBuffer, halSize );
-#endif
+	SX1280HalSpiTxThenRx( halSize, NULL, 0);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
@@ -370,22 +356,12 @@ void SX1280HalReadRegisters( uint16_t address, uint8_t *buffer, uint16_t size )
     halTxBuffer[1] = ( address & 0xFF00 ) >> 8;
     halTxBuffer[2] = address & 0x00FF;
     halTxBuffer[3] = 0x00;
-    for( uint16_t index = 0; index < size; index++ )
-    {
-        halTxBuffer[4+index] = 0x00;
-    }
 
     SX1280HalWaitOnBusy( );
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, 4, buffer, size);
-#else
-    uint16_t halSize = 4 + size;
-    SpiInOut( halTxBuffer, halRxBuffer, halSize );
-    memcpy( buffer, halRxBuffer + 4, size );
-#endif
+	SX1280HalSpiTxThenRx( 4, buffer, size);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
@@ -412,11 +388,7 @@ void SX1280HalWriteBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, halSize, NULL, 0);
-#else
-    SpiIn( halTxBuffer, halSize );
-#endif
+	SX1280HalSpiTxThenRx( halSize, NULL, 0);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
@@ -428,24 +400,12 @@ void SX1280HalReadBuffer( uint8_t offset, uint8_t *buffer, uint8_t size )
     halTxBuffer[0] = RADIO_READ_BUFFER;
     halTxBuffer[1] = offset;
     halTxBuffer[2] = 0x00;
-#ifndef USE_BK_SPI
-    uint16_t halSize = size + 3;
-    for( uint16_t index = 0; index < size; index++ )
-    {
-        halTxBuffer[3+index] = 0x00;
-    }
-#endif
 
     SX1280HalWaitOnBusy( );
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 0 );
 
-#ifdef USE_BK_SPI
-    spi_tx_then_rx( &RADIO_SPI_HANDLE, halTxBuffer, 3, buffer, size);
-#else
-    SpiInOut( halTxBuffer, halRxBuffer, halSize );
-    memcpy( buffer, halRxBuffer + 3, size );
-#endif
+	SX1280HalSpiTxThenRx( 3, buffer, size);
 
     HAL_GPIO_WritePin( RADIO_NSS_PORT, RADIO_NSS_PIN, 1 );
 
