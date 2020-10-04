@@ -925,16 +925,16 @@ void ll_radio_on(void){
     // Go back to Frequcency Synthesis Mode, reduces transition time between Rx<->TX
     Radio.SetAutoFS(1);
 
-    // quick test
-    uint8_t data[] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-    Radio.WriteBuffer(0, data, sizeof(data));
-    uint8_t check[8];
-    Radio.ReadBuffer(0, check, sizeof(data));
-    if (memcmp(data, check, sizeof(data)) != 0){
-        printf_hexdump(data, sizeof(data));
-        printf_hexdump(check, sizeof(data));
-        btstack_assert(false);
-    }
+	// quick test
+	uint8_t data[] = {1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128 };
+	Radio.WriteBuffer(0, data, sizeof(data));
+	uint8_t check[32];
+	Radio.ReadBuffer(0, check, sizeof(data));
+	if (memcmp(data, check, sizeof(data)) != 0) {
+		printf("GOOD: "); printf_hexdump(data, sizeof(data));
+		printf("BAD:  "); printf_hexdump(check, sizeof(data));
+		btstack_assert(false);
+	}
 
     ll_state = LL_STATE_STANDBY;
 }
