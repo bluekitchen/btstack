@@ -133,15 +133,69 @@ const struct Radio_s Radio =
 };
 
 #ifndef USE_BK_SPI
-static uint8_t halRxBuffer[MAX_HAL_BUFFER_SIZE] = {0x00};
 #endif
+static uint8_t halRxBuffer[MAX_HAL_BUFFER_SIZE] = {0x00};
 static uint8_t halTxBuffer[MAX_HAL_BUFFER_SIZE] = {0x00};
 
 static DioIrqHandler **dioIrqHandlers;
 
 extern SPI_HandleTypeDef RADIO_SPI_HANDLE;
+extern DMA_HandleTypeDef RADIO_SPI_DMA_RX;
+extern DMA_HandleTypeDef RADIO_SPI_DMA_TX;
+
 
 #ifdef USE_BK_SPI
+
+static void spi_tx_only_dma(const uint8_t * tx_data, uint16_t tx_len) {
+
+	// Enable & Config SPI
+#ifdef STM32L4XX_FAMILY
+	/* Set fiforxthreshold according the reception data length: 8bit */
+	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_RXFIFO_THRESHOLD);
+#endif
+
+	/* Check if the SPI is already enabled */
+	if ((RADIO_SPI_HANDLE.Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE) {
+		/* Enable SPI peripheral */
+		__HAL_SPI_ENABLE(&RADIO_SPI_HANDLE);
+	}
+
+	HAL_DMA_Start(&RADIO_SPI_DMA_TX, (uintptr_t) tx_data, (uintptr_t) &RADIO_SPI_HANDLE.Instance->DR, tx_len);
+
+	/* Enable Tx DMA Request */
+	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_CR2_TXDMAEN);
+
+	HAL_DMA_PollForTransfer(&RADIO_SPI_DMA_TX, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+
+	/* Discard received byte */
+	(void) RADIO_SPI_HANDLE.Instance->DR;
+}
+
+static void spi_tx_rx_dma(const uint8_t * tx_data, uint8_t * rx_buffer, uint16_t size) {
+
+#ifdef STM32L4XX_FAMILY
+	/* Set fiforxthreshold according the reception data length: 8bit */
+	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_RXFIFO_THRESHOLD);
+#endif
+
+	/* Check if the SPI is already enabled */
+	if ((RADIO_SPI_HANDLE.Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE) {
+		/* Enable SPI peripheral */
+		__HAL_SPI_ENABLE(&RADIO_SPI_HANDLE);
+	}
+
+	/* Enable Rx DMA Request */
+	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_CR2_RXDMAEN);
+
+	HAL_DMA_Start(&RADIO_SPI_DMA_RX, (uintptr_t) &RADIO_SPI_HANDLE.Instance->DR, (uintptr_t) rx_buffer, size);
+	HAL_DMA_Start(&RADIO_SPI_DMA_TX, (uintptr_t) tx_data, (uintptr_t) &RADIO_SPI_HANDLE.Instance->DR, size);
+
+	/* Enable Tx DMA Request */
+	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_CR2_TXDMAEN);
+
+	HAL_DMA_PollForTransfer(&RADIO_SPI_DMA_TX, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+	HAL_DMA_PollForTransfer(&RADIO_SPI_DMA_RX, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+}
 
 static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
 
@@ -184,29 +238,36 @@ static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uin
 // assert: tx_data == tx_buffer (local call)
 void SX1280HalSpiTxThenRx(uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
 
-#ifdef USE_BK_SPI
-	spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, rx_buffer, rx_len);
-#else
+	// min size for dma to be faster (L073@24 Mhz)
+	const uint16_t dma_tx_min_size = 8;
+	const uint16_t dma_tx_rx_min_size = 16;
+
 	if (rx_len == 0){
-
-		// SPI Transfer
-		HAL_SPI_Transmit( &RADIO_SPI_HANDLE, halTxBuffer, size, HAL_MAX_DELAY );
-
+		if (tx_len < dma_tx_min_size) {
+			// Custom Polling
+			spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, NULL, 0);
+		} else {
+			// Custom DMA
+			spi_tx_only_dma( halTxBuffer, tx_len );
+		}
 	} else {
+
+		uint16_t total_len = tx_len + rx_len;
+
 		// fill TX buffer with zeros
 		memset(&halTxBuffer[tx_len], 0, rx_len);
 
-		// SPI Transfer
-#ifdef STM32L4XX_FAMILY
-		// Comment For STM32L0XX and STM32L1XX Intégration, uncomment for STM32L4XX Intégration
-		HAL_SPIEx_FlushRxFifo( &RADIO_SPI_HANDLE );
-#endif
-	    HAL_SPI_TransmitReceive( &RADIO_SPI_HANDLE, halTxBuffer, halRxBuffer, size, HAL_MAX_DELAY );
+		if (total_len < dma_tx_rx_min_size){
+			// Custom Polling
+			spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, rx_buffer, rx_len);
+		} else {
+			// Custom DMA
+			spi_tx_rx_dma( halTxBuffer, halRxBuffer, total_len);
+			// return rx data
+			memcpy( rx_buffer, &halRxBuffer[tx_len], rx_len );
+		}
 
-		// return rx data
-	    memcpy( rx_buffer, &halRxBuffer[tx_len], size );
 	}
-#endif
 }
 
 /*!
