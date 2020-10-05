@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys, getopt, re, pickle
 
 class State:
@@ -77,7 +77,7 @@ def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
             fout.write(title)
             
             state = State.SearchStartAPI
-            with open(api_filename, 'rb') as fin:
+            with open(api_filename, 'r') as fin:
                 for line in fin:
                     if state == State.SearchStartAPI:
                         parts = re.match('.*API_START.*',line)
@@ -103,7 +103,7 @@ def createIndex(btstackfolder, apis, githubfolder):
         api_lable = api_tuple[2]
 
         linenr = 0
-        with open(api_filename, 'rb') as fin:
+        with open(api_filename, 'r') as fin:
             typedefFound = 0
             multiline_function_def = 0
             state = State.SearchStartAPI
@@ -195,11 +195,11 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"hiso:",["bfolder=","afile=","gfolder=","ifile="])
     except getopt.GetoptError:
-        print cmd
+        print (cmd)
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print cmd
+            print (cmd)
             sys.exit()
         elif opt in ("-b", "--bfolder"):
             btstackfolder = arg
@@ -209,10 +209,10 @@ def main(argv):
             btstackfolder = arg
         elif opt in ("-i", "--ifile"):
             indexfile = arg
-    print 'BTstack folder is :', btstackfolder
-    print 'API file is       :', apifile
-    print 'Github path is    :', githubfolder
-    print 'Index file is     :', indexfile
+    print ('BTstack folder is : ' + btstackfolder)
+    print ('API file is       : ' + apifile)
+    print ('Github path is    : ' + githubfolder)
+    print ('Index file is     : ' + indexfile)
 
     writeAPI(apifile, btstackfolder, apis, mk_codeidentation)
     createIndex(btstackfolder, apis, githubfolder)

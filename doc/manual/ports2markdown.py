@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, os, shutil, re
 
@@ -9,7 +9,7 @@ port_item = """
 
 def get_readme_title(example_path):
     title = ''
-    with open(example_path, 'rb') as fin:
+    with open(example_path, 'r') as fin:
         for line in fin:
             parts = re.match('(##\s)(.*)\n',line)
             if parts: 
@@ -34,13 +34,13 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                         images[file] =  port_folder + "/" + port + "/" + file
 
     with open(ports_file, 'w') as ports:
-        with open(intro_file, 'rb') as fin:
+        with open(intro_file, 'r') as fin:
             for line in fin:
                 ports.write(line)
         fin.close()
 
         for readme_dir, readme_file in sorted(matches.items()):
-            with open(readme_file, 'rb') as fin:
+            with open(readme_file, 'r') as fin:
                 for line in fin:
                     # find title, add reference
                     title_parts = re.match('(#\s+)(.*)\n',line)
@@ -52,7 +52,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
         ports.write("\n\n")
 
         for readme_dir, readme_file in sorted(matches.items()):
-            with open(readme_file, 'rb') as fin:
+            with open(readme_file, 'r') as fin:
                 for line in fin:
                     #increase level of indentation
                     parts = re.match('#(.*)\n',line)

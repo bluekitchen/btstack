@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, os, shutil
 import re, yaml
@@ -74,9 +74,9 @@ def main(argv):
     yml_file = "mkdocs.yml"
     
     with open(yml_file, 'r') as yin:
-        doc = yaml.load(yin)
+        doc = yaml.load(yin, Loader=yaml.SafeLoader)
         for page in doc["pages"]:
-            mk_file = page.values()[0]
+            mk_file = list(page.values())[0]
             source_file = md_template +"/"+ mk_file
             dest_file   = md_final +"/"+ mk_file
             print("Processing %s -> %s" % (source_file, dest_file))
