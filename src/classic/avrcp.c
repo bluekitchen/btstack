@@ -232,7 +232,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
         uint8_t* avctpProtocol = de_push_sequence(attribute);
         {
             de_add_number(avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // avctpProtocol_service
-            de_add_number(avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0106);    // version
+            de_add_number(avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0104);    // version
         }
         de_pop_sequence(attribute, avctpProtocol);
     }
@@ -253,7 +253,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
         uint8_t *avrcProfile = de_push_sequence(attribute);
         {
             de_add_number(avrcProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL); 
-            de_add_number(avrcProfile,  DE_UINT, DE_SIZE_16, 0x0105); 
+            de_add_number(avrcProfile,  DE_UINT, DE_SIZE_16, 0x0106); 
         }
         de_pop_sequence(attribute, avrcProfile);
     }
@@ -276,7 +276,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
                 uint8_t* browsing_avctpProtocol = de_push_sequence(des);
                 {
                     de_add_number(browsing_avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // browsing_avctpProtocol_service
-                    de_add_number(browsing_avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
+                    de_add_number(browsing_avctpProtocol,  DE_UINT, DE_SIZE_16, 0x0104);                   // version
                 }
                 de_pop_sequence(des, browsing_avctpProtocol);
             }
