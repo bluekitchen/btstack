@@ -12,7 +12,6 @@
 
 SUBDIRS =  \
 			arduino \
-			daemon \
 			ez430-rf2560 \
 			libusb \
 			libusb-intel \
@@ -33,6 +32,7 @@ SUBDIRS =  \
 			stm32-l073rz-nucleo-em9304 \
 
 EXCLUDED = \
+			daemon \
 			pic32-harmony/app.X \
 			ios \
 			wiced \
@@ -45,7 +45,7 @@ subdirs:
 	  $(MAKE) -C $$dir; \
 	done
 	echo Building daemon
-	cd daemon ; ./bootstrap.sh ; make
+	cd daemon ; ./bootstrap.sh ; ./configure ; make
 
 clean:
 	echo Cleaning all ports
@@ -53,4 +53,4 @@ clean:
 	  $(MAKE) -C $$dir clean; \
 	done
 	echo Cleaning daemon
-	cd daemon ; make clean
+	cd daemon ; ./clean.sh
