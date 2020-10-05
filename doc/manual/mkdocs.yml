@@ -2,6 +2,7 @@ site_name: BTstack Manual v1.0
 site_dir: btstack
 docs_dir: docs_final
 extra_css: ['btstack.css']
+use_directory_urls: false
 pages:
 - 'Welcome': index.md
 - 'Quick Start': quick_start.md
