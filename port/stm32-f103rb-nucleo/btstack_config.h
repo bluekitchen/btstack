@@ -34,7 +34,7 @@
 #define MAX_NR_HFP_CONNECTIONS 0
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
-#define MAX_NR_SERVICE_RECORD_ITEMS 1
+#define MAX_NR_SERVICE_RECORD_ITEMS 4
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
 // if defined, le_device_db_memory will not be compiled
