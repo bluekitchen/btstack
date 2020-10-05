@@ -32,18 +32,6 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 1
 #define MAX_NR_WHITELIST_ENTRIES 1
 
-// no classic services
-#define MAX_NR_AVDTP_CONNECTIONS 0
-#define MAX_NR_AVDTP_STREAM_ENDPOINTS 0
-#define MAX_NR_AVRCP_CONNECTIONS 0
-#define MAX_NR_BNEP_CHANNELS 0
-#define MAX_NR_BNEP_SERVICES 0
-#define MAX_NR_DB_MEM_DEVICE_LINK_KEYS  0
-#define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES  0
-#define MAX_NR_HFP_CONNECTIONS 0
-#define MAX_NR_L2CAP_CHANNELS  0
-#define MAX_NR_L2CAP_SERVICES  0
-
 // if defined, le_device_db_memory will not be compiled
 // #define NVM_NUM_DEVICE_DB_ENTRIES      16
 
