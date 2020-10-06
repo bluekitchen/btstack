@@ -1,4 +1,4 @@
-site_name: BTstack Manual v1.0
+site_name: BTstack Manual VERSION
 site_dir: btstack
 docs_dir: docs_final
 extra_css: ['btstack.css']
