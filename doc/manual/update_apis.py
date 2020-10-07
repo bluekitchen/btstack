@@ -8,7 +8,7 @@ class State:
 
 # [file_name, api_title, api_label]
 apis = [ 
-    ["src/ad_parser.h", "BLE Advertisements Parser", "advParser"],
+    ["src/ad_parser.h", "AD Data (Advertisements and EIR) Parser", "advParser"],
     ["src/btstack_chipset.h","BTstack Chipset","btMemory"],
     ["src/btstack_control.h","BTstack Hardware Control","btControl"],
     ["src/btstack_event.h","HCI Event Getter","btEvent"],
@@ -23,13 +23,13 @@ apis = [
     ["src/hci_transport.h","HCI Transport","hciTransport"],
     ["src/l2cap.h", "L2CAP", "l2cap"],
 
-    ["src/ble/ancs_client.h", "BLE ANCS Client", "ancsClient"],
-    ["src/ble/att_db_util.h", "BLE ATT Database", "attDb"],
-    ["src/ble/att_server.h", "BLE ATT Server", "attServer"],
-    ["src/ble/gatt_client.h", "BLE GATT Client", "gattClient"],
-    ["src/ble/le_device_db.h", "BLE Device Database", "leDeviceDb"],
-    ["src/ble/le_device_db_tlv.h", "BLE Device Database TLV", "leDeviceDbTLV"],
-    ["src/ble/sm.h", "BLE Security Manager", "sm"],
+    ["src/ble/ancs_client.h", "ANCS Client", "ancsClient"],
+    ["src/ble/att_db_util.h", "ATT Database", "attDb"],
+    ["src/ble/att_server.h", "ATT Server", "attServer"],
+    ["src/ble/gatt_client.h", "GATT Client", "gattClient"],
+    ["src/ble/le_device_db.h", "Device Database", "leDeviceDb"],
+    ["src/ble/le_device_db_tlv.h", "Device Database TLV", "leDeviceDbTLV"],
+    ["src/ble/sm.h", "Security Manager", "sm"],
 
     ["src/ble/gatt-service/battery_service_server.h", "Battery Service Server", "batteryServiceServer"],
     ["src/ble/gatt-service/cycling_power_service_server.h", "Cycling Power Service Server", "cyclingPowerServiceServer"],
@@ -51,7 +51,6 @@ apis = [
     ["src/classic/avrcp_controller.h", "AVRCP Controller", "avrcpController"],
     ["src/classic/avrcp_target.h", "AVRCP Target", "avrcpTarget"],
     ["src/classic/bnep.h", "BNEP", "bnep"],
-    ["src/classic/bnep.h", "BNEP", "bnep"],
     ["src/classic/btstack_link_key_db.h","Link Key DB","lkDb"],
     ["src/classic/btstack_sbc.h", "SBC", "sbc"],
     ["src/classic/device_id_server.h", "Device ID Server", "deviceIdServer"],
@@ -62,7 +61,6 @@ apis = [
     ["src/classic/hid_device.h", "HID Device", "hidDevice"],
     ["src/classic/hsp_ag.h","HSP Audio Gateway","hspAG"],   
     ["src/classic/hsp_hs.h","HSP Headset","hspHS"],
-    ["src/classic/pan.h", "PAN", "pan"],
     ["src/classic/pan.h", "PAN", "pan"],
     ["src/classic/pbap_client.h", "PBAP Client", "pbapClient"],
     ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
