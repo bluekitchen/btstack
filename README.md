@@ -94,6 +94,7 @@ CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | 
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
 Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | bcm            |
 Cypress CYW20819             | Dual mode | H4, H5, USB     | Probably         | bcm            | Keep CTS high during power cycle
+Cypress CYW43xxx             | Dual mode + Wifi | H4, H5   | Don't know       | bcm            | Bluetooth + Wifi Combo Controller
 Cypress PSoC 4               | LE        | H4              | n.a.             |                | HCI Firmware part of PSoC Creator kit examples
 Dialog Semiconductor DA14581, DA14585 | LE      | H4, SPI  | n.a.             | da14581        | Official HCI firmware used
 Dialog Semiconductor DA1469x | LE        | H4, SPI         | n.a              |                | HCI Firmware part of DA1469x SDK

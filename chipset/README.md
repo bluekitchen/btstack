@@ -60,11 +60,12 @@ CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | Partially (2)
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | CSR8510:  No   |                    | csr            |
 Cypress CYW20704/7   | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | Yes            |       Yes          | bcm            |
 Cypress CYW20819     | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | Yes            |    Don't know      | bcm            | Keep CTS high during power cycle
+Cypress CYW43xxx     | Dual mode + Wifi | H4, H5  | Don't know   | Partially (2)    | Don't know |     No           | Don't know     |    Don't know      | bcm            | Bluetooth + Wifi Combo Controller
 Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.             | Yes    |    Don't know        | n.a.           |    Don't know      |                | HCI Firmware part of PSoC Creator kits examples
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | da14581        | Official HCI firmware included in BTstack
 Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | Official HCI firmware included in BTstack
 Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | HCI Firmware part of DA1469x SDK
-Espressif ESP32      | Dual mode | VHCI           | Yes          | Not yet          | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
+Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Not yet          | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | Don't know     |    Don't know      | intel          | Firmware size: 400 kB 
@@ -110,6 +111,8 @@ The PSoC 4 SoCs can be programmed with the "BLE DTM" HCI Firmware from the PSoC 
 
 The CYW20819 can be used as a SoC with Cypress' Bluetooth stack. To use it as a regular Bluetooth Controller over HCI H4, CTS must be asserted during Power-Up / Reset. 
 
+The CYW43xxx series contains a Wifi and Bluetooth Controller. The Bluetooth Controller can be used independent from the Wifi part.
+
 **Init scripts**: For UART connected chipsets, an init script has to be uploaded after power on. For Bluetooth chipsets that are used in Broadcom Wifi+Bluetooth combos, this file often can be found as a binary file in Linux distributions with the ending *'.hcd'* or as part of the WICED SDK as C source file that contains the init script as a data array for use without a file system.
 
 To find the correct file, Broadcom chipsets return their model number when asked for their local name.
@@ -153,19 +156,21 @@ Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed w
 
 It does not implement the Data Length Extension or supports multiple concurrent roles.
 
-The newer DA14585 uses the same firmware upload mechanism as the 581 model. In addition, it supports both Data Length Extension as well as multiple concurrent roles.
+The DA14585 uses the same firmware upload mechanism as the 581 model. In addition, it supports both Data Length Extension as well as multiple concurrent roles.
 
-The even newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmware that can be compiled and downloaded into flash using the SmartSnippets Studio.
+The newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmware that can be compiled and downloaded into flash using the SmartSnippets Studio.
 
 **BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
 
 **Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware.
 
-**BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA1458x. After that, it can be used as any other HCI chipset. No special support needed for DA1469x.
+**BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA1458x. After that, it can be used as any other HCI chipset. No special support needed for DA1469x after compiling and flashing the HCI firmware.
+
 
 ## Espressif ESP32
 
 The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. SCO isn't supported currently, but [Espressif is working on it](https://github.com/espressif/esp-idf/issues/1118).
+
 
 ## EM Microelectronic Marin
 
@@ -185,9 +190,11 @@ EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file als
 
 **BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
 
+
 ## Intel Dual Wireless 8260, 8265
 
 Wifi/Bluetooth combo cards mainly used in mobile computers. The Bluetooth part requires the upload of a firmware file and a configuration file. SCO, DLE, Multiple roles not tested.
+
 
 ## Nordic nRF5 series
 
@@ -226,6 +233,7 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
    * For the nRF51 Dev Kit, use `make BOARD=nrf51_pca10028` and `./flash_nrf51_10028.sh` with the nRF51 kit.
    * The nRF5 dev kit acts as an LE HCI Controller with H4 interface.
 
+
 ## Renesas Electronics
 
 Renesas currently has 3 LE-only SoCs: the older 16-bit RL78 and the newer RX23W and the RA4W1. 
@@ -262,6 +270,7 @@ STMicroelectronics offers the Bluetooth V2.1 + EDR chipset STLC2500D that suppor
 **BTstack integration**: Support for the STLC2500C is provided by *btstack_chipset_stlc.c*. During the setup, *btstack_chipset_stlc2500d_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables higher UART baud rate and to set the BD Addr during startup.
 
 The new STM32-WB5x series microcontroller is an SoC with a multi-protocol 2.4 Ghz radio co-processor. It provides a virtual HCI interface.
+
 
 ## Texas Instruments CC256x series
 
