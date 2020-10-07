@@ -276,27 +276,29 @@ static void stdin_process(char cmd);
 static void a2dp_demo_hexcmod_configure_sample_rate(int sample_rate);
 
 static int a2dp_source_and_avrcp_services_init(void){
-    // request role change on reconnecting headset to always use them in slave mode
+    // Request role change on reconnecting headset to always use them in slave mode
     hci_set_master_slave_policy(0);
 
     l2cap_init();
-    // Initialize  A2DP Source.
+    // Initialize  A2DP Source
     a2dp_source_init();
     a2dp_source_register_packet_handler(&a2dp_source_packet_handler);
 
-    // Create stream endpoint.
+    // Create stream endpoint
     avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
     if (!local_stream_endpoint){
         printf("A2DP Source: not enough memory to create local stream endpoint\n");
         return 1;
     }
+
+    // Store stream enpoint's SEP ID, as it is used by A2DP API to indentify the stream endpoint
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
     avdtp_source_register_delay_reporting_category(media_tracker.local_seid);
 
-    // Initialize AVRCP Service.
+    // Initialize AVRCP Service
     avrcp_init();
     avrcp_register_packet_handler(&avrcp_packet_handler);
-    // Initialize AVRCP Target.
+    // Initialize AVRCP Target
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
     // Initialize AVRCP Controller
@@ -306,12 +308,12 @@ static int a2dp_source_and_avrcp_services_init(void){
     // Initialize SDP, 
     sdp_init();
     
-    // Create  A2DP Source service record and register it with SDP.
+    // Create A2DP Source service record and register it with SDP
     memset(sdp_a2dp_source_service_buffer, 0, sizeof(sdp_a2dp_source_service_buffer));
     a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, AVDTP_SOURCE_FEATURE_MASK_PLAYER, NULL, NULL);
     sdp_register_service(sdp_a2dp_source_service_buffer);
     
-    // Create AVRCP target service record and register it with SDP.
+    // Create AVRCP target service record and register it with SDP
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
     uint16_t supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
@@ -320,12 +322,14 @@ static int a2dp_source_and_avrcp_services_init(void){
     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10002, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
-    // setup AVRCP Controller
+    // Register AVRCP Controller
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
+    // Register Device ID (PnP) service SDP record
+    memset(device_id_sdp_service_buffer, 0, sizeof(device_id_sdp_service_buffer));
     device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10004, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
     sdp_register_service(device_id_sdp_service_buffer);
 
@@ -398,9 +402,7 @@ static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
                 break;
             default:
                 break;
-        }
-        
-        
+        }   
     }
 }
 
@@ -432,7 +434,7 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
 }
 
 static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
-    // perform sbc encodin
+    // perform sbc encoding
     int total_num_bytes_read = 0;
     unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
