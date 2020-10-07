@@ -12,33 +12,58 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
+## Changes October 2020
+
+### Fixed
+- AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
+
+### Added
+
+### Changed
+
+
 ## Changes September 2020
 
 ### Fixed
 - HFP: fix parsing of ranges e.g. in +CIND responses
+- AVDTP, AVRCP: fix bugs due to transaction id overrun
+- A2DP Source: fix issues with stream configuration by sink
+- hci_dump: fix tv_us calculation for non-posix / embedded systems with binary output
 
 ### Added
 - `btstack_ring_buffer`: add `btstack_ring_buffer_reset` to reset it to initial state/empty
 - GAP: Support for address resolution of resolvable private addresses by Controller with `ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION`
 
 ### Changed
+- AVDTP, AVRCP, HSP: schedule SDP query, avoids avoids 'command disallowed' if SDP client is busy
+- HSP, HFP: allow to configure usable SCO packet types
+- cc256x: update CC256xC init script to v1.4
+- A2DP Source: use Get All Capabilities if supported by remote get Delay Reporting capability
 
 ## Changes August 2020
 
 ### Fixed
 - ESP32: fix authentication for incoming Secure Connections
-
+- AVDTP: Fix forwarding of Delay reports
+- STM32-F4Discovery: fix pan_lwip_http_server by increasing HCI_ACL_PAYLOAD_SIZE
+- tool/create_packet_log: basic support for 16-bit Unicode log files from Windows
+ 
 ### Added
 - `btstack_run_loop_base`: added `btstack_run_loop_base_dump_timer`
 - GAP: request role change for classic connection via `gap_request_role`
-- GAP: LE Whitelist API with 'gap_le_whitelist_x' with x = add, remove, clear and new `gap_connect_with_whitelist`
+- GAP: LE Whitelist API with `gap_le_whitelist_x` with x = add, remove, clear and new `gap_connect_with_whitelist`
 - SDP Client: add sdp_client_register_query_callback() allows to register query request instead of polling sdp_client_ready()
 - BNEP lwIP: add `bnep_lwip_connect` to establish BNEP connection and manage lwIP network interface
 - New `btstack_linked_queue` utility, a linked list-based queue with first-in-first-out semantics and constant time enqueue/dequeue operations
+- btstack_tlv_posix: add `btstack_tlv_posix_deinit`
+- New `btpclient` for use with [auto-pts project](https://github.com/intel/auto-pts)
 
 ### Changed
 - GAP: treat AES-CCM encrypted connection as mutually authenticated (BIAS)
-- GAP: 'gap_auto_connect_x' API deprecated. Please manage LE Whitelist and call `gap_connect_with_whitelist` instead
+- GAP: 'gap_auto_connect_x' API deprecated. Please direclty manage LE Whitelist with `gap_le_whitelist_*` functions and call `gap_connect_with_whitelist` instead
+- example/hid_host_demo: try to become master for incoming connections
+- btstack_run_loop: use btstack_assert instead of local while(true)
+- att_db_util: allow to reset att_db via `att_db_util_init`
 
 ## Changes July 2020
 
