@@ -41,7 +41,7 @@ update_content:
 	cp -r docs docs_final
 
 clean:
-	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex
+	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
 	rm -rf docs/appendix/apis.md docs/appendix/index.md docs/examples/examples.md docs/chipsets.md
 	rm -rf latex btstack help
 	
