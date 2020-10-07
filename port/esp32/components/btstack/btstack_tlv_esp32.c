@@ -64,7 +64,7 @@ static int btstack_tlv_esp32_get_tag(void * context, uint32_t tag, uint8_t * buf
 	if (!nvs_active) return 0;
 	char key_buffer[9];
 	key_for_tag(tag, key_buffer);
-	log_info("read tag %s", key_buffer);
+	log_debug("read tag %s", key_buffer);
 	size_t size = 0;
     esp_err_t err = nvs_get_blob(the_nvs_handle, key_buffer, NULL, &size);
     switch (err) {
