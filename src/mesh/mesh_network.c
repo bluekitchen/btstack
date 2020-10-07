@@ -66,7 +66,7 @@
 #define MESH_NETWORK_CACHE_SIZE 2
 
 // debug config
-// #define LOG_NETWORK
+#define LOG_NETWORK
 
 static void mesh_network_dump_network_pdus(const char * name, btstack_linked_list_t * list);
 
@@ -138,6 +138,9 @@ static mesh_network_pdu_t * adv_bearer_network_pdu;
 // mesh network cache - we use 32-bit 'hashes'
 static uint32_t mesh_network_cache[MESH_NETWORK_CACHE_SIZE];
 static int      mesh_network_cache_index;
+
+// register for freed network pdu
+void (*mesh_network_free_pdu_callback)(void);
 
 // prototypes
 
@@ -272,20 +275,6 @@ static void mesh_network_send_complete(mesh_network_pdu_t * network_pdu){
     }
 }
 
-static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
-
-#ifdef LOG_NETWORK
-    printf("TX-D-NetworkPDU (%p): ", network_pdu);
-    printf_hexdump(network_pdu->data, network_pdu->len);
-#endif
-
-    // add to queue
-    btstack_linked_list_add_tail(&network_pdus_outgoing_gatt, (btstack_linked_item_t *) network_pdu);
-
-    // go
-    mesh_network_run();
-}
-
 // new
 static void mesh_network_send_c(void *arg){
     UNUSED(arg);
@@ -307,7 +296,23 @@ static void mesh_network_send_c(void *arg){
     // done
     mesh_network_pdu_t * network_pdu = outgoing_pdu;
     outgoing_pdu = NULL;
-    (network_pdu->callback)(network_pdu);
+
+    if ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION) != 0){
+        // encryption requested by mesh_network_encrypt_proxy_configuration_message
+        (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_ENCRYPTED, network_pdu);
+        return;
+    }
+
+#ifdef LOG_NETWORK
+    printf("TX-D-NetworkPDU (%p): ", network_pdu);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
+
+    // add to queue
+    btstack_linked_list_add_tail(&network_pdus_outgoing_gatt, (btstack_linked_item_t *) network_pdu);
+
+    // go
+    mesh_network_run();
 }
 
 static void mesh_network_send_b(void *arg){
@@ -399,18 +404,21 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
     uint8_t ctl_in_bit_7 = ctl_ttl & 0x80;
     uint8_t ttl          = ctl_ttl & 0x7f;
 
+    // prepare pdu for resending
+    network_pdu->data[1] = ctl_in_bit_7 | (ttl - 1);
+    network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
+
 #ifdef LOG_NETWORK
     printf("TX-Relay-NetworkPDU (%p): ", network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
     printf("^^ into network_pdus_queued\n");
 #endif
 
-    // prepare pdu for resending
-    network_pdu->data[1] = ctl_in_bit_7 | (ttl - 1);
-    network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
+    uint8_t net_mic_len = ctl_in_bit_7 ? 8 : 4;
+    btstack_assert((network_pdu->len + net_mic_len) <= 29);
+    UNUSED(net_mic_len);
 
     // queue up
-    network_pdu->callback = &mesh_network_send_d;
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
 }
 #endif
@@ -433,7 +441,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
 
 #ifdef ENABLE_MESH_RELAY
             if (mesh_foundation_relay_get() != 0){
-                // - to ADV bearer, if Relay supported and enabled
+                // - to ADV bearer, if Relay supported and enabledx
                 mesh_network_relay_message(network_pdu);
                 mesh_network_run();
                 return;
@@ -1057,7 +1065,6 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     btstack_assert(network_pdu->len >= 9);
 
     // setup callback
-    network_pdu->callback = &mesh_network_send_d;
     network_pdu->flags    = 0;
 
     // queue up
@@ -1070,12 +1077,11 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     mesh_network_run();
 }
 
-void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback)){
+void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu){
     printf("ProxyPDU(unencrypted): ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
     // setup callback
-    network_pdu->callback = callback;
     network_pdu->flags    = MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION;
 
     // queue up
@@ -1094,10 +1100,10 @@ void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * netwo
  * @param dest
  */
 void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
-    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
     // set netkey_index
     network_pdu->netkey_index = netkey_index;
     // setup header
+    network_pdu->len = 0;
     network_pdu->data[network_pdu->len++] = (mesh_get_iv_index_for_tx() << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
     network_pdu->data[network_pdu->len++] = ctl_ttl;
@@ -1107,9 +1113,12 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
     network_pdu->len += 2;
     big_endian_store_16(network_pdu->data, network_pdu->len, dest);
     network_pdu->len += 2;
+    btstack_assert((network_pdu->len + transport_pdu_len) <= MESH_NETWORK_PAYLOAD_MAX);
     (void)memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data,
                  transport_pdu_len);
     network_pdu->len += transport_pdu_len;
+    // zero rest of packet
+    memset(&network_pdu->data[network_pdu->len], 0, MESH_NETWORK_PAYLOAD_MAX - network_pdu->len);
 }
 
 /*
@@ -1217,12 +1226,22 @@ void mesh_network_reset(void){
     // - adv_bearer_network_pdu
     // - gatt_bearer_network_pdu
     // - outoing_pdu
+    // unless they are SEG ACK messages
 #ifdef ENABLE_MESH_ADV_BEARER
+    if ((adv_bearer_network_pdu != NULL) && (adv_bearer_network_pdu->pdu_header.pdu_type == MESH_PDU_TYPE_SEGMENT_ACKNOWLEDGMENT)){
+        btstack_memory_mesh_network_pdu_free(adv_bearer_network_pdu);
+    }
     adv_bearer_network_pdu = NULL;
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
+    if ((gatt_bearer_network_pdu != NULL) && (gatt_bearer_network_pdu->pdu_header.pdu_type == MESH_PDU_TYPE_SEGMENT_ACKNOWLEDGMENT)){
+        btstack_memory_mesh_network_pdu_free(gatt_bearer_network_pdu);
+    }
     gatt_bearer_network_pdu = NULL;
 #endif
+    if ((outgoing_pdu != NULL) && (outgoing_pdu->pdu_header.pdu_type == MESH_PDU_TYPE_SEGMENT_ACKNOWLEDGMENT)){
+        btstack_memory_mesh_network_pdu_free(outgoing_pdu);
+    }
     outgoing_pdu = NULL;
     
     if (incoming_pdu_raw){
@@ -1248,7 +1267,18 @@ mesh_network_pdu_t * mesh_network_pdu_get(void){
 
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu){
     btstack_memory_mesh_network_pdu_free(network_pdu);
+    if (mesh_network_free_pdu_callback!=NULL){
+        void (*callback)(void) = mesh_network_free_pdu_callback;
+        mesh_network_free_pdu_callback= NULL;
+        (*callback)();
+    }
 }
+
+void mesh_network_notify_on_freed_pdu(void (*callback)(void)){
+    btstack_assert(mesh_network_free_pdu_callback == NULL);
+    mesh_network_free_pdu_callback = callback;
+}
+
 
 // Mesh Subnet Management
 

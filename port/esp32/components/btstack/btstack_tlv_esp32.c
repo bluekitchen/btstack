@@ -51,7 +51,6 @@ static void key_for_tag(uint32_t tag, char * key_buffer){
 		key_buffer[i] = char_for_nibble( (tag >> (4*(7-i))) & 0x0f);
 	}
 	key_buffer[i] = 0;
-	log_info("tag %08x -> %s", tag, key_buffer);
 }
 
 /**
@@ -65,7 +64,7 @@ static int btstack_tlv_esp32_get_tag(void * context, uint32_t tag, uint8_t * buf
 	if (!nvs_active) return 0;
 	char key_buffer[9];
 	key_for_tag(tag, key_buffer);
-	log_info("read tag %s", key_buffer);
+	log_debug("read tag %s", key_buffer);
 	size_t size = 0;
     esp_err_t err = nvs_get_blob(the_nvs_handle, key_buffer, NULL, &size);
     switch (err) {
@@ -98,12 +97,12 @@ static int btstack_tlv_esp32_store_tag(void * context, uint32_t tag, const uint8
 	log_info("store tag %s", key_buffer);
 	esp_err_t err = nvs_set_blob(the_nvs_handle, key_buffer, data, data_size);
 	if (err != ESP_OK){
-        printf("Error (0x%04x) nvs_set_blob %s!\n", err, key_buffer);
+        log_error("Error (0x%04x) nvs_set_blob %s!", err, key_buffer);
         return 1;
     }
 	err = nvs_commit(the_nvs_handle);
 	if (err != ESP_OK){
-        printf("Error (0x%04x) nvs_commit %s!\n", err, key_buffer);
+        log_error("Error (0x%04x) nvs_commit %s!", err, key_buffer);
         return 1;
     }
     return 0;

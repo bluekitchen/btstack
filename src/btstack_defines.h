@@ -1724,10 +1724,11 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT             0x03
 
 /**
- * @format 12B1
+ * @format 12B21
  * @param subevent_code
  * @param avdtp_cid
  * @param bd_addr
+ * @param con_handle
  * @param status 0 == OK
  */
 #define AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED     0x04
@@ -2070,10 +2071,11 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0A
 
 /**
- * @format 12B1
+ * @format 12B21
  * @param subevent_code
  * @param a2dp_cid
  * @param bd_addr
+ * @param con_handle
  * @param status 0 == OK
  */
 #define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0B
@@ -2244,11 +2246,12 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x11
 
 /**
- * @format 11B2
+ * @format 112B2
  * @param subevent_code
  * @param status 0 == OK
- * @param bd_addr
  * @param avrcp_cid
+ * @param bd_addr
+ * @param con_handle
  */
 #define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x12
 

@@ -83,6 +83,11 @@ bool  btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer);
 void  btstack_run_loop_base_process_timers(uint32_t now);
 
 /**
+ * @brief Dump list of timers via log_info
+ */
+void btstack_run_loop_base_dump_timer(void);
+
+/**
  * @brief Get time until first timer fires
  * @returns -1 if no timers, time until next timeout otherwise
  */

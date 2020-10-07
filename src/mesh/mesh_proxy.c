@@ -381,7 +381,7 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
                     big_endian_store_16(data, pos, proxy_configuration_filter_list_len);
 
                     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
-                    mesh_network_encrypt_proxy_configuration_message(network_pdu, &request_can_send_now_proxy_configuration_callback_handler);
+                    mesh_network_encrypt_proxy_configuration_message(network_pdu);
                     
                     // received_network_pdu is processed
                     btstack_memory_mesh_network_pdu_free(received_network_pdu);
@@ -400,6 +400,9 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
         case MESH_NETWORK_PDU_SENT:
             // printf("test MESH_PROXY_PDU_SENT\n");
             // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
+            break;
+        case MESH_NETWORK_PDU_ENCRYPTED:
+            request_can_send_now_proxy_configuration_callback_handler(received_network_pdu);
             break;
         default:
             break;

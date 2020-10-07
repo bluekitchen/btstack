@@ -62,7 +62,7 @@ COMMON += \
 	uECC.c                      \
 	sm.c                        \
 
-CLASSIC += \
+CLASSIC ?= \
 	sdp_util.c	                \
 	gatt_sdp.c                  \
 	spp_server.c  				\
@@ -233,7 +233,6 @@ EXAMPLES_LE_ONLY=           \
 	nordic_spp_le_streamer  \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
-	spp_and_gatt_counter    \
 	ublox_spp_le_counter    \
 
 # List of Examples that use Bluetooth BR/EDR/LE = Dual Mode
@@ -291,6 +290,7 @@ default_target: all
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
+
 ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
@@ -414,7 +414,7 @@ a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_E
 a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o avrcp_target.o btstack_resample.o a2dp_sink_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${AVRCP_OBJ} avrcp_browsing_client.c
+avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${AVRCP_OBJ} ${AVDTP_OBJ} avrcp_browsing_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c

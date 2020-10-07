@@ -7,8 +7,8 @@ BTSTACK_ROOT =  ../..
 CPPFLAGS =  -x c++ -Wall -Wno-unused
 
 CFLAGS  = -DUNIT_TEST -g
-CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -I. -I${BTSTACK_ROOT}/src
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 VPATH += ${BTSTACK_ROOT}/src
 

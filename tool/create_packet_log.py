@@ -107,11 +107,13 @@ with open (outfile, 'wb') as fout:
 		line_conter = 0
 		for line in fin:
 			try:
+				# try to deal with windows 16-bit unicode by dropping \0 characters
+				line = ''.join([c for c in line if c != '\0'])
 				line_conter += 1
 				timestamp = None
 				# strip newlines
 				line = line.strip("\n\r")
-				# skip empyt lines
+				# skip empty lines
 				if len(line) == 0: 
 					continue
 				parts = re.match('\[(.*)\] (.*)', line)

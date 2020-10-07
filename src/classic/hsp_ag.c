@@ -57,6 +57,7 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
+#include "classic/sdp_client.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
@@ -90,18 +91,18 @@ static int ag_speaker_gain = -1;
 static uint8_t ag_ring = 0;
 static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
-static uint8_t ag_num_button_press_received = 0;
 static uint8_t ag_support_custom_commands = 0;
 static uint8_t hsp_disconnect_rfcomm = 0;
-static uint8_t hsp_establish_audio_connection = 0;
 static uint8_t hsp_release_audio_connection = 0;
+
+static uint16_t hsp_ag_sco_packet_types;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 typedef enum {
     HSP_IDLE,
-    HSP_SDP_QUERY_RFCOMM_CHANNEL,
-    HSP_W4_SDP_EVENT_QUERY_COMPLETE,
+    HSP_W2_SEND_SDP_QUERY,
+    HSP_W4_SDP_QUERY_COMPLETE,
     HSP_W4_RFCOMM_CONNECTED,
 
     HSP_RFCOMM_CONNECTION_ESTABLISHED,
@@ -123,7 +124,7 @@ typedef enum {
 
 static hsp_state_t hsp_state = HSP_IDLE;
 
-
+static btstack_context_callback_registration_t hsp_ag_handle_sdp_client_query_request;
 static btstack_packet_handler_t hsp_ag_callback;
 
 static void hsp_run(void);
@@ -261,14 +262,12 @@ static void hsp_ag_reset_state(void){
     ag_send_error = 0;
     ag_ring = 0;
 
-    ag_num_button_press_received = 0;
     ag_support_custom_commands = 0;
 
     ag_microphone_gain = -1;
     ag_speaker_gain = -1;
 
     hsp_disconnect_rfcomm = 0;
-    hsp_establish_audio_connection = 0;
     hsp_release_audio_connection = 0;
 }
 
@@ -279,14 +278,27 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
 
     rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
 
+    hsp_ag_sco_packet_types = SCO_PACKET_TYPES_ALL;
     hsp_ag_reset_state();
+}
+
+static void hsp_ag_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    if (hsp_state != HSP_W2_SEND_SDP_QUERY) return;
+    
+    hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
+    log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET);
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);
 }
 
 void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
-    hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
+    
     (void)memcpy(remote, bd_addr, 6);
-    hsp_run();
+    hsp_state = HSP_W2_SEND_SDP_QUERY;
+    hsp_ag_handle_sdp_client_query_request.callback = &hsp_ag_handle_start_sdp_client_query;
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&hsp_ag_handle_sdp_client_query_request);
 }
 
 void hsp_ag_disconnect(void){
@@ -307,8 +319,7 @@ void hsp_ag_disconnect(void){
 void hsp_ag_establish_audio_connection(void){
     switch (hsp_state){
         case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-            hsp_establish_audio_connection = 1;
-            hsp_state = HSP_W4_SCO_CONNECTED;
+            hsp_state = HSP_W2_CONNECT_SCO;
             break;
         case HSP_W4_RFCOMM_CONNECTED:
             hsp_state = HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
@@ -382,6 +393,7 @@ void hsp_ag_stop_ringing(void){
 }
 
 static void hsp_run(void){
+    uint16_t packet_types;
 
     if (ag_send_ok){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
@@ -413,13 +425,6 @@ static void hsp_run(void){
         return;
     }
 
-    if (hsp_establish_audio_connection){
-        if (!hci_can_send_command_packet_now()) return;
-        hsp_establish_audio_connection = 0;
-        hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
-        return;
-    }
-
     if (hsp_release_audio_connection){
         hsp_release_audio_connection = 0;
         gap_disconnect(sco_handle);
@@ -428,28 +433,19 @@ static void hsp_run(void){
     
     if (hsp_disconnect_rfcomm){
         hsp_disconnect_rfcomm = 0;
-        hsp_establish_audio_connection = 0;
         rfcomm_disconnect(rfcomm_cid);
         return;
     }
 
     switch (hsp_state){
-        case HSP_SDP_QUERY_RFCOMM_CHANNEL:
-            hsp_state = HSP_W4_SDP_EVENT_QUERY_COMPLETE;
-            log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET);
-            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);
-            break;
 
         case HSP_W4_RING_ANSWER:
-            if (!ag_num_button_press_received) break;    
-
             if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
                 rfcomm_request_can_send_now_event(rfcomm_cid);
                 return;
             }
 
             ag_send_ok = 0;
-            ag_num_button_press_received = 0;
             hsp_state = HSP_W2_CONNECT_SCO;
 
             hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
@@ -458,12 +454,12 @@ static void hsp_run(void){
         case HSP_W2_CONNECT_SCO:
             if (!hci_can_send_command_packet_now()) return;
             hsp_state = HSP_W4_SCO_CONNECTED;
-            hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, 0x003F);
+            // bits 6-9 are 'don't use'
+            packet_types = hsp_ag_sco_packet_types ^ 0x3c0;
+            hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, hci_get_sco_voice_setting(), 0xFF, packet_types);
             break;
         
         case HSP_W2_DISCONNECT_SCO:
-            ag_num_button_press_received = 0;
-        
             hsp_state = HSP_W4_SCO_DISCONNECTED;
             gap_disconnect(sco_handle);
             break;
@@ -524,7 +520,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     hsp_release_audio_connection = 1;
                     break;
                 case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-                    hsp_establish_audio_connection = 1;
+                    hsp_state = HSP_W2_CONNECT_SCO;
                     break;
                 default:
                     break;
@@ -562,8 +558,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     switch (event) {
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            if (hsp_state != HSP_W4_SCO_CONNECTED) break;
             uint8_t status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != 0){
+                hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
                 log_error("(e)SCO Connection failed, status %u", status);
                 emit_event_audio_connected(status, sco_handle);
                 break;
@@ -689,4 +687,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+void hsp_ag_set_sco_packet_types(uint16_t packet_types){
+    hsp_ag_sco_packet_types = packet_types;
+}
 

@@ -246,7 +246,7 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
 $(BUILD_DIR)/%.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@

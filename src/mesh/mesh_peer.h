@@ -52,7 +52,7 @@ typedef struct {
     uint32_t seq;
 
     // segmented transport message
-    mesh_transport_pdu_t * transport_pdu;
+    mesh_segmented_pdu_t * message_pdu;
     // seq_zero
     uint16_t seq_zero;
     // seq_auth

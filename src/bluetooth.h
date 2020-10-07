@@ -238,6 +238,8 @@ typedef enum {
 #define RFCOMM_AGGREGATE_FLOW_OFF                          0x73
 #define RFCOMM_DATA_LEN_EXCEEDS_MTU                        0x74
 
+#define HFP_REMOTE_REJECTS_AUDIO_CONNECTION                0x7F
+
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81
 #define SDP_SERVICE_NOT_FOUND                              0x82
@@ -320,6 +322,14 @@ typedef enum {
 #define HCI_ACL_3DH5_SIZE         1021
        
 #define LE_ADVERTISING_DATA_SIZE    31
+
+// SCO Packet Types
+#define SCO_PACKET_TYPES_NONE  0x0000
+#define SCO_PACKET_TYPES_HV1   0x0001
+#define SCO_PACKET_TYPES_HV3   0x0004
+#define SCO_PACKET_TYPES_EV3   0x0008
+#define SCO_PACKET_TYPES_2EV3  0x0040
+#define SCO_PACKET_TYPES_ALL   0x03FF
 
 // Link Policy Settings
 #define LM_LINK_POLICY_DISABLE_ALL_LM_MODES  0

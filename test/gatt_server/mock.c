@@ -11,6 +11,8 @@
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 
+#include "btstack_debug.h"
+
 static btstack_packet_handler_t att_packet_handler;
 static void (*registered_hci_event_handler) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
@@ -71,6 +73,22 @@ int hci_can_send_acl_le_packet_now(void){
 	return 1;
 }
 
+int hci_can_send_command_packet_now(void){
+	return 1;
+}
+
+HCI_STATE hci_get_state(void){
+	return HCI_STATE_WORKING;
+}
+
+int hci_send_cmd(const hci_cmd_t *cmd, ...){
+	btstack_assert(false);
+	return 0;
+}
+
+void hci_halting_defer(void){
+}
+
 int  l2cap_can_send_connectionless_packet_now(void){
 	return 1;	
 }
@@ -107,8 +125,14 @@ int l2cap_reserve_packet_buffer(void){
 void l2cap_release_packet_buffer(void){
 }
 
+static uint8_t l2cap_can_send_fixed_channel_packet_now_status = 1;
+
+void l2cap_can_send_fixed_channel_packet_now_set_status(uint8_t status){
+	l2cap_can_send_fixed_channel_packet_now_status = status;
+}
+
 int l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
-	return 1;
+	return l2cap_can_send_fixed_channel_packet_now_status;
 }
 
 void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t channel_id){
@@ -172,6 +196,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_t
 	return NULL;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
+	if (con_handle != 0) return NULL;
 	return &hci_connection;
 }
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){

@@ -1275,6 +1275,66 @@ const hci_cmd_t hci_le_generate_dhkey = {
 };
 
 /**
+ * @param Peer_Identity_Address_Type
+ * @param Peer_Identity_Address
+ * @param Peer_IRK
+ * @param Local_IRK
+ */
+const hci_cmd_t hci_le_add_device_to_resolving_list = {
+        HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_RESOLVING_LIST, "1BPP"
+};
+
+/**
+ * @param Peer_Identity_Address_Type
+ * @param Peer_Identity_Address
+ */
+const hci_cmd_t hci_le_remove_device_from_resolving_list = {
+        HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_RESOLVING_LIST, "1B"
+};
+
+/**
+ */
+const hci_cmd_t hci_le_clear_resolving_list = {
+        HCI_OPCODE_HCI_LE_CLEAR_RESOLVING_LIST, ""
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_resolving_list_size = {
+        HCI_OPCODE_HCI_LE_READ_RESOLVING_LIST_SIZE, ""
+};
+
+/**
+ * @param Peer_Identity_Address_Type
+ * @param Peer_Identity_Address
+ */
+const hci_cmd_t hci_le_read_peer_resolvable_address = {
+        HCI_OPCODE_HCI_LE_READ_PEER_RESOLVABLE_ADDRESS, ""
+};
+
+/**
+ * @param Peer_Identity_Address_Type
+ * @param Peer_Identity_Address
+ */
+const hci_cmd_t hci_le_read_local_resolvable_address = {
+        HCI_OPCODE_HCI_LE_READ_LOCAL_RESOLVABLE_ADDRESS, ""
+};
+
+/**
+ * @param Address_Resolution_Enable
+ */
+const hci_cmd_t hci_le_set_address_resolution_enabled= {
+        HCI_OPCODE_HCI_LE_SET_ADDRESS_RESOLUTION_ENABLED, "1"
+};
+
+/**
+ * @param RPA_Timeout in seconds, range 0x0001 to 0x0E10, default: 900 s
+ */
+const hci_cmd_t hci_le_set_resolvable_private_address_timeout= {
+        HCI_OPCODE_HCI_LE_SET_RESOLVABLE_PRIVATE_ADDRESS_TIMEOUT, "2"
+};
+
+/**
  */
 const hci_cmd_t hci_le_read_maximum_data_length = {
     HCI_OPCODE_HCI_LE_READ_MAXIMUM_DATA_LENGTH, ""

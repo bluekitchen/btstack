@@ -21,7 +21,7 @@ CORE += \
 	wav_util.c 					\
 	0000000_META_hci_patches_v7.c \
 	# bluetooth_init_cc2564_2.14.c \
-	# bluetooth_init_cc2564C_1.3.c \
+	# bluetooth_init_cc2564C_1.4.c \
 
 # TI-WL183x requires TIInit_11.8.32.c
 

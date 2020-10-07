@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mesh/mesh_iv_index_seq_number.h>
 
 #include "btstack.h"
 #include "mesh_pts.h"
@@ -77,6 +78,8 @@ static int      pts_type;
 
 static mesh_virtual_address_t * pts_virtual_addresss;
 
+static uint16_t test_destination = 0x0001;
+
 const char * pts_device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
 
 static uint8_t      prov_static_oob_data[16];
@@ -86,8 +89,6 @@ static uint8_t      prov_public_key_data[64];
 static const char * prov_public_key_string = "F465E43FF23D3F1B9DC7DFC04DA8758184DBC966204796ECCF0D6CF5E16500CC0201D048BCBBD899EEEFC424164E33C201C2B010CA6B4D43A8A155CAD8ECB279";
 static uint8_t      prov_private_key_data[32];
 static const char * prov_private_key_string = "529AA0670D72CD6497502ED473502B037E8803B5C60829A5A3CAA219505530BA";
-
-static mesh_transport_key_t pts_application_key;
 
 // pin entry (pts)
 static int ui_chars_for_pin; 
@@ -137,6 +138,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     strcpy(gap_name_buffer, gap_name_prefix);
                     strcat(gap_name_buffer, bd_addr_to_str(addr));
 
+                    // stop publication for testing
+                    mesh_model_publication_stop(mesh_node_get_health_server());
+
                     // dump PTS MeshOptions.ini
                     mesh_pts_dump_mesh_options();
                     break;
@@ -148,17 +152,34 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
     mesh_provisioning_data_t provisioning_data;
 
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
-                    printf("Provisioner link opened");
+                    switch (mesh_subevent_pb_transport_link_open_get_status(packet)){
+                        case ERROR_CODE_SUCCESS:
+                            printf("Provisioner link opened\n");
+                            break;
+                        default:
+                            printf("Provisioner link open failed, status 0x%02x\n", mesh_subevent_pb_transport_link_open_get_status(packet));
+                            break;
+                    }
                     break;
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Provisioner link close");
                     break;
+#ifdef ENABLE_MESH_PROVISIONER
+                case MESH_SUBEVENT_PB_PROV_CAPABILITIES:
+                    printf("Provisioner, select authentication method\n");
+                    provisioning_provisioner_select_authentication_method(1, 0, 0, 0, 0, 0);
+                    break;
+#endif
                 case MESH_SUBEVENT_ATTENTION_TIMER:
                     printf("Attention Timer: %u\n", mesh_subevent_attention_timer_get_attention_time(packet));
                     break;
@@ -185,6 +206,9 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 }
 
 static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
    
     switch(packet[0]){
@@ -208,6 +232,9 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
 }
 
 static void mesh_configuration_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != HCI_EVENT_PACKET) return;
    
     switch(packet[0]){
@@ -223,48 +250,6 @@ static void mesh_configuration_message_handler(uint8_t packet_type, uint16_t cha
     }
 }
 // PTS
-
-// helper network layer, temp
-static void mesh_pts_received_network_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu){
-    switch (callback_type){
-        case MESH_NETWORK_PDU_RECEIVED:
-            printf("Received network message. SRC %04x, DST %04x, SEQ %04x\n",
-                   mesh_network_src(network_pdu), mesh_network_dst(network_pdu),  mesh_network_seq(network_pdu));
-            printf_hexdump(mesh_network_pdu_data(network_pdu), mesh_network_pdu_len(network_pdu));
-            mesh_network_message_processed_by_higher_layer(network_pdu);
-            break;
-        default:
-            break;
-    }
-}
-
-static uint8_t mesh_network_send(uint8_t ttl, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
-
-    uint16_t netkey_index = 0;
-    uint8_t  ctl = 0;
-    uint16_t src = mesh_node_get_primary_element_address();
-    uint32_t seq = mesh_sequence_number_next();
-
-    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
-    // if (ttl <= 1) return 0;
-
-    // TODO: check transport_pdu_len depending on ctl
-
-    // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 0;
-
-    // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-    if (!network_pdu) return 0;
-
-    // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
-
-    // send network_pdu
-    mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
-    return 0;
-}
 
 static void printf_hex(const uint8_t * data, uint16_t len){
     while (len){
@@ -304,14 +289,17 @@ static void mesh_pts_dump_mesh_options(void){
 }
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != MESH_BEACON_PACKET) return;
-    uint8_t  device_uuid[16];
+    static uint8_t  device_uuid[16];
     uint16_t oob;
     memcpy(device_uuid, &packet[1], 16);
     oob = big_endian_read_16(packet, 17);
     printf("received unprovisioned device beacon, oob data %x, device uuid: ", oob);
     printf_hexdump(device_uuid, 16);
-    pb_adv_create_link(device_uuid);
+    provisioning_provisioner_start_provisioning(device_uuid);
 }
 
 static int scan_hex_byte(const char * byte_string){
@@ -353,43 +341,35 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     printf("\n");
 }
 
-static void load_pts_app_key(void){
-    // PTS app key
-    btstack_parse_hex("3216D1509884B533248541792B877F98", 16, pts_application_key.key);
-    pts_application_key.aid = 0x38;
-    pts_application_key.internal_index = mesh_transport_key_get_free_index();
-    mesh_transport_key_add(&pts_application_key);
-    printf("PTS Application Key (AID %02x): ", 0x38);
-    printf_hexdump(pts_application_key.key, 16);
-}
-static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, int ttl_type){
-    uint8_t ttl;
-    switch (ttl_type){
-        case 0:
-            ttl = 0;
-            break;
-        case 1:
-            ttl = PTS_DEFAULT_TTL;
-            break;
-        default:
-            ttl = 0x7f;
-            break;
-    }
-    printf("%s dst %04x, ttl %u\n", dst_type, dst_addr, ttl);
-    int lower_transport_pdu_len = 16;
-    uint8_t lower_transport_pdu_data[16];
-    memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
-    mesh_network_send(ttl, dst_addr, lower_transport_pdu_data, lower_transport_pdu_len);
-}
-
-static void send_pts_unsegmented_access_messsage(void){
+static void send_pts_network_messsage(uint16_t dst_addr, uint8_t ttl){
     uint8_t access_pdu_data[16];
 
-    load_pts_app_key();
+    printf("Send Network message dst %04x, ttl %u\n", dst_addr, ttl);
 
+    int access_pdu_len = 1;
+    memset(access_pdu_data, 0x55, access_pdu_len);
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = 0x0001;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
+
+    // send as unsegmented access pdu
+    mesh_upper_transport_builder_t builder;
+    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
+    mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
+    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
+    if (status) return;
+    mesh_access_send_unacknowledged_pdu(pdu);
+}
+
+static void send_pts_unsegmented_access_messsage(uint16_t dst_addr, uint8_t ttl){
+
+    printf("Send Unsegmented Access message dst %04x, ttl %u\n", dst_addr, ttl);
+
+    // load_pts_app_key();
+
+    uint8_t access_pdu_data[16];
+    uint16_t src = mesh_node_get_primary_element_address();
 
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -397,20 +377,24 @@ static void send_pts_unsegmented_access_messsage(void){
     uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as unsegmented access pdu
-    mesh_pdu_t * pdu = (mesh_pdu_t*) mesh_network_pdu_get();
-    int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_builder_t builder;
+    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS);
+    mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
+    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
     if (status) return;
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
-static void send_pts_segmented_access_messsage_unicast(void){
+static void send_pts_segmented_access_messsage_unicast(uint16_t dst_addr, uint8_t ttl){
+
+    printf("Send Segmented Access message dst %04x, ttl %u\n", dst_addr, ttl);
+
+    // load_pts_app_key();
+
     uint8_t access_pdu_data[20];
 
-    load_pts_app_key();
-
     uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = 0x0001;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -418,73 +402,36 @@ static void send_pts_segmented_access_messsage_unicast(void){
     uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as segmented access pdu
-    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
-    int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_builder_t builder;
+    mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS);
+    mesh_upper_transport_message_add_data(&builder, access_pdu_data, access_pdu_len);
+    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+    int status = mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dst_addr, 0);
     if (status) return;
     mesh_access_send_unacknowledged_pdu(pdu);
-}
-
-static void send_pts_segmented_access_messsage_group(void){
-    uint8_t access_pdu_data[20];
-
-    load_pts_app_key();
-
-    uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = 0xd000;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
-
-    int access_pdu_len = 20;
-    memset(access_pdu_data, 0x55, access_pdu_len);
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-
-    // send as segmented access pdu
-    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
-    int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
-    if (status) return;
-    mesh_access_send_unacknowledged_pdu(pdu);
-}
-
-static void send_pts_segmented_access_messsage_virtual(void){
-    uint8_t access_pdu_data[20];
-
-    load_pts_app_key();
-
-    uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = pts_virtual_addresss->pseudo_dst;
-    uint8_t  ttl = PTS_DEFAULT_TTL;
-
-    int access_pdu_len = 20;
-    memset(access_pdu_data, 0x55, access_pdu_len);
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-
-    // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
-    int status = mesh_upper_transport_setup_access_pdu((mesh_pdu_t*) transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
-    if (status) return;
-    mesh_access_send_unacknowledged_pdu((mesh_pdu_t*) transport_pdu);
 }
 
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
-    printf("0      - Send Network Message Unicast\n");
-    printf("1      - Send Network Message Virtual 9779\n");
-    printf("2      - Send Network Message Group   D000\n");
-    printf("3      - Send Network Message All Proxies\n");
-    printf("4      - Send Network Message All Friends\n");
-    printf("5      - Send Network Message All Relays\n");
-    printf("6      - Send Network Message Nodes\n");
-    printf("7      - Dump Network Messages\n");
-    printf("?      - Send Unsegmented Access Message\n");
-    printf("?      - Send Segmented Access Message - Unicast\n");
-    printf("?      - Send Segmented Access Message - Group   D000\n");
-    printf("?      - Send Segmented Access Message - Virtual 9779\n");
+    printf("Destination: %04x\n", test_destination);
+    printf("\n");
+    printf("0      - Destination:  Unicast\n");
+    printf("1      - Destination:  Virtual     9779\n");
+    printf("2      - Destination:  Group       D000\n");
+    printf("3      - Destination:  All Proxies FFFC\n");
+    printf("4      - Destination:  All Friends FFFD\n");
+    printf("5      - Destination:  All Relays  FFFE\n");
+    printf("6      - Destination:  Nodes       FFFF\n");
+
+    printf("7      - Send Network Message\n");
+    printf("8      - Send Unsegmented Access Message\n");
+    printf("9      - Send Segmented Access Message\n");
+
     printf("?      - Clear Replay Protection List\n");
     printf("?      - Load PTS App key\n");
-    printf("8      - Delete provisioning data\n");
+    printf("R      - Delete provisioning data\n");
     printf("p      - Enable Public Key OOB \n");
     printf("o      - Enable Output OOB \n");
     printf("i      - Input  Output OOB \n");
@@ -512,33 +459,56 @@ static void stdin_process(char cmd){
         }
         return;
     }
+
+    uint8_t ttl;
+    switch (pts_type){
+        case 0:
+            ttl = 0;
+            break;
+        case 1:
+            ttl = PTS_DEFAULT_TTL;
+            break;
+        default:
+            ttl = 0x7f;
+            break;
+    }
+
     switch (cmd){
         case '0':
-            send_pts_network_messsage("Unicast", 0x0001, pts_type++);
+            test_destination = 0x0001;
             break;
         case '1':
-            send_pts_network_messsage("Virtual", pts_virtual_addresss->hash, pts_type++);
+            test_destination = pts_virtual_addresss->pseudo_dst;
             break;
         case '2':
-            send_pts_network_messsage("Group", 0xd000, pts_type++);
+            test_destination =  0xd000;
             break;
         case '3':
-            send_pts_network_messsage("All Proxies", MESH_ADDRESS_ALL_PROXIES, pts_type++);
+            test_destination =  MESH_ADDRESS_ALL_PROXIES;
             break;
         case '4':
-            send_pts_network_messsage("All Friends", MESH_ADDRESS_ALL_FRIENDS, pts_type++);
+            test_destination = MESH_ADDRESS_ALL_FRIENDS;
             break;
         case '5':
-            send_pts_network_messsage("All Relays", MESH_ADDRESS_ALL_RELAYS, pts_type++);
+            test_destination = MESH_ADDRESS_ALL_RELAYS;
             break;
         case '6':
-            send_pts_network_messsage("All Nodes", MESH_ADDRESS_ALL_NODES, pts_type++);
+            test_destination = MESH_ADDRESS_ALL_NODES;
             break;
         case '7':
-            printf("Dump Network packets\n");
-            mesh_network_set_higher_layer_handler(&mesh_pts_received_network_message);
+            send_pts_network_messsage(test_destination, ttl);
+            pts_type++;
             break;
         case '8':
+            send_pts_unsegmented_access_messsage(test_destination, ttl);
+            pts_type++;
+            break;
+        case '9':
+            send_pts_segmented_access_messsage_unicast(test_destination, ttl);
+            pts_type++;
+            break;
+
+        case 'R':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
 #ifdef ENABLE_MESH_PROXY_SERVER
@@ -602,6 +572,24 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
         return att_read_callback_handle_blob((const uint8_t *)gap_name_buffer, strlen(gap_name_buffer), offset, buffer, buffer_size);
     }
     return 0;
+}
+
+static void pts_lower_transport_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+            printf("PTS: network pdu received. TTL %02x CTL %02x SRC %04x DST %04x\n",
+                    mesh_network_ttl(network_pdu), mesh_network_control(network_pdu),
+                    mesh_network_src(network_pdu), mesh_network_dst(network_pdu));
+            printf("PTS: payload ");
+            printf_hexdump(mesh_network_pdu_data(network_pdu), mesh_network_pdu_len(network_pdu));
+            break;
+        case MESH_NETWORK_PDU_SENT:
+            break;
+        default:
+            break;
+    }
+    // forward to mesh_transport
+    mesh_lower_transport_received_message(callback_type, network_pdu);
 }
 
 int btstack_main(void);
@@ -686,6 +674,9 @@ int btstack_main(void)
     gap_set_scan_parameters(0, 0x300, 0x300);
     gap_start_scan();
 #endif
+
+    // intercept messages between network and lower layer
+    mesh_network_set_higher_layer_handler(&pts_lower_transport_callback_handler);
 
     //  PTS add-on
 

@@ -258,6 +258,7 @@ typedef enum {
 
 typedef enum {
     LE_CONNECTING_IDLE,
+    LE_CONNECTING_CANCEL,
     LE_CONNECTING_DIRECT,
     LE_CONNECTING_WHITELIST,
 } le_connecting_state_t;
@@ -530,7 +531,10 @@ typedef struct {
 
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;
-    
+
+    // request role switch
+    hci_role_t request_role;
+
     btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
@@ -709,11 +713,9 @@ typedef enum hci_init_state{
 } hci_substate_t;
 
 enum {
-    LE_ADVERTISEMENT_TASKS_DISABLE       = 1 << 0,
-    LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 1,
-    LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 2,
-    LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 3,
-    LE_ADVERTISEMENT_TASKS_ENABLE        = 1 << 4,
+    LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
+    LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
+    LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
 };
 
 enum {
@@ -728,6 +730,16 @@ typedef struct {
     bd_addr_type_t address_type;
     uint8_t        state;   
 } whitelist_entry_t;
+
+#define MAX_NUM_RESOLVING_LIST_ENTRIES 64
+typedef enum {
+    LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION,
+    LE_RESOLVING_LIST_READ_SIZE,
+    LE_RESOLVING_LIST_SEND_CLEAR,
+	LE_RESOLVING_LIST_REMOVE_ENTRIES,
+    LE_RESOLVING_LIST_ADD_ENTRIES,
+    LE_RESOLVING_LIST_DONE
+} le_resolving_list_state_t;
 
 /**
  * main data structure
@@ -810,16 +822,17 @@ typedef struct {
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    /* 0 - Read Buffer Size                        (Octet 14/bit 7) */
-    /* 1 - Write Le Host Supported                 (Octet 24/bit 6) */
-    /* 2 - Write Synchronous Flow Control Enable   (Octet 10/bit 4) */
-    /* 3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
-    /* 4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
-    /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
-    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */
-    /* 7 - Read Encryption Key Size                (Octet 20/bit 4) */
-    /* 8 - Read Remote Extended Features           (Octet  2/bit 5) */
-    /* 9 - Write Secure Connections Host           (Octet 32/bit 3) */
+    /*  0 - Read Buffer Size                        (Octet 14/bit 7) */
+    /*  1 - Write Le Host Supported                 (Octet 24/bit 6) */
+    /*  2 - Write Synchronous Flow Control Enable   (Octet 10/bit 4) */
+    /*  3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
+    /*  4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
+    /*  5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
+    /*  6 - LE Set Default PHY                      (Octet 35/bit 5) */
+    /*  7 - Read Encryption Key Size                (Octet 20/bit 4) */
+    /*  8 - Read Remote Extended Features           (Octet  2/bit 5) */
+    /*  9 - Write Secure Connections Host           (Octet 32/bit 3) */
+    /* 10 - LE Set Address Resolution Enable        (Octet 35/bit 1) */
     uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */
@@ -882,22 +895,24 @@ typedef struct {
     uint8_t   le_own_addr_type;
     bd_addr_t le_random_address;
     uint8_t   le_random_address_set;
-#endif
-
-#ifdef ENABLE_LE_CENTRAL
-    uint8_t   le_scanning_enabled;
-    uint8_t   le_scanning_active;
-
-    le_connecting_state_t le_connecting_state;
-
-    // buffer for le scan type command - 0xff not set
-    uint8_t  le_scan_type;
-    uint16_t le_scan_interval;  
-    uint16_t le_scan_window;
 
     // LE Whitelist Management
     uint8_t               le_whitelist_capacity;
     btstack_linked_list_t le_whitelist;
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
+    bool   le_scanning_enabled;
+    bool   le_scanning_active;
+
+    le_connecting_state_t le_connecting_state;
+    le_connecting_state_t le_connecting_request;
+
+    bool     le_scanning_param_update;
+    uint8_t  le_scan_type;
+    uint8_t  le_scan_filter_policy;
+    uint16_t le_scan_interval;
+    uint16_t le_scan_window;
 
     // Connection parameters
     uint16_t le_connection_interval_min;
@@ -919,8 +934,9 @@ typedef struct {
     uint8_t  * le_scan_response_data;
     uint8_t    le_scan_response_data_len;
 
-    uint8_t  le_advertisements_active;
-    uint8_t  le_advertisements_enabled;
+    bool     le_advertisements_active;
+    bool     le_advertisements_enabled;
+    bool     le_advertisements_enabled_for_current_roles;
     uint8_t  le_advertisements_todo;
 
     uint16_t le_advertisements_interval_min;
@@ -951,6 +967,15 @@ typedef struct {
     // address and address_type of active create connection command (ACL, SCO, LE)
     bd_addr_t      outgoing_addr;
     bd_addr_type_t outgoing_addr_type;
+
+    // LE Resolving List
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+    le_resolving_list_state_t le_resolving_list_state;
+    uint16_t                  le_resolving_list_size;
+    uint8_t                   le_resolving_list_add_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
+	uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
+#endif
+
 } hci_stack_t;
 
 
@@ -1128,7 +1153,7 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 /**
  * Get internal hci_connection_t for given Bluetooth addres. Called by L2CAP
  */
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type);
 
 /**
  * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
@@ -1244,6 +1269,16 @@ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max
 void hci_le_set_own_address_type(uint8_t own_address_type);
 
 /**
+ * @note internal use by sm
+ */
+void hci_load_le_device_db_entry_into_resolving_list(uint16_t le_device_db_index);
+
+/**
+ * @note internal use by sm
+ */
+void hci_remove_le_device_db_entry_from_resolving_list(uint16_t le_device_db_index);
+
+/**
  * @brief Get Manufactured
  * @return manufacturer id
  */
@@ -1279,6 +1314,7 @@ void hci_free_connections_fuzz(void);
 
 // simulate stack bootup
 void hci_simulate_working_fuzz(void);
+
 
 #if defined __cplusplus
 }

@@ -160,6 +160,7 @@ static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_sou
 }
 
 static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
+    UNUSED(baudrate);
 #if 0
     int fd = transport_data_source.source.fd;
 

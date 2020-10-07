@@ -65,6 +65,12 @@ typedef struct btstack_ring_buffer {
 void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint32_t storage_size);
 
 /**
+ * Reset ring buffer to initial state (empty)
+ * @param ring_buffer object
+ */
+void btstack_ring_buffer_reset(btstack_ring_buffer_t * ring_buffer);
+
+/**
  * Check if ring buffer is empty
  * @param ring_buffer object
  * @return TRUE if empty

@@ -54,8 +54,12 @@
 void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * storage, uint32_t storage_size){
     ring_buffer->storage = storage;
     ring_buffer->size = storage_size;
+    btstack_ring_buffer_reset(ring_buffer);
+}
+
+void btstack_ring_buffer_reset(btstack_ring_buffer_t * ring_buffer){
     ring_buffer->last_read_index = 0;
-    ring_buffer->last_written_index = 0;   
+    ring_buffer->last_written_index = 0;
     ring_buffer->full = 0;
 }
 

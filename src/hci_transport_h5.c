@@ -436,7 +436,6 @@ static void hci_transport_link_run(void){
 }
 
 static void hci_transport_link_set_timer(uint16_t timeout_ms){
-    btstack_run_loop_set_timer_handler(&link_timer, &hci_transport_link_timeout_handler);
     btstack_run_loop_set_timer(&link_timer, timeout_ms);
     btstack_run_loop_add_timer(&link_timer);
 }
@@ -480,6 +479,7 @@ static void hci_transport_link_init(void){
  
     // get started
     hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;
+    btstack_run_loop_set_timer_handler(&link_timer, &hci_transport_link_timeout_handler);
     hci_transport_link_set_timer(LINK_PERIOD_MS);
     hci_transport_link_run();
 }

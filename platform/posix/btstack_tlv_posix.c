@@ -264,3 +264,17 @@ const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * self
 	return &btstack_tlv_posix;
 }
 
+/**
+ * Free TLV entries
+ * @param self
+ */
+void btstack_tlv_posix_deinit(btstack_tlv_posix_t * self){
+    // free all entries
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &self->entry_list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        tlv_entry_t * entry = (tlv_entry_t*) btstack_linked_list_iterator_next(&it);
+		btstack_linked_list_iterator_remove(&it);
+		free(entry);
+    }
+}

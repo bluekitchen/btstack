@@ -1,0 +1,23 @@
+#!/bin/sh
+rm -f  Makefile
+rm -f  Makefile.in
+rm -f  aclocal.m4
+rm -fr autom4te.cache
+rm -f  btstack_config.h
+rm -f  config.*
+rm -fr config
+rm -f  configure
+rm -fr m4
+rm -rf src/*.dSYM
+rm -f  src/BTdaemon
+rm -f  src/Makefile
+rm -rf example/*.dSYM
+rm -f  example/le_scan
+rm -f  example/l2cap_server
+rm -f  example/l2cap_throughput
+rm -f  example/rfcomm_cat
+rm -f  example/rfcomm_echo
+rm -f  example/rfcomm_test
+rm -f  example/inquiry
+rm -f  example/test
+rm -f  example/Makefile

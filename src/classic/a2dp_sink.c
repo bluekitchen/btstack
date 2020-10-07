@@ -52,8 +52,9 @@
 static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service";
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
 
-static a2dp_state_t app_state = A2DP_IDLE;
-static int send_stream_established_for_outgoing_connection;
+static bool outgoing_active = false;
+static uint16_t a2dp_sink_cid;
+static bool stream_endpoint_configured = false;
 
 static avdtp_stream_endpoint_context_t sc;
 
@@ -179,14 +180,18 @@ avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t me
     return local_stream_endpoint;
 }
 
+void a2dp_sink_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+    avdtp_sink_finalize_stream_endpoint(stream_endpoint);
+}
+
 uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
     sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!sc.local_stream_endpoint){
         log_info("No local_stream_endpoint for seid %d", local_seid);
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
     // remember to tell client
-    send_stream_established_for_outgoing_connection = 1;
+    outgoing_active = true;
     return avdtp_sink_connect(bd_addr, avdtp_cid);
 }
 
@@ -194,161 +199,135 @@ void a2dp_sink_disconnect(uint16_t a2dp_cid){
     avdtp_disconnect(a2dp_cid);
 }
 
-static inline void a2dp_signaling_emit_media_codec_sbc(uint8_t * event, uint16_t event_size){
-    if (event_size < 18) return;
-    event[0] = HCI_EVENT_A2DP_META;
-    event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, event_size);
-}
-
-static inline void a2dp_signaling_emit_media_codec_other(uint8_t * event, uint16_t event_size){
-    if (event_size < 113) return;
-    event[0] = HCI_EVENT_A2DP_META;
-    event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, event_size);
-}
-
-static inline void a2dp_emit_stream_event(uint16_t a2dp_cid, uint8_t eventID, uint8_t local_seid){
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = eventID;
-    little_endian_store_16(event, pos, a2dp_cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
-}
-
-static inline void a2dp_emit_signaling_connection_released(uint16_t a2dp_cid){
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
-    little_endian_store_16(event, pos, a2dp_cid);
-    pos += 2;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
-}
-
-static inline void a2dp_emit_cmd_rejected(uint8_t * packet, uint16_t size){
-    UNUSED(size);
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = A2DP_SUBEVENT_COMMAND_REJECTED;
-    (*a2dp_sink_packet_handler_user)(HCI_EVENT_PACKET, 0, packet, size); 
-}
-
-static void a2dp_sink_handle_signaling_accept(uint8_t * packet){
-    uint8_t signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-    uint16_t cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-    uint8_t loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
-
-    switch (signal_identifier){
-        case  AVDTP_SI_START:
-            a2dp_emit_stream_event(cid, A2DP_SUBEVENT_STREAM_STARTED, loc_seid);
-            break;
-        case AVDTP_SI_SUSPEND:
-            a2dp_emit_stream_event(cid, A2DP_SUBEVENT_STREAM_SUSPENDED, loc_seid);
-            break;
-        case AVDTP_SI_ABORT:
-        case AVDTP_SI_CLOSE:
-            a2dp_emit_stream_event(cid, A2DP_SUBEVENT_STREAM_STOPPED, loc_seid);
-            break;
-        default:
-            // a2dp_emit_cmd_accepted(a2dp_sink_packet_handler_user, packet, size);
-            break;
-    }
-}
-
 static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t address;
-    uint8_t status;
     uint16_t cid;
-    uint8_t loc_seid;
-    uint8_t rem_seid;
+    uint8_t status;
+
+    uint8_t local_seid;
+    uint8_t remote_seid;
+    uint8_t signal_identifier;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
 
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
+            if (stream_endpoint_configured) return;
+            
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
+
+            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
-            if (status != 0){
-                app_state = A2DP_IDLE;
-
+            if (status != ERROR_CODE_SUCCESS){
                 // only care for outgoing connections
-                if (send_stream_established_for_outgoing_connection == 0) break;
-                send_stream_established_for_outgoing_connection = 0;
-
-                log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION failed status %d ---", status);
-                a2dp_streaming_emit_connection_established(a2dp_sink_packet_handler_user, cid, address, 0, 0, status);
+                if (!outgoing_active) break;
+                outgoing_active = false;
+                a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
+                log_info("A2DP sink signaling connection failed status %d", status);
                 break;
             }
-            app_state = A2DP_CONNECTED;
-            log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---", cid);
+
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
+            log_info("A2DP sink signaling connection established avdtp_cid 0x%02x", cid);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            a2dp_signaling_emit_media_codec_other(packet, size);
+            if (stream_endpoint_configured) break;
+            stream_endpoint_configured = true;
+            a2dp_sink_cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-            a2dp_signaling_emit_media_codec_sbc(packet, size);
+            if (stream_endpoint_configured) break;
+            stream_endpoint_configured = true;
+            a2dp_sink_cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION);
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
-            avdtp_subevent_streaming_connection_established_get_bd_addr(packet, address);
-            status = avdtp_subevent_streaming_connection_established_get_status(packet);
+            if (stream_endpoint_configured == false) break;
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
-            loc_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
-            rem_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
-            log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x, status %d ---", cid, status);
+            if (cid != a2dp_sink_cid) break;
+
+            cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
+
+            avdtp_subevent_streaming_connection_established_get_bd_addr(packet, address);
+            local_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
+            remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             
             // about to notify client
-            send_stream_established_for_outgoing_connection = 0;
-
-            if (status){
-                a2dp_streaming_emit_connection_established(a2dp_sink_packet_handler_user, cid, address, loc_seid, rem_seid, status);
+            outgoing_active = false;
+            status = avdtp_subevent_streaming_connection_established_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                log_info("A2DP sink streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
+                a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
                 break;
             }
-            app_state = A2DP_STREAMING_OPENED;
-            a2dp_streaming_emit_connection_established(a2dp_sink_packet_handler_user, cid, address, loc_seid, rem_seid, 0);
+
+            log_info("A2DP streaming connection established --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
-            a2dp_sink_handle_signaling_accept(packet);
+            if (stream_endpoint_configured == false) break;
+            cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
+            if (cid != a2dp_sink_cid) break;
+
+            signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
+            local_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
+
+            switch (signal_identifier){
+                case  AVDTP_SI_START:
+                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, cid, local_seid, A2DP_SUBEVENT_STREAM_STARTED);
+                    break;
+                case AVDTP_SI_SUSPEND:
+                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, cid, local_seid, A2DP_SUBEVENT_STREAM_SUSPENDED);
+                    break;
+                case AVDTP_SI_ABORT:
+                case AVDTP_SI_CLOSE:
+                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, cid, local_seid, A2DP_SUBEVENT_STREAM_STOPPED);
+                    break;
+                default:
+                    break;
+            }
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
+            if (stream_endpoint_configured == false) break;
+            cid = avdtp_subevent_signaling_reject_get_avdtp_cid(packet);
+            if (cid != a2dp_sink_cid) break;
+
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-            cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
-            a2dp_emit_cmd_rejected(packet, size);
-            app_state = A2DP_CONNECTED;
+            if (stream_endpoint_configured == false) break;
+            cid = avdtp_subevent_signaling_general_reject_get_avdtp_cid(packet);
+            if (cid != a2dp_sink_cid) break;
+
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
+
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
+            if (stream_endpoint_configured == false) break;
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);
-            loc_seid = avdtp_subevent_streaming_connection_released_get_local_seid(packet);
-            app_state = A2DP_IDLE;
-            a2dp_emit_stream_event(cid, A2DP_SUBEVENT_STREAM_RELEASED, loc_seid);
+            if (cid != a2dp_sink_cid) break;
+
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
+        
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+            if (cid != a2dp_sink_cid) break;
 
-            // for outgoing connections, suppress release event and report stream established failed
-            if (send_stream_established_for_outgoing_connection){
-                send_stream_established_for_outgoing_connection = 0;
-                log_info("A2DP sink outgoing connnection failed - disconnect");
-                a2dp_streaming_emit_connection_established(a2dp_sink_packet_handler_user, cid, address, 0, 0, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
-                break;
-            }
+            stream_endpoint_configured = false;
+            outgoing_active = false;
 
-            a2dp_emit_signaling_connection_released(cid);
-            app_state = A2DP_IDLE;
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
             break;
         default:
             break;

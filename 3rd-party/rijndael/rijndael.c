@@ -350,6 +350,7 @@ static const u32 Te4[256] =
   0xb0b0b0b0U, 0x54545454U, 0xbbbbbbbbU, 0x16161616U,
 };
 
+#ifdef ENABLE_RIJNDAEL_DECRYPT
 static const u32 Td0[256] =
 {
   0x51f4a750U, 0x7e416553U, 0x1a17a4c3U, 0x3a275e96U,
@@ -689,6 +690,7 @@ static const u32 Td4[256] =
   0xe1e1e1e1U, 0x69696969U, 0x14141414U, 0x63636363U,
   0x55555555U, 0x21212121U, 0x0c0c0c0cU, 0x7d7d7d7dU,
 };
+#endif
 
 static const u32 rcon[] =
 {
@@ -715,6 +717,7 @@ static const u32 rcon[] =
  */
 int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
 {
+  int rounds = 0;
   int i = 0;
   u32 temp;
 
@@ -736,11 +739,16 @@ int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
       rk[5] = rk[1] ^ rk[4];
       rk[6] = rk[2] ^ rk[5];
       rk[7] = rk[3] ^ rk[6];
-      if (++i == 10)
-        return 10;
+      if (++i == 10) {
+		  rounds = 10;
+		  break;
+	  }
       rk += 4;
     }
   }
+
+#if defined(ENABLE_RIJNDAEL_192) || defined (ENABLE_RIJNDAEL_256)
+
   rk[4] = GETU32(key + 16);
   rk[5] = GETU32(key + 20);
   if (keybits == 192)
@@ -757,13 +765,17 @@ int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
       rk[ 7] = rk[ 1] ^ rk[ 6];
       rk[ 8] = rk[ 2] ^ rk[ 7];
       rk[ 9] = rk[ 3] ^ rk[ 8];
-      if (++i == 8)
-        return 12;
+      if (++i == 8){
+      	rounds = 12;
+      }
       rk[10] = rk[ 4] ^ rk[ 9];
       rk[11] = rk[ 5] ^ rk[10];
       rk += 6;
     }
   }
+#endif
+
+#ifdef ENABLE_RIJNDAEL_256
   rk[6] = GETU32(key + 24);
   rk[7] = GETU32(key + 28);
   if (keybits == 256)
@@ -780,8 +792,10 @@ int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
       rk[ 9] = rk[ 1] ^ rk[ 8];
       rk[10] = rk[ 2] ^ rk[ 9];
       rk[11] = rk[ 3] ^ rk[10];
-      if (++i == 7)
-        return 14;
+      if (++i == 7){
+      	rounds = 14;
+      	break;
+	  }
       temp = rk[11];
       rk[12] = rk[ 4] ^
         (Te4[(temp >> 24)       ] & 0xff000000) ^
@@ -794,9 +808,11 @@ int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
       rk += 8;
     }
   }
-  return 0;
+#endif
+	return rounds;
 }
 
+#ifdef ENABLE_RIJNDAEL_DECRYPT
 /**
  * Expand the cipher key into the decryption key schedule.
  *
@@ -844,6 +860,7 @@ int rijndaelSetupDecrypt(u32 *rk, const u8 *key, int keybits)
   }
   return nrounds;
 }
+#endif
 
 void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
   u8 ciphertext[16])
@@ -907,6 +924,9 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
     t1 = Te0[s1 >> 24] ^ Te1[(s2 >> 16) & 0xff] ^ Te2[(s3 >>  8) & 0xff] ^ Te3[s0 & 0xff] ^ rk[37];
     t2 = Te0[s2 >> 24] ^ Te1[(s3 >> 16) & 0xff] ^ Te2[(s0 >>  8) & 0xff] ^ Te3[s1 & 0xff] ^ rk[38];
     t3 = Te0[s3 >> 24] ^ Te1[(s0 >> 16) & 0xff] ^ Te2[(s1 >>  8) & 0xff] ^ Te3[s2 & 0xff] ^ rk[39];
+
+#if defined(ENABLE_RIJNDAEL_192) || defined (ENABLE_RIJNDAEL_256)
+
     if (nrounds > 10)
     {
       /* round 10: */
@@ -919,6 +939,9 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
       t1 = Te0[s1 >> 24] ^ Te1[(s2 >> 16) & 0xff] ^ Te2[(s3 >>  8) & 0xff] ^ Te3[s0 & 0xff] ^ rk[45];
       t2 = Te0[s2 >> 24] ^ Te1[(s3 >> 16) & 0xff] ^ Te2[(s0 >>  8) & 0xff] ^ Te3[s1 & 0xff] ^ rk[46];
       t3 = Te0[s3 >> 24] ^ Te1[(s0 >> 16) & 0xff] ^ Te2[(s1 >>  8) & 0xff] ^ Te3[s2 & 0xff] ^ rk[47];
+
+#ifdef ENABLE_RIJNDAEL_256
+
       if (nrounds > 12)
       {
         /* round 12: */
@@ -932,7 +955,10 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
         t2 = Te0[s2 >> 24] ^ Te1[(s3 >> 16) & 0xff] ^ Te2[(s0 >>  8) & 0xff] ^ Te3[s1 & 0xff] ^ rk[54];
         t3 = Te0[s3 >> 24] ^ Te1[(s0 >> 16) & 0xff] ^ Te2[(s1 >>  8) & 0xff] ^ Te3[s2 & 0xff] ^ rk[55];
       }
+#endif
     }
+#endif
+
     rk += nrounds << 2;
   #else  /* !FULL_UNROLL */
     /*
@@ -1030,6 +1056,7 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
 
 }
 
+#ifdef ENABLE_RIJNDAEL_DECRYPT
 void rijndaelDecrypt(const u32 *rk, int nrounds, const u8 ciphertext[16],
   u8 plaintext[16])
 {
@@ -1095,6 +1122,9 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
     t1 = Td0[s1 >> 24] ^ Td1[(s0 >> 16) & 0xff] ^ Td2[(s3 >>  8) & 0xff] ^ Td3[s2 & 0xff] ^ rk[37];
     t2 = Td0[s2 >> 24] ^ Td1[(s1 >> 16) & 0xff] ^ Td2[(s0 >>  8) & 0xff] ^ Td3[s3 & 0xff] ^ rk[38];
     t3 = Td0[s3 >> 24] ^ Td1[(s2 >> 16) & 0xff] ^ Td2[(s1 >>  8) & 0xff] ^ Td3[s0 & 0xff] ^ rk[39];
+
+#if defined(ENABLE_RIJNDAEL_192) || defined (ENABLE_RIJNDAEL_256)
+
     if (nrounds > 10)
     {
       /* round 10: */
@@ -1107,7 +1137,9 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
       t1 = Td0[s1 >> 24] ^ Td1[(s0 >> 16) & 0xff] ^ Td2[(s3 >>  8) & 0xff] ^ Td3[s2 & 0xff] ^ rk[45];
       t2 = Td0[s2 >> 24] ^ Td1[(s1 >> 16) & 0xff] ^ Td2[(s0 >>  8) & 0xff] ^ Td3[s3 & 0xff] ^ rk[46];
       t3 = Td0[s3 >> 24] ^ Td1[(s2 >> 16) & 0xff] ^ Td2[(s1 >>  8) & 0xff] ^ Td3[s0 & 0xff] ^ rk[47];
-      if (nrounds > 12)
+
+ #ifdef ENABLE_RIJNDAEL_256
+     if (nrounds > 12)
       {
         /* round 12: */
         s0 = Td0[t0 >> 24] ^ Td1[(t3 >> 16) & 0xff] ^ Td2[(t2 >>  8) & 0xff] ^ Td3[t1 & 0xff] ^ rk[48];
@@ -1120,7 +1152,11 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
         t2 = Td0[s2 >> 24] ^ Td1[(s1 >> 16) & 0xff] ^ Td2[(s0 >>  8) & 0xff] ^ Td3[s3 & 0xff] ^ rk[54];
         t3 = Td0[s3 >> 24] ^ Td1[(s2 >> 16) & 0xff] ^ Td2[(s1 >>  8) & 0xff] ^ Td3[s0 & 0xff] ^ rk[55];
       }
+#endif
+
     }
+#endif
+
     rk += nrounds << 2;
   #else  /* !FULL_UNROLL */
     /*
@@ -1218,3 +1254,4 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
 	
 
 }
+#endif

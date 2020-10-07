@@ -438,7 +438,8 @@ static void stdin_process(char c){
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
-    
+    uint8_t status;
+
     switch (packet_type){
 
         case HCI_SCO_DATA_PACKET:
@@ -471,7 +472,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                             if (hfp_subevent_audio_connection_established_get_status(event)){
-                                printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
+                                printf("Audio connection establishment failed with status 0x%02x\n", hfp_subevent_audio_connection_established_get_status(event));
                             } else {
                                 sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -497,15 +498,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             sco_demo_close();
                             break;
                         case HFP_SUBEVENT_COMPLETE:
-                            switch (cmd){
-                                case 'd':
-                                    printf("HFP AG registration status update enabled.\n");
-                                    break;
-                                case 'e':
-                                    printf("HFP AG registration status update for individual indicators set.\n");
-                                    break;
-                                default:
-                                    break;
+                            status = hfp_subevent_complete_get_status(event);
+                            if (status == ERROR_CODE_SUCCESS){
+                                printf("Cmd \'%c\' succeded\n", cmd);
+                            } else {
+                                printf("Cmd \'%c\' failed with status 0x%02x\n", cmd, hfp_subevent_complete_get_status(event));
                             }
                             break;
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
@@ -555,7 +552,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         default:
-                            printf("event not handled %u\n", event[2]);
+                            printf("event not handled 0x%02x\n", event[2]);
                             break;
                     }
                     break;

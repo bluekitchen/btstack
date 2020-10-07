@@ -294,6 +294,7 @@ typedef enum {
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
+    AVCTP_CONNECTION_W2_SEND_SDP_QUERY,
     AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
@@ -448,6 +449,8 @@ typedef struct {
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
+    hci_con_handle_t con_handle;
+    
     bool incoming_declined;
 
     uint16_t avrcp_browsing_cid;
@@ -555,17 +558,6 @@ typedef struct {
 
     btstack_packet_handler_t browsing_avrcp_callback;
     btstack_packet_handler_t browsing_packet_handler;
-
-    // SDP query
-    bd_addr_t remote_addr;
-    uint8_t  parse_sdp_record;
-    uint32_t record_id;
-    uint16_t avrcp_cid;
-    uint16_t avrcp_l2cap_psm;
-    uint16_t avrcp_version;
-
-    uint16_t browsing_l2cap_psm;
-    uint16_t browsing_version;
 } avrcp_context_t; 
 
 
@@ -594,8 +586,8 @@ avrcp_browsing_connection_t * avrcp_get_browsing_connection_for_l2cap_cid_for_ro
 
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 uint16_t avrcp_get_next_cid(avrcp_role_t role);
+btstack_linked_list_t avrcp_get_connections(void);
 
-uint8_t avrcp_start_sdp_query(btstack_packet_handler_t packet_handler, const uint8_t *remote_addr, uint16_t cid);
 uint16_t avrcp_sdp_sdp_query_browsing_l2cap_psm(void);
 void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet);
 avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);

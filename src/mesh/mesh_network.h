@@ -52,6 +52,7 @@ extern "C" {
 
 #define MESH_NETWORK_PAYLOAD_MAX      29
 #define MESH_ACCESS_PAYLOAD_MAX      384
+#define MESH_CONTROL_PAYLOAD_MAX     256
 
 #define MESH_ADDRESS_UNSASSIGNED     0x0000u
 #define MESH_ADDRESS_ALL_PROXIES     0xFFFCu
@@ -62,12 +63,22 @@ extern "C" {
 typedef enum {
     MESH_NETWORK_PDU_RECEIVED,
     MESH_NETWORK_PDU_SENT,
+    MESH_NETWORK_PDU_ENCRYPTED,
     MESH_NETWORK_CAN_SEND_NOW,
 } mesh_network_callback_type_t;
 
 typedef enum {
-    MESH_PDU_TYPE_NETWORK = 0,
-    MESH_PDU_TYPE_TRANSPORT,
+    MESH_PDU_TYPE_INVALID,
+    MESH_PDU_TYPE_NETWORK,
+    MESH_PDU_TYPE_SEGMENT_ACKNOWLEDGMENT,
+    MESH_PDU_TYPE_SEGMENTED,
+    MESH_PDU_TYPE_UNSEGMENTED,
+    MESH_PDU_TYPE_ACCESS,
+    MESH_PDU_TYPE_CONTROL,
+    MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS,
+    MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS,
+    MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL,
+    MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL,
 } mesh_pdu_type_t;
 
 typedef struct mesh_pdu {
@@ -75,11 +86,6 @@ typedef struct mesh_pdu {
     btstack_linked_item_t item;
     // type
     mesh_pdu_type_t pdu_type;
-
-    // access acknowledged message
-    uint16_t retransmit_count;
-    uint32_t retransmit_timeout_ms;
-    uint32_t ack_opcode;
 
 } mesh_pdu_t;
 
@@ -91,13 +97,8 @@ typedef struct mesh_pdu {
 typedef struct mesh_network_pdu {
     mesh_pdu_t pdu_header;
 
-    // callback
-    void (*callback)(struct mesh_network_pdu * network_pdu);
-
     // meta data network layer
     uint16_t              netkey_index;
-    // meta data transport layer
-    uint16_t              appkey_index;
     // MESH_NETWORK_PDU_FLAGS
     uint16_t              flags;
 
@@ -106,41 +107,113 @@ typedef struct mesh_network_pdu {
     uint8_t               data[MESH_NETWORK_PAYLOAD_MAX];
 } mesh_network_pdu_t;
 
-#define MESH_TRANSPORT_FLAG_SEQ_RESERVED    1
+#define MESH_TRANSPORT_FLAG_SEQ_RESERVED      1
+#define MESH_TRANSPORT_FLAG_CONTROL           2
+#define MESH_TRANSPORT_FLAG_TRANSMIC_64       4
+#define MESH_TRANSPORT_FLAG_ACK_TIMER         8
+#define MESH_TRANSPORT_FLAG_INCOMPLETE_TIMER 16
 
 typedef struct {
     mesh_pdu_t pdu_header;
+    // network header
+    uint8_t               ivi_nid;
+    uint8_t               ctl_ttl;
+    uint16_t              src;
+    uint16_t              dst;
+    uint32_t              seq;
 
-    // rx/tx: acknowledgement timer / segment transmission timer
+    // incoming: acknowledgement timer / outgoing: segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
-    // rx: incomplete timer / tx: resend timer
+    // incoming: incomplete timer / outgoing: not used
     btstack_timer_source_t incomplete_timer;
     // block access
     uint32_t              block_ack;
     // meta data network layer
     uint16_t              netkey_index;
-    // meta data transport layer
-    uint16_t              appkey_index;
-    // transmic size
-    uint8_t               transmic_len;
     // akf - aid for access, opcode for control
     uint8_t               akf_aid_control;
-    // network pdu header
-    uint8_t               network_header[9];
     // MESH_TRANSPORT_FLAG
     uint16_t              flags;
-    // acknowledgement timer active
-    uint8_t               acknowledgement_timer_active;
-    // incomplete timer active
-    uint8_t               incomplete_timer_active;
-    // message complete
-    uint8_t               message_complete;
-    // seq_zero for segmented messages
-    uint16_t              seq_zero;
-    // pdu
+    // retry count
+    uint8_t               retry_count;
+    // pdu segments
+    uint16_t              len;
+    btstack_linked_list_t segments;
+} mesh_segmented_pdu_t;
+
+typedef struct {
+    // generic pdu header
+    mesh_pdu_t            pdu_header;
+    // network header
+    uint8_t               ivi_nid;
+    uint8_t               ctl_ttl;
+    uint16_t              src;
+    uint16_t              dst;
+    uint32_t              seq;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // payload
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
-} mesh_transport_pdu_t;
+
+} mesh_access_pdu_t;
+
+// for unsegmented + segmented access + segmented control pdus
+typedef struct {
+    // generic pdu header
+    mesh_pdu_t            pdu_header;
+    // network header
+    uint8_t               ivi_nid;
+    uint8_t               ctl_ttl;
+    uint16_t              src;
+    uint16_t              dst;
+    uint32_t              seq;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // payload, single segmented or list of them
+    uint16_t              len;
+    btstack_linked_list_t segments;
+
+    // access acknowledged message
+    uint16_t retransmit_count;
+    uint32_t retransmit_timeout_ms;
+    uint32_t ack_opcode;
+
+    // associated lower transport pdu
+    mesh_pdu_t *          lower_pdu;
+} mesh_upper_transport_pdu_t;
+
+typedef struct {
+    // generic pdu header
+    mesh_pdu_t            pdu_header;
+    // network header
+    uint8_t               ivi_nid;
+    uint8_t               ctl_ttl;
+    uint16_t              src;
+    uint16_t              dst;
+    uint32_t              seq;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
+    // payload
+    uint16_t              len;
+    uint8_t               data[MESH_CONTROL_PAYLOAD_MAX];
+} mesh_control_pdu_t;
 
 typedef enum {
     MESH_KEY_REFRESH_NOT_ACTIVE = 0,
@@ -370,6 +443,7 @@ mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet
 // buffer pool
 mesh_network_pdu_t * mesh_network_pdu_get(void);
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu);
+void mesh_network_notify_on_freed_pdu(void (*callback)(void));
 
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
@@ -389,7 +463,7 @@ void mesh_network_pdu_set_seq(mesh_network_pdu_t * network_pdu, uint32_t seq);
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);
 void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len);
-void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback));
+void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu);
 void mesh_network_dump(void);
 void mesh_network_reset(void);
 

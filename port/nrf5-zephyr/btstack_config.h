@@ -32,7 +32,7 @@
 #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES 0
 #define MAX_NR_BNEP_SERVICES 0
 #define MAX_NR_BNEP_CHANNELS 0
-#define MAX_NR_SERVICE_RECORD_ITEMS 1
+#define MAX_NR_SERVICE_RECORD_ITEMS 0
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
 // hack to fix usage of hci_init in zephry

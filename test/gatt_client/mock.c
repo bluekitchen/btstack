@@ -10,6 +10,7 @@
 #include "ble/att_db.h"
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
+#include "gap.h"
 
 #define PREBUFFER_SIZE (HCI_INCOMING_PRE_BUFFER_SIZE + 8)
 
@@ -50,7 +51,7 @@ void gap_start_scan(void){
 }
 void gap_stop_scan(void){
 }
-uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
+uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
 	return 0;
 }
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){

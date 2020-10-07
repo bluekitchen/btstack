@@ -152,6 +152,7 @@
 #include "mesh/mesh_generic_on_off_client.h"
 #include "mesh/mesh_generic_on_off_server.h"
 #include "mesh/mesh_health_server.h"
+#include "mesh/mesh_iv_index_seq_number.h"
 #include "mesh/mesh_proxy.h"
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/mesh_virtual_addresses.h"

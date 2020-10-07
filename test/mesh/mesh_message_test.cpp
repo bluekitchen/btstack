@@ -3,8 +3,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "bluetooth_data_types.h"
-#include "bluetooth_gatt.h"
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "btstack_util.h"
 #include "mesh/adv_bearer.h"
@@ -18,8 +17,8 @@
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/provisioning.h"
 #include "mesh/mesh_peer.h"
+#include "mock.h"
 
-extern "C" int mock_process_hci_cmd(void);
 
 static mesh_network_pdu_t * received_network_pdu;
 static mesh_network_pdu_t * received_proxy_pdu;
@@ -69,6 +68,7 @@ void gatt_bearer_register_for_network_pdu(btstack_packet_handler_t packet_handle
     gatt_packet_handler = packet_handler;
 }
 void gatt_bearer_register_for_mesh_proxy_configuration(btstack_packet_handler_t packet_handler){
+    UNUSED(packet_handler);
 }
 void gatt_bearer_request_can_send_now_for_network_pdu(void){
     // simulate can send now
@@ -104,26 +104,36 @@ static void gatt_bearer_emit_connected(void){
 // copy from mesh_message.c for now
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_UNSEGMENTED:
         case MESH_PDU_TYPE_NETWORK:
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
             return mesh_network_dst((mesh_network_pdu_t *) pdu);
+        case MESH_PDU_TYPE_ACCESS: {
+            return ((mesh_access_pdu_t *) pdu)->dst;
+        }
+        case MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS:
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS:
+            return ((mesh_upper_transport_pdu_t *) pdu)->dst;
         default:
+            btstack_assert(false);
             return MESH_ADDRESS_UNSASSIGNED;
     }
 }
 uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return mesh_transport_ctl((mesh_transport_pdu_t*) pdu);
         case MESH_PDU_TYPE_NETWORK:
+        case MESH_PDU_TYPE_UPPER_UNSEGMENTED_CONTROL:
             return mesh_network_control((mesh_network_pdu_t *) pdu);
+        case MESH_PDU_TYPE_ACCESS: {
+            return ((mesh_access_pdu_t *) pdu)->ctl_ttl >> 7;
+        }
         default:
+            btstack_assert(false);
             return 0;
     }
 }
 
-void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
+static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
     int i;
     for (i=0; i<size; i++){
         if (expected[i] != actual[i]) {
@@ -136,9 +146,9 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 }
 
 static int scan_hex_byte(const char * byte_string){
-    int upper_nibble = nibble_for_char(*byte_string++);
+    uint8_t upper_nibble = nibble_for_char(*byte_string++);
     if (upper_nibble < 0) return -1;
-    int lower_nibble = nibble_for_char(*byte_string);
+    uint8_t lower_nibble = nibble_for_char(*byte_string);
     if (lower_nibble < 0) return -1;
     return (upper_nibble << 4) | lower_nibble;
 }
@@ -150,13 +160,13 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
         if (single_byte < 0) return 0;
         string += 2;
         buffer[i] = (uint8_t)single_byte;
-        // don't check seperator after last byte
+        // don't check separator after last byte
         if (i == len - 1) {
             return 1;
         }
         // optional seperator
         char separator = *string;
-        if (separator == ':' && separator == '-' && separator == ' ') {
+        if (separator == ':' || separator == '-' || separator == ' ') {
             string++;
         }
     }
@@ -226,7 +236,7 @@ static void load_provisioning_data_test_message(void){
 static void test_lower_transport_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
-        printf("test MESH_NETWORK_PDU_RECEIVED\n");
+            printf("test MESH_NETWORK_PDU_RECEIVED\n");
             received_network_pdu = network_pdu;
             break;
         case MESH_NETWORK_PDU_SENT:
@@ -241,60 +251,77 @@ static void test_lower_transport_callback_handler(mesh_network_callback_type_t c
 static void test_proxy_server_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
-        printf("test MESH_PROXY_PDU_RECEIVED\n");
+            printf("test MESH_PROXY_PDU_RECEIVED\n");
             received_proxy_pdu = network_pdu;
             break;
         case MESH_NETWORK_PDU_SENT:
             // printf("test MESH_PROXY_PDU_SENT\n");
             // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
             break;
+        case MESH_NETWORK_PDU_ENCRYPTED:
+            printf("test MESH_NETWORK_PDU_ENCRYPTED\n");
+            received_proxy_pdu = network_pdu;
+            break;
         default:
             break;
     }
 }
 
-static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu;
+static void test_upper_transport_access_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    UNUSED(status);
+
+    // free sent pdus
+    if (callback_type == MESH_TRANSPORT_PDU_SENT) {
+        mesh_upper_transport_pdu_free(pdu);
+        return;
+    }
+
+    // process pdu received
+    mesh_access_pdu_t    * access_pdu;
     mesh_network_pdu_t   * network_pdu;
+    mesh_segmented_pdu_t   * message_pdu;
+
     switch(pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            transport_pdu = (mesh_transport_pdu_t *) pdu;
-            printf("test MESH_ACCESS_TRANSPORT_PDU_RECEIVED\n");
-            recv_upper_transport_pdu_len = transport_pdu->len;
-            memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
+        case MESH_PDU_TYPE_ACCESS:
+            access_pdu = (mesh_access_pdu_t *) pdu;
+            printf("test access handler MESH_PDU_TYPE_ACCESS received\n");
+            recv_upper_transport_pdu_len = access_pdu->len;
+            memcpy(recv_upper_transport_pdu_data, access_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
-        case MESH_PDU_TYPE_NETWORK:
-            network_pdu = (mesh_network_pdu_t *) pdu;
-            printf("test MESH_ACCESS_NETWORK_PDU_RECEIVED\n");
+        case MESH_PDU_TYPE_SEGMENTED:
+            message_pdu = (mesh_segmented_pdu_t *) pdu;
+            printf("test access handler MESH_PDU_TYPE_SEGMENTED received\n");
+            network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&message_pdu->segments);
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
+            btstack_assert(0);
             break;
     }
 }
 
-static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu;
-    mesh_network_pdu_t   * network_pdu;
+static void test_upper_transport_control_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    UNUSED(status);
+
+    // ignore pdu sent
+    if (callback_type == MESH_TRANSPORT_PDU_SENT) return;
+
+    // process pdu received
+    mesh_control_pdu_t     * control_pdu;
     switch(pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            transport_pdu = (mesh_transport_pdu_t *) pdu;
-            printf("test MESH_CONTROL_TRANSPORT_PDU_RECEIVED\n");
-            recv_upper_transport_pdu_len = transport_pdu->len;
-            memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
-            mesh_upper_transport_message_processed_by_higher_layer(pdu);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            network_pdu = (mesh_network_pdu_t *) pdu;
-            printf("test MESH_CONTROL_NETWORK_PDU_RECEIVED\n");
-            recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu);
-            memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu), recv_upper_transport_pdu_len);
+        case MESH_PDU_TYPE_CONTROL:
+            control_pdu = (mesh_control_pdu_t *) pdu;
+            printf("test MESH_PDU_TYPE_CONTROL\n");
+            recv_upper_transport_pdu_len = control_pdu->len + 1;
+            recv_upper_transport_pdu_data[0] = control_pdu->akf_aid_control;
+            memcpy(&recv_upper_transport_pdu_data[1], control_pdu->data, control_pdu->len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
+            btstack_assert(0);
             break;
     }
 }
@@ -343,7 +370,7 @@ static uint16_t transport_pdu_len;
 static     uint8_t test_network_pdu_len;
 static uint8_t test_network_pdu_data[29];
 
-void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_transport_pdus, char * access_pdu){
+static void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_transport_pdus, char * access_pdu){
     int i;
     for (i=0;i<count;i++){
         test_network_pdu_len = strlen(network_pdus[i]) / 2;
@@ -373,9 +400,19 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
         received_network_pdu = NULL;
     }
 
-    // wait for tranport pdu
+    // wait for transport pdu
     while (recv_upper_transport_pdu_len == 0) {
         mock_process_hci_cmd();
+
+        // check for acks
+        if (outgoing_gatt_network_pdu_len != 0){
+            outgoing_gatt_network_pdu_len = 0;
+            gatt_bearer_emit_sent();
+        }
+        if (outgoing_adv_network_pdu_len != 0){
+            outgoing_adv_network_pdu_len = 0;
+            adv_bearer_emit_sent();
+        }
     }
 
     transport_pdu_len = strlen(access_pdu) / 2;
@@ -387,7 +424,8 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
     CHECK_EQUAL_ARRAY(transport_pdu_data, recv_upper_transport_pdu_data, transport_pdu_len);
 }
 
-static void expect_gatt_network_pdu(const uint8_t * data, uint16_t len){
+static void expect_gatt_network_pdu(void){
+
         while (outgoing_gatt_network_pdu_len == 0) {
             mock_process_hci_cmd();
         }
@@ -403,7 +441,7 @@ static void expect_gatt_network_pdu(const uint8_t * data, uint16_t len){
         gatt_bearer_emit_sent();
 }
 
-static void expect_adv_network_pdu(const uint8_t * data, uint16_t len){
+static void expect_adv_network_pdu(void){
         while (outgoing_adv_network_pdu_len == 0) {
             mock_process_hci_cmd();
         }
@@ -419,20 +457,35 @@ static void expect_adv_network_pdu(const uint8_t * data, uint16_t len){
         adv_bearer_emit_sent();
 }
 
-void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
+static void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
+
+    UNUSED(lower_transport_pdus);
 
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
 
-    mesh_pdu_t * pdu;
+    mesh_pdu_type_t pdu_type;
     if (count == 1 ){
         // send as unsegmented access pdu
-        pdu = (mesh_pdu_t*) mesh_network_pdu_get();
+        pdu_type = MESH_PDU_TYPE_UPPER_UNSEGMENTED_ACCESS;
     } else {
         // send as segmented access pdu
-        pdu = (mesh_pdu_t*) mesh_transport_pdu_get();
-    } 
+        pdu_type = MESH_PDU_TYPE_UPPER_SEGMENTED_ACCESS;
+    }
+#if 0
+    //
+    upper_pdu.lower_pdu = NULL;
+    upper_pdu.flags = 0;
+    upper_pdu.pdu_type = pdu_type;
+    mesh_pdu_t * pdu = (mesh_pdu_t *) &upper_pdu;
     mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
+#else
+    mesh_upper_transport_builder_t builder;
+    mesh_upper_transport_message_init(&builder, pdu_type);
+    mesh_upper_transport_message_add_data(&builder, transport_pdu_data, transport_pdu_len);
+    mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+    mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, szmic);
+#endif
     mesh_upper_transport_send_access_pdu(pdu);
 
     // check for all network pdus
@@ -443,16 +496,19 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
 #ifdef ENABLE_MESH_GATT_BEARER
-        expect_gatt_network_pdu(test_network_pdu_data, test_network_pdu_len);
+        expect_gatt_network_pdu();
 #endif
 
 #ifdef ENABLE_MESH_ADV_BEARER
-        expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
+        expect_adv_network_pdu();
 #endif
     }
+    // mesh_upper_transport_pdu_free(pdu);
 }
 
-void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
+static void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
+
+    UNUSED(lower_transport_pdus);
 
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
@@ -462,12 +518,17 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
     mesh_pdu_t * pdu;
     if (transport_pdu_len < 12){
         // send as unsegmented control pdu
-        pdu = (mesh_pdu_t *) mesh_network_pdu_get();
+        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+        mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
+        pdu = (mesh_pdu_t *) network_pdu;
     } else {
-        // send as segmented control pdu
-        pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
+        mesh_upper_transport_builder_t builder;
+        mesh_upper_transport_message_init(&builder, MESH_PDU_TYPE_UPPER_SEGMENTED_CONTROL);
+        mesh_upper_transport_message_add_data(&builder, transport_pdu_data+1, transport_pdu_len-1);
+        mesh_upper_transport_pdu_t * final_upper_pdu = (mesh_upper_transport_pdu_t *) mesh_upper_transport_message_finalize(&builder);
+        mesh_upper_transport_setup_segmented_control_pdu_header(final_upper_pdu, netkey_index, ttl, src, dest, opcode);
+        pdu = (mesh_pdu_t *) final_upper_pdu;
     }
-    mesh_upper_transport_setup_control_pdu(pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
     mesh_upper_transport_send_control_pdu(pdu);
 
     // check for all network pdus
@@ -478,11 +539,11 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
 #ifdef ENABLE_MESH_GATT_BEARER
-        expect_gatt_network_pdu(test_network_pdu_data, test_network_pdu_len);
+        expect_gatt_network_pdu();
 #endif
 
 #ifdef ENABLE_MESH_ADV_BEARER
-        expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
+        expect_adv_network_pdu();
 #endif
 
     }
@@ -1080,10 +1141,6 @@ TEST(MessageTest, ProxyConfigReceive){
     received_proxy_pdu = NULL;
 }
 
-static void test_proxy_callback_handler(mesh_network_pdu_t * network_pdu){
-    received_proxy_pdu = network_pdu;
-}
-
 
 TEST(MessageTest, ProxyConfigSend){
     uint16_t netkey_index = 0;
@@ -1098,7 +1155,7 @@ TEST(MessageTest, ProxyConfigSend){
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     uint8_t data[] = { 0 , 0 };
     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
-    mesh_network_encrypt_proxy_configuration_message(network_pdu, &test_proxy_callback_handler);
+    mesh_network_encrypt_proxy_configuration_message(network_pdu);
     while (received_proxy_pdu == NULL) {
         mock_process_hci_cmd();
     }
@@ -1150,6 +1207,7 @@ TEST(MessageTest, ServiceDataUsingNodeIdentityTest){
 static btstack_crypto_aes128_cmac_t aes_cmac_request;
 static uint8_t k4_result[1];
 static void handle_k4_result(void *arg){
+    UNUSED(arg);
     printf("ApplicationkeyIDTest: %02x\n", k4_result[0]);
     CHECK_EQUAL( 0x26, k4_result[0]);
 }

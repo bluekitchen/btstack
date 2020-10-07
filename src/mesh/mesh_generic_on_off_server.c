@@ -122,20 +122,20 @@ static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_
 
     mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *) generic_on_off_server_model->model_data;
     // setup message
-    mesh_transport_pdu_t * transport_pdu = NULL; 
+    mesh_upper_transport_pdu_t * transport_pdu = NULL; 
     if (state->transition_data.base_transition.num_steps > 0) {
         uint8_t remaining_time = (((uint8_t)state->transition_data.base_transition.step_resolution) << 6) | (state->transition_data.base_transition.num_steps);
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value,
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value,
             state->transition_data.target_value, remaining_time);
     } else {
         log_info("On/Off Status: value %u, no transition active", state->transition_data.current_value);
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
     }
     return (mesh_pdu_t *) transport_pdu;
 }
 
 static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
     if (!transport_pdu) return;
     generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -148,7 +148,7 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
+    uint8_t on_off_value = mesh_access_parser_get_uint8(&parser);
 
     // check for valid value
     if (on_off_value > 1) return false;
@@ -156,7 +156,7 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
     mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
-    uint8_t tid = mesh_access_parser_get_u8(&parser);
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
             
@@ -171,8 +171,8 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
             
             if (mesh_access_parser_available(&parser) == 2){
                 //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
-                transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-                delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+                transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+                delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
             } 
             mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt);
             mesh_access_state_changed(mesh_model);
@@ -184,7 +184,7 @@ static bool generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
 static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
     bool send_status = generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
     if (send_status){
-        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
+        mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
         if (transport_pdu) {
             generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
         }

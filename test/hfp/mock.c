@@ -51,6 +51,7 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/rfcomm.h"
 #include "classic/hfp_hf.h"
+#include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"
 
 #include "mock.h"
@@ -246,6 +247,10 @@ uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler
     return 0;
 }
 
+uint8_t sdp_client_register_query_callback(btstack_context_callback_registration_t * callback_registration){
+    (callback_registration->callback)(callback_registration->context);
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t rfcomm_create_channel(btstack_packet_handler_t handler, bd_addr_t addr, uint8_t channel, uint16_t * out_cid){
 

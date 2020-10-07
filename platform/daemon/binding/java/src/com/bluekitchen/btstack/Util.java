@@ -90,7 +90,7 @@ public class Util {
 		int bytes_to_copy = Math.min(value.length, len);
 		System.arraycopy(value, 0, buffer, offset, bytes_to_copy);
 		for (int i = bytes_to_copy; i < len ; i++){
-			buffer[i] = 0;
+			buffer[offset + i] = 0;
 		}
 	}
 

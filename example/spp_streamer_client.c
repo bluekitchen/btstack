@@ -79,7 +79,7 @@ typedef enum {
     W4_PEER_COD,
     W4_SCAN_COMPLETE,
     W4_SDP_RESULT,
-    W4_SDP_COMPLETE,
+    W2_SEND_SDP_QUERY,
     W4_RFCOMM_CHANNEL,
     SENDING,
     DONE
@@ -89,6 +89,7 @@ static uint8_t   test_data[NUM_ROWS * NUM_COLS];
 static uint16_t  spp_test_data_len;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_context_callback_registration_t handle_sdp_client_query_request;
 
 static bd_addr_t peer_addr;
 static state_t state;
@@ -223,6 +224,14 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
+static void handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    if (state != W2_SEND_SDP_QUERY) return;
+    state = W4_RFCOMM_CHANNEL;
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, peer_addr, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);               
+}
+
+
 /* 
  * @section Gerenal Packet Handler
  * 
@@ -267,8 +276,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             break;                        
                         case W4_SCAN_COMPLETE:
                             printf("Start to connect and query for SPP service\n");
-                            state = W4_RFCOMM_CHANNEL;
-                            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, peer_addr, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
+                            state = W2_SEND_SDP_QUERY;
+                            handle_sdp_client_query_request.callback = &handle_start_sdp_client_query;
+                            (void) sdp_client_register_query_callback(&handle_sdp_client_query_request);
                             break;
                         default:
                             break;
@@ -320,7 +330,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             spp_test_data_len = sizeof(test_data);
                         }
                         spp_create_test_data();
-
+                        state = SENDING;
                         // start sending
                         rfcomm_request_can_send_now_event(rfcomm_cid);
 #endif

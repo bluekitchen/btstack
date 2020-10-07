@@ -141,13 +141,13 @@ static mesh_pdu_t * mesh_generic_level_status_message(mesh_model_t *generic_leve
     btstack_assert(state != NULL);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = NULL; 
+    mesh_upper_transport_pdu_t * transport_pdu = NULL;
     if (state->transition_data.base_transition.num_steps > 0) {
         uint8_t remaining_time = (((uint8_t)state->transition_data.base_transition.step_resolution) << 6) | (state->transition_data.base_transition.num_steps);
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_level_status_transition, state->transition_data.current_value,
+        transport_pdu = mesh_access_setup_message(&mesh_generic_level_status_transition, state->transition_data.current_value,
             state->transition_data.target_value, remaining_time);
     } else {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_level_status_instantaneous, state->transition_data.current_value);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_level_status_instantaneous, state->transition_data.current_value);
     }
     return (mesh_pdu_t *)transport_pdu;
 }
@@ -158,17 +158,17 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
     
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int16_t level_value = (int16_t)mesh_access_parser_get_u16(&parser);
+    int16_t level_value = (int16_t) mesh_access_parser_get_uint16(&parser);
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
     
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
 
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
@@ -197,18 +197,18 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int32_t delta_value = mesh_access_parser_get_u32(&parser);
+    int32_t delta_value = mesh_access_parser_get_uint32(&parser);
 
     // The TID field is a transaction identifier indicating whether the message is
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser);
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
 
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
             
     mesh_transition_t * base_transition = generic_level_server_get_base_transition(mesh_model);
@@ -249,18 +249,18 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    int32_t delta_value = (int32_t) mesh_access_parser_get_u16(&parser);
+    int32_t delta_value = (int32_t) mesh_access_parser_get_uint16(&parser);
     
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+    uint8_t tid = mesh_access_parser_get_uint8(&parser);
     
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits)
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        transition_time_gdtt = mesh_access_parser_get_uint8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_uint8(&parser);
     } else {
         // transition speed is delta / num steps, without num steps, and without a default transition time, we cannot do this
         return;
@@ -290,7 +290,7 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
 }
 
 static void generic_level_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
     if (transport_pdu != NULL) {
         generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
     }
@@ -300,7 +300,7 @@ static void generic_level_get_handler(mesh_model_t *generic_level_server_model, 
 static void generic_level_set_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_target_level_message(generic_level_server_model, pdu);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
     if (transport_pdu != NULL) {
         generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
     }
@@ -315,7 +315,7 @@ static void generic_level_set_unacknowledged_handler(mesh_model_t *generic_level
 static void generic_delta_set_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_delta_message(generic_level_server_model, pdu);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
     if (transport_pdu != NULL) {
         generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
     }
@@ -330,7 +330,7 @@ static void generic_delta_set_unacknowledged_handler(mesh_model_t *generic_level
 static void generic_move_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     generic_level_handle_set_move_message(generic_level_server_model, pdu);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
+    mesh_upper_transport_pdu_t * transport_pdu = (mesh_upper_transport_pdu_t *) mesh_generic_level_status_message(generic_level_server_model);
     if (transport_pdu != NULL) {
         generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu), (mesh_pdu_t *) transport_pdu);
     }

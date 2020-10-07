@@ -98,6 +98,10 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
     return avdtp_create_stream_endpoint(sep_type, media_type);
 }
 
+void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+    avdtp_finalize_stream_endpoint(stream_endpoint);
+}
+
 uint8_t avdtp_source_connect(bd_addr_t remote, uint16_t * avdtp_cid){
     return avdtp_connect(remote, AVDTP_ROLE_SOURCE, avdtp_cid);
 }
@@ -239,7 +243,7 @@ void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8
         log_error("AVDTP source: no stream_endpoint with seid %d", local_seid);
         return;
     }
-    stream_endpoint->send_stream = 1;
+    stream_endpoint->request_can_send_now = true;
     avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
 }
 

@@ -139,6 +139,7 @@ typedef enum {
     DEVICE_SEND_INPUT_COMPLETE,
     DEVICE_W4_PUB_KEY,
     DEVICE_SEND_PUB_KEY,
+    DEVICE_PUB_KEY_SENT,
     DEVICE_W4_CONFIRM,
     DEVICE_SEND_CONFIRM,
     DEVICE_W4_RANDOM,
@@ -405,6 +406,7 @@ static void provisioning_run(void){
             provisioning_send_input_complete();
             break;
         case DEVICE_SEND_PUB_KEY:
+            device_state = DEVICE_PUB_KEY_SENT;
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_public_key();
             provisioning_public_key_exchange_complete();
@@ -768,6 +770,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
                     if (device_state == DEVICE_W4_DONE){
+                        pb_close_link(1, 0);
                         provisioning_done();
                     }
                     break;                    
@@ -843,7 +846,7 @@ void provisioning_device_init(void){
 #ifdef ENABLE_MESH_ADV_BEARER
     // setup PB ADV
     pb_adv_init();
-    pb_adv_register_packet_handler(&provisioning_handle_pdu);
+    pb_adv_register_device_packet_handler(&provisioning_handle_pdu);
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
     // setup PB GATT

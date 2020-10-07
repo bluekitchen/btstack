@@ -318,34 +318,35 @@ typedef enum {
 typedef enum {
     HFP_IDLE = 0, //0
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
+    HFP_W2_SEND_SDP_QUERY,
     HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
     
-    HFP_EXCHANGE_SUPPORTED_FEATURES,
-    HFP_W4_EXCHANGE_SUPPORTED_FEATURES, // 5
+    HFP_EXCHANGE_SUPPORTED_FEATURES,   // 5
+    HFP_W4_EXCHANGE_SUPPORTED_FEATURES, 
     
     HFP_NOTIFY_ON_CODECS,
     HFP_W4_NOTIFY_ON_CODECS,
     
-    HFP_RETRIEVE_INDICATORS,
-    HFP_W4_RETRIEVE_INDICATORS,
+    HFP_RETRIEVE_INDICATORS, 
+    HFP_W4_RETRIEVE_INDICATORS,        // 10
     
-    HFP_RETRIEVE_INDICATORS_STATUS, // 10
+    HFP_RETRIEVE_INDICATORS_STATUS, 
     HFP_W4_RETRIEVE_INDICATORS_STATUS,
     
     HFP_ENABLE_INDICATORS_STATUS_UPDATE,
     HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE,
     
-    HFP_RETRIEVE_CAN_HOLD_CALL,
-    HFP_W4_RETRIEVE_CAN_HOLD_CALL, // 15
+    HFP_RETRIEVE_CAN_HOLD_CALL,        // 15
+    HFP_W4_RETRIEVE_CAN_HOLD_CALL, 
     
     HFP_LIST_GENERIC_STATUS_INDICATORS,
     HFP_W4_LIST_GENERIC_STATUS_INDICATORS,
     
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
-    HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,  //20
     
-    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, //20
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, 
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
     HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 
@@ -439,8 +440,9 @@ typedef enum {
     HFP_LINK_SETTINGS_S3,
     HFP_LINK_SETTINGS_S4,
     HFP_LINK_SETTINGS_T1,
-    HFP_LINK_SETTINGS_T2
-} hfp_link_setttings_t;
+    HFP_LINK_SETTINGS_T2,
+    HFP_LINK_SETTINGS_NONE,
+} hfp_link_settings_t;
 
 typedef enum{
     HFP_NONE_SM,
@@ -556,7 +558,7 @@ typedef struct hfp_connection {
     uint8_t codec_confirmed;
     uint8_t sco_for_msbc_failed;
     
-    hfp_link_setttings_t link_setting;
+    hfp_link_settings_t link_setting;
 
     uint8_t trigger_codec_exchange;
     uint8_t establish_audio_connection; 
@@ -648,6 +650,8 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
+void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec);
+
 void hfp_set_ag_callback(btstack_packet_handler_t callback);
 void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
@@ -682,7 +686,8 @@ void hfp_release_audio_connection(hfp_connection_t * connection);
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
-void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported);
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
+hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, bool local_eSCO_supported, bool remote_eSCO_supported, bool eSCO_s4_supported, uint8_t negotiated_codec);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
@@ -693,6 +698,18 @@ const char * hfp_enhanced_call_dir2str(uint16_t index);
 const char * hfp_enhanced_call_status2str(uint16_t index);
 const char * hfp_enhanced_call_mode2str(uint16_t index);
 const char * hfp_enhanced_call_mpty2str(uint16_t index);
+
+/**
+ * @brief Set packet types for SCO connections
+ * @param common single packet_types: HFP_SCO_PACKET_TYPES_*
+ */
+void hfp_set_sco_packet_types(uint16_t packet_types);
+
+/**
+ * @brief Get packet types for SCO connections
+ * @returns packet_types
+ */
+uint16_t hfp_get_sco_packet_types(void);
 
 #if defined __cplusplus
 }

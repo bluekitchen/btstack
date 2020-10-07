@@ -93,7 +93,7 @@ static void generic_client_send_message_acknowledged(uint16_t src, uint16_t dest
 
 uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_get);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_get);
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
     // send as segmented access pdu
     generic_client_send_message_acknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu, MESH_GENERIC_ON_OFF_STATUS);
@@ -103,11 +103,11 @@ uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, 
 uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     
-    mesh_transport_pdu_t *  transport_pdu;
+    mesh_upper_transport_pdu_t *  transport_pdu;
     if (transition_time_gdtt != 0) {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_set_with_transition, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_set_with_transition, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
     } else {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_set_instantaneous, on_off_value, transaction_id);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_set_instantaneous, on_off_value, transaction_id);
     }
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
@@ -117,11 +117,11 @@ uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest,
 
 uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
-    mesh_transport_pdu_t *  transport_pdu;
+    mesh_upper_transport_pdu_t *  transport_pdu;
     if (transition_time_gdtt != 0) {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_set_unacknowledged_with_transition, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_set_unacknowledged_with_transition, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
     } else {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_set_unacknowledged_instantaneous, on_off_value, transaction_id);
+        transport_pdu = mesh_access_setup_message(&mesh_generic_on_off_set_unacknowledged_instantaneous, on_off_value, transaction_id);
     }
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
     generic_client_send_message_unacknowledged(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
@@ -146,13 +146,13 @@ static void generic_on_off_status_handler(mesh_model_t *mesh_model, mesh_pdu_t *
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     
-    uint8_t present_value = mesh_access_parser_get_u8(&parser);
+    uint8_t present_value = mesh_access_parser_get_uint8(&parser);
     uint8_t target_value = 0;
     uint8_t remaining_time_gdtt = 0;
 
     if (mesh_access_parser_available(&parser) == 2){
-        target_value = mesh_access_parser_get_u8(&parser);
-        remaining_time_gdtt = mesh_access_parser_get_u8(&parser);
+        target_value = mesh_access_parser_get_uint8(&parser);
+        remaining_time_gdtt = mesh_access_parser_get_uint8(&parser);
     }
 
     uint8_t event[12] = {HCI_EVENT_MESH_META, 10, MESH_SUBEVENT_GENERIC_ON_OFF};

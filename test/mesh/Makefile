@@ -38,7 +38,7 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \
 	-I$(BTSTACK_ROOT)/3rd-party/rijndael \
 
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 
 CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 
@@ -86,8 +86,12 @@ EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_pr
 
 all: ${EXAMPLES}
 
-test: mesh_message_test
-	./mesh_message_test
+test: mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
+	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
+	ASAN_OPTIONS=detect_leaks=0 ./mesh_message_test
+	./provisioning_device_test
+	./provisioning_provisioner_test
+	./mesh_configuration_composition_data_message_test
 
 clean:
 	rm -f  *.o *.out *.exe

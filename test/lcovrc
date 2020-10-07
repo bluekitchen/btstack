@@ -1,0 +1,6 @@
+# Coverage rate limits
+genhtml_med_limit = 50
+genhtml_hi_limit  = 80
+
+# Include color legend in HTML output if non-zero
+genhtml_legend = 1

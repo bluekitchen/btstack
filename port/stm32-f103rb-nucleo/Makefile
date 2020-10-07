@@ -25,7 +25,7 @@ CORE = \
 
 COMMON = \
 	ad_parser.c 			 \
-	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c   \
+	bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c   \
 	btstack_chipset_cc256x.c   \
 	btstack_link_key_db_memory.c \
 	rfcomm.c			      \
@@ -85,5 +85,5 @@ libopencm3/lib/libopencm3_stm32f1.a:
 
 # compile GATT database
 spp_and_gatt_counter.h: spp_and_gatt_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 

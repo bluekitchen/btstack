@@ -13,18 +13,22 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
-#define ENABLE_CLASSIC
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_DATA_CHANNELS
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
+#define ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
 
 // work around bug in Controller ACL fragmentation
 #define ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
+
+// work around bug in Controller
+#define ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE
+
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy

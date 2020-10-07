@@ -64,9 +64,17 @@ int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 
 /** 
  * @brief Checks if the SDP Client is ready
- * @return 1 when no query is active
+ * @deprecated Please use sdp_client_register_query_callback instead
+ * @return true when no query is active
  */
-int sdp_client_ready(void);
+bool sdp_client_ready(void);
+
+/**
+ * @brief Requests a callback, when the SDP Client is ready and can be used
+ * @note The callback might happens before sdp_client_register_query_callback has returned
+ * @param callback_registration
+ */
+uint8_t sdp_client_register_query_callback(btstack_context_callback_registration_t * callback_registration);
 
 /** 
  * @brief Queries the SDP service of the remote device given a service search pattern and a list of attribute IDs. 

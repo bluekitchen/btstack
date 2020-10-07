@@ -172,6 +172,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t  sdp_avdtp_sink_service_buffer[150];
 static uint8_t  sdp_avrcp_target_service_buffer[150];
 static uint8_t  sdp_avrcp_controller_service_buffer[200];
+static uint8_t  device_id_sdp_service_buffer[100];
 
 static uint16_t a2dp_cid = 0;
 static uint8_t  a2dp_local_seid = 0;
@@ -217,7 +218,7 @@ static btstack_resample_t resample_instance;
  * - handle_pcm_data - handles PCM audio frames. Here, they are stored a in wav file if STORE_TO_WAV_FILE is defined, and/or played using the audio library.
  */
 
-/* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
+/* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP services */
 static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size);
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size);
@@ -235,6 +236,7 @@ static int a2dp_and_avrcp_setup(void){
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
+    // Create stream endpoint
     avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, 
         AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), 
         media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
@@ -242,9 +244,11 @@ static int a2dp_and_avrcp_setup(void){
         printf("A2DP Sink: not enough memory to create local stream endpoint\n");
         return 1;
     }
+
+    // Store stream enpoint's SEP ID, as it is used by A2DP API to indentify the stream endpoint
     a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
 
-    // Initialize AVRCP service.
+    // Initialize AVRCP service
     avrcp_init();
     avrcp_register_packet_handler(&avrcp_packet_handler);
     
@@ -258,12 +262,13 @@ static int a2dp_and_avrcp_setup(void){
     
     // Initialize SDP 
     sdp_init();
-    // setup AVDTP sink
+
+    // Create A2DP Sink service record and register it with SDP
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     
-    // setup AVRCP Controller
+    // Create AVRCP Controller service record and register it with SDP
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
@@ -272,17 +277,25 @@ static int a2dp_and_avrcp_setup(void){
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10002, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
     
-    // setup AVRCP Target
+    // Create AVRCP Target service record and register it with SDP
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
     uint16_t target_supported_features = AVRCP_FEATURE_MASK_CATEGORY_MONITOR_OR_AMPLIFIER;
     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
+    // Create Device ID (PnP) service record and register it with SDP
+    memset(device_id_sdp_service_buffer, 0, sizeof(device_id_sdp_service_buffer));
+    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10004, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    sdp_register_service(device_id_sdp_service_buffer);
+
+    // Set local name with a template Bluetooth address, that will be automatically
+    // replaced with a actual address once it is available, i.e. when BTstack boots
+    // up and starts talking to a Bluetooth module.
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
 
-    /* Register for HCI events */
+    // Register for HCI events
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
@@ -445,9 +458,9 @@ static void media_processing_close(void){
 
 /* @section Handle Media Data Packet 
  *
- * @text Media data packets, in this case the audio data, are received through the handle_l2cap_media_data_packet callback.
+ * @text Here the audio data, are received through the handle_l2cap_media_data_packet callback.
  * Currently, only the SBC media codec is supported. Hence, the media data consists of the media packet header and the SBC packet.
- * The SBC frame will be stored in a ring buffer for later processing (instead of decoding it to PCM right away which would require a much larger buffer)
+ * The SBC frame will be stored in a ring buffer for later processing (instead of decoding it to PCM right away which would require a much larger buffer).
  * If the audio stream wasn't started already and there are enough SBC frames in the ring buffer, start playback.
  */ 
 
@@ -715,7 +728,16 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case AVRCP_SUBEVENT_OPERATION_START:
             printf("AVRCP Controller: %s start\n", avrcp_operation2str(avrcp_subevent_operation_start_get_operation_id(packet)));
             break;
-        
+       
+        case AVRCP_SUBEVENT_NOTIFICATION_EVENT_TRACK_REACHED_END:
+            printf("AVRCP Controller: Track reached end\n");
+            break;
+
+        case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
+            printf("A2DP  Sink      : Set Player App Value %s\n", avrcp_ctype2str(avrcp_subevent_player_application_value_response_get_command_type(packet)));
+            break;
+            
+       
         default:
             printf("AVRCP Controller: Event 0x%02x is not parsed\n", packet[2]);
             break;
@@ -963,7 +985,7 @@ static void stdin_process(char cmd){
             break;
         case 'B':
             printf(" - AVDTP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-            status = avdtp_sink_disconnect(a2dp_cid);
+            a2dp_sink_disconnect(a2dp_cid);
             break;
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
@@ -1095,7 +1117,7 @@ static void stdin_process(char cmd){
             return;
     }
     if (status != ERROR_CODE_SUCCESS){
-        printf("Could not perform command, status 0x%2x\n", status);
+        printf("Could not perform command, status 0x%02x\n", status);
     }
 }
 #endif

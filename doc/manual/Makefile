@@ -20,7 +20,7 @@ pdf:
 	mv latex/btstack_gettingstarted.pdf btstack.pdf
 
 preview: update_content html
-	# race condition, open browser before startnig MKdocs
+	# race condition, open browser before starting MKdocs server
 	open http://127.0.0.1:8000
 	mkdocs serve
 
@@ -28,6 +28,8 @@ update_content:
 	sed -e "s|../doc/manual/docs/||g" ../../chipset/README.md > docs/chipsets.md
 	rm -rf tmp
 	mkdir tmp
+	# create mkdocs.yml
+	./update_mkdocs_yml.sh
 	# create docs/appendix/apis.md
 	./update_apis.py	
 	# create docs/examples/examples.md
@@ -39,7 +41,7 @@ update_content:
 	cp -r docs docs_final
 
 clean:
-	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex
+	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
 	rm -rf docs/appendix/apis.md docs/appendix/index.md docs/examples/examples.md docs/chipsets.md
 	rm -rf latex btstack help
 	

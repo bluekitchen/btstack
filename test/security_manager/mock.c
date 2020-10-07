@@ -9,6 +9,7 @@
 #include "l2cap.h"
 #include "rijndael.h"
 #include "btstack_linked_list.h"
+#include "btstack_run_loop_embedded.h"
 
 static btstack_packet_handler_t le_data_handler;
 
@@ -97,6 +98,9 @@ void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t len){
 	hci_dump_packet(HCI_ACL_DATA_PACKET, 1, &acl_buffer[0], len + 8);
 
 	le_data_handler(SM_DATA_PACKET, handle, packet, len);
+
+	// process queued callbacks, might become obsolete after queued callback integration in run loop
+	btstack_run_loop_embedded_execute_once();
 }
 
 void mock_simulate_command_complete(const hci_cmd_t *cmd){
@@ -263,4 +267,15 @@ void l2cap_run(void){
 
 HCI_STATE hci_get_state(void){
 	return HCI_STATE_WORKING;
+}
+
+#include "hal_cpu.h"
+void hal_cpu_disable_irqs(void){}
+void hal_cpu_enable_irqs(void){}
+void hal_cpu_enable_irqs_and_sleep(void){}
+
+#include "hal_time_ms.h"
+static uint32_t time_ms;
+uint32_t hal_time_ms(void){
+	return time_ms++;
 }

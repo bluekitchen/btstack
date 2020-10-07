@@ -607,19 +607,28 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
         if (eSCO && hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
             max_latency = 0x000c;
             retransmission_effort = 0x02;
-            packet_types = 0x388;
+            // eSCO: EV3 and 2-EV3
+            packet_types = 0x0048;
         } else {
             max_latency = 0xffff;
             retransmission_effort = 0xff;
-            packet_types = 0x003f;
+            // sco: HV1 and HV3
+            packet_types = 0x005;
         }
-        
+
+        // mSBC only allows for transparent data
         uint16_t sco_voice_setting = hci_get_sco_voice_setting();
         if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
             sco_voice_setting = 0x0043; // Transparent data
         }
-        
-        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting 0x%02x", sco_voice_setting);
+
+        // filter packet types
+        packet_types &= hfp_get_sco_packet_types();
+
+        // bits 6-9 are 'don't allow'
+        packet_types ^= 0x3c0;
+
+        log_info("HFP: sending hci_accept_connection_request, packet types 0x%04x, sco_voice_setting 0x%02x", packet_types, sco_voice_setting);
         hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency, 
                         sco_voice_setting, retransmission_effort, packet_types);
         return;
@@ -1063,6 +1072,19 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_connection->ok_pending = 0;
             hfp_reset_context_flags(hfp_connection);
             hfp_connection->command = HFP_CMD_NONE;
+            
+            switch (hfp_connection->state){
+                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    switch (hfp_connection->codecs_state){
+                        case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
+                            hfp_emit_sco_event(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION, 0, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
+                            return;
+                        default:
+                            break;
+                    }
+                default: 
+                    break;
+            }
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 1);
             break;
         case HFP_CMD_OK:

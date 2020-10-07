@@ -26,10 +26,10 @@ CFLAGS  = \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/embedded \
 
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-TESTS = tlv_test tlv_le_test
+TESTS = tlv_test
 
 all: ${TESTS}
 
@@ -38,9 +38,6 @@ clean:
 	rm -f *.gcno *.gcda
 
 tlv_test: ${COMMON_OBJ} btstack_link_key_db_tlv.o tlv_test.o  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-tlv_le_test: ${COMMON_OBJ} le_device_db_tlv.o tlv_le_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

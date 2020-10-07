@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys, getopt, re, pickle
 
 class State:
@@ -8,39 +8,66 @@ class State:
 
 # [file_name, api_title, api_label]
 apis = [ 
-    ["src/ble/ancs_client.h", "BLE ANCS Client", "ancsClient"],
-    ["src/ble/att_db_util.h", "BLE ATT Database", "attDb"],
-    ["src/ble/att_server.h", "BLE ATT Server", "attServer"],
-    ["src/ble/gatt_client.h", "BLE GATT Client", "gattClient"],
-    ["src/ble/le_device_db.h", "BLE Device Database", "leDeviceDb"],
-    ["src/ble/sm.h", "BLE Security Manager", "sm"],
-
-    ["src/classic/bnep.h", "BNEP", "bnep"],
-    ["src/classic/btstack_link_key_db.h","Link Key DB","lkDb"],
-    ["src/classic/hsp_hs.h","HSP Headset","hspHS"],
-    ["src/classic/hsp_ag.h","HSP Audio Gateway","hspAG"],   
-    ["src/classic/hfp_hf.h","HFP Hands-Free","hfpHF"],
-    ["src/classic/hfp_ag.h","HFP Audio Gateway","hfpAG"],
-    ["src/classic/pan.h", "PAN", "pan"],
-    ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
-    ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],
-    ["src/classic/sdp_client_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
-    ["src/classic/sdp_server.h", "SDP Server", "sdpSrv"],
-    ["src/classic/sdp_util.h","SDP Utils", "sdpUtil"],
-
-    ["src/ad_parser.h", "BLE Advertisements Parser", "advParser"],
+    ["src/ad_parser.h", "AD Data (Advertisements and EIR) Parser", "advParser"],
     ["src/btstack_chipset.h","BTstack Chipset","btMemory"],
     ["src/btstack_control.h","BTstack Hardware Control","btControl"],
     ["src/btstack_event.h","HCI Event Getter","btEvent"],
-    ["src/btstack_memory.h","BTstack Memory Management","btMemory"],
     ["src/btstack_linked_list.h","BTstack Linked List","btList"],
+    ["src/btstack_memory.h","BTstack Memory Management","btMemory"],
     ["src/btstack_run_loop.h", "Run Loop", "runLoop"],
+    ["src/btstack_tlv.h", "Tag Value Length Persistent Storage (TLV)", "tlv"],
     ["src/btstack_util.h", "Common Utils", "btUtil"],
     ["src/gap.h", "GAP", "gap"],
     ["src/hci.h", "HCI", "hci"],
     ["src/hci_dump.h","HCI Logging","hciTrace"],
     ["src/hci_transport.h","HCI Transport","hciTransport"],
     ["src/l2cap.h", "L2CAP", "l2cap"],
+
+    ["src/ble/ancs_client.h", "ANCS Client", "ancsClient"],
+    ["src/ble/att_db_util.h", "ATT Database", "attDb"],
+    ["src/ble/att_server.h", "ATT Server", "attServer"],
+    ["src/ble/gatt_client.h", "GATT Client", "gattClient"],
+    ["src/ble/le_device_db.h", "Device Database", "leDeviceDb"],
+    ["src/ble/le_device_db_tlv.h", "Device Database TLV", "leDeviceDbTLV"],
+    ["src/ble/sm.h", "Security Manager", "sm"],
+
+    ["src/ble/gatt-service/battery_service_server.h", "Battery Service Server", "batteryServiceServer"],
+    ["src/ble/gatt-service/cycling_power_service_server.h", "Cycling Power Service Server", "cyclingPowerServiceServer"],
+    ["src/ble/gatt-service/cycling_speed_and_cadence_service_server.h", "Cycling Speed and Cadence Service Server", "cyclingSpeedCadenceServiceServer"],
+    ["src/ble/gatt-service/device_information_service_server.h", "Device Information Service Server", "deviceInformationServiceServer"],
+    ["src/ble/gatt-service/heart_rate_service_server.h", "Heart Rate Service Server", "heartRateServiceServer"],
+    ["src/ble/gatt-service/hids_device.h", "HID Device Service Server", "hidsDevice"],
+    ["src/ble/gatt-service/mesh_provisioning_service_server.h", "Mesh Provisioning Service Server", "meshProvisioningServiceServer"],
+    ["src/ble/gatt-service/mesh_proxy_service_server.h", "Mesh Proxy Service Server", "meshProxyServiceServer"],
+    ["src/ble/gatt-service/nordic_spp_service_server.h", "Nordic SPP Service Server", "nordicSppServiceServer"],
+    ["src/ble/gatt-service/ublox_spp_service_server.h", "u-blox SPP Service Server", "ubloxSppServiceServer"],
+
+    ["src/classic/a2dp_sink.h", "A2DP Sink", "a2dpSink"],
+    ["src/classic/a2dp_source.h", "A2DP Source", "a2dpSource"],
+    ["src/classic/avdtp_sink.h", "AVDTP Sink", "avdtpSink"],
+    ["src/classic/avdtp_source.h", "AVDTP Source", "avdtpSource"],
+    ["src/classic/avrcp_browsing_controller.h", "AVRCP Browsing Controller", "avrcpBrowsingController"],
+    ["src/classic/avrcp_browsing_target.h", "AVRCP Browsing Target", "avrcpBrowsingTarget"],
+    ["src/classic/avrcp_controller.h", "AVRCP Controller", "avrcpController"],
+    ["src/classic/avrcp_target.h", "AVRCP Target", "avrcpTarget"],
+    ["src/classic/bnep.h", "BNEP", "bnep"],
+    ["src/classic/btstack_link_key_db.h","Link Key DB","lkDb"],
+    ["src/classic/btstack_sbc.h", "SBC", "sbc"],
+    ["src/classic/device_id_server.h", "Device ID Server", "deviceIdServer"],
+    ["src/classic/gatt_sdp.h", "GATT SDP", "gattSdp"],
+    ["src/classic/goep_client.h", "GOEP Client", "goepClient"],
+    ["src/classic/hfp_ag.h","HFP Audio Gateway","hfpAG"],
+    ["src/classic/hfp_hf.h","HFP Hands-Free","hfpHF"],
+    ["src/classic/hid_device.h", "HID Device", "hidDevice"],
+    ["src/classic/hsp_ag.h","HSP Audio Gateway","hspAG"],   
+    ["src/classic/hsp_hs.h","HSP Headset","hspHS"],
+    ["src/classic/pan.h", "PAN", "pan"],
+    ["src/classic/pbap_client.h", "PBAP Client", "pbapClient"],
+    ["src/classic/rfcomm.h", "RFCOMM", "rfcomm"],
+    ["src/classic/sdp_client.h", "SDP Client", "sdpClient"],
+    ["src/classic/sdp_client_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
+    ["src/classic/sdp_server.h", "SDP Server", "sdpSrv"],
+    ["src/classic/sdp_util.h","SDP Utils", "sdpUtil"],
 ]
 
 functions = {}
@@ -77,7 +104,7 @@ def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
             fout.write(title)
             
             state = State.SearchStartAPI
-            with open(api_filename, 'rb') as fin:
+            with open(api_filename, 'r') as fin:
                 for line in fin:
                     if state == State.SearchStartAPI:
                         parts = re.match('.*API_START.*',line)
@@ -103,7 +130,7 @@ def createIndex(btstackfolder, apis, githubfolder):
         api_lable = api_tuple[2]
 
         linenr = 0
-        with open(api_filename, 'rb') as fin:
+        with open(api_filename, 'r') as fin:
             typedefFound = 0
             multiline_function_def = 0
             state = State.SearchStartAPI
@@ -195,11 +222,11 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"hiso:",["bfolder=","afile=","gfolder=","ifile="])
     except getopt.GetoptError:
-        print cmd
+        print (cmd)
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print cmd
+            print (cmd)
             sys.exit()
         elif opt in ("-b", "--bfolder"):
             btstackfolder = arg
@@ -209,10 +236,10 @@ def main(argv):
             btstackfolder = arg
         elif opt in ("-i", "--ifile"):
             indexfile = arg
-    print 'BTstack folder is :', btstackfolder
-    print 'API file is       :', apifile
-    print 'Github path is    :', githubfolder
-    print 'Index file is     :', indexfile
+    print ('BTstack folder is : ' + btstackfolder)
+    print ('API file is       : ' + apifile)
+    print ('Github path is    : ' + githubfolder)
+    print ('Index file is     : ' + indexfile)
 
     writeAPI(apifile, btstackfolder, apis, mk_codeidentation)
     createIndex(btstackfolder, apis, githubfolder)

@@ -269,7 +269,7 @@ PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE
 # LINKERFILE=$(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/GCC/$(TARGET_LC).ld
 
 %.h: %.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 all: spp_and_le_streamer.h
 
@@ -283,7 +283,7 @@ include $(PERIPH_DRIVER_DIR)/periphdriver.mk
 include $(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/$(COMPILER)/$(TARGET_LC).mk
 
 # fetch and convert init scripts
-# use bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c
+# use bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 rm-compiled-gatt-file:

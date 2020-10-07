@@ -6,7 +6,7 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/src
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address,undefined
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 # -L$(CPPUTEST_HOME) 
 
@@ -26,20 +26,20 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 all: sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query
 
-sdp_rfcomm_query: ${COMMON_OBJ} sdp_client_rfcomm.c sdp_rfcomm_query.c
+sdp_rfcomm_query: ${COMMON_OBJ} sdp_client_rfcomm.c sdp_rfcomm_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-general_sdp_query: ${COMMON_OBJ} general_sdp_query.c
+general_sdp_query: ${COMMON_OBJ} general_sdp_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-service_attribute_search_query: ${COMMON_OBJ} service_attribute_search_query.c
+service_attribute_search_query: ${COMMON_OBJ} service_attribute_search_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-service_search_query: ${COMMON_OBJ} service_search_query.c
+service_search_query: ${COMMON_OBJ} service_search_query.c btstack_linked_list.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./sdp_rfcomm_query
+	ASAN_OPTIONS=detect_leaks=0 ./sdp_rfcomm_query
 	./general_sdp_query
 	./service_attribute_search_query
 	./service_search_query

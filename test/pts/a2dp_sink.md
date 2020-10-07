@@ -1,4 +1,4 @@
-use port/libusb/a2dp_example:
+use avdtp_sink_test:
 A2DP/SNK/AS/BV-01-I : (wait)
 
 A2DP/SNK/CC/BV-01-I : (wait)

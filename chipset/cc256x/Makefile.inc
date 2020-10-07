@@ -168,6 +168,20 @@ initscripts-TIInit_6.12.26_ble_add-on_v1.3.bts: cc256xc_bt_sp_v1.3.zip
 	@echo "Extracting $@"
 	@unzip -q -p cc256xc_bt_sp_v1.3.zip CC256XC_BT_SP/v1.3/initscripts-TIInit_6.12.26_ble_add-on.bts > $@
 
+# v1.4 - unversioned files from BlueKitchen website, original: http://www.ti.com/tool/cc256xc-bt-sp
+cc256xc_bt_sp_v1.4.zip:
+	@echo "Downloading $@"
+	@curl -sS -O $(BLUEKITCHEN_URL)/cc256xc_bt_sp_v1.4.zip
+
+initscripts-TIInit_6.12.26_v1.4.bts: cc256xc_bt_sp_v1.4.zip
+	@echo "Extracting $@"
+	@unzip -q -p cc256xc_bt_sp_v1.4.zip CC256XC_BT_SP/v1.4/initscripts-TIInit_6.12.26.bts > $@
+
+initscripts-TIInit_6.12.26_ble_add-on_v1.4.bts: cc256xc_bt_sp_v1.4.zip
+	@echo "Extracting $@"
+	@unzip -q -p cc256xc_bt_sp_v1.4.zip CC256XC_BT_SP/v1.4/initscripts-TIInit_6.12.26_ble_add-on.bts > $@
+
+
 # Various scripts for WL chipsets
 
 # V4.2 from BlueKitchen website, original: http://www.ti.com/tool/wl18xx-bt-sp
@@ -276,6 +290,14 @@ bluetooth_init_cc2560C_1.3.c: initscripts-TIInit_6.12.26_v1.3.bts
 	@$(CONVERSION_SCRIPT) $^ $@
 
 bluetooth_init_cc2564C_1.3.c: initscripts-TIInit_6.12.26_v1.3.bts initscripts-TIInit_6.12.26_ble_add-on_v1.3.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
+bluetooth_init_cc2560C_1.4.c: initscripts-TIInit_6.12.26_v1.4.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
+bluetooth_init_cc2564C_1.4.c: initscripts-TIInit_6.12.26_v1.4.bts initscripts-TIInit_6.12.26_ble_add-on_v1.4.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 

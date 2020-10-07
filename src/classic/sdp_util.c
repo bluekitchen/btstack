@@ -43,6 +43,7 @@
 
 #include "bluetooth.h"
 #include "btstack_config.h"
+#include "btstack_debug.h"
 #include "btstack_util.h"
 #include "classic/core.h"
 #include "classic/sdp_util.h"
@@ -254,8 +255,10 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
         de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
         data_size += 2;
     }
-    (void)memcpy(seq + 3 + data_size, data, size);
-    data_size += size;
+    if (size > 0){
+		(void)memcpy(seq + 3 + data_size, data, size);
+		data_size += size;
+    }
     big_endian_store_16(seq, 1, data_size);
 }
 

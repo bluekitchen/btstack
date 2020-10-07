@@ -40,6 +40,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /**
  * Configure BTstack for use with ESP32 VHCI Bluetooth Controller
  *
@@ -49,4 +53,7 @@
 
 uint8_t btstack_init(void);
 
+#if defined __cplusplus
+}
+#endif
 #endif //__BTSTACK_PORT_ESP32_H

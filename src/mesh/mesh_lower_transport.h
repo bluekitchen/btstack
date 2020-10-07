@@ -75,26 +75,8 @@ typedef enum {
     MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE,
 } mesh_transport_status_t;
 
-// allocator
-mesh_transport_pdu_t * mesh_transport_pdu_get(void);
-void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
-
-// transport getter/setter
-uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_ctl(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu);
-uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu);
-uint32_t mesh_transport_seq_zero(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu);
-uint16_t mesh_transport_dst(mesh_transport_pdu_t * transport_pdu);
-uint8_t  mesh_transport_control_opcode(mesh_transport_pdu_t * transport_pdu);
-
-void mesh_transport_set_nid_ivi(mesh_transport_pdu_t * transport_pdu, uint8_t nid_ivi);
-void mesh_transport_set_ctl_ttl(mesh_transport_pdu_t * transport_pdu, uint8_t ctl_ttl);
-void mesh_transport_set_seq(mesh_transport_pdu_t * transport_pdu, uint32_t seq);
-void mesh_transport_set_src(mesh_transport_pdu_t * transport_pdu, uint16_t src);
-void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest);
-
+mesh_segmented_pdu_t * mesh_segmented_pdu_get(void);
+void mesh_segmented_pdu_free(mesh_segmented_pdu_t * message_pdu);
 
 void mesh_lower_transport_init(void);
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
@@ -107,8 +89,9 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
 
 // test
 void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu);
-void mesh_lower_transport_dump(void);
 void mesh_lower_transport_reset(void);
+void mesh_lower_transport_dump_network_pdus(const char *name, btstack_linked_list_t *list);
+void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

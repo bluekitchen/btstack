@@ -1,6 +1,7 @@
+
+#include "mock.h"
+
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "ble/att_db.h"
@@ -20,11 +21,15 @@ static uint8_t aes128_cyphertext[16];
 static int report_aes128;
 static int report_random;
 
+static uint32_t lfsr_random;
 // #define ENABLE_PACKET_LOGGER
 // #define ENABLE_AES128_LOGGER
 
+/* taps: 32 31 29 1; characteristic polynomial: x^32 + x^31 + x^29 + x + 1 */
+#define LFSR(a) ((a >> 1) ^ (uint32_t)((0 - (a & 1u)) & 0xd0000001u))
+
 void mock_init(void){
-	 srand(0);
+    lfsr_random = 0x12345678;
 }
 
 uint8_t * mock_packet_buffer(void){
@@ -48,10 +53,14 @@ static void dump_packet(int packet_type, uint8_t * buffer, uint16_t size){
 	}
 	printf("};\n");
 	packet_counter++;
+#else
+UNUSED(packet_type);
+UNUSED(buffer);
+UNUSED(size);
 #endif
 }
 
-void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
+static void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
 	uint32_t rk[RKLENGTH(KEYBITS)];
 	int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
 	rijndaelEncrypt(rk, nrounds, plaintext, cyphertext);
@@ -83,7 +92,8 @@ static void random_report_result(void){
 	memcpy (le_rand_result, rand_complete, 6);
 	int i;
 	for (i=0;i<8;i++){
-		le_rand_result[6+i]= rand();
+        lfsr_random = LFSR(lfsr_random);
+		le_rand_result[6+i]= lfsr_random;
 	}
 	mock_simulate_hci_event(le_rand_result, sizeof(le_rand_result));
 }
@@ -152,19 +162,27 @@ HCI_STATE hci_get_state(void){
 }
 
 void btstack_run_loop_add_timer(btstack_timer_source_t * ts){
+    UNUSED(ts);
 }
 int btstack_run_loop_remove_timer(btstack_timer_source_t * ts){
+    UNUSED(ts);
 	return 0;
 }
 void btstack_run_loop_set_timer(btstack_timer_source_t * ts, uint32_t timeout){
+    UNUSED(ts);
+    UNUSED(timeout);
 }
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t * ts, void (*fn)(btstack_timer_source_t * ts)){
+    UNUSED(ts);
+    UNUSED(fn);
 }
 static void * timer_context;
 void btstack_run_loop_set_timer_context(btstack_timer_source_t * ts, void * context){
+    UNUSED(ts);
 	timer_context = context;
 }
 void * btstack_run_loop_get_timer_context(btstack_timer_source_t * ts){
+    UNUSED(ts);
 	return timer_context;
 }
 void hci_halting_defer(void){

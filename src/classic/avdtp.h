@@ -120,7 +120,7 @@ typedef enum {
 } avdtp_signal_identifier_t;
 
 typedef enum {
-    AVDTP_SINGLE_PACKET= 0,
+    AVDTP_SINGLE_PACKET = 0,
     AVDTP_START_PACKET    ,
     AVDTP_CONTINUE_PACKET ,
     AVDTP_END_PACKET
@@ -279,16 +279,17 @@ typedef struct {
 } avdtp_media_packet_header_t;
 
 typedef enum {
-    AVDTP_BASIC_SERVICE_MODE,
+    AVDTP_BASIC_SERVICE_MODE = 0,
     AVDTP_MULTIPLEXING_SERVICE_MODE
 } avdtp_service_mode_t;
 
 typedef enum {
-    AVDTP_STREAM_ENDPOINT_IDLE,
+    AVDTP_STREAM_ENDPOINT_IDLE = 0,
     AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE,
     AVDTP_STREAM_ENDPOINT_CONFIGURED,
 
     AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM,
+    AVDTP_STREAM_ENDPOINT_W4_ACCEPT_OPEN_STREAM,
     AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED,
 
     AVDTP_STREAM_ENDPOINT_OPENED, 
@@ -300,7 +301,7 @@ typedef enum {
 } avdtp_stream_endpoint_state_t;
 
 typedef enum {
-    AVDTP_INITIATOR_STREAM_CONFIG_IDLE,
+    AVDTP_INITIATOR_STREAM_CONFIG_IDLE = 0,
     AVDTP_INITIATOR_W2_SET_CONFIGURATION,
     AVDTP_INITIATOR_W2_SUSPEND_STREAM_WITH_SEID,
     AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID,
@@ -313,7 +314,7 @@ typedef enum {
 } avdtp_initiator_stream_endpoint_state_t;
 
 typedef enum {
-    AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE,
+    AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE = 0,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES,
     AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT,
@@ -347,8 +348,10 @@ typedef struct {
 
 
 typedef enum {
-    AVDTP_SIGNALING_CONNECTION_IDLE,
+    AVDTP_SIGNALING_CONNECTION_IDLE = 0,
+    AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SINK,
     AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SINK_COMPLETE,
+    AVDTP_SIGNALING_W2_SEND_SDP_QUERY_FOR_REMOTE_SOURCE,
     AVDTP_SIGNALING_W4_SDP_QUERY_FOR_REMOTE_SOURCE_COMPLETE,
     AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED,
     AVDTP_SIGNALING_CONNECTION_W2_L2CAP_RETRY,
@@ -357,7 +360,7 @@ typedef enum {
 } avdtp_connection_state_t;
 
 typedef enum {
-    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE,
+    AVDTP_SIGNALING_CONNECTION_ACCEPTOR_IDLE = 0,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE,
     AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE,
@@ -365,8 +368,10 @@ typedef enum {
 } avdtp_acceptor_connection_state_t;
 
 typedef enum {
-    AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE = 0,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_SDP_QUERY_THEN_GET_ALL_CAPABILITIES,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_SDP_QUERY_COMPLETE_THEN_GET_ALL_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION,
@@ -388,19 +393,42 @@ typedef struct {
 } avdtp_signaling_packet_t;
 
 typedef enum {
-    AVDTP_CONFIGURATION_STATE_IDLE,
+    AVDTP_CONFIGURATION_STATE_IDLE = 0,
     AVDTP_CONFIGURATION_STATE_LOCAL_INITIATED,
     AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED,
     AVDTP_CONFIGURATION_STATE_REMOTE_INITIATED,
     AVDTP_CONFIGURATION_STATE_REMOTE_CONFIGURED,
 } avtdp_configuration_state_t;
 
+typedef enum {
+    A2DP_IDLE = 0,
+    A2DP_W4_CONNECTED,
+    A2DP_CONNECTED,
+    A2DP_DISCOVER_SEPS,
+    A2DP_GET_CAPABILITIES,
+    A2DP_W2_GET_ALL_CAPABILITIES, //5
+    A2DP_SET_CONFIGURATION,      
+    A2DP_W4_GET_CONFIGURATION,
+    A2DP_W4_SET_CONFIGURATION,
+    A2DP_CONFIGURED,
+    A2DP_W2_SUSPEND_STREAM_WITH_SEID, //10
+    A2DP_W2_RECONFIGURE_WITH_SEID,
+    A2DP_W2_OPEN_STREAM_WITH_SEID,   
+    A2DP_W4_OPEN_STREAM_WITH_SEID,
+    A2DP_W2_START_STREAM_WITH_SEID,  
+    A2DP_W2_ABORT_STREAM_WITH_SEID,   //15
+    A2DP_W2_STOP_STREAM_WITH_SEID,
+    A2DP_STREAMING_OPENED
+} a2dp_state_t;
+
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     
     uint16_t avdtp_cid;
-
+    hci_con_handle_t con_handle;
+    
     // SDP results
     uint16_t avdtp_l2cap_psm;
     uint16_t avdtp_version;
@@ -448,27 +476,12 @@ typedef struct {
     
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
+
+    bool    a2dp_source_discover_seps;
+    uint8_t supported_codecs_bitmap;
+
 } avdtp_connection_t;
 
-typedef enum {
-    A2DP_IDLE,
-    A2DP_W4_CONNECTED,
-    A2DP_CONNECTED,
-    A2DP_W2_DISCOVER_SEPS,
-    A2DP_W2_GET_CAPABILITIES,
-    A2DP_W2_GET_ALL_CAPABILITIES,
-    A2DP_W2_SET_CONFIGURATION,      //5
-    A2DP_W4_GET_CONFIGURATION,
-    A2DP_W4_SET_CONFIGURATION,
-    A2DP_W2_SUSPEND_STREAM_WITH_SEID,
-    A2DP_W2_RECONFIGURE_WITH_SEID,
-    A2DP_W2_OPEN_STREAM_WITH_SEID,   //10
-    A2DP_W4_OPEN_STREAM_WITH_SEID,
-    A2DP_W2_START_STREAM_WITH_SEID,
-    A2DP_W2_ABORT_STREAM_WITH_SEID,
-    A2DP_W2_STOP_STREAM_WITH_SEID,
-    A2DP_STREAMING_OPENED
-} a2dp_state_t;
 
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
@@ -510,18 +523,14 @@ typedef struct avdtp_stream_endpoint {
     uint8_t media_disconnect;
     uint8_t media_connect;
     uint8_t start_stream;
-    uint8_t stop_stream;
-    uint8_t send_stream;
+    uint8_t close_stream;
+    uint8_t request_can_send_now;
     uint8_t abort_stream;
     uint8_t suspend_stream;
     uint16_t sequence_number;
 } avdtp_stream_endpoint_t;
 
 typedef struct {
-// to app
-    bd_addr_t remote_addr;
-    uint16_t avdtp_cid;
-
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // msstream
     uint32_t acc_num_missed_samples;
@@ -543,8 +552,9 @@ typedef struct {
 } avdtp_stream_endpoint_context_t;
 
 void avdtp_init(void);
-avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t l2cap_cid);
+avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
+btstack_linked_list_t * avdtp_get_connections(void);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
@@ -553,6 +563,7 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uin
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
+void avdtp_emit_source(uint8_t * packet, uint16_t size);
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);
 void avdtp_register_reporting_category(avdtp_stream_endpoint_t * stream_endpoint);
@@ -569,6 +580,7 @@ void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
+void avdtp_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_role_t role, uint16_t * avdtp_cid);
 uint8_t avdtp_disconnect(uint16_t avdtp_cid);
@@ -603,21 +615,9 @@ uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endp
 
 uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 
-void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *stream_endpoint, uint16_t sequence_number);
-void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay);
-void avdtp_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                              avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
-void avdtp_signaling_emit_media_codec_sbc_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                        avdtp_media_type_t media_type,
-                                                        const uint8_t *media_codec_information);
-void avdtp_signaling_emit_media_codec_sbc_reconfiguration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                          avdtp_media_type_t media_type,
-                                                          const uint8_t *media_codec_information);
-void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                          uint8_t local_seid, uint8_t remote_seid,
-                                                          adtvp_media_codec_capabilities_t media_codec);
-
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
+
+uint16_t avdtp_get_next_transaction_label(void);
 
 #if defined __cplusplus
 }

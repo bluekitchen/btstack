@@ -1214,7 +1214,7 @@ static int usb_open(void){
 
 static int usb_close(void){
     
-    if (!usb_transport_open == 0) return 0;
+    if (!usb_transport_open) return 0;
 
     // remove data sources
     btstack_run_loop_remove_data_source(&usb_data_source_command_out);

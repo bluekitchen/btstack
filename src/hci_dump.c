@@ -302,8 +302,10 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     tv_us  = curr_time.tv_usec;
 #else
     uint32_t time_ms = btstack_run_loop_get_time_ms();
-    tv_us   = time_ms * 1000u;
-    tv_sec  = 946728000UL + (time_ms / 1000u);
+	tv_sec  = time_ms / 1000u;
+	tv_us   = (time_ms - (tv_sec * 1000)) * 1000;
+	// Saturday, January 1, 2000 12:00:00
+    tv_sec += 946728000UL;
 #endif
 
 #ifdef ENABLE_SEGGER_RTT

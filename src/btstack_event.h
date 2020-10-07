@@ -4416,13 +4416,22 @@ static inline void avdtp_subevent_signaling_connection_established_get_bd_addr(c
     reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
+ * @brief Get field con_handle from event AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t avdtp_subevent_signaling_connection_established_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+/**
  * @brief Get field status from event AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_connection_established_get_status(const uint8_t * event){
-    return event[11];
+    return event[13];
 }
 
 /**
@@ -5751,13 +5760,22 @@ static inline void a2dp_subevent_signaling_connection_established_get_bd_addr(co
     reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
+ * @brief Get field con_handle from event A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_connection_established_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+/**
  * @brief Get field status from event A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_signaling_connection_established_get_status(const uint8_t * event){
-    return event[11];
+    return event[13];
 }
 
 /**
@@ -6211,22 +6229,31 @@ static inline uint8_t avrcp_subevent_connection_established_get_status(const uin
     return event[3];
 }
 /**
- * @brief Get field bd_addr from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
- * @param event packet
- * @param Pointer to storage for bd_addr
- * @note: btstack_type B
- */
-static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bytes(&event[4], bd_addr, 6);
-}
-/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return avrcp_cid
  * @note: btstack_type 2
  */
 static inline uint16_t avrcp_subevent_connection_established_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 10);
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field bd_addr from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[6], bd_addr, 6);
+}
+/**
+ * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_connection_established_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 12);
 }
 
 /**

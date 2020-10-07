@@ -245,20 +245,20 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
 
     printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
 
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
-    if (!transport_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
 
     // page 0
-    mesh_access_transport_add_uint8(transport_pdu, 0);
+    mesh_access_message_add_uint8(&builder, 0);
 
     // CID
-    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_company_id());
+    mesh_access_message_add_uint16(&builder, mesh_node_get_company_id());
     // PID
-    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_product_id());
+    mesh_access_message_add_uint16(&builder, mesh_node_get_product_id());
     // VID
-    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_product_version_id());
+    mesh_access_message_add_uint16(&builder, mesh_node_get_product_version_id());
     // CRPL - number of protection list entries
-    mesh_access_transport_add_uint16(transport_pdu, 1);
+    mesh_access_message_add_uint16(&builder, 1);
     // Features - Relay, Proxy, Friend, Lower Power, ...
     uint16_t features = 0;
 #ifdef ENABLE_MESH_RELAY
@@ -267,7 +267,7 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
 #ifdef ENABLE_MESH_PROXY_SERVER
     features |= 2;
 #endif
-    mesh_access_transport_add_uint16(transport_pdu, features);
+    mesh_access_message_add_uint16(&builder, features);
 
     mesh_element_iterator_t element_it;
     mesh_element_iterator_init(&element_it);
@@ -275,32 +275,34 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
         mesh_element_t * element = mesh_element_iterator_next(&element_it);
 
         // Loc
-        mesh_access_transport_add_uint16(transport_pdu, element->loc);
+        mesh_access_message_add_uint16(&builder, element->loc);
         // NumS
-        mesh_access_transport_add_uint8( transport_pdu, element->models_count_sig);
+        mesh_access_message_add_uint8(&builder, element->models_count_sig);
         // NumV
-        mesh_access_transport_add_uint8( transport_pdu, element->models_count_vendor);
+        mesh_access_message_add_uint8(&builder, element->models_count_vendor);
 
         mesh_model_iterator_t model_it;
-        
+
         // SIG Models
         mesh_model_iterator_init(&model_it, element);
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_transport_add_model_identifier(transport_pdu, model->model_identifier);
+            mesh_access_message_add_model_identifier(&builder, model->model_identifier);
         }
         // Vendor Models
         mesh_model_iterator_init(&model_it, element);
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_transport_add_model_identifier(transport_pdu, model->model_identifier);
+            mesh_access_message_add_model_identifier(&builder, model->model_identifier);
         }
     }
-    
+
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
+
     // send as segmented access pdu
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -313,7 +315,7 @@ static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_p
 static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_beacon_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_beacon_status,
                                                                                mesh_foundation_beacon_get());
     if (!transport_pdu) return;
 
@@ -331,7 +333,7 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint8_t beacon_enabled = mesh_access_parser_get_u8(&parser);
+    uint8_t beacon_enabled = mesh_access_parser_get_uint8(&parser);
 
     // beacon valid
     if (beacon_enabled < MESH_FOUNDATION_STATE_NOT_SUPPORTED) {
@@ -349,7 +351,7 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void config_model_default_ttl_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_default_ttl_status, mesh_foundation_default_ttl_get());
     if (!transport_pdu) return;
 
@@ -367,7 +369,7 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_pdu_t 
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint8_t new_ttl = mesh_access_parser_get_u8(&parser);
+    uint8_t new_ttl = mesh_access_parser_get_uint8(&parser);
 
     // validate (0x01 and > 0x7f are prohibited)
     if (new_ttl <= 0x7f && new_ttl != 0x01) {
@@ -387,7 +389,7 @@ static void config_friend_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_friend_status, mesh_foundation_friend_get());
     if (!transport_pdu) return;
 
@@ -405,7 +407,7 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint8_t new_friend_state = mesh_access_parser_get_u8(&parser);
+    uint8_t new_friend_state = mesh_access_parser_get_uint8(&parser);
 
     // validate
     if (new_friend_state < MESH_FOUNDATION_STATE_NOT_SUPPORTED) {
@@ -426,7 +428,7 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
     if (!transport_pdu) return;
 
     // send as segmented access pdu
@@ -443,7 +445,7 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_pdu_t *
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint8_t enabled = mesh_access_parser_get_u8(&parser);
+    uint8_t enabled = mesh_access_parser_get_uint8(&parser);
 
     // validate
     if (enabled <  MESH_FOUNDATION_STATE_NOT_SUPPORTED) {
@@ -465,7 +467,7 @@ static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_relay_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_relay_status,
                                                                                mesh_foundation_relay_get(),
                                                                                mesh_foundation_relay_retransmit_get());
     if (!transport_pdu) return;
@@ -486,8 +488,8 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // check if valid
-    uint8_t relay            = mesh_access_parser_get_u8(&parser);
-    uint8_t relay_retransmit = mesh_access_parser_get_u8(&parser);
+    uint8_t relay            = mesh_access_parser_get_uint8(&parser);
+    uint8_t relay_retransmit = mesh_access_parser_get_uint8(&parser);
 
     // check if valid
     if (relay <= 1) {
@@ -512,7 +514,7 @@ static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_network_transmit_status, mesh_foundation_network_transmit_get());
     if (!transport_pdu) return;
 
@@ -530,7 +532,7 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint8_t new_ttl = mesh_access_parser_get_u8(&parser);
+    uint8_t new_ttl = mesh_access_parser_get_uint8(&parser);
 
     // store
     mesh_foundation_network_transmit_set(new_ttl);
@@ -552,7 +554,7 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_netkey_status, status, new_netkey_index);
     if (!transport_pdu) return;
 
@@ -563,19 +565,21 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
     UNUSED(mesh_model);
 
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
-    if (!transport_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, MESH_FOUNDATION_OPERATION_NETKEY_LIST);
 
     // add list of netkey indexes
     mesh_network_key_iterator_t it;
     mesh_network_key_iterator_init(&it);
     while (mesh_network_key_iterator_has_more(&it)){
         mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
-        mesh_access_transport_add_uint16(transport_pdu, network_key->netkey_index);
+        mesh_access_message_add_uint16(&builder, network_key->netkey_index);
     }
 
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
+
     // send as segmented access pdu
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_netkey_add_derived(void * arg){
@@ -604,7 +608,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
 
     // get params
     uint8_t new_netkey[16];
-    uint16_t new_netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t new_netkey_index = mesh_access_parser_get_uint16(&parser);
     mesh_access_parser_get_key(&parser, new_netkey);
 
     uint8_t status;
@@ -689,7 +693,7 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
 
     // get params
     uint8_t new_netkey[16];
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
     mesh_access_parser_get_key(&parser, new_netkey);
 
     // get existing subnet
@@ -735,7 +739,7 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
 
     // get params
-    uint16_t netkey_index_to_remove = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index_to_remove = mesh_access_parser_get_uint16(&parser);
 
     // get message netkey
     uint16_t netkey_index_pdu = mesh_pdu_netkey_index(pdu);
@@ -789,7 +793,7 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_appkey_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_appkey_status,
                                                                                status, netkey_and_appkey_index);
     if (!transport_pdu) return;
 
@@ -800,8 +804,8 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_index_of_list){
     UNUSED(mesh_model);
 
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST);
-    if (!transport_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, MESH_FOUNDATION_OPERATION_APPKEY_LIST);
 
     // check netkey_index is valid
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index_of_list);
@@ -811,19 +815,22 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     } else {
         status = MESH_FOUNDATION_STATUS_SUCCESS;
     }
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, netkey_index_of_list);
+    mesh_access_message_add_uint8(&builder, status);
+    mesh_access_message_add_uint16(&builder, netkey_index_of_list);
 
     // add list of appkey indexes
     mesh_transport_key_iterator_t it;
     mesh_transport_key_iterator_init(&it, netkey_index_of_list);
     while (mesh_transport_key_iterator_has_more(&it)){
         mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
-        mesh_access_transport_add_uint16(transport_pdu, transport_key->appkey_index);
+        if (transport_key->old_key == 1) continue;
+        mesh_access_message_add_uint16(&builder, transport_key->appkey_index);
     }
 
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
+
     // send as segmented access pdu
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_appkey_add_or_update_aid(void *arg){
@@ -838,7 +845,7 @@ static void config_appkey_add_or_update_aid(void *arg){
     // add app key
     mesh_transport_key_add(transport_key);
 
-    uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
+    uint32_t netkey_and_appkey_index = (((uint32_t)transport_key->appkey_index) << 12) | transport_key->netkey_index;
     config_appkey_status(mesh_node_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
 
     mesh_access_message_processed(access_pdu_in_process);
@@ -850,7 +857,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // netkey and appkey index
-    uint32_t netkey_and_appkey_index = mesh_access_parser_get_u24(&parser);
+    uint32_t netkey_and_appkey_index = mesh_access_parser_get_uint24(&parser);
     uint16_t netkey_index = netkey_and_appkey_index & 0xfff;
     uint16_t appkey_index = netkey_and_appkey_index >> 12;
 
@@ -918,7 +925,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // netkey and appkey index
-    uint32_t netkey_and_appkey_index = mesh_access_parser_get_u24(&parser);
+    uint32_t netkey_and_appkey_index = mesh_access_parser_get_uint24(&parser);
     uint16_t netkey_index = netkey_and_appkey_index & 0xfff;
     uint16_t appkey_index = netkey_and_appkey_index >> 12;
 
@@ -991,7 +998,7 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
 
     // netkey and appkey index
-    uint32_t netkey_and_appkey_index = mesh_access_parser_get_u24(&parser);
+    uint32_t netkey_and_appkey_index = mesh_access_parser_get_uint24(&parser);
     uint16_t netkey_index = netkey_and_appkey_index & 0xfff;
     uint16_t appkey_index = netkey_and_appkey_index >> 12;
 
@@ -1016,7 +1023,7 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
 static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
 
     config_appkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_index);
     mesh_access_message_processed(pdu);
@@ -1034,13 +1041,13 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
         opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST;
     }
 
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(opcode);
-    if (!transport_pdu) return;
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, opcode);
 
     // setup segmented message
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, element_address);
-    mesh_access_transport_add_model_identifier(transport_pdu, model_identifier);
+    mesh_access_message_add_uint8(&builder, status);
+    mesh_access_message_add_uint16(&builder, element_address);
+    mesh_access_message_add_model_identifier(&builder, model_identifier);
 
     if (target_model != NULL){
         uint16_t i;
@@ -1052,17 +1059,20 @@ static void config_model_subscription_list(mesh_model_t * mesh_model, uint16_t n
                 if (virtual_address == NULL) continue;
                 address = virtual_address->hash;
             }
-            mesh_access_transport_add_uint16(transport_pdu, address);
+            mesh_access_message_add_uint16(&builder, address);
         }
-    }   
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    }
+
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
+
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1076,7 +1086,7 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_subscription_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_model_subscription_status,
                                                                                 status, element_address, address, model_identifier);
     if (!transport_pdu) return;
     // send as segmented access pdu
@@ -1087,8 +1097,8 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
+    uint16_t address          = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1144,7 +1154,7 @@ static void config_model_subscription_virtual_address_add_handler(mesh_model_t *
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress - Address of the element - should be us
-    configuration_server_element_address = mesh_access_parser_get_u16(&parser);
+    configuration_server_element_address = mesh_access_parser_get_uint16(&parser);
 
     // store label uuid
     mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
@@ -1169,8 +1179,8 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
+    uint16_t address          = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1233,7 +1243,7 @@ static void config_model_subscription_virtual_address_overwrite_handler(mesh_mod
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress - Address of the element - should be us
-    configuration_server_element_address = mesh_access_parser_get_u16(&parser);
+    configuration_server_element_address = mesh_access_parser_get_uint16(&parser);
 
     // store label uuid
     mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
@@ -1257,8 +1267,8 @@ static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, m
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
+    uint16_t address          = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1281,7 +1291,7 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
     mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
@@ -1305,7 +1315,7 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address  = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1327,7 +1337,7 @@ static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_i
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_app_status,
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_config_model_app_status,
                                                             status, element_address, appkey_index, model_identifier);
     if (!transport_pdu) return;
 
@@ -1344,15 +1354,16 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
     } else {
         opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST;
     }
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(opcode);
-    if (!transport_pdu) return;
 
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, element_address);
+    mesh_upper_transport_builder_t builder;
+    mesh_access_message_init(&builder, opcode);
+
+    mesh_access_message_add_uint8(&builder, status);
+    mesh_access_message_add_uint16(&builder, element_address);
     if (mesh_model_is_bluetooth_sig(model_identifier)) {
-        mesh_access_transport_add_uint16(transport_pdu, mesh_model_get_model_id(model_identifier));
+        mesh_access_message_add_uint16(&builder, mesh_model_get_model_id(model_identifier));
     } else {
-        mesh_access_transport_add_uint32(transport_pdu, model_identifier);
+        mesh_access_message_add_uint32(&builder, model_identifier);
     }
     
     // add list of appkey indexes
@@ -1361,20 +1372,22 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
         for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
             uint16_t appkey_index = mesh_model->appkey_indices[i];
             if (appkey_index == MESH_APPKEY_INVALID) continue;
-            mesh_access_transport_add_uint16(transport_pdu, appkey_index);
+            mesh_access_message_add_uint16(&builder, appkey_index);
         }
     }
 
+    mesh_upper_transport_pdu_t * upper_pdu = mesh_access_message_finalize(&builder);
+
     // send as segmented access pdu
-    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) upper_pdu);
 }
 
 static void config_model_app_bind_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address = mesh_access_parser_get_u16(&parser);
-    uint16_t appkey_index    = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address = mesh_access_parser_get_uint16(&parser);
+    uint16_t appkey_index    = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
@@ -1407,8 +1420,8 @@ static void config_model_app_unbind_handler(mesh_model_t *config_server_model, m
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address = mesh_access_parser_get_u16(&parser);
-    uint16_t appkey_index    = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address = mesh_access_parser_get_uint16(&parser);
+    uint16_t appkey_index    = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
@@ -1441,7 +1454,7 @@ static void config_model_app_get_handler(mesh_model_t *config_server_model, mesh
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    uint16_t element_address = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address = mesh_access_parser_get_uint16(&parser);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
@@ -1511,7 +1524,7 @@ config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index,
         }
     }
 
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_model_publication_status, status, element_address, publish_address,
             app_key_index_and_credential_flag, ttl, period, retransmit, model_identifier);
     if (!transport_pdu) return;
@@ -1530,24 +1543,24 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress
-    uint16_t element_address = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address = mesh_access_parser_get_uint16(&parser);
 
     // PublishAddress, 16 bit
-    configuration_server_publication_model.address = mesh_access_parser_get_u16(&parser);
+    configuration_server_publication_model.address = mesh_access_parser_get_uint16(&parser);
 
     // AppKeyIndex (12), CredentialFlag (1), RFU (3)
-    uint16_t temp = mesh_access_parser_get_u16(&parser);
+    uint16_t temp = mesh_access_parser_get_uint16(&parser);
     configuration_server_publication_model.appkey_index = temp & 0x0fff;
     configuration_server_publication_model.friendship_credential_flag = (temp >> 12) & 1;
 
     // TTL
-    configuration_server_publication_model.ttl        = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.ttl        = mesh_access_parser_get_uint8(&parser);
 
     // Period
-    configuration_server_publication_model.period     = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.period     = mesh_access_parser_get_uint8(&parser);
 
     // Retransmit
-    configuration_server_publication_model.retransmit = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.retransmit = mesh_access_parser_get_uint8(&parser);
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
@@ -1638,18 +1651,18 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress - Address of the element
-    configuration_server_element_address = mesh_access_parser_get_u16(&parser);
+    configuration_server_element_address = mesh_access_parser_get_uint16(&parser);
 
     // store label uuid
     mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
 
     // AppKeyIndex (12), CredentialFlag (1), RFU (3)
-    uint16_t temp = mesh_access_parser_get_u16(&parser);
+    uint16_t temp = mesh_access_parser_get_uint16(&parser);
     configuration_server_publication_model.appkey_index = temp & 0x0fff;
     configuration_server_publication_model.friendship_credential_flag = (temp >> 12) & 1;
-    configuration_server_publication_model.ttl        = mesh_access_parser_get_u8(&parser);
-    configuration_server_publication_model.period     = mesh_access_parser_get_u8(&parser);
-    configuration_server_publication_model.retransmit = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.ttl        = mesh_access_parser_get_uint8(&parser);
+    configuration_server_publication_model.period     = mesh_access_parser_get_uint8(&parser);
+    configuration_server_publication_model.retransmit = mesh_access_parser_get_uint8(&parser);
 
     // Model Identifier
     configuration_server_model_identifier = mesh_access_parser_get_model_identifier(&parser);
@@ -1693,7 +1706,7 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress - Address of the element - should be us
-    uint16_t element_address = mesh_access_parser_get_u16(&parser);
+    uint16_t element_address = mesh_access_parser_get_uint16(&parser);
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
@@ -1732,7 +1745,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
         uint8_t data[3];
         data[0] = mesh_heartbeat_publication->ttl;
         big_endian_store_16(data, 1, mesh_heartbeat_publication->active_features);
-        uint8_t status = mesh_upper_transport_setup_control_pdu((mesh_pdu_t *) network_pdu, mesh_heartbeat_publication->netkey_index,
+        uint8_t status = mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, mesh_heartbeat_publication->netkey_index,
                 mesh_heartbeat_publication->ttl, mesh_node_get_primary_element_address(), mesh_heartbeat_publication->destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
         if (status){
@@ -1787,7 +1800,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 
     // setup message
     uint8_t count_log = mesh_heartbeat_count_log(mesh_heartbeat_publication->count);
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_heartbeat_publication_status,
             status,
             mesh_heartbeat_publication->destination,
@@ -1813,17 +1826,17 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // Destination address for Heartbeat messages
-    requested_publication.destination = mesh_access_parser_get_u16(&parser);
+    requested_publication.destination = mesh_access_parser_get_uint16(&parser);
     // Number of Heartbeat messages to be sent
-    requested_publication.count = mesh_heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
+    requested_publication.count = mesh_heartbeat_pwr2(mesh_access_parser_get_uint8(&parser));
     //  Period for sending Heartbeat messages
-    requested_publication.period_log = mesh_access_parser_get_u8(&parser);
+    requested_publication.period_log = mesh_access_parser_get_uint8(&parser);
     //  TTL to be used when sending Heartbeat messages
-    requested_publication.ttl = mesh_access_parser_get_u8(&parser);
+    requested_publication.ttl = mesh_access_parser_get_uint8(&parser);
     // Bit field indicating features that trigger Heartbeat messages when changed
-    requested_publication.features = mesh_access_parser_get_u16(&parser) & MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK;
+    requested_publication.features = mesh_access_parser_get_uint16(&parser) & MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK;
     // NetKey Index
-    requested_publication.netkey_index = mesh_access_parser_get_u16(&parser);
+    requested_publication.netkey_index = mesh_access_parser_get_uint16(&parser);
 
     // store period as ms
     requested_publication.period_ms = mesh_heartbeat_pwr2(requested_publication.period_log) * 1000;
@@ -1886,7 +1899,7 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
 
     // setup message
     uint8_t count_log = mesh_heartbeat_count_log(mesh_heartbeat_subscription->count);
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
             &mesh_foundation_config_heartbeat_subscription_status,
             status,
             mesh_heartbeat_subscription->source,
@@ -1913,11 +1926,11 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
     mesh_heartbeat_subscription_t requested_subscription;
 
     // Destination address for Heartbeat messages
-    requested_subscription.source = mesh_access_parser_get_u16(&parser);
+    requested_subscription.source = mesh_access_parser_get_uint16(&parser);
     // Destination address for Heartbeat messages
-    requested_subscription.destination = mesh_access_parser_get_u16(&parser);
+    requested_subscription.destination = mesh_access_parser_get_uint16(&parser);
     //  Period for sending Heartbeat messages
-    requested_subscription.period_log = mesh_access_parser_get_u8(&parser);
+    requested_subscription.period_log = mesh_access_parser_get_uint8(&parser);
     
 
     // Hearbeat Subscription Soure must be unassigned or a unicast address
@@ -2030,7 +2043,7 @@ static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t n
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
         &mesh_key_refresh_phase_status,
         status,
         netkey_index,
@@ -2044,7 +2057,7 @@ static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t n
 static void config_key_refresh_phase_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
 
     uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
@@ -2062,8 +2075,8 @@ static void config_key_refresh_phase_get_handler(mesh_model_t *mesh_model, mesh_
 static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
-    uint8_t  key_refresh_phase_transition = mesh_access_parser_get_u8(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
+    uint8_t  key_refresh_phase_transition = mesh_access_parser_get_uint8(&parser);
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
 
     uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
@@ -2109,7 +2122,7 @@ static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_i
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_node_reset_status);
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(&mesh_foundation_node_reset_status);
     if (!transport_pdu) return;
 
     // send as segmented access pdu
@@ -2125,7 +2138,7 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void low_power_node_poll_timeout_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status){
     UNUSED(mesh_model);
 
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
         &mesh_foundation_low_power_node_poll_timeout_status,
         status,
         0,  // The unicast address of the Low Power node
@@ -2150,7 +2163,7 @@ static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netke
     UNUSED(mesh_model);
 
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+    mesh_upper_transport_pdu_t * transport_pdu = mesh_access_setup_message(
         &mesh_foundation_node_identity_status,
         status,
         netkey_index,
@@ -2164,7 +2177,7 @@ static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netke
 static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
 
     mesh_node_identity_state_t node_identity_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -2179,8 +2192,8 @@ static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_
 static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
-    mesh_node_identity_state_t node_identity_state = (mesh_node_identity_state_t) mesh_access_parser_get_u8(&parser);
+    uint16_t netkey_index = mesh_access_parser_get_uint16(&parser);
+    mesh_node_identity_state_t node_identity_state = (mesh_node_identity_state_t) mesh_access_parser_get_uint8(&parser);
 
     // ignore invalid state
     if (node_identity_state >= MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED) {

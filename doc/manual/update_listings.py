@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys, getopt, re
 
 # Defines the names of example groups. Preserves the order in which the example groups will be parsed.
@@ -111,7 +111,7 @@ def processTextLine(line, ref_prefix):
 
 def getExampleTitle(example_path):
     example_title = ''
-    with open(example_path, 'rb') as fin:
+    with open(example_path, 'r') as fin:
         for line in fin:
             parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
             if parts: 
@@ -151,7 +151,7 @@ def writeListings(aout, infile_name, ref_prefix):
     code_identation = "    "
     skip_code = 0
 
-    with open(infile_name, 'rb') as fin:
+    with open(infile_name, 'r') as fin:
         for line in fin:
             if state == State.SearchExampleStart:
                 parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
@@ -256,22 +256,22 @@ def writeListings(aout, infile_name, ref_prefix):
             parts = re.match('.*(EXAMPLE_END).*',line)
             if parts:
                 if state != State.SearchListingStart:
-                    print "Formating error detected"
+                    print("Formating error detected")
                 writeItemizeBlock(aout, 0)
                 writeTextBlock(aout, 0)
                 state = State.ReachedExampleEnd
-                print "Reached end of the example"
+                print("Reached end of the example")
             
 
 # write list of examples
 def processExamples(intro_file, examples_folder, examples_ofile):
     with open(examples_ofile, 'w') as aout:
-        with open(intro_file, 'rb') as fin:
+        with open(intro_file, 'r') as fin:
             for line in fin:
                 aout.write(line)
 
         for group_title in list_of_groups:
-            if not list_of_examples.has_key(group_title): continue
+            if not group_title in list_of_examples: continue
             examples = list_of_examples[group_title]
             for example in examples:
                 example_path  = examples_folder + example[0] + ".c"
@@ -282,7 +282,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
         aout.write("\n\n");
 
         for group_title in list_of_groups:
-            if not list_of_examples.has_key(group_title): continue
+            if not group_title in list_of_examples: continue
             examples = list_of_examples[group_title]
             
             group_title = group_title + " example"
@@ -300,7 +300,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
         aout.write("\n")
 
         for group_title in list_of_groups:
-            if not list_of_examples.has_key(group_title): continue
+            if not group_title in list_of_examples: continue
             examples = list_of_examples[group_title]
             
             for example in examples:
@@ -320,11 +320,11 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"hiso:",["ffolder=","ifile=","ofile="])
     except getopt.GetoptError:
-        print cmd
+        print (cmd)
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print cmd
+            print (cmd)
             sys.exit()
         elif opt in ("-f", "--ffolder"):
             inputfolder = arg
@@ -332,9 +332,9 @@ def main(argv):
             introfile = arg
         elif opt in ("-o", "--ofile"):
             outputfile = arg
-    print 'Input folder is ', inputfolder
-    print 'Intro file is ',  introfile
-    print 'Output file is ', outputfile
+    print ('Input folder is : ', inputfolder)
+    print ('Intro file is   : ', introfile)
+    print ('Output file is  : ', outputfile)
 
     processExamples(introfile, inputfolder, outputfile)
 

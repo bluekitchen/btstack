@@ -68,6 +68,7 @@
 #include "mesh/pb_gatt.h"
 #include "mesh/provisioning.h"
 #include "mesh/provisioning_device.h"
+#include "mesh/provisioning_provisioner.h"
 
 static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data);
 static int mesh_node_startup_from_tlv(void);
@@ -1009,18 +1010,6 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
 
 static const uint32_t mesh_tag_for_prov_data = ((uint32_t) 'P' << 24) | ((uint32_t) 'R' << 16) | ((uint32_t) 'O' <<  8) | (uint32_t)'V';
 
-void mesh_node_reset(void){
-    // PROV
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data);
-    // everything else
-    mesh_delete_network_keys();
-    mesh_delete_app_keys();
-    mesh_delete_appkey_lists();
-    mesh_delete_virtual_addresses();
-    mesh_delete_subscriptions();
-    mesh_delete_publications();
-}
-
 typedef struct {
     uint16_t unicast_address;
     uint8_t  flags;
@@ -1067,6 +1056,23 @@ static void mesh_access_setup_without_provisiong_data_random(void * arg){
     // set random value
     mesh_node_set_device_uuid(random_device_uuid);
     mesh_access_setup_unprovisioned_device(random_device_uuid);
+}
+
+void mesh_node_reset(void){
+    // PROV
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data);
+    // everything else
+    mesh_delete_network_keys();
+    mesh_delete_app_keys();
+    mesh_delete_appkey_lists();
+    mesh_delete_virtual_addresses();
+    mesh_delete_subscriptions();
+    mesh_delete_publications();
+    // also reset iv index + sequence number
+    mesh_set_iv_index(0);
+    mesh_sequence_number_set(0);
+    // start advertising as unprovisioned device
+    mesh_access_setup_unprovisioned_device(mesh_node_get_device_uuid());
 }
 
 static void mesh_access_setup_with_provisiong_data_random(void * arg){
@@ -1163,10 +1169,14 @@ static int mesh_node_startup_from_tlv(void){
     return prov_data_valid;
 }
 
-static void mesh_control_message_handler(mesh_pdu_t * pdu){
+static void mesh_control_message_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    UNUSED(callback_type);
+    UNUSED(status);
+
     // get opcode 
     uint8_t opcode = mesh_pdu_control_opcode(pdu);
-    printf("Opcode: 0x%02x\n", opcode);
+    printf("MESH Control Message, Opcode: 0x%02x + ", opcode);
+    printf_hexdump(mesh_pdu_data(pdu), mesh_pdu_len(pdu));
 
     uint8_t init_ttl;
     uint8_t hops = 0;
@@ -1224,6 +1234,11 @@ void mesh_init(void){
 
     provisioning_device_init();
     provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
+
+#ifdef ENABLE_MESH_PROVISIONER
+    provisioning_provisioner_init();
+    provisioning_provisioner_register_packet_handler(&mesh_provisioning_message_handler);
+#endif
 
     // Node Configuration
     mesh_node_init();

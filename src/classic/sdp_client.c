@@ -116,6 +116,10 @@ static uint8_t   continuationState[16];
 static uint8_t   continuationStateLen;
 static sdp_client_state_t sdp_client_state = INIT;
 static SDP_PDU_ID_t PDU_ID = SDP_Invalid;
+
+// Query registration
+static btstack_linked_list_t sdp_client_query_requests;
+
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 static uint32_t serviceRecordHandle;
 static uint32_t record_handle;
@@ -307,12 +311,30 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
 }
 #endif
 
+static void sdp_client_notify_callbacks(void){
+    if (sdp_client_ready() == false) {
+        return;
+    }
+    btstack_context_callback_registration_t * callback = (btstack_context_callback_registration_t*) btstack_linked_list_pop(&sdp_client_query_requests);
+    if (callback == NULL) {
+        return;
+    }
+    (*callback->callback)(callback->context);
+}
+
 void sdp_parser_handle_done(uint8_t status){
+    // reset state
+    sdp_client_state = INIT;
+
+    // emit query complete event
     uint8_t event[3];
     event[0] = SDP_EVENT_QUERY_COMPLETE;
     event[1] = 1;
     event[2] = status;
     (*sdp_parser_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
+
+    // trigger next query if pending
+    sdp_client_notify_callbacks();
 }
 
 // SDP Client
@@ -447,7 +469,6 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
                 log_info("SDP Client Connection failed, status 0x%02x.", packet[2]);
-                sdp_client_state = INIT;
                 sdp_parser_handle_done(packet[2]);
                 break;
             }
@@ -472,7 +493,6 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             }
             log_info("SDP Client disconnected.");
             uint8_t status = (sdp_client_state == QUERY_COMPLETE) ? 0 : SDP_QUERY_INCOMPLETE;
-            sdp_client_state = INIT;
             sdp_parser_handle_done(status);
             break;
         }
@@ -682,8 +702,15 @@ void sdp_client_reset(void){
 
 // Public API
 
-int sdp_client_ready(void){
+bool sdp_client_ready(void){
     return sdp_client_state == INIT;
+}
+
+uint8_t sdp_client_register_query_callback(btstack_context_callback_registration_t * callback_registration){
+    bool added = btstack_linked_list_add_tail(&sdp_client_query_requests, (btstack_linked_item_t*) callback_registration);
+    if (!added) return ERROR_CODE_COMMAND_DISALLOWED;
+    sdp_client_notify_callbacks();
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list){

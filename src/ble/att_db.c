@@ -194,10 +194,7 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
     }
     
     // STATIC
-    uint16_t bytes_to_copy = it->value_len - offset;
-    if (bytes_to_copy > buffer_size){
-        bytes_to_copy = buffer_size;
-    }
+    uint16_t bytes_to_copy = btstack_min(it->value_len - offset, buffer_size);
     (void)memcpy(buffer, it->value, bytes_to_copy);
     return bytes_to_copy;
 }
@@ -209,6 +206,7 @@ void att_set_db(uint8_t const * db){
         log_error("ATT DB version differs, please regenerate .h from .gatt file or update att_db_util.c");
         return;
     }
+    log_info("att_set_db %p", db);
     att_db = db;
 }
 
@@ -224,6 +222,7 @@ void att_dump_attributes(void){
     att_iterator_t it;
     att_iterator_init(&it);
     uint8_t uuid128[16];
+    log_info("att_dump_attributes, table %p", att_db);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle == 0u) {
@@ -763,11 +762,6 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     log_info("ATT_READ_MULTIPLE_REQUEST: num handles %u", num_handles);
     uint8_t request_type = ATT_READ_MULTIPLE_REQUEST;
     
-    // TODO: figure out which error to respond with
-    // if (num_handles < 2){
-    //     return setup_error(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle, ???);
-    // }
-
     uint16_t offset   = 1;
 
     int i;
@@ -1408,9 +1402,14 @@ bool att_is_persistent_ccc(uint16_t handle){
 
 // att_read_callback helpers
 uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    btstack_assert(blob != NULL);
+    
     if (buffer){
-        uint16_t bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
-        (void)memcpy(buffer, &blob[offset], bytes_to_copy);
+        uint16_t bytes_to_copy = 0;
+        if (blob_size >= offset){
+            bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
+            (void)memcpy(buffer, &blob[offset], bytes_to_copy);
+        }
         return bytes_to_copy;
     } else {
         return blob_size;
@@ -1434,3 +1433,140 @@ uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t *
     value_buffer[0] = value;
     return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
 }
+
+
+#ifdef ENABLE_BTP
+
+// start of auto-PTS testing code, not used in production
+// LCOV_EXCL_START
+#include "btp.h"
+
+static uint8_t btp_permissions_for_flags(uint16_t flags){
+
+    // see BT_GATT_PERM_*
+    // https://docs.zephyrproject.org/latest/reference/bluetooth/gatt.html
+    // set bit indicates requirement, e.g. BTP_GATT_PERM_READ_AUTHN requires authenticated connection
+
+    uint8_t permissions = 0;
+
+    uint8_t read_security_level = 0;
+    uint8_t write_security_level = 0;
+    if (flags & ATT_PROPERTY_READ){
+        if (flags & ATT_PROPERTY_READ_PERMISSION_BIT_0) {
+            read_security_level |= 1;
+        }
+        if (flags & ATT_PROPERTY_READ_PERMISSION_BIT_1) {
+            read_security_level |= 2;
+        }
+        if (read_security_level == ATT_SECURITY_AUTHORIZED) {
+            permissions |= BTP_GATT_PERM_READ_AUTHZ;
+        }
+        if (read_security_level == ATT_SECURITY_AUTHENTICATED) {
+            permissions |= BTP_GATT_PERM_READ_AUTHN;
+        }
+        if (read_security_level == ATT_SECURITY_ENCRYPTED) {
+            permissions |= BTP_GATT_PERM_READ_ENC;
+        }
+        if (read_security_level == ATT_SECURITY_NONE) {
+            permissions |= BTP_GATT_PERM_READ;
+        }
+    }
+    if (flags & (ATT_PROPERTY_WRITE | ATT_PROPERTY_WRITE_WITHOUT_RESPONSE)){
+        if (flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_0) {
+            write_security_level |= 1;
+        }
+        if (flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_1) {
+            write_security_level |= 2;
+        }
+        if (write_security_level == ATT_SECURITY_AUTHORIZED) {
+            permissions |= BTP_GATT_PERM_WRITE_AUTHZ;
+        }
+        if (write_security_level == ATT_SECURITY_AUTHENTICATED) {
+            permissions |= BTP_GATT_PERM_WRITE_AUTHN;
+        }
+        if (write_security_level == ATT_SECURITY_ENCRYPTED) {
+            permissions |= BTP_GATT_PERM_WRITE_ENC;
+        }
+        if (write_security_level == ATT_SECURITY_NONE) {
+            permissions |= BTP_GATT_PERM_WRITE;
+        }
+    }
+    return permissions;
+}
+
+uint16_t btp_att_get_attributes_by_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, uint8_t * response_buffer, uint16_t response_buffer_size){
+    log_info("btp_att_get_attributes_by_uuid16 %04x from 0x%04x to 0x%04x, db %p", uuid16, start_handle, end_handle, att_db);
+    att_dump_attributes();
+
+    uint8_t num_attributes = 0;
+    uint16_t pos = 1;
+
+    att_iterator_t  it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it) && ((pos + 6) < response_buffer_size)){
+        att_iterator_fetch_next(&it);
+        log_info("handle %04x", it.handle);
+        if (it.handle == 0) break;
+        if (it.handle < start_handle) continue;
+        if (it.handle > end_handle) break;
+        if ((uuid16 == 0) || att_iterator_match_uuid16(&it, uuid16)){
+            little_endian_store_16(response_buffer, pos, it.handle);
+            pos += 2;
+            response_buffer[pos++] = btp_permissions_for_flags(it.flags);
+            response_buffer[pos++] = 2;
+            little_endian_store_16(response_buffer, pos, uuid16);
+            pos += 2;
+            num_attributes++;
+        }
+    }
+    response_buffer[0] = num_attributes;
+    return pos;
+}
+
+uint16_t btp_att_get_attributes_by_uuid128(uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128, uint8_t * response_buffer, uint16_t response_buffer_size){
+    uint8_t num_attributes = 0;
+    uint16_t pos = 1;
+    att_iterator_t  it;
+    att_iterator_init(&it);
+    while (att_iterator_has_next(&it) && ((pos + 20) < response_buffer_size)){
+        att_iterator_fetch_next(&it);
+        if (it.handle == 0) break;
+        if (it.handle < start_handle) continue;
+        if (it.handle > end_handle) break;
+        if (att_iterator_match_uuid(&it, (uint8_t*) uuid128, 16)){
+            little_endian_store_16(response_buffer, pos, it.handle);
+            pos += 2;
+            response_buffer[pos++] = btp_permissions_for_flags(it.flags);
+            response_buffer[pos++] = 16;
+            reverse_128(uuid128, &response_buffer[pos]);
+            pos += 16;
+            num_attributes++;
+        }
+    }
+    response_buffer[0] = num_attributes;
+    return pos;
+}
+
+uint16_t btp_att_get_attribute_value(att_connection_t * att_connection, uint16_t attribute_handle, uint8_t * response_buffer, uint16_t response_buffer_size){
+    att_iterator_t it;
+    int ok = att_find_handle(&it, attribute_handle);
+    if (!ok) return 0;
+
+    uint16_t pos = 0;
+    // field: ATT_Response - simulate READ operation on given connection
+    response_buffer[pos++] = att_validate_security(att_connection, ATT_READ, &it);
+    // fetch len
+    // assume: con handle not relevant here, else, it needs to get passed in
+    // att_update_value_len(&it, HCI_CON_HANDLE_INVALID);
+    uint16_t bytes_to_copy = btstack_min( response_buffer_size - 3, it.value_len);
+    little_endian_store_16(response_buffer, pos, bytes_to_copy);
+    pos += 2;
+    // get value - only works for non-dynamic data
+    if (it.value){
+        memcpy(&response_buffer[pos], it.value, bytes_to_copy);
+        pos += bytes_to_copy;
+    }
+    return pos;
+}
+// LCOV_EXCL_STOP
+#endif

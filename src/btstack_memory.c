@@ -35,11 +35,11 @@
  *
  */
 
+
 #define BTSTACK_FILE__ "btstack_memory.c"
 
-
 /*
- *  btstack_memory.h
+ *  btstack_memory.c
  *
  *  @brief BTstack memory management via configurable memory pools
  *
@@ -946,48 +946,94 @@ void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
 #endif
 
 
-// MARK: mesh_transport_pdu_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_TRANSPORT_PDUS)
-    #if defined(MAX_NO_MESH_TRANSPORT_PDUS)
-        #error "Deprecated MAX_NO_MESH_TRANSPORT_PDUS defined instead of MAX_NR_MESH_TRANSPORT_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_TRANSPORT_PDUS."
+// MARK: mesh_segmented_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_SEGMENTED_PDUS)
+    #if defined(MAX_NO_MESH_SEGMENTED_PDUS)
+        #error "Deprecated MAX_NO_MESH_SEGMENTED_PDUS defined instead of MAX_NR_MESH_SEGMENTED_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_SEGMENTED_PDUS."
     #else
-        #define MAX_NR_MESH_TRANSPORT_PDUS 0
+        #define MAX_NR_MESH_SEGMENTED_PDUS 0
     #endif
 #endif
 
-#ifdef MAX_NR_MESH_TRANSPORT_PDUS
-#if MAX_NR_MESH_TRANSPORT_PDUS > 0
-static mesh_transport_pdu_t mesh_transport_pdu_storage[MAX_NR_MESH_TRANSPORT_PDUS];
-static btstack_memory_pool_t mesh_transport_pdu_pool;
-mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
-    void * buffer = btstack_memory_pool_get(&mesh_transport_pdu_pool);
+#ifdef MAX_NR_MESH_SEGMENTED_PDUS
+#if MAX_NR_MESH_SEGMENTED_PDUS > 0
+static mesh_segmented_pdu_t mesh_segmented_pdu_storage[MAX_NR_MESH_SEGMENTED_PDUS];
+static btstack_memory_pool_t mesh_segmented_pdu_pool;
+mesh_segmented_pdu_t * btstack_memory_mesh_segmented_pdu_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_segmented_pdu_pool);
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_transport_pdu_t));
+        memset(buffer, 0, sizeof(mesh_segmented_pdu_t));
     }
-    return (mesh_transport_pdu_t *) buffer;
+    return (mesh_segmented_pdu_t *) buffer;
 }
-void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
-    btstack_memory_pool_free(&mesh_transport_pdu_pool, mesh_transport_pdu);
+void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented_pdu){
+    btstack_memory_pool_free(&mesh_segmented_pdu_pool, mesh_segmented_pdu);
 }
 #else
-mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
+mesh_segmented_pdu_t * btstack_memory_mesh_segmented_pdu_get(void){
     return NULL;
 }
-void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
+void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented_pdu){
     // silence compiler warning about unused parameter in a portable way
-    (void) mesh_transport_pdu;
+    (void) mesh_segmented_pdu;
 };
 #endif
 #elif defined(HAVE_MALLOC)
-mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
-    void * buffer = malloc(sizeof(mesh_transport_pdu_t));
+mesh_segmented_pdu_t * btstack_memory_mesh_segmented_pdu_get(void){
+    void * buffer = malloc(sizeof(mesh_segmented_pdu_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_transport_pdu_t));
+        memset(buffer, 0, sizeof(mesh_segmented_pdu_t));
     }
-    return (mesh_transport_pdu_t *) buffer;
+    return (mesh_segmented_pdu_t *) buffer;
 }
-void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
-    free(mesh_transport_pdu);
+void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented_pdu){
+    free(mesh_segmented_pdu);
+}
+#endif
+
+
+// MARK: mesh_upper_transport_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_UPPER_TRANSPORT_PDUS)
+    #if defined(MAX_NO_MESH_UPPER_TRANSPORT_PDUS)
+        #error "Deprecated MAX_NO_MESH_UPPER_TRANSPORT_PDUS defined instead of MAX_NR_MESH_UPPER_TRANSPORT_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_UPPER_TRANSPORT_PDUS."
+    #else
+        #define MAX_NR_MESH_UPPER_TRANSPORT_PDUS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_UPPER_TRANSPORT_PDUS
+#if MAX_NR_MESH_UPPER_TRANSPORT_PDUS > 0
+static mesh_upper_transport_pdu_t mesh_upper_transport_pdu_storage[MAX_NR_MESH_UPPER_TRANSPORT_PDUS];
+static btstack_memory_pool_t mesh_upper_transport_pdu_pool;
+mesh_upper_transport_pdu_t * btstack_memory_mesh_upper_transport_pdu_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_upper_transport_pdu_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_upper_transport_pdu_t));
+    }
+    return (mesh_upper_transport_pdu_t *) buffer;
+}
+void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *mesh_upper_transport_pdu){
+    btstack_memory_pool_free(&mesh_upper_transport_pdu_pool, mesh_upper_transport_pdu);
+}
+#else
+mesh_upper_transport_pdu_t * btstack_memory_mesh_upper_transport_pdu_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *mesh_upper_transport_pdu){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_upper_transport_pdu;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_upper_transport_pdu_t * btstack_memory_mesh_upper_transport_pdu_get(void){
+    void * buffer = malloc(sizeof(mesh_upper_transport_pdu_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_upper_transport_pdu_t));
+    }
+    return (mesh_upper_transport_pdu_t *) buffer;
+}
+void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *mesh_upper_transport_pdu){
+    free(mesh_upper_transport_pdu);
 }
 #endif
 
@@ -1241,8 +1287,11 @@ void btstack_memory_init(void){
 #if MAX_NR_MESH_NETWORK_PDUS > 0
     btstack_memory_pool_create(&mesh_network_pdu_pool, mesh_network_pdu_storage, MAX_NR_MESH_NETWORK_PDUS, sizeof(mesh_network_pdu_t));
 #endif
-#if MAX_NR_MESH_TRANSPORT_PDUS > 0
-    btstack_memory_pool_create(&mesh_transport_pdu_pool, mesh_transport_pdu_storage, MAX_NR_MESH_TRANSPORT_PDUS, sizeof(mesh_transport_pdu_t));
+#if MAX_NR_MESH_SEGMENTED_PDUS > 0
+    btstack_memory_pool_create(&mesh_segmented_pdu_pool, mesh_segmented_pdu_storage, MAX_NR_MESH_SEGMENTED_PDUS, sizeof(mesh_segmented_pdu_t));
+#endif
+#if MAX_NR_MESH_UPPER_TRANSPORT_PDUS > 0
+    btstack_memory_pool_create(&mesh_upper_transport_pdu_pool, mesh_upper_transport_pdu_storage, MAX_NR_MESH_UPPER_TRANSPORT_PDUS, sizeof(mesh_upper_transport_pdu_t));
 #endif
 #if MAX_NR_MESH_NETWORK_KEYS > 0
     btstack_memory_pool_create(&mesh_network_key_pool, mesh_network_key_storage, MAX_NR_MESH_NETWORK_KEYS, sizeof(mesh_network_key_t));

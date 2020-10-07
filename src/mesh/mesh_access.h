@@ -41,12 +41,14 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include "btstack_bool.h"
 #include "bluetooth_company_id.h"
 #include "btstack_linked_list.h"
 
 #include "mesh/mesh_lower_transport.h"
 #include "mesh/mesh_keys.h"
 #include "mesh/mesh_node.h"
+#include "mesh_upper_transport.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -235,38 +237,28 @@ int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * o
 int  mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu);
 void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip);
 uint16_t mesh_access_parser_available(mesh_access_parser_state_t * state);
-uint8_t mesh_access_parser_get_u8(mesh_access_parser_state_t * state);
-uint16_t mesh_access_parser_get_u16(mesh_access_parser_state_t * state);
-uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state);
-uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state);
-void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * dest);
+uint8_t  mesh_access_parser_get_uint8(mesh_access_parser_state_t * state);
+uint16_t mesh_access_parser_get_uint16(mesh_access_parser_state_t * state);
+uint32_t mesh_access_parser_get_uint24(mesh_access_parser_state_t * state);
+uint32_t mesh_access_parser_get_uint32(mesh_access_parser_state_t * state);
+void mesh_access_parser_get_uint128(mesh_access_parser_state_t * state, uint8_t * dest);
 void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest);
 void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest);
-uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
-
 uint32_t mesh_access_parser_get_sig_model_identifier(mesh_access_parser_state_t * parser);
 uint32_t mesh_access_parser_get_vendor_model_identifier(mesh_access_parser_state_t * parser);
+uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
 
-// message builder transport
-mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode);
-void mesh_access_transport_add_uint8(mesh_transport_pdu_t * pdu, uint8_t value);
-void mesh_access_transport_add_uint16(mesh_transport_pdu_t * pdu, uint16_t value);
-void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint32_t value);
-void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value);
-void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier);
-void mesh_access_transport_add_label_uuid(mesh_transport_pdu_t * pdu, uint8_t * value);
-
-// message builder network
-mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode);
-void mesh_access_network_add_uint8(mesh_network_pdu_t * pdu, uint8_t value);
-void mesh_access_network_add_uint16(mesh_network_pdu_t * pdu, uint16_t value);
-void mesh_access_network_add_uint24(mesh_network_pdu_t * pdu, uint16_t value);
-void mesh_access_network_add_uint32(mesh_network_pdu_t * pdu, uint16_t value);
-void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t model_identifier);
+void mesh_access_message_init(mesh_upper_transport_builder_t * builder, uint32_t opcode);
+void mesh_access_message_add_data(mesh_upper_transport_builder_t * builder, const uint8_t * data, uint16_t data_len);
+void mesh_access_message_add_uint8(mesh_upper_transport_builder_t * builder, uint8_t value);
+void mesh_access_message_add_uint16(mesh_upper_transport_builder_t * builder, uint16_t value);
+void mesh_access_message_add_uint24(mesh_upper_transport_builder_t * builder, uint32_t value);
+void mesh_access_message_add_uint32(mesh_upper_transport_builder_t * builder, uint32_t value);
+void mesh_access_message_add_model_identifier(mesh_upper_transport_builder_t * builder, uint32_t model_identifier);
+mesh_upper_transport_pdu_t * mesh_access_message_finalize(mesh_upper_transport_builder_t * builder);
 
 // message builder using template
-mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *message_template, ...);
-mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...);
+mesh_upper_transport_pdu_t * mesh_access_setup_message(const mesh_access_message_t *message_template, ...);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

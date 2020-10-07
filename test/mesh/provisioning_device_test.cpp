@@ -37,8 +37,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "btstack_memory.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "hci_dump.h"
 #include "mesh/mesh_node.h"
@@ -50,48 +49,19 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
+#include "mock.h"
+
+static void CHECK_EQUAL_ARRAY(const char * name, uint8_t * expected, uint8_t * actual, int size){
     int i;
     for (i=0; i<size; i++){
         if (expected[i] != actual[i]) {
-            printf("offset %u wrong\n", i);
+            printf("%s: offset %u wrong\n", name, i);
             printf("expected: "); printf_hexdump(expected, size);
             printf("actual:   "); printf_hexdump(actual, size);
         }
         BYTES_EQUAL(expected[i], actual[i]);
     }
 }
-
-void dump_data(uint8_t * buffer, uint16_t size){
-    static int data_counter = 1;
-    char var_name[80];
-    sprintf(var_name, "test_data_%02u", data_counter);
-    printf("uint8_t %s[] = { ", var_name);
-    for (int i = 0; i < size ; i++){
-        if ((i % 16) == 0) printf("\n    ");
-        printf ("0x%02x, ", buffer[i]);
-    }
-    printf("};\n");
-    data_counter++;
-}
-
-int parse_hex(uint8_t * buffer, const char * hex_string){
-    int len = 0;
-    while (*hex_string){
-        if (*hex_string == ' '){
-            hex_string++;
-            continue;
-        }
-        int high_nibble = nibble_for_char(*hex_string++);
-        int low_nibble = nibble_for_char(*hex_string++);
-        *buffer++ = (high_nibble << 4) | low_nibble;
-        len++;
-    }
-    return len;
-}
-
-// returns if anything was done
-extern "C" int mock_process_hci_cmd(void);
 
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
@@ -114,14 +84,20 @@ void pb_gatt_init(void){}
  * @param con_handle
  * @param reason 0 = success, 1 = timeout, 2 = fail
  */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){}
-void pb_adv_close_link(hci_con_handle_t con_handle, uint8_t reason){}
+void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
+    UNUSED(con_handle);
+    UNUSED(reason);
+}
+void pb_adv_close_link(hci_con_handle_t con_handle, uint8_t reason){
+    UNUSED(con_handle);
+    UNUSED(reason);
+}
 
 
 /**
  * Register listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
  */
-void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
+void pb_adv_register_device_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
 }
 
@@ -138,7 +114,11 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t _pdu_size){
+    UNUSED(con_handle);
+    UNUSED(pdu);
+    UNUSED(_pdu_size);
+}
  
 uint16_t mesh_network_key_get_free_index(void){
     return 0;
@@ -202,6 +182,10 @@ static const char * prov_static_oob_string = "00000000000000000102030405060708";
 
 TEST_GROUP(Provisioning){
     void setup(void){
+        mock_init();
+        for (unsigned int i = 0 ; i < 4 ; i ++){
+            printf("rand: %08x\n", rand());
+        }
         btstack_crypto_init();
         provisioning_device_init();
         mesh_node_set_device_uuid(device_uuid);
@@ -217,12 +201,13 @@ uint8_t prov_invite[] = { 0x00, 0x00 };
 uint8_t prov_capabilities[] = { 0x01, 0x01, 0x00, 0x01, 0x00, 0x01, 0x08, 0x00, 0x08, 0x08, 0x00, 0x08, };
 uint8_t prov_start[] = { 0x02, 0x00, 0x00, 0x02, 0x00, 0x01 };
 uint8_t prov_public_key[] = { 0x03,
-    0xf0, 0xc8, 0x63, 0xf8, 0xe5, 0x55, 0x11, 0x4b, 0xf4, 0x88, 0x2c, 0xc7, 0x87, 0xb9, 0x5c, 0x27,
-    0x2a, 0x7f, 0xe4, 0xdc, 0xdd, 0xf1, 0x92, 0x2f, 0x4f, 0x18, 0xa4, 0x94, 0xe1, 0xc3, 0x57, 0xa1,
-    0xa6, 0xc3, 0x2d, 0x07, 0xbe, 0xb5, 0x76, 0xab, 0x60, 0x10, 0x68, 0x06, 0x8f, 0x0a, 0x9e, 0x01,
-    0x60, 0xc3, 0xa1, 0x41, 0x19, 0xf5, 0xd4, 0x26, 0xa7, 0x95, 0x5d, 0xa3, 0xe6, 0xed, 0x3e, 0x81, };
-uint8_t prov_confirm[] = { 0x05, 0x80, 0x4d, 0xdc, 0x3b, 0xba, 0x60, 0xd5, 0x93, 0x5b, 0x56, 0xef, 0xb5, 0xcb, 0x59, 0x31, 0xfa, };
-uint8_t prov_random[]  = { 0x06, 0x9b, 0x4d, 0x39, 0xf6, 0xf7, 0xe8, 0xa1, 0x05, 0xd3, 0xfe, 0xed, 0xa5, 0xd5, 0xf3, 0xd9, 0xe4, };
+                              0x8E, 0x9D, 0xEE, 0x76, 0x17, 0x67, 0x4A, 0xCD, 0xBE, 0xA5, 0x4D, 0xCD, 0xAB, 0x7E, 0xA3, 0x83,
+                              0x26, 0xF6, 0x87, 0x22, 0x7F, 0x97, 0xE7, 0xC4, 0xEE, 0xF5, 0x2F, 0x7C, 0x80, 0x5A, 0xEB, 0x2A,
+                              0x59, 0x46, 0x99, 0xDF, 0x60, 0x54, 0x53, 0x47, 0x48, 0xF8, 0xA1, 0x99, 0xF0, 0x02, 0xE7, 0x23,
+                              0x2C, 0x52, 0x9C, 0xBA, 0x0F, 0x54, 0x94, 0x1F, 0xE4, 0xB7, 0x02, 0x89, 0x9E, 0x03, 0xFA, 0x43 };
+uint8_t prov_confirm[] = { 0x05,
+                           0x5F, 0xDE, 0x98, 0x35, 0x7F, 0x0B, 0xA2, 0xB2, 0x94, 0x72, 0x03, 0xD6, 0x82, 0x57, 0xF0, 0x6E };
+uint8_t prov_random[]  = { 0x06, 0xC2, 0xE1, 0xF1, 0xF9, 0x7D, 0x3F, 0x9E, 0xCF, 0xE6, 0x73, 0xB8, 0x5C, 0x2E, 0x97, 0x4A, 0x25, };
 uint8_t prov_data[] = {
     0x07,
     0x85, 0x66, 0xac, 0x46, 0x37, 0x34, 0x86, 0xe1, 0x3e, 0x4c, 0x13, 0x52, 0xd0, 0x6d, 0x34, 0x7d,
@@ -234,29 +219,29 @@ TEST(Provisioning, Prov1){
     // send prov inviate
     send_prov_pdu(prov_invite, sizeof(prov_invite));        
     // check for prov cap
-    CHECK_EQUAL_ARRAY(prov_capabilities, pdu_data, sizeof(prov_capabilities));
+    CHECK_EQUAL_ARRAY("prov_capabilities", prov_capabilities, pdu_data, sizeof(prov_capabilities));
     pb_adv_emit_pdu_sent(0);
     // send prov start
     send_prov_pdu(prov_start, sizeof(prov_start));        
     // send public key
     send_prov_pdu(prov_public_key, sizeof(prov_public_key));
     // check for public key
-    CHECK_EQUAL_ARRAY(prov_public_key, pdu_data, sizeof(prov_public_key));
+    CHECK_EQUAL_ARRAY("prov_public_key", prov_public_key, pdu_data, sizeof(prov_public_key));
     pb_adv_emit_pdu_sent(0);
     // send prov confirm
     send_prov_pdu(prov_confirm, sizeof(prov_confirm));
     // check for prov confirm
-    CHECK_EQUAL_ARRAY(prov_confirm, pdu_data, sizeof(prov_confirm));
+    CHECK_EQUAL_ARRAY("prov_confirm", prov_confirm, pdu_data, sizeof(prov_confirm));
     pb_adv_emit_pdu_sent(0);
     // send prov random
     send_prov_pdu(prov_random, sizeof(prov_random));
     // check for prov random
-    CHECK_EQUAL_ARRAY(prov_random, pdu_data, sizeof(prov_random));
+    CHECK_EQUAL_ARRAY("prov_random", prov_random, pdu_data, sizeof(prov_random));
     pb_adv_emit_pdu_sent(0);
     // send prov data
     send_prov_pdu(prov_data, sizeof(prov_data));
     // check prov complete
-    CHECK_EQUAL_ARRAY(prov_complete, pdu_data, sizeof(prov_complete));
+    CHECK_EQUAL_ARRAY("prov_complete", prov_complete, pdu_data, sizeof(prov_complete));
     pb_adv_emit_pdu_sent(0);
 }
 

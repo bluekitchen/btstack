@@ -52,7 +52,7 @@ BTSTACK_ROOT=../../../..
 all: le_counter.h wilc3000_ble_firmware.h
 
 le_counter.h: ${BTSTACK_ROOT}/example/le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 
 # Include the common Makefile, which will also include the project specific

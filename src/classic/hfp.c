@@ -53,6 +53,7 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
+#include "classic/sdp_client.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
@@ -141,6 +142,14 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index){
     return "not defined";
 }
 
+typedef struct {
+    hfp_role_t local_role;
+    bd_addr_t  remote_address;
+} hfp_sdp_query_context_t;
+
+static hfp_sdp_query_context_t sdp_query_context;
+static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
+
 static void parse_sequence(hfp_connection_t * context);
 
 static btstack_linked_list_t hfp_connections = NULL;
@@ -154,6 +163,12 @@ static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
 
 static hfp_connection_t * sco_establishment_active;
+
+// HFP_SCO_PACKET_TYPES_NONE == no choice/override
+static uint16_t hfp_allowed_sco_packet_types;
+
+// prototypes
+static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 
 static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
     uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -336,7 +351,7 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-static void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
+void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
     uint8_t event[13];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -560,27 +575,24 @@ void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, ui
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
 
-static hfp_connection_t * connection_doing_sdp_query = NULL;
-
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: handling own sdp events
     UNUSED(channel);        // ok: no channel
     UNUSED(size);           // ok: handling own sdp events
-    hfp_connection_t * hfp_connection = connection_doing_sdp_query;
-    if (!hfp_connection) {
-        log_error("handle_query_rfcomm_event, no connection");
+    
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(sdp_query_context.remote_address, sdp_query_context.local_role);
+    if (hfp_connection == NULL) {
+        log_info("connection with %s and local role %d not found", sdp_query_context.remote_address, sdp_query_context.local_role);
         return;
     }
-
+    
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             hfp_connection->rfcomm_channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             break;
         case SDP_EVENT_QUERY_COMPLETE:
-            connection_doing_sdp_query = NULL;
             if (hfp_connection->rfcomm_channel_nr > 0){
                 hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
-                log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
                 btstack_packet_handler_t packet_handler;
                 switch (hfp_connection->local_role){
                     case HFP_ROLE_AG:
@@ -590,15 +602,21 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                         packet_handler = hfp_hf_rfcomm_packet_handler;
                         break;
                     default:
-                        log_error("Role %x", hfp_connection->local_role);
+                        btstack_assert(false);
                         return;
                 }
+
                 rfcomm_create_channel(packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
-                break;
+
+            } else {
+                hfp_connection->state = HFP_IDLE;
+                hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+                log_info("rfcomm service not found, status 0x%02x", sdp_event_query_complete_get_status(packet));
             }
-            hfp_connection->state = HFP_IDLE;
-            hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
-            log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
+
+            // register the SDP Query request to check if there is another connection waiting for the query
+            // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
             break;
         default:
             break;
@@ -609,44 +627,40 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 static int hfp_handle_failed_sco_connection(uint8_t status){
                    
     if (!sco_establishment_active){
-        log_error("(e)SCO Connection failed but not started by us");
+        log_info("(e)SCO Connection failed but not started by us");
         return 0;
     }
-    log_info("(e)SCO Connection failed status 0x%02x", status);
-    // invalid params / unspecified error
-    if ((status != 0x11) && (status != 0x1f) && (status != 0x0D)) return 0;
-                
-    switch (sco_establishment_active->link_setting){
-        case HFP_LINK_SETTINGS_D0:
-            return 0; // no other option left
-        case HFP_LINK_SETTINGS_D1:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D0;
+
+    log_info("(e)SCO Connection failed 0x%02x", status);
+    switch (status){
+        case ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE:
+        case ERROR_CODE_UNSPECIFIED_ERROR:
+        case ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES:
             break;
-        case HFP_LINK_SETTINGS_S1:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
-            break;                    
-        case HFP_LINK_SETTINGS_S2:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S1;
-            break;
-        case HFP_LINK_SETTINGS_S3:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S2;
-            break;
-        case HFP_LINK_SETTINGS_S4:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_S3;
-            break;
-        case HFP_LINK_SETTINGS_T1:
-            log_info("T1 failed, fallback to CVSD - D1");
+        default:
+            return 0;
+    }
+
+    // note: eSCO_S4 supported flag not available, but it's only relevant for highest CVSD link setting (and the current failed)
+    hfp_link_settings_t next_setting = hfp_next_link_setting_for_connection(sco_establishment_active->link_setting, sco_establishment_active, false);
+
+    // handle no valid setting found
+    if (next_setting == HFP_LINK_SETTINGS_NONE) {
+        if (sco_establishment_active->negotiated_codec == HFP_CODEC_MSBC){
+            log_info("T2/T1 failed, fallback to CVSD - D1");
             sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
             sco_establishment_active->sco_for_msbc_failed = 1;
             sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
-            break;
-        case HFP_LINK_SETTINGS_T2:
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_T1;
-            break;
+        } else {
+            // no other options
+            return 0;
+        }
     }
-    log_info("e)SCO Connection: try new link_setting %d", sco_establishment_active->link_setting);
+
+    log_info("e)SCO Connection: try new link_setting %d", next_setting);
     sco_establishment_active->establish_audio_connection = 1;
+    sco_establishment_active->link_setting = next_setting;
     sco_establishment_active = NULL;
     return 1;
 }
@@ -679,6 +693,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         hfp_connection->hf_accept_sco = 1;
                     }
                     log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
+                    sco_establishment_active = hfp_connection;
                     if (!hfp_hf_run_for_context) break;
                     (*hfp_hf_run_for_context)(hfp_connection);
                     break;
@@ -689,6 +704,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
+                if (sco_establishment_active == NULL) break;
                 status = hci_event_command_status_get_status(packet);
                 if (status == ERROR_CODE_SUCCESS) break;
                 
@@ -701,6 +717,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            if (sco_establishment_active == NULL) break;
             hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection) {
@@ -1008,6 +1025,7 @@ static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
     switch (byte){
         case ',':
+		case '-':
         case ';':
         case '(':
         case ')':
@@ -1023,6 +1041,7 @@ static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t
 static bool hfp_parser_is_separator( uint8_t byte){
     switch (byte){
         case ',':
+		case '-':
         case ';':
         case '\n':
         case '\r':
@@ -1476,6 +1495,24 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
     }  
 }
 
+static void hfp_handle_start_sdp_client_query(void * context){
+    UNUSED(context);
+    
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &hfp_connections);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        
+        if (connection->state != HFP_W2_SEND_SDP_QUERY) continue;
+        
+        connection->state = HFP_W4_SDP_QUERY_COMPLETE;
+        sdp_query_context.local_role = connection->local_role;
+        (void)memcpy(sdp_query_context.remote_address, connection->remote_addr, 6);
+        sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
+        return;
+    }
+}
+
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
     hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     log_info("hfp_connect %s, hfp_connection %p", bd_addr_to_str(bd_addr), hfp_connection);
@@ -1493,10 +1530,12 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
             return;
         case HFP_IDLE:
             (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
-            hfp_connection->state = HFP_W4_SDP_QUERY_COMPLETE;
-            connection_doing_sdp_query = hfp_connection;
+            hfp_connection->state = HFP_W2_SEND_SDP_QUERY;
             hfp_connection->service_uuid = service_uuid;
-            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, hfp_connection->remote_addr, service_uuid);
+
+            hfp_handle_sdp_client_query_request.callback = &hfp_handle_start_sdp_client_query;
+            // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
             break;
         default:
             break;
@@ -1541,15 +1580,17 @@ static const struct link_settings {
     const uint16_t max_latency;
     const uint8_t  retransmission_effort;
     const uint16_t packet_types;
+    const bool     eSCO;
+    const uint8_t  codec;
 } hfp_link_settings [] = {
-    { 0xffff, 0xff, 0x03c1 }, // HFP_LINK_SETTINGS_D0,   HV1
-    { 0xffff, 0xff, 0x03c4 }, // HFP_LINK_SETTINGS_D1,   HV3
-    { 0x0007, 0x01, 0x03c8 }, // HFP_LINK_SETTINGS_S1,   EV3
-    { 0x0007, 0x01, 0x0380 }, // HFP_LINK_SETTINGS_S2, 2-EV3
-    { 0x000a, 0x01, 0x0380 }, // HFP_LINK_SETTINGS_S3, 2-EV3
-    { 0x000c, 0x02, 0x0380 }, // HFP_LINK_SETTINGS_S4, 2-EV3
-    { 0x0008, 0x02, 0x03c8 }, // HFP_LINK_SETTINGS_T1,   EV3
-    { 0x000d, 0x02, 0x0380 }  // HFP_LINK_SETTINGS_T2, 2-EV3
+    { 0xffff, 0xff, SCO_PACKET_TYPES_HV1,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D0
+    { 0xffff, 0xff, SCO_PACKET_TYPES_HV3,  false, HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_D1
+    { 0x0007, 0x01, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S1
+    { 0x0007, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S2
+    { 0x000a, 0x01, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S3
+    { 0x000c, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_CVSD }, // HFP_LINK_SETTINGS_S4
+    { 0x0008, 0x02, SCO_PACKET_TYPES_EV3,  true,  HFP_CODEC_MSBC }, // HFP_LINK_SETTINGS_T1
+    { 0x000d, 0x02, SCO_PACKET_TYPES_2EV3, true,  HFP_CODEC_MSBC }  // HFP_LINK_SETTINGS_T2
 };
 
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
@@ -1561,8 +1602,10 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
         sco_voice_setting = 0x0043; // Transparent data
     }
+    // get packet types - bits 6-9 are 'don't allow'
+    uint16_t packet_types = hfp_link_settings[setting].packet_types ^ 0x03c0;
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
-        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
+        sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types);
 }
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
@@ -1586,27 +1629,49 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 }
 
 void hfp_init(void){
+    hfp_allowed_sco_packet_types = SCO_PACKET_TYPES_ALL;
 }
 
-void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported){
-    // determine highest possible link setting
-    hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-    // anything else requires eSCO support on both sides
-    if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
-        switch (hfp_connection->negotiated_codec){
-            case HFP_CODEC_CVSD:
-                hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
-                if (esco_s4_supported){
-                    hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
-                }
-                break;
-            case HFP_CODEC_MSBC:
-                hfp_connection->link_setting = HFP_LINK_SETTINGS_T2;
-                break;
-            default:
-                break;
-        }
+void hfp_set_sco_packet_types(uint16_t packet_types){
+    hfp_allowed_sco_packet_types = packet_types;
+}
+
+uint16_t hfp_get_sco_packet_types(void){
+    return hfp_allowed_sco_packet_types;
+}
+
+hfp_link_settings_t hfp_next_link_setting(hfp_link_settings_t current_setting, bool local_eSCO_supported, bool remote_eSCO_supported, bool eSCO_S4_supported, uint8_t negotiated_codec){
+    int8_t setting = (int8_t) current_setting;
+    bool can_use_eSCO = local_eSCO_supported && remote_eSCO_supported;
+    while (setting > 0){
+        setting--;
+        // skip if eSCO required but not available
+        if (hfp_link_settings[setting].eSCO && !can_use_eSCO) continue;
+        // skip if S4 but not supported
+        if ((setting == (int8_t) HFP_LINK_SETTINGS_S4) && !eSCO_S4_supported) continue;
+        // skip wrong codec
+        if ( hfp_link_settings[setting].codec != negotiated_codec) continue;
+        // skip disabled packet types
+        uint16_t required_packet_types = hfp_link_settings[setting].packet_types;
+        uint16_t allowed_packet_types  = hfp_allowed_sco_packet_types;
+        if ((required_packet_types & allowed_packet_types) == 0) continue;
+
+        // found matching setting
+        return (hfp_link_settings_t) setting;
     }
+    return HFP_LINK_SETTINGS_NONE;
+}
+
+static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported){
+    bool local_eSCO_supported  = hci_extended_sco_link_supported();
+    bool remote_eSCO_supported = hci_remote_esco_supported(hfp_connection->acl_handle);
+    uint8_t negotiated_codec   = hfp_connection->negotiated_codec;
+    return  hfp_next_link_setting(current_setting, local_eSCO_supported, remote_eSCO_supported, eSCO_S4_supported, negotiated_codec);
+}
+
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported){
+    // get highest possible link setting
+    hfp_connection->link_setting = hfp_next_link_setting_for_connection(HFP_LINK_SETTINGS_NONE, hfp_connection, eSCO_S4_supported);
     log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
 }
 

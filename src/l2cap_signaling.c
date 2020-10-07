@@ -94,6 +94,8 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     if (is_classic){
         pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
     }
+#else
+    UNUSED(is_classic);
 #endif
 
     // 0 - Connection handle : PB=pb : BC=00 

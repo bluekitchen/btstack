@@ -39,8 +39,8 @@
 //  Core header for all Classic protocols and profiles
 // *****************************************************************************
 
-#ifndef __CLASSIC_CORE
-#define __CLASSIC_CORE
+#ifndef CLASSIC_CORE_H
+#define CLASSIC_CORE_H
 
 #include "btstack_config.h"
 

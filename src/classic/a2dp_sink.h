@@ -86,6 +86,12 @@ avdtp_stream_endpoint_t *  a2dp_sink_create_stream_endpoint(avdtp_media_type_t m
 	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
 /**
+ *  @brief Unregister stream endpoint and free it's memory
+ *  @param stream_endpoint created by a2dp_sink_create_stream_endpoint
+ */
+void a2dp_sink_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
+
+/**
  * @brief Register callback for the A2DP Sink client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 
  * - A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:		indicates from remote chosen SBC media codec configuration 
  * - A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:	indicates from remote chosen other then SBC media codec configuration 

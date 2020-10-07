@@ -9,7 +9,7 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 
-CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
+CFLAGS += -fprofile-arcs -ftest-coverage
 
 LDFLAGS += -lCppUTest -lCppUTestExt 
 
@@ -29,13 +29,17 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: att_db_util_test
+all: att_db_util_test att_db_test
 
 att_db_util_test: ${COMMON_OBJ} att_db_util_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+att_db_test: att_db_test.c att_db.o btstack_util.o hci_dump.o att_db_util.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 test: all
 	./att_db_util_test
+	./att_db_test
 
 clean:
 	rm -f  att_db_util_test

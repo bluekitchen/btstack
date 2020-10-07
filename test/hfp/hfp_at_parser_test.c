@@ -121,10 +121,13 @@ TEST(HFPParser, HFP_CMD_INDICATORS_RETRIEVE){
 TEST(HFPParser, HFP_HF_INDICATORS){
     offset = 0;
     offset += snprintf(packet, sizeof(packet), "%s:", HFP_INDICATOR);
-    for (pos = 0; pos < hfp_ag_indicators_nr - 1; pos++){
-        offset += snprintf(packet+offset, sizeof(packet)-offset, "(\"%s\", (%d, %d)),", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
+    for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+    	if (pos != 0) {
+			packet[offset++] = ',';
+		}
+    	offset += snprintf(packet+offset, sizeof(packet)-offset, "(\"%s\", (%d, %d)),", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
     }
-    offset += snprintf(packet+offset, sizeof(packet)-offset, "(\"%s\", (%d, %d))\r\n\r\nOK\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
+    offset += snprintf(packet+offset, sizeof(packet)-offset, "\r\n\r\nOK\r\n");
     context.state = HFP_W4_RETRIEVE_INDICATORS;
 
     parse_hf(packet);
@@ -136,6 +139,29 @@ TEST(HFPParser, HFP_HF_INDICATORS){
         CHECK_EQUAL(hfp_ag_indicators[pos].min_range, context.ag_indicators[pos].min_range);
         CHECK_EQUAL(hfp_ag_indicators[pos].max_range, context.ag_indicators[pos].max_range);
     }   
+}
+
+TEST(HFPParser, HFP_HF_INDICATORS_RANGE){
+	offset = 0;
+	offset += snprintf(packet, sizeof(packet), "%s:", HFP_INDICATOR);
+	for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+		if (pos != 0) {
+			packet[offset++] = ',';
+		}
+		offset += snprintf(packet+offset, sizeof(packet)-offset, "(\"%s\", (%d-%d)),", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
+	}
+	offset += snprintf(packet+offset, sizeof(packet)-offset, "\r\n\r\nOK\r\n");
+	context.state = HFP_W4_RETRIEVE_INDICATORS;
+
+	parse_hf(packet);
+	CHECK_EQUAL(HFP_CMD_OK, context.command);
+	CHECK_EQUAL(hfp_ag_indicators_nr, context.ag_indicators_nr);
+	for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+		CHECK_EQUAL(hfp_ag_indicators[pos].index, context.ag_indicators[pos].index);
+		STRCMP_EQUAL(hfp_ag_indicators[pos].name, context.ag_indicators[pos].name);
+		CHECK_EQUAL(hfp_ag_indicators[pos].min_range, context.ag_indicators[pos].min_range);
+		CHECK_EQUAL(hfp_ag_indicators[pos].max_range, context.ag_indicators[pos].max_range);
+	}
 }
 
 TEST(HFPParser, HFP_HF_INDICATOR_STATUS){

@@ -197,8 +197,8 @@ void mesh_provisioning_service_server_init(void){
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
     int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING, &start_handle, &end_handle);
-
-    if (!service_found) return;
+	btstack_assert(service_found != 0);
+	UNUSED(service_found);
 
     instance->data_in_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN);
     instance->data_out_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);

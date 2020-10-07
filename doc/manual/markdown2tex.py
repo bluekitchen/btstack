@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, yaml
 import os, re
@@ -60,10 +60,10 @@ def main(argv):
 
     with open(mk_file, 'w') as aout:
         with open(yml_file, 'r') as yin:
-            doc = yaml.load(yin)
+            doc = yaml.load(yin, Loader=yaml.SafeLoader)
             for page in doc["pages"]:
-                title   = page.keys()[0]
-                md_file = page.values()[0]
+                title   = list(page.keys())[0]
+                md_file = list(page.values())[0]
                 with open(docs_folder +"/"+ md_file, 'r') as mdin:
                     aout.write("\n\n#"+ title +"\n\n")
                     for line in mdin:
@@ -80,7 +80,7 @@ def main(argv):
     while 1:
         line = p.readline()
         if not line: break
-        print line
+        print (line)
 
 
     # btstatck_root_file = "latex/btstack_gettingstarted.tex"

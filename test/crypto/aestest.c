@@ -1,5 +1,6 @@
 
 #include "rijndael.h"
+#include "btstack_debug.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -27,4 +28,8 @@ int main(void){
 	uint8_t cyphertext[16];
 	aes128_calc_cyphertext(key, plaintext, cyphertext);
 	hexdump2(cyphertext, 16);
+
+	// test invalid key len
+	uint32_t rk[RKLENGTH(KEYBITS)];
+	btstack_assert(rijndaelSetupEncrypt(rk, &key[0], 0) == 0);
 }

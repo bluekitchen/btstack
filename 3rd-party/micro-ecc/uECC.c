@@ -375,10 +375,14 @@ static const uECC_word_t curve_n[uECC_N_WORDS] = uECC_CONCAT(Curve_N_, uECC_CURV
 static void vli_clear(uECC_word_t *vli);
 static uECC_word_t vli_isZero(const uECC_word_t *vli);
 static uECC_word_t vli_testBit(const uECC_word_t *vli, bitcount_t bit);
+#ifdef ENABLE_MICRO_ECC_ECDSA
 static bitcount_t vli_numBits(const uECC_word_t *vli, wordcount_t max_words);
+#endif
 static void vli_set(uECC_word_t *dest, const uECC_word_t *src);
 static cmpresult_t vli_cmp(const uECC_word_t *left, const uECC_word_t *right);
+#ifdef ENABLE_MICRO_ECC_ECDSA
 static cmpresult_t vli_equal(const uECC_word_t *left, const uECC_word_t *right);
+#endif
 static void vli_rshift1(uECC_word_t *vli);
 static uECC_word_t vli_add(uECC_word_t *result,
                            const uECC_word_t *left,
@@ -514,6 +518,8 @@ static uECC_word_t vli_testBit(const uECC_word_t *vli, bitcount_t bit) {
 }
 #endif
 
+#ifdef ENABLE_MICO_ECC_ECDSA
+
 /* Counts the number of words in vli. */
 #if !asm_numBits
 static wordcount_t vli_numDigits(const uECC_word_t *vli, wordcount_t max_words) {
@@ -543,6 +549,9 @@ static bitcount_t vli_numBits(const uECC_word_t *vli, wordcount_t max_words) {
 
     return (((bitcount_t)(num_digits - 1) << uECC_WORD_BITS_SHIFT) + i);
 }
+
+#endif /* ENABLE_MICO_ECC_ECDSA */
+
 #endif /* !asm_numBits */
 
 /* Sets dest = src. */
@@ -570,6 +579,8 @@ static cmpresult_t vli_cmp(const uECC_word_t *left, const uECC_word_t *right) {
 }
 #endif
 
+#ifdef ENABLE_MICRO_ECC_ECDSA
+
 static cmpresult_t vli_equal(const uECC_word_t *left, const uECC_word_t *right) {
     uECC_word_t result = 0;
     swordcount_t i;
@@ -578,6 +589,8 @@ static cmpresult_t vli_equal(const uECC_word_t *left, const uECC_word_t *right) 
     }
     return (result == 0);
 }
+
+#endif
 
 /* Computes vli = vli >> 1. */
 #if !asm_rshift1
@@ -1816,6 +1829,8 @@ static int EccPoint_compute_public_key(EccPoint *result, uECC_word_t *private) {
     return 1;
 }
 
+#ifdef ENABLE_MICRO_ECC_COMPRESSION
+
 #if uECC_CURVE == uECC_secp224r1
 
 /* Routine 3.2.4 RS;  from http://www.nsa.gov/ia/_files/nist-routines.pdf */
@@ -1952,6 +1967,9 @@ static void mod_sqrt(uECC_word_t *a) {
 }
 #endif /* uECC_CURVE */
 
+#endif /* ENABLE_MICRO_ECC_COMPRESSION */
+
+
 #if uECC_WORD_SIZE == 1
 
 static void vli_nativeToBytes(uint8_t * RESTRICT dest, const uint8_t * RESTRICT src) {
@@ -2073,6 +2091,8 @@ int uECC_shared_secret(const uint8_t public_key[uECC_BYTES*2],
     return !EccPoint_isZero(&product);
 }
 
+#ifdef ENABLE_MICRO_ECC_COMPRESSION
+
 void uECC_compress(const uint8_t public_key[uECC_BYTES*2], uint8_t compressed[uECC_BYTES+1]) {
     wordcount_t i;
     for (i = 0; i < uECC_BYTES; ++i) {
@@ -2080,6 +2100,8 @@ void uECC_compress(const uint8_t public_key[uECC_BYTES*2], uint8_t compressed[uE
     }
     compressed[0] = 2 + (public_key[uECC_BYTES * 2 - 1] & 0x01);
 }
+
+#endif
 
 /* Computes result = x^3 + ax + b. result must not overlap x. */
 static void curve_x_side(uECC_word_t * RESTRICT result, const uECC_word_t * RESTRICT x) {
@@ -2098,6 +2120,8 @@ static void curve_x_side(uECC_word_t * RESTRICT result, const uECC_word_t * REST
 #endif
 }
 
+#ifdef ENABLE_MICRO_ECC_COMPRESSION
+
 void uECC_decompress(const uint8_t compressed[uECC_BYTES+1], uint8_t public_key[uECC_BYTES*2]) {
     EccPoint point;
     vli_bytesToNative(point.x, compressed + 1);
@@ -2111,6 +2135,8 @@ void uECC_decompress(const uint8_t compressed[uECC_BYTES+1], uint8_t public_key[
     vli_nativeToBytes(public_key, point.x);
     vli_nativeToBytes(public_key + uECC_BYTES, point.y);
 }
+
+#endif /* ENABLE_MICRO_ECC_COMPRESSION */
 
 int uECC_valid_public_key(const uint8_t public_key[uECC_BYTES*2]) {
     uECC_word_t tmp1[uECC_WORDS];
@@ -2162,6 +2188,8 @@ int uECC_curve(void) {
 }
 
 /* -------- ECDSA code -------- */
+
+#ifdef ENABLE_MICRO_ECC_ECDSA
 
 #if (uECC_CURVE == uECC_secp160r1)
 static void vli_clear_n(uECC_word_t *vli) {
@@ -2745,3 +2773,5 @@ int uECC_verify(const uint8_t public_key[uECC_BYTES*2],
     /* Accept only if v == r. */
     return vli_equal(rx, r);
 }
+
+#endif

@@ -144,51 +144,6 @@ static int a2dp_sample_rate(void){
     return sc.sampling_frequency;
 }
 
-#if 0
-static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
-    if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
-        log_error("small outgoing buffer");
-        return;
-    }
-
-    uint8_t  rtp_version = 2;
-    uint8_t  padding = 0;
-    uint8_t  extension = 0;
-    uint8_t  csrc_count = 0;
-    uint8_t  payload_type = 1; //0x60;
-    // uint16_t sequence_number = stream_endpoint->sequence_number;
-    uint32_t timestamp = btstack_run_loop_get_time_ms();
-    uint32_t ssrc = 0x11223344;
-
-    // rtp header (min size 12B)
-    int pos = 0;
-    // int mtu = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
-
-    media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
-    media_packet[pos++] = (marker << 1) | payload_type;
-    big_endian_store_16(media_packet, pos, sequence_number);
-    pos += 2;
-    big_endian_store_32(media_packet, pos, timestamp);
-    pos += 4;
-    big_endian_store_32(media_packet, pos, ssrc); // only used for multicast
-    pos += 4;
-    *offset = pos;
-}
-
-static void a2dp_source_copy_media_payload(uint8_t * media_packet, int size, int * offset, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames){
-    if (size < num_bytes_to_copy + 1){
-        log_error("small outgoing buffer: buffer size %u, but need %u", size, num_bytes_to_copy + 1);
-        return;
-    }
-    
-    int pos = *offset;
-    media_packet[pos++] = num_frames; // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
-    memcpy(media_packet + pos, storage, num_bytes_to_copy);
-    pos += num_bytes_to_copy;
-    *offset = pos;
-}
-
-#endif
 
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
@@ -271,26 +226,12 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
             printf("no stream_endpoint for seid %d\n", context->local_seid);
             return;
         }
-        stream_endpoint->send_stream = 1;
+        stream_endpoint->request_can_send_now = 1;
         if (stream_endpoint->connection){
             avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
         }
     }
 }
-
-// static int avdtp_max_media_payload_size(uint8_t local_seid){
-//     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid, &a2dp_source_context);
-//     if (!stream_endpoint) {
-//         log_error("no stream_endpoint found for seid %d", local_seid);
-//         return 0;
-//     }
-//     if (stream_endpoint->l2cap_media_cid == 0){
-//         log_error("no media cid found for seid %d", local_seid);
-//         return 0;
-//     }  
-//     return l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid) - AVDTP_MEDIA_PAYLOAD_HEADER_SIZE;
-// }
-
 
 static void a2dp_demo_timer_start(a2dp_media_sending_context_t * context){
     context->max_media_payload_size = 0x290;// avdtp_max_media_payload_size(context->local_seid);

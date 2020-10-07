@@ -40,8 +40,8 @@
  * (BTstack GATT Compiler is not used)
  */
 
-#ifndef __ATT_DB_UTIL
-#define __ATT_DB_UTIL
+#ifndef ATT_DB_UTIL_H
+#define ATT_DB_UTIL_H
 
 #include "btstack_config.h"
 #include "btstack_crypto.h"

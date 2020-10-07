@@ -54,11 +54,16 @@ extern "C" {
 void pb_adv_init(void);
 
 /**
- * Register listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
+ * Register provisioning device listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
  */
-void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler);
+void pb_adv_register_device_packet_handler(btstack_packet_handler_t packet_handler);
 
-/** 
+/**
+ * Register provisioning provisioner listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
+ */
+void pb_adv_register_provisioner_packet_handler(btstack_packet_handler_t packet_handler);
+
+/**
  * Send Provisioning PDU
  * @param pb_adv_cid
  * @param pdu
@@ -76,7 +81,7 @@ void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason);
 #ifdef ENABLE_MESH_PROVISIONER
 /**
  * Setup Link with unprovisioned device
- * @param DeviceUUID
+ * @param DeviceUUID - data not copied
  * @returns pb_adv_cid or 0
  */
 uint16_t pb_adv_create_link(const uint8_t * device_uuid);
