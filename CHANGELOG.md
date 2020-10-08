@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GAP: add `gap_get_link_key_for_bd_addr`
+- SM: support h7 for CTKD
 
 ### Changed
 - SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now

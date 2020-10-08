@@ -1125,7 +1125,14 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         sm_pairing_packet_set_responder_key_distribution(setup->sm_m_preq, key_distribution_flags);
     }
 
-    uint8_t auth_req = sm_auth_req;
+    uint8_t auth_req = sm_auth_req & ~SM_AUTHREQ_CT2;
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+	// set CT2 if SC + Bonding + CTKD
+	const uint8_t auth_req_for_ct2 = SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING;
+	if ((auth_req & auth_req_for_ct2) == auth_req_for_ct2){
+		auth_req |= SM_AUTHREQ_CT2;
+	}
+#endif
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, setup->sm_have_oob_data);
     sm_pairing_packet_set_auth_req(*local_packet, auth_req);
@@ -1532,11 +1539,11 @@ static void sm_sc_cmac_done(uint8_t * hash){
             }
             break;
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-        case SM_SC_W4_CALCULATE_H6_ILK:
+        case SM_SC_W4_CALCULATE_ILK:
             (void)memcpy(setup->sm_t, hash, 16);
-            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY;
+            sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY;
             break;
-        case SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY:
+        case SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY:
             reverse_128(hash, setup->sm_t);
             link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
@@ -1801,7 +1808,7 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
 //
 // Link Key Conversion Function h6
 //
-// h6(W, keyID) = AES-CMACW(keyID)
+// h6(W, keyID) = AES-CMAC_W(keyID)
 // - W is 128 bits
 // - keyID is 32 bits
 static void h6_engine(sm_connection_t * sm_conn, const sm_key_t w, const uint32_t key_id){
@@ -1814,11 +1821,27 @@ static void h6_engine(sm_connection_t * sm_conn, const sm_key_t w, const uint32_
     log_info_hexdump(sm_cmac_sc_buffer, message_len);
     sm_cmac_message_start(w, message_len, sm_cmac_sc_buffer, &sm_sc_cmac_done);
 }
+//
+// Link Key Conversion Function h7
+//
+// h7(SALT, W) = AES-CMAC_SALT(W)
+// - SALT is 128 bits
+// - W    is 128 bits
+static void h7_engine(sm_connection_t * sm_conn, const sm_key_t salt, const sm_key_t w) {
+	const uint16_t message_len = 16;
+	sm_cmac_connection = sm_conn;
+	log_info("h7 key");
+	log_info_hexdump(salt, 16);
+	log_info("h7 message");
+	log_info_hexdump(w, 16);
+	sm_cmac_message_start(salt, message_len, w, &sm_sc_cmac_done);
+}
 
 // For SC, setup->sm_local_ltk holds full LTK (sm_ltk is already truncated)
 // Errata Service Release to the Bluetooth Specification: ESR09
 //   E6405 – Cross transport key derivation from a key of size less than 128 bits
 //   "Note: When the BR/EDR link key is being derived from the LTK, the derivation is done before the LTK gets masked."
+
 static void h6_calculate_ilk(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_local_ltk, 0x746D7031);    // "tmp1"
 }
@@ -1827,6 +1850,10 @@ static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_t, 0x6c656272);    // "lebr"
 }
 
+static void h7_calculate_ilk(sm_connection_t * sm_conn){
+	const uint8_t salt[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x74, 0x6D, 0x70, 0x31};  // "tmp1"
+	h7_engine(sm_conn, salt, setup->sm_local_ltk);
+}
 #endif
 
 #endif
@@ -2356,16 +2383,21 @@ static void sm_run(void){
                 g2_calculate(connection);
                 break;
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-            case SM_SC_W2_CALCULATE_H6_ILK:
+            case SM_SC_W2_CALCULATE_ILK_USING_H6:
                 if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_ILK;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
                 h6_calculate_ilk(connection);
                 break;
-            case SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY:
+            case SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY:
                 if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY;
                 h6_calculate_br_edr_link_key(connection);
                 break;
+			case SM_SC_W2_CALCULATE_ILK_USING_H7:
+				if (!sm_cmac_ready()) break;
+				connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
+				h7_calculate_ilk(connection);
+				break;
 #endif
 #endif
 
@@ -2975,7 +3007,8 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
 			if (sm_ctkd_from_le(connection)){
-                connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
+				bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+				connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
             } else {
                 sm_master_pairing_success(connection);
             }
@@ -4028,7 +4061,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
                     if (sm_ctkd_from_le(sm_conn)){
-                        sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
+                    	bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+                        sm_conn->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
                     } else {
                         sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                         sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
