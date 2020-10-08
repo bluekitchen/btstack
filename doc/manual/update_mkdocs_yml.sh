@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 # get commit and tag
-tag=`git tag --points-at`
+tag=`git tag --points-at HEAD`
 commit=`git rev-parse --short HEAD`
 
 # use tag if available
