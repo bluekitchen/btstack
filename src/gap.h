@@ -600,6 +600,17 @@ void gap_delete_all_link_keys(void);
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
 
 /**
+ * @brief Get link for remote device with basband address
+ * @param addr
+ * @param link_key (out) is stored here
+ * @param link_key_type (out) is stored here
+ * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
+ */
+bool gap_get_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t * type);
+
+/**
  * @brief Setup Link Key iterator
  * @param it
  * @returns 1 on success

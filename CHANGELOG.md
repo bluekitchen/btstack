@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
 
 ### Added
+- GAP: add `gap_get_link_key_for_bd_addr`
 
 ### Changed
 - SM: Cross-Transport Key Derivation requires ENABLE_CROSS_TRANSPORT_KEY_DERIVATION now
