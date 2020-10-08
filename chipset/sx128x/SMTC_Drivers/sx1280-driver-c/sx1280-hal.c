@@ -132,11 +132,9 @@ const struct Radio_s Radio =
     SX1280GetFrequencyError,
 };
 
-#ifndef USE_BK_SPI
-#endif
-static uint8_t halRxBuffer[MAX_HAL_BUFFER_SIZE] = {0x00};
-static uint8_t halTxBuffer[MAX_HAL_BUFFER_SIZE] = {0x00};
-
+// static uint8_t halRxBuffer[MAX_HAL_BUFFER_SIZE];
+static uint8_t halTxBuffer[MAX_HAL_BUFFER_SIZE];
+const static uint8_t halZeroBuffer[MAX_HAL_BUFFER_SIZE];
 static DioIrqHandler **dioIrqHandlers;
 
 extern SPI_HandleTypeDef RADIO_SPI_HANDLE;
@@ -239,11 +237,10 @@ static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uin
 void SX1280HalSpiTxThenRx(uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
 
 	// min size for dma to be faster (L073@24 Mhz)
-	const uint16_t dma_tx_min_size = 8;
-	const uint16_t dma_tx_rx_min_size = 16;
+	const uint16_t dma_min_size = 8;
 
 	if (rx_len == 0){
-		if (tx_len < dma_tx_min_size) {
+		if (tx_len < dma_min_size) {
 			// Custom Polling
 			spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, NULL, 0);
 		} else {
@@ -252,21 +249,27 @@ void SX1280HalSpiTxThenRx(uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len)
 		}
 	} else {
 
-		uint16_t total_len = tx_len + rx_len;
-
-		// fill TX buffer with zeros
-		memset(&halTxBuffer[tx_len], 0, rx_len);
-
-		if (total_len < dma_tx_rx_min_size){
+		if (rx_len < dma_min_size){
 			// Custom Polling
 			spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, rx_buffer, rx_len);
 		} else {
-			// Custom DMA
-			spi_tx_rx_dma( halTxBuffer, halRxBuffer, total_len);
-			// return rx data
-			memcpy( rx_buffer, &halRxBuffer[tx_len], rx_len );
-		}
 
+			// poll the first few bytes
+			uint8_t *tx_data = halTxBuffer;
+			uint8_t tx_byte = *tx_data++;
+			while (tx_len > 0){
+				tx_len--;
+				// while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE) == 0);
+				*(__IO uint8_t *)&RADIO_SPI_HANDLE.Instance->DR = tx_byte;
+				tx_byte = *tx_data++;
+				while (__HAL_SPI_GET_FLAG(&RADIO_SPI_HANDLE, SPI_FLAG_RXNE) == 0);
+				uint8_t rx_byte = *(__IO uint8_t *)&RADIO_SPI_HANDLE.Instance->DR;
+				(void) rx_byte;
+			}
+
+			// Custom DMA
+			spi_tx_rx_dma( halZeroBuffer, rx_buffer, rx_len);
+		}
 	}
 }
 
