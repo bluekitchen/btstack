@@ -1296,8 +1296,10 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
     stream_endpoint->remote_configuration = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
-    
-    // cache media codec information for SBC
+
+	log_debug("SE %p, initiator_config_state: 0x%02x", stream_endpoint->initiator_config_state);
+
+	// cache media codec information for SBC
     stream_endpoint->media_codec_type = configuration.media_codec.media_codec_type;
     if (configuration.media_codec.media_codec_type == AVDTP_CODEC_SBC){
         stream_endpoint->media_type = configuration.media_codec.media_type;

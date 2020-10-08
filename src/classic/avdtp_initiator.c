@@ -82,14 +82,20 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
     if (connection->initiator_connection_state == AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER) {
         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
     } else {
-        stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
-        if (!stream_endpoint){
-            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
-        }
-        if (!stream_endpoint) {
-            log_error("stream_endpoint for seid 0x%02x not found", connection->initiator_local_seid);
-            return;
-        }
+		stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
+		if (stream_endpoint == NULL){
+			stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
+			if (stream_endpoint == NULL){
+				log_debug("no stream endpoint for local %u, remote %u", connection->initiator_local_seid, connection->initiator_remote_seid);
+				return;
+			} else {
+				log_debug("Using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
+			}
+		} else {
+			log_debug("Using stream endpoint %p for remote seid %u", stream_endpoint, connection->initiator_remote_seid);
+		}
+
+		log_debug("SE %p, initiator_connection_state: 0x%02x, initiator_config_state: 0x%02x", connection->initiator_connection_state, tream_endpoint->initiator_config_state);
         sep.seid = connection->initiator_remote_seid;
         
         if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
@@ -340,7 +346,7 @@ static bool avdtp_initiator_stream_config_subsm_run_signaling(avdtp_connection_t
 }
 
 static bool avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
-	log_debug("SE state: 0x2%x", stream_endpoint->initiator_config_state);
+	log_debug("SE %p, initiator_config_state: 0x%02x", stream_endpoint->initiator_config_state);
     switch (stream_endpoint->initiator_config_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{
@@ -416,12 +422,16 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t *connection) {
     if (sent) return;
 
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_associated_with_acp_seid(connection->initiator_remote_seid);
-    if (!stream_endpoint){
-        stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
-    }
-    if (!stream_endpoint) {
-    	log_debug("no stream endpoint (local %u, remote %u", connection->initiator_local_seid, connection->initiator_remote_seid);
-    	return;
+    if (stream_endpoint == NULL){
+		stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
+		if (stream_endpoint == NULL){
+			log_debug("no stream endpoint for local %u, remote %u", connection->initiator_local_seid, connection->initiator_remote_seid);
+			return;
+		} else {
+			log_debug("Using stream endpoint %p for local seid %u", stream_endpoint, connection->initiator_local_seid);
+		}
+    } else {
+		log_debug("Using stream endpoint %p for remote seid %u", stream_endpoint, connection->initiator_remote_seid);
     }
 
 	sent = avdtp_initiator_stream_config_subsm_run_endpoint(connection, stream_endpoint);
