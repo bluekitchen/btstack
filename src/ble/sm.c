@@ -1520,12 +1520,12 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 sm_conn->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
             }
             break;
+#ifdef ENABLE_CLASSIC
         case SM_SC_W4_CALCULATE_H6_ILK:
             (void)memcpy(setup->sm_t, hash, 16);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY;
             break;
         case SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY:
-#ifdef ENABLE_CLASSIC
             reverse_128(hash, setup->sm_t);
             link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
@@ -2345,6 +2345,7 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
                 break;
+#ifdef ENABLE_CLASSIC
             case SM_SC_W2_CALCULATE_H6_ILK:
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_ILK;
@@ -2355,6 +2356,7 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY;
                 h6_calculate_br_edr_link_key(connection);
                 break;
+#endif
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
@@ -2933,9 +2935,12 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             // slave -> receive master keys
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
-            if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
+#ifdef ENABLE_CLASSIC
+			if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
                 connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
-            } else {
+            } else
+#endif
+			{
                 sm_master_pairing_success(connection);
             }
         }
@@ -3986,9 +3991,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_key_distribution_handle_all_received(sm_conn);
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
+#ifdef ENABLE_CLASSIC
                     if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
-                    } else {
+                    } else
+#endif
+					{
                         sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                         sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(sm_conn->sm_handle);
