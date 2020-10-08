@@ -65,6 +65,14 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+// deal with changes in libusb API:
+#ifdef LIBUSB_API_VERSION
+#if LIBUSB_API_VERSION >= 0x01000106
+// since 1.0.22, libusb_set_option replaces libusb_set_debug
+#define libusb_set_debug(context,level) libusb_set_option(context, LIBUSB_OPTION_LOG_LEVEL, level)
+#endif
+#endif
+
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 #endif
