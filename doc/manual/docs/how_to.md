@@ -93,9 +93,10 @@ ENABLE_LE_DATA_CHANNELS          | Enable LE Data Channels in credit-based flow 
 ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support
 ENABLE_LE_SIGNED_WRITE           | Enable LE Signed Writes in ATT/GATT
 ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION | Enable address resolution for resolvable private addresses in Controller
-ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
+ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (CTKD) for Secure Connections
 ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable L2CAP Enhanced Retransmission Mode. Mandatory for AVRCP Browsing
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
+ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
 ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS | Force HCI to fragment ACL-LE packets to fit into over-the-air packet

@@ -60,6 +60,10 @@
 #error "LE Security Manager used, but neither ENABLE_LE_PERIPHERAL nor ENABLE_LE_CENTRAL defined. Please add at least one to btstack_config.h."
 #endif
 
+#if defined(ENABLE_CROSS_TRANSPORT_KEY_DERIVATION) && !defined(ENABLE_CLASSIC)
+#error "Cross Transport Key Derivation requires BR/EDR (Classic) support"
+#endif
+
 // assert SM Public Key can be sent/received
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 #if HCI_ACL_PAYLOAD_SIZE < 69
@@ -82,6 +86,7 @@
 #if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
 #define USE_CMAC_ENGINE
 #endif
+
 
 #define BTSTACK_TAG32(A,B,C,D) (((A) << 24) | ((B) << 16) | ((C) << 8) | (D))
 
@@ -1452,7 +1457,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     sm_connection_t * sm_conn = sm_cmac_connection;
     sm_cmac_connection = NULL;
-#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
     link_key_type_t link_key_type;
 #endif
 
@@ -1520,7 +1525,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 sm_conn->sm_engine_state = SM_INITIATOR_PH3_SEND_START_ENCRYPTION;
             }
             break;
-#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
         case SM_SC_W4_CALCULATE_H6_ILK:
             (void)memcpy(setup->sm_t, hash, 16);
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY;
@@ -2345,7 +2350,7 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
                 break;
-#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
             case SM_SC_W2_CALCULATE_H6_ILK:
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_H6_ILK;
@@ -2944,7 +2949,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             // slave -> receive master keys
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
-#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 			if (sm_ctkd_from_le()){
                 connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
             } else
@@ -4000,7 +4005,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_key_distribution_handle_all_received(sm_conn);
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
-#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
                     if (sm_ctkd_from_le()){
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
                     } else

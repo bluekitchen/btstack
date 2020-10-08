@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 ### Changed
-
+- SM: Cross-Transport Key Derivation requires ENABLE_CROSS_TRANSPORT_KEY_DERIVATION now
 
 ## Changes September 2020
 
@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - HFP: Fix parsing of empty fields, e.g. phone number in +CLCC and other AT commands
-- sm: Fix validation of confirm value for secure connection Passkey entry
+- SM: Fix validation of confirm value for secure connection Passkey entry
 - AVRCP: handle concurrent signaling establishment with reject and retry
 
 ### Added
@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
 - pbap_client: fix PBAP UUID len on connect message
-- sm: fix secure connection pairing as peripheral when local user confirmation happens after remote one
+- SM: fix secure connection pairing as peripheral when local user confirmation happens after remote one
 - A2DP Source: only connect to remote sink stream endpoints
 - btstack_hal_flash_memory: fix write of 0xff bytes to simulated flash
 - hsp_hs: fix disconnect if audio not connected
@@ -116,7 +116,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_set_security_level sets required security level for incoming and outgoing connections
 - cc256x: allow to specify power vector for each modulation type
 - FreeRTOS: btstack_run_loop_freertos_trigger_exit allows to request run loop exit
-- sm: support LE Secure Connections Only mode with sm_set_secure_connections_only_mode
+- SM: support LE Secure Connections Only mode with sm_set_secure_connections_only_mode
 - GAP: enable BR/EDR Secure Connections if supported, add gap_secure_connections_enable
 
 ### Changed
