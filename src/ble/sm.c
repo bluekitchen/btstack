@@ -2917,6 +2917,15 @@ static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
     sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, (void *)(uintptr_t) connection->sm_handle);
 }
+static bool sm_ctkd_from_le(void){
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+	bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
+	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0);
+	return bonding_enabled && setup->sm_use_secure_connections && have_identity_address_info;
+#else
+	return false;
+#endif
+}
 
 static void sm_handle_encryption_result_enc_csrk(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
@@ -2936,7 +2945,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
 #ifdef ENABLE_CLASSIC
-			if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
+			if (sm_ctkd_from_le()){
                 connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
             } else
 #endif
@@ -3992,7 +4001,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
 #ifdef ENABLE_CLASSIC
-                    if (setup->sm_use_secure_connections && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION)){
+                    if (sm_ctkd_from_le()){
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
                     } else
 #endif
