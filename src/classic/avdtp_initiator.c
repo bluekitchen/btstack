@@ -346,7 +346,7 @@ static bool avdtp_initiator_stream_config_subsm_run_signaling(avdtp_connection_t
 }
 
 static bool avdtp_initiator_stream_config_subsm_run_endpoint(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint){
-	log_debug("SE %p, initiator_config_state: 0x%02x", stream_endpoint->initiator_config_state);
+	log_debug("SE %p, initiator_config_state: 0x%02x", stream_endpoint, stream_endpoint->initiator_config_state);
     switch (stream_endpoint->initiator_config_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{

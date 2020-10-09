@@ -367,10 +367,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state == A2DP_GET_CAPABILITIES) {
 
-                log_info("A2DP received SBC capability, received: local seid 0x%02x, remote seid 0x%02x, expected: local seid 0x%02x, remote seid 0x%02x",
-                    avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet),
-                    avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet),
-                    avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seps[sc.active_remote_sep_index].seid );
+                log_info("A2DP received SBC capability, received: remote seid 0x%02x (expected: remote seid 0x%02x)",
+                    avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet), remote_seps[sc.active_remote_sep_index].seid);
 
                 connection = avdtp_get_connection_for_avdtp_cid(cid);
                 btstack_assert(connection != NULL);
