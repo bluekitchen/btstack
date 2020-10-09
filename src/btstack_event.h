@@ -4500,22 +4500,13 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_sbc_capability_get_a
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field media_type from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4524,7 +4515,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_re
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_media_type(const uint8_t * event){
-    return event[7];
+    return event[6];
 }
 /**
  * @brief Get field sampling_frequency_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4533,7 +4524,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_me
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(const uint8_t * event){
-    return event[8];
+    return event[7];
 }
 /**
  * @brief Get field channel_mode_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4542,7 +4533,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_sa
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(const uint8_t * event){
-    return event[9];
+    return event[8];
 }
 /**
  * @brief Get field block_length_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4551,7 +4542,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_ch
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(const uint8_t * event){
-    return event[10];
+    return event[9];
 }
 /**
  * @brief Get field subbands_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4560,7 +4551,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_bl
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(const uint8_t * event){
-    return event[11];
+    return event[10];
 }
 /**
  * @brief Get field allocation_method_bitmap from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4569,7 +4560,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_su
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(const uint8_t * event){
-    return event[12];
+    return event[11];
 }
 /**
  * @brief Get field min_bitpool_value from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4578,7 +4569,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_al
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(const uint8_t * event){
-    return event[13];
+    return event[12];
 }
 /**
  * @brief Get field max_bitpool_value from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY
@@ -4587,7 +4578,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_mi
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(const uint8_t * event){
-    return event[14];
+    return event[13];
 }
 
 /**
@@ -4600,22 +4591,13 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_media_codec_other_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_other_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field media_type from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
@@ -4624,7 +4606,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_other_capability_get_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_other_capability_get_media_type(const uint8_t * event){
-    return event[7];
+    return event[6];
 }
 /**
  * @brief Get field media_codec_type from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
@@ -4633,7 +4615,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_other_capability_get_
  * @note: btstack_type 2
  */
 static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_type(const uint8_t * event){
-    return little_endian_read_16(event, 8);
+    return little_endian_read_16(event, 7);
 }
 /**
  * @brief Get field media_codec_information_len from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
@@ -4642,7 +4624,7 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get
  * @note: btstack_type L
  */
 static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information_len(const uint8_t * event){
-    return little_endian_read_16(event, 10);
+    return little_endian_read_16(event, 9);
 }
 /**
  * @brief Get field media_codec_information from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY
@@ -4651,7 +4633,7 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get
  * @note: btstack_type V
  */
 static inline const uint8_t * avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information(const uint8_t * event){
-    return &event[12];
+    return &event[11];
 }
 
 /**
@@ -4664,22 +4646,13 @@ static inline uint16_t avdtp_subevent_signaling_media_transport_capability_get_a
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_media_transport_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_transport_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 
 /**
@@ -4692,22 +4665,13 @@ static inline uint16_t avdtp_subevent_signaling_reporting_capability_get_avdtp_c
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_reporting_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_reporting_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 
 /**
@@ -4720,22 +4684,13 @@ static inline uint16_t avdtp_subevent_signaling_recovery_capability_get_avdtp_ci
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field recovery_type from event AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY
@@ -4744,7 +4699,7 @@ static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_remote_se
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_recovery_type(const uint8_t * event){
-    return event[7];
+    return event[6];
 }
 /**
  * @brief Get field maximum_recovery_window_size from event AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY
@@ -4753,7 +4708,7 @@ static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_recovery_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_maximum_recovery_window_size(const uint8_t * event){
-    return event[8];
+    return event[7];
 }
 /**
  * @brief Get field maximum_number_media_packets from event AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY
@@ -4762,7 +4717,7 @@ static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_maximum_r
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_recovery_capability_get_maximum_number_media_packets(const uint8_t * event){
-    return event[9];
+    return event[8];
 }
 
 /**
@@ -4775,22 +4730,13 @@ static inline uint16_t avdtp_subevent_signaling_content_protection_capability_ge
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_content_protection_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_content_protection_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field cp_type from event AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY
@@ -4799,7 +4745,7 @@ static inline uint8_t avdtp_subevent_signaling_content_protection_capability_get
  * @note: btstack_type 2
  */
 static inline uint16_t avdtp_subevent_signaling_content_protection_capability_get_cp_type(const uint8_t * event){
-    return little_endian_read_16(event, 7);
+    return little_endian_read_16(event, 6);
 }
 /**
  * @brief Get field cp_type_value_len from event AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY
@@ -4808,7 +4754,7 @@ static inline uint16_t avdtp_subevent_signaling_content_protection_capability_ge
  * @note: btstack_type L
  */
 static inline uint16_t avdtp_subevent_signaling_content_protection_capability_get_cp_type_value_len(const uint8_t * event){
-    return little_endian_read_16(event, 9);
+    return little_endian_read_16(event, 8);
 }
 /**
  * @brief Get field cp_type_value from event AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY
@@ -4817,7 +4763,7 @@ static inline uint16_t avdtp_subevent_signaling_content_protection_capability_ge
  * @note: btstack_type V
  */
 static inline const uint8_t * avdtp_subevent_signaling_content_protection_capability_get_cp_type_value(const uint8_t * event){
-    return &event[11];
+    return &event[10];
 }
 
 /**
@@ -4830,22 +4776,13 @@ static inline uint16_t avdtp_subevent_signaling_multiplexing_capability_get_avdt
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field fragmentation from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4854,7 +4791,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_remot
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_fragmentation(const uint8_t * event){
-    return event[7];
+    return event[6];
 }
 /**
  * @brief Get field transport_identifiers_num from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4863,7 +4800,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_fragm
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_transport_identifiers_num(const uint8_t * event){
-    return event[8];
+    return event[7];
 }
 /**
  * @brief Get field transport_session_identifier_1 from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4872,7 +4809,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_trans
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_1(const uint8_t * event){
-    return event[9];
+    return event[8];
 }
 /**
  * @brief Get field transport_session_identifier_2 from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4881,7 +4818,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_trans
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_2(const uint8_t * event){
-    return event[10];
+    return event[9];
 }
 /**
  * @brief Get field transport_session_identifier_3 from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4890,7 +4827,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_trans
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_3(const uint8_t * event){
-    return event[11];
+    return event[10];
 }
 /**
  * @brief Get field tcid_1 from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4899,7 +4836,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_trans
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_tcid_1(const uint8_t * event){
-    return event[12];
+    return event[11];
 }
 /**
  * @brief Get field tcid_2 from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4908,7 +4845,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_tcid_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_tcid_2(const uint8_t * event){
-    return event[13];
+    return event[12];
 }
 /**
  * @brief Get field tcid_3 from event AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY
@@ -4917,7 +4854,7 @@ static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_tcid_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_multiplexing_capability_get_tcid_3(const uint8_t * event){
-    return event[14];
+    return event[13];
 }
 
 /**
@@ -4930,22 +4867,13 @@ static inline uint16_t avdtp_subevent_signaling_delay_reporting_capability_get_a
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_delay_reporting_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 
 /**
@@ -4958,22 +4886,13 @@ static inline uint16_t avdtp_subevent_signaling_header_compression_capability_ge
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 /**
  * @brief Get field back_ch from event AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY
@@ -4982,7 +4901,7 @@ static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get_back_ch(const uint8_t * event){
-    return event[7];
+    return event[6];
 }
 /**
  * @brief Get field media from event AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY
@@ -4991,7 +4910,7 @@ static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get_media(const uint8_t * event){
-    return event[8];
+    return event[7];
 }
 /**
  * @brief Get field recovery from event AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY
@@ -5000,7 +4919,7 @@ static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_header_compression_capability_get_recovery(const uint8_t * event){
-    return event[9];
+    return event[8];
 }
 
 /**
@@ -5297,22 +5216,13 @@ static inline uint16_t avdtp_subevent_signaling_capabilities_done_get_avdtp_cid(
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_capabilities_done_get_local_seid(const uint8_t * event){
-    return event[5];
-}
-/**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_capabilities_done_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[5];
 }
 
 /**

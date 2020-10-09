@@ -1752,10 +1752,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                  0x06
 
 /**
- * @format 121111111111
+ * @format 12111111111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param media_type
  * @param sampling_frequency_bitmap
@@ -1769,10 +1768,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
 
 /**
- * @format 121112LV
+ * @format 12112LV
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param media_type
  * @param media_codec_type
@@ -1783,30 +1781,27 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY        0x09
 
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0A
 
 
 /**
- * @format 1211111
+ * @format 121111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param recovery_type
  * @param maximum_recovery_window_size
@@ -1816,10 +1811,9 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 12112LV
+ * @format 1212LV
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param cp_type
  * @param cp_type_value_len
@@ -1829,10 +1823,9 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 121111111111
+ * @format 12111111111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param fragmentation
  * @param transport_identifiers_num
@@ -1847,20 +1840,18 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x0E
 
 
 /**
- * @format 1211111
+ * @format 121111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param back_ch
  * @param media
@@ -1931,10 +1922,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x14
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE           0x15

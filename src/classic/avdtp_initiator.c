@@ -141,9 +141,9 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, connection->initiator_signaling_packet.signal_identifier, &sep.capabilities, packet+offset, size-offset);
-                    avdtp_signaling_emit_capabilities(connection->avdtp_cid, connection->initiator_local_seid,
-                                                      connection->initiator_remote_seid, &sep.capabilities,
-                                                      sep.registered_service_categories);
+					avdtp_signaling_emit_capabilities(connection->avdtp_cid,
+													  connection->initiator_remote_seid, &sep.capabilities,
+													  sep.registered_service_categories);
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
