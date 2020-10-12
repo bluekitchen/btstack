@@ -471,40 +471,27 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->trigger_codec_exchange){
 		hfp_connection->trigger_codec_exchange = 0;
 
-		hfp_connection->codec_confirmed = 0;
-		hfp_connection->suggested_codec = 0;
-		hfp_connection->negotiated_codec = 0;
-
-		hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
 		hfp_connection->ok_pending = 1;
 		hfp_hf_cmd_trigger_codec_connection_setup(hfp_connection->rfcomm_cid);
 		return 1;
     }
 
-    switch (hfp_connection->command){
+    if (hfp_connection->hf_send_codec_confirm){
+		hfp_connection->hf_send_codec_confirm = false;
 
-         case HFP_CMD_AG_SUGGESTED_CODEC:{
-            if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_codecs_nr, hfp_codecs)){
-                hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
-                hfp_connection->ok_pending = 1;
-                hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
-                hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
-                log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
-                hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
-            } else {
-                hfp_connection->codec_confirmed = 0;
-                hfp_connection->suggested_codec = 0;
-                hfp_connection->negotiated_codec = 0;
-                hfp_connection->codecs_state = HFP_CODECS_W4_AG_COMMON_CODEC;
-                hfp_connection->ok_pending = 1;
-                hfp_hf_cmd_notify_on_codecs(hfp_connection->rfcomm_cid);
-
-            }
-            break;
-        }
-        default:
-            break;
+		hfp_connection->ok_pending = 1;
+		hfp_hf_cmd_confirm_codec(hfp_connection->rfcomm_cid, hfp_connection->codec_confirmed);
+		return 1;
     }
+
+    if (hfp_connection->hf_send_supported_codecs){
+		hfp_connection->hf_send_supported_codecs = false;
+
+		hfp_connection->ok_pending = 1;
+		hfp_hf_cmd_notify_on_codecs(hfp_connection->rfcomm_cid);
+		return 1;
+    }
+
     return 0;
 }
 
@@ -864,6 +851,26 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     }
 }
 
+static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
+	if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_codecs_nr, hfp_codecs)){
+		// Codec supported, confirm
+		hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
+		hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
+		log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
+		hfp_connection->codecs_state = HFP_CODECS_HF_CONFIRMED_CODEC;
+
+		hfp_connection->hf_send_codec_confirm = true;
+	} else {
+		// Codec not supported, send supported codecs
+		hfp_connection->codec_confirmed = 0;
+		hfp_connection->suggested_codec = 0;
+		hfp_connection->negotiated_codec = 0;
+		hfp_connection->codecs_state = HFP_CODECS_W4_AG_COMMON_CODEC;
+
+		hfp_connection->hf_send_supported_codecs = true;
+	}
+}
+
 static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
     hfp_connection->ok_pending = 0;
     switch (hfp_connection->state){
@@ -1067,6 +1074,10 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             }
             hfp_connection->command = HFP_CMD_NONE;
             break;
+    	case HFP_CMD_AG_SUGGESTED_CODEC:
+    		hfp_hf_handle_suggested_codec(hfp_connection);
+			hfp_connection->command = HFP_CMD_NONE;
+			break;
         default:
             break;
     }
@@ -1294,6 +1305,10 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
             case HFP_CODECS_W4_AG_COMMON_CODEC:
                 break;
             default:
+				hfp_connection->codec_confirmed = 0;
+				hfp_connection->suggested_codec = 0;
+				hfp_connection->negotiated_codec = 0;
+				hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
                 hfp_connection->trigger_codec_exchange = 1;
                 break;
         } 
