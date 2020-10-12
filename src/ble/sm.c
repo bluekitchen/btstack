@@ -2949,12 +2949,9 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             // slave -> receive master keys
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 			if (sm_ctkd_from_le()){
                 connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
-            } else
-#endif
-			{
+            } else {
                 sm_master_pairing_success(connection);
             }
         }
@@ -4005,12 +4002,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_key_distribution_handle_all_received(sm_conn);
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
                     if (sm_ctkd_from_le()){
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
-                    } else
-#endif
-					{
+                    } else {
                         sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                         sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(sm_conn->sm_handle);
