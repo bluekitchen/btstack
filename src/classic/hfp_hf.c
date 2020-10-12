@@ -465,26 +465,23 @@ static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connectio
 }
 
 static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
-    /* events ( == commands):
-        HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
-            hf_trigger_codec_connection_setup == received BCC
-            ag_trigger_codec_connection_setup == received from AG to send BCS
-        HFP_CMD_HF_CONFIRMED_CODEC == received AT+BCS
-    */
 
     if (hfp_connection->ok_pending) return 0;
-    
+
+    if (hfp_connection->trigger_codec_exchange){
+		hfp_connection->trigger_codec_exchange = 0;
+
+		hfp_connection->codec_confirmed = 0;
+		hfp_connection->suggested_codec = 0;
+		hfp_connection->negotiated_codec = 0;
+
+		hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
+		hfp_connection->ok_pending = 1;
+		hfp_hf_cmd_trigger_codec_connection_setup(hfp_connection->rfcomm_cid);
+		return 1;
+    }
+
     switch (hfp_connection->command){
-
-        case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
-            hfp_connection->codec_confirmed = 0;
-            hfp_connection->suggested_codec = 0;
-            hfp_connection->negotiated_codec = 0;
-
-            hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
-            hfp_connection->ok_pending = 1;
-            hfp_hf_cmd_trigger_codec_connection_setup(hfp_connection->rfcomm_cid);
-            break;
 
          case HFP_CMD_AG_SUGGESTED_CODEC:{
             if (hfp_supports_codec(hfp_connection->suggested_codec, hfp_codecs_nr, hfp_codecs)){
@@ -1285,13 +1282,12 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection->trigger_codec_exchange = 0;
     hfp_connection->establish_audio_connection = 1;
     if (!has_codec_negotiation_feature(hfp_connection)){
-        log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
+        log_info("no codec negotiation feature, using NBS");
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
         hfp_connection->suggested_codec = HFP_CODEC_CVSD;
         hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
         hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
         hfp_init_link_settings(hfp_connection, hfp_hf_esco_s4_supported(hfp_connection));
-        hfp_connection->trigger_codec_exchange = 0;
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
     } else {
         switch (hfp_connection->codecs_state){
@@ -1299,7 +1295,6 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
                 break;
             default:
                 hfp_connection->trigger_codec_exchange = 1;
-                hfp_connection->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
                 break;
         } 
     }
