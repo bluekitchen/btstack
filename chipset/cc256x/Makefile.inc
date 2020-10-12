@@ -5,7 +5,7 @@
 # Service Packs for CC256xB v1.5 and CC256xC v1.0 downloaded from BlueKitchen company website
 # https://e2e.ti.com/support/wireless_connectivity/bluetooth_cc256x/f/660/p/560523/2056007#2056007
 
-TI_GIT_REPO_URL = https://git.ti.com/ti-bt/service-packs/blobs/raw/a027ae390d8790e56e1c78136c78fe6537470e91
+TI_GIT_REPO_URL = https://git.ti.com/cgit/ti-bt/service-packs/blobs/raw/a027ae390d8790e56e1c78136c78fe6537470e91
 BLUEKITCHEN_URL = https://bluekitchen-gmbh.com/files/
 CONVERSION_SCRIPT=$(BTSTACK_ROOT)/chipset/cc256x/convert_bts_init_scripts.py
 
@@ -181,6 +181,9 @@ initscripts-TIInit_6.12.26_ble_add-on_v1.4.bts: cc256xc_bt_sp_v1.4.zip
 	@echo "Extracting $@"
 	@unzip -q -p cc256xc_bt_sp_v1.4.zip CC256XC_BT_SP/v1.4/initscripts-TIInit_6.12.26_ble_add-on.bts > $@
 
+initscripts-TIInit_6.12.26_avpr_add-on_v1.4.bts: cc256xc_bt_sp_v1.4.zip
+	@echo "Extracting $@"
+	@unzip -q -p cc256xc_bt_sp_v1.4.zip CC256XC_BT_SP/v1.4/initscripts-TIInit_6.12.26_avpr_add-on.bts > $@
 
 # Various scripts for WL chipsets
 
@@ -297,6 +300,10 @@ bluetooth_init_cc2560C_1.4.c: initscripts-TIInit_6.12.26_v1.4.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
+bluetooth_init_cc2560C_avpr_1.4.c: initscripts-TIInit_6.12.26_v1.4.bts initscripts-TIInit_6.12.26_avpr_add-on_v1.4.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
 bluetooth_init_cc2564C_1.4.c: initscripts-TIInit_6.12.26_v1.4.bts initscripts-TIInit_6.12.26_ble_add-on_v1.4.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
@@ -318,19 +325,11 @@ all-scripts: \
 	bluetooth_init_cc2560_2.44.c \
 	bluetooth_init_cc2560A_2.14.c \
 	bluetooth_init_cc2564_2.14.bts \
-	bluetooth_init_cc2560B_1.4_BT_Spec_4.1.c \
-	bluetooth_init_cc2564B_1.4_BT_Spec_4.1.c \
-	bluetooth_init_cc2560B_1.5_BT_Spec_4.1.c \
-	bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c \
-	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
+	bluetooth_init_cc2560B_1.8_BT_Spec_4.1.c \
 	bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
-	bluetooth_init_cc2560C_1.0.c \
-	bluetooth_init_cc2564C_1.0.c \
-	bluetooth_init_cc2560C_1.1.c \
-	bluetooth_init_cc2564C_1.1.c \
-	bluetooth_init_cc2560C_1.2.c \
-	bluetooth_init_cc2564C_1.2.c \
-	bluetooth_init_cc2564C_1.3.c \
+	bluetooth_init_cc2560C_1.4.c \
+	bluetooth_init_cc2560C_avpr_1.4.c \
+	bluetooth_init_cc2564C_1.4.c \
 	TIInit_11.8.32.c \
 	TIInit_12.10.28.c \
 	TIInit_12.8.32.c \
