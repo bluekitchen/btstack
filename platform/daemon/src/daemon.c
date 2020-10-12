@@ -2169,6 +2169,8 @@ int main (int argc,  char * const * argv){
 #endif
 
     btstack_server_run(tcp_flag);
+
+    return 0;
 }
 
 void btstack_server_set_storage_path(const char * path){
