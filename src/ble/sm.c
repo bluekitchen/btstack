@@ -1794,6 +1794,7 @@ static void sm_sc_calculate_f6_to_verify_dhkey_check(sm_connection_t * sm_conn){
     }
 }
 
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 
 //
 // Link Key Conversion Function h6
@@ -1823,6 +1824,8 @@ static void h6_calculate_ilk(sm_connection_t * sm_conn){
 static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_t, 0x6c656272);    // "lebr"
 }
+
+#endif
 
 #endif
 
