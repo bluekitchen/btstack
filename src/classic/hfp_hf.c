@@ -466,7 +466,6 @@ static int hfp_hf_run_for_context_service_level_connection_queries(hfp_connectio
 
 static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     /* events ( == commands):
-        HFP_CMD_AVAILABLE_CODECS == received AT+BAC with list of codecs
         HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
             hf_trigger_codec_connection_setup == received BCC
             ag_trigger_codec_connection_setup == received from AG to send BCS
@@ -476,13 +475,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->ok_pending) return 0;
     
     switch (hfp_connection->command){
-        case HFP_CMD_AVAILABLE_CODECS:
-            if (hfp_connection->codecs_state == HFP_CODECS_W4_AG_COMMON_CODEC) return 0;
-            
-            hfp_connection->codecs_state = HFP_CODECS_W4_AG_COMMON_CODEC;
-            hfp_connection->ok_pending = 1;
-            hfp_hf_cmd_notify_on_codecs(hfp_connection->rfcomm_cid);
-            return 1;
+
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
             hfp_connection->codec_confirmed = 0;
             hfp_connection->suggested_codec = 0;
