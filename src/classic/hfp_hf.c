@@ -548,6 +548,9 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
 
 
 static int call_setup_state_machine(hfp_connection_t * hfp_connection){
+
+	if (hfp_connection->ok_pending) return 0;
+
     if (hfp_connection->hf_answer_incoming_call){
         hfp_hf_cmd_ata(hfp_connection->rfcomm_cid);
         hfp_connection->hf_answer_incoming_call = 0;
