@@ -382,6 +382,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
                 uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
+                sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
                 sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[0] = (sampling_frequency << 4) | channel_mode;
                 sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[1] = (block_length << 4) | (subbands << 2) | allocation_method;
                 sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
