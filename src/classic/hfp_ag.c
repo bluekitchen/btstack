@@ -109,6 +109,15 @@ static int subscriber_numbers_count = 0;
 hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 
+static void hfp_ag_emit_simple_event(uint8_t event_subtype){
+	uint8_t event[3];
+	event[0] = HCI_EVENT_HFP_META;
+	event[1] = sizeof(event) - 2;
+	event[2] = event_subtype;
+	if (!hfp_ag_callback) return;
+	(*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
         hfp_connection->ag_indicators_nr = hfp_ag_indicators_nr;
@@ -160,15 +169,6 @@ static hfp_connection_t * get_hfp_ag_connection_context_for_acl_handle(uint16_t 
     return NULL;
 }
 
-void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
-    if (callback == NULL){
-        log_error("hfp_ag_register_packet_handler called with NULL callback");
-        return;
-    }
-    hfp_ag_callback = callback;
-    hfp_set_ag_callback(callback); 
-}
-
 static int use_in_band_tone(void){
     return get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
 }
@@ -191,33 +191,7 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
     return hf && ag;
 }
 
-void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){
-    if (!name){
-        name = default_hfp_ag_service_name;
-    }
-    hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
-    
-    /*
-     * 0x01 – Ability to reject a call
-     * 0x00 – No ability to reject a call
-     */
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
-    de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
-
-    // Construct SupportedFeatures for SDP bitmap:
-    // 
-    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
-    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
-    //
-    // Wide band speech (bit 5) requires Codec negotiation
-    //
-    uint16_t sdp_features = supported_features & 0x1f;
-    if (wide_band_speech && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
-        sdp_features |= 1 << 5;
-    }
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
-}
+/* unsolicited responses */
 
 static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(uint16_t cid){
     char buffer[20];
@@ -515,6 +489,8 @@ static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
     }
     return HFP_CODEC_CVSD;
 }
+
+/* state machines */
 
 static uint8_t hfp_ag_esco_s4_supported(hfp_connection_t * hfp_connection){
     return (hfp_connection->remote_supported_features & (1<<HFP_HFSF_ESCO_S4)) &&  (hfp_supported_features  & (1<<HFP_AGSF_ESCO_S4));
@@ -993,15 +969,6 @@ static void hfp_ag_trigger_reject_call(void){
         connection->call_state = HFP_CALL_IDLE;
         hfp_ag_run_for_context(connection);
     }    
-}
-
-static void hfp_ag_emit_simple_event(uint8_t event_subtype){
-    uint8_t event[3];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = event_subtype;
-    if (!hfp_ag_callback) return;
-    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void hfp_ag_trigger_terminate_call(void){
@@ -1754,14 +1721,11 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
 
 static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 
-    if (!hfp_connection) return;
+	btstack_assert(hfp_connection != NULL);
+	btstack_assert(hfp_connection->local_role == HFP_ROLE_AG);
 
-    if (!hfp_connection->rfcomm_cid) return;
-
-    if (hfp_connection->local_role != HFP_ROLE_AG) {
-        log_info("HFP AG%p, wrong role %u", hfp_connection, hfp_connection->local_role);
-        return;
-    }
+	// during SDP query, RFCOMM CID is not set
+	if (hfp_connection->rfcomm_cid == 0) return;
 
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
@@ -2407,3 +2371,39 @@ void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
     hfp_ag_run_for_context(hfp_connection);
 }
 
+void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){
+	if (!name){
+		name = default_hfp_ag_service_name;
+	}
+	hfp_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, rfcomm_channel_nr, name);
+
+	/*
+	 * 0x01 – Ability to reject a call
+	 * 0x00 – No ability to reject a call
+	 */
+	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0301);    // Hands-Free Profile - Network
+	de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
+
+	// Construct SupportedFeatures for SDP bitmap:
+	//
+	// "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+	//  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+	//
+	// Wide band speech (bit 5) requires Codec negotiation
+	//
+	uint16_t sdp_features = supported_features & 0x1f;
+	if (wide_band_speech && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
+		sdp_features |= 1 << 5;
+	}
+	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
+	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
+}
+
+void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
+	if (callback == NULL){
+		log_error("hfp_ag_register_packet_handler called with NULL callback");
+		return;
+	}
+	hfp_ag_callback = callback;
+	hfp_set_ag_callback(callback);
+}
