@@ -13,11 +13,14 @@ It uses the SX1280 C-Driver from Semtech to communicate with the SX1280. The mai
 
 ## Status
 
-Tested with the [Miromico FMLR-80-P-STL4E module](https://miromico.ch/portfolio/fmlr-8x-x-stlx/) 
-and our [SX1280 Shield](https://github.com/bluekitchen/sx1280-shield) - see (port/stm32-l476rg-nucleo-sx1280).
-On the FMLR-80-P-STL4E module, the 52 Mhz clock for the SX1280 is controlled by the MCU.
+Tested with the[Miromico FMLR-80-P-STL4E module](https://miromico.ch/portfolio/fmlr-8x-x-stlx/) 
+(see port/stm32-l451-miromico-sx1280) and the
+[STM32 L476 Nucleo dev kit](https://www.st.com/en/evaluation-tools/nucleo-l476rg.html)
+with our [SX1280 Shield](https://github.com/bluekitchen/sx1280-shield). 
 
-SEGGER RTT is used for debug output, so a Segger J-Link programmer is required.
+SEGGER RTT is used for debug output, so a Segger J-Link programmer is required, but the on-board
+[ST-Link programmer and debugger](https://www.st.com/en/development-tools/st-link-v2.html) can be replaced by an
+[SEGGER J-Link OB](https://www.segger.com/products/debug-probes/j-link/models/other-j-links/st-link-on-board/). 
 
 Uses 32.768 kHz crytstal as LSE for timing
 
@@ -48,7 +51,7 @@ The Makefile project compiles gatt_counter, gatt_streamer_server, hog_mouse and 
 
 ## Getting Started
 
-For the FMLR-80-P-STL4E module, just run make. You can upload the EXAMPLE.elf file created in build folder,
+Just run make. You can upload the EXAMPLE.elf file created in build folder, 
 e.g. with Ozone using the provided EXAMPLE.jdebug, and run it.
 
 ## TODO
@@ -66,3 +69,4 @@ e.g. with Ozone using the provided EXAMPLE.jdebug, and run it.
 - replace SysTick with tick counter based on LPTIM1
 - disable SPI on MCU sleep
 
+![STM32 L476RG Nucleo with SX1280 Shield](nucleo-with-sx1280-shield.jpg)
