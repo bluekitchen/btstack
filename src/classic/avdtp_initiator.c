@@ -95,7 +95,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
 			log_debug("Using stream endpoint %p for remote seid %u", stream_endpoint, connection->initiator_remote_seid);
 		}
 
-		log_debug("SE %p, initiator_connection_state: 0x%02x, initiator_config_state: 0x%02x", connection->initiator_connection_state, tream_endpoint->initiator_config_state);
+		log_debug("SE %p, initiator_connection_state: 0x%02x, initiator_config_state: 0x%02x", stream_endpoint, connection->initiator_connection_state, stream_endpoint->initiator_config_state);
         sep.seid = connection->initiator_remote_seid;
         
         if (stream_endpoint->initiator_config_state != AVDTP_INITIATOR_W4_ANSWER) {
