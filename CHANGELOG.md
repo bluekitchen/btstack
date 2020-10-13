@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
 - SM: only trigger Cross-Transport Key Derivation (CTKD) when bonding is enabled
+- SM: store CTKD key with Public Identity Address
 - HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
 
 ### Added

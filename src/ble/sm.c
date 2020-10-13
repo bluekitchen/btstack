@@ -1535,11 +1535,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
             log_info("Derived classic link key from LE using h6, type %u", (int) link_key_type);
-            if (IS_RESPONDER(sm_conn->sm_role)){
-                gap_store_link_key_for_bd_addr(setup->sm_m_address, setup->sm_t, link_key_type);
-            } else {
-                gap_store_link_key_for_bd_addr(setup->sm_s_address, setup->sm_t, link_key_type);
-            }
+			gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_t, link_key_type);
 #endif
             if (IS_RESPONDER(sm_conn->sm_role)){
                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
