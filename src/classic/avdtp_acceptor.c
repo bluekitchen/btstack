@@ -132,8 +132,14 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
         log_info("add remote seid %d", stream_endpoint->remote_sep.seid);
     }
 
-    avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration,
-                                       sep.configured_service_categories);
+	// if media codec configuration set, copy configuration and emit event
+	if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
+		if  (stream_endpoint->media_codec_configuration_len == sep.configuration.media_codec.media_codec_information_len){
+			(void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+		}
+		avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
+	}
+
     avdtp_signaling_emit_accept(connection->avdtp_cid, avdtp_local_seid(stream_endpoint),
                                 connection->acceptor_signaling_packet.signal_identifier, false);
 }
@@ -314,8 +320,13 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     
                     log_info("update active remote seid %d", stream_endpoint->remote_sep.seid);
 
-                    avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration,
-                                                       sep.configured_service_categories);
+					// if media codec configuration updated, copy configuration and emit event
+					if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
+						if (stream_endpoint->media_codec_configuration_len == sep.configuration.media_codec.media_codec_information_len){
+							(void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+						}
+						avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
+					}
                     break;
                 }
 

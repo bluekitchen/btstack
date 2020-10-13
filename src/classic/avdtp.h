@@ -486,8 +486,13 @@ typedef struct {
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
     
-    // original capabilities
+    // original capabilities configured via avdtp_register_x_category
     avdtp_sep_t sep;
+
+    // media codec configuration
+    uint16_t  media_codec_configuration_len;
+    uint8_t * media_codec_configuration_info;
+
     avdtp_sep_t remote_sep;
     hci_con_handle_t media_con_handle;
     uint16_t l2cap_media_cid;
@@ -508,13 +513,10 @@ typedef struct avdtp_stream_endpoint {
     uint16_t remote_configuration_bitmap;
     avdtp_capabilities_t remote_configuration;  
 
-    // temporary SBC config
+    // temporary SBC config used by A2DP Source
     avdtp_media_codec_type_t media_codec_type;
     avdtp_media_type_t media_type;
     uint8_t media_codec_sbc_info[4];
-
-    // temporary reconfigure SBC config used by A2DP
-    uint8_t              reconfigure_media_codec_sbc_info[4];
 
     // preferred sampling frequency
     uint32_t preferred_sampling_frequency; 

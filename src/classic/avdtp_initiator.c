@@ -152,17 +152,18 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                         break;
                     }
                     stream_endpoint_for_event = stream_endpoint;
-                    // copy sbc media codec info
                     stream_endpoint->remote_sep.configured_service_categories |= stream_endpoint->remote_configuration_bitmap;
                     stream_endpoint->remote_sep.configuration = stream_endpoint->remote_configuration;
-                    (void)memcpy(stream_endpoint->media_codec_sbc_info,
-                                 stream_endpoint->remote_configuration.media_codec.media_codec_information,
-                                 4);
-                    stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_sbc_info; 
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+
+					// copy media codec configuration if reconfigured
+					if ((stream_endpoint->remote_configuration_bitmap & (1 << AVDTP_MEDIA_CODEC)) != 0){
+						btstack_assert(stream_endpoint->remote_configuration.media_codec.media_codec_information_len == stream_endpoint->media_codec_configuration_len);
+						(void)memcpy(stream_endpoint->media_codec_configuration_info, stream_endpoint->remote_configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
+					}
                     break;
 
-                case AVDTP_SI_SET_CONFIGURATION:{
+                case AVDTP_SI_SET_CONFIGURATION:
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
                         break;
@@ -181,24 +182,32 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
 
                     log_info("configured remote seid %d", stream_endpoint->remote_sep.seid);
 
-                    switch (stream_endpoint->media_codec_type){
-                        case AVDTP_CODEC_SBC:
-                            avdtp_signaling_emit_media_codec_sbc_configuration(
-                                    stream_endpoint,
-                                    connection->avdtp_cid,
-                                    stream_endpoint->media_type,
-                                    stream_endpoint->media_codec_sbc_info);
-                            break;
-                        default:
-                            // TODO: we don\t have codec info to emit config
-                            avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint,
-                                                                                 connection->avdtp_cid,
-                                                                                 &sep.configuration.media_codec);
-                            break;
-                    }
+					// copy media codec configuration if configured
+					if ((stream_endpoint->remote_configuration_bitmap & (1 << AVDTP_MEDIA_CODEC)) != 0) {
+						btstack_assert(stream_endpoint->remote_configuration.media_codec.media_codec_information_len ==
+									   stream_endpoint->media_codec_configuration_len);
+						(void) memcpy(stream_endpoint->media_codec_configuration_info,
+									  stream_endpoint->remote_configuration.media_codec.media_codec_information,
+									  stream_endpoint->media_codec_configuration_len);
+
+						switch (stream_endpoint->media_codec_type) {
+							case AVDTP_CODEC_SBC:
+								avdtp_signaling_emit_media_codec_sbc_configuration(
+										stream_endpoint,
+										connection->avdtp_cid,
+										stream_endpoint->media_type,
+										stream_endpoint->media_codec_configuration_info);
+								break;
+							default:
+								// TODO: we don't have codec info to emit config
+								avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint,
+																					 connection->avdtp_cid,
+																					 &sep.configuration.media_codec);
+								break;
+						}
+					}
                     break;
-                }
-                
+
                 case AVDTP_SI_OPEN:
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_OPEN: stream endpoint is null");

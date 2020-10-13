@@ -124,8 +124,8 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->remote_configuration_bitmap = 0;
     memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
     
-    // temporary reconfigure SBC config used by A2DP
-    memset(stream_endpoint->reconfigure_media_codec_sbc_info, 0, 4);
+    // temporary SBC config used by A2DP Source
+    memset(stream_endpoint->media_codec_sbc_info, 0, 4);
 
     stream_endpoint->media_disconnect = 0;
     stream_endpoint->media_connect = 0;

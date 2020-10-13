@@ -1299,13 +1299,6 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
 
 	log_debug("SE %p, initiator_config_state: 0x%02x", stream_endpoint, stream_endpoint->initiator_config_state);
 
-	// cache media codec information for SBC
-    stream_endpoint->media_codec_type = configuration.media_codec.media_codec_type;
-    if (configuration.media_codec.media_codec_type == AVDTP_CODEC_SBC){
-        stream_endpoint->media_type = configuration.media_codec.media_type;
-        (void)memcpy(stream_endpoint->media_codec_sbc_info,
-                     configuration.media_codec.media_codec_information, 4);
-    }
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 

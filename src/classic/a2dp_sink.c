@@ -56,8 +56,6 @@ static bool outgoing_active = false;
 static uint16_t a2dp_sink_cid;
 static bool stream_endpoint_configured = false;
 
-static avdtp_stream_endpoint_context_t sc;
-
 static btstack_packet_handler_t a2dp_sink_packet_handler_user;
 
 static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -164,9 +162,9 @@ void a2dp_sink_init(void){
     avdtp_sink_init();
 }
 
-avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
-    uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
-    uint8_t * media_codec_info, uint16_t media_codec_info_len){
+avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
+														   uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
+														   uint8_t * codec_configuration, uint16_t codec_configuration_len){
     avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, media_type);
     if (!local_stream_endpoint){
         return NULL;
@@ -174,9 +172,12 @@ avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t me
     avdtp_sink_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     avdtp_sink_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type, 
         codec_capabilities, codec_capabilities_len);
-    local_stream_endpoint->remote_configuration.media_codec.media_codec_information     = media_codec_info;
-    local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_info_len;
-    avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
+	avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
+
+	// store user codec configuration buffer
+	local_stream_endpoint->media_codec_configuration_info = codec_configuration;
+	local_stream_endpoint->media_codec_configuration_len  = codec_configuration_len;
+
     return local_stream_endpoint;
 }
 
@@ -185,8 +186,8 @@ void a2dp_sink_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoin
 }
 
 uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
-    sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
-    if (!sc.local_stream_endpoint){
+	avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    if (stream_endpoint == NULL){
         log_info("No local_stream_endpoint for seid %d", local_seid);
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
