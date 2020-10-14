@@ -1536,7 +1536,6 @@ static void sm_sc_cmac_done(uint8_t * hash){
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
             log_info("Derived classic link key from LE using h6, type %u", (int) link_key_type);
 			gap_store_link_key_for_bd_addr(setup->sm_peer_address, setup->sm_t, link_key_type);
-#endif
             if (IS_RESPONDER(sm_conn->sm_role)){
                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
             } else {
@@ -1545,6 +1544,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
             sm_done_for_handle(sm_conn->sm_handle);
             break;
+#endif
         default:
             log_error("sm_sc_cmac_done in state %u", sm_conn->sm_engine_state);
             break;
