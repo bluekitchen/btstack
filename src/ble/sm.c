@@ -2923,9 +2923,17 @@ static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
 }
 static bool sm_ctkd_from_le(void){
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+	// requirements to derive link key from  LE:
+	// - use secure connections
+	if (setup->sm_use_secure_connections == 0) return false;
+	// - bonding needs to be enabled:
 	bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
+	if (!bonding_enabled) return false;
+	// - need identity address
 	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0);
-	return bonding_enabled && setup->sm_use_secure_connections && have_identity_address_info;
+	if (!have_identity_address_info) return false;
+	// get started (all of the above are true)
+	return true;
 #else
 	return false;
 #endif
