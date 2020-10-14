@@ -401,8 +401,9 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
 
 bool gap_get_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t * type){
 	if (!hci_stack->link_key_db) return false;
-	log_info("gap_store_link_key_for_bd_addr: %s, type %u", bd_addr_to_str(addr), type);
-	return hci_stack->link_key_db->get_link_key(addr, link_key, type) != 0;
+	int result = hci_stack->link_key_db->get_link_key(addr, link_key, type) != 0;
+	log_info("link key for %s available %u, type %u", bd_addr_to_str(addr), result, (int) *type);
+	return result;
 }
 
 void gap_delete_all_link_keys(void){
