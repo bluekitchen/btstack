@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
+- AVDTP Source: buffer for SBC media codec information got discarded, leading to invalid Set Configuration command in second connection
 - SM: only trigger Cross-Transport Key Derivation (CTKD) when bonding is enabled
 - SM: store CTKD key with Public Identity Address
 - SM: only allow CTKD to overwrite existing link key if derived key has same or higher authentication
@@ -25,7 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: add `gap_get_link_key_for_bd_addr`
 
 ### Changed
-- SM: Cross-Transport Key Derivation requires ENABLE_CROSS_TRANSPORT_KEY_DERIVATION now
+- SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now
 
 ## Changes September 2020
 
