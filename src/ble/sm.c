@@ -60,8 +60,8 @@
 #error "LE Security Manager used, but neither ENABLE_LE_PERIPHERAL nor ENABLE_LE_CENTRAL defined. Please add at least one to btstack_config.h."
 #endif
 
-#if defined(ENABLE_CROSS_TRANSPORT_KEY_DERIVATION) && !defined(ENABLE_CLASSIC)
-#error "Cross Transport Key Derivation requires BR/EDR (Classic) support"
+#if defined(ENABLE_CROSS_TRANSPORT_KEY_DERIVATION) && (!defined(ENABLE_CLASSIC) || !defined(ENABLE_LE_SECURE_CONNECTIONS))
+#error "Cross Transport Key Derivation requires support for LE Secure Connections and BR/EDR (Classic)"
 #endif
 
 // assert SM Public Key can be sent/received
@@ -1051,6 +1051,12 @@ static int sm_key_distribution_flags_for_auth_req(void){
         flags |= SM_KEYDIST_ENC_KEY;
 #ifdef ENABLE_LE_SIGNED_WRITE
         flags |= SM_KEYDIST_SIGN;
+#endif
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+        // LinkKey for CTKD requires SC
+        if (sm_auth_req & SM_AUTHREQ_SECURE_CONNECTION){
+        	flags |= SM_KEYDIST_LINK_KEY;
+        }
 #endif
     }
     return flags;

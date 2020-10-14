@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
 - AVDTP Source: buffer for SBC media codec information got discarded, leading to invalid Set Configuration command in second connection
 - SM: only trigger Cross-Transport Key Derivation (CTKD) when bonding is enabled
+- SM: set LinkKey flag to request CTKD if enabled
 - SM: store CTKD key with Public Identity Address
 - SM: only allow CTKD to overwrite existing link key if derived key has same or higher authentication
 - HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
