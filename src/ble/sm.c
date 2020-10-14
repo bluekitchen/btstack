@@ -2921,7 +2921,7 @@ static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
     sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, (void *)(uintptr_t) connection->sm_handle);
 }
-static bool sm_ctkd_from_le(void){
+static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 	// requirements to derive link key from  LE:
 	// - use secure connections
@@ -2932,6 +2932,18 @@ static bool sm_ctkd_from_le(void){
 	// - need identity address
 	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0);
 	if (!have_identity_address_info) return false;
+	// - there is no stored BR/EDR link key or the derived key has at least the same level of authentication (bail if stored key has higher authentication)
+	//   this requirement is motivated by BLURtooth paper. The paper recommends to not overwrite keys at all.
+	//      If SC is authenticated, we consider it safe to overwrite a stored key.
+	//      If stored link key is not authenticated, it could already be compromised by a MITM attack. Allowing overwrite by unauthenticated derived key does not make it worse.
+	uint8_t link_key[16];
+	link_key_type_t link_key_type;
+	bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
+	bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type) != 0;
+	bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
+	if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
+		return false;
+	}
 	// get started (all of the above are true)
 	return true;
 #else
@@ -2956,7 +2968,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             // slave -> receive master keys
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
-			if (sm_ctkd_from_le()){
+			if (sm_ctkd_from_le(connection)){
                 connection->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
             } else {
                 sm_master_pairing_success(connection);
@@ -4009,7 +4021,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_key_distribution_handle_all_received(sm_conn);
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
-                    if (sm_ctkd_from_le()){
+                    if (sm_ctkd_from_le(sm_conn)){
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
                     } else {
                         sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
