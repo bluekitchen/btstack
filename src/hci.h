@@ -790,6 +790,7 @@ typedef struct {
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
     bool               secure_connections_enable;
+    bool               secure_connections_active;
     inquiry_mode_t     inquiry_mode;
 #ifdef ENABLE_CLASSIC
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default

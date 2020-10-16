@@ -1482,6 +1482,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
             hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+			hci_stack->secure_connections_active = true;
             hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
             break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
@@ -2983,7 +2984,9 @@ static void hci_state_reset(void){
     // no pending cmds
     hci_stack->decline_reason = 0;
     hci_stack->new_scan_enable_value = 0xff;
-    
+
+    hci_stack->secure_connections_active = false;
+
     // LE
 #ifdef ENABLE_BLE
     memset(hci_stack->le_random_address, 0, 6);
