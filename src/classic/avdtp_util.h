@@ -107,9 +107,9 @@ void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_en
 
 void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *stream_endpoint, uint16_t sequence_number);
 
-uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid);
+uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t *connection);
 
-uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid);
+uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t *connection);
 
 void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 

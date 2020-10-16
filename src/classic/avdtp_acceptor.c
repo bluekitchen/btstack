@@ -151,7 +151,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
         connection->error_code = BAD_LENGTH;
         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
         connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
-        avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+		avdtp_request_can_send_now_acceptor(connection);
         return;
     }
     
@@ -161,7 +161,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
             if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
             log_info("W2_ANSWER_DISCOVER_SEPS");
             connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_ANSWER_DISCOVER_SEPS;
-            avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+			avdtp_request_can_send_now_acceptor(connection);
             return;
         case AVDTP_SI_GET_CAPABILITIES:
         case AVDTP_SI_GET_ALL_CAPABILITIES:
@@ -188,7 +188,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                     connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                 }
                 connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
-                avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+				avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
             break;
@@ -211,7 +211,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 connection->reject_service_category = connection->acceptor_local_seid;
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                 connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
-                avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+				avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
             // deal with first susspended seid 
@@ -224,7 +224,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                 connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
                 connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                 connection->num_suspended_seids = 0;
-                avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+				avdtp_request_can_send_now_acceptor(connection);
                 return;
             }
             break;
@@ -233,7 +233,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
             connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_GENERAL_REJECT_WITH_ERROR_CODE;
             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
             log_info("AVDTP_CMD_MSG signal %d not implemented, general reject", connection->acceptor_signaling_packet.signal_identifier);
-            avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+			avdtp_request_can_send_now_acceptor(connection);
             return;
     }
 
@@ -425,7 +425,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
     if (!request_to_send){
         log_info("NOT IMPLEMENTED");
     }
-    avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+	avdtp_request_can_send_now_acceptor(connection);
 }
 
 static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * endpoints){
@@ -654,6 +654,6 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
     }
     // check fragmentation
     if ((connection->acceptor_signaling_packet.packet_type != AVDTP_SINGLE_PACKET) && (connection->acceptor_signaling_packet.packet_type != AVDTP_END_PACKET)){
-        avdtp_request_can_send_now_acceptor(connection, connection->l2cap_signaling_cid);
+		avdtp_request_can_send_now_acceptor(connection);
     }
 }

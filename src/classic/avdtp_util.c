@@ -998,17 +998,17 @@ void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *str
     (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
+uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t *connection) {
     if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    connection->wait_to_send_acceptor = 1;
-    l2cap_request_can_send_now_event(l2cap_cid);
+    connection->wait_to_send_acceptor = true;
+    l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid){
+uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t *connection) {
     if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    connection->wait_to_send_initiator = 1;
-    l2cap_request_can_send_now_event(l2cap_cid);
+    connection->wait_to_send_initiator = true;
+    l2cap_request_can_send_now_event(connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
 

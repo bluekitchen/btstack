@@ -460,9 +460,9 @@ typedef struct {
 
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
-    uint8_t wait_to_send_acceptor;
-    uint8_t wait_to_send_initiator;
-    
+    bool    wait_to_send_acceptor;
+	bool    wait_to_send_initiator;
+
     uint8_t suspended_seids[AVDTP_MAX_NUM_SEPS];
     uint8_t num_suspended_seids;
 
@@ -560,8 +560,7 @@ btstack_linked_list_t * avdtp_get_connections(void);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid);
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid);
+avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint16_t seid);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
@@ -575,7 +574,6 @@ void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream
 void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t back_ch, uint8_t media, uint8_t recovery);
 void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
 void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t fragmentation);
-void avdtp_handle_can_send_now(avdtp_connection_t *connection, uint16_t l2cap_cid);
 
 // sink only
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
