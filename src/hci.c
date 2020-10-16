@@ -2578,7 +2578,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
                         bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type) != 0;
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
-                        if (sc_used_during_pairing && !connected_uses_aes_ccm){
+                        if (hci_stack->secure_connections_active && sc_used_during_pairing && !connected_uses_aes_ccm){
                             log_info("SC during pairing, but only E0 now -> abort");
                             conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
                             break;
