@@ -3670,7 +3670,8 @@ static bool hci_run_general_gap_le(void){
     // check if resolving list needs modification
     bool resolving_list_modification_pending = false;
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-    if (hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
+    bool resolving_list_supported = (hci_stack->local_supported_commands[1] & (1 << 2)) != 0;
+	if (resolving_list_supported && hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
         resolving_list_modification_pending = true;
     }
 #endif
@@ -3837,87 +3838,86 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
     // LE Resolving List Management
-    uint16_t i;
-    switch (hci_stack->le_resolving_list_state){
-        case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
-            // check if supported
-            if ((hci_stack->local_supported_commands[1] & (1 << 2)) == 0){
-                log_info("LE Address Resolution not supported");
-                break;
-            } else {
-                hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
-                hci_send_cmd(&hci_le_set_address_resolution_enabled, 1);
-                return true;
-            }
-            break;
-        case LE_RESOLVING_LIST_READ_SIZE:
-            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SEND_CLEAR;
-            hci_send_cmd(&hci_le_read_resolving_list_size);
-            return true;
-        case LE_RESOLVING_LIST_SEND_CLEAR:
-            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
-            (void) memset(hci_stack->le_resolving_list_add_entries, 0xff, sizeof(hci_stack->le_resolving_list_add_entries));
-			(void) memset(hci_stack->le_resolving_list_remove_entries, 0, sizeof(hci_stack->le_resolving_list_remove_entries));
-            hci_send_cmd(&hci_le_clear_resolving_list);
-            return true;
-		case LE_RESOLVING_LIST_REMOVE_ENTRIES:
-			for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
-				uint8_t offset = i >> 3;
-				uint8_t mask = 1 << (i & 7);
-				if ((hci_stack->le_resolving_list_remove_entries[offset] & mask) == 0) continue;
-				hci_stack->le_resolving_list_remove_entries[offset] &= ~mask;
-				bd_addr_t peer_identity_addreses;
-				int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
-				sm_key_t peer_irk;
-				le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
-				if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+    if (resolving_list_supported) {
+		uint16_t i;
+		switch (hci_stack->le_resolving_list_state) {
+			case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
+				hci_send_cmd(&hci_le_set_address_resolution_enabled, 1);
+				return true;
+			case LE_RESOLVING_LIST_READ_SIZE:
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SEND_CLEAR;
+				hci_send_cmd(&hci_le_read_resolving_list_size);
+				return true;
+			case LE_RESOLVING_LIST_SEND_CLEAR:
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
+				(void) memset(hci_stack->le_resolving_list_add_entries, 0xff,
+							  sizeof(hci_stack->le_resolving_list_add_entries));
+				(void) memset(hci_stack->le_resolving_list_remove_entries, 0,
+							  sizeof(hci_stack->le_resolving_list_remove_entries));
+				hci_send_cmd(&hci_le_clear_resolving_list);
+				return true;
+			case LE_RESOLVING_LIST_REMOVE_ENTRIES:
+				for (i = 0; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++) {
+					uint8_t offset = i >> 3;
+					uint8_t mask = 1 << (i & 7);
+					if ((hci_stack->le_resolving_list_remove_entries[offset] & mask) == 0) continue;
+					hci_stack->le_resolving_list_remove_entries[offset] &= ~mask;
+					bd_addr_t peer_identity_addreses;
+					int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+					sm_key_t peer_irk;
+					le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
+					if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
 
 #ifdef ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE
-				// trigger whitelist entry 'update' (work around for controller bug)
-				btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-				while (btstack_linked_list_iterator_has_next(&lit)) {
-					whitelist_entry_t *entry = (whitelist_entry_t *) btstack_linked_list_iterator_next(&lit);
-					if (entry->address_type != peer_identity_addr_type) continue;
-					if (memcmp(entry->address, peer_identity_addreses, 6) != 0) continue;
-					log_info("trigger whitelist update %s", bd_addr_to_str(peer_identity_addreses));
-					entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER;
-				}
+					// trigger whitelist entry 'update' (work around for controller bug)
+					btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+					while (btstack_linked_list_iterator_has_next(&lit)) {
+						whitelist_entry_t *entry = (whitelist_entry_t *) btstack_linked_list_iterator_next(&lit);
+						if (entry->address_type != peer_identity_addr_type) continue;
+						if (memcmp(entry->address, peer_identity_addreses, 6) != 0) continue;
+						log_info("trigger whitelist update %s", bd_addr_to_str(peer_identity_addreses));
+						entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER;
+					}
 #endif
 
-				hci_send_cmd(&hci_le_remove_device_from_resolving_list, peer_identity_addr_type, peer_identity_addreses);
-				return true;
-			}
+					hci_send_cmd(&hci_le_remove_device_from_resolving_list, peer_identity_addr_type,
+								 peer_identity_addreses);
+					return true;
+				}
 
-			hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
 
-			/* fall through */
+				/* fall through */
 
-		case LE_RESOLVING_LIST_ADD_ENTRIES:
-            for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
-                uint8_t offset = i >> 3;
-                uint8_t mask = 1 << (i & 7);
-                if ((hci_stack->le_resolving_list_add_entries[offset] & mask) == 0) continue;
-                hci_stack->le_resolving_list_add_entries[offset] &= ~mask;
-                bd_addr_t peer_identity_addreses;
-                int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
-                sm_key_t peer_irk;
-                le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
-                if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
-                const uint8_t * local_irk = gap_get_persistent_irk();
-                // command uses format specifier 'P' that stores 16-byte value without flip
-                uint8_t local_irk_flipped[16];
-                uint8_t peer_irk_flipped[16];
-                reverse_128(local_irk, local_irk_flipped);
-                reverse_128(peer_irk, peer_irk_flipped);
-                hci_send_cmd(&hci_le_add_device_to_resolving_list, peer_identity_addr_type, peer_identity_addreses, peer_irk_flipped, local_irk_flipped);
-                return true;
-            }
-			hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
-			break;
+			case LE_RESOLVING_LIST_ADD_ENTRIES:
+				for (i = 0; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++) {
+					uint8_t offset = i >> 3;
+					uint8_t mask = 1 << (i & 7);
+					if ((hci_stack->le_resolving_list_add_entries[offset] & mask) == 0) continue;
+					hci_stack->le_resolving_list_add_entries[offset] &= ~mask;
+					bd_addr_t peer_identity_addreses;
+					int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+					sm_key_t peer_irk;
+					le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
+					if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+					const uint8_t *local_irk = gap_get_persistent_irk();
+					// command uses format specifier 'P' that stores 16-byte value without flip
+					uint8_t local_irk_flipped[16];
+					uint8_t peer_irk_flipped[16];
+					reverse_128(local_irk, local_irk_flipped);
+					reverse_128(peer_irk, peer_irk_flipped);
+					hci_send_cmd(&hci_le_add_device_to_resolving_list, peer_identity_addr_type, peer_identity_addreses,
+								 peer_irk_flipped, local_irk_flipped);
+					return true;
+				}
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
+				break;
 
-		default:
-            break;
-    }
+			default:
+				break;
+		}
+	}
     hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 #endif
 
