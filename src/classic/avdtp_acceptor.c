@@ -174,7 +174,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
         case AVDTP_SI_RECONFIGURE:
         case AVDTP_SI_DELAYREPORT:
             connection->acceptor_local_seid  = packet[offset++] >> 2;
-            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->acceptor_local_seid);
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
                 log_info("cmd %d - REJECT", connection->acceptor_signaling_packet.signal_identifier);
                 connection->error_code = BAD_ACP_SEID;
@@ -216,7 +216,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
             }
             // deal with first susspended seid 
             connection->acceptor_local_seid = connection->suspended_seids[0];
-            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->acceptor_local_seid);
+            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
             if (!stream_endpoint){
                 log_info("stream_endpoint not found, BAD_ACP_SEID");
                 connection->error_code = BAD_ACP_SEID;

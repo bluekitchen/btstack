@@ -127,7 +127,7 @@ static avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
 }
 
 
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint16_t seid){
+avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -137,10 +137,6 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint16_t seid){
         }
     }
     return NULL;
-}
-
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid){
-	return avdtp_get_stream_endpoint_with_seid(seid);
 }
 
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid){
@@ -827,7 +823,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             decline_connection = true;
                         } else {
                             // now, we're only dealing with media connections that are created by remote side - we're acceptor here
-                            stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->acceptor_local_seid);
+                            stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->acceptor_local_seid);
                             if ((stream_endpoint == NULL) || (stream_endpoint->l2cap_media_cid != 0) ) {
                                 decline_connection = true;
                             }
@@ -1029,7 +1025,7 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_media_connect: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1058,7 +1054,7 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_start_stream: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1092,7 +1088,7 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_stop_stream: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1121,7 +1117,7 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_abort_stream: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1149,7 +1145,7 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
         log_error("avdtp_suspend_stream: no connection for signaling cid 0x%02x found", avdtp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("avdtp_suspend_stream: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

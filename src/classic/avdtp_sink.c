@@ -180,7 +180,7 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_with_seid(local_seid);
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (!stream_endpoint) {
         log_error("delay_report: no stream_endpoint with seid %d found", local_seid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

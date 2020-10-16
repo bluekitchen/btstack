@@ -560,7 +560,6 @@ btstack_linked_list_t * avdtp_get_connections(void);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint16_t seid);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
