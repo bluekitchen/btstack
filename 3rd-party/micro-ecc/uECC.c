@@ -467,6 +467,8 @@ static int default_RNG(uint8_t *dest, unsigned size) {
 #else /* Some other platform */
 
 static int default_RNG(uint8_t *dest, unsigned size) {
+    (void) dest;
+    (void) size;
     return 0;
 }
 

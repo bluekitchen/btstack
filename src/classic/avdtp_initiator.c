@@ -82,7 +82,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
     if (connection->initiator_connection_state == AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER) {
         connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE;
     } else {
-		stream_endpoint = avdtp_get_stream_endpoint_with_seid(connection->initiator_local_seid);
+		stream_endpoint = avdtp_get_stream_endpoint_for_seid(connection->initiator_local_seid);
 		if (stream_endpoint == NULL) {
 			log_debug("no stream endpoint for local seid %u", connection->initiator_local_seid);
 			return;
