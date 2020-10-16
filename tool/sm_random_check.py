@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2014
 
 # Report SM Pairing Random packets with value zero
@@ -69,7 +69,7 @@ def check_file(infile):
 				if warning:
 					print("%s contains SM Pairing Random command with Zeroes:" % infile)
 					warning = False
-				print time, packet_types[type], as_hex(packet)
+				print (time, packet_types[type], as_hex(packet))
 
 			if not warning:
 				print("")
@@ -78,7 +78,7 @@ def check_file(infile):
 			print ("Error parsing pklg at offset %u (%x)." % (pos, pos))
 
 if len(sys.argv) == 1:
-	print 'Usage: ', sys.argv[0], 'hci_dump.pklg'
+	print ('Usage: ' + sys.argv[0] + ' hci_dump.pklg')
 	exit(0)
 
 for infile in sys.argv[2:]:
