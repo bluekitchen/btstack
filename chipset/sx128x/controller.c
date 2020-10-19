@@ -96,7 +96,8 @@ static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
     btstack_assert(hci_outgoing_event_ready == false);
 
     const uint8_t local_supported_features[] = { 0, 0, 0, 0, 0x40, 0, 0, 0};
-    const uint8_t read_buffer_size_result[] = { 0x1b, 0, HCI_NUM_TX_BUFFERS_STACK };
+    // return buffer size = 20 (instead of 27) until auto-timeout for SXx1280 is fixed
+	const uint8_t read_buffer_size_result[] = { 16, 0, HCI_NUM_TX_BUFFERS_STACK };
     uint8_t status;
 
     uint16_t opcode = little_endian_read_16(packet, 0);
