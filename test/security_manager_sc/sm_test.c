@@ -296,7 +296,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 				case HCI_EVENT_LE_META:
 					switch (hci_event_le_meta_get_subevent_code(packet)) {
 						case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-							connection_handle = little_endian_read_16(packet, 4);
+							connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
 							printf("CONNECTED: Connection handle 0x%04x\n", connection_handle);
 							break;
 						default:
@@ -304,6 +304,9 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 					}
 					break;
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
+					if (hci_get_state() != HCI_STATE_WORKING) break;
+					connection_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+					printf("DISCONNECTED: Connection handle 0x%04x\n", connection_handle);
 					break;
 				default:
 					break;
