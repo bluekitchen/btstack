@@ -271,6 +271,11 @@ def run(test_descriptor, nodes):
                         # on error, test is finished, else wait for notify
                         if status != '0':
                             return
+                elif line.startswith('DISCONNECTED'):
+                    # Abort on unexpected disconnect
+                    print('%s unexpected disconnect' % node.get_name())
+                    test_descriptor['error'] = 'DISCONNECTED'
+                    return
                 elif line.startswith('COUNTER'):
                     print('%s notification received' % node.get_name())
                     return;
@@ -394,6 +399,9 @@ def run_test(test_descriptor):
     # run test
     try:
         run(test_descriptor, nodes)
+        if 'error' in test_descriptor:
+            sys.exit()
+            raise NameError(test_descriptor['error'])
 
         # identify iut and tester
         if iut_role == 'responder':
@@ -443,6 +451,9 @@ def run_test(test_descriptor):
         print('Interrupted')
         test_descriptor['interrupted'] = 'EXIT'
 
+    except NameError:
+        print('Run-time error')
+
     # shutdown
     for node in nodes:
         node.terminate()
@@ -471,9 +482,24 @@ with open('sm_test.csv') as csvfile:
                 print('Test: %s (completed)' % test_name)
                 continue
 
-        # run test
-        print(test_descriptor)
-        run_test(test_descriptor)
+        # run test (max 10 times)
+        tries = 10
+        done = False
+        while not done:
+            print(test_descriptor)
+            run_test(test_descriptor)
+            tries = tries - 1
+            done = True
+
+            # escalate CTRL-C
+            if 'interrupted' in test_descriptor:
+                break
+
+            # repeat on 'error'
+            if 'error' in test_descriptor:
+                del test_descriptor['error']
+                if tries > 0:
+                    done = False
 
         if 'interrupted' in test_descriptor:
             break
