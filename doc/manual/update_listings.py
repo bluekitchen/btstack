@@ -1,29 +1,35 @@
 #!/usr/bin/env python3
 import os, sys, getopt, re
+import subprocess
+
+
 
 # Defines the names of example groups. Preserves the order in which the example groups will be parsed.
 list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "HSP", "HFP", "Low Energy", "Dual Mode", "Audio", "HID", "LE Pairing", "Phone Book Access", "Performance", "Testing"]
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
-    "Hello World" : [["led_counter"]],
+    "Audio"       : [["a2dp_sink_demo"],["a2dp_source_demo"]],
+    
+    "BNEP/PAN"    :  [["panu_demo"]],
+    
+    "Dual Mode"   : [["spp_and_gatt_counter"]],
+    
     "GAP"         : [["gap_inquiry"]],
-    "SDP Queries" : [["sdp_general_query"],["sdp_bnep_query"]],
-    "SPP Server"  : [["spp_counter"],["spp_flowcontrol"]],
-    "BNEP/PAN"   :  [["panu_demo"]],
-    "HSP"         : [["hsp_hs_demo"],["hsp_ag_demo"]],
-    "HFP"         : [["hfp_hf_demo"],["hfp_ag_demo"]],
-    "Low Energy"  : [["gap_le_advertisements"],
-                     ["gatt_browser"],
-                     ["gatt_counter"],
-                     ["gatt_streamer_server"]],
-    "Dual Mode" : [["spp_and_gatt_counter"]],
-    "Audio"     : [["a2dp_sink_demo"],["a2dp_source_demo"]],
-
-    "HID"       : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"]],
-    "LE Pairing": [["sm_pairing_central"], ["sm_pairing_peripheral"]],
+    
+    "Hello World" : [["led_counter"]],
+    "HFP"         : [["hfp_ag_demo"], ["hfp_hf_demo"]],
+    "HID"         : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"]],
+    "HSP"         : [["hsp_ag_demo"], ["hsp_hs_demo"]],
+    
+    "LE Pairing"  : [["sm_pairing_central"], ["sm_pairing_peripheral"]],
+    "Low Energy"  : [["gap_le_advertisements"], ["gatt_browser"], ["gatt_counter"], ["gatt_streamer_server"]],
+    
+    "Performance" : [["le_streamer_client"], ["gatt_streamer_server"], ["spp_streamer"], ["spp_streamer_client"]],
     "Phone Book Access" : [["pbap_client_demo"]],
-    "Performance" : [["gatt_streamer_server"], ["le_streamer_client"], ["spp_streamer"], ["spp_streamer_client"]],
+    
+    "SDP Queries" : [["sdp_bnep_query"], ["sdp_general_query"]],
+    "SPP Server"  : [["spp_counter"], ["spp_flowcontrol"]],    
     "Testing"     : [["dut_mode_classic"]]
 }
 
@@ -41,7 +47,9 @@ example_item = """
 """
 example_section = """
 
-## EXAMPLE_TITLE: EXAMPLE_DESC {#sec:EXAMPLE_LABELExample}
+## EXAMPLE_DESC {#sec:EXAMPLE_LABELExample}
+
+Source Code: [EXAMPLE_TITLE.c](https://github.com/bluekitchen/btstack/tree/GIT_BRANCH/example/EXAMPLE_TITLE.c)
 
 """
 example_subsection = """
@@ -62,8 +70,8 @@ listing_ending = """
 
 """
 
-def replacePlaceholder(template, title, lable):
-    snippet = template.replace("API_TITLE", title).replace("API_LABEL", lable)
+def replacePlaceholder(template, title, label):
+    snippet = template.replace("API_TITLE", title).replace("API_LABEL", label)
     return snippet
 
 def latexText(text, ref_prefix):
@@ -143,7 +151,7 @@ def writeItemizeBlock(aout, lstStarted):
         aout.write(itemize_block + "\n\n")
         itemize_block = ''
 
-def writeListings(aout, infile_name, ref_prefix):
+def writeListings(aout, infile_name, ref_prefix, git_branch_name):
     global text_block, itemize_block
     itemText = None
     state = State.SearchExampleStart
@@ -156,10 +164,10 @@ def writeListings(aout, infile_name, ref_prefix):
             if state == State.SearchExampleStart:
                 parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
                 if parts: 
-                    lable = parts.group(2).replace("_","")
+                    label = parts.group(2).replace("_","")
                     title = latexText(parts.group(2), ref_prefix)
                     desc  = latexText(parts.group(3), ref_prefix)
-                    aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABEL", lable))
+                    aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABEL", label).replace("GIT_BRANCH", git_branch_name))
                     state = State.SearchListingStart
                 continue
            
@@ -218,9 +226,9 @@ def writeListings(aout, infile_name, ref_prefix):
                 parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*)(\s+\*/).*',line)
                 
                 if parts: 
-                    lst_lable = parts.group(2).replace("_","")
+                    lst_label = parts.group(2).replace("_","")
                     lst_caption = latexText(parts.group(3), ref_prefix)
-                    listing = listing_start.replace("LISTING_CAPTION", lst_caption).replace("FILE_NAME", ref_prefix).replace("LISTING_LABEL", lst_lable)
+                    listing = listing_start.replace("LISTING_CAPTION", lst_caption).replace("FILE_NAME", ref_prefix).replace("LISTING_LABEL", lst_label)
                     if listing:
                         aout.write("\n" + listing)
                     state = State.SearchListingEnd
@@ -264,7 +272,7 @@ def writeListings(aout, infile_name, ref_prefix):
             
 
 # write list of examples
-def processExamples(intro_file, examples_folder, examples_ofile):
+def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name):
     with open(examples_ofile, 'w') as aout:
         with open(intro_file, 'r') as fin:
             for line in fin:
@@ -305,13 +313,14 @@ def processExamples(intro_file, examples_folder, examples_ofile):
             
             for example in examples:
                 file_name = examples_folder + example[0] + ".c"
-                writeListings(aout, file_name, example[0].replace("_",""))
+                writeListings(aout, file_name, example[0].replace("_",""), git_branch_name)
 
 
 def main(argv):
     btstackfolder = "../../"
     docsfolder    = "docs/"
-    
+    git_branch_name = "master"
+
     inputfolder = btstackfolder + "example/"
     introfile   = docsfolder + "examples/intro.md"
     outputfile  = docsfolder + "examples/examples.md"
@@ -335,8 +344,16 @@ def main(argv):
     print ('Input folder is : ', inputfolder)
     print ('Intro file is   : ', introfile)
     print ('Output file is  : ', outputfile)
-
-    processExamples(introfile, inputfolder, outputfile)
+    
+    try:
+        output = subprocess.check_output("git symbolic-ref --short HEAD", stderr=subprocess.STDOUT, timeout=3, shell=True)
+        git_branch_name = output.decode().rstrip()
+    except subprocess.CalledProcessError as exc:
+        print('GIT branch name: failed to get, use default value \"%s\""  ', git_branch_name, exc.returncode, exc.output)
+    else:
+        print ('GIT branch name :  %s' % git_branch_name)
+    
+    processExamples(introfile, inputfolder, outputfile, git_branch_name)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
