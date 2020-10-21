@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
+- AVDTP Initiator: avoid use of remote seid for stream endpoint lookup, fixes issue with two connected devices 
 - AVDTP Source: buffer for SBC media codec information got discarded, leading to invalid Set Configuration command in second connection
 - SM: only trigger Cross-Transport Key Derivation (CTKD) when bonding is enabled
 - SM: set LinkKey flag to request CTKD if enabled
