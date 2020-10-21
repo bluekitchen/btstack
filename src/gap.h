@@ -552,6 +552,14 @@ int gap_secure_connection(hci_con_handle_t con_handle);
  */
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle);
 
+/**
+ * @brief Get bonded property (BR/EDR/LE)
+ * @note LE: has to be called after identity resolving is complete
+ * @param con_handle
+ * @return true if bonded
+ */
+bool gap_bonded(hci_con_handle_t con_handle);
+
 // Classic
 
 /**

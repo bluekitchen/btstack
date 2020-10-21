@@ -5953,6 +5953,27 @@ int gap_secure_connection(hci_con_handle_t con_handle){
     }
 }
 
+bool gap_bonded(hci_con_handle_t con_handle){
+	hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+	if (hci_connection == NULL) return 0;
+
+	link_key_t link_key;
+	link_key_type_t link_key_type;
+	switch (hci_connection->address_type){
+		case BD_ADDR_TYPE_LE_PUBLIC:
+		case BD_ADDR_TYPE_LE_RANDOM:
+			return hci_connection->sm_connection.sm_le_db_index >= 0;
+#ifdef ENABLE_CLASSIC
+		case BD_ADDR_TYPE_SCO:
+		case BD_ADDR_TYPE_ACL:
+			return hci_stack->link_key_db && hci_stack->link_key_db->get_link_key(hci_connection->address, link_key, &link_key_type);
+#endif
+		default:
+			return false;
+	}
+}
+
+
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection

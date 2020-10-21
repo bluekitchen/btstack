@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - GAP: add `gap_get_link_key_for_bd_addr`
+- GAP: add `gap_bonded` to check if bonding information is available for active connection
 - SM: support h7 for CTKD
 
 ### Changed
