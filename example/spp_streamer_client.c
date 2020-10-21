@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(spp_streamer_client): Client for SPP Streamer
+/* EXAMPLE_START(spp_streamer_client): Performance - SPP Streamer Client
  * 
  * @text Note: The SPP Streamer Client scans for and connects to SPP Streamer,
  * and measures the throughput.

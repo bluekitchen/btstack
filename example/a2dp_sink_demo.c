@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(a2dp_sink_demo): Receive audio stream and control its playback.
+/* EXAMPLE_START(a2dp_sink_demo): Audio stream reception and playback control
  *
  * @text This A2DP Sink example demonstrates how to use the A2DP Sink service to 
  * receive an audio data stream from a remote A2DP Source device. In addition,

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "sdp_bnep_query.c"
  
 // *****************************************************************************
-/* EXAMPLE_START(sdp_bnep_query): Dump remote BNEP PAN protocol UUID and L2CAP PSM
+/* EXAMPLE_START(sdp_bnep_query): SDP Records - Dump BNEP PAN protocol
  *
  * @text The example shows how the SDP Client is used to get all BNEP service
  * records from a remote device. It extracts the remote BNEP PAN protocol 

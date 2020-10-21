@@ -39,7 +39,7 @@
  
 
 // *****************************************************************************
-/* EXAMPLE_START(sm_pairing_central): LE Peripheral - Test pairing combinations
+/* EXAMPLE_START(sm_pairing_central): LE Central - Test pairing combinations
  *
  * @text Depending on the Authentication requiremens and IO Capabilities,
  * the pairing process uses different short and long term key generation method.

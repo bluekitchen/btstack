@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "sdp_general_query.c"
  
 // *****************************************************************************
-/* EXAMPLE_START(sdp_general_query): Dump remote SDP Records
+/* EXAMPLE_START(sdp_general_query): SDP Records Dump
  *
  * @text The example shows how the SDP Client is used to get a list of 
  * service records on a remote device. 

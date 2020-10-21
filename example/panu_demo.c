@@ -42,7 +42,7 @@
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
  */
 
-/* EXAMPLE_START(panu_demo): PANU Demo
+/* EXAMPLE_START(panu_demo): BNEP/PANU Demo
  *
  * @text This example implements both a PANU client and a server. In server mode, it 
  * sets up a BNEP server and registers a PANU SDP record and waits for incoming connections.
