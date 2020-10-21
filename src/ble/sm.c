@@ -3418,11 +3418,11 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HCI_EVENT_ENCRYPTION_CHANGE:
-                    con_handle = little_endian_read_16(packet, 3);
+                	con_handle = hci_event_encryption_change_get_connection_handle(packet);
                     sm_conn = sm_get_connection_for_handle(con_handle);
                     if (!sm_conn) break;
 
-                    sm_conn->sm_connection_encrypted = packet[5];
+                    sm_conn->sm_connection_encrypted = hci_event_encryption_change_get_encryption_enabled(packet);
                     log_info("Encryption state change: %u, key size %u", sm_conn->sm_connection_encrypted,
                         sm_conn->sm_actual_encryption_key_size);
                     log_info("event handler, state %u", sm_conn->sm_engine_state);
@@ -3430,6 +3430,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     // encryption change event concludes re-encryption for bonded devices (even if it fails)
                     if (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED){
                         sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        // block connection if encryption fails
+                        if (sm_conn->sm_connection_encrypted == 0){
+                        	// set state to 'TIMEOUT' to prevent further interaction with this
+                        	// also, gap_reconnect_security_setup_active will return true
+                        	sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+                        }
                         // notify client, if pairing was requested before
                         if (sm_conn->sm_pairing_requested){
                             sm_conn->sm_pairing_requested = 0;
