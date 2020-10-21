@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: store CTKD key with Public Identity Address
 - SM: only allow CTKD to overwrite existing link key if derived key has same or higher authentication
 - HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
+- HCI: fix reject of LE remote connection param request via HCI
 
 ### Added
 - GAP: add `gap_get_link_key_for_bd_addr`

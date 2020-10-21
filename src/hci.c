@@ -2778,7 +2778,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             conn->le_conn_latency = le_conn_latency;
                             conn->le_supervision_timeout = le_supervision_timeout;
                         } else {
-                            conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
+                            conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NEGATIVE_REPLY;
                         }
                     }
                     break;
