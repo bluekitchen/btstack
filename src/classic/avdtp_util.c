@@ -1028,9 +1028,16 @@ uint8_t avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint){
 void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id){
     UNUSED(size);
     btstack_assert(callback != NULL);
+    // cache orig event and subevent id
+    uint8_t orig_event_id    = packet[0];
+    uint8_t orig_subevent_id = packet[2];
+    // execute callback
     packet[0] = HCI_EVENT_A2DP_META;
     packet[2] = subevent_id;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+    // restore id
+    packet[0] = orig_event_id;
+    packet[2] = orig_subevent_id;
 }
 
 void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id){
