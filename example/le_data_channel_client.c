@@ -37,12 +37,10 @@
 
 #define BTSTACK_FILE__ "le_data_channel_client.c"
 
-/*
- * le_data_channel_client.c
- */
-
 // *****************************************************************************
-/* EXAMPLE_START(le_data_channel_client): Connects to 'LE Data Channel' and streams data 
+/* EXAMPLE_START(le_data_channel_client): LE Data Channel Client - Send Data over L2CAP
+ *
+ * @text Connects to 'LE Data Channel' and streams data 
  * via LE Data Channel == LE Connection-Oriented Channel == LE Credit-based Connection
  */
 // *****************************************************************************

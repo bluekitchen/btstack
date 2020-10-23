@@ -42,16 +42,17 @@
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
  */
 
-/* EXAMPLE_START(panu_demo): BNEP/PANU Demo
+/* EXAMPLE_START(panu_demo): BNEP/PANU (Linux only)
  *
  * @text This example implements both a PANU client and a server. In server mode, it 
  * sets up a BNEP server and registers a PANU SDP record and waits for incoming connections.
  * In client mode, it connects to a remote device, does an SDP Query to identify the PANU
  * service and initiates a BNEP connection.
  *
- * Note: currently supported only on Linux and Mac.
+ * Note: currently supported only on Linux and provides a TAP network interface which you
+ *       can configure yourself.
  *
- * To enable client mode, uncomment ENABLE_PANU_CLIENT below
+ * To enable client mode, uncomment ENABLE_PANU_CLIENT below.
  */
 
 #include <stdio.h>

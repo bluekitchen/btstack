@@ -38,14 +38,9 @@
 #define BTSTACK_FILE__ "ancs_client_demo.c"
 
 // *****************************************************************************
-//
-// ANCS Client Demo
-//
-// TODO: query full text upon notification using control point
-// TODO: present notifications in human readable form
-//
-// *****************************************************************************
-
+/* EXAMPLE_START(ancs_client_demo): LE ANCS Client - Apple Notification Service
+ *
+ */ 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +65,9 @@
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
+
+// TODO: query full text upon notification using control point
+// TODO: present notifications in human readable form
 
 // ancs_client_demo.gatt contains the declaration of the provided GATT Services + Characteristics
 // ancs_client_demo.h    contains the binary representation of ancs_client_demo.gatt
@@ -190,3 +188,5 @@ int btstack_main(int argc, const char * argv[]){
     
     return 0;
 }
+
+/* EXAMPLE_END */

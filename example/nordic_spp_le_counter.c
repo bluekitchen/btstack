@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "nordic_spp_le_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(nordic_le_counter): LE Peripheral - Nordic SPP-like profile
+/* EXAMPLE_START(nordic_le_counter): LE Nordic SPP-like Heartbeat Server 
  *
  */
  // *****************************************************************************

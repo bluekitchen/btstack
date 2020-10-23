@@ -38,9 +38,12 @@
 #define BTSTACK_FILE__ "sdp_rfcomm_query.c"
  
 // *****************************************************************************
-//
-// minimal setup for SDP client over USB or UART
-//
+/* EXAMPLE_START(sdp_rfcomm_query): SDP Client - Query RFCOMM SDP record
+ *
+ * @text The example shows how the SDP Client is used to get all RFCOMM service
+ * records from a remote device. It extracts the remote RFCOMM Server Channel, 
+ * which are needed to connect to a remote RFCOMM service.
+ */
 // *****************************************************************************
 
 #include "btstack_config.h"
@@ -60,7 +63,6 @@
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-// static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 
 static struct {
@@ -163,3 +165,5 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
+
+/* EXAMPLE_END */

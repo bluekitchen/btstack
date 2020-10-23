@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "sdp_bnep_query.c"
  
 // *****************************************************************************
-/* EXAMPLE_START(sdp_bnep_query): SDP Records - Dump BNEP PAN protocol
+/* EXAMPLE_START(sdp_bnep_query): SDP Client - Query BNEP SDP record
  *
  * @text The example shows how the SDP Client is used to get all BNEP service
  * records from a remote device. It extracts the remote BNEP PAN protocol 

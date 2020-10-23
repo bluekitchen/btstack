@@ -41,7 +41,7 @@
  * hid_host_demo.c
  */
 
-/* EXAMPLE_START(hid_host_demo): HID Host Demo
+/* EXAMPLE_START(hid_host_demo): HID Host Classic
  *
  * @text This example implements an HID Host. For now, it connnects to a fixed device, queries the HID SDP
  * record and opens the HID Control + Interrupt channels

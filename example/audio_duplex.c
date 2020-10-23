@@ -37,8 +37,7 @@
 
 #define BTSTACK_FILE__ "audio_duplex.c"
 
-/*
- * Audio Duplex: forward audio from BTstack audio source to audio sink - test for audio interface
+/* EXAMPLE_START(audio_duplex): Audio Driver - Forward Audio from Source to Sink
  *
  */
 
@@ -208,3 +207,5 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
+
+/* EXAMPLE_END */

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "nordic_spp_le_streamer.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(nordic_spp_le_streamer): LE Streamer - Stream data over GATT.
+/* EXAMPLE_START(nordic_spp_le_streamer): LE Nordic SPP-like Streamer Server 
  *
  * @text All newer operating systems provide GATT Client functionality.
  * This example shows how to get a maximal throughput via BLE:

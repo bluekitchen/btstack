@@ -35,10 +35,10 @@
  *
  */
 
-#define BTSTACK_FILE__ "gatt_streamer.c"
+#define BTSTACK_FILE__ "gatt_streamer_server.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_streamer): Performance - Stream data over GATT
+/* EXAMPLE_START(gatt_streamer_server): Performance - Stream Data over GATT (Server)
  *
  * @text All newer operating systems provide GATT Client functionality.
  * This example shows how to get a maximal throughput via BLE:

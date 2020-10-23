@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "ublox_spp_le_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(ublox_le_counter): LE Peripheral - Nordic SPP-like profile
+/* EXAMPLE_START(ublox_spp_le_counter): LE u-blox SPP-like Heartbeat Server
  *
  */
  // *****************************************************************************

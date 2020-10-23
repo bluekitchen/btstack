@@ -5,30 +5,52 @@ import subprocess
 
 
 # Defines the names of example groups. Preserves the order in which the example groups will be parsed.
-list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "HSP", "HFP", "Low Energy", "Dual Mode", "Audio", "HID", "LE Pairing", "Phone Book Access", "Performance", "Testing"]
+list_of_groups = [
+    "Hello World", 
+    "GAP", 
+    
+    "Low Energy", 
+    "Performance", 
+    
+    "Audio", 
+    "SPP Server", 
+    "Networking", 
+    "HID", 
+
+    "Dual Mode", 
+    "SDP Queries", 
+    "Phone Book Access", 
+    
+    "Testing"
+]
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
-    "Audio"       : [["a2dp_sink_demo"],["a2dp_source_demo"]],
+    "Audio"       : [["a2dp_sink_demo"],["a2dp_source_demo"], ["avrcp_browsing_client"], 
+                     ["hfp_ag_demo"], ["hfp_hf_demo"], 
+                     ["hsp_ag_demo"], ["hsp_hs_demo"],
+                     ["sine_player"], ["mod_player"], ["audio_duplex"]],
     
-    "BNEP/PAN"    :  [["panu_demo"]],
+    "Dual Mode"   : [["spp_and_gatt_counter"], ["gatt_streamer_server"]],
     
-    "Dual Mode"   : [["spp_and_gatt_counter"]],
-    
-    "GAP"         : [["gap_inquiry"]],
+    "GAP"         : [["gap_inquiry"], ["gap_link_keys"]],
     
     "Hello World" : [["led_counter"]],
-    "HFP"         : [["hfp_ag_demo"], ["hfp_hf_demo"]],
-    "HID"         : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"]],
-    "HSP"         : [["hsp_ag_demo"], ["hsp_hs_demo"]],
+    "HID"         : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"], ["hog_boot_host_demo"]],
     
-    "LE Pairing"  : [["sm_pairing_central"], ["sm_pairing_peripheral"]],
-    "Low Energy"  : [["gap_le_advertisements"], ["gatt_browser"], ["gatt_counter"], ["gatt_streamer_server"]],
+    "Low Energy"  : [["gap_le_advertisements"], ["gatt_browser"], ["gatt_counter"], ["gatt_streamer_server"], 
+                    ["gatt_battery_query"], ["gatt_heart_rate_client"], 
+                    ["nordic_spp_le_counter"], ["nordic_spp_le_streamer"], ["ublox_spp_le_counter"], 
+                    ["sm_pairing_central"], ["sm_pairing_peripheral"], 
+                    ["le_data_channel_client"], ["le_data_channel_server"], 
+                    ["att_delayed_response"], ["ancs_client_demo"], ["le_mitm"]],
     
-    "Performance" : [["le_streamer_client"], ["gatt_streamer_server"], ["spp_streamer"], ["spp_streamer_client"]],
+    "Networking"    :  [["pan_lwip_http_server"], ["panu_demo"]],
+    
+    "Performance" : [["le_streamer_client"], ["gatt_streamer_server"], ["le_data_channel_client"], ["le_data_channel_server"], ["spp_streamer_client"], ["spp_streamer"]],
     "Phone Book Access" : [["pbap_client_demo"]],
     
-    "SDP Queries" : [["sdp_bnep_query"], ["sdp_general_query"]],
+    "SDP Queries" : [["sdp_general_query"], ["sdp_rfcomm_query"], ["sdp_bnep_query"]],
     "SPP Server"  : [["spp_counter"], ["spp_flowcontrol"]],    
     "Testing"     : [["dut_mode_classic"]]
 }

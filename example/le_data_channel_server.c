@@ -38,9 +38,9 @@
 #define BTSTACK_FILE__ "le_data_channel_server.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_data_channel): LE Data Channel Server - Receive data via L2CAP
+/* EXAMPLE_START(le_data_channel): LE Data Channel Server - Receive data over L2CAP
  *
- * @text iOS 11 and newer supports LE Data Channels for fast transfer via LE
+ * @text iOS 11 and newer supports LE Data Channels for fast transfer over LE
  *       [https://github.com/bluekitchen/CBL2CAPChannel-Demo](Basic iOS example on GitHub)
  */
  // *****************************************************************************

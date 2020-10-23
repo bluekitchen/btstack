@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(hsp_ag_demo): HSP Audio Gateway Demo
+/* EXAMPLE_START(hsp_ag_demo): HSP AG - Audio Gateway
  *
  * @text This example implements a HSP Audio Gateway device that sends and receives 
  * audio signal over HCI SCO. It demonstrates how to receive 

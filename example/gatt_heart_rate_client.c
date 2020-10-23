@@ -38,7 +38,10 @@
 #define BTSTACK_FILE__ "gatt_heart_rate_client.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(gatt_heart_rate_client): Connects for Heart Rate Sensor and reports measurements */
+/* EXAMPLE_START(gatt_heart_rate_client): GATT Heart Rate Sensor Client 
+ *
+ * @text Connects for Heart Rate Sensor and reports measurements.
+ */
 // *****************************************************************************
 
 #include <inttypes.h>

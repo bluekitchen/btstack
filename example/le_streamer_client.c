@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(le_streamer_client): Performance - LE Streamer Client
+/* EXAMPLE_START(le_streamer_client): Performance - Stream Data over GATT (Client)
  * 
  * @text Connects to 'LE Streamer' and subscribes to test characteristic
  *

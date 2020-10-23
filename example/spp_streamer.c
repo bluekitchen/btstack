@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(spp_streamer): Performance - Stream data over SPP
+/* EXAMPLE_START(spp_streamer): Performance - Stream Data over SPP (Server)
  * 
  * @text After RFCOMM connections gets open, request a
  * RFCOMM_EVENT_CAN_SEND_NOW via rfcomm_request_can_send_now_event().

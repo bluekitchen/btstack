@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(hsp_hs_demo): HSP Headset Demo
+/* EXAMPLE_START(hsp_hs_demo): HSP HS - Headset
  *
  * @text This example implements a HSP Headset device that sends and receives 
  * audio signal over HCI SCO. It demonstrates how to receive 

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "gatt_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
+/* EXAMPLE_START(gatt_counter): GATT Server - Heartbeat Counter over GATT
  *
  * @text All newer operating systems provide GATT Client functionality.
  * The LE Counter examples demonstrates how to specify a minimal GATT Database

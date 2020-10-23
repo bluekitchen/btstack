@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "hog_mouse_demo.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(hog_mouse_demo): HID-over-GATT Mouse
+/* EXAMPLE_START(hog_mouse_demo): HID Mouse LE
  */
 // *****************************************************************************
 

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "le_mitm.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_mitm): Man-in-the-Middle tool for Bluetooth LE
+/* EXAMPLE_START(le_mitm): LE Man-in-the-Middle Tool
  *
  * @text The example first does an LE scan and allows the user to select a Peripheral
  * device. Then, it connects to the Peripheral and starts advertising with the same

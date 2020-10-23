@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "sm_pairing_peripheral.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(sm_pairing_peripheral): LE Peripheral - Test pairing combinations
+/* EXAMPLE_START(sm_pairing_peripheral): LE Peripheral - Test Pairing Methods
  *
  * @text Depending on the Authentication requiremens and IO Capabilities,
  * the pairing process uses different short and long term key generation method.

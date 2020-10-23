@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(hfp_ag_demo): HFP Audio Gateway (AG) Demo
+/* EXAMPLE_START(hfp_ag_demo): HFP AG - Audio Gateway
  *
  * @text This HFP Audio Gateway example demonstrates how to receive 
  * an output from a remote HFP Hands-Free (HF) unit, and, 

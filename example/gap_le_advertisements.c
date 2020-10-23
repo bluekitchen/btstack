@@ -39,7 +39,7 @@
  
 
 // *****************************************************************************
-/* EXAMPLE_START(gap_le_advertisements): GAP LE Advertisements Dumper
+/* EXAMPLE_START(gap_le_advertisements): GAP LE Advertisements Scanner
  *
  * @text This example shows how to scan and parse advertisements.
  * 

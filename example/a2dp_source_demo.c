@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(a2dp_source_demo): Audio streaming and remote playback control
+/* EXAMPLE_START(a2dp_source_demo): A2DP Source - Stream Audio and Control Volume
  *
  * @text This A2DP Source example demonstrates how to send an audio data stream 
  * to a remote A2DP Sink device and how to switch between two audio data sources.  

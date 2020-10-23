@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(avrcp_browsing_client): Browse media players and media information on a remote device.
+/* EXAMPLE_START(avrcp_browsing_client): AVRCP Browsing - Browse Media Players and Media Information
  *
  * @text This example demonstrates how to use the AVRCP Controller Browsing service to 
  * browse madia players and media information on a remote AVRCP Source device. 

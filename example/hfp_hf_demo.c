@@ -43,7 +43,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(hfp_hs_demo): HFP Hands-Free (HF) Demo
+/* EXAMPLE_START(hfp_hs_demo): HFP HF - Hands-Free
  *
  * @text This  HFP Hands-Free example demonstrates how to receive 
  * an output from a remote HFP audio gateway (AG), and, 
