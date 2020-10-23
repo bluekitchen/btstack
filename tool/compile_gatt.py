@@ -51,6 +51,10 @@ header = '''
 
 #include <stdint.h>
 
+// Reference: https://en.cppreference.com/w/cpp/feature_test
+#if __cplusplus >= 200704L
+constexpr
+#endif
 const uint8_t profile_data[] =
 '''
 
