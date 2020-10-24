@@ -3736,6 +3736,12 @@ static bool hci_run_general_pending_commmands(void){
             } else {
                 hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }
+            //uint8_t key[] = { 0x17,0x95,0xc9,0xd4,0xcb,0x16,0xa5,0xe9,0x32,0xdb,0xd0,0x18,0x9d,0xc6,0x5f,0xcd };
+            //uint8_t key[] = { 0xF8,0xE8,0xF7,0xA3,0x1E,0x9F,0xF9,0x37,0xF9,0xBC,0xAC,0xBB,0x27,0xF0,0x03,0x18 };
+            //memcpy(link_key, key, 16);
+            //hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
+            //log_info("link_key");
+            //log_info_hexdump(link_key, 16);
             return true;
         }
 
@@ -4270,7 +4276,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     // dump packet
-    if (dump) {
+    if (dump && false) {
         hci_dump_packet( HCI_EVENT_PACKET, 0, event, size);
     } 
 

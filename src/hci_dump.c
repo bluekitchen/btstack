@@ -251,11 +251,14 @@ static void hci_dump_snoop_setup_header(uint8_t * buffer, uint32_t tv_sec, uint3
     big_endian_store_32(buffer,  4, len);//Included Length
     big_endian_store_32(buffer,  8, flags);//Packet Flags
     big_endian_store_32(buffer, 12, 0);//Cumulativ Drops
-    big_endian_store_32(buffer, 16, tv_sec);//Timestamp Microseconds
-    big_endian_store_32(buffer, 20, tv_us);//Timestamp Microseconds
+    uint64_t tm = 0x00dcddb30f2f8000ULL + tv_sec * 1000000ULL + tv_us;//Timestamp Microseconds;
+    big_endian_store_32(buffer, 16, (uint32_t)(tm >> 32));
+    big_endian_store_32(buffer, 20, (uint32_t)(tm & 0xFFFFFFFF));
 }
 
 static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
+    static uint32_t frame = 0;
+    if(packet_type != LOG_MESSAGE_PACKET) printf("frame %04d ", ++frame);
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             printf("CMD => ");
@@ -334,7 +337,10 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         nr_packets++;
     }
 #endif
-    if (dump_format == HCI_DUMP_STDOUT || packet_type > 0x04) {
+    if (packet_type == 0x04 && packet[0] >= 0x60) {
+        return;
+    }
+    if (dump_format == HCI_DUMP_STDOUT || packet_type <= 0xFF) {
         printf_timestamp();
         printf_packet(packet_type, in, packet, len);
     }
@@ -394,8 +400,13 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     // avoid -Wunused-result
     int res = 0;
     res = fwrite(&header, 1, header_len, dump_file);
+    if (res != header_len) {
+        while (0);
+    }
     res = fwrite (packet, 1, len, dump_file);
-    UNUSED(res);
+    if (res != len) {
+        while (0);
+    }
 #endif
 
 #ifdef ENABLE_SEGGER_RTT
