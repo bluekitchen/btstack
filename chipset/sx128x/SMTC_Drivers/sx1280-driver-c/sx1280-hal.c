@@ -144,19 +144,44 @@ extern DMA_HandleTypeDef RADIO_SPI_DMA_TX;
 
 #ifdef USE_BK_SPI
 
-static void spi_tx_only_dma(const uint8_t * tx_data, uint16_t tx_len) {
-
-	// Enable & Config SPI
-#ifdef STM32L4XX_FAMILY
+static void spi_enable(SPI_HandleTypeDef *hspi){
 	/* Set fiforxthreshold according the reception data length: 8bit */
-	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_RXFIFO_THRESHOLD);
-#endif
+	SET_BIT(hspi->Instance->CR2, SPI_RXFIFO_THRESHOLD);
 
 	/* Check if the SPI is already enabled */
-	if ((RADIO_SPI_HANDLE.Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE) {
+	if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)
+	{
 		/* Enable SPI peripheral */
-		__HAL_SPI_ENABLE(&RADIO_SPI_HANDLE);
+		__HAL_SPI_ENABLE(hspi);
 	}
+}
+
+static void spi_tx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uint16_t tx_len){
+    // send tx / ignore rx
+    uint8_t tx_byte = *tx_data++;
+    while (tx_len > 0){
+        tx_len--;
+        // while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE) == 0);
+        *(__IO uint8_t *)&hspi->Instance->DR = tx_byte;
+        tx_byte = *tx_data++;
+        while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE) == 0);
+        uint8_t rx_byte = *(__IO uint8_t *)&hspi->Instance->DR;
+        (void) rx_byte;
+    }
+}
+
+static void spi_rx(SPI_HandleTypeDef *hspi,  uint8_t * rx_buffer, uint16_t rx_len){
+    // send NOP / store rx
+    while (rx_len > 0){
+        rx_len--;
+        // while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE) == 0);
+        *(__IO uint8_t *)&hspi->Instance->DR = 0;
+        while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE) == 0);
+        *rx_buffer++ = *(__IO uint8_t *)&hspi->Instance->DR;
+    }
+}
+
+static void spi_tx_only_dma(const uint8_t * tx_data, uint16_t tx_len) {
 
 	HAL_DMA_Start(&RADIO_SPI_DMA_TX, (uintptr_t) tx_data, (uintptr_t) &RADIO_SPI_HANDLE.Instance->DR, tx_len);
 
@@ -171,17 +196,6 @@ static void spi_tx_only_dma(const uint8_t * tx_data, uint16_t tx_len) {
 
 static void spi_tx_rx_dma(const uint8_t * tx_data, uint8_t * rx_buffer, uint16_t size) {
 
-#ifdef STM32L4XX_FAMILY
-	/* Set fiforxthreshold according the reception data length: 8bit */
-	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_RXFIFO_THRESHOLD);
-#endif
-
-	/* Check if the SPI is already enabled */
-	if ((RADIO_SPI_HANDLE.Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE) {
-		/* Enable SPI peripheral */
-		__HAL_SPI_ENABLE(&RADIO_SPI_HANDLE);
-	}
-
 	/* Enable Rx DMA Request */
 	SET_BIT(RADIO_SPI_HANDLE.Instance->CR2, SPI_CR2_RXDMAEN);
 
@@ -195,81 +209,39 @@ static void spi_tx_rx_dma(const uint8_t * tx_data, uint8_t * rx_buffer, uint16_t
 	HAL_DMA_PollForTransfer(&RADIO_SPI_DMA_RX, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
 }
 
-static void spi_tx_then_rx(SPI_HandleTypeDef *hspi, const uint8_t * tx_data, uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
-
-    /* Set fiforxthreshold according the reception data length: 8bit */
-    SET_BIT(hspi->Instance->CR2, SPI_RXFIFO_THRESHOLD);
-
-    /* Check if the SPI is already enabled */
-    if ((hspi->Instance->CR1 & SPI_CR1_SPE) != SPI_CR1_SPE)
-    {
-        /* Enable SPI peripheral */
-        __HAL_SPI_ENABLE(hspi);
-    }
-
-    // send tx / ignore rx
-
-    uint8_t tx_byte = *tx_data++;
-    while (tx_len > 0){
-        tx_len--;
-        // while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE) == 0);
-        *(__IO uint8_t *)&hspi->Instance->DR = tx_byte;
-        tx_byte = *tx_data++;
-        while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE) == 0);
-        // *rx_buffer++ = *(__IO uint8_t *)&hspi->Instance->DR;
-        uint8_t rx_byte = *(__IO uint8_t *)&hspi->Instance->DR;
-        (void) rx_byte;
-    }
-
-    // send NOP / store rx
-
-    while (rx_len > 0){
-        rx_len--;
-        // while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE) == 0);
-        *(__IO uint8_t *)&hspi->Instance->DR = 0;
-        while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXNE) == 0);
-        *rx_buffer++ = *(__IO uint8_t *)&hspi->Instance->DR;
-    }
-}
 #endif
 
-// assert: tx_data == tx_buffer (local call)
+// assert: tx_data == tx_buffer (local call), tx_len > 0
+// DMA is disabled as one extra byte is read
 void SX1280HalSpiTxThenRx(uint16_t tx_len, uint8_t * rx_buffer, uint16_t rx_len){
 
-	// min size for dma to be faster (L073@24 Mhz)
-	const uint16_t dma_min_size = 8;
+	spi_enable(&RADIO_SPI_HANDLE);
 
-	if (rx_len == 0){
-		if (tx_len < dma_min_size) {
-			// Custom Polling
-			spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, NULL, 0);
-		} else {
-			// Custom DMA
-			spi_tx_only_dma( halTxBuffer, tx_len );
-		}
+	// min size for dma to be faster
+	const uint16_t dma_min_size_tx = 100;
+
+	if (tx_len < dma_min_size_tx) {
+		// Custom Polling
+		spi_tx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len);
 	} else {
+		// Custom DMA
+		spi_tx_only_dma( halTxBuffer, tx_len );
+	}
 
-		if (rx_len < dma_min_size){
-			// Custom Polling
-			spi_tx_then_rx(&RADIO_SPI_HANDLE, halTxBuffer, tx_len, rx_buffer, rx_len);
-		} else {
+	// 'Flush' Fifo by reading until marked empty
+	HAL_SPIEx_FlushRxFifo(&RADIO_SPI_HANDLE);
 
-			// poll the first few bytes
-			uint8_t *tx_data = halTxBuffer;
-			uint8_t tx_byte = *tx_data++;
-			while (tx_len > 0){
-				tx_len--;
-				// while (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_TXE) == 0);
-				*(__IO uint8_t *)&RADIO_SPI_HANDLE.Instance->DR = tx_byte;
-				tx_byte = *tx_data++;
-				while (__HAL_SPI_GET_FLAG(&RADIO_SPI_HANDLE, SPI_FLAG_RXNE) == 0);
-				uint8_t rx_byte = *(__IO uint8_t *)&RADIO_SPI_HANDLE.Instance->DR;
-				(void) rx_byte;
-			}
+	if (rx_len == 0) return;
 
-			// Custom DMA
-			spi_tx_rx_dma( halZeroBuffer, rx_buffer, rx_len);
-		}
+	// min size for dma to be faster
+	const uint16_t dma_min_size_rx = 100;
+
+	if (rx_len < dma_min_size_rx){
+		// Custom Polling
+		spi_rx(&RADIO_SPI_HANDLE, rx_buffer, rx_len);
+	} else {
+		// Custom DMA
+		spi_tx_rx_dma( halZeroBuffer, rx_buffer, rx_len);
 	}
 }
 
