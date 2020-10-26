@@ -1856,7 +1856,7 @@ static void l2cap_run(void){
 
 #ifdef ENABLE_LE_DATA_CHANNELS
     l2cap_run_le_data_channels();
-    #endif
+#endif
 
 #ifdef ENABLE_BLE
     // send l2cap con paramter update if necessary
@@ -1919,12 +1919,10 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
     // we have been waiting for remote supported features
-    log_info("l2cap received remote supported features, sec_level_0_allowed for psm %u = %u", channel->psm, l2cap_security_level_0_allowed_for_PSM(channel->psm));
-    if (l2cap_security_level_0_allowed_for_PSM(channel->psm) == 0){
-        // request security level 2
+    if (channel->required_security_level > LEVEL_0){
+        // request security level
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
-        channel->required_security_level = gap_get_security_level();
-        gap_request_security_level(channel->con_handle, gap_get_security_level());
+        gap_request_security_level(channel->con_handle, channel->required_security_level);
         return;
     }
 
@@ -1991,12 +1989,14 @@ static void l2cap_free_channel_entry(l2cap_channel_t * channel){
  */
 
 uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
-    // limit MTU to the size of our outtgoing HCI buffer
+    // limit MTU to the size of our outgoing HCI buffer
     uint16_t local_mtu = btstack_min(mtu, l2cap_max_mtu());
 
-    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u", bd_addr_to_str(address), psm, mtu, local_mtu);
+	// determine security level based on psm
+	const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
+	log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u, sec level %u", bd_addr_to_str(address), psm, mtu, local_mtu, (int) security_level);
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2013,13 +2013,19 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
        *out_local_cid = channel->local_cid;
     }
 
-    // check if hci connection is already usable
+	// state: L2CAP_STATE_WILL_SEND_CREATE_CONNECTION
+
+    // check if hci connection is already usable,
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
     if (conn && conn->con_handle != HCI_CON_HANDLE_INVALID){
-        log_info("l2cap_create_channel, hci connection 0x%04x already exists", conn->con_handle);
-        l2cap_handle_connection_complete(conn->con_handle, channel);
-        // check if remote supported fearures are already received
+    	// simulate connection complete
+	    l2cap_handle_connection_complete(conn->con_handle, channel);
+
+		// state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES
+
+        // check if remote supported features are already received
         if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+        	// simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
         }
     }
