@@ -23,7 +23,6 @@ We provide their overview here. For the case that there is a need to inspect the
 between BTstack and the Bluetooth chipset, we describe how to configure
 packet logging mechanism. Finally, we provide an overview on power management in Bluetooth in general and how to save energy in BTstack.
 
-
 ## Configuration in btstack_config.h {#sec:btstackConfigHowTo}
 The file *btstack_config.h* contains three parts:
 
@@ -207,7 +206,67 @@ When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_open` was called with either
 ---------------------------------|--------------------------------|------------------------
 SEGGER_RTT_PACKETLOG_MODE        | SEGGER_RTT_MODE_NO_BLOCK_SKIP  | SEGGER_RTT_MODE_NO_BLOCK_SKIP to skip messages if buffer is full, or, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL to block 
 SEGGER_RTT_PACKETLOG_CHANNEL     | 1                              | Channel to use for packet log. Channel 0 is used for terminal
-SEGGER_RTT_PACKETLOG_BUFFER_SIZE | 1024                           | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings
+SEGGER_RTT_PACKETLOG_BUFFER_SIZE | 1024                           | Size of outgoing ring buffer. Increase if you cannot block but get 'message skipped' warnings.
+
+## Run-time configuration
+
+To allow code-reuse with different platforms
+as well as with new ports, the low-level initialization of BTstack and
+the hardware configuration has been extracted to the various
+*platforms/PLATFORM/main.c* files. The examples only contain the
+platform-independent Bluetooth logic. But let’s have a look at the
+common init code.
+
+Listing [below](#lst:btstackInit) shows a minimal platform setup for an
+embedded system with a Bluetooth chipset connected via UART.
+
+~~~~ {#lst:btstackInit .c caption="{Minimal platform setup for an embedded system}"}
+
+    int main(){
+      // ... hardware init: watchdoch, IOs, timers, etc...
+
+      // setup BTstack memory pools
+      btstack_memory_init();
+
+      // select embedded run loop
+      btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+          
+      // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+      hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
+      // init HCI
+      hci_transport_t     * transport = hci_transport_h4_instance();
+      hci_init(transport, NULL);
+
+      // setup example    
+      btstack_main(argc, argv);
+
+      // go
+      btstack_run_loop_execute();    
+    }
+    
+~~~~ 
+
+First, BTstack’s memory pools are setup up. Then, the standard run loop
+implementation for embedded systems is selected.
+
+The call to *hci_dump_open* configures BTstack to output all Bluetooth
+packets and it’s own debug and error message via printf. The Python
+script *tools/create_packet_log.py* can be used to convert the console
+output into a Bluetooth PacketLogger format that can be opened by the OS
+X PacketLogger tool as well as by Wireshark for further inspection. When
+asking for help, please always include a log created with HCI dump.
+
+The *hci_init* function sets up HCI to use the HCI H4 Transport
+implementation. It doesn’t provide a special transport configuration nor
+a special implementation for a particular Bluetooth chipset. It makes
+use of the *remote_device_db_memory* implementation that allows for
+re-connects without a new pairing but doesn’t persist the bonding
+information.
+
+Finally, it calls *btstack_main()* of the actual example before
+executing the run loop.
+
 
 ## Source tree structure {#sec:sourceTreeHowTo}
 
