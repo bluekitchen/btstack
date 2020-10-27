@@ -67,11 +67,15 @@
 #define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
 
-static int record_id = -1;
-static uint16_t bnep_l2cap_psm      = 0;
-static uint32_t bnep_remote_uuid    = 0;
-static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
+
+#ifdef ENABLE_PANU_CLIENT
+
+static int record_id = -1;
+
+static uint16_t bnep_version        = 0;
+static uint32_t bnep_remote_uuid    = 0;
+static uint16_t bnep_l2cap_psm      = 0;
 
 static uint16_t sdp_bnep_l2cap_psm      = 0;
 static uint16_t sdp_bnep_version        = 0;
@@ -79,6 +83,7 @@ static uint32_t sdp_bnep_remote_uuid    = 0;
 
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
+#endif
 
 // MBP 2016
 static const char * remote_addr_string = "78:4F:43:8C:B2:5D";
