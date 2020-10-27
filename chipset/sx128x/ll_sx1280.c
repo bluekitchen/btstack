@@ -325,6 +325,10 @@ static struct {
     uint8_t  adv_map;
     uint32_t adv_interval_us;
 
+	// adv data
+	uint8_t scan_resp_len;
+	uint8_t scan_resp_data[31];
+
     // next expected sequence number
     volatile uint8_t next_expected_sequence_number;
 
@@ -427,19 +431,20 @@ static void receive_master(void){
     }
 }
 
-
-static void send_adv(void){
-    // setup advertisement: header (2) + addr (6) + data (31)
-    uint8_t adv_buffer[39];
-    adv_buffer[0] = PDU_ADV_TYPE_ADV_IND;  // TODO: also set private address bits
-    adv_buffer[1] = 6 + ctx.adv_len;
-    memcpy(&adv_buffer[2], ctx.bd_addr_le, 6);
-    memcpy(&adv_buffer[8], ctx.adv_data, ctx.adv_len);
-    uint16_t packet_size = 2 + adv_buffer[1];
-    SX1280HalWriteBuffer( tx_buffer_offset[ctx.next_tx_buffer], adv_buffer, packet_size );
-    SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
+static void setup_adv_pdu(uint8_t offset, uint8_t header, uint8_t len, const uint8_t * data){
+	uint8_t buffer[39];
+	buffer[0] = header;
+	buffer[1] = 6 + len;
+	memcpy(&buffer[2], ctx.bd_addr_le, 6);
+	memcpy(&buffer[8], data, len);
+	uint16_t packet_size = 2 + buffer[1];
+	SX1280HalWriteBuffer( offset, buffer, packet_size );
 }
 
+static void send_adv(void){
+	SX1280SetBufferBaseAddresses( SX1280_TX0_OFFSET, SX1280_RX0_OFFSET);
+    SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
+}
 
 static void select_channel(uint8_t channel){
     // Set Whitening seed
@@ -510,7 +515,11 @@ static void start_advertising(void){
     // Set AccessAddress for ADV packets
     Radio.SetBleAdvertizerAccessAddress( );
 
-    radio_state = RADIO_LOWPOWER;
+    // prepare adv and scan data in tx0 and tx1
+	setup_adv_pdu(SX1280_TX0_OFFSET, PDU_ADV_TYPE_ADV_IND,  ctx.adv_len,       ctx.adv_data);
+	setup_adv_pdu(SX1280_TX1_OFFSET, PDU_ADV_TYPE_SCAN_RSP, ctx.scan_resp_len, ctx.scan_resp_data);
+
+	radio_state = RADIO_LOWPOWER;
     ll_state = LL_STATE_ADVERTISING;
 
     // prepare
@@ -1223,8 +1232,17 @@ uint8_t ll_set_advertising_data(uint8_t adv_len, const uint8_t * adv_data){
     ctx.adv_len = adv_len;
     memcpy(ctx.adv_data, adv_data, adv_len);
 
-    // TODO:
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t ll_set_scan_response_data(uint8_t adv_len, const uint8_t * adv_data){
+	// COMMAND DISALLOWED if wrong state.
+	if (ll_state == LL_STATE_ADVERTISING) return ERROR_CODE_COMMAND_DISALLOWED;
+	if (adv_len > 31) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+	ctx.scan_resp_len = adv_len;
+	memcpy(ctx.scan_resp_data, adv_data, adv_len);
+
+	return ERROR_CODE_SUCCESS;
 }
 
 void ll_execute_once(void){
