@@ -399,6 +399,18 @@ static void btstack_memory_ll_pdu_free(ll_pdu_t *acl_le_pdu){
     btstack_memory_pool_free(&ll_pdu_pool, acl_le_pdu);
 }
 
+static void radio_auto_tx_on(void){
+	// SetAutoTX(150 ms) - direct write / ignore compensation
+	uint8_t buf[2];
+	big_endian_store_16(buf, 0, AUTO_RX_TX_TIME_US);
+	SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+}
+
+static void radio_auto_tx_off(void){
+	// SetAutoTX(0) - direct write / ignore compensation
+	uint8_t buf[2] = { 0, 0 };
+	SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+}
 
 static bool receive_prepare_rx_bufffer(void){
     if (ctx.rx_pdu == NULL){
@@ -442,6 +454,11 @@ static void setup_adv_pdu(uint8_t offset, uint8_t header, uint8_t len, const uin
 }
 
 static void send_adv(void){
+
+	// enable AutoTX for potential Scan Response
+	// TODO: only if adv type allows for scanning
+	radio_auto_tx_on();
+
 	SX1280SetBufferBaseAddresses( SX1280_TX0_OFFSET, SX1280_RX0_OFFSET);
     SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
 }
@@ -780,19 +797,33 @@ static void radio_on_rx_done(void ){
 
 	if (ll_state == LL_STATE_ADVERTISING){
 		
-		// fetch reserved rx pdu
-		ll_pdu_t * rx_packet = ctx.rx_pdu;
-		btstack_assert(rx_packet != NULL);
-		ctx.rx_pdu = NULL;
+		// get rx pdu header
+		uint8_t rx_header;
+		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_header, 1);
 
-		// no data packet
-		rx_packet->flags = 0;
-		uint16_t max_packet_len = 2 + LL_MAX_PAYLOAD;
+		// check for Scan Request
+		uint8_t pdu_type = rx_header & 0x0f;
+		if (pdu_type == PDU_ADV_TYPE_SCAN_REQ){
+			// scan request, select TX1 for active AutoTx
+			SX1280SetBufferBaseAddresses( SX1280_TX1_OFFSET, SX1280_RX0_OFFSET);
+		} else {
 
-		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+			// fetch reserved rx pdu
+			ll_pdu_t * rx_packet = ctx.rx_pdu;
+			btstack_assert(rx_packet != NULL);
+			ctx.rx_pdu = NULL;
 
-		// queue received packet
-		btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+			// no data packet
+			rx_packet->flags = 0;
+			uint16_t max_packet_len = 2 + LL_MAX_PAYLOAD;
+
+			// no scan request, disable auto tx and read complete buffer
+			radio_auto_tx_off();
+			SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+
+			// queue received packet
+			btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+		}
 
 	} else if (ll_state == LL_STATE_CONNECTED){
 
@@ -1026,15 +1057,8 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     next_channel();
 
     start_hopping();
-    
-    // Enable Rx->Tx in 150 us for BLE
-    // Note: Driver subtracts AUTO_RX_TX_OFFSET (33) from it and 150 should be correct, Raccoon reports 181 us then, so -31
-    // Radio.SetAutoTx(119);
 
-    // SetAutoTX(100) - direct write / ignore compensation
-    uint8_t buf[2];
-    big_endian_store_16(buf, 0, AUTO_RX_TX_TIME_US);
-    SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+    radio_auto_tx_on();
 
 	// pre-load tx pdu
 	ctx.num_tx_pdus_on_controller = 0;
