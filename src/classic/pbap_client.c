@@ -264,7 +264,6 @@ static void pbap_handle_can_send_now(void){
     uint8_t  challenge_response[36];
     int i;
     uint16_t phone_number_len;
-    int done;
 
     MD5_CTX md5_ctx;
 
@@ -463,11 +462,8 @@ static void pbap_handle_can_send_now(void){
                 pbap_client->set_path_offset++;  
             }
 
-            // done?
-            done = pbap_client->current_folder[pbap_client->set_path_offset] == '\0';
-
             // status
-            log_info("Path element '%s', done %u", path_element, done);
+            log_info("Path element '%s'", path_element);
 
             goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
             goep_client_header_add_name(pbap_client->goep_cid, (const char *) path_element); // next element

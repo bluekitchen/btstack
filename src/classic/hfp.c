@@ -742,8 +742,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet);// measured in slots
             uint16_t rx_packet_length = hci_event_synchronous_connection_complete_get_rx_packet_length(packet); // measured in bytes
             uint16_t tx_packet_length = hci_event_synchronous_connection_complete_get_tx_packet_length(packet); // measured in bytes
-            uint8_t  air_mode = hci_event_synchronous_connection_complete_get_air_mode(packet);
-
+            
             switch (link_type){
                 case 0x00:
                     log_info("SCO Connection established.");
@@ -759,16 +758,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     log_error("(e)SCO reserved link_type 0x%2x", link_type);
                     break;
             }
+            
             log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)\n", sco_handle,
-                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
-
-            // hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-            
-            // if (!hfp_connection) {
-            //     log_error("SCO link created, hfp_connection for address %s not found.", bd_addr_to_str(event_addr));
-            //     break;
-            // }
+                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, 
+                 hci_event_synchronous_connection_complete_get_air_mode(packet));
 
             if (hfp_connection->state == HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
                 log_info("SCO about to disconnect: HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN");

@@ -271,9 +271,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
     uint8_t signal_identifier;
     uint8_t status;
-    uint8_t local_seid;
     uint8_t remote_seid;
-    bd_addr_t address;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
@@ -286,8 +284,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
-            
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // notify about connection error only if we're initiator
@@ -509,8 +505,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
 
 			outgoing_active = false;
-            remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
-            local_seid  = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP source streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
@@ -518,7 +512,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 break;
             }
 
-            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid, local_seid, remote_seid);
+            log_info("A2DP source streaming connection established --- avdtp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x", cid, 
+                avdtp_subevent_streaming_connection_established_get_local_seid(packet),
+                avdtp_subevent_streaming_connection_established_get_remote_seid(packet));
             a2dp_source_state = A2DP_STREAMING_OPENED;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_ESTABLISHED);
             break;

@@ -553,7 +553,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             uint8_t  retransmission_interval = hci_event_synchronous_connection_complete_get_retransmission_interval(packet); // measured in slots
             uint16_t rx_packet_length        = hci_event_synchronous_connection_complete_get_rx_packet_length(packet);        // measured in bytes
             uint16_t tx_packet_length        = hci_event_synchronous_connection_complete_get_tx_packet_length(packet);        // measured in bytes
-            uint8_t  air_mode                = hci_event_synchronous_connection_complete_get_air_mode(packet);
 
             if (status != 0){
                 log_error("(e)SCO Connection failed, status %u", status);
@@ -579,7 +578,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
-                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
+                 bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, 
+                 hci_event_synchronous_connection_complete_get_air_mode(packet));
 
             hsp_state = HSP_AUDIO_CONNECTION_ESTABLISHED;
             emit_event_audio_connected(status, sco_handle);

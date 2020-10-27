@@ -688,27 +688,35 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     
-    uint8_t byte_value = packet[pos++];
+#ifdef ENABLE_LOG_INFO
+    uint8_t byte_value = packet[pos];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
     avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t)   (byte_value & 0x07);
+#endif
+    pos++;
+    
     uint8_t opcode = packet[pos++];
-
     uint16_t param_length;
 
     switch (opcode){
         case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
+
+#ifdef ENABLE_LOG_INFO
             // page, extention code (1)
             pos++;
             uint8_t unit_type = packet[pos] >> 3;
             uint8_t max_subunit_ID = packet[pos] & 0x07;
             log_info("SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
+#endif
             break;
         }
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
+
+#ifdef ENABLE_LOG_INFO
             // byte value 7 (1)
             pos++;
             uint8_t unit_type = packet[pos] >> 3;
@@ -717,6 +725,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint32_t company_id = big_endian_read_24(packet, pos);
             log_info("UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
                 ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id);
+#endif
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:

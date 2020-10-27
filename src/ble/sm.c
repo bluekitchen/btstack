@@ -3228,6 +3228,7 @@ static void sm_handle_random_result_ir(void *arg){
         // key generated, store in tlv
         int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16u);
         log_info("Generated IR key. Store in TLV status: %d", status);
+        UNUSED(status);
     }
     log_info_key("IR", sm_persistent_ir);
     dkg_state = DKG_CALC_IRK;
@@ -3246,6 +3247,7 @@ static void sm_handle_random_result_er(void *arg){
         // key generated, store in tlv
         int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
         log_info("Generated ER key. Store in TLV status: %d", status);
+        UNUSED(status);
     }
     log_info_key("ER", sm_persistent_er);
 
