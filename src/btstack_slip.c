@@ -215,6 +215,9 @@ void btstack_slip_decoder_process(uint8_t input){
                     break;
             }
             break;
+		default:
+			btstack_assert(false);
+			break;
     }
 }
 
