@@ -117,6 +117,9 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
             bd_encoder_state.context.mSBCEnabled = 1;
             bd_encoder_state.context.s16SamplingFreq = SBC_sf16000;
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
     bd_encoder_state.context.pu8Packet = bd_encoder_state.sbc_packet;
     

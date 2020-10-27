@@ -68,8 +68,10 @@ static uint16_t avrcp_get_max_payload_size_for_packet_type(avrcp_packet_type_t p
         case AVRCP_CONTINUE_PACKET:
         case AVRCP_END_PACKET:
             return AVRCP_CMD_BUFFER_SIZE - 1;
+        default:
+            btstack_assert(false);
+            return 0;
     }
-    return 0;
 }
 
 static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
@@ -863,6 +865,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             event[offset++] = 0;
                             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
+
+                        default:
+                            btstack_assert(false);
+                            break;
                     }
                     break;
                 }
@@ -918,6 +924,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 1);
                                 avrcp_parser_reset(connection);
                             }
+                            break;
+                        default:
+                            // TODO check
+                            btstack_assert(false);
                             break;
                     }
                 }

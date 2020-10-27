@@ -178,6 +178,9 @@ void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
             case 3:
                 printf("%08x\n", (int) obex_iterator_get_data_32(&it));
                 break;
+            default:
+                btstack_assert(false);
+                break;
         }
 
     }

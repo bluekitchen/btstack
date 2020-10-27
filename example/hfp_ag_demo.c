@@ -127,6 +127,9 @@ static void dump_supported_codecs(void){
                     mSBC_skipped = 1;
                 }
                 break;
+            default:
+                btstack_assert(false);
+                break;
         }
     }
     printf("\n");

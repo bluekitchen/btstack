@@ -644,8 +644,9 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            if (packet[0] != HCI_EVENT_MESH_META)  break;
-            switch (packet[2]){
+            if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META)  break;
+            
+            switch (hci_event_mesh_meta_get_subevent_code(packet)){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                     if (provisioner_state != PROVISIONER_W4_LINK_OPENED) break;
                     switch (mesh_subevent_pb_transport_link_open_get_status(packet)) {
@@ -666,6 +667,8 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
                     provisioning_done();
+                    break;
+                default:
                     break;
             }
             break;

@@ -257,6 +257,9 @@ static void stdin_process(char character){
             printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
             hid_device_connect(device_addr, &hid_cid);
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 #else

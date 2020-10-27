@@ -319,6 +319,9 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
                 requires_secure_connection = true;
             }
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
 
     uint8_t required_encryption_size = it->flags >> 12;

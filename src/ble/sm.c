@@ -998,6 +998,9 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
         case OOB:
             // client already provided OOB data, let's skip notification.
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 
@@ -1268,6 +1271,10 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
 #endif
                     break;
+
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
         default:
@@ -1280,6 +1287,9 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             break;
         case ADDRESS_RESOLUTION_FAILED:
             sm_notify_client_base(SM_EVENT_IDENTITY_RESOLVING_FAILED, con_handle, sm_address_resolution_addr_type, sm_address_resolution_address);
+            break;
+        default:
+            btstack_assert(false);
             break;
     }
 }
@@ -1453,6 +1463,9 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
                 break;
             case OOB:
                 sm_sc_prepare_dhkey_check(sm_conn);
+                break;
+            default:
+                btstack_assert(false);
                 break;
         }
     }
@@ -2481,6 +2494,9 @@ static void sm_run(void){
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                         }
                         break;
+                    default:
+                        btstack_assert(false);
+                        break;
                 }
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
@@ -2765,6 +2781,9 @@ static void sm_run(void){
                             // fallback to public
                             gap_local_bd_addr(local_address);
                             buffer[1] = 0;
+                            break;
+                        default:
+                            btstack_assert(false);
                             break;
                     }
                     reverse_bd_addr(local_address, &buffer[2]);
@@ -3849,6 +3868,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         log_info("Generate Na");
                         btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
                         break;
+                    default:
+                        btstack_assert(false);
+                        break;
                 }
             }
             break;
@@ -4338,6 +4360,9 @@ void sm_bonding_decline(hci_con_handle_t con_handle){
                 case JUST_WORKS:
                 case OOB:
                     sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;

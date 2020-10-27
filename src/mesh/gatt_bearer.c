@@ -269,6 +269,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         default:
                             break;
                     }
+                    break;
+
+                default:
+                    break;
             }
             break;
         default:

@@ -1129,6 +1129,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                             break;
                     }
                     break;
+                default:
+                    break;
             }
             break;
         case HFP_AG_INCOMING_CALL_ACCEPTED_BY_AG:
@@ -1159,6 +1161,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         default:
                             break;
                     }
+                    break;
+                default:
                     break;
             }
             break;
@@ -1305,6 +1309,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                     hfp_ag_transfer_call_state();
                     hfp_connection->call_state = HFP_CALL_IDLE;
                     log_info("AG terminate call");
+                    break;
+                default:
                     break;
             }
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);

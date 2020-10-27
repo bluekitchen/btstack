@@ -166,70 +166,68 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     UNUSED(size);
 
+    if (packet_type != HCI_EVENT_PACKET) return;
+
     hci_con_handle_t con_handle;
     bd_addr_t addr;
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            printf("Connection complete\n");
-                            // Uncomment the next lines to trigger explicit pairing on connect
-                            // con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                            // sm_send_security_request(con_handle);
-                            UNUSED(con_handle);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case SM_EVENT_JUST_WORKS_REQUEST:
-                    printf("Just Works requested\n");
-                    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-                    break;
-                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
-                    printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
-                    sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
-                    break;
-                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
-                    break;
-                case SM_EVENT_IDENTITY_CREATED:
-                    sm_event_identity_created_get_identity_address(packet, addr);
-                    printf("Identity created: type %u address %s\n", sm_event_identity_created_get_identity_addr_type(packet), bd_addr_to_str(addr));
-                    break;
-                case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
-                    sm_event_identity_resolving_succeeded_get_identity_address(packet, addr);
-                    printf("Identity resolved: type %u address %s\n", sm_event_identity_resolving_succeeded_get_identity_addr_type(packet), bd_addr_to_str(addr));
-                    break;
-                case SM_EVENT_IDENTITY_RESOLVING_FAILED:
-                    sm_event_identity_created_get_address(packet, addr);
-                    printf("Identity resolving failed\n");
-                    break;
-                case SM_EVENT_PAIRING_COMPLETE:
-                    switch (sm_event_pairing_complete_get_status(packet)){
-                        case ERROR_CODE_SUCCESS:
-                            printf("Pairing complete, success\n");
-                            break;
-                        case ERROR_CODE_CONNECTION_TIMEOUT:
-                            printf("Pairing failed, timeout\n");
-                            break;
-                        case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
-                            printf("Pairing failed, disconnected\n");
-                            break;
-                        case ERROR_CODE_AUTHENTICATION_FAILURE:
-                            printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
-                            break;
-                        default:
-                            break;
-                    }
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_LE_META:
+            switch (hci_event_le_meta_get_subevent_code(packet)) {
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    printf("Connection complete\n");
+                    // Uncomment the next lines to trigger explicit pairing on connect
+                    // con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    // sm_send_security_request(con_handle);
+                    UNUSED(con_handle);
                     break;
                 default:
                     break;
-        }
-        break;
+            }
+            break;
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+            printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
+            sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+            break;
+        case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
+            break;
+        case SM_EVENT_IDENTITY_CREATED:
+            sm_event_identity_created_get_identity_address(packet, addr);
+            printf("Identity created: type %u address %s\n", sm_event_identity_created_get_identity_addr_type(packet), bd_addr_to_str(addr));
+            break;
+        case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
+            sm_event_identity_resolving_succeeded_get_identity_address(packet, addr);
+            printf("Identity resolved: type %u address %s\n", sm_event_identity_resolving_succeeded_get_identity_addr_type(packet), bd_addr_to_str(addr));
+            break;
+        case SM_EVENT_IDENTITY_RESOLVING_FAILED:
+            sm_event_identity_created_get_address(packet, addr);
+            printf("Identity resolving failed\n");
+            break;
+        case SM_EVENT_PAIRING_COMPLETE:
+            switch (sm_event_pairing_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    printf("Pairing complete, success\n");
+                    break;
+                case ERROR_CODE_CONNECTION_TIMEOUT:
+                    printf("Pairing failed, timeout\n");
+                    break;
+                case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                    printf("Pairing failed, disconnected\n");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                    printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
     }
 }
 /* LISTING_END */

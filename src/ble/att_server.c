@@ -662,9 +662,10 @@ static int att_server_data_ready_for_phase(att_server_t * att_server,  att_serve
              return (!btstack_linked_list_empty(&att_server->indication_requests) && (att_server->value_indication_handle == 0));
         case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
             return (!btstack_linked_list_empty(&att_server->notification_requests));
+        default:
+            btstack_assert(false);
+            return 0;
     }
-    // avoid warning
-    return 0;
 }
 
 static void att_server_trigger_send_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
@@ -682,6 +683,9 @@ static void att_server_trigger_send_for_phase(att_server_t * att_server,  att_se
             client = (btstack_context_callback_registration_t*) att_server->notification_requests;
             btstack_linked_list_remove(&att_server->notification_requests, (btstack_linked_item_t *) client);
             client->callback(client->context);
+            break;
+        default:
+            btstack_assert(false);
             break;
     }
 }
@@ -833,6 +837,9 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             if (!att_server) break;
 
             att_server_handle_att_pdu(att_server, packet, size);
+            break;
+            
+        default:
             break;
     }
 }

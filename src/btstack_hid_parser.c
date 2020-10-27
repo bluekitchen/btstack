@@ -121,7 +121,7 @@ static const char * local_tags[] = {
 static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
 #ifdef HID_PARSER_PRETTY_PRINT
     const char ** item_tag_table;
-    switch (item->item_type){
+    switch ((TagType)item->item_type){
         case Main:
             item_tag_table = main_tags;
             break;
@@ -187,7 +187,7 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
 }
 
 static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    switch(item->item_tag){
+    switch((GlobalItemTag)item->item_tag){
         case UsagePage:
             parser->global_usage_page = item->item_value;
             break;
@@ -211,7 +211,18 @@ static void btstack_hid_handle_global_item(btstack_hid_parser_t * parser, hid_de
         case ReportCount:
             parser->global_report_count = item->item_value;
             break;
+
+        // TODO handle tags
+        case PhysicalMinimum:
+        case PhysicalMaximum:
+        case UnitExponent:
+        case Unit:
+        case Push:
+        case Pop:
+            break;
+
         default:
+            btstack_assert(false);
             break;
     }
 }
@@ -255,9 +266,9 @@ static void hid_find_next_usage(btstack_hid_parser_t * parser){
 static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
     hid_pretty_print_item(parser, item);
     int valid_field = 0;
-    switch (item->item_type){
+    switch ((TagType)item->item_type){
         case Main:
-            switch (item->item_tag){
+            switch ((MainItemTag)item->item_tag){
                 case Input:
                     valid_field = parser->report_type == HID_REPORT_TYPE_INPUT;
                     break;
@@ -275,6 +286,10 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
             btstack_hid_handle_global_item(parser, item);
             break;
         case Local:
+        case Reserved:
+            break;
+        default:
+            btstack_assert(false);
             break;
     }
     if (!valid_field) return;
@@ -303,7 +318,7 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
 }
 
 static void hid_post_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_t * item){
-    if (item->item_type == Main){
+    if ((TagType)item->item_type == Main){
         // reset usage
         parser->usage_pos  = parser->descriptor_pos;
         parser->usage_page = parser->global_usage_page;

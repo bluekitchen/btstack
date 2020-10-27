@@ -259,6 +259,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             } 
             printf("SDP query done.\n");
             break;
+        default:
+            break;
     }
     /* LISTING_RESUME */
 }

@@ -107,14 +107,11 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
         pdl_state = GET_PROTOCOL_LIST_LENGTH;
     }
 
-    // log_info("sdp_client_query_rfcomm_handle_protocol_descriptor_list_data (%u,%u) %02x", attribute_value_length, data_offset, data);
 
     switch(pdl_state){
         
         case GET_PROTOCOL_LIST_LENGTH:
             if (!de_state_size(data, &de_header_state)) break;
-            // log_info("   query: PD List payload is %d bytes.", de_header_state.de_size);
-            // log_info("   query: PD List offset %u, list size %u", de_header_state.de_offset, de_header_state.de_size);
 
             pdl_state = GET_PROTOCOL_LENGTH;
             break;
@@ -122,7 +119,6 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
         case GET_PROTOCOL_LENGTH:
             // check size
             if (!de_state_size(data, &de_header_state)) break;
-            // log_info("   query: PD Record payload is %d bytes.", de_header_state.de_size);
             
             // cache protocol info
             protocol_offset = de_header_state.de_offset;
@@ -137,7 +133,6 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
             
             protocol_id = 0;
             protocol_id_bytes_to_read = de_header_state.de_size;
-            // log_info("   query: ID data is stored in %d bytes.", protocol_id_bytes_to_read);
             pdl_state = GET_PROTOCOL_ID;
             
             break;
@@ -149,11 +144,9 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
             protocol_id_bytes_to_read--;
             if (protocol_id_bytes_to_read > 0) break;
 
-            // log_info("   query: Protocol ID: %04x.", protocol_id);
 
             if (protocol_offset >= protocol_size){
                 pdl_state = GET_PROTOCOL_LENGTH;
-                // log_info("   query: Get next protocol");
                 break;
             } 
             
@@ -174,8 +167,6 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
         case GET_PROTOCOL_VALUE:
             protocol_offset++;
             protocol_value_bytes_received++;
-           
-            // log_info("   query: protocol_value_bytes_received %u, protocol_value_size %u", protocol_value_bytes_received, protocol_value_size);
 
             if (protocol_value_bytes_received < protocol_value_size) break;
 
@@ -184,16 +175,12 @@ static void sdp_client_query_rfcomm_handle_protocol_descriptor_list_data(uint32_
                 sdp_rfcomm_channel_nr = data;
             }
 
-            // log_info("   query: protocol done");
-            // log_info("   query: Protocol offset %u, protocol size %u", protocol_offset, protocol_size);
-
             if (protocol_offset >= protocol_size) {
                 pdl_state = GET_PROTOCOL_LENGTH;
                 break;
 
             }
             pdl_state = GET_PROTOCOL_ID_HEADER_LENGTH;
-            // log_info("   query: Get next protocol");
             break;
         default:
             break;
@@ -258,9 +245,6 @@ static void sdp_client_query_rfcomm_handle_sdp_parser_event(uint8_t packet_type,
             sdp_service_name[0] = 0;
             break;
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            // log_info("sdp_client_query_rfcomm_handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
-            //          ve->attribute_id, sdp_event_query_attribute_byte_get_attribute_length(packet),
-            //          sdp_event_query_attribute_byte_get_data_offset(packet), sdp_event_query_attribute_byte_get_data(packet));
             switch (sdp_event_query_attribute_byte_get_attribute_id(packet)){
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
                     // find rfcomm channel
@@ -286,8 +270,9 @@ static void sdp_client_query_rfcomm_handle_sdp_parser_event(uint8_t packet_type,
             }
             (*sdp_app_callback)(HCI_EVENT_PACKET, 0, packet, size); 
             break;
+        default:
+            break;
     }
-    // insert higher level code HERE
 }
 
 void sdp_client_query_rfcomm_init(void){

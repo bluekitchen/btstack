@@ -664,6 +664,8 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                 emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, SDP_SERVICE_NOT_FOUND);
             }
             break;
+        default:
+            break;
     }
 }
 

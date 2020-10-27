@@ -1057,6 +1057,8 @@ yxml_ret_t yxml_parse(yxml_t *x, int _ch) {
 			return YXML_OK;
 		}
 		break;
+	default:
+		break;
 	}
 	return YXML_ESYN;
 }

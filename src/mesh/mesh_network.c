@@ -866,43 +866,41 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
             break;
 
         case HCI_EVENT_PACKET:
-            switch(packet[0]){
-                case HCI_EVENT_MESH_META:
-                    switch(packet[2]){
-                        case MESH_SUBEVENT_CAN_SEND_NOW:
-                            if (adv_bearer_network_pdu == NULL) break;
+            if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META) break;
 
-                            // Get Transmission config depending on relay flag
-                            if (adv_bearer_network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY){
-                                transmit_config = mesh_foundation_relay_get();
-                            } else {
-                                transmit_config = mesh_foundation_network_transmit_get();
-                            }
-                            transmission_count     = (transmit_config & 0x07) + 1;
-                            transmission_interval = (transmit_config >> 3) * 10;
+            switch(hci_event_mesh_meta_get_subevent_code(packet)){
+                case MESH_SUBEVENT_CAN_SEND_NOW:
+                    if (adv_bearer_network_pdu == NULL) break;
+
+                    // Get Transmission config depending on relay flag
+                    if (adv_bearer_network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY){
+                        transmit_config = mesh_foundation_relay_get();
+                    } else {
+                        transmit_config = mesh_foundation_network_transmit_get();
+                    }
+                    transmission_count     = (transmit_config & 0x07) + 1;
+                    transmission_interval = (transmit_config >> 3) * 10;
 
 #ifdef LOG_NETWORK
-                            printf("TX-E-NetworkPDU (%p) count %u, interval %u ms: ", adv_bearer_network_pdu, transmission_count, transmission_interval);
-                            printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
+                    printf("TX-E-NetworkPDU (%p) count %u, interval %u ms: ", adv_bearer_network_pdu, transmission_count, transmission_interval);
+                    printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
 #endif
 
-                            adv_bearer_send_network_pdu(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len, transmission_count, transmission_interval);
-                            network_pdu = adv_bearer_network_pdu;
-                            adv_bearer_network_pdu = NULL;
+                    adv_bearer_send_network_pdu(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len, transmission_count, transmission_interval);
+                    network_pdu = adv_bearer_network_pdu;
+                    adv_bearer_network_pdu = NULL;
 
-                            // notify upper layer
-                            mesh_network_send_complete(network_pdu);
+                    // notify upper layer
+                    mesh_network_send_complete(network_pdu);
 
-                            // check if more to send
-                            mesh_network_run();
-                            break;
-                        default:
-                            break;
-                    }
+                    // check if more to send
+                    mesh_network_run();
                     break;
                 default:
                     break;
             }
+            break;
+        default:
             break;
     }
 }

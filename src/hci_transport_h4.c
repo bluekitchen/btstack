@@ -297,6 +297,9 @@ static void hci_transport_h4_block_read(void){
         case H4_OFF:
             bytes_to_read = 0;
             break;
+        default:
+            btstack_assert(false);
+            break; 
     }
 
 #ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND

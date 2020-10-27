@@ -132,7 +132,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             store_found_service(sdp_event_query_rfcomm_service_get_name(packet), 
                                 sdp_event_query_rfcomm_service_get_rfcomm_channel(packet));
@@ -144,6 +144,8 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             } 
             printf("SDP query done.\n");
             report_found_services();
+            break;
+        default:
             break;
     }
 }

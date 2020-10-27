@@ -270,6 +270,9 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 		    	upload_state = UPLOAD_IDLE;
 		    }
 		    return BTSTACK_CHIPSET_VALID_COMMAND;
+        default:
+            btstack_assert(false);
+            break;
 	}
 	return BTSTACK_CHIPSET_DONE;
 }

@@ -280,6 +280,9 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                 printf("Connecting to HID Control failed: 0x%02x\n", status);
             }
             break;
+            
+        default:
+            break;
     }
 }
 

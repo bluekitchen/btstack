@@ -482,10 +482,8 @@ static void pbap_handle_can_send_now(void){
 }
 
 static void pbap_parse_authentication_challenge(pbap_client_t * context, const uint8_t * challenge_data, uint16_t challenge_len){
-    // printf("Challenge:  ");
-    // printf_hexdump(challenge_data, challenge_len);
     int i;
-    // uint8_t charset_code = 0;
+
     for (i=0 ; i<challenge_len ; ){
         int tag = challenge_data[i];
         int len = challenge_data[i + 1];
@@ -496,18 +494,16 @@ static void pbap_parse_authentication_challenge(pbap_client_t * context, const u
                     log_error("Invalid OBEX digest len %u", len);
                     return;
                 }
-                (void)memcpy(context->authentication_nonce,
-                             &challenge_data[i], 16);
-                // printf("Nonce: ");
-                // printf_hexdump(context->authentication_nonce, 16);
+                (void)memcpy(context->authentication_nonce, &challenge_data[i], 16);
                 break;
             case 1:
                 context->authentication_options = challenge_data[i];
-                // printf("Options %u\n", context->authentication_options);
                 break;
             case 2:
                 // TODO: handle charset
                 // charset_code = challenge_data[i];
+                break;
+            default:
                 break;
         }
         i += len;
@@ -671,6 +667,8 @@ static void pbap_packet_handler_hci(uint8_t *packet, uint16_t size){
                     break;
                 case GOEP_SUBEVENT_CAN_SEND_NOW:
                     pbap_handle_can_send_now();
+                    break;
+                default:
                     break;
             }
             break;

@@ -488,6 +488,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             }
                             device->report_id = packet[pos++];
                             break;
+                        default:
+                            btstack_assert(false);
+                            break;
                     }
                     if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
                         l2cap_request_can_send_now_event(device->control_cid);
@@ -546,6 +549,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 (*hci_device_set_report)(device->cid, device->report_type, 1, payload);
                             } 
                             break;
+                        default:
+                            btstack_assert(false);
+                            break;
                     }
                     device->report_type = (hid_report_type_t)(packet[0] & 0x03);
                     l2cap_request_can_send_now_event(device->control_cid);
@@ -581,6 +587,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
                             // printf("Set protocol mode to REPORT\n");
+                            break;
+                        default:
+                            btstack_assert(false);
                             break;
                     }
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;

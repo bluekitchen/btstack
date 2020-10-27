@@ -612,6 +612,9 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                     sbc_configuration.channel_mode = 0;
                     sbc_configuration.num_channels = 1;
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             dump_sbc_configuration(&sbc_configuration);
 

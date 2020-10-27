@@ -183,6 +183,9 @@ int avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uin
             }
             signaling_header->num_packets--;
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
     signaling_header->signal_identifier = (avdtp_signal_identifier_t)(packet[pos++] & 0x3f);
     return pos;

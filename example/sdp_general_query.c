@@ -150,7 +150,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // handle new record
             if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id){
@@ -172,6 +172,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                 break;
             } 
             printf("SDP query done.\n");
+            break;
+        default:
             break;
     }
 }

@@ -91,17 +91,17 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case SM_EVENT_JUST_WORKS_REQUEST:
-                    sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
-                    printf("Just Works Confirmed.\n");
-                    break;
-                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("Passkey display: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
-                    break;
-            }
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            printf("Just Works Confirmed.\n");
+            break;
+        case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            printf("Passkey display: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
+            break;
+        default:
             break;
     }
 }

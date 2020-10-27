@@ -358,11 +358,15 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
             opcode = network_pdu_data[0];
             switch (opcode){
                 case MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE:{
-                    switch (network_pdu_data[1]){
+                    switch ((mesh_proxy_configuration_filter_type_t) network_pdu_data[1]){
                         case MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST:
                         case MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST:
                             proxy_configuration_filter_type = network_pdu_data[1];
                             break;
+                        default:
+                            // invalid filter type, ignore
+                            btstack_memory_mesh_network_pdu_free(received_network_pdu);
+                            return;
                     }
                     
                     uint8_t  ctl          = 1;
@@ -389,6 +393,7 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
                 }
                 default:
                     printf("proxy config not implemented, opcode %d\n", opcode);
+                    btstack_memory_mesh_network_pdu_free(received_network_pdu);
                     break;
             }
             break;

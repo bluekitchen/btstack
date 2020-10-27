@@ -3343,6 +3343,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // do nothing (with SLEEP == OFF)
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
             
@@ -3358,6 +3361,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // no connections yet, just turn it off
                     hci_power_control_sleep();
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;
@@ -3377,6 +3383,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
                     hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
             
@@ -3392,6 +3401,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // see hci_run
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
                     hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;
@@ -3417,6 +3429,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;
@@ -3445,7 +3460,14 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // do nothing
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
+            break;
+
+        default:
+            btstack_assert(false);
             break;
     }
 
@@ -4761,6 +4783,8 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
                     event_size += len;
                 }
                 break;
+            default:
+                return;
         }
         event[1] = event_size - 2;
         hci_emit_event(event, event_size, 1);

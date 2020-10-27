@@ -250,6 +250,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("%c: Connection Interval: %u.%02u ms\n", le_data_channel_connection.name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
                             printf("%c: Connection Latency: %u\n", le_data_channel_connection.name, hci_subevent_le_connection_update_complete_get_conn_latency(packet));
                             break;
+                        default:
+                            break;
                     }
                     break;  
 

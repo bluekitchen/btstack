@@ -830,6 +830,9 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->reassembly_buffer, l2cap_channel->reassembly_pos);
             l2cap_channel->reassembly_pos = 0;    
             break; 
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 
@@ -2229,10 +2232,12 @@ static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
         case L2CAP_STATE_INVALID:
         case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
             return 0;
-        // no default here, to get a warning about new states
+
+        default:
+            // get a "warning" about new states
+            btstack_assert(false);
+            return 0;
     }
-    // still, the compiler insists on a return value
-    return 0;
 }
 #endif
 
@@ -3458,6 +3463,9 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
                     max_payload_size = l2cap_channel->local_mps;
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             if (payload_len > max_payload_size){
