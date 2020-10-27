@@ -336,7 +336,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 		                	att_server->connection.authorized = 0;
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
-                            att_server->ir_lookup_active = 0;
                             att_server->pairing_active = 0;
                             // notify all - old
                             att_emit_event_to_all(packet, size);
@@ -398,13 +397,11 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
                     log_info("SM_EVENT_IDENTITY_RESOLVING_STARTED");
-                    att_server->ir_lookup_active = 1;
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
                     con_handle = sm_event_identity_created_get_handle(packet);
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) return;
-                    att_server->ir_lookup_active = 0;
                     att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index(packet);
                     log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED");
                     att_run_for_context(att_server);
@@ -414,7 +411,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
                     log_info("SM_EVENT_IDENTITY_RESOLVING_FAILED");
-                    att_server->ir_lookup_active = 0;
                     att_server->ir_le_device_db_index = -1;
                     att_run_for_context(att_server);
                     break;

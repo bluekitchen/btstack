@@ -441,7 +441,6 @@ typedef struct {
     bd_addr_t               peer_address;
 
     int                     ir_le_device_db_index;
-    uint8_t                 ir_lookup_active;
     uint8_t                 pairing_active;
 
     int                     value_indication_handle;    
