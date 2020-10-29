@@ -101,7 +101,7 @@ coverage-pts.info:
 
 coverage-sm-sc.info:
 	# download pts coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop/build|`realpath ..`|" > coverage-sm-sc.info
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop-sm-sc/build|`realpath ..`|" > coverage-sm-sc.info
 
 
 coverage-unit.info: subdirs
