@@ -2141,33 +2141,6 @@ static void sm_run_activate_connection(void){
                 done = 0;
                 break;
             case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
-                sm_reset_setup();
-                sm_init_setup(sm_connection);
-                // recover pairing request
-                (void)memcpy(&setup->sm_m_preq,
-                             &sm_connection->sm_m_preq,
-                             sizeof(sm_pairing_packet_t));
-                err = sm_stk_generation_init(sm_connection);
-
-#ifdef ENABLE_TESTING_SUPPORT
-            if (0 < test_pairing_failure && test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
-                        log_info("testing_support: respond with pairing failure %u", test_pairing_failure);
-                        err = test_pairing_failure;
-                    }
-#endif
-                if (err){
-                    setup->sm_pairing_failed_reason = err;
-                    sm_connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-                    break;
-                }
-                sm_timeout_start(sm_connection);
-                // generate random number first, if we need to show passkey
-                if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, (void *)(uintptr_t) sm_connection->sm_handle);
-                    break;
-                }
-                sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
-                break;
             case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
             	// just  lock context
                 break;
@@ -2324,6 +2297,8 @@ static void sm_run(void){
 
         int key_distribution_flags;
         UNUSED(key_distribution_flags);
+		int err;
+		UNUSED(err);
 
         log_info("sm_run: state %u", connection->sm_engine_state);
         if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
@@ -2575,6 +2550,36 @@ static void sm_run(void){
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
+
+			case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
+				sm_reset_setup();
+				sm_init_setup(connection);
+				// recover pairing request
+				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
+				err = sm_stk_generation_init(connection);
+
+#ifdef ENABLE_TESTING_SUPPORT
+				if ((0 < test_pairing_failure) && (test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED)){
+                        log_info("testing_support: respond with pairing failure %u", test_pairing_failure);
+                        err = test_pairing_failure;
+                    }
+#endif
+				if (err){
+					setup->sm_pairing_failed_reason = err;
+					connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+					sm_trigger_run();
+					break;
+				}
+
+				sm_timeout_start(connection);
+
+				// generate random number first, if we need to show passkey, otherwise send response
+				if (setup->sm_stk_generation_method == PK_INIT_INPUT){
+					btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, (void *)(uintptr_t) connection->sm_handle);
+					break;
+				}
+
+				/* fall through */
 
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
