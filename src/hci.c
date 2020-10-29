@@ -5030,6 +5030,9 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         hci_emit_security_level(con_handle, LEVEL_0);
         return;
     }
+
+    btstack_assert(hci_is_le_connection(connection) == false);
+
     gap_security_level_t current_level = gap_security_level(con_handle);
     log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
         requested_level, connection->requested_security_level, current_level);
@@ -5055,20 +5058,10 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     // store request
     connection->requested_security_level = requested_level;
 
-	if (hci_is_le_connection(connection)) {
-
-		// LE Connection - not implemented yet
-		btstack_assert(false);
-
-	} else {
-
-		// Classic Connection
-
-		// start to authenticate connection if authentication not already active
-		if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
-		connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-		hci_run();
-	}
+    // start to authenticate connection if authentication not already active
+    if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
+    connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+    hci_run();
 }
 
 /**
