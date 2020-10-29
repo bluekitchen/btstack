@@ -2129,33 +2129,18 @@ static void sm_run_activate_connection(void){
         switch (sm_connection->sm_engine_state) {
 #ifdef ENABLE_LE_PERIPHERAL
             case SM_RESPONDER_SEND_SECURITY_REQUEST:
-                // send packet if possible,
-                if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
-                    const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, sm_auth_req};
-                    sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
-                    l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                } else {
-                    l2cap_request_can_send_fix_channel_now_event(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-                }
-                // don't lock sxetup context yet
-                done = 0;
-                break;
             case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
             case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
-            	// just  lock context
-                break;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_RECEIVED_LTK_REQUEST:
-            	// just lock context
-                break;
-#endif /* ENABLE_LE_SECURE_CONNECTIONS */
-#endif /* ENABLE_LE_PERIPHERAL */
-
+#endif
+#endif
 #ifdef ENABLE_LE_CENTRAL
             case SM_INITIATOR_PH0_HAS_LTK:
 			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
-            	// just lock context
 #endif
+				// just lock context
+				break;
             default:
                 done = 0;
                 break;
@@ -2526,6 +2511,13 @@ static void sm_run(void){
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
+
+			case SM_RESPONDER_SEND_SECURITY_REQUEST: {
+				const uint8_t buffer[2] = {SM_CODE_SECURITY_REQUEST, sm_auth_req};
+				connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+				l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL,  (uint8_t *) buffer, sizeof(buffer));
+				break;
+			}
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 			case SM_SC_RECEIVED_LTK_REQUEST:
