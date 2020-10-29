@@ -2206,14 +2206,8 @@ static void sm_run_activate_connection(void){
 
 #ifdef ENABLE_LE_CENTRAL
             case SM_INITIATOR_PH0_HAS_LTK:
+			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
             	// just lock context
-                break;
-            case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
-                sm_reset_setup();
-                sm_init_setup(sm_connection);
-                sm_timeout_start(sm_connection);
-                sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-                break;
 #endif
 
             default:
@@ -2430,7 +2424,11 @@ static void sm_run(void){
                 return;
             }
 
-            case SM_INITIATOR_PH1_SEND_PAIRING_REQUEST:
+			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+				sm_reset_setup();
+				sm_init_setup(connection);
+				sm_timeout_start(connection);
+
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
