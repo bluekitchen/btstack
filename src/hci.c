@@ -5052,30 +5052,23 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         return;
     }
 
-    // start pairing to increase security level
+    // store request
     connection->requested_security_level = requested_level;
 
-#if 0
-    // sending encryption request without a link key results in an error. 
-    // TODO: figure out how to use it properly
+	if (hci_is_le_connection(connection)) {
 
-    // would enabling ecnryption suffice (>= LEVEL_2)?
-    if (hci_stack->link_key_db){
-        link_key_type_t link_key_type;
-        link_key_t      link_key;
-        if (hci_stack->link_key_db->get_link_key( &connection->address, &link_key, &link_key_type)){
-            if (gap_security_level_for_link_key_type(link_key_type) >= requested_level){
-                connection->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
-                return;
-            }
-        }
-    }
-#endif
+		// LE Connection - not implemented yet
+		btstack_assert(false);
 
-    // start to authenticate connection if not already active
-    if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
-    connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-    hci_run();
+	} else {
+
+		// Classic Connection
+
+		// start to authenticate connection if authentication not already active
+		if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
+		connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+		hci_run();
+	}
 }
 
 /**
