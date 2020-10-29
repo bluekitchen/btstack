@@ -2516,6 +2516,7 @@ static void sm_run(void){
 				const uint8_t buffer[2] = {SM_CODE_SECURITY_REQUEST, sm_auth_req};
 				connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
 				l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL,  (uint8_t *) buffer, sizeof(buffer));
+				sm_timeout_start(connection);
 				break;
 			}
 
@@ -3672,7 +3673,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
     switch (sm_conn->sm_engine_state){
 
-        // a sm timeout requries a new physical connection
+        // a sm timeout requires a new physical connection
         case SM_GENERAL_TIMEOUT:
             return;
 

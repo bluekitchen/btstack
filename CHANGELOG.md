@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: set LinkKey flag to request CTKD if enabled
 - SM: store CTKD key with Public Identity Address
 - SM: only allow CTKD to overwrite existing link key if derived key has same or higher authentication
+- SM: sending Security Request by Responder starts SMP Timeout 
 - HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
 - HCI: fix reject of LE remote connection param request via HCI
 
