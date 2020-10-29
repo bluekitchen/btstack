@@ -2144,32 +2144,9 @@ static void sm_run_activate_connection(void){
             case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
             	// just  lock context
                 break;
-
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_RECEIVED_LTK_REQUEST:
-                switch (sm_connection->sm_irk_lookup_state){
-                    case IRK_LOOKUP_SUCCEEDED:
-                        // assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
-                        // start using context by loading security info
-                        sm_reset_setup();
-                        sm_load_security_info(sm_connection);
-                        if ((setup->sm_peer_ediv == 0u) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
-                            (void)memcpy(setup->sm_ltk,
-                                         setup->sm_peer_ltk, 16);
-                            sm_connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
-                            break;
-                        }
-                        log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
-                        sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
-                        hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
-                        // don't lock setup context yet
-                        return;
-                    default:
-                        // just wait until IRK lookup is completed
-                        // don't lock setup context yet
-                        done = 0;
-                        break;
-                }
+            	// just lock context
                 break;
 #endif /* ENABLE_LE_SECURE_CONNECTIONS */
 #endif /* ENABLE_LE_PERIPHERAL */
@@ -2179,7 +2156,6 @@ static void sm_run_activate_connection(void){
 			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
             	// just lock context
 #endif
-
             default:
                 done = 0;
                 break;
@@ -2550,6 +2526,31 @@ static void sm_run(void){
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+			case SM_SC_RECEIVED_LTK_REQUEST:
+				switch (connection->sm_irk_lookup_state){
+					case IRK_LOOKUP_SUCCEEDED:
+						// assuming Secure Connection, we have a stored LTK and the EDIV/RAND are null
+						// start using context by loading security info
+						sm_reset_setup();
+						sm_load_security_info(connection);
+						if ((setup->sm_peer_ediv == 0u) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
+							(void)memcpy(setup->sm_ltk, setup->sm_peer_ltk, 16);
+							connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
+							sm_trigger_run();
+							break;
+						}
+						log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
+						connection->sm_engine_state = SM_RESPONDER_IDLE;
+						hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
+						return;
+					default:
+						// just wait until IRK lookup is completed
+						break;
+				}
+				break;
+#endif /* ENABLE_LE_SECURE_CONNECTIONS */
 
 			case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
 				sm_reset_setup();
