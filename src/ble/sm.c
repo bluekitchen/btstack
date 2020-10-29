@@ -2116,8 +2116,9 @@ static void sm_run_activate_connection(void){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
         // assert ec key is ready
-        if ((sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED)
-            ||  (sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST)){
+        if (   (sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED)
+            || (sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST)
+			|| (sm_connection->sm_engine_state == SM_RESPONDER_SEND_SECURITY_REQUEST)){
             if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
                 sm_ec_generate_new_key();
             }
