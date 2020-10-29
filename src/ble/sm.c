@@ -2206,9 +2206,7 @@ static void sm_run_activate_connection(void){
 
 #ifdef ENABLE_LE_CENTRAL
             case SM_INITIATOR_PH0_HAS_LTK:
-                sm_reset_setup();
-                sm_load_security_info(sm_connection);
-                sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
+            	// just lock context
                 break;
             case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
                 sm_reset_setup();
@@ -2354,7 +2352,7 @@ static void sm_run(void){
                 break;
             }
 
-            // responding state
+            // secure connections, initiator + responding states
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
                 if (!sm_cmac_ready()) break;
@@ -2417,7 +2415,11 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_CENTRAL
             // initiator side
-            case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
+
+            case SM_INITIATOR_PH0_HAS_LTK: {
+				sm_reset_setup();
+				sm_load_security_info(connection);
+
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
                 connection->sm_engine_state = SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED;
