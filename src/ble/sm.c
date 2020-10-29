@@ -1911,8 +1911,6 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
     sm_connection->sm_connection_sc = 0;
     log_info("sm: received ltk request with key size %u, authenticated %u",
             sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
-    sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
-    sm_trigger_run();
 }
 #endif
 
@@ -2171,8 +2169,7 @@ static void sm_run_activate_connection(void){
                 sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
                 break;
             case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
-                sm_reset_setup();
-                sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
+            	// just  lock context
                 break;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -2578,6 +2575,7 @@ static void sm_run(void){
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
+
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
 
@@ -2706,10 +2704,14 @@ static void sm_run(void){
                 sm_done_for_handle(connection->sm_handle);
                 return;
             }
-            case SM_RESPONDER_PH4_Y_GET_ENC:
+
+			case SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST:
                 // already busy?
                 if (sm_aes128_state == SM_AES128_ACTIVE) break;
                 log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_local_ediv);
+
+				sm_reset_setup();
+				sm_start_calculating_ltk_from_ediv_and_rand(connection);
 
                 // dm helper (was sm_dm_r_prime)
                 // r' = padding || r

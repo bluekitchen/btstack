@@ -333,7 +333,6 @@ typedef enum {
     SM_RESPONDER_PH2_SEND_LTK_REPLY,
 
     // Phase 4: re-establish previously distributed LTK
-    SM_RESPONDER_PH4_Y_GET_ENC,
     SM_RESPONDER_PH4_Y_W4_ENC,
     SM_RESPONDER_PH4_SEND_LTK_REPLY,
 
