@@ -1197,7 +1197,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     }
 
     if (gatt_client == NULL) return;
-    
+
+    uint8_t error_code;
     switch (packet[0]){
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
@@ -1494,7 +1495,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
         case ATT_ERROR_RESPONSE:
             if (size < 5u) return;
-            switch (packet[4]){
+            error_code = packet[4];
+            switch (error_code){
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
                     switch(gatt_client->gatt_client_state){
                         case P_W4_SERVICE_QUERY_RESULT:
@@ -1519,7 +1521,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                             }
                             break;
                         default:
-                            gatt_client_report_error_if_pending(gatt_client, packet[4]);
+                            gatt_client_report_error_if_pending(gatt_client, error_code);
                             break;
                     }
                     break;
@@ -1533,7 +1535,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
                     // security too low
                     if (gatt_client->security_counter > 0) {
-                        gatt_client_report_error_if_pending(gatt_client, packet[4]);
+                        gatt_client_report_error_if_pending(gatt_client, error_code);
                         break;
                     }
                     // start security
@@ -1605,15 +1607,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     }
 
                     if (!retry) {
-                        gatt_client_report_error_if_pending(gatt_client, packet[4]);
+                        gatt_client_report_error_if_pending(gatt_client, error_code);
                         break;
                     }
 
                     log_info("security error, start pairing");
 
-                    // requrest pairing
+                    // start pairing for higher security level
                     gatt_client->wait_for_pairing_complete = 1;
-                    gatt_client->pending_error_code = packet[4];
+                    gatt_client->pending_error_code = error_code;
                     sm_request_pairing(gatt_client->con_handle);
                     break;
                 }
@@ -1622,7 +1624,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 // nothing we can do about that
                 case ATT_ERROR_INSUFFICIENT_AUTHORIZATION:
                 default:
-                    gatt_client_report_error_if_pending(gatt_client, packet[4]);
+                    gatt_client_report_error_if_pending(gatt_client, error_code);
                     break;
             }
             break;
