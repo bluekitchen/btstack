@@ -29,6 +29,7 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 	tlv_posix \
+	embedded \
 
 # not testing anything in source tree
 #	maths \
@@ -55,7 +56,7 @@ SUBDIRS_BLE = \
 	ring_buffer \
     gatt_server \
     security_manager \
-
+    embedded \
 # test fails
 
 # not unit-tests
