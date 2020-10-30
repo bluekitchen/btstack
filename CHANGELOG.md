@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
+## Changes November 2020
+
+### Fixed
+L2CAP: trigger pairing for outgoing LE Data Channels if security level insufficient
+
+### Added
+
+### Changed
+
 ## Changes October 2020
 
 ### Fixed
