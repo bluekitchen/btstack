@@ -78,14 +78,6 @@ static void gatt_client_report_error_if_pending(gatt_client_t *gatt_client, uint
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 #endif
 
-static uint16_t gatt_client_mtu(gatt_client_t *gatt_client){
-    if (gatt_client->mtu > l2cap_max_le_mtu()){
-        log_error("Remote MTU is not initialized");
-        return l2cap_max_le_mtu();
-    }
-    return gatt_client->mtu;
-}
-
 void gatt_client_init(void){
     gatt_client_connections = NULL;
     mtu_exchange_enabled = 1;
@@ -359,7 +351,7 @@ static uint8_t att_exchange_mtu_request(uint16_t con_handle){
 }
 
 static uint16_t write_blob_length(gatt_client_t * gatt_client){
-    uint16_t max_blob_length = gatt_client_mtu(gatt_client) - 5u;
+    uint16_t max_blob_length = gatt_client->mtu - 5u;
     if (gatt_client->attribute_offset >= gatt_client->attribute_length) {
         return 0;
     }
@@ -828,8 +820,8 @@ static void trigger_next_prepare_write_query(gatt_client_t * gatt_client, gatt_c
 }
 
 static void trigger_next_blob_query(gatt_client_t * gatt_client, gatt_client_state_t next_query_state, uint16_t received_blob_length){
-    
-    uint16_t max_blob_length = gatt_client_mtu(gatt_client) - 1u;
+
+    uint16_t max_blob_length = gatt_client->mtu - 1u;
     if (received_blob_length < max_blob_length){
         gatt_client_handle_transaction_complete(gatt_client);
         emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
@@ -882,9 +874,8 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     switch (gatt_client->gatt_client_state){
         case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
         case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
-            if (gatt_client->attribute_length <= (gatt_client_mtu(gatt_client) - 3u)) break;
-            log_error("gatt_client_run: value len %u > MTU %u - 3\n", gatt_client->attribute_length,
-                      gatt_client_mtu(gatt_client));
+            if (gatt_client->attribute_length <= (gatt_client->mtu - 3u)) break;
+            log_error("gatt_client_run: value len %u > MTU %u - 3\n", gatt_client->attribute_length,gatt_client->mtu);
             gatt_client_handle_transaction_complete(gatt_client);
             emit_gatt_complete_event(gatt_client, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
             return 0;
@@ -1897,8 +1888,8 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
-    
-    if (value_length > (gatt_client_mtu(gatt_client) - 3u)) return GATT_CLIENT_VALUE_TOO_LONG;
+
+    if (value_length > (gatt_client->mtu - 3u)) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(gatt_client->con_handle)) return GATT_CLIENT_BUSY;
 
     return att_write_request(ATT_WRITE_COMMAND, gatt_client->con_handle, value_handle, value_length, value);
