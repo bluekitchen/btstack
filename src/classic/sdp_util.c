@@ -48,11 +48,14 @@
 #include "classic/core.h"
 #include "classic/sdp_util.h"
  
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <inttypes.h>   // PRIx32
+
+#ifdef ENABLE_SDP_DES_DUMP
+#include <stdio.h>
+#endif
 
 #ifdef ENABLE_SDP_DES_DUMP
 // workaround for missing PRIx32 on mspgcc (16-bit MCU)
@@ -277,7 +280,6 @@ bool des_iterator_init(des_iterator_t * it, uint8_t * element){
     it->element = element;
     it->pos = de_get_header_size(element);
     it->length = de_get_len(element);
-    // printf("des_iterator_init current pos %d, total len %d\n", it->pos, it->length);
     return true;
 }
 
@@ -302,7 +304,6 @@ uint8_t * des_iterator_get_element(des_iterator_t * it){
 
 void des_iterator_next(des_iterator_t * it){
     int element_len = de_get_len(&it->element[it->pos]);
-    // printf("des_iterator_next element size %d, current pos %d, total len %d\n", element_len, it->pos, it->length);
     it->pos += element_len;
 }
 

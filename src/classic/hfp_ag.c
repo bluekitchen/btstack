@@ -516,8 +516,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             break;
     }
 
-    // printf(" -> State machine: CC\n");
-    
     switch (hfp_connection->command){
         case HFP_CMD_AVAILABLE_CODECS:
             if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
@@ -1101,7 +1099,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
     int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     
-    //printf("hfp_ag_call_sm event %d \n", event);
     switch (event){
         case HFP_AG_INCOMING_CALL:
             switch (hfp_gsm_call_status()){

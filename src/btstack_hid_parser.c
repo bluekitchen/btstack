@@ -433,7 +433,6 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
     while (hid_descriptor_len){
         int valid_report_type = 0;
         hid_descriptor_item_t item;
-        // printf("item: 0x%02x (%p)\n", *hid_descriptor, hid_descriptor);
         btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
         switch (item.item_type){
             case Global:
@@ -495,7 +494,6 @@ hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descript
                 switch ((GlobalItemTag)item.item_tag){
                     case ReportID:
                         current_report_id = item.item_value;
-                        // printf("current ID %d, searched ID %d\n", current_report_id, report_id);
                         if (current_report_id != report_id) break;
                         return HID_REPORT_ID_VALID;
                     default:

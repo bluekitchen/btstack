@@ -258,7 +258,6 @@ static void avrcp_controller_emit_now_playing_info_event_done(btstack_packet_han
     pos += 2;
     event[pos++] = ctype;
     event[pos++] = status;
-    // printf_hexdump(event, pos);
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
@@ -355,7 +354,6 @@ static void avrcp_parser_reset(avrcp_connection_t * connection){
 static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connection, avrcp_command_type_t ctype){
     uint16_t attribute_total_value_len;
     uint32_t attribute_id;
-    // printf("avrcp_parser_process_byte: %02x, state %02x\n", byte, connection->parser_state);
     switch(connection->parser_state){
         case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
             connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;

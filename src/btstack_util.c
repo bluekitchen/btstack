@@ -323,9 +323,6 @@ char * uuid128_to_str(const uint8_t * uuid){
 
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
 char * bd_addr_to_str(const bd_addr_t addr){
-    // orig code
-    // sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
-    // sprintf-free code
     char * p = bd_addr_to_str_buffer;
     int i;
     for (i = 0; i < 6 ; i++) {
