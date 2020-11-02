@@ -410,7 +410,8 @@ static bool receive_prepare_rx_bufffer(void){
 
 static void receive_response(void){
     if (receive_prepare_rx_bufffer()) {
-        Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 10 } );  // 220 us
+        // 150 us would be enough, but the timeout seems to apply for AutoTx as well, so we use 250 us
+        Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 16 } );
     }
 }
 
