@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import wave
 import struct
@@ -244,10 +244,10 @@ class SBCFrame:
         self.EX = np.zeros(nr_subbands)
 
     def dump_audio_samples(self, blk, ch):
-        print self.audio_sample[blk][ch]
+        print(self.audio_sample[blk][ch])
 
     def dump_subband_samples(self, blk, ch):
-        print self.sb_sample[blk][ch]
+        print(self.sb_sample[blk][ch])
 
     def dump_state(self):
         res =  "SBCFrameHeader state:"
@@ -258,7 +258,7 @@ class SBCFrame:
         res += "\n - levels: %s" % self.levels
         res += "\n - join: %s" % self.join
         res += "\n - bits: %s" % self.bits
-        print res
+        print(res)
 
     def __str__(self):
         res =  "SBCFrameHeader:"
@@ -371,13 +371,13 @@ def sbc_bit_allocation_stereo_joint(frame):
 
     
     if bits.sum() != frame.bitpool:
-        print "bit allocation failed, bitpool %d, allocated %d" % (bits.sum() , frame.bitpool)
+        print("bit allocation failed, bitpool %d, allocated %d" % (bits.sum() , frame.bitpool))
         exit(1)
     return bits
 
 
 def sbc_bit_allocation_mono_dual(frame):
-    #print "Bit allocation for mono/dual channel" 
+    #print("Bit allocation for mono/dual channel" )
     bitneed = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     bits    = np.zeros(shape=(frame.nr_channels, frame.nr_subbands), dtype = np.int32)
     loudness = 0
@@ -461,7 +461,7 @@ def sbc_bit_allocation(frame):
     elif frame.channel_mode == STEREO or frame.channel_mode == JOINT_STEREO:
         return sbc_bit_allocation_stereo_joint(frame)
     else:
-        print "Wrong channel mode ", frame.channel_mode
+        print("Wrong channel mode ", frame.channel_mode)
         return -1
 
 def sbc_sampling_frequency_index(sample_rate):
@@ -534,14 +534,14 @@ def get_bit(fin):
 
 def drop_remaining_bits():
     global ibuffer_count
-    #print "dropping %d bits" % ibuffer_count
+    #print("dropping %d bits" % ibuffer_count)
     ibuffer_count = 0
 
 def get_bits(fin, bit_count):
     bits = 0
     for i in range(bit_count):
         bits = (bits << 1) | get_bit(fin)
-    # print "get bits: %d -> %02x" %(bit_count, bits)
+    # print("get bits: %d -> %02x" %(bit_count, bits))
     return bits
 
 

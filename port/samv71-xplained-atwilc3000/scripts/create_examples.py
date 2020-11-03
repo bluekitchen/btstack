@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Create project files for all BTstack embedded examples in WICED/apps/btstack
 

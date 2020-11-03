@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # BlueKitchen GmbH (c) 2014
 
 # primitive dump for PacketLogger format
@@ -32,17 +32,17 @@ def as_hex(data):
     return ''.join(str_list)
 
 if len(sys.argv) < 2:
-    print 'Dump PacketLogger file'
-    print 'Copyright 2014, BlueKitchen GmbH'
-    print ''
-    print 'Usage: ', sys.argv[0], 'hci_dump.pklg test_name'
+    print ('Dump PacketLogger file')
+    print ('Copyright 2014, BlueKitchen GmbH')
+    print ('')
+    print ('Usage: ', sys.argv[0], 'hci_dump.pklg test_name')
     exit(0)
 
 infile = sys.argv[1]
 test_name = sys.argv[2]
 separator = ""
 spaces = "    "
-print "const char * "+test_name+"[] = {"
+print ("const char * "+test_name+"[] = {")
 
 
 with open (infile, 'rb') as fin:
@@ -69,21 +69,21 @@ with open (infile, 'rb') as fin:
                     hfp_cmds = parts.groups()[0].split('\\r\\n')
                     for cmd in hfp_cmds:
                         cmd = cmd.strip()
-                        if cmd <> "":
+                        if cmd != "":
                             cmd = cmd.replace("\\r","")
-                            print separator+spaces+"\""+cmd+"\"",
+                            print (separator+spaces+"\""+cmd+"\"",)
                             separator = ",\n"
                         
                 else:
                     parts = re.match('USER:\'(.*)\'.*',packet)
                     if parts:
                         cmd = 'USER:'+parts.groups()[0]
-                        print separator+spaces+"\""+cmd+"\"",
+                        print (separator+spaces+"\""+cmd+"\"",)
                         separator = ",\n"
 
 
     except TypeError:
-        print "\n};\n"
+        print ("\n};\n")
         exit(0) 
 
-print "\n};\n"
+print ("\n};\n")

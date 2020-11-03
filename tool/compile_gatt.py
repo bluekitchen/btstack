@@ -33,9 +33,9 @@ except ImportError:
         from Crypto.Cipher import AES
         from Crypto.Hash import CMAC
     except ImportError:
-            have_crypto = False
-            print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
-            print("[!] Please install PyCryptodome, e.g. 'pip install pycryptodomex' or 'pip install pycryptodome'\n")
+        have_crypto = False
+        print("\n[!] PyCryptodome required to calculate GATT Database Hash but not installed (using random value instead)")
+        print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'\n")
 
 header = '''
 // {0} generated from {1} for BTstack

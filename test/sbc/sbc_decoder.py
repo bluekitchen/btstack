@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import wave
 import struct
@@ -34,7 +34,7 @@ def find_syncword(h2_first_byte, h2_second_byte):
 def sbc_unpack_frame(fin, available_bytes, frame):
     global H2_first_byte, H2_second_byte
     if available_bytes == 0:
-        print "no available_bytes"
+        print ("no available_bytes")
         raise TypeError
 
     frame.syncword = get_bits(fin,8)
@@ -88,13 +88,13 @@ def sbc_unpack_frame(fin, available_bytes, frame):
             frame.scale_factor[ch][sb] = get_bits(fin, 4)
 
     if mSBC_enabled:
-        #print "syncword: ", find_syncword(H2_first_byte, H2_second_byte)
+        #print ("syncword: ", find_syncword(H2_first_byte, H2_second_byte))
         crc = calculate_crc_mSBC(frame)
     else:
         crc = calculate_crc(frame)
     
     if crc != frame.crc_check:
-        print "CRC mismatch: calculated %d, expected %d" % (crc, frame.crc_check)
+        print ("CRC mismatch: calculated %d, expected %d" % (crc, frame.crc_check))
         return -1
 
     
@@ -111,7 +111,7 @@ def sbc_unpack_frame(fin, available_bytes, frame):
         for ch in range(frame.nr_channels):
             for sb in range(frame.nr_subbands):
                 frame.audio_sample[blk][ch][sb] = get_bits(fin, frame.bits[ch][sb])
-        #print "block %2d - audio sample: %s" % (blk, frame.audio_sample[blk][0])
+        #print ("block %2d - audio sample: %s" % (blk, frame.audio_sample[blk][0]))
      
     drop_remaining_bits()
     return 0
@@ -290,8 +290,8 @@ def write_wav_file(fout, frame):
                 packed_value = struct.pack('h', frame.pcm[ch][i])
                 values.append(packed_value)
             except struct.error:
-                print frame
-                print i, frame.pcm[ch][i], frame.pcm[ch]
+                print (frame)
+                print (i, frame.pcm[ch][i], frame.pcm[ch])
                 exit(1)
 
     value_str = ''.join(values)
@@ -320,9 +320,9 @@ if __name__ == "__main__":
         else:
             wavfile = infile.replace('.sbc', '-decoded-py.wav')
         
-        print "input file: ", infile
-        print "output file: ", wavfile
-        print "mSBC enabled: ", mSBC_enabled
+        print ("input file: ", infile)
+        print ("output file: ", wavfile)
+        print ("mSBC enabled: ", mSBC_enabled)
 
         fout = False
 
@@ -345,16 +345,16 @@ if __name__ == "__main__":
                 while True:
                     frame = SBCFrame()
                     if frame_count % 200 == 0:
-                        print "== Frame %d == offset %d" % (frame_count, fin.tell())
+                        print ("== Frame %d == offset %d" % (frame_count, fin.tell()))
 
                     err = sbc_unpack_frame(fin, file_size - fin.tell(), frame)
                     if err:
-                        #print "error, frame_count: ", frame_count
+                        #print ("error, frame_count: ", frame_count)
                         continue
 
                     if frame_count == 0:
                         sbc_init_sythesis(frame.nr_subbands, implementation)
-                        print frame                    
+                        print (frame                    )
 
                     sbc_decode(frame, implementation)
                         
@@ -366,7 +366,7 @@ if __name__ == "__main__":
                         fout.setnframes(0)
                         fout.setcomptype = 'NONE'
                         
-                        print frame.pcm
+                        print (frame.pcm)
 
 
                     write_wav_file(fout, frame)
@@ -377,7 +377,7 @@ if __name__ == "__main__":
 
             except TypeError as err:
                 if not fout:
-                    print err
+                    print (err)
                 else:
                     fout.close()
                     if frame_count > 0:

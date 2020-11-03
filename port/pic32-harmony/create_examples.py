@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Create project files for all BTstack embedded examples in harmony/apps/btstack
 
@@ -21,7 +21,7 @@ script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
 
 # validate Harmony root by reading version.txt
 harmony_root = script_path + "/../../../../"
-print harmony_root
+print(harmony_root)
 harmony_version = ""
 try:
     with open(harmony_root + 'config/harmony.hconfig', 'r') as fin:

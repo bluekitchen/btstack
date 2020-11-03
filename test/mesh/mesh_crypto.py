@@ -5,8 +5,17 @@
 
 # implementation of the Bluetooth SIG Mesh crypto functions using pycryptodomex
 
-from Cryptodome.Cipher import AES
-from Cryptodome.Hash   import CMAC
+try:
+    from Cryptodome.Cipher import AES
+    from Cryptodome.Hash import CMAC
+except ImportError:
+    # fallback: try to import PyCryptodome as (an almost drop-in) replacement for the PyCrypto library
+    try:
+        from Crypto.Cipher import AES
+        from Crypto.Hash import CMAC
+    except ImportError:
+        print("\n[!] PyCryptodome required but not installed (using random value instead)")
+        print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'\n")
 
 def aes128(key, n):
     cipher = AES.new(key, AES.MODE_ECB)
