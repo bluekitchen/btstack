@@ -4301,8 +4301,10 @@ void sm_request_pairing(hci_con_handle_t con_handle){
     } else {
         // used as a trigger to start central/master/initiator security procedures
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
+#ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
             uint8_t ltk[16];
             bool have_ltk;
+#endif
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_SUCCEEDED:
 #ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
