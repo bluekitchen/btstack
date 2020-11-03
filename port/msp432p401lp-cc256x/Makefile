@@ -120,7 +120,7 @@ uECC.c \
 
 PORT_SOURCES = \
 	btstack_chipset_cc256x.o \
-	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o \
+ 	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o \
 	hal_flash_bank_msp432.o \
 	main.o \
 	startup_msp432p401r_${COMPILER}.o \
@@ -190,6 +190,8 @@ all: \
     linker_script_gcc.ld \
 	$(addprefix $(COMPILER)/,$(GATT_FILES:.gatt=.h)) \
 	$(addprefix $(COMPILER)/,$(EXAMPLES:=.elf)) \
+
+include $(BTSTACK_ROOT)/chipset/cc256x/Makefile.inc
 
 #
 # The rule to clean out all the build products.
