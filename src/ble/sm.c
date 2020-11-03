@@ -1241,7 +1241,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     // "When a bond has been created between two devices, any reconnection should result in the local device
                     //  enabling or requesting encryption with the remote device before initiating any service request."
                     if (have_ltk){
-#ifdef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
+#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                         break;
 #else
@@ -4303,7 +4303,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
             bool have_ltk;
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_SUCCEEDED:
-#ifndef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
+#ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
                     le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
                     log_info("have ltk %u", have_ltk);
