@@ -4663,8 +4663,6 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
     if (!sm_conn) return 0;
     // already encrypted
     if (sm_conn->sm_connection_encrypted) return 0;
-    // only central can re-encrypt
-    if (sm_conn->sm_role == HCI_ROLE_SLAVE) return 0;
     // irk status?
     switch(sm_conn->sm_irk_lookup_state){
         case IRK_LOOKUP_FAILED:
@@ -4677,7 +4675,11 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
             return 1;
     }
     // IRK Lookup Succeeded, re-encryption should be initiated. When done, state gets reset
-    return sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED;
+    if (sm_conn->sm_role){
+        return sm_conn->sm_engine_state != SM_RESPONDER_IDLE;
+    } else {
+        return sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED;
+    }
 }
 
 void sm_set_secure_connections_only_mode(bool enable){

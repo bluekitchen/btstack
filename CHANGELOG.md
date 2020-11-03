@@ -34,7 +34,7 @@ AVRCP Controller: allow to send multiple absolute volume commands without waitin
 - SM: set LinkKey flag to request CTKD if enabled
 - SM: store CTKD key with Public Identity Address
 - SM: only allow CTKD to overwrite existing link key if derived key has same or higher authentication
-- SM: sending Security Request by Responder starts SMP Timeout 
+- SM: start SMP Timeout when sending Security Request
 - HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
 - HCI: fix reject of LE remote connection param request via HCI
 
