@@ -149,7 +149,7 @@ typedef enum {
 } address_resolution_mode_t;
 
 typedef enum {
-    ADDRESS_RESOLUTION_SUCEEDED,
+    ADDRESS_RESOLUTION_SUCCEEDED,
     ADDRESS_RESOLUTION_FAILED,
 } address_resolution_event_t;
 
@@ -1215,10 +1215,10 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             sm_connection = (sm_connection_t *) context;
             con_handle = sm_connection->sm_handle;
             switch (event){
-                case ADDRESS_RESOLUTION_SUCEEDED:
+                case ADDRESS_RESOLUTION_SUCCEEDED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
                     sm_connection->sm_le_db_index = matched_device_id;
-                    log_info("ADDRESS_RESOLUTION_SUCEEDED, index %d", sm_connection->sm_le_db_index);
+                    log_info("ADDRESS_RESOLUTION_SUCCEEDED, index %d", sm_connection->sm_le_db_index);
                     if (sm_connection->sm_role) {
                         // LTK request received before, IRK required -> start LTK calculation
                         if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
@@ -1282,7 +1282,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     }
 
     switch (event){
-        case ADDRESS_RESOLUTION_SUCEEDED:
+        case ADDRESS_RESOLUTION_SUCCEEDED:
             sm_notify_client_index(SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED, con_handle, sm_address_resolution_addr_type, sm_address_resolution_address, matched_device_id);
             break;
         case ADDRESS_RESOLUTION_FAILED:
@@ -2019,7 +2019,7 @@ static bool sm_run_csrk(void){
 
             if ((sm_address_resolution_addr_type == addr_type) && (memcmp(addr, sm_address_resolution_address, 6) == 0)){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
-                sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCEEDED);
+                sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCCEEDED);
                 break;
             }
 
@@ -3062,7 +3062,7 @@ static void sm_handle_encryption_result_address_resolution(void *arg){
     uint8_t * hash = &sm_aes128_ciphertext[13];
     if (memcmp(&sm_address_resolution_address[3], hash, 3) == 0){
         log_info("LE Device Lookup: matched resolvable private address");
-        sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCEEDED);
+        sm_address_resolution_handle_event(ADDRESS_RESOLUTION_SUCCEEDED);
         sm_trigger_run();
         return;
     }
