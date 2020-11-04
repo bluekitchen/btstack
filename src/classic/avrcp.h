@@ -467,8 +467,12 @@ typedef struct {
     uint8_t transport_header;
     uint16_t invalid_pid;
 
+    // transaction id 
+    uint8_t transaction_id_counter;
+    
     // command
     uint8_t transaction_label;
+    
     avrcp_command_opcode_t command_opcode;
     avrcp_command_type_t command_type;
     avrcp_subunit_type_t subunit_type;
