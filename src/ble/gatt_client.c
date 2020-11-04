@@ -64,7 +64,7 @@ static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE)
+#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE) || defined (ENABLE_LE_PROACTIVE_AUTHENTICATION)
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 #endif
 
@@ -86,7 +86,7 @@ void gatt_client_init(void){
     hci_event_callback_registration.callback = &gatt_client_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE)
+#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE) || defined (ENABLE_LE_PROACTIVE_AUTHENTICATION)
     // register for SM Events
     sm_event_callback_registration.callback = &gatt_client_event_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
