@@ -438,7 +438,7 @@ static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t p
     // fragmented:     transport header (1) + num packets (1) + PID (2)
 
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-    command[pos++] = (connection->transaction_label << 4) | (packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
+    command[pos++] = (connection->transaction_id << 4) | (packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
     if (packet_type == AVRCP_START_PACKET){
         // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header). 
@@ -482,8 +482,8 @@ static int avrcp_send_register_notification(avrcp_connection_t * connection, uin
     uint8_t command[18];
     uint16_t pos = 0; 
     // transport header : transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
-    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
+    command[pos++] = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
     
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -532,7 +532,7 @@ static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_c
         avrcp_press_and_hold_timer_stop(connection);
     }
     connection->cmd_operands[0] = 0x80 | connection->cmd_operands[0];
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -569,7 +569,7 @@ static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(ui
         avrcp_press_and_hold_timer_start(connection);
     }
 
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -593,7 +593,7 @@ static int avrcp_controller_register_notification(avrcp_connection_t * connectio
 
 static uint8_t avrcp_controller_request_abort_continuation(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -615,7 +615,7 @@ static uint8_t avrcp_controller_request_abort_continuation(avrcp_connection_t * 
 
 static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1178,7 +1178,7 @@ uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_UNIT_INFO;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
@@ -1198,7 +1198,7 @@ uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
@@ -1219,7 +1219,7 @@ static uint8_t avrcp_controller_get_capabilities(uint16_t avrcp_cid, uint8_t cap
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1250,7 +1250,7 @@ uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1273,7 +1273,7 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1305,7 +1305,7 @@ uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1341,7 +1341,7 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
 
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1371,7 +1371,7 @@ uint8_t avrcp_controller_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
     
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1400,7 +1400,7 @@ static uint8_t avrcp_controller_set_current_player_application_setting_value(uin
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_COMMAND;
 
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
@@ -1444,7 +1444,7 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
     } 
     connection->state = AVCTP_W2_SEND_COMMAND;
 
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = AVRCP_SUBUNIT_ID;
@@ -1484,7 +1484,7 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
     } 
     connection->state = AVCTP_W2_SEND_COMMAND;
 
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = AVRCP_SUBUNIT_ID;
@@ -1532,7 +1532,7 @@ uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_t
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_FRAGMENTED_COMMAND;
 
-    connection->transaction_label = avrcp_controller_get_next_transaction_label(connection);
+    connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = command_opcode;
     connection->command_type = command_type;
     connection->subunit_type = subunit_type;

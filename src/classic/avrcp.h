@@ -471,7 +471,7 @@ typedef struct {
     uint8_t transaction_id_counter;
     
     // command
-    uint8_t transaction_label;
+    uint8_t transaction_id;
     
     avrcp_command_opcode_t command_opcode;
     avrcp_command_type_t command_type;
