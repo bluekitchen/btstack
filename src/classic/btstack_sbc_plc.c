@@ -43,9 +43,12 @@
  */
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef OCTAVE_OUTPUT
+#include <stdio.h>
+#endif
 
 #include "btstack_sbc_plc.h"
 #include "btstack_debug.h"
