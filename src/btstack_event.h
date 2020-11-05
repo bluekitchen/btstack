@@ -3022,6 +3022,75 @@ static inline uint8_t sm_event_pairing_complete_get_reason(const uint8_t * event
 }
 #endif
 
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event SM_EVENT_REENCRYPTION_STARTED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_reencryption_started_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field addr_type from event SM_EVENT_REENCRYPTION_STARTED
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_reencryption_started_get_addr_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event SM_EVENT_REENCRYPTION_STARTED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void sm_event_reencryption_started_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[5], address, 6);
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event SM_EVENT_REENCRYPTION_COMPLETE
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t sm_event_reencryption_complete_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field addr_type from event SM_EVENT_REENCRYPTION_COMPLETE
+ * @param event packet
+ * @return addr_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_reencryption_complete_get_addr_type(const uint8_t * event){
+    return event[4];
+}
+/**
+ * @brief Get field address from event SM_EVENT_REENCRYPTION_COMPLETE
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void sm_event_reencryption_complete_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[5], address, 6);
+}
+/**
+ * @brief Get field status from event SM_EVENT_REENCRYPTION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_reencryption_complete_get_status(const uint8_t * event){
+    return event[11];
+}
+#endif
+
 /**
  * @brief Get field handle from event GAP_EVENT_SECURITY_LEVEL
  * @param event packet
