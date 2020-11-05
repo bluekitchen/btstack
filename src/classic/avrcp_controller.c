@@ -50,12 +50,22 @@
 // made public in avrcp_controller.h
 avrcp_context_t avrcp_controller_context;
 
-static uint8_t avrcp_controller_get_next_transaction_label(avrcp_connection_t * connection){
-    connection->transaction_id_counter++;
-    if (connection->transaction_id_counter == 16){
-        connection->transaction_id_counter = 1;
+static uint8_t avrcp_controller_calc_next_transaction_label(uint8_t current_transaction_label){
+    current_transaction_label++;
+    if (current_transaction_label == 16){
+        current_transaction_label = 1;
     }
+    return current_transaction_label;
+}
+
+static uint8_t avrcp_controller_get_next_transaction_label(avrcp_connection_t * connection){
+    connection->transaction_id_counter = avrcp_controller_calc_next_transaction_label(connection->transaction_id_counter);
     return connection->transaction_id_counter;
+}
+
+static bool avrcp_controller_is_transaction_id_valid(avrcp_connection_t * connection, uint8_t transaction_id){
+    uint8_t delta = ((int8_t) transaction_id - connection->last_confirmed_transaction_id) & 0x0f;
+    return delta < 15;
 }
 
 static uint16_t avrcp_get_max_payload_size_for_packet_type(avrcp_packet_type_t packet_type){
@@ -671,6 +681,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint16_t pos = 3;
     uint8_t  pdu_id;
     
+    connection->last_confirmed_transaction_id = packet[0] >> 4;
+
     avrcp_frame_type_t  frame_type = (avrcp_frame_type_t)((packet[0] >> 1) & 0x01);
     if (frame_type != AVRCP_RESPONSE_FRAME) return;
 
@@ -1338,7 +1350,31 @@ uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume)
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+
+    //
+    // allow sending of multiple set abs volume commands without waiting for response
+    //
+    uint8_t status = ERROR_CODE_COMMAND_DISALLOWED;
+    switch (connection->state){
+        case AVCTP_CONNECTION_OPENED:
+            status = ERROR_CODE_SUCCESS;
+            break;
+        case AVCTP_W2_RECEIVE_RESPONSE:
+            // - is pending response also set abs volume
+            if (connection->command_opcode  != AVRCP_CMD_OPCODE_VENDOR_DEPENDENT) break;
+            if (connection->command_type    != AVRCP_CTYPE_CONTROL)               break;
+            if (connection->subunit_type    != AVRCP_SUBUNIT_TYPE_PANEL)          break;
+            if (connection->subunit_id      != AVRCP_SUBUNIT_ID)                  break;
+            if (connection->cmd_operands[3] != AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME)  break;
+            // - is next transaction id valid in window
+            if (avrcp_controller_is_transaction_id_valid(connection, avrcp_controller_calc_next_transaction_label(connection->transaction_id_counter)) == false) break;
+            status = ERROR_CODE_SUCCESS;
+            break;
+        default:
+            break;
+    }
+    if (status != ERROR_CODE_SUCCESS) return status;
+
     connection->state = AVCTP_W2_SEND_COMMAND;
 
     connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);

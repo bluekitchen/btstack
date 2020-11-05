@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 ### Changed
+AVRCP Controller: allow to send multiple absolute volume commands without waiting for response. 
 
 ## Changes October 2020
 

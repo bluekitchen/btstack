@@ -469,7 +469,10 @@ typedef struct {
 
     // transaction id 
     uint8_t transaction_id_counter;
-    
+
+    // limit number of pending commands to transaction id window size
+    uint8_t last_confirmed_transaction_id;
+
     // command
     uint8_t transaction_id;
     
