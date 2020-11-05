@@ -745,6 +745,15 @@ static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t st
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
+static void sm_notify_client_reencryption(sm_connection_t * sm_conn, uint8_t status){
+    // fetch addr and addr type from db, only called for valid entries
+    int       identity_addr_type;
+    bd_addr_t identity_addr;
+    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+
+    sm_notify_client_status(SM_EVENT_REENCRYPTION_COMPLETE, sm_conn->sm_handle, identity_addr_type, identity_addr, status);
+}
+
 // decide on stk generation based on
 // - pairing request
 // - io capabilities
@@ -3295,9 +3304,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);    // ok: there is no channel
     UNUSED(size);       // ok: fixed format HCI events
 
-    sm_connection_t  * sm_conn;
-    hci_con_handle_t con_handle;
-
+    sm_connection_t * sm_conn;
+    hci_con_handle_t  con_handle;
+    uint8_t           status;
     switch (packet_type) {
 
 		case HCI_EVENT_PACKET:
@@ -3450,37 +3459,40 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         sm_conn->sm_actual_encryption_key_size);
                     log_info("event handler, state %u", sm_conn->sm_engine_state);
 
-                    // encryption change event concludes re-encryption for bonded devices (even if it fails)
-                    if (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED){
-                        sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-                        // block connection if encryption fails
-                        if (sm_conn->sm_connection_encrypted == 0){
-                        	// set state to 'TIMEOUT' to prevent further interaction with this
-                        	// also, gap_reconnect_security_setup_active will return true
-                        	sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
-                        }
-                        // notify client, if pairing was requested before
-                        if (sm_conn->sm_pairing_requested){
-                            sm_conn->sm_pairing_requested = 0;
-                            if (sm_conn->sm_connection_encrypted){
-                                sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
-                            } else {
-                                sm_notify_client_status_reason(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, 0);
-                            }
-                        }
-                        sm_done_for_handle(sm_conn->sm_handle);
-                        break;
-                    }
-
-                    if (!sm_conn->sm_connection_encrypted) break;
-
-                    // continue pairing
                     switch (sm_conn->sm_engine_state){
+
                         case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
-                            sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                            // encryption change event concludes re-encryption for bonded devices (even if it fails)
+                            if (sm_conn->sm_connection_encrypted) {
+                                status = ERROR_CODE_SUCCESS;
+                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                            } else {
+                                status = ERROR_CODE_AUTHENTICATION_FAILURE;
+                                // set state to 'TIMEOUT' to prevent further interaction with this
+                                // also, gap_reconnect_security_setup_active will return true
+                                sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+                            }
+
+                            // emit re-encryption complete
+                            sm_notify_client_reencryption(sm_conn, status);
+
+                            // notify client, if pairing was requested before
+                            if (sm_conn->sm_pairing_requested){
+                                sm_conn->sm_pairing_requested = 0;
+                                sm_notify_client_status_reason(sm_conn, status, 0);
+                            }
+
                             sm_done_for_handle(sm_conn->sm_handle);
+
+                            // abort/disconnect on authentication failure
+                            if (status == ERROR_CODE_AUTHENTICATION_FAILURE){
+                                // gap disconnect with authentication failure
+                                hci_disconnect_security_block(con_handle);
+                            }
                             break;
+
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
+                            if (!sm_conn->sm_connection_encrypted) break;
                             sm_conn->sm_connection_sc = setup->sm_use_secure_connections;
                             if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave
