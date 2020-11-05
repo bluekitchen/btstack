@@ -84,14 +84,11 @@ PRIVATE OI_STATUS FindSyncword(OI_CODEC_SBC_DECODER_CONTEXT *context,
     if (context->common.frameInfo.mSBCEnabled){
         syncword = OI_mSBC_SYNCWORD;
     }
-    //printf("search %x\n", syncword);
     /* BK4BTSTACK_CHANGE END */
     while (*frameBytes && (**frameData != syncword)) {
-      //  printf("%c ", **frameData);
         (*frameBytes)--;
         (*frameData)++;
     }
-    //printf("\n\n");
     if (*frameBytes) {
         /* Syncword found, *frameData points to it, and *frameBytes correctly
          * reflects the number of bytes available to read, including the
@@ -269,7 +266,6 @@ OI_STATUS OI_CODEC_SBC_DecodeFrame(OI_CODEC_SBC_DECODER_CONTEXT *context,
     TRACE(("+OI_CODEC_SBC_DecodeFrame"));
 
     TRACE(("Finding syncword"));
-    //printf("OI_CODEC_SBC_DecodeFrame frameBytes %d\n", frameBytes);
     status = FindSyncword(context, frameData, frameBytes);
     if (!OI_SUCCESS(status)) {
         return status;

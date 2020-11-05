@@ -678,7 +678,6 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
     int wait_for_user = 0;
 
     // TODO: handle chunked data
-    // obex_dump_packet(goep_client_get_request_opcode(pbap_client->goep_cid), packet, size);
     switch (pbap_client->state){
         case PBAP_W4_CONNECT_RESPONSE:
             switch (packet[0]){
