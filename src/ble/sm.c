@@ -371,6 +371,7 @@ typedef struct sm_setup_context {
     int       sm_le_device_index;
 #endif
 
+    bool      sm_reencryption_active;
 } sm_setup_context_t;
 
 //
@@ -537,6 +538,94 @@ static int sm_ir_is_default(void){
     return 1;
 }
 
+static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    UNUSED(channel);
+
+    // log event
+    hci_dump_packet(packet_type, 1, packet, size);
+    // dispatch to all event handlers
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &sm_event_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
+        entry->callback(packet_type, 0, packet, size);
+    }
+}
+
+static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
+    event[0] = type;
+    event[1] = event_size - 2;
+    little_endian_store_16(event, 2, con_handle);
+    event[4] = addr_type;
+    reverse_bd_addr(address, &event[5]);
+}
+
+static void sm_notify_client_base(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
+    uint8_t event[11];
+    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void sm_notify_client_passkey(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
+    uint8_t event[15];
+    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
+    little_endian_store_32(event, 11, passkey);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint16_t index){
+    // fetch addr and addr type from db, only called for valid entries
+    bd_addr_t identity_address;
+    int identity_address_type;
+    le_device_db_info(index, &identity_address_type, identity_address, NULL);
+
+    uint8_t event[20];
+    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
+    event[11] = identity_address_type;
+    reverse_bd_addr(identity_address, &event[12]);
+    little_endian_store_16(event, 18, index);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t status){
+    uint8_t event[12];
+    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
+    event[11] = status;
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
+
+static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
+    uint8_t event[13];
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
+    event[11] = status;
+    event[12] = reason;
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
+
+static void sm_reencryption_started(sm_connection_t * sm_conn){
+
+    setup->sm_reencryption_active = true;
+
+    // fetch addr and addr type from db, only called for valid entries
+    int       identity_addr_type;
+    bd_addr_t identity_addr;
+    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+
+    sm_notify_client_base(SM_EVENT_REENCRYPTION_STARTED, sm_conn->sm_handle, identity_addr_type, identity_addr);
+}
+
+static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
+
+    setup->sm_reencryption_active = false;
+
+    // fetch addr and addr type from db, only called for valid entries
+    int       identity_addr_type;
+    bd_addr_t identity_addr;
+    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+
+    sm_notify_client_status(SM_EVENT_REENCRYPTION_COMPLETE, sm_conn->sm_handle, identity_addr_type, identity_addr, status);
+}
+
 // SMP Timeout implementation
 
 // Upon transmission of the Pairing Request command or reception of the Pairing Request command,
@@ -553,6 +642,11 @@ static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
     sm_connection_t * sm_conn = (sm_connection_t*) btstack_run_loop_get_timer_context(timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+
+    if (setup->sm_reencryption_active){
+        sm_reencryption_complete(sm_conn, ERROR_CODE_CONNECTION_TIMEOUT);
+    }
+
     sm_notify_client_status_reason(sm_conn, ERROR_CODE_CONNECTION_TIMEOUT, 0);
     sm_done_for_handle(sm_conn->sm_handle);
 
@@ -681,87 +775,6 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, uint8_t * r_prime){
     (void)memcpy(&r_prime[0], &r1[8], 8);
 }
 
-static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    UNUSED(channel);
-
-    // log event
-    hci_dump_packet(packet_type, 1, packet, size);
-    // dispatch to all event handlers
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &sm_event_handlers);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
-        entry->callback(packet_type, 0, packet, size);
-    }
-}
-
-static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
-    event[0] = type;
-    event[1] = event_size - 2;
-    little_endian_store_16(event, 2, con_handle);
-    event[4] = addr_type;
-    reverse_bd_addr(address, &event[5]);
-}
-
-static void sm_notify_client_base(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
-    uint8_t event[11];
-    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void sm_notify_client_passkey(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
-    uint8_t event[15];
-    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    little_endian_store_32(event, 11, passkey);
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint16_t index){
-    // fetch addr and addr type from db, only called for valid entries
-    bd_addr_t identity_address;
-    int identity_address_type;
-    le_device_db_info(index, &identity_address_type, identity_address, NULL);
-
-    uint8_t event[20];
-    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    event[11] = identity_address_type;
-    reverse_bd_addr(identity_address, &event[12]);
-    little_endian_store_16(event, 18, index);
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t status){
-    uint8_t event[12];
-    sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    event[11] = status;
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
-}
-
-static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
-    uint8_t event[13];
-    sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
-    event[11] = status;
-    event[12] = reason;
-    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
-}
-
-static void sm_notify_client_reencryption_started(sm_connection_t * sm_conn){
-    // fetch addr and addr type from db, only called for valid entries
-    int       identity_addr_type;
-    bd_addr_t identity_addr;
-    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
-
-    sm_notify_client_base(SM_EVENT_REENCRYPTION_STARTED, sm_conn->sm_handle, identity_addr_type, identity_addr);    uint8_t event[4];
-}
-
-static void sm_notify_client_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
-    // fetch addr and addr type from db, only called for valid entries
-    int       identity_addr_type;
-    bd_addr_t identity_addr;
-    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
-
-    sm_notify_client_status(SM_EVENT_REENCRYPTION_COMPLETE, sm_conn->sm_handle, identity_addr_type, identity_addr, status);
-}
 
 // decide on stk generation based on
 // - pairing request
@@ -1088,6 +1101,7 @@ static void sm_reset_setup(void){
     setup->sm_state_vars = 0;
     setup->sm_keypress_notification = 0;
     sm_reset_tk();
+    setup->sm_reencryption_active = false;
 }
 
 static void sm_init_setup(sm_connection_t * sm_conn){
@@ -1261,7 +1275,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
                             log_info("central: enable encryption for bonded device");
                             sm_connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-                            sm_notify_client_reencryption_started(sm_connection);
+                            sm_reencryption_started(sm_connection);
                             sm_trigger_run();
 #else
                             log_info("central: defer security request for bonded device");
@@ -1295,7 +1309,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         if (trigger_reencryption){
                             log_info("central: enable encryption for bonded device");
                             sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                            sm_notify_client_reencryption_started(sm_connection);
+                            sm_reencryption_started(sm_connection);
                             break;
                         }
 
@@ -3494,7 +3508,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             // emit re-encryption complete
-                            sm_notify_client_reencryption_complete(sm_conn, status);
+                            sm_reencryption_complete(sm_conn, status);
 
                             // notify client, if pairing was requested before
                             if (sm_conn->sm_pairing_requested){
