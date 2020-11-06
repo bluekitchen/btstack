@@ -2,8 +2,8 @@
 // btstack_config.h for msp-exp430f5438-cc2564b port
 //
 
-#ifndef __BTSTACK_CONFIG
-#define __BTSTACK_CONFIG
+#ifndef BTSTACK_CONFIG_H
+#define BTSTACK_CONFIG_H
 
 // Port related features
 #define HAVE_EMBEDDED_TICK
@@ -12,10 +12,6 @@
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
 #define ENABLE_LE_PERIPHERAL
-// #define ENABLE_LE_CENTRAL
-// #define ENABLE_LOG_ERROR
-// #define ENABLE_LOG_INFO 
-// #define ENABLE_EHCILL
 #define ENABLE_SCO_OVER_HCI
 
 // BTstack configuration. buffers, sizes, ...
@@ -28,6 +24,7 @@
 #define MAX_NR_HFP_CONNECTIONS 0
 #define MAX_NR_L2CAP_CHANNELS  (1+MAX_SPP_CONNECTIONS)
 #define MAX_NR_L2CAP_SERVICES  2
+#define MAX_NR_LE_DEVICE_DB_ENTRIES 0
 #define MAX_NR_RFCOMM_CHANNELS MAX_SPP_CONNECTIONS
 #define MAX_NR_RFCOMM_MULTIPLEXERS MAX_SPP_CONNECTIONS
 #define MAX_NR_RFCOMM_SERVICES 1
@@ -35,7 +32,6 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_SPP_CONNECTIONS 1
-#define MAX_NR_LE_DEVICE_DB_ENTRIES 0
 
 #endif
 

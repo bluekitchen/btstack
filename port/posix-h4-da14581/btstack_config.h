@@ -2,30 +2,30 @@
 // btstack_config.h for generic POSIX H4 port
 //
 
-#ifndef __BTSTACK_CONFIG
-#define __BTSTACK_CONFIG
+#ifndef BTSTACK_CONFIG_H
+#define BTSTACK_CONFIG_H
 
 // Port related features
 #define HAVE_ASSERT
+#define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-#define HAVE_BTSTACK_STDIN
 #define HAVE_POSIX_TIME
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_LE_CENTRAL
-#define ENABLE_LE_PERIPHERAL
-#define ENABLE_LE_SECURE_CONNECTIONS
-#define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_DATA_CHANNELS
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
+#define ENABLE_LE_PERIPHERAL
+#define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LOG_ERROR
-#define ENABLE_LOG_INFO 
+#define ENABLE_LOG_INFO
+#define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
+#define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy
 
 #define NVM_NUM_DEVICE_DB_ENTRIES      20
 
@@ -35,12 +35,12 @@
 #define ENABLE_MESH_GATT_BEARER
 #define ENABLE_MESH_PB_ADV
 #define ENABLE_MESH_PB_GATT
-#define ENABLE_MESH_PROXY_SERVER
 #define ENABLE_MESH_PROVISIONER
+#define ENABLE_MESH_PROXY_SERVER
 
+#define MAX_NR_MESH_SUBNETS            2
 #define MAX_NR_MESH_TRANSPORT_KEYS    16
 #define MAX_NR_MESH_VIRTUAL_ADDRESSES 16
-#define MAX_NR_MESH_SUBNETS            2
 
 // allow for one NetKey update
 #define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
