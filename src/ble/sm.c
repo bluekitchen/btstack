@@ -745,7 +745,7 @@ static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t st
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
-static void sm_notify_client_reencryption(sm_connection_t * sm_conn, uint8_t status){
+static void sm_notify_client_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
     // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
     bd_addr_t identity_addr;
@@ -3474,7 +3474,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             // emit re-encryption complete
-                            sm_notify_client_reencryption(sm_conn, status);
+                            sm_notify_client_reencryption_complete(sm_conn, status);
 
                             // notify client, if pairing was requested before
                             if (sm_conn->sm_pairing_requested){
