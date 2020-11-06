@@ -36,7 +36,6 @@
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_SPP_CONNECTIONS 1
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 0
-// 
 
 #endif
 

@@ -32,8 +32,5 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 1
 #define MAX_NR_WHITELIST_ENTRIES 1
 
-// if defined, le_device_db_memory will not be compiled
-// #define NVM_NUM_DEVICE_DB_ENTRIES      16
-
 #endif
 
