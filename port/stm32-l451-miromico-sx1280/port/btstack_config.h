@@ -1,5 +1,5 @@
 //
-// btstack_config.h 
+// btstack_config.h
 //
 
 #ifndef BTSTACK_CONFIG_H

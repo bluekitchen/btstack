@@ -1,5 +1,5 @@
 //
-// btstack_config.h 
+// btstack_config.h
 //
 //  Made for BlueKitchen by OneWave with <3
 //      Author: ftrefou@onewave.io
