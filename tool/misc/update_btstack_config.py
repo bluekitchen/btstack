@@ -4,6 +4,8 @@ import os
 import re
 import sys
 
+btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../../')
+
 defines_to_add = []
 defines_to_remove = []
 
@@ -94,13 +96,6 @@ def write_configuration(full_path, config_file):
         bytes = configuration.encode('utf-8')
         fout.write(bytes)
 
-btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../../port')
-
-config_file = "/Users/mringwal/Projects/btstack/port/arduino/btstack_config.h"
-line_ending = get_line_ending(config_file)
-# configuration = read_and_update_configuration(config_file, line_ending)
-# write_configuration(config_file, configuration)
-# sys.exit(0)
 
 for root, dirs, files in os.walk(btstack_root, topdown=True):
     for f in files:
