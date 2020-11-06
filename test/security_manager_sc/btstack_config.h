@@ -1,27 +1,28 @@
 //
 // btstack_config.h for security manager sc live test based on libusb port //
 
-#ifndef BTSTACK_CONFIG
-#define BTSTACK_CONFIG
+#ifndef BTSTACK_CONFIG_H
+#define BTSTACK_CONFIG_H
 
 // Port related features
+#define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
-#define HAVE_BTSTACK_STDIN
 #define HAVE_POSIX_TIME
 
 // BTstack features that can be enabled
+#define ENABLE_ATT_DELAYED_RESPONSE
 #define ENABLE_BLE
 #define ENABLE_LE_CENTRAL
-#define ENABLE_LE_PERIPHERAL
-#define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_DATA_CHANNELS
-#define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
+#define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-#define ENABLE_ATT_DELAYED_RESPONSE
+#define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LOG_ERROR
-#define ENABLE_LOG_INFO 
+#define ENABLE_LOG_INFO
+#define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+
 // #define ENABLE_SOFTWARE_AES128
 
 // BTstack configuration. buffers, sizes, ...
