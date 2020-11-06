@@ -16,8 +16,6 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
-
-// #define ENABLE_LOG_DEBUG
 #define ENABLE_BTP
 #define ENABLE_GATT_CLIENT_PAIRING
 #define ENABLE_LE_CENTRAL
@@ -28,6 +26,7 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#define ENABLE_PRINTF_HEXDUMP
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1024

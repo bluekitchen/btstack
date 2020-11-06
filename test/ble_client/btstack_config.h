@@ -19,6 +19,7 @@
 #define ENABLE_LE_SIGNED_WRITE
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
+#define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SOFTWARE_AES128
 
 // BTstack configuration. buffers, sizes, ...

@@ -14,10 +14,9 @@
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
-
-// #define ENABLE_LOG_DEBUG
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
+#define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SDP_DES_DUMP
 #define ENABLE_SDP_EXTRA_QUERIES
 
