@@ -745,6 +745,15 @@ static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t st
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
+static void sm_notify_client_reencryption_started(sm_connection_t * sm_conn){
+    // fetch addr and addr type from db, only called for valid entries
+    int       identity_addr_type;
+    bd_addr_t identity_addr;
+    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+
+    sm_notify_client_base(SM_EVENT_REENCRYPTION_STARTED, sm_conn->sm_handle, identity_addr_type, identity_addr);    uint8_t event[4];
+}
+
 static void sm_notify_client_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
     // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
@@ -1252,6 +1261,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
                             log_info("central: enable encryption for bonded device");
                             sm_connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                            sm_notify_client_reencryption_started(sm_connection);
                             sm_trigger_run();
 #else
                             log_info("central: defer security request for bonded device");
@@ -1268,15 +1278,25 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                                  sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received, trigger_pairing, have_ltk);
                         sm_connection->sm_security_request_received = 0;
                         sm_connection->sm_pairing_requested = 0;
+                        bool trigger_reencryption = false;
 
                         if (have_ltk){
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
+                            trgigger_reencryptipm = true;
+#else
+                            if (trigger_pairing){
+                                trigger_reencryption = true;
+                            } else {
+                                log_info("central: defer enabling encryption for bonded device");
+                            }
+#endif
+                        }
+
+                        if (trigger_reencryption){
                             log_info("central: enable encryption for bonded device");
                             sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                            sm_notify_client_reencryption_started(sm_connection);
                             break;
-#else
-                            log_info("central: defer enabling encryption for bonded device");
-#endif
                         }
 
                         // pairing_request -> send pairing request
@@ -4346,6 +4366,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                     if (have_ltk){
                         sm_conn->sm_pairing_requested = 1;
                         sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+						sm_reencryption_started(sm_conn);
                         break;
                     }
                     /* fall through */
