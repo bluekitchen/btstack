@@ -111,7 +111,7 @@ def processTextLine(line, ref_prefix):
 
 def getExampleTitle(example_path):
     example_title = ''
-    with open(example_path, 'rb') as fin:
+    with open(example_path, 'r') as fin:
         for line in fin:
             parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
             if parts: 
@@ -151,7 +151,7 @@ def writeListings(aout, infile_name, ref_prefix):
     code_identation = "    "
     skip_code = 0
 
-    with open(infile_name, 'rb') as fin:
+    with open(infile_name, 'r') as fin:
         for line in fin:
             if state == State.SearchExampleStart:
                 parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
@@ -267,12 +267,12 @@ def writeListings(aout, infile_name, ref_prefix):
 def processExamples(intro_file, examples_folder, examples_ofile):
     with open(examples_ofile, 'w') as aout:
 
-        with open(intro_file, 'rb') as fin:
+        with open(intro_file, 'r') as fin:
             for line in fin:
                 aout.write(line)
 
         for group_title in list_of_groups:
-            if not list_of_examples.has_key(group_title): continue
+            if not group_title in list_of_examples.keys(): continue
             examples = list_of_examples[group_title]
             for example in examples:
                 example_path  = examples_folder + example[0] + "/" + example[0] + ".ino"
@@ -283,7 +283,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
         aout.write("\n\n");
 
         for group_title in list_of_groups:
-            if not list_of_examples.has_key(group_title): continue
+            if not group_title in list_of_examples.keys(): continue
             examples = list_of_examples[group_title]
             
             group_title = group_title + " example"
@@ -301,7 +301,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
         aout.write("\n")
 
         for group_title in list_of_groups:
-            if not list_of_examples.has_key(group_title): continue
+            if not group_title in list_of_examples.keys(): continue
             examples = list_of_examples[group_title]
             
             for example in examples:

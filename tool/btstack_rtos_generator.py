@@ -261,7 +261,7 @@ def create_wrapper(fout, type_and_name, arg_string, need_lock):
     num_functions += 1
 
 def write_wrappers_for_file(fout, file, header_name, need_lock):
-    with open(file, 'rb') as fin:
+    with open(file, 'r') as fin:
         typedefFound = 0
         multiline_function_def = 0
         multiline = ''
