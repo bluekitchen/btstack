@@ -863,6 +863,11 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     // wait until re-encryption as central is complete
     if (gap_reconnect_security_setup_active(gatt_client->con_handle)) return 0;
 
+#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
+    // wait until re-encryption complete
+    if (gatt_client->reencryption_active) return 0;
+#endif
+
 #ifdef ENABLE_GATT_CLIENT_PAIRING
     // wait until pairing complete
     if (gatt_client->wait_for_pairing_complete) return 0;
@@ -1165,6 +1170,16 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             break;
 #endif
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
+        // re-encryption started
+        case SM_EVENT_REENCRYPTION_STARTED:
+            con_handle = sm_event_reencryption_complete_get_handle(packet);
+            gatt_client = gatt_client_get_context_for_handle(con_handle);
+            if (gatt_client == NULL) break;
+
+            gatt_client->reencryption_active = true;
+            gatt_client->reencryption_result = ERROR_CODE_SUCCESS;
+            break;
+
         // re-encryption complete
         case SM_EVENT_REENCRYPTION_COMPLETE:
             con_handle = sm_event_reencryption_complete_get_handle(packet);
@@ -1172,7 +1187,9 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             if (gatt_client == NULL) break;
 
             // report bonding information missing, if re-encryption failed
-            if (sm_event_reencryption_complete_get_status(packet)){
+            gatt_client->reencryption_result = sm_event_reencryption_complete_get_status(packet);
+            gatt_client->reencryption_active = false;
+            if (gatt_client->reencryption_result != ERROR_CODE_SUCCESS){
                 gatt_client_report_error_if_pending(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
             } else {
                 log_info("re-encryption success, retry operation");
