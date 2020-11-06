@@ -2,6 +2,7 @@
 //
 #ifndef BTSTACK_CONFIG_H
 #define BTSTACK_CONFIG_H
+
 #include <stdint.h>
 
 // Port related features
@@ -19,6 +20,7 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
 
 // BTstack configuration. buffers, sizes, ...

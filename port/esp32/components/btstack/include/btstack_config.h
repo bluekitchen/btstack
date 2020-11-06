@@ -21,6 +21,7 @@
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SECURE_CONNECTIONS
+#define ENABLE_PRINTF_HEXDUMP
 
 // ESP32 supports ECDH HCI Commands, but micro-ecc lib is already provided anyway
 #define ENABLE_LOG_ERROR

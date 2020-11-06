@@ -13,6 +13,7 @@
 #define ENABLE_CLASSIC
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_PERIPHERAL
+#define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
 
 // BTstack configuration. buffers, sizes, ...

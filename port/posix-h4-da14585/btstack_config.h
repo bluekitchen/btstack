@@ -23,6 +23,7 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#define ENABLE_PRINTF_HEXDUMP
 
 // work around bug in Controller ACL fragmentation
 #define ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
