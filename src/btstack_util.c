@@ -49,7 +49,10 @@
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
+#ifdef ENABLE_PRINTF_HEXDUMP
 #include <stdio.h>
+#endif
+
 #include <string.h>
 
 /**
@@ -202,6 +205,7 @@ int nibble_for_char(char c){
     return -1;
 }
 
+#ifdef ENABLE_PRINTF_HEXDUMP
 void printf_hexdump(const void *data, int size){
     char buffer[4];
     buffer[2] = ' ';
@@ -216,6 +220,7 @@ void printf_hexdump(const void *data, int size){
     }
     printf("\n");
 }
+#endif
 
 #if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_DEBUG)
 static void log_hexdump(int level, const void * data, int size){
