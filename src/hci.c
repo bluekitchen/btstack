@@ -2243,7 +2243,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
         return;
     }
 
-    bd_addr_t addr;
     bd_addr_type_t addr_type;
     hci_con_handle_t handle;
     hci_connection_t * conn;
@@ -2252,6 +2251,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
     uint8_t link_type;
+    bd_addr_t addr;
 #endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
@@ -5967,8 +5967,10 @@ bool gap_bonded(hci_con_handle_t con_handle){
 	hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
 	if (hci_connection == NULL) return 0;
 
+#ifdef ENABLE_CLASSIC
 	link_key_t link_key;
 	link_key_type_t link_key_type;
+#endif
 	switch (hci_connection->address_type){
 		case BD_ADDR_TYPE_LE_PUBLIC:
 		case BD_ADDR_TYPE_LE_RANDOM:

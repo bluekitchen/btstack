@@ -3986,6 +3986,7 @@ static gap_security_level_t l2cap_le_security_level_for_connection(hci_con_handl
 static void l2cap_sm_packet_handler(uint8_t packet_type, uint16_t channel_nr, uint8_t *packet, uint16_t size) {
     UNUSED(channel_nr);
     UNUSED(size);
+    UNUSED(packet_type);
     btstack_assert(packet_type = HCI_EVENT_PACKET);
     if (hci_event_packet_get_type(packet) != SM_EVENT_PAIRING_COMPLETE) return;
     hci_con_handle_t con_handle = sm_event_pairing_complete_get_handle(packet);

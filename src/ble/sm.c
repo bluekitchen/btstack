@@ -3006,6 +3006,7 @@ static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
 	// get started (all of the above are true)
 	return true;
 #else
+    UNUSED(sm_connection);
 	return false;
 #endif
 }
