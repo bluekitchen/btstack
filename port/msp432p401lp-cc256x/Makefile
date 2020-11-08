@@ -190,6 +190,7 @@ all: \
     linker_script_gcc.ld \
 	$(addprefix $(COMPILER)/,$(GATT_FILES:.gatt=.h)) \
 	$(addprefix $(COMPILER)/,$(EXAMPLES:=.elf)) \
+	$(addprefix $(COMPILER)/,$(EXAMPLES:=.jdebug)) \
 
 include $(BTSTACK_ROOT)/chipset/cc256x/Makefile.inc
 
@@ -208,6 +209,9 @@ ${COMPILER}:
 # compile .gatt descriptions
 ${COMPILER}/%.h: %.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+$(COMPILER)/%.jdebug: ozone.jdebug | $(COMPILER)
+	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
 
 ##
 
