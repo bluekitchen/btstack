@@ -370,8 +370,6 @@ typedef struct sm_setup_context {
 #ifdef ENABLE_LE_SIGNED_WRITE
     int       sm_le_device_index;
 #endif
-
-    bool      sm_reencryption_active;
 } sm_setup_context_t;
 
 //
@@ -597,7 +595,7 @@ static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, u
 
 static void sm_reencryption_started(sm_connection_t * sm_conn){
 
-    setup->sm_reencryption_active = true;
+    sm_conn->sm_reencryption_active = true;
 
     // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
@@ -609,7 +607,7 @@ static void sm_reencryption_started(sm_connection_t * sm_conn){
 
 static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 
-    setup->sm_reencryption_active = false;
+    sm_conn->sm_reencryption_active = false;
 
     // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
@@ -621,7 +619,7 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
 
-    if (setup->sm_reencryption_active){
+    if (sm_conn->sm_reencryption_active){
         sm_reencryption_complete(sm_conn, status);
     }
 
@@ -1102,7 +1100,6 @@ static void sm_reset_setup(void){
     setup->sm_state_vars = 0;
     setup->sm_keypress_notification = 0;
     sm_reset_tk();
-    setup->sm_reencryption_active = false;
 }
 
 static void sm_init_setup(sm_connection_t * sm_conn){
@@ -3404,6 +3401,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_connection_authenticated = 0;
                             sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
                             sm_conn->sm_le_db_index = -1;
+                            sm_conn->sm_reencryption_active = false;
 
                             // prepare CSRK lookup (does not involve setup)
                             sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
