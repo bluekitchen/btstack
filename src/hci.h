@@ -335,6 +335,7 @@ typedef enum {
     // Phase 4: re-establish previously distributed LTK
     SM_RESPONDER_PH4_Y_W4_ENC,
     SM_RESPONDER_PH4_SEND_LTK_REPLY,
+    SM_RESPONDER_PH4_W4_CONNECTION_ENCRYPTED,
 
     // INITITIATOR ROLE
     SM_INITIATOR_CONNECTED,

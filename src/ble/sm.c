@@ -2765,9 +2765,8 @@ static void sm_run(void){
             case SM_RESPONDER_PH4_SEND_LTK_REPLY: {
                 sm_key_t ltk_flipped;
                 reverse_128(setup->sm_ltk, ltk_flipped);
-                connection->sm_engine_state = SM_RESPONDER_IDLE;
+                connection->sm_engine_state = SM_RESPONDER_PH4_W4_CONNECTION_ENCRYPTED;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
-                sm_done_for_handle(connection->sm_handle);
                 return;
             }
 
@@ -3500,10 +3499,15 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     switch (sm_conn->sm_engine_state){
 
                         case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
+                        case SM_RESPONDER_PH4_W4_CONNECTION_ENCRYPTED:
                             // encryption change event concludes re-encryption for bonded devices (even if it fails)
                             if (sm_conn->sm_connection_encrypted) {
                                 status = ERROR_CODE_SUCCESS;
-                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                                if (sm_conn->sm_role){
+                                    sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
+                                } else {
+                                    sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                                }
                             } else {
                                 status = ERROR_CODE_AUTHENTICATION_FAILURE;
                                 // set state to 'TIMEOUT' to prevent further interaction with this
