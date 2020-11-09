@@ -73,7 +73,7 @@
 #include <stdint.h>
 
 /* Forward declaration of the default fault handlers. */
-static void resetISR(void);
+void resetISR(void);
 static void nmiISR(void);
 static void faultISR(void);
 static void defaultISR(void);

@@ -88,12 +88,12 @@ OBJCOPY=arm-none-eabi-objcopy
 # Tell the compiler to include debugging information if the DEBUG environment
 # variable is set.
 #
-ifdef DEBUG
-CFLAGS+=-g -D DEBUG -O0
-else
-CFLAGS+=-Os
-endif
-
+# ifdef DEBUG
+# CFLAGS+=-g -D DEBUG -O0
+# else
+# CFLAGS+=-Os
+# endif
+CFLAGS+=-g -Os
 
 #
 # Add the tool specific CFLAGS.
