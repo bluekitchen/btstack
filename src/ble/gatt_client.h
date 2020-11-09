@@ -187,11 +187,9 @@ typedef struct gatt_client{
 
     btstack_timer_source_t gc_timeout;
 
-#ifdef ENABLE_GATT_CLIENT_PAIRING
     uint8_t  security_counter;
     uint8_t  wait_for_pairing_complete;
     uint8_t  pending_error_code;
-#endif
 
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
     bool     reencryption_active;
@@ -235,6 +233,17 @@ typedef struct {
  * @brief Set up GATT client.
  */
 void gatt_client_init(void);
+
+/**
+ * @brief Set minimum required security level for GATT Client
+ * @note  The Bluetooth specification makes the GATT Server responsible to check for security.
+ *        This allows an attacker to spoof existing devices with GATT Servers, but skip the authentication part
+ *        If your application is exchanging sensitive data from a remote device, you would need to manually check
+ *        the security level before sending/receive such data. This function allows to have the GATT Client post-pone
+ *        any exchange until the required security level is established.
+ *  @pram level, default LEVEL_0 (no encryption required)
+ */
+void gatt_client_set_required_security_level(gap_security_level_t level);
 
 /** 
  * @brief MTU is available after the first query has completed. If status is equal to ERROR_CODE_SUCCESS, it returns the real value, otherwise the default value ATT_DEFAULT_MTU (see bluetooth.h). 

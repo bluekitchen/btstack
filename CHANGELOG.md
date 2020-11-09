@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: trigger pairing for outgoing LE Data Channels if security level insufficient
 - SM: fix update of sc flag for re-encrypted connection in peripheral role
 - SM: send security request on re-connect if bonded (ENABLE_LE_PROACTIVE_AUTHENTICATION)
+- GATT Client: allow to set required minimum security level for all GATT requests
 
 ### Added
 

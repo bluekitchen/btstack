@@ -63,12 +63,11 @@
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE) || defined (ENABLE_LE_PROACTIVE_AUTHENTICATION)
 static btstack_packet_callback_registration_t sm_event_callback_registration;
-#endif
 
-static uint8_t mtu_exchange_enabled;
+// GATT Client Configuration
+static bool                 gatt_client_mtu_exchange_enabled;
+static gap_security_level_t gatt_client_required_security_level;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -80,20 +79,25 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 
 void gatt_client_init(void){
     gatt_client_connections = NULL;
-    mtu_exchange_enabled = 1;
 
-    // regsister for HCI Events
+    // default configuration
+    gatt_client_mtu_exchange_enabled    = true;
+    gatt_client_required_security_level = LEVEL_0;
+
+    // register for HCI Events
     hci_event_callback_registration.callback = &gatt_client_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE) || defined (ENABLE_LE_PROACTIVE_AUTHENTICATION)
     // register for SM Events
     sm_event_callback_registration.callback = &gatt_client_event_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
-#endif
 
     // and ATT Client PDUs
     att_dispatch_register_client(gatt_client_att_packet_handler);
+}
+
+void gatt_client_set_required_security_level(gap_security_level_t level){
+    gatt_client_required_security_level = level;
 }
 
 static gatt_client_t * gatt_client_for_timer(btstack_timer_source_t * ts){
@@ -156,7 +160,7 @@ static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t c
     // init state
     gatt_client->con_handle = con_handle;
     gatt_client->mtu = ATT_DEFAULT_MTU;
-    if (mtu_exchange_enabled){
+    if (gatt_client_mtu_exchange_enabled){
         gatt_client->mtu_state = SEND_MTU_EXCHANGE;
     } else {
         gatt_client->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
@@ -184,7 +188,7 @@ int gatt_client_is_ready(hci_con_handle_t con_handle){
 }
 
 void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled){
-    mtu_exchange_enabled = enabled;
+    gatt_client_mtu_exchange_enabled = enabled != 0;
 }
 
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
@@ -857,6 +861,16 @@ static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t 
     return memcmp(&gatt_client->attribute_value[gatt_client->attribute_offset], &packet[5], size - 5u) == 0u;
 }
 
+static gap_security_level_t gatt_client_le_security_level_for_connection(hci_con_handle_t con_handle){
+    uint8_t encryption_key_size = gap_encryption_key_size(con_handle);
+    if (encryption_key_size == 0) return LEVEL_0;
+
+    uint8_t authenticated = gap_authenticated(con_handle);
+    if (!authenticated) return LEVEL_2;
+
+    return encryption_key_size == 16 ? LEVEL_4 : LEVEL_3;
+}
+
 // returns 1 if packet was sent
 static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
@@ -875,10 +889,28 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     }
 #endif
 
-#ifdef ENABLE_GATT_CLIENT_PAIRING
-    // wait until pairing complete
+    // wait until pairing complete (either reactive authentication or due to required security level)
     if (gatt_client->wait_for_pairing_complete) return 0;
-#endif
+
+    // verify security level
+    gap_security_level_t current_security_level = gatt_client_le_security_level_for_connection(gatt_client->con_handle);
+    if (gatt_client_required_security_level > current_security_level){
+        log_info("Trigger pairing, current security level %u, required %u\n", current_security_level, gatt_client_required_security_level);
+        gatt_client->wait_for_pairing_complete = 1;
+        // set att error code for pairing failure based on required level
+        switch (gatt_client_required_security_level){
+            case LEVEL_4:
+            case LEVEL_3:
+                gatt_client->pending_error_code = ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+                break;
+            default:
+                gatt_client->pending_error_code = ATT_ERROR_INSUFFICIENT_ENCRYPTION;
+                break;
+        }
+        sm_request_pairing(gatt_client->con_handle);
+        // sm probably just sent a pdu
+        return 1;
+    }
 
     switch (gatt_client->mtu_state) {
         case SEND_MTU_EXCHANGE:
@@ -1152,7 +1184,6 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             btstack_memory_gatt_client_free(gatt_client);
             break;
 
-#ifdef ENABLE_GATT_CLIENT_PAIRING
         // Pairing complete (with/without bonding=storing of pairing information)
         case SM_EVENT_PAIRING_COMPLETE:
             con_handle = sm_event_pairing_complete_get_handle(packet);
@@ -1169,7 +1200,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
                 }
             }
             break;
-#endif
+
 #ifdef ENABLE_LE_SIGNED_WRITE
         // Identity Resolving completed (no code, gatt_client_run will continue)
         case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
