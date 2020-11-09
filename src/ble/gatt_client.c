@@ -132,6 +132,16 @@ static void gatt_client_timeout_stop(gatt_client_t * gatt_client){
     btstack_run_loop_remove_timer(&gatt_client->gc_timeout);
 }
 
+static gap_security_level_t gatt_client_le_security_level_for_connection(hci_con_handle_t con_handle){
+    uint8_t encryption_key_size = gap_encryption_key_size(con_handle);
+    if (encryption_key_size == 0) return LEVEL_0;
+
+    uint8_t authenticated = gap_authenticated(con_handle);
+    if (!authenticated) return LEVEL_2;
+
+    return encryption_key_size == 16 ? LEVEL_4 : LEVEL_3;
+}
+
 static gatt_client_t * gatt_client_get_context_for_handle(uint16_t handle){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) gatt_client_connections; it != NULL; it = it->next){
@@ -160,6 +170,7 @@ static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t c
     // init state
     gatt_client->con_handle = con_handle;
     gatt_client->mtu = ATT_DEFAULT_MTU;
+    gatt_client->security_level = gatt_client_le_security_level_for_connection(con_handle);
     if (gatt_client_mtu_exchange_enabled){
         gatt_client->mtu_state = SEND_MTU_EXCHANGE;
     } else {
@@ -861,16 +872,6 @@ static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t 
     return memcmp(&gatt_client->attribute_value[gatt_client->attribute_offset], &packet[5], size - 5u) == 0u;
 }
 
-static gap_security_level_t gatt_client_le_security_level_for_connection(hci_con_handle_t con_handle){
-    uint8_t encryption_key_size = gap_encryption_key_size(con_handle);
-    if (encryption_key_size == 0) return LEVEL_0;
-
-    uint8_t authenticated = gap_authenticated(con_handle);
-    if (!authenticated) return LEVEL_2;
-
-    return encryption_key_size == 16 ? LEVEL_4 : LEVEL_3;
-}
-
 // returns 1 if packet was sent
 static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
@@ -893,9 +894,8 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     if (gatt_client->wait_for_pairing_complete) return 0;
 
     // verify security level
-    gap_security_level_t current_security_level = gatt_client_le_security_level_for_connection(gatt_client->con_handle);
-    if (gatt_client_required_security_level > current_security_level){
-        log_info("Trigger pairing, current security level %u, required %u\n", current_security_level, gatt_client_required_security_level);
+    if (gatt_client_required_security_level > gatt_client->security_level){
+        log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
         gatt_client->wait_for_pairing_complete = 1;
         // set att error code for pairing failure based on required level
         switch (gatt_client_required_security_level){
@@ -1190,6 +1190,9 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             gatt_client = gatt_client_get_context_for_handle(con_handle);
             if (gatt_client == NULL) break;
 
+            // update security level
+            gatt_client->security_level = gatt_client_le_security_level_for_connection(con_handle);
+
             if (gatt_client->wait_for_pairing_complete){
                 gatt_client->wait_for_pairing_complete = 0;
                 if (sm_event_pairing_complete_get_status(packet)){
@@ -1223,6 +1226,9 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             con_handle = sm_event_reencryption_complete_get_handle(packet);
             gatt_client = gatt_client_get_context_for_handle(con_handle);
             if (gatt_client == NULL) break;
+
+            // update security level
+            gatt_client->security_level = gatt_client_le_security_level_for_connection(con_handle);
 
             gatt_client->reencryption_result = sm_event_reencryption_complete_get_status(packet);
             gatt_client->reencryption_active = false;

@@ -196,6 +196,8 @@ typedef struct gatt_client{
     uint8_t  reencryption_result;
 #endif
 
+    gap_security_level_t security_level;
+
 } gatt_client_t;
 
 typedef struct gatt_client_notification {
