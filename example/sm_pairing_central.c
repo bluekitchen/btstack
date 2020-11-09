@@ -220,6 +220,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
+    bd_addr_t addr;
     switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             printf("Just works requested\n");
@@ -250,6 +251,29 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
                     printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case SM_EVENT_REENCRYPTION_STARTED:
+            sm_event_reencryption_complete_get_address(packet, addr);
+            printf("Bonding information exists for addr type %u, identity addr %s -> start re-encryption\n",
+                   sm_event_reencryption_started_get_addr_type(packet), bd_addr_to_str(addr));
+            break;
+        case SM_EVENT_REENCRYPTION_COMPLETE:
+            switch (sm_event_reencryption_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    printf("Re-encryption complete, success\n");
+                    break;
+                case ERROR_CODE_CONNECTION_TIMEOUT:
+                    printf("Re-encryption failed, timeout\n");
+                    break;
+                case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                    printf("Re-encryption failed, disconnected\n");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                    printf("Re-encryption failed, authentication failure\n");
                     break;
                 default:
                     break;
