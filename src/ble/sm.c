@@ -1308,7 +1308,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 
                         if (trigger_reencryption){
                             log_info("central: enable encryption for bonded device");
-                            sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                            sm_connection->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
                             sm_reencryption_started(sm_connection);
                             break;
                         }
@@ -2202,7 +2202,7 @@ static void sm_run_activate_connection(void){
 #endif
 #endif
 #ifdef ENABLE_LE_CENTRAL
-            case SM_INITIATOR_PH0_HAS_LTK:
+            case SM_INITIATOR_PH4_HAS_LTK:
 			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
 #endif
 				// just lock context
@@ -2409,13 +2409,13 @@ static void sm_run(void){
 #ifdef ENABLE_LE_CENTRAL
             // initiator side
 
-            case SM_INITIATOR_PH0_HAS_LTK: {
+            case SM_INITIATOR_PH4_HAS_LTK: {
 				sm_reset_setup();
 				sm_load_security_info(connection);
 
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
-                connection->sm_engine_state = SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED;
+                connection->sm_engine_state = SM_PH4_W4_CONNECTION_ENCRYPTED;
                 log_info("sm: hci_le_start_encryption ediv 0x%04x", setup->sm_peer_ediv);
                 uint32_t rand_high = big_endian_read_32(setup->sm_peer_rand, 0);
                 uint32_t rand_low  = big_endian_read_32(setup->sm_peer_rand, 4);
@@ -2765,7 +2765,7 @@ static void sm_run(void){
             case SM_RESPONDER_PH4_SEND_LTK_REPLY: {
                 sm_key_t ltk_flipped;
                 reverse_128(setup->sm_ltk, ltk_flipped);
-                connection->sm_engine_state = SM_RESPONDER_PH4_W4_CONNECTION_ENCRYPTED;
+                connection->sm_engine_state = SM_PH4_W4_CONNECTION_ENCRYPTED;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
                 return;
             }
@@ -3498,8 +3498,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                     switch (sm_conn->sm_engine_state){
 
-                        case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
-                        case SM_RESPONDER_PH4_W4_CONNECTION_ENCRYPTED:
+                        case SM_PH4_W4_CONNECTION_ENCRYPTED:
                             // encryption change event concludes re-encryption for bonded devices (even if it fails)
                             if (sm_conn->sm_connection_encrypted) {
                                 status = ERROR_CODE_SUCCESS;
@@ -3568,8 +3567,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     log_info("event handler, state %u", sm_conn->sm_engine_state);
                     // continue if part of initial pairing
                     switch (sm_conn->sm_engine_state){
-                        case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
-                            sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        case SM_PH4_W4_CONNECTION_ENCRYPTED:
+                            if (sm_conn->sm_role){
+                                sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
+                            } else {
+                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                            }
                             sm_done_for_handle(sm_conn->sm_handle);
                             break;
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
@@ -3595,7 +3598,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                     // delete stored bonding on disconnect with authentication failure in ph0
                     if ((sm_conn->sm_role == 0u)
-                        && (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED)
+                        && (sm_conn->sm_engine_state == SM_PH4_W4_CONNECTION_ENCRYPTED)
                         && (packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE)){
                         le_device_db_remove(sm_conn->sm_le_db_index);
                     }
@@ -3784,7 +3787,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     log_info("central: security request - have_ltk %u", have_ltk);
                     if (have_ltk){
                         // start re-encrypt
-                        sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
                     } else {
                         // start pairing
                         sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
@@ -4387,7 +4390,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                     log_info("have ltk %u", have_ltk);
                     if (have_ltk){
                         sm_conn->sm_pairing_requested = 1;
-                        sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
 						sm_reencryption_started(sm_conn);
                         break;
                     }
