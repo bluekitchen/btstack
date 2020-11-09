@@ -3596,13 +3596,6 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_conn = sm_get_connection_for_handle(con_handle);
                     if (!sm_conn) break;
 
-                    // delete stored bonding on disconnect with authentication failure in ph0
-                    if ((sm_conn->sm_role == 0u)
-                        && (sm_conn->sm_engine_state == SM_PH4_W4_CONNECTION_ENCRYPTED)
-                        && (packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE)){
-                        le_device_db_remove(sm_conn->sm_le_db_index);
-                    }
-
                     // pairing failed, if it was ongoing
                     switch (sm_conn->sm_engine_state){
                         case SM_GENERAL_IDLE:
