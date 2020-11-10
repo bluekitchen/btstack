@@ -91,6 +91,8 @@ extern int main(void);
 /* External declarations for the interrupt handlers used by the application. */
 /* To be added by the user */
 extern void EUSCIA2_IRQHandler(void);
+extern void DMA_INT1_IRQHandler(void);
+extern void DMA_INT2_IRQHandler(void);
 
 /* To be added by the user */
 extern void SysTick_Handler(void);
@@ -135,7 +137,7 @@ void (* const interruptVectors[])(void) __attribute__ ((section (".intvecs"))) =
     defaultISR,                             /* TA3_N ISR                 */
     defaultISR,                             /* EUSCIA0 ISR               */
     defaultISR,                             /* EUSCIA1 ISR               */
-    EUSCIA2_IRQHandler,                     /* EUSCIA2 ISR               */
+    defaultISR,                             /* EUSCIA2 ISR               */
     defaultISR,                             /* EUSCIA3 ISR               */
     defaultISR,                             /* EUSCIB0 ISR               */
     defaultISR,                             /* EUSCIB1 ISR               */
@@ -149,8 +151,8 @@ void (* const interruptVectors[])(void) __attribute__ ((section (".intvecs"))) =
     defaultISR,                             /* RTC ISR                   */
     defaultISR,                             /* DMA_ERR ISR               */
     defaultISR,                             /* DMA_INT3 ISR              */
-    defaultISR,                             /* DMA_INT2 ISR              */
-    defaultISR,                             /* DMA_INT1 ISR              */
+    DMA_INT2_IRQHandler,                    /* DMA_INT2 ISR              */
+    DMA_INT1_IRQHandler,                    /* DMA_INT1 ISR              */
     defaultISR,                             /* DMA_INT0 ISR              */
     defaultISR,                             /* PORT1 ISR                 */
     defaultISR,                             /* PORT2 ISR                 */

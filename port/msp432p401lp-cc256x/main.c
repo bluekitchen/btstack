@@ -183,6 +183,16 @@ uint32_t hal_time_ms(void){
 
 // HAL UART DMA
 
+// DMA Control Table
+// if not all channels are used, the alignment can be finer
+// GCC
+__attribute__ ((aligned (1024)))
+static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32];
+
+// RX Ping Pong Buffer - similar to circular buffer on other MCUs
+#define HAL_DMA_RX_BUFFER_SIZE 2
+static uint8_t hal_dma_rx_ping_pong_buffer[2 * HAL_DMA_RX_BUFFER_SIZE];
+
 // rx state
 static uint16_t  bytes_to_read = 0;
 static uint8_t * rx_buffer_ptr = 0;
@@ -263,6 +273,22 @@ static void hal_uart_dma_disable_rx(void){
     HWREG16(&P5->OUT) |= GPIO_PIN6;
 }
 
+
+void DMA_INT1_IRQHandler(void)
+{
+    MAP_DMA_clearInterruptFlag(DMA_CH4_EUSCIA2TX & 0x0F);
+    MAP_DMA_disableChannel(DMA_CH4_EUSCIA2TX & 0x0F);
+    (*tx_done_handler)();
+}
+
+void DMA_INT2_IRQHandler(void)
+{
+    MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
+    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+}
+
+#if 0
 // tries to optimize path to RTS high
 void EUSCIA2_IRQHandler(void){ 
 
@@ -325,6 +351,7 @@ void EUSCIA2_IRQHandler(void){
         HWREG16(&P5->OUT) &= ~GPIO_PIN6;
     }
 }
+#endif
 
 void hal_uart_dma_init(void){
     // nShutdown
@@ -337,21 +364,64 @@ void hal_uart_dma_init(void){
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P3,
              GPIO_PIN2 | GPIO_PIN3, GPIO_PRIMARY_MODULE_FUNCTION);
 
-    // configure UART
-    /* Configuring UART Module */
-    MAP_UART_initModule(EUSCI_A2_BASE, &uartConfig);
+    // UART
 
-    /* Enable UART module */
+    /* Configuring and enable UART Module */
+    MAP_UART_initModule(EUSCI_A2_BASE, &uartConfig);
     MAP_UART_enableModule(EUSCI_A2_BASE);
 
-    /* Enable UART interrupts in general */
-    Interrupt_enableInterrupt(INT_EUSCIA2);
+    // DMA
+
+    /* Configuring DMA module */
+    MAP_DMA_enableModule();
+    MAP_DMA_setControlBase(MSP_EXP432P401RLP_DMAControlTable);
+
+    /* Assign DMA channel 4 to EUSCI_A2_TX, channel 5 to EUSCI_A2_RX */
+    MAP_DMA_assignChannel(DMA_CH4_EUSCIA2TX);
+    MAP_DMA_assignChannel(DMA_CH5_EUSCIA2RX);
+
+    /* Setup the RX and TX transfer characteristics */
+    MAP_DMA_setChannelControl(DMA_CH4_EUSCIA2TX | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1);
+    MAP_DMA_setChannelControl(DMA_CH5_EUSCIA2RX | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_NONE | UDMA_DST_INC_8 | UDMA_ARB_1);
+
+    /* Enable DMA interrupt for both channels */
+    MAP_DMA_assignInterrupt(INT_DMA_INT1, DMA_CH4_EUSCIA2TX & 0x0f);
+    MAP_DMA_assignInterrupt(INT_DMA_INT2, DMA_CH5_EUSCIA2RX & 0x0f);
+
+    /* Clear interrupt flags */
+    MAP_DMA_clearInterruptFlag(DMA_CH4_EUSCIA2TX & 0x0F);
+    MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
+
+    /* Enable Interrupts */
+    MAP_Interrupt_enableInterrupt(INT_DMA_INT1);
+    MAP_Interrupt_enableInterrupt(INT_DMA_INT2);
+    MAP_DMA_enableInterrupt(INT_DMA_INT1);
+    MAP_DMA_enableInterrupt(INT_DMA_INT2);
 
     // power cycle
     MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN5);
     delay_ms(10);
     MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN5);
     delay_ms(200);
+
+    // test setup ping pong rx
+
+    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+
+    MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_PRI_SELECT,
+                               UDMA_MODE_PINGPONG,
+                               (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
+                               (uint8_t *) &hal_dma_rx_ping_pong_buffer[0],
+                               HAL_DMA_RX_BUFFER_SIZE);
+    MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_ALT_SELECT,
+                               UDMA_MODE_PINGPONG,
+                               (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
+                               (uint8_t *) &hal_dma_rx_ping_pong_buffer[HAL_DMA_RX_BUFFER_SIZE],
+                               HAL_DMA_RX_BUFFER_SIZE);
+
+    MAP_DMA_enableChannel(DMA_CH5_EUSCIA2RX & 0x0F);
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
@@ -396,24 +466,17 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
-    tx_buffer_ptr = (uint8_t *) data;
-    bytes_to_write = len;
-
-    // start sending
-    if (!bytes_to_write) return;
-
-    // enable TX interrupt -> starts transmission
-    UART_enableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_TRANSMIT_INTERRUPT);
+    MAP_DMA_setChannelTransfer(DMA_CH4_EUSCIA2TX | UDMA_PRI_SELECT, UDMA_MODE_BASIC, (uint8_t *) data,
+                               (void *) MAP_UART_getTransmitBufferAddressForDMA(EUSCI_A2_BASE),
+                               len);
+    MAP_DMA_enableChannel(DMA_CH4_EUSCIA2TX & 0x0F);
 }
 
 // int used to indicate a request for more new data
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
     rx_buffer_ptr = buffer;
     bytes_to_read = len;
-    
-    UART_enableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
-
-    hal_uart_dma_enable_rx();   // RTS low
+    //  TODO
 }
 
 // End of HAL UART DMA
@@ -434,11 +497,13 @@ int main(void)
     /* Halting the Watchdog */
     MAP_WDT_A_holdTimer();
 
+#if 1
     /* Setting our MCLK to 48MHz - directly setting it in system_msp432p401r didn't work */
     MAP_PCM_setCoreVoltageLevel(PCM_VCORE1);
     FlashCtl_setWaitState(FLASH_BANK0, 2);
     FlashCtl_setWaitState(FLASH_BANK1, 2);
     MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
+#endif
 
     init_systick();
 
