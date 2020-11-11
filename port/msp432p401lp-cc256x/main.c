@@ -223,14 +223,14 @@ Pin 37: BTCTS=GPIO-P5.6
 static eUSCI_UART_ConfigV1 uartConfig =
 {
         EUSCI_A_UART_CLOCKSOURCE_SMCLK,          // SMCLK Clock Source
-        13,                                      // BRDIV = 13
-        0,                                       // UCxBRF = 0
-        37,                                      // UCxBRS = 37
+        0 ,                                      // BRDIV  (template)
+        0,                                       // UCxBRF (template)
+        0 ,                                      // UCxBRS (template)
         EUSCI_A_UART_NO_PARITY,                  // No Parity
         EUSCI_A_UART_LSB_FIRST,                  // MSB First
         EUSCI_A_UART_ONE_STOP_BIT,               // One stop bit
-        EUSCI_A_UART_MODE,                       // UART mode
-        EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION,  // Oversampling
+        EUSCI_A_UART_MODE,                       // UART mode: normal
+        0,                                       // Oversampling (template)
         EUSCI_A_UART_8_BIT_LEN,                  // 8 bit
 };
 
@@ -242,28 +242,37 @@ static struct baudrate_config {
     uint8_t  second_mod_reg;
     uint8_t  oversampling;
 } baudrate_configs[] = {
-#if 0
-    // Config for 24 Mhz
-    {  115200, 13,  0, 37, 1},
-    {  230400,  6,  8, 32, 1},
-    {  460800,  3,  4,  2, 1},
-    {  921600,  1, 10,  0, 1},
-    { 1000000,  1,  8,  0, 1},
-    { 2000000, 12,  0,  0, 0},
-    { 3000000,  8,  0,  0, 0},
-    { 3000000,  6,  0,  0, 0},
-#else
     // Config for 48 Mhz
+    {   57600, 52,  1,   37, 1},
     {  115200, 26,  1,  111, 1},
     {  230400, 13,  0,   37, 1},
     {  460800,  6,  8,   32, 1},
     {  921600,  3,  4,    2, 1},
-    { 1000000,  3,  0,  0, 1},
-    { 2000000,  1,  8,  0, 1},
-    { 3000000, 16,  0,  0, 0},
-    { 3000000, 12,  0,  0, 0},
-#endif
+    { 1000000,  3,  0,    0, 1},
+    { 2000000,  1,  8,    0, 1},
+    { 3000000,  1,  0,    0, 1},
+    { 4000000, 12,  0,    0, 0},
 };
+
+// return true if ok
+static bool hal_uart_dma_config(uint32_t baud){
+    int index = -1;
+    int i;
+    for (i=0;i<sizeof(baudrate_configs)/sizeof(struct baudrate_config);i++){
+        if (baudrate_configs[i].baudrate == baud){
+            index = i;
+            break;
+        }
+    }
+    if (index < 0) return false;
+
+    uartConfig.clockPrescalar = baudrate_configs[index].clock_prescalar;
+    uartConfig.firstModReg    = baudrate_configs[index].first_mod_reg;
+    uartConfig.secondModReg   = baudrate_configs[index].second_mod_reg;
+    uartConfig.overSampling   = baudrate_configs[index].oversampling ? EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION : EUSCI_A_UART_LOW_FREQUENCY_BAUDRATE_GENERATION;
+    printf("Pre %u, first %u, second %u\n", uartConfig.clockPrescalar, uartConfig.firstModReg, uartConfig.secondModReg );
+    return true;
+}
 
 static void hal_uart_dma_enable_rx(void){
     // MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
@@ -444,26 +453,14 @@ void hal_uart_dma_init(void){
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
-    int index = -1;
-    int i;
-    for (i=0;i<sizeof(baudrate_configs)/sizeof(struct baudrate_config);i++){
-        if (baudrate_configs[i].baudrate == baud){
-            index = i;
-            break;
-        }
-    }
-    if (index < 0) return -1;
-
+    hal_uart_dma_config(baud);
     MAP_UART_disableModule(EUSCI_A2_BASE);
-
-    uartConfig.clockPrescalar = baudrate_configs[index].clock_prescalar;
-    uartConfig.firstModReg    = baudrate_configs[index].first_mod_reg;
-    uartConfig.secondModReg   = baudrate_configs[index].second_mod_reg;
-    uartConfig.overSampling   = baudrate_configs[index].oversampling;
-    MAP_UART_initModule(EUSCI_A2_BASE, &uartConfig);
-
+    /* BaudRate Control Register */
+    uint32_t moduleInstance = EUSCI_A2_BASE;
+    const eUSCI_UART_ConfigV1 *config = &uartConfig;
+    EUSCI_A_CMSIS(moduleInstance)->BRW = config->clockPrescalar;
+    EUSCI_A_CMSIS(moduleInstance)->MCTLW = ((config->secondModReg << 8) + (config->firstModReg << 4) + config->overSampling);
     MAP_UART_enableModule(EUSCI_A2_BASE);
-    UNUSED(baud);
     return 0;
 }
 
@@ -486,6 +483,17 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
+#if 0
+    static uint32_t baudrate = 115200;
+    if (baudrate == 115200){
+        baudrate =  57600;
+    } else {
+        baudrate = 115200;
+    }
+    printf("baud %u\n", baudrate);
+    hal_uart_dma_set_baud(baudrate);
+#endif
+
     MAP_DMA_setChannelTransfer(DMA_CH4_EUSCIA2TX | UDMA_PRI_SELECT, UDMA_MODE_BASIC, (uint8_t *) data,
                                (void *) MAP_UART_getTransmitBufferAddressForDMA(EUSCI_A2_BASE),
                                len);
