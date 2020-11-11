@@ -126,7 +126,7 @@ static void btstack_run_loop_posix_dump_timer(void){
     int i = 0;
     for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %u\n", i, ts, ts->timeout);
+        log_info("timer %u (%p): timeout %u\n", i++, ts, ts->timeout);
     }
 }
 
