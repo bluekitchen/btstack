@@ -2597,7 +2597,8 @@ static void sm_run(void){
 						if ((setup->sm_peer_ediv == 0u) && sm_is_null_random(setup->sm_peer_rand) && !sm_is_null_key(setup->sm_peer_ltk)){
 							(void)memcpy(setup->sm_ltk, setup->sm_peer_ltk, 16);
 							connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
-							sm_trigger_run();
+                            sm_reencryption_started(connection);
+                            sm_trigger_run();
 							break;
 						}
 						log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Succeeded)");
@@ -2777,6 +2778,8 @@ static void sm_run(void){
 
 				sm_reset_setup();
 				sm_start_calculating_ltk_from_ediv_and_rand(connection);
+
+				sm_reencryption_started(connection);
 
                 // dm helper (was sm_dm_r_prime)
                 // r' = padding || r
