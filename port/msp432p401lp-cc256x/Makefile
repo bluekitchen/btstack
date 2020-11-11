@@ -6,7 +6,7 @@ PART=__MSP432P401R__
 #
 # The base directory for MSPWare.
 #
-ROOT=MSP432_DriverLib_3_10_00_09
+ROOT=ti/devices/msp432p4xx/
 
 #
 # Include the common make definitions.
@@ -16,10 +16,8 @@ include Makefile.defs
 #
 # Where to find header files that do not live in the source directory.
 #
-#IPATH=../../../..
-IPATH+=${ROOT}/inc/
-IPATH+=${ROOT}/inc/CMSIS/
-IPATH+=${ROOT}/driverlib/MSP432P4xx
+IPATH+=CMSIS
+IPATH+=${ROOT}/driverlib
 
 # BTstack
 BTSTACK_ROOT=../..
@@ -218,14 +216,12 @@ $(COMPILER)/%.jdebug: ozone.jdebug | $(COMPILER)
 # pick up sources
 OBJECTS = $(BTSTACK_SOURCES:%.c=$(COMPILER)/%.o) $(PORT_SOURCES:%.o=$(COMPILER)/%.o)
 
-CFLAGSgcc=-DTARGET_IS_MSP432P4XX
-
 LDFLAGS2 = ${CPU} ${FPU} -specs=nano.specs  -lc -lm -lnosys -Wl,--gc-sections
 
 # #
 # # The rule for linking the application.
 # #
-${COMPILER}${SUFFIX}/%.elf: ${OBJECTS} ${COMPILER}/%.o ${ROOT}/driverlib/MSP432P4xx/${COMPILER}/msp432p4xx_driverlib.a
+${COMPILER}${SUFFIX}/%.elf: ${OBJECTS} ${COMPILER}/%.o ti/devices/msp432p4xx/driverlib/${COMPILER}/msp432p4xx_driverlib.a
 	@ \
 	 ldname="linker_script_gcc.ld";                                       \
 	 if [ 'x${VERBOSE}' = x ];                                            \

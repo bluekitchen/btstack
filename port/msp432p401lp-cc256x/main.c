@@ -219,7 +219,7 @@ Pin 37: BTCTS=GPIO-P5.6
  * at:
  * http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSP430BaudRateConverter/index.html
  */
-static eUSCI_UART_Config uartConfig =
+static eUSCI_UART_ConfigV1 uartConfig =
 {
         EUSCI_A_UART_CLOCKSOURCE_SMCLK,          // SMCLK Clock Source
         13,                                      // BRDIV = 13
@@ -229,10 +229,11 @@ static eUSCI_UART_Config uartConfig =
         EUSCI_A_UART_LSB_FIRST,                  // MSB First
         EUSCI_A_UART_ONE_STOP_BIT,               // One stop bit
         EUSCI_A_UART_MODE,                       // UART mode
-        EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION  // Oversampling
+        EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION,  // Oversampling
+        EUSCI_A_UART_8_BIT_LEN,                  // 8 bit
 };
 
-// table 
+// table
 static struct baudrate_config {
     uint32_t baudrate;
     uint8_t  clock_prescalar;
@@ -430,6 +431,7 @@ int  hal_uart_dma_set_baud(uint32_t baud){
     for (i=0;i<sizeof(baudrate_configs)/sizeof(struct baudrate_config);i++){
         if (baudrate_configs[i].baudrate == baud){
             index = i;
+            break;
         }
     }
     if (index < 0) return -1;
@@ -496,14 +498,6 @@ int main(void)
 {
     /* Halting the Watchdog */
     MAP_WDT_A_holdTimer();
-
-#if 1
-    /* Setting our MCLK to 48MHz - directly setting it in system_msp432p401r didn't work */
-    MAP_PCM_setCoreVoltageLevel(PCM_VCORE1);
-    FlashCtl_setWaitState(FLASH_BANK0, 2);
-    FlashCtl_setWaitState(FLASH_BANK1, 2);
-    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
-#endif
 
     init_systick();
 
