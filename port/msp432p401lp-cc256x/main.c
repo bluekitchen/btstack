@@ -192,6 +192,7 @@ static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32];
 // RX Ping Pong Buffer - similar to circular buffer on other MCUs
 #define HAL_DMA_RX_BUFFER_SIZE 2
 static uint8_t hal_dma_rx_ping_pong_buffer[2 * HAL_DMA_RX_BUFFER_SIZE];
+static uint8_t hal_dam_rx_active_buffer = 0;
 
 // rx state
 static uint16_t  bytes_to_read = 0;
@@ -287,6 +288,23 @@ void DMA_INT2_IRQHandler(void)
     MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
     GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
     GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+
+    // reset transfer
+    if (hal_dam_rx_active_buffer == 0){
+        hal_dam_rx_active_buffer = 1;
+        MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_PRI_SELECT,
+                                   UDMA_MODE_PINGPONG,
+                                   (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
+                                   (uint8_t *) &hal_dma_rx_ping_pong_buffer[0],
+                                   HAL_DMA_RX_BUFFER_SIZE);
+    } else {
+        hal_dam_rx_active_buffer = 0;
+        MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_ALT_SELECT,
+                                   UDMA_MODE_PINGPONG,
+                                   (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
+                                   (uint8_t *) &hal_dma_rx_ping_pong_buffer[HAL_DMA_RX_BUFFER_SIZE],
+                                   HAL_DMA_RX_BUFFER_SIZE);
+    }
 }
 
 #if 0
