@@ -595,6 +595,8 @@ static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, u
 
 static void sm_reencryption_started(sm_connection_t * sm_conn){
 
+    if (sm_conn->sm_reencryption_active) return;
+
     sm_conn->sm_reencryption_active = true;
 
     // fetch addr and addr type from db, only called for valid entries
