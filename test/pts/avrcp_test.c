@@ -861,8 +861,12 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             // response to set shuffle and repeat mode
             printf("\n");
             break;
+        case AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE:
+            volume_percentage = avrcp_subevent_set_absolute_volume_response_get_absolute_volume(packet) * 100 / 127;
+            printf("absolute volume response %d %%\n", volume_percentage);
+            break;
         default:
-            printf("AVRCP controller: event not parsed.\n");
+            printf("AVRCP controller: event not parsed 0x%02x\n", packet[2]);
             break;
     }             
 }
@@ -1793,6 +1797,12 @@ static bool avrcp_set_addressed_player_handler(uint16_t player_id){
     return true;
 }
 
+static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
+    UNUSED(seid);
+    UNUSED(packet);
+    UNUSED(size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
@@ -1812,6 +1822,7 @@ int btstack_main(int argc, const char * argv[]){
     local_stream_endpoint->sep.seid = 1;
     avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
     avdtp_source_init();
     avdtp_source_register_packet_handler(&avdtp_source_connection_establishment_packet_handler);
