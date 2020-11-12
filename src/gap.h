@@ -773,6 +773,16 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
 
 /**
+ * @brief Delete bonding information for remote device
+ * @note On most desktop ports, the LE Device DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
+ * @param address_type
+ * @param address
+ */
+void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address);
+
+/**
  * LE Privacy 1.2 - requires support by Controller and ENABLE_LE_RESOLVING_LIST to be defined
  */
 

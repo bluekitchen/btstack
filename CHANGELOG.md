@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: allow to set required minimum security level for all GATT requests
 
 ### Added
-
+- GAP: `gap_delete_bonding` removes device from LE Resolving List and from discards LE bonding information
+ 
 ### Changed
 AVRCP Controller: allow to send multiple absolute volume commands without waiting for response. 
 

@@ -4694,3 +4694,21 @@ void sm_set_secure_connections_only_mode(bool enable){
 const uint8_t * gap_get_persistent_irk(void){
     return sm_persistent_irk;
 }
+
+void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address){
+    uint16_t i;
+    for (i=0; i < le_device_db_max_count(); i++){
+        bd_addr_t entry_address;
+        int entry_address_type = BD_ADDR_TYPE_UNKNOWN;
+        le_device_db_info(i, &entry_address_type, entry_address, NULL);
+        // skip unused entries
+        if (entry_address_type == (int) BD_ADDR_TYPE_UNKNOWN) continue;
+        if ((entry_address_type == (int) address_type) && (memcmp(entry_address, address, 6) == 0)){
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+            hci_remove_le_device_db_entry_from_resolving_list(i);
+#endif
+            le_device_db_remove(i);
+            break;
+        }
+    }
+}
