@@ -221,6 +221,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     if (packet_type != HCI_EVENT_PACKET) return;
 
     bd_addr_t addr;
+    bd_addr_type_t addr_type;
+
     switch (hci_event_packet_get_type(packet)) {
         case SM_EVENT_JUST_WORKS_REQUEST:
             printf("Just works requested\n");
@@ -273,7 +275,13 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     printf("Re-encryption failed, disconnected\n");
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
-                    printf("Re-encryption failed, authentication failure\n");
+                    printf("Re-encryption failed, authentication failure\n\n");
+                    printf("Assuming remote lost bonding information\n");
+                    printf("Deleting local bonding information and start new pairing...\n");
+                    sm_event_reencryption_complete_get_address(packet, addr);
+                    addr_type = sm_event_reencryption_started_get_addr_type(packet);
+                    gap_delete_bonding(addr_type, addr);
+                    sm_request_pairing(sm_event_reencryption_complete_get_handle(packet));
                     break;
                 default:
                     break;
