@@ -22,7 +22,7 @@ AVRCP/CT/MCN/CB/BV-01-I : pQ
 AVRCP/CT/MCN/CB/BV-02-I : pQ, pT, pQ, pW
 AVRCP/CT/MCN/CB/BV-03-I : pQ, pT
 AVRCP/CT/MCN/CB/BV-04-I : pQ, pT, pQ, pi, pj
-AVRCP/CT/MCN/CB/BV-05-I : pQ, y, pQ
+AVRCP/CT/MCN/CB/BV-05-I : pQ, pT, pQ, y, pQ, pQ, pT, pQ, (yes)
 AVRCP/CT/MCN/CB/BV-06-I : pQ
 AVRCP/CT/MCN/CB/BV-09-I : pQ
 
@@ -34,7 +34,7 @@ AVRCP/CT/MCN/NP/BV-10-C : pL
 AVRCP/CT/MCN/NP/BV-01-I : pj, pr
 AVRCP/CT/MCN/NP/BV-02-I : pQ, pT, pQ, p5
 AVRCP/CT/MCN/NP/BV-03-I : pn, ps, p6
-AVRCP/CT/MCN/NP/BV-04-I : l, pj, pj
+AVRCP/CT/MCN/NP/BV-04-I : l, pj, pj, (yes)
 AVRCP/CT/MCN/NP/BV-05-I : pj
 AVRCP/CT/MCN/NP/BV-06-I : pj
 
