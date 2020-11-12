@@ -3509,9 +3509,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 }
                             } else {
                                 status = ERROR_CODE_AUTHENTICATION_FAILURE;
-                                // set state to 'TIMEOUT' to prevent further interaction with this
+                                // set state to 'RE-ENCRYPTION FAILED' to allow pairing but prevent other interactions
                                 // also, gap_reconnect_security_setup_active will return true
-                                sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+                                sm_conn->sm_engine_state = SM_GENERAL_REENCRYPTION_FAILED;
                             }
 
                             // emit re-encryption complete
@@ -3524,7 +3524,6 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             sm_done_for_handle(sm_conn->sm_handle);
-
                             break;
 
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
@@ -4393,6 +4392,9 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                         sm_conn->sm_pairing_requested = 1;
                         break;
                 }
+                break;
+            case SM_GENERAL_REENCRYPTION_FAILED:
+                sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                 break;
             case SM_GENERAL_IDLE:
                 sm_conn->sm_pairing_requested = 1;
