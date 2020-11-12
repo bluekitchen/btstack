@@ -228,7 +228,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
         }
         stream_endpoint->request_can_send_now = 1;
         if (stream_endpoint->connection){
-            avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+            avdtp_request_can_send_now_initiator(stream_endpoint->connection);
         }
     }
 }
