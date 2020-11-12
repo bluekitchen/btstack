@@ -275,6 +275,7 @@ typedef enum {
     SM_GENERAL_IDLE,
     SM_GENERAL_SEND_PAIRING_FAILED,
     SM_GENERAL_TIMEOUT, // no other security messages are exchanged
+    SM_GENERAL_REENCRYPTION_FAILED,
 
     // Phase 1: Pairing Feature Exchange
     SM_PH1_W4_USER_RESPONSE,
