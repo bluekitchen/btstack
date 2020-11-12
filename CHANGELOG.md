@@ -48,6 +48,7 @@ AVRCP Controller: allow to send multiple absolute volume commands without waitin
 ### Changed
 - SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now
 - SM: block connection if encryption fails for bonded devices as Central
+- SM: support pairing as Central after failed re-ecnryption
 
 ## Changes September 2020
 

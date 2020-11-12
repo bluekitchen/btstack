@@ -3525,11 +3525,6 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             sm_done_for_handle(sm_conn->sm_handle);
 
-                            // abort/disconnect on authentication failure
-                            if (status == ERROR_CODE_AUTHENTICATION_FAILURE){
-                                // gap disconnect with authentication failure
-                                hci_disconnect_security_block(con_handle);
-                            }
                             break;
 
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
