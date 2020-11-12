@@ -734,6 +734,7 @@ static bool gatt_client_accept_server_message(hci_con_handle_t con_handle){
 	// after that ignore if bonded but not encrypted
 	return !gap_bonded(con_handle) || (gap_encryption_key_size(con_handle) > 0);
 #else
+    UNUSED(con_handle);
 	return true;
 #endif
 }
