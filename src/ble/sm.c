@@ -4373,32 +4373,37 @@ void sm_request_pairing(hci_con_handle_t con_handle){
         sm_send_security_request_for_connection(sm_conn);
     } else {
         // used as a trigger to start central/master/initiator security procedures
-        if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
-            uint8_t ltk[16];
-            bool have_ltk;
-            switch (sm_conn->sm_irk_lookup_state){
-                case IRK_LOOKUP_SUCCEEDED:
-                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
-                    have_ltk = !sm_is_null_key(ltk);
-                    log_info("have ltk %u", have_ltk);
-                    if (have_ltk){
-                        sm_conn->sm_pairing_requested = 1;
-                        sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
-						sm_reencryption_started(sm_conn);
-                        break;
-                    }
-                    /* fall through */
+        bool have_ltk;
+        uint8_t ltk[16];
+        switch (sm_conn->sm_engine_state){
+            case SM_INITIATOR_CONNECTED:
+                switch (sm_conn->sm_irk_lookup_state){
+                    case IRK_LOOKUP_SUCCEEDED:
+                        le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                        have_ltk = !sm_is_null_key(ltk);
+                        log_info("have ltk %u", have_ltk);
+                        if (have_ltk){
+                            sm_conn->sm_pairing_requested = 1;
+                            sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
+                            sm_reencryption_started(sm_conn);
+                            break;
+                        }
+                        /* fall through */
 
-                case IRK_LOOKUP_FAILED:
-                    sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                    break;
-                default:
-                    log_info("irk lookup pending");
-                    sm_conn->sm_pairing_requested = 1;
-                    break;
-            }
-        } else if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
-            sm_conn->sm_pairing_requested = 1;
+                    case IRK_LOOKUP_FAILED:
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                        break;
+                    default:
+                        log_info("irk lookup pending");
+                        sm_conn->sm_pairing_requested = 1;
+                        break;
+                }
+                break;
+            case SM_GENERAL_IDLE:
+                sm_conn->sm_pairing_requested = 1;
+                break;
+            default:
+                break;
         }
     }
     sm_trigger_run();
