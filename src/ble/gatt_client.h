@@ -188,10 +188,8 @@ typedef struct gatt_client{
     uint8_t  wait_for_pairing_complete;
     uint8_t  pending_error_code;
 
-#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
     bool     reencryption_active;
     uint8_t  reencryption_result;
-#endif
 
     gap_security_level_t security_level;
 
