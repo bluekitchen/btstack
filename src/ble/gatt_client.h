@@ -148,9 +148,6 @@ typedef struct gatt_client{
     btstack_packet_handler_t write_without_response_callback;
 
     hci_con_handle_t con_handle;
-    
-    uint8_t   address_type;
-    bd_addr_t address;
 
     uint16_t          mtu;
     gatt_client_mtu_t mtu_state;
