@@ -387,8 +387,9 @@ void SystemInit(void)
     // DCO = 48 MHz; MCLK = source
     CS->KEY = CS_KEY_VAL;                                  // Unlock CS module for register access
     CS->CTL0 = CS_CTL0_DCORSEL_5;                          // Set DCO to 48MHz
-    CS->CTL1 = (CS->CTL1 & ~(CS_CTL1_SELM_MASK | CS_CTL1_DIVM_MASK)) | CS_CTL1_SELM__DCOCLK;
-	                                                       // Select MCLK as DCO source
+//    CS->CTL1 = (CS->CTL1 & ~(CS_CTL1_SELM_MASK | CS_CTL1_DIVM_MASK)) | CS_CTL1_SELM__DCOCLK;
+//	                                                       // Select MCLK as DCO source
+    CS->CTL1 = 0x00000033;   // reset value (SMCLK, HSMCLK, MCLK source DCO)
     CS->KEY = 0;
 
     // Set Flash Bank read buffering
