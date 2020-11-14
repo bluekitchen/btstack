@@ -155,6 +155,7 @@ EXAMPLES = 					\
 	le_counter              \
 	le_streamer				\
 	le_streamer_client      \
+	led_counter             \
 	pbap_client_demo		\
 	sdp_bnep_query 			\
 	sdp_general_query		\
