@@ -154,6 +154,19 @@ void hal_cpu_enable_irqs_and_sleep(void){
     __asm__("wfe"); // go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
+// HAL LED
+#include "hal_led.h"
+void hal_led_toggle(void){
+    static bool on = false;
+    if (on){
+        on = false;
+        GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);
+   } else {
+        on = true;
+        GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);
+    }
+}
+
 // HAL TIME Implementation
 
 static volatile uint32_t systick;
@@ -526,6 +539,10 @@ int main(void)
     MAP_WDT_A_holdTimer();
 
     init_systick();
+
+    // init led
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
+    hal_led_toggle();
 
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
