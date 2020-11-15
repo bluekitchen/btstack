@@ -24,6 +24,8 @@
 #include "classic/btstack_link_key_db_tlv.h"
 #include "ble/le_device_db_tlv.h"
 
+static void delay_ms(uint32_t ms);
+
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
@@ -167,33 +169,6 @@ void hal_led_toggle(void){
     }
 }
 
-// HAL TIME Implementation
-
-static volatile uint32_t systick;
-
-void SysTick_Handler(void)
-{
-    systick++;
-}
-
-
-static void init_systick(void){
-    // Configuring SysTick to trigger every ms (48 Mhz / 48000 = 1 ms)
-    MAP_SysTick_enableModule();
-    MAP_SysTick_setPeriod(48000);
-    // MAP_Interrupt_enableSleepOnIsrExit();
-    MAP_SysTick_enableInterrupt();
-}
-
-static void delay_ms(uint32_t ms){
-    uint32_t delay_until = systick + ms;
-    while (systick < delay_until);
-}
-
-uint32_t hal_time_ms(void){
-    return systick;
-}
-
 // HAL UART DMA
 
 // DMA Control Table
@@ -203,9 +178,12 @@ __attribute__ ((aligned (1024)))
 static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32];
 
 // RX Ping Pong Buffer - similar to circular buffer on other MCUs
-#define HAL_DMA_RX_BUFFER_SIZE 2
+#define HAL_DMA_RX_BUFFER_SIZE 64
 static uint8_t hal_dma_rx_ping_pong_buffer[2 * HAL_DMA_RX_BUFFER_SIZE];
-static uint8_t hal_dam_rx_active_buffer = 0;
+
+// active buffer and position to read from
+static uint8_t  hal_dma_rx_active_buffer = 0;
+static uint16_t hal_dma_rx_offset;
 
 // rx state
 static uint16_t  bytes_to_read = 0;
@@ -287,16 +265,16 @@ static bool hal_uart_dma_config(uint32_t baud){
     return true;
 }
 
-static void hal_uart_dma_enable_rx(void){
-    // MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    HWREG16(&P5->OUT) &= ~GPIO_PIN6;
+static void hal_dma_rx_start_transfer(uint8_t buffer){
+    uint32_t channel = DMA_CH5_EUSCIA2RX | (buffer == 0 ? UDMA_PRI_SELECT : UDMA_ALT_SELECT);
+    MAP_DMA_setChannelTransfer(channel, UDMA_MODE_PINGPONG, (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
+       (uint8_t *) &hal_dma_rx_ping_pong_buffer[buffer * HAL_DMA_RX_BUFFER_SIZE], HAL_DMA_RX_BUFFER_SIZE);
 }
 
-static void hal_uart_dma_disable_rx(void){
-    // MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    HWREG16(&P5->OUT) |= GPIO_PIN6;
+static uint16_t hal_dma_rx_bytes_avail(uint8_t buffer, uint16_t offset){
+    uint32_t channel = DMA_CH5_EUSCIA2RX | (buffer == 0 ? UDMA_PRI_SELECT : UDMA_ALT_SELECT);
+    return HAL_DMA_RX_BUFFER_SIZE - MAP_DMA_getChannelSize(channel) - offset;
 }
-
 
 void DMA_INT1_IRQHandler(void)
 {
@@ -308,97 +286,37 @@ void DMA_INT1_IRQHandler(void)
 void DMA_INT2_IRQHandler(void)
 {
     MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
+    // raise RTS
     GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
-
-    // reset transfer
-    if (hal_dam_rx_active_buffer == 0){
-        hal_dam_rx_active_buffer = 1;
-        MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_PRI_SELECT,
-                                   UDMA_MODE_PINGPONG,
-                                   (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
-                                   (uint8_t *) &hal_dma_rx_ping_pong_buffer[0],
-                                   HAL_DMA_RX_BUFFER_SIZE);
-    } else {
-        hal_dam_rx_active_buffer = 0;
-        MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_ALT_SELECT,
-                                   UDMA_MODE_PINGPONG,
-                                   (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
-                                   (uint8_t *) &hal_dma_rx_ping_pong_buffer[HAL_DMA_RX_BUFFER_SIZE],
-                                   HAL_DMA_RX_BUFFER_SIZE);
-    }
 }
 
-#if 0
-// tries to optimize path to RTS high
-void EUSCIA2_IRQHandler(void){ 
-
-    // raise RTS  prophylactically
-
-    // Call Library: 2 Instructions + Call to Library
-    // GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
-
-    // Copied code from library: 13 Instructioncs
-    // uint32_t baseAddress = GPIO_PORT_TO_BASE[5];
-    // HWREG16(baseAddress + OFS_LIB_PAOUT) |= GPIO_PIN6;
-
-    // basic optimization: 7 instructions
-    HWREG16(&P5->OUT) |= GPIO_PIN6;
-
-    // regular IRQ handler
-    uint_fast8_t status = MAP_UART_getEnabledInterruptStatus(EUSCI_A2_BASE);    
-
-    MAP_UART_clearInterruptFlag(EUSCI_A2_BASE, status);
-
-    // RX Complete
-    if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG){
-        if (bytes_to_read) {
-            *rx_buffer_ptr = UART_receiveData(EUSCI_A2_BASE);
-            ++rx_buffer_ptr;
-            --bytes_to_read;
-        }
-        if (bytes_to_read == 0){
-
-            // disable RXIE
-            UART_disableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
-
-            // done
-            (*rx_done_handler)();
-        }
+static void hal_uart_dma_harvest(void){
+    if (bytes_to_read == 0) return;
+    // get bytes from current buffer
+    uint16_t bytes_avail = hal_dma_rx_bytes_avail(hal_dma_rx_active_buffer, hal_dma_rx_offset);
+    uint16_t bytes_to_copy = btstack_min(bytes_avail, bytes_to_read);
+    memcpy(rx_buffer_ptr, &hal_dma_rx_ping_pong_buffer[hal_dma_rx_active_buffer * HAL_DMA_RX_BUFFER_SIZE + hal_dma_rx_offset], bytes_to_copy);
+    rx_buffer_ptr += bytes_to_copy;
+    bytes_to_read -= bytes_to_copy;
+    hal_dma_rx_offset += bytes_to_copy;
+    // if current buffer fully processed, restart DMA transfer and switch to next buffer
+    if (hal_dma_rx_offset == HAL_DMA_RX_BUFFER_SIZE){
+        hal_dma_rx_offset = 0;
+        hal_dma_rx_start_transfer(hal_dma_rx_active_buffer);
+        hal_dma_rx_active_buffer = 1 - hal_dma_rx_active_buffer;
+        GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
     }
-
-    // TX IDLE
-    if (status & EUSCI_A_UART_TRANSMIT_INTERRUPT_FLAG){
-        if (bytes_to_write){
-            // start TX
-            MAP_UART_transmitData(EUSCI_A2_BASE, *tx_buffer_ptr);
-            ++tx_buffer_ptr;
-            --bytes_to_write;
-        }
-        if (bytes_to_write == 0){
-            // disable TXIE interrupt
-            UART_disableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_TRANSMIT_INTERRUPT);
-
-            // done
-            (*tx_done_handler)();
-        }
-    }
-
-    // lower RTS again if waiting for data
-    if (bytes_to_read) {
-        // hal_uart_dma_enable_rx();
-
-        // basic optimization: 7 instructions
-        HWREG16(&P5->OUT) &= ~GPIO_PIN6;
+    if (bytes_to_read == 0){
+        (*rx_done_handler)();
     }
 }
-#endif
 
 void hal_uart_dma_init(void){
     // nShutdown
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
     // BT-CTS
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
     // BT-RTS
     MAP_GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P6, GPIO_PIN6);
     // UART pins
@@ -445,24 +363,17 @@ void hal_uart_dma_init(void){
     MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN5);
     delay_ms(200);
 
-    // test setup ping pong rx
+    // setup ping pong rx
+    hal_dma_rx_start_transfer(0);
+    hal_dma_rx_start_transfer(1);
 
-    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
-
-    MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_PRI_SELECT,
-                               UDMA_MODE_PINGPONG,
-                               (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
-                               (uint8_t *) &hal_dma_rx_ping_pong_buffer[0],
-                               HAL_DMA_RX_BUFFER_SIZE);
-    MAP_DMA_setChannelTransfer(DMA_CH5_EUSCIA2RX | UDMA_ALT_SELECT,
-                               UDMA_MODE_PINGPONG,
-                               (void *) UART_getReceiveBufferAddressForDMA(EUSCI_A2_BASE),
-                               (uint8_t *) &hal_dma_rx_ping_pong_buffer[HAL_DMA_RX_BUFFER_SIZE],
-                               HAL_DMA_RX_BUFFER_SIZE);
+    hal_dma_rx_active_buffer = 0;
+    hal_dma_rx_offset = 0;
 
     MAP_DMA_enableChannel(DMA_CH5_EUSCIA2RX & 0x0F);
+
+    // ready
+    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
@@ -496,17 +407,6 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
-#if 0
-    static uint32_t baudrate = 115200;
-    if (baudrate == 115200){
-        baudrate =  57600;
-    } else {
-        baudrate = 115200;
-    }
-    printf("baud %u\n", baudrate);
-    hal_uart_dma_set_baud(baudrate);
-#endif
-
     MAP_DMA_setChannelTransfer(DMA_CH4_EUSCIA2TX | UDMA_PRI_SELECT, UDMA_MODE_BASIC, (uint8_t *) data,
                                (void *) MAP_UART_getTransmitBufferAddressForDMA(EUSCI_A2_BASE),
                                len);
@@ -515,12 +415,43 @@ void hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
 
 // int used to indicate a request for more new data
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
+    printf("rx: %u\n", len);
     rx_buffer_ptr = buffer;
     bytes_to_read = len;
-    //  TODO
+    hal_cpu_disable_irqs();
+    hal_uart_dma_harvest();
+    hal_cpu_enable_irqs();
 }
 
 // End of HAL UART DMA
+
+// HAL TIME Implementation
+
+static volatile uint32_t systick;
+
+void SysTick_Handler(void){
+    systick++;
+    // process received data
+    hal_uart_dma_harvest();
+}
+
+
+static void init_systick(void){
+    // Configuring SysTick to trigger every ms (48 Mhz / 48000 = 1 ms)
+    MAP_SysTick_enableModule();
+    MAP_SysTick_setPeriod(48000);
+    // MAP_Interrupt_enableSleepOnIsrExit();
+    MAP_SysTick_enableInterrupt();
+}
+
+static void delay_ms(uint32_t ms){
+    uint32_t delay_until = systick + ms;
+    while (systick < delay_until);
+}
+
+uint32_t hal_time_ms(void){
+    return systick;
+}
 
 #include "SEGGER_RTT.h"
 
@@ -592,24 +523,6 @@ int main(void)
 
     // go
     btstack_run_loop_execute();
-
-
-#if 0
-    tx_done_handler = &tc_callback;
-    rx_done_handler = &rc_callback;
-    while (1){
-        // depends on systick
-        hal_uart_dma_init();
-        w4_tc = 1;
-        w4_rc = 1;
-        memset(rx_buffer, 0, sizeof(rx_buffer));
-        hal_uart_dma_receive_block(&rx_buffer[0], 7);
-        hal_uart_dma_send_block(hci_reset, sizeof(hci_reset));
-        while (w4_tc); 
-        while (w4_rc);
-        delay_ms(10);
-    }
-#endif
 }
 
 
