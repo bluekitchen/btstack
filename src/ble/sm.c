@@ -622,7 +622,9 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 }
 
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
-    
+
+    if (!sm_conn->sm_pairing_active) return;
+
     uint8_t event[13];
     sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
     event[11] = status;
@@ -997,6 +999,7 @@ void sm_cmac_signed_write_start(const sm_key_t k, uint8_t opcode, hci_con_handle
 static void sm_trigger_user_response(sm_connection_t * sm_conn){
     // notify client for: JUST WORKS confirm, Numeric comparison confirm, PASSKEY display or input
     setup->sm_user_response = SM_USER_RESPONSE_IDLE;
+    sm_conn->sm_pairing_active = true;
     switch (setup->sm_stk_generation_method){
         case PK_RESP_INPUT:
             if (IS_RESPONDER(sm_conn->sm_role)){

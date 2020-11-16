@@ -403,7 +403,7 @@ typedef struct sm_connection {
     uint8_t                  sm_peer_addr_type;
     bd_addr_t                sm_peer_address;
     security_manager_state_t sm_engine_state;
-    irk_lookup_state_t      sm_irk_lookup_state;
+    irk_lookup_state_t       sm_irk_lookup_state;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
     uint8_t                  sm_connection_sc;
@@ -413,6 +413,7 @@ typedef struct sm_connection {
     uint16_t                 sm_local_ediv;
     uint8_t                  sm_local_rand[8];
     int                      sm_le_db_index;
+    bool                     sm_pairing_active;
     bool                     sm_reencryption_active;
 } sm_connection_t;
 
