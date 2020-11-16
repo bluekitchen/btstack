@@ -622,9 +622,7 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 }
 
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
-
-    sm_reencryption_complete(sm_conn, status);
-
+    
     uint8_t event[13];
     sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
     event[11] = status;
@@ -648,6 +646,7 @@ static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
     sm_connection_t * sm_conn = (sm_connection_t*) btstack_run_loop_get_timer_context(timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+    sm_reencryption_complete(sm_conn, ERROR_CODE_CONNECTION_TIMEOUT);
     sm_pairing_complete(sm_conn, ERROR_CODE_CONNECTION_TIMEOUT, 0);
     sm_done_for_handle(sm_conn->sm_handle);
 
@@ -3597,6 +3596,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         case SM_RESPONDER_IDLE:
                             break;
                         default:
+                            sm_reencryption_complete(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
                             sm_pairing_complete(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
                             break;
                     }
@@ -3724,6 +3724,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     if (!sm_conn) return;
 
     if (sm_pdu_code == SM_CODE_PAIRING_FAILED){
+        sm_reencryption_complete(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE);
         sm_pairing_complete(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, packet[1]);
         sm_done_for_handle(con_handle);
         sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
