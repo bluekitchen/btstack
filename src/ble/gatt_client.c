@@ -891,7 +891,9 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
             // delete bonding information
             int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
             btstack_assert(le_device_db_index >= 0);
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
             hci_remove_le_device_db_entry_from_resolving_list((uint16_t) le_device_db_index);
+#endif
             le_device_db_remove(le_device_db_index);
             // trigger pairing again
             sm_request_pairing(gatt_client->con_handle);
