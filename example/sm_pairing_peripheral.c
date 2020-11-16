@@ -220,7 +220,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Pairing failed, disconnected\n");
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
-                    printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    printf("Pairing failed, authentication failure with reason = %u\n", sm_event_pairing_complete_get_reason(packet));
                     break;
                 default:
                     break;
