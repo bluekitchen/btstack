@@ -205,6 +205,18 @@ Pin 36: BTRTS=GPIO-P6.6
 Pin 37: BTCTS=GPIO-P5.6
 */
 
+#define BLUETOOTH_TX_PORT        GPIO_PORT_P3
+#define BLUETOOTH_TX_PIN         GPIO_PIN2
+#define BLUETOOTH_RX_PORT        GPIO_PORT_P3
+#define BLUETOOTH_RX_PIN         GPIO_PIN3
+#define BLUETOOTH_RTS_PORT       GPIO_PORT_P6
+#define BLUETOOTH_RTS_PIN        GPIO_PIN6
+#define BLUETOOTH_CTS_PORT       GPIO_PORT_P5
+#define BLUETOOTH_CTS_PIN        GPIO_PIN6
+#define BLUETOOTH_nSHUTDOWN_PORT GPIO_PORT_P2
+#define BLUETOOTH_nSHUTDOWN_PIN  GPIO_PIN5
+
+
 /* UART Configuration Parameter. These are the configuration parameters to
  * make the eUSCI A UART module to operate with a 115200 baud rate. These
  * values were calculated using the online calculator that TI provides
@@ -286,8 +298,8 @@ void DMA_INT1_IRQHandler(void)
 void DMA_INT2_IRQHandler(void)
 {
     MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
-    // raise RTS
-    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    // raise our RTS
+    GPIO_setOutputHighOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
 }
 
 static void hal_uart_dma_harvest(void){
@@ -304,7 +316,7 @@ static void hal_uart_dma_harvest(void){
         hal_dma_rx_offset = 0;
         hal_dma_rx_start_transfer(hal_dma_rx_active_buffer);
         hal_dma_rx_active_buffer = 1 - hal_dma_rx_active_buffer;
-        GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+        GPIO_setOutputLowOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
     }
     if (bytes_to_read == 0){
         (*rx_done_handler)();
@@ -313,15 +325,15 @@ static void hal_uart_dma_harvest(void){
 
 void hal_uart_dma_init(void){
     // nShutdown
-    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setAsOutputPin(BLUETOOTH_nSHUTDOWN_PORT, BLUETOOTH_nSHUTDOWN_PIN);
     // BT-CTS
-    MAP_GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN6);
-    GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    MAP_GPIO_setAsOutputPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
+    GPIO_setOutputHighOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
     // BT-RTS
-    MAP_GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P6, GPIO_PIN6);
+    MAP_GPIO_setAsInputPinWithPullDownResistor(BLUETOOTH_RTS_PORT, BLUETOOTH_RTS_PIN);
     // UART pins
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P3,
-             GPIO_PIN2 | GPIO_PIN3, GPIO_PRIMARY_MODULE_FUNCTION);
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(BLUETOOTH_TX_PORT, BLUETOOTH_TX_PIN, GPIO_PRIMARY_MODULE_FUNCTION);
+    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(BLUETOOTH_RX_PORT, BLUETOOTH_RX_PIN, GPIO_PRIMARY_MODULE_FUNCTION);
 
     // UART
 
@@ -358,9 +370,9 @@ void hal_uart_dma_init(void){
     MAP_DMA_enableInterrupt(INT_DMA_INT2);
 
     // power cycle
-    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setOutputLowOnPin(BLUETOOTH_nSHUTDOWN_PORT, BLUETOOTH_nSHUTDOWN_PIN);
     delay_ms(10);
-    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setOutputHighOnPin(BLUETOOTH_nSHUTDOWN_PORT, BLUETOOTH_nSHUTDOWN_PIN);
     delay_ms(200);
 
     // setup ping pong rx
@@ -373,7 +385,7 @@ void hal_uart_dma_init(void){
     MAP_DMA_enableChannel(DMA_CH5_EUSCIA2RX & 0x0F);
 
     // ready
-    GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    GPIO_setOutputLowOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
