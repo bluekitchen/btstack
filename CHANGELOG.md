@@ -17,19 +17,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - L2CAP: trigger pairing for outgoing LE Data Channels if security level insufficient
 - SM: fix update of sc flag for re-encrypted connection in peripheral role
-- SM: send security request on re-connect if bonded (ENABLE_LE_PROACTIVE_AUTHENTICATION)
-- GATT Client: allow to set required minimum security level for all GATT requests
+- SM: send security request on re-connect if bonded and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is defined
+- GATT Client: gatt_client_set_required_security_level allows to set required minimum security level for all GATT requests
 
 ### Added
 - GAP: `gap_delete_bonding` removes device from LE Resolving List and from discards LE bonding information
- 
+- GATT Client: delete bonding information if re-encryption fails and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is not defined
+- SM: emit events for re-encryption started/complete
+
 ### Changed
-AVRCP Controller: allow to send multiple absolute volume commands without waiting for response. 
+- AVRCP Controller: allow to send multiple absolute volume commands without waiting for response. 
+- GAP: replaced `ENABLE_LE_CENTRAL_AUTO_ENCRYPION` with `ENABLE_LE_PROACTIVE_AUTHENTICATION`
+
 
 ## Changes October 2020
 
 ### Fixed
-- AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
 - AVDTP Initiator: avoid use of remote seid for stream endpoint lookup, fixes issue with two connected devices 
 - AVDTP Source: buffer for SBC media codec information got discarded, leading to invalid Set Configuration command in second connection
 - SM: only trigger Cross-Transport Key Derivation (CTKD) when bonding is enabled
@@ -49,6 +52,17 @@ AVRCP Controller: allow to send multiple absolute volume commands without waitin
 - SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now
 - SM: block connection if encryption fails for bonded devices as Central
 - SM: support pairing as Central after failed re-ecnryption
+
+
+## Release v1.1
+
+### Fixed
+- AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
+
+### Added
+
+### Changed
+
 
 ## Changes September 2020
 
