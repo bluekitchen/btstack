@@ -205,6 +205,8 @@ Pin 36: BTRTS=GPIO-P6.6
 Pin 37: BTCTS=GPIO-P5.6
 */
 
+#if 0
+// Unclear
 #define BLUETOOTH_TX_PORT        GPIO_PORT_P3
 #define BLUETOOTH_TX_PIN         GPIO_PIN2
 #define BLUETOOTH_RX_PORT        GPIO_PORT_P3
@@ -215,7 +217,19 @@ Pin 37: BTCTS=GPIO-P5.6
 #define BLUETOOTH_CTS_PIN        GPIO_PIN6
 #define BLUETOOTH_nSHUTDOWN_PORT GPIO_PORT_P2
 #define BLUETOOTH_nSHUTDOWN_PIN  GPIO_PIN5
-
+#else
+// EM Wireless BoosterPack with CC256x module
+#define BLUETOOTH_TX_PORT        GPIO_PORT_P3
+#define BLUETOOTH_TX_PIN         GPIO_PIN2
+#define BLUETOOTH_RX_PORT        GPIO_PORT_P3
+#define BLUETOOTH_RX_PIN         GPIO_PIN3
+#define BLUETOOTH_RTS_PORT       GPIO_PORT_P3
+#define BLUETOOTH_RTS_PIN        GPIO_PIN6
+#define BLUETOOTH_CTS_PORT       GPIO_PORT_P5
+#define BLUETOOTH_CTS_PIN        GPIO_PIN2
+#define BLUETOOTH_nSHUTDOWN_PORT GPIO_PORT_P6
+#define BLUETOOTH_nSHUTDOWN_PIN  GPIO_PIN4
+#endif
 
 /* UART Configuration Parameter. These are the configuration parameters to
  * make the eUSCI A UART module to operate with a 115200 baud rate. These

@@ -118,7 +118,7 @@ uECC.c \
 
 PORT_SOURCES = \
 	btstack_chipset_cc256x.o \
- 	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o \
+ 	bluetooth_init_cc2564C_1.4.o \
 	hal_flash_bank_msp432.o \
 	main.o \
 	startup_msp432p401r_${COMPILER}.o \
