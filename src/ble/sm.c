@@ -609,6 +609,8 @@ static void sm_reencryption_started(sm_connection_t * sm_conn){
 
 static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 
+    if (!sm_conn->sm_reencryption_active) return;
+
     sm_conn->sm_reencryption_active = false;
 
     // fetch addr and addr type from db, only called for valid entries
@@ -621,9 +623,7 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
 
-    if (sm_conn->sm_reencryption_active){
-        sm_reencryption_complete(sm_conn, status);
-    }
+    sm_reencryption_complete(sm_conn, status);
 
     uint8_t event[13];
     sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
