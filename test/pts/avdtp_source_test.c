@@ -696,7 +696,10 @@ int btstack_main(int argc, const char * argv[]){
     sc.local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *) media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t*) media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
     media_tracker.local_seid = avdtp_local_seid(sc.local_stream_endpoint);
     media_tracker.remote_seid = 1;
-    
+    // store user codec configuration buffer
+    sc.local_stream_endpoint->media_codec_configuration_info = media_sbc_codec_configuration;
+    sc.local_stream_endpoint->media_codec_configuration_len  = sizeof(media_sbc_codec_configuration);
+
     avdtp_source_register_delay_reporting_category(media_tracker.local_seid);
 
     // Initialize SDP 
