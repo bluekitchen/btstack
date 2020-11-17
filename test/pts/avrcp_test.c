@@ -308,6 +308,10 @@ static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
 };
 
+static avrcp_media_attribute_id_t now_playing_info_attributes [] = {
+    AVRCP_MEDIA_ATTR_TITLE
+};
+
 typedef struct {
     uint8_t track_id[8];
     uint32_t song_length_ms;
@@ -865,6 +869,9 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             volume_percentage = avrcp_subevent_set_absolute_volume_response_get_absolute_volume(packet) * 100 / 127;
             printf("absolute volume response %d %%\n", volume_percentage);
             break;
+        case AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE:
+            printf("Playing info done with receiving\n");
+            break;
         default:
             printf("AVRCP controller: event not parsed 0x%02x\n", packet[2]);
             break;
@@ -1142,7 +1149,8 @@ static void show_usage(void){
     printf("* - get subunit info\n");
     printf("r - get play status\n");
     printf("/ - get now playing info\n");
-    
+    printf("$ - get TITLE of now playing song\n");
+
     printf("01 - play\n");
     printf("02 - pause\n");
     printf("03 - stop\n");
@@ -1328,6 +1336,11 @@ static void stdin_process(char * cmd, int size){
             printf("AVRCP: get now playing info\n");
             avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
+        case '$':
+            printf("AVRCP: get TITLE of now playing song\n");
+            avrcp_controller_get_element_attributes(avrcp_cid, sizeof(now_playing_info_attributes)/4, now_playing_info_attributes);
+            break;
+
         case '0':
             switch (cmd[1]){
                 case '1':

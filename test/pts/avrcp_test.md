@@ -137,8 +137,8 @@ AVRCP/TG/PTT/BV-03-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-04-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-05-I : (Confirmation expected)
 
-AVRCP/TG/RCR/BV-02-C : tl, (OK)
-AVRCP/TG/RCR/BV-04-C : tl, (OK)
+AVRCP/TG/RCR/BV-02-C : $
+AVRCP/TG/RCR/BV-04-C : $
 
 AVRCP/TG/VLH/BI-01-C : (wait)
 AVRCP/TG/VLH/BI-02-C : (wait)

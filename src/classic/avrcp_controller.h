@@ -238,7 +238,14 @@ uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notificat
 uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
 /**
- * @brief Get info on now playing media.
+ * @brief Get info on now playing media using subset of attribute IDs
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_attributes, avrcp_media_attribute_id_t * attributes);
+
+/**
+ * @brief Get info on now playing media using all IDs.
  * @param avrcp_cid
  * @returns status
  */

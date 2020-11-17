@@ -680,7 +680,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     
     uint16_t pos = 3;
     uint8_t  pdu_id;
-    
+    uint8_t  vendor_dependent_packet_type;
+
     connection->last_confirmed_transaction_id = packet[0] >> 4;
 
     avrcp_frame_type_t  frame_type = (avrcp_frame_type_t)((packet[0] >> 1) & 0x01);
@@ -741,8 +742,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             // Company ID (3)
             pos += 3;
             pdu_id = packet[pos++];
-            // packet type (1)
-            pos++;
+            vendor_dependent_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);            
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
             log_info("operands length %d, remaining size %d", param_length, size - pos);
@@ -916,31 +916,32 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
                 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    switch (packet_type){
+                    switch (vendor_dependent_packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:
                             avrcp_parser_reset(connection);
                             connection->list_size = param_length;
                             connection->num_attributes = packet[pos++];
-                            
+
                             avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
-                            
-                            if (packet_type == AVRCP_START_PACKET){
+                            if (vendor_dependent_packet_type == AVRCP_START_PACKET){
                                 avrcp_controller_request_continue_response(connection);
                             }
                             break;
                         case AVRCP_CONTINUE_PACKET:
                         case AVRCP_END_PACKET:
                             connection->num_received_fragments++;
+                            
                             if (connection->num_received_fragments < connection->max_num_fragments){
                                 avrcp_controller_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
-                                if (packet_type == AVRCP_CONTINUE_PACKET){
+
+                                if (vendor_dependent_packet_type == AVRCP_CONTINUE_PACKET){
                                     avrcp_controller_request_continue_response(connection);
-                                }
+                                } 
                             } else {
-                                avrcp_controller_request_abort_continuation(connection);
                                 avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 1);
                                 avrcp_parser_reset(connection);
+                                avrcp_controller_request_abort_continuation(connection);
                             }
                             break;
                         default:
@@ -1308,15 +1309,20 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
+uint8_t avrcp_controller_get_element_attributes(uint16_t avrcp_cid, uint8_t num_attributes, avrcp_media_attribute_id_t * attributes){
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
         log_error("avrcp_get_capabilities: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+
+    if (num_attributes >= AVRCP_MEDIA_ATTR_RESERVED) {
+        return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
     connection->state = AVCTP_W2_SEND_COMMAND;
-    
+
     connection->transaction_id = avrcp_controller_get_next_transaction_label(connection);
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
@@ -1336,12 +1342,22 @@ uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
     memset(connection->cmd_operands + pos, 0, 8); // identifier: PLAYING
     pos += 8;
 
-    connection->cmd_operands[pos++] = 0; // attribute count, if 0 get all attributes
-    // every attribute is 4 bytes long
+    connection->cmd_operands[pos++] = num_attributes; // attribute count, if 0 get all attributes
+    
+    int i;
+    for (i = 0; i < num_attributes; i++){
+        // every attribute is 4 bytes long
+        big_endian_store_32(connection->cmd_operands, pos, attributes[i]);
+        pos += 4;
+    }
 
     connection->cmd_operands_length = pos;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
+    return avrcp_controller_get_element_attributes(avrcp_cid, 0, NULL);
 }
 
 uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume){
