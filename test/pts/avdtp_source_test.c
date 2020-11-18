@@ -549,11 +549,7 @@ static const uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
-static const uint8_t media_sbc_codec_configuration[] = {
-    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 53
-}; 
+static uint8_t media_sbc_codec_configuration[4];
 
 static const uint8_t media_sbc_codec_reconfiguration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
