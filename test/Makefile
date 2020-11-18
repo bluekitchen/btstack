@@ -24,6 +24,7 @@ SUBDIRS =  \
 	map_test \
 	mesh \
 	obex \
+	pts \
 	ring_buffer \
 	sdp \
 	sdp_client \

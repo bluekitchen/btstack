@@ -244,3 +244,6 @@ myclean:
 	rm -rf hrp_server_test.h
 	
 clean: myclean
+
+test:
+	echo "No unit tests in PTS"
