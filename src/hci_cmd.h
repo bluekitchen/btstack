@@ -377,8 +377,12 @@ extern const hci_cmd_t hci_bcm_write_tx_power_table;
 extern const hci_cmd_t hci_bcm_set_tx_pwr;
 
 // TI specific HCI commands
+extern const hci_cmd_t hci_ti_avrp_enable;
 extern const hci_cmd_t hci_ti_drpb_tester_con_tx;
 extern const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx;
+extern const hci_cmd_t hci_ti_wbs_associate;
+extern const hci_cmd_t hci_ti_wbs_disassociate;
+extern const hci_cmd_t hci_ti_write_codec_config;
 
 /**
  * construct HCI Command based on template
