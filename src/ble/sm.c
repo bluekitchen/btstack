@@ -1320,8 +1320,8 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                             sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                             break;
                         }
-                    }
 #endif
+                    }
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
