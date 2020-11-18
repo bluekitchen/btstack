@@ -113,6 +113,10 @@ cc256xb_bt_sp_v1.8/initscripts-TIInit_6.7.16_ble_add-on.bts: cc256xb_bt_sp_v1.8.
 	@mkdir -p cc256xb_bt_sp_v1.8
 	@unzip -q -j -o cc256xb_bt_sp_v1.8.zip -d cc256xb_bt_sp_v1.8 CC256XB_BT_SP/v1.8/initscripts-TIInit_6.7.16_ble_add-on.bts
 
+cc256xb_bt_sp_v1.8/initscripts-TIInit_6.7.16_avpr_add-on.bts: cc256xb_bt_sp_v1.8.zip
+	@echo "Extracting $@"
+	@mkdir -p cc256xb_bt_sp_v1.8
+	@unzip -q -j -o cc256xb_bt_sp_v1.8.zip -d cc256xb_bt_sp_v1.8 CC256XB_BT_SP/v1.8/initscripts-TIInit_6.7.16_avpr_add-on.bts
 
 # Fourth generation CC256xC - TIInit_6.12.26.bts
 
@@ -257,6 +261,11 @@ bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c: cc256xb_bt_sp_v1.6/initscripts-TIInit_
 	@$(CONVERSION_SCRIPT) $^ $@
 
 bluetooth_init_cc2560B_1.8_BT_Spec_4.1.c: cc256xb_bt_sp_v1.8/initscripts-TIInit_6.7.16_bt_spec_4.1.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
+bluetooth_init_cc2560B_avpr_1.8_BT_Spec_4.1.c: cc256xb_bt_sp_v1.8/initscripts-TIInit_6.7.16_bt_spec_4.1.bts cc256xb_bt_sp_v1.8/initscripts-TIInit_6.7.16_avpr_add-on.bts
+
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
