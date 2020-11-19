@@ -4683,7 +4683,8 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
             // IR Lookup pending
             return 1;
     }
-    // IRK Lookup Succeeded, re-encryption should be initiated. When done, state gets reset
+    // IRK Lookup Succeeded, re-encryption should be initiated. When done, state gets reset or indicates failure
+    if (sm_conn->sm_engine_state == SM_GENERAL_REENCRYPTION_FAILED) return 0;
     if (sm_conn->sm_role){
         return sm_conn->sm_engine_state != SM_RESPONDER_IDLE;
     } else {
