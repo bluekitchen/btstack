@@ -272,6 +272,17 @@ static struct baudrate_config {
     { 4000000, 12,  0,    0, 0},
 };
 
+#ifdef TEST_LOOPBACK
+static uint8_t test_tx[16];
+static uint8_t test_rx[16];
+static uint8_t test_rx_flag;
+static void test_tx_complete(void){
+}
+static void test_rx_complete(void){
+    test_rx_flag = 1;
+}
+#endif
+
 // return true if ok
 static bool hal_uart_dma_config(uint32_t baud){
     int index = -1;
@@ -288,7 +299,6 @@ static bool hal_uart_dma_config(uint32_t baud){
     uartConfig.firstModReg    = baudrate_configs[index].first_mod_reg;
     uartConfig.secondModReg   = baudrate_configs[index].second_mod_reg;
     uartConfig.overSampling   = baudrate_configs[index].oversampling ? EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION : EUSCI_A_UART_LOW_FREQUENCY_BAUDRATE_GENERATION;
-    printf("Pre %u, first %u, second %u\n", uartConfig.clockPrescalar, uartConfig.firstModReg, uartConfig.secondModReg );
     return true;
 }
 
@@ -303,16 +313,24 @@ static uint16_t hal_dma_rx_bytes_avail(uint8_t buffer, uint16_t offset){
     return HAL_DMA_RX_BUFFER_SIZE - MAP_DMA_getChannelSize(channel) - offset;
 }
 
+// directly called from timer or similar interrupt. to call from non-isr context, interrupts must be disabled
 static void hal_uart_dma_harvest(void){
-    if (bytes_to_read == 0) return;
-    // get bytes from current buffer
+    if (bytes_to_read == 0) {
+        return;
+    }
+
     uint16_t bytes_avail = hal_dma_rx_bytes_avail(hal_dma_rx_active_buffer, hal_dma_rx_offset);
-    if (bytes_avail == 0) return;
+    if (bytes_avail == 0) {
+        return;
+    }
+
+    // fetch bytes from current buffer
     uint16_t bytes_to_copy = btstack_min(bytes_avail, bytes_to_read);
     memcpy(rx_buffer_ptr, &hal_dma_rx_ping_pong_buffer[hal_dma_rx_active_buffer * HAL_DMA_RX_BUFFER_SIZE + hal_dma_rx_offset], bytes_to_copy);
-    rx_buffer_ptr += bytes_to_copy;
-    bytes_to_read -= bytes_to_copy;
+    rx_buffer_ptr     += bytes_to_copy;
     hal_dma_rx_offset += bytes_to_copy;
+    bytes_to_read     -= bytes_to_copy;
+
     // if current buffer fully processed, restart DMA transfer and switch to next buffer
     if (hal_dma_rx_offset == HAL_DMA_RX_BUFFER_SIZE){
         hal_dma_rx_offset = 0;
@@ -320,6 +338,7 @@ static void hal_uart_dma_harvest(void){
         hal_dma_rx_active_buffer = 1 - hal_dma_rx_active_buffer;
         GPIO_setOutputLowOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
     }
+
     if (bytes_to_read == 0){
         (*rx_done_handler)();
     }
@@ -407,6 +426,36 @@ void hal_uart_dma_init(void){
 
     // ready
     GPIO_setOutputLowOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
+
+#ifdef TEST_LOOPBACK
+    // test code
+    rx_done_handler = &test_rx_complete;
+    tx_done_handler = &test_tx_complete;
+    uint8_t value = 0;
+    uint8_t block_size = 6;
+    while(true){
+        // prepare data
+        uint8_t pos;
+        for (pos=0;pos<block_size;pos++){
+            test_tx[pos] = value++;
+        }
+        // trigger receive
+        hal_uart_dma_receive_block(test_rx, block_size);
+        // trigger send
+        printf_hexdump(test_tx, block_size);
+        hal_uart_dma_send_block(test_tx, block_size);
+        while (test_rx_flag == 0){
+            hal_cpu_disable_irqs();
+            hal_uart_dma_harvest();
+            hal_cpu_enable_irqs();
+        };
+        test_rx_flag = 0;
+        printf_hexdump(test_rx, block_size);
+        printf("\n");
+        if (memcmp(test_rx, test_tx, block_size) != 0) break;
+    }
+    while (1);
+#endif
 }
 
 int  hal_uart_dma_set_baud(uint32_t baud){
@@ -448,7 +497,6 @@ void hal_uart_dma_send_block(const uint8_t * data, uint16_t len){
 
 // int used to indicate a request for more new data
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
-    printf("rx: %u\n", len);
     rx_buffer_ptr = buffer;
     bytes_to_read = len;
     hal_cpu_disable_irqs();
