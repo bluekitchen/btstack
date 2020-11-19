@@ -643,6 +643,12 @@ typedef struct hfp_connection {
     uint8_t bnip_type;       // 0 == not set
     char    bnip_number[25]; // 
 
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    bool cc256x_send_write_codec_config;
+    bool cc256x_send_wbs_associate;
+    bool cc256x_send_wbs_disassociate;
+#endif
+
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
@@ -700,6 +706,11 @@ const char * hfp_enhanced_call_dir2str(uint16_t index);
 const char * hfp_enhanced_call_status2str(uint16_t index);
 const char * hfp_enhanced_call_mode2str(uint16_t index);
 const char * hfp_enhanced_call_mpty2str(uint16_t index);
+
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+void hfp_cc256x_prepare_for_sco(hfp_connection_t * hfp_connection);
+void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection);
+#endif
 
 /**
  * @brief Set packet types for SCO connections

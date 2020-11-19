@@ -59,6 +59,10 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+#if defined(ENABLE_CC256X_ASSISTED_HFP) && !defined(ENABLE_SCO_OVER_PCM)
+#error "Assisted HFP is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
 
@@ -690,6 +694,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     } else {
                         hfp_connection->hf_accept_sco = 1;
                     }
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+                    hfp_cc256x_prepare_for_sco(hfp_connection);
+#endif
                     log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
                     sco_establishment_active = hfp_connection;
                     break;
@@ -778,6 +785,10 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             if (!hfp_connection) break;
 
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+            hfp_connection->cc256x_send_wbs_disassociate = true;
+#endif
+
             hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
             hfp_connection->release_audio_connection = 0;
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -794,6 +805,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
     }
 }
+
 
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(packet_type);
@@ -1597,6 +1609,41 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types);
 }
+
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+void hfp_cc256x_prepare_for_sco(hfp_connection_t * hfp_connection){
+    hfp_connection->cc256x_send_write_codec_config = true;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        hfp_connection->cc256x_send_wbs_associate = true;
+    }
+}
+
+void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection){
+    uint32_t sample_rate_hz;
+    uint16_t clock_rate_khz;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        clock_rate_khz = 512;
+        sample_rate_hz = 16000;
+    } else {
+        clock_rate_khz = 256;
+        sample_rate_hz = 8000;
+    }
+    uint8_t clock_direction = 0;        // master
+    uint16_t frame_sync_duty_cycle = 0; // i2s with 50%
+    uint8_t  frame_sync_edge = 1;       // rising edge
+    uint8_t  frame_sync_polarity = 0;   // active high
+    uint8_t  reserved = 0;
+    uint16_t size = 16;
+    uint16_t chan_1_offset = 1;
+    uint16_t chan_2_offset = chan_1_offset + size;
+    uint8_t  out_edge = 1;              // rising
+    uint8_t  in_edge = 0;               // falling
+    hci_send_cmd(&hci_ti_write_codec_config, clock_rate_khz, clock_direction, sample_rate_hz, frame_sync_duty_cycle,
+                 frame_sync_edge, frame_sync_polarity, reserved,
+                 size, chan_1_offset, out_edge, size, chan_1_offset, in_edge, reserved,
+                 size, chan_2_offset, out_edge, size, chan_2_offset, in_edge, reserved);
+}
+#endif
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
     hfp_hf_callback = callback;

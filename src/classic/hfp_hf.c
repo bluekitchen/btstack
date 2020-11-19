@@ -544,7 +544,31 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
 
-    if (hfp_connection->hf_accept_sco && hci_can_send_command_packet_now()){
+	// assert command could be sent
+	if (hci_can_send_command_packet_now() == 0) return;
+
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    // WBS Disassociate
+    if (hfp_connection->cc256x_send_wbs_disassociate){
+        hfp_connection->cc256x_send_wbs_disassociate = false;
+        hci_send_cmd(&hci_ti_wbs_disassociate);
+        return;
+    }
+    // Write Codec Config
+    if (hfp_connection->cc256x_send_write_codec_config){
+        hfp_connection->cc256x_send_write_codec_config = false;
+        hfp_cc256x_write_codec_config(hfp_connection);
+        return;
+    }
+    // WBS Associate
+    if (hfp_connection->cc256x_send_wbs_associate){
+        hfp_connection->cc256x_send_wbs_associate = false;
+        hci_send_cmd(&hci_ti_wbs_associate, hfp_connection->acl_handle);
+        return;
+    }
+#endif
+
+    if (hfp_connection->hf_accept_sco){
 
         bool eSCO = hfp_connection->hf_accept_sco == 2;
         hfp_connection->hf_accept_sco = 0;

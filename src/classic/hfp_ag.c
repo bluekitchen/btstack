@@ -555,9 +555,11 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             log_info("hfp: codec confirmed: %s", (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? "mSBC" : "CVSD");
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);           
             // now, pick link settings
-
             hfp_init_link_settings(hfp_connection, hfp_ag_esco_s4_supported(hfp_connection));
-            return 1; 
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+            hfp_cc256x_prepare_for_sco(hfp_connection);
+#endif
+            return 1;
         default:
             break;
     }
@@ -1712,6 +1714,30 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
 
+    // assert command could be sent
+    if (hci_can_send_command_packet_now() == 0) return;
+
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+    // WBS Disassociate
+    if (hfp_connection->cc256x_send_wbs_disassociate){
+        hfp_connection->cc256x_send_wbs_disassociate = false;
+        hci_send_cmd(&hci_ti_wbs_disassociate);
+        return;
+    }
+    // Write Codec Config
+    if (hfp_connection->cc256x_send_write_codec_config){
+        hfp_connection->cc256x_send_write_codec_config = false;
+        hfp_cc256x_write_codec_config(hfp_connection);
+        return;
+    }
+    // WBS Associate
+    if (hfp_connection->cc256x_send_wbs_associate){
+        hfp_connection->cc256x_send_wbs_associate = false;
+        hci_send_cmd(&hci_ti_wbs_associate, hfp_connection->acl_handle);
+        return;
+    }
+#endif
+
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
@@ -2013,10 +2039,6 @@ static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
 
 static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
-
-    // allow for sco established -> ring transition
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE) return;
     hfp_ag_run();
 }
 
@@ -2115,6 +2137,9 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
         // now, pick link settings
         hfp_init_link_settings(hfp_connection, hfp_ag_esco_s4_supported(hfp_connection));
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+        hfp_cc256x_prepare_for_sco(hfp_connection);
+#endif
         return;
     } 
     
