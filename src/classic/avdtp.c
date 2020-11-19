@@ -1327,11 +1327,31 @@ void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_e
     stream_endpoint->preferred_sampling_frequency = sampling_frequency;
 }
 
+void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode){
+    stream_endpoint->preferred_channel_mode = channel_mode;
+}
+
+
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t channel_mode_bitmap = (media_codec[0] & 0x0F) & remote_channel_mode_bitmap;
     
     uint8_t channel_mode = AVDTP_SBC_STEREO;
+    // use preferred channel mode if possible
+    if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_JOINT_STEREO){
+        return AVDTP_SBC_JOINT_STEREO;
+    }
+    if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_STEREO){
+        return AVDTP_SBC_STEREO;
+    }
+    if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_DUAL_CHANNEL){
+        return AVDTP_SBC_DUAL_CHANNEL;
+    }
+    if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_MONO){
+        return AVDTP_SBC_MONO;
+    }
+
+
     if (channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO){
         channel_mode = AVDTP_SBC_JOINT_STEREO;
     } else if (channel_mode_bitmap & AVDTP_SBC_STEREO){
