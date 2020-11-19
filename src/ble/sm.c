@@ -1298,7 +1298,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 
                         if (have_ltk){
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
-                            trgigger_reencryptipm = true;
+                            trigger_reencryption = true;
 #else
                             if (trigger_pairing){
                                 trigger_reencryption = true;
