@@ -94,6 +94,7 @@ include ${BTSTACK_ROOT}/src/ble/gatt-service/Makefile.inc
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
 CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -D ENABLE_LE_SIGNED_WRITE
+CFLAGS += -fsanitize=address -fno-omit-frame-pointer
 
 # CFLAGS += -I..
 CFLAGS += -I${BTSTACK_ROOT}/src
