@@ -2429,6 +2429,7 @@ static void sm_run(void){
 				sm_reset_setup();
 				sm_init_setup(connection);
 				sm_timeout_start(connection);
+                connection->sm_pairing_active = true;
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
@@ -2617,6 +2618,8 @@ static void sm_run(void){
 			case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
 				sm_reset_setup();
 				sm_init_setup(connection);
+                connection->sm_pairing_active = true;
+
 				// recover pairing request
 				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
 				err = sm_stk_generation_init(connection);
