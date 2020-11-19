@@ -171,6 +171,7 @@ void hal_led_toggle(void){
 
 // HAL UART DMA
 
+#include "hal_uart_dma.h"
 // DMA Control Table
 // if not all channels are used, the alignment can be finer
 // GCC
@@ -302,24 +303,11 @@ static uint16_t hal_dma_rx_bytes_avail(uint8_t buffer, uint16_t offset){
     return HAL_DMA_RX_BUFFER_SIZE - MAP_DMA_getChannelSize(channel) - offset;
 }
 
-void DMA_INT1_IRQHandler(void)
-{
-    MAP_DMA_clearInterruptFlag(DMA_CH4_EUSCIA2TX & 0x0F);
-    MAP_DMA_disableChannel(DMA_CH4_EUSCIA2TX & 0x0F);
-    (*tx_done_handler)();
-}
-
-void DMA_INT2_IRQHandler(void)
-{
-    MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
-    // raise our RTS
-    GPIO_setOutputHighOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
-}
-
 static void hal_uart_dma_harvest(void){
     if (bytes_to_read == 0) return;
     // get bytes from current buffer
     uint16_t bytes_avail = hal_dma_rx_bytes_avail(hal_dma_rx_active_buffer, hal_dma_rx_offset);
+    if (bytes_avail == 0) return;
     uint16_t bytes_to_copy = btstack_min(bytes_avail, bytes_to_read);
     memcpy(rx_buffer_ptr, &hal_dma_rx_ping_pong_buffer[hal_dma_rx_active_buffer * HAL_DMA_RX_BUFFER_SIZE + hal_dma_rx_offset], bytes_to_copy);
     rx_buffer_ptr += bytes_to_copy;
@@ -337,6 +325,23 @@ static void hal_uart_dma_harvest(void){
     }
 }
 
+void DMA_INT1_IRQHandler(void)
+{
+    MAP_DMA_clearInterruptFlag(DMA_CH4_EUSCIA2TX & 0x0F);
+    MAP_DMA_disableChannel(DMA_CH4_EUSCIA2TX & 0x0F);
+    (*tx_done_handler)();
+}
+
+void DMA_INT2_IRQHandler(void)
+{
+    MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
+    // raise our RTS
+    GPIO_setOutputHighOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
+
+    hal_uart_dma_harvest();
+}
+
+
 void hal_uart_dma_init(void){
     // nShutdown
     MAP_GPIO_setAsOutputPin(BLUETOOTH_nSHUTDOWN_PORT, BLUETOOTH_nSHUTDOWN_PIN);
@@ -352,6 +357,7 @@ void hal_uart_dma_init(void){
     // UART
 
     /* Configuring and enable UART Module */
+    hal_uart_dma_config(115200);
     MAP_UART_initModule(EUSCI_A2_BASE, &uartConfig);
     MAP_UART_enableModule(EUSCI_A2_BASE);
 
@@ -368,6 +374,7 @@ void hal_uart_dma_init(void){
     /* Setup the RX and TX transfer characteristics */
     MAP_DMA_setChannelControl(DMA_CH4_EUSCIA2TX | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1);
     MAP_DMA_setChannelControl(DMA_CH5_EUSCIA2RX | UDMA_PRI_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_NONE | UDMA_DST_INC_8 | UDMA_ARB_1);
+    MAP_DMA_setChannelControl(DMA_CH5_EUSCIA2RX | UDMA_ALT_SELECT, UDMA_SIZE_8 | UDMA_SRC_INC_NONE | UDMA_DST_INC_8 | UDMA_ARB_1);
 
     /* Enable DMA interrupt for both channels */
     MAP_DMA_assignInterrupt(INT_DMA_INT1, DMA_CH4_EUSCIA2TX & 0x0f);
@@ -544,8 +551,6 @@ int main(void)
 
     // hand over to btstack embedded code
     btstack_main(0, NULL);
-
-    hci_power_control(HCI_POWER_ON);
 
     // go
     btstack_run_loop_execute();
