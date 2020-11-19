@@ -131,18 +131,18 @@ static char * sbc_filename = "av2dp_sink_demo.sbc";
 
 typedef struct {
     int reconfigure;
+
     int num_channels;
     int sampling_frequency;
-    int channel_mode;
     int block_length;
     int subbands;
-    int allocation_method;
     int min_bitpool_value;
     int max_bitpool_value;
-    int frames_per_buffer;
-} avdtp_media_codec_configuration_sbc_t;
+    btstack_sbc_channel_mode_t      channel_mode;
+    btstack_sbc_allocation_method_t allocation_method;
+} media_codec_configuration_sbc_t;
 
-static avdtp_media_codec_configuration_sbc_t sbc_configuration;
+static media_codec_configuration_sbc_t sbc_configuration;
 static int volume_percentage = 0; 
 
 #ifdef SUPPORT_VOLUME_CHANGE_NOTIFICATION
@@ -378,7 +378,7 @@ static void handle_pcm_data(int16_t * data, int num_audio_frames, int num_channe
     }
 }
 
-static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
+static int media_processing_init(media_codec_configuration_sbc_t configuration){
     if (media_initialized) return 0;
 
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
@@ -569,7 +569,7 @@ static int read_media_data_header(uint8_t *packet, int size, int *offset, avdtp_
     return 1;
 }
 
-static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configuration){
+static void dump_sbc_configuration(media_codec_configuration_sbc_t configuration){
     printf("    - num_channels: %d\n", configuration.num_channels);
     printf("    - sampling_frequency: %d\n", configuration.sampling_frequency);
     printf("    - channel_mode: %d\n", configuration.channel_mode);
@@ -857,6 +857,9 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
     bd_addr_t address;
     uint8_t status;
 
+    uint8_t channel_mode;
+    uint8_t allocation_method;
+
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
@@ -869,13 +872,35 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             sbc_configuration.block_length = a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
             sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sbc_configuration.allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
+            
+            allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
+            channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            
+            // Adapt Bluetooth spec definition to SBC Encoder expected input
+            sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
+            sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
+            switch (channel_mode){
+                case AVDTP_SBC_JOINT_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
+                    break;
+                case AVDTP_SBC_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
+                    break;
+                case AVDTP_SBC_DUAL_CHANNEL:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
+                    break;
+                case AVDTP_SBC_MONO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
+                    sbc_configuration.num_channels = 1;
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
+            }
             dump_sbc_configuration(sbc_configuration);
 
             if (sbc_configuration.reconfigure){

@@ -106,7 +106,7 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void) argc;
     (void) argv;
-    btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 16, 8, 2, 44100, 53);
+    btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 44100, 53, SBC_CHANNEL_MODE_STEREO);
                     
     /* initialise sinusoidal wavetable */
     int i;

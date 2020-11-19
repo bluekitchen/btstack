@@ -209,16 +209,16 @@ typedef struct {
 
 typedef struct {
     int reconfigure;
+    
     int num_channels;
     int sampling_frequency;
-    int channel_mode;
     int block_length;
     int subbands;
-    int allocation_method;
     int min_bitpool_value;
     int max_bitpool_value;
-    int frames_per_buffer;
-} avdtp_media_codec_configuration_sbc_t;
+    btstack_sbc_channel_mode_t      channel_mode;
+    btstack_sbc_allocation_method_t allocation_method;
+} media_codec_configuration_sbc_t;
 
 
 static uint8_t ertm_buffer[10000];
@@ -329,7 +329,7 @@ avrcp_track_t tracks[] = {
 };
 int current_track_index;
 avrcp_play_status_info_t play_info;
-static avdtp_media_codec_configuration_sbc_t sbc_configuration;
+static media_codec_configuration_sbc_t sbc_configuration;
 static btstack_sbc_encoder_state_t sbc_encoder_state;
 
 static uint8_t media_sbc_codec_configuration[4];
@@ -398,6 +398,9 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
     bd_addr_t address;
     uint16_t cid;
 
+    uint8_t channel_mode;
+    uint8_t allocation_method;
+
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_PIN_CODE_REQUEST:
@@ -450,24 +453,42 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
             sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sbc_configuration.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             sbc_configuration.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
             sbc_configuration.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sbc_configuration.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             sbc_configuration.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             
+            allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
+            channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            
+            // Adapt Bluetooth spec definition to SBC Encoder expected input
+            sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
+            sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
+            switch (channel_mode){
+                case AVDTP_SBC_JOINT_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
+                    break;
+                case AVDTP_SBC_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
+                    break;
+                case AVDTP_SBC_DUAL_CHANNEL:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
+                    break;
+                case AVDTP_SBC_MONO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
+                    sbc_configuration.num_channels = 1;
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
+            }
+
             btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
                 sbc_configuration.block_length, sbc_configuration.subbands, 
                 sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
                 sbc_configuration.max_bitpool_value,
                 sbc_configuration.channel_mode);
             
-            // status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
-            // if (status != ERROR_CODE_SUCCESS){
-            //     printf("Could not perform command, status 0x%2x\n", status);
-            // }
             break;
         }  
 
