@@ -7,6 +7,8 @@ A2DP/SRC/CC/BV-10-I : (wait)
 A2DP/SRC/REL/BV-01-I : g, s, o, m, S
 A2DP/SRC/REL/BV-02-I : g, s, o, m
 
+A2DP/SRC/SDP/BV-01 : (confirm)
+
 A2DP/SRC/SET/BV-01-I : g, s, o
 A2DP/SRC/SET/BV-02-I : (wait)
 A2DP/SRC/SET/BV-03-I : g, s, o, m
