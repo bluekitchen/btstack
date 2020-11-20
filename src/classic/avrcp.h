@@ -596,7 +596,7 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 uint16_t avrcp_get_next_cid(avrcp_role_t role);
 btstack_linked_list_t avrcp_get_connections(void);
 
-uint16_t avrcp_sdp_sdp_query_browsing_l2cap_psm(void);
+uint16_t avrcp_sdp_query_browsing_l2cap_psm(void);
 void avrcp_handle_sdp_client_query_attribute_value(uint8_t *packet);
 avrcp_connection_t * get_avrcp_connection_for_browsing_cid_for_role(avrcp_role_t role, uint16_t browsing_cid);
 avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid_for_role(avrcp_role_t role, uint16_t browsing_l2cap_cid);
