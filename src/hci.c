@@ -399,6 +399,13 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
     hci_stack->link_key_db->put_link_key(addr, link_key, type);
 }
 
+bool gap_get_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t * type){
+	if (!hci_stack->link_key_db) return false;
+	int result = hci_stack->link_key_db->get_link_key(addr, link_key, type) != 0;
+	log_info("link key for %s available %u, type %u", bd_addr_to_str(addr), result, (int) *type);
+	return result;
+}
+
 void gap_delete_all_link_keys(void){
     bd_addr_t  addr;
     link_key_t link_key;
@@ -1475,6 +1482,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE:
             hci_send_cmd(&hci_write_secure_connections_host_support, 1);
+			hci_stack->secure_connections_active = true;
             hci_stack->substate = HCI_INIT_W4_WRITE_SECURE_CONNECTIONS_HOST_ENABLE;
             break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
@@ -2235,7 +2243,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
         return;
     }
 
-    bd_addr_t addr;
     bd_addr_type_t addr_type;
     hci_con_handle_t handle;
     hci_connection_t * conn;
@@ -2244,6 +2251,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
     uint8_t link_type;
+    bd_addr_t addr;
 #endif
 
     // log_info("HCI:EVENT:%02x", hci_event_packet_get_type(packet));
@@ -2570,7 +2578,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
                         bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type) != 0;
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
-                        if (sc_used_during_pairing && !connected_uses_aes_ccm){
+                        if (hci_stack->secure_connections_active && sc_used_during_pairing && !connected_uses_aes_ccm){
                             log_info("SC during pairing, but only E0 now -> abort");
                             conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
                             break;
@@ -2770,7 +2778,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             conn->le_conn_latency = le_conn_latency;
                             conn->le_supervision_timeout = le_supervision_timeout;
                         } else {
-                            conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
+                            conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NEGATIVE_REPLY;
                         }
                     }
                     break;
@@ -2976,7 +2984,9 @@ static void hci_state_reset(void){
     // no pending cmds
     hci_stack->decline_reason = 0;
     hci_stack->new_scan_enable_value = 0xff;
-    
+
+    hci_stack->secure_connections_active = false;
+
     // LE
 #ifdef ENABLE_BLE
     memset(hci_stack->le_random_address, 0, 6);
@@ -3333,6 +3343,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // do nothing (with SLEEP == OFF)
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
             
@@ -3348,6 +3361,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // no connections yet, just turn it off
                     hci_power_control_sleep();
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;
@@ -3367,6 +3383,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
                     hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
             
@@ -3382,6 +3401,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // see hci_run
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
                     hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;
@@ -3407,6 +3429,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
+                    break;
+                default:
+                    btstack_assert(false);
                     break;
             }
             break;
@@ -3435,7 +3460,14 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // do nothing
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
+            break;
+
+        default:
+            btstack_assert(false);
             break;
     }
 
@@ -3660,7 +3692,8 @@ static bool hci_run_general_gap_le(void){
     // check if resolving list needs modification
     bool resolving_list_modification_pending = false;
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-    if (hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
+    bool resolving_list_supported = (hci_stack->local_supported_commands[1] & (1 << 2)) != 0;
+	if (resolving_list_supported && hci_stack->le_resolving_list_state != LE_RESOLVING_LIST_DONE){
         resolving_list_modification_pending = true;
     }
 #endif
@@ -3827,87 +3860,86 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
     // LE Resolving List Management
-    uint16_t i;
-    switch (hci_stack->le_resolving_list_state){
-        case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
-            // check if supported
-            if ((hci_stack->local_supported_commands[1] & (1 << 2)) == 0){
-                log_info("LE Address Resolution not supported");
-                break;
-            } else {
-                hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
-                hci_send_cmd(&hci_le_set_address_resolution_enabled, 1);
-                return true;
-            }
-            break;
-        case LE_RESOLVING_LIST_READ_SIZE:
-            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SEND_CLEAR;
-            hci_send_cmd(&hci_le_read_resolving_list_size);
-            return true;
-        case LE_RESOLVING_LIST_SEND_CLEAR:
-            hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
-            (void) memset(hci_stack->le_resolving_list_add_entries, 0xff, sizeof(hci_stack->le_resolving_list_add_entries));
-			(void) memset(hci_stack->le_resolving_list_remove_entries, 0, sizeof(hci_stack->le_resolving_list_remove_entries));
-            hci_send_cmd(&hci_le_clear_resolving_list);
-            return true;
-		case LE_RESOLVING_LIST_REMOVE_ENTRIES:
-			for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
-				uint8_t offset = i >> 3;
-				uint8_t mask = 1 << (i & 7);
-				if ((hci_stack->le_resolving_list_remove_entries[offset] & mask) == 0) continue;
-				hci_stack->le_resolving_list_remove_entries[offset] &= ~mask;
-				bd_addr_t peer_identity_addreses;
-				int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
-				sm_key_t peer_irk;
-				le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
-				if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+    if (resolving_list_supported) {
+		uint16_t i;
+		switch (hci_stack->le_resolving_list_state) {
+			case LE_RESOLVING_LIST_SEND_ENABLE_ADDRESS_RESOLUTION:
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_READ_SIZE;
+				hci_send_cmd(&hci_le_set_address_resolution_enabled, 1);
+				return true;
+			case LE_RESOLVING_LIST_READ_SIZE:
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_SEND_CLEAR;
+				hci_send_cmd(&hci_le_read_resolving_list_size);
+				return true;
+			case LE_RESOLVING_LIST_SEND_CLEAR:
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_REMOVE_ENTRIES;
+				(void) memset(hci_stack->le_resolving_list_add_entries, 0xff,
+							  sizeof(hci_stack->le_resolving_list_add_entries));
+				(void) memset(hci_stack->le_resolving_list_remove_entries, 0,
+							  sizeof(hci_stack->le_resolving_list_remove_entries));
+				hci_send_cmd(&hci_le_clear_resolving_list);
+				return true;
+			case LE_RESOLVING_LIST_REMOVE_ENTRIES:
+				for (i = 0; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++) {
+					uint8_t offset = i >> 3;
+					uint8_t mask = 1 << (i & 7);
+					if ((hci_stack->le_resolving_list_remove_entries[offset] & mask) == 0) continue;
+					hci_stack->le_resolving_list_remove_entries[offset] &= ~mask;
+					bd_addr_t peer_identity_addreses;
+					int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+					sm_key_t peer_irk;
+					le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
+					if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
 
 #ifdef ENABLE_LE_WHITELIST_TOUCH_AFTER_RESOLVING_LIST_UPDATE
-				// trigger whitelist entry 'update' (work around for controller bug)
-				btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-				while (btstack_linked_list_iterator_has_next(&lit)) {
-					whitelist_entry_t *entry = (whitelist_entry_t *) btstack_linked_list_iterator_next(&lit);
-					if (entry->address_type != peer_identity_addr_type) continue;
-					if (memcmp(entry->address, peer_identity_addreses, 6) != 0) continue;
-					log_info("trigger whitelist update %s", bd_addr_to_str(peer_identity_addreses));
-					entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER;
-				}
+					// trigger whitelist entry 'update' (work around for controller bug)
+					btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+					while (btstack_linked_list_iterator_has_next(&lit)) {
+						whitelist_entry_t *entry = (whitelist_entry_t *) btstack_linked_list_iterator_next(&lit);
+						if (entry->address_type != peer_identity_addr_type) continue;
+						if (memcmp(entry->address, peer_identity_addreses, 6) != 0) continue;
+						log_info("trigger whitelist update %s", bd_addr_to_str(peer_identity_addreses));
+						entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER;
+					}
 #endif
 
-				hci_send_cmd(&hci_le_remove_device_from_resolving_list, peer_identity_addr_type, peer_identity_addreses);
-				return true;
-			}
+					hci_send_cmd(&hci_le_remove_device_from_resolving_list, peer_identity_addr_type,
+								 peer_identity_addreses);
+					return true;
+				}
 
-			hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_ADD_ENTRIES;
 
-			/* fall through */
+				/* fall through */
 
-		case LE_RESOLVING_LIST_ADD_ENTRIES:
-            for (i = 0 ; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++){
-                uint8_t offset = i >> 3;
-                uint8_t mask = 1 << (i & 7);
-                if ((hci_stack->le_resolving_list_add_entries[offset] & mask) == 0) continue;
-                hci_stack->le_resolving_list_add_entries[offset] &= ~mask;
-                bd_addr_t peer_identity_addreses;
-                int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
-                sm_key_t peer_irk;
-                le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
-                if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
-                const uint8_t * local_irk = gap_get_persistent_irk();
-                // command uses format specifier 'P' that stores 16-byte value without flip
-                uint8_t local_irk_flipped[16];
-                uint8_t peer_irk_flipped[16];
-                reverse_128(local_irk, local_irk_flipped);
-                reverse_128(peer_irk, peer_irk_flipped);
-                hci_send_cmd(&hci_le_add_device_to_resolving_list, peer_identity_addr_type, peer_identity_addreses, peer_irk_flipped, local_irk_flipped);
-                return true;
-            }
-			hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
-			break;
+			case LE_RESOLVING_LIST_ADD_ENTRIES:
+				for (i = 0; i < MAX_NUM_RESOLVING_LIST_ENTRIES && i < le_device_db_max_count(); i++) {
+					uint8_t offset = i >> 3;
+					uint8_t mask = 1 << (i & 7);
+					if ((hci_stack->le_resolving_list_add_entries[offset] & mask) == 0) continue;
+					hci_stack->le_resolving_list_add_entries[offset] &= ~mask;
+					bd_addr_t peer_identity_addreses;
+					int peer_identity_addr_type = (int) BD_ADDR_TYPE_UNKNOWN;
+					sm_key_t peer_irk;
+					le_device_db_info(i, &peer_identity_addr_type, peer_identity_addreses, peer_irk);
+					if (peer_identity_addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
+					const uint8_t *local_irk = gap_get_persistent_irk();
+					// command uses format specifier 'P' that stores 16-byte value without flip
+					uint8_t local_irk_flipped[16];
+					uint8_t peer_irk_flipped[16];
+					reverse_128(local_irk, local_irk_flipped);
+					reverse_128(peer_irk, peer_irk_flipped);
+					hci_send_cmd(&hci_le_add_device_to_resolving_list, peer_identity_addr_type, peer_identity_addreses,
+								 peer_irk_flipped, local_irk_flipped);
+					return true;
+				}
+				hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
+				break;
 
-		default:
-            break;
-    }
+			default:
+				break;
+		}
+	}
     hci_stack->le_resolving_list_state = LE_RESOLVING_LIST_DONE;
 #endif
 
@@ -4751,6 +4783,8 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
                     event_size += len;
                 }
                 break;
+            default:
+                return;
         }
         event[1] = event_size - 2;
         hci_emit_event(event, event_size, 1);
@@ -4996,6 +5030,9 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         hci_emit_security_level(con_handle, LEVEL_0);
         return;
     }
+
+    btstack_assert(hci_is_le_connection(connection) == false);
+
     gap_security_level_t current_level = gap_security_level(con_handle);
     log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
         requested_level, connection->requested_security_level, current_level);
@@ -5018,27 +5055,10 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         return;
     }
 
-    // start pairing to increase security level
+    // store request
     connection->requested_security_level = requested_level;
 
-#if 0
-    // sending encryption request without a link key results in an error. 
-    // TODO: figure out how to use it properly
-
-    // would enabling ecnryption suffice (>= LEVEL_2)?
-    if (hci_stack->link_key_db){
-        link_key_type_t link_key_type;
-        link_key_t      link_key;
-        if (hci_stack->link_key_db->get_link_key( &connection->address, &link_key, &link_key_type)){
-            if (gap_security_level_for_link_key_type(link_key_type) >= requested_level){
-                connection->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
-                return;
-            }
-        }
-    }
-#endif
-
-    // start to authenticate connection if not already active
+    // start to authenticate connection if authentication not already active
     if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     hci_run();
@@ -5942,6 +5962,29 @@ int gap_secure_connection(hci_con_handle_t con_handle){
             return 0;
     }
 }
+
+bool gap_bonded(hci_con_handle_t con_handle){
+	hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+	if (hci_connection == NULL) return 0;
+
+#ifdef ENABLE_CLASSIC
+	link_key_t link_key;
+	link_key_type_t link_key_type;
+#endif
+	switch (hci_connection->address_type){
+		case BD_ADDR_TYPE_LE_PUBLIC:
+		case BD_ADDR_TYPE_LE_RANDOM:
+			return hci_connection->sm_connection.sm_le_db_index >= 0;
+#ifdef ENABLE_CLASSIC
+		case BD_ADDR_TYPE_SCO:
+		case BD_ADDR_TYPE_ACL:
+			return hci_stack->link_key_db && hci_stack->link_key_db->get_link_key(hci_connection->address, link_key, &link_key_type);
+#endif
+		default:
+			return false;
+	}
+}
+
 
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);

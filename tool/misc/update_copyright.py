@@ -144,8 +144,9 @@ def requiresCopyrightUpdate(file_name):
 # 	print "UPdate"
 # 	updateCopyright("../example", "panu_demo.c")
 
+btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../..')
 
-for root, dirs, files in os.walk('../', topdown=True):
+for root, dirs, files in os.walk(btstack_root, topdown=True):
 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
 	files[:] = [f for f in files if f not in ignoreFiles]
 	for f in files:

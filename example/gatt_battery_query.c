@@ -38,10 +38,9 @@
 #define BTSTACK_FILE__ "gatt_battery_query.c"
 
 // *****************************************************************************
-//
-// BLE Client
-//
-// *****************************************************************************
+/* EXAMPLE_START(gatt_battery_query): GATT Battery Client
+ *
+ */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -374,6 +373,6 @@ int btstack_main(int argc, const char * argv[]){
     return 0;
 }
 
-
+/* EXAMPLE_END */
 
 

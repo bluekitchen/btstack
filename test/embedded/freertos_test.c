@@ -114,6 +114,10 @@ TEST_GROUP(FreeRTOS){
     }
 };
 
+TEST(FreeRTOS, Init){
+
+}
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

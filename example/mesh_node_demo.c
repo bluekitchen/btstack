@@ -68,20 +68,20 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
     bd_addr_t addr;
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-                    // setup gap name
-                    gap_local_bd_addr(addr);
-                    strcpy(gap_name_buffer, gap_name_prefix);
-                    strcat(gap_name_buffer, bd_addr_to_str(addr));
-                    break;
-                default:
-                    break;
-            }
+    
+    switch (hci_event_packet_get_type(packet)) {
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            // setup gap name
+            gap_local_bd_addr(addr);
+            strcpy(gap_name_buffer, gap_name_prefix);
+            strcat(gap_name_buffer, bd_addr_to_str(addr));
+            break;
+        default:
             break;
     }
 }

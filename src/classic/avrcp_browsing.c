@@ -422,7 +422,7 @@ static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, u
                 break;
             }
 
-            browsing_l2cap_psm = avrcp_sdp_sdp_query_browsing_l2cap_psm();
+            browsing_l2cap_psm = avrcp_sdp_query_browsing_l2cap_psm();
             if (!browsing_l2cap_psm){
                 avrcp_browsing_emit_connection_established(avrcp_target_connection->avrcp_browsing_cid, avrcp_browsing_sdp_addr, SDP_SERVICE_NOT_FOUND);
                 avrcp_browsing_finalize_connection(avrcp_target_connection);

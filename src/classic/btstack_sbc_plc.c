@@ -43,9 +43,12 @@
  */
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef OCTAVE_OUTPUT
+#include <stdio.h>
+#endif
 
 #include "btstack_sbc_plc.h"
 #include "btstack_debug.h"
@@ -150,7 +153,6 @@ uint8_t * btstack_sbc_plc_zero_signal_frame(void){
 void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state){
     plc_state->nbf=0;
     plc_state->bestlag=0;
-    // printf("size\n");
     memset(plc_state->hist,0,sizeof(plc_state->hist));   
 }
 

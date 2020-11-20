@@ -2,8 +2,8 @@
 // btstack_config.h for iOS port in Cydia
 //
 
-#ifndef __BTSTACK_CONFIG
-#define __BTSTACK_CONFIG
+#ifndef BTSTACK_CONFIG_H
+#define BTSTACK_CONFIG_H
 
 // Port related features
 #define HAVE_MALLOC
@@ -14,7 +14,8 @@
 // BTstack features that can be enabled
 #define ENABLE_CLASSIC
 #define ENABLE_LOG_ERROR
-#define ENABLE_LOG_INFO 
+#define ENABLE_LOG_INFO
+#define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SDP_DES_DUMP
 
 // BTstack configuration. buffers, sizes, ...

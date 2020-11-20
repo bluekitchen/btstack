@@ -38,7 +38,8 @@
 #define BTSTACK_FILE__ "gap_link_keys.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(gap_link_keys): GAP Link Key Management Example
+/* EXAMPLE_START(gap_link_keys): GAP Link Key Management (Classic)
+ *
  * @text Shows how to iterate over the Classic Link Keys stored in NVS
  *       Link Keys are per device-device bonding. If the Bluetooth Controller can be swapped, 
  *       e.g. on desktop systems, a Link Key DB for each Controller is needed.

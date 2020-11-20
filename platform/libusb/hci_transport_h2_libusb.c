@@ -434,6 +434,9 @@ static void handle_isochronous_data(uint8_t * buffer, uint16_t size){
                 packet_handler(HCI_SCO_DATA_PACKET, sco_buffer, sco_read_pos);
                 sco_state_machine_init();
                 break;
+			default:
+				btstack_assert(false);
+				break;
         }
     }
 }
@@ -1183,6 +1186,8 @@ static int usb_close(void){
                 doing_pollfds = 0;
             }
 
+            /* fall through */
+
         case LIB_USB_INTERFACE_CLAIMED:
             // Cancel all transfers, ignore warnings for this
             libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
@@ -1281,11 +1286,20 @@ static int usb_close(void){
 #endif
             log_info("Libusb shutdown complete");
 
+			/* fall through */
+
         case LIB_USB_DEVICE_OPENDED:
             libusb_close(handle);
 
+			/* fall through */
+
         case LIB_USB_OPENED:
             libusb_exit(NULL);
+            break;
+
+		default:
+			btstack_assert(false);
+			break;
     }
 
     libusb_state = LIB_USB_CLOSED;
@@ -1314,7 +1328,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
 
     // submit transfer
     r = libusb_submit_transfer(command_out_transfer);
-    
+
     if (r < 0) {
         usb_command_active = 0;
         log_error("Error submitting cmd transfer %d", r);
@@ -1330,7 +1344,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
     // log_info("usb_send_acl_packet enter, size %u", size);
-    
+
     // prepare transfer
     int completed = 0;
     libusb_fill_bulk_transfer(acl_out_transfer, handle, acl_out_addr, packet, size,

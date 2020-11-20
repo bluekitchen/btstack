@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(spp_streamer_client): Client for SPP Streamer
+/* EXAMPLE_START(spp_streamer_client): Performance - Stream Data over SPP (Client)
  * 
  * @text Note: The SPP Streamer Client scans for and connects to SPP Streamer,
  * and measures the throughput.
@@ -205,7 +205,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet[0]){
+    switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             rfcomm_server_channel = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             break;
@@ -220,6 +220,8 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             }
             printf("SDP query done, channel %u.\n", rfcomm_server_channel);
             rfcomm_create_channel(packet_handler, peer_addr, rfcomm_server_channel, NULL); 
+            break;
+        default:
             break;
     }
 }

@@ -662,6 +662,9 @@ void pb_adv_close_link(uint16_t pb_transport_cid, uint8_t reason){
         case LINK_STATE_CLOSING:
             // nothing to do
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 

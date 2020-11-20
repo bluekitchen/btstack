@@ -22,7 +22,7 @@ AVRCP/CT/MCN/CB/BV-01-I : pQ
 AVRCP/CT/MCN/CB/BV-02-I : pQ, pT, pQ, pW
 AVRCP/CT/MCN/CB/BV-03-I : pQ, pT
 AVRCP/CT/MCN/CB/BV-04-I : pQ, pT, pQ, pi, pj
-AVRCP/CT/MCN/CB/BV-05-I : pQ, y, pQ
+AVRCP/CT/MCN/CB/BV-05-I : pQ, pT, pQ, y, pQ, pQ, pT, pQ, (yes)
 AVRCP/CT/MCN/CB/BV-06-I : pQ
 AVRCP/CT/MCN/CB/BV-09-I : pQ
 
@@ -34,7 +34,7 @@ AVRCP/CT/MCN/NP/BV-10-C : pL
 AVRCP/CT/MCN/NP/BV-01-I : pj, pr
 AVRCP/CT/MCN/NP/BV-02-I : pQ, pT, pQ, p5
 AVRCP/CT/MCN/NP/BV-03-I : pn, ps, p6
-AVRCP/CT/MCN/NP/BV-04-I : l, pj, pj
+AVRCP/CT/MCN/NP/BV-04-I : l, pj, pj, (yes)
 AVRCP/CT/MCN/NP/BV-05-I : pj
 AVRCP/CT/MCN/NP/BV-06-I : pj
 
@@ -128,8 +128,8 @@ AVRCP/TG/MPS/BV-03-I : (Confirmation expected)
 AVRCP/TG/NFY/BI-01-C : (wait)
 AVRCP/TG/NFY/BV-02-C : tt
 AVRCP/TG/NFY/BV-04-C : (OK)
-AVRCP/TG/NFY/BV-05-C : ts
-AVRCP/TG/NFY/BV-08-C : ts
+AVRCP/TG/NFY/BV-05-C : ts, (OK)
+AVRCP/TG/NFY/BV-08-C : ts, (OK)
 
 AVRCP/TG/PTT/BV-01-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-02-I : (Confirmation expected)
@@ -137,15 +137,15 @@ AVRCP/TG/PTT/BV-03-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-04-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-05-I : (Confirmation expected)
 
-AVRCP/TG/RCR/BV-02-C : tl
-AVRCP/TG/RCR/BV-04-C : tl
+AVRCP/TG/RCR/BV-02-C : $
+AVRCP/TG/RCR/BV-04-C : $
 
 AVRCP/TG/VLH/BI-01-C : (wait)
 AVRCP/TG/VLH/BI-02-C : (wait)
 AVRCP/TG/VLH/BV-02-C : (wait)
 AVRCP/TG/VLH/BV-04-C : tv
 AVRCP/TG/VLH/BV-01-I : tv
-AVRCP/TG/VLH/BV-02-I : (wait)
+AVRCP/TG/VLH/BV-02-I : R, (OK), (Confirmation expected)
 
 ## AVRCP IOPT tests:
 

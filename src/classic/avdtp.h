@@ -460,9 +460,9 @@ typedef struct {
 
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
-    uint8_t wait_to_send_acceptor;
-    uint8_t wait_to_send_initiator;
-    
+    bool    wait_to_send_acceptor;
+	bool    wait_to_send_initiator;
+
     uint8_t suspended_seids[AVDTP_MAX_NUM_SEPS];
     uint8_t num_suspended_seids;
 
@@ -486,8 +486,13 @@ typedef struct {
 typedef struct avdtp_stream_endpoint {
     btstack_linked_item_t    item;
     
-    // original capabilities
+    // original capabilities configured via avdtp_register_x_category
     avdtp_sep_t sep;
+
+    // media codec configuration
+    uint16_t  media_codec_configuration_len;
+    uint8_t * media_codec_configuration_info;
+
     avdtp_sep_t remote_sep;
     hci_con_handle_t media_con_handle;
     uint16_t l2cap_media_cid;
@@ -508,16 +513,14 @@ typedef struct avdtp_stream_endpoint {
     uint16_t remote_configuration_bitmap;
     avdtp_capabilities_t remote_configuration;  
 
-    // temporary SBC config
+    // temporary SBC config used by A2DP Source
     avdtp_media_codec_type_t media_codec_type;
     avdtp_media_type_t media_type;
     uint8_t media_codec_sbc_info[4];
 
-    // temporary reconfigure SBC config used by A2DP
-    uint8_t              reconfigure_media_codec_sbc_info[4];
-
-    // preferred sampling frequency
+    // preferred SBC codec settings
     uint32_t preferred_sampling_frequency; 
+    uint8_t  preferred_channel_mode;
 
     // register request for media L2cap connection release
     uint8_t media_disconnect;
@@ -558,8 +561,6 @@ btstack_linked_list_t * avdtp_get_connections(void);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_with_seid(uint8_t seid);
-avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
@@ -573,7 +574,6 @@ void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream
 void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t back_ch, uint8_t media, uint8_t recovery);
 void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
 void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t fragmentation);
-void avdtp_handle_can_send_now(avdtp_connection_t *connection, uint16_t l2cap_cid);
 
 // sink only
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
@@ -600,9 +600,12 @@ uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
-// frequency will be used by avdtp_choose_sbc_sampling_frequency if supported by both endpoints
+// frequency will be used by avdtp_choose_sbc_sampling_frequency (if supported by both endpoints)
 void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
-//
+
+// channel_mode will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
+void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode);
+
 void    avdtp_set_preferred_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
 
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);

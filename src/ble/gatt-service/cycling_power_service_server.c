@@ -393,7 +393,6 @@ static void cycling_power_service_vector_can_send_now(void * context){
                 break;
             }
             case CP_VECTOR_FLAG_FIRST_CRANK_MEASUREMENT_ANGLE_PRESENT:
-                // printf("CP_VECTOR_FLAG_FIRST_CRANK_MEASUREMENT_ANGLE_PRESENT \n");
                 little_endian_store_16(value, pos, instance->vector_first_crank_measurement_angle_deg);
                 pos += 2;
                 break;
@@ -572,11 +571,6 @@ static void cycling_power_service_response_can_send_now(void * context){
         return;
     } 
 
-    // if (instance->w4_indication_complete){
-    //     printf("cycling_power_service_response_can_send_now: w4_indication_complete\n");
-    //     return;
-    // }
-
     // use preprocessor instead of btstack_max to get compile-time constant
 #if (CP_SENSOR_LOCATION_RESERVED > (CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE + 5))
     #define MAX_RESPONSE_PAYLOAD CP_SENSOR_LOCATION_RESERVED
@@ -669,8 +663,6 @@ static void cycling_power_service_response_can_send_now(void * context){
     uint8_t status = att_server_indicate(instance->con_handle, instance->control_point_value_handle, &value[0], pos); 
     if (status == ERROR_CODE_SUCCESS){
         instance->w4_indication_complete = 1;
-        // printf("cycling_power_service_response_can_send_now: set w4_indication_complete\n");
-        // printf("can_send_now set opcode to CP_OPCODE_IDLE\n");
         instance->request_opcode = CP_OPCODE_IDLE;
     } else {
         log_error("can_send_now failed 0x%2x", status);
@@ -686,7 +678,6 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
     cycling_power_sensor_location_t location;
     cycling_power_t * instance = &cycling_power;
 
-    // printf("cycling_power_service_write_callback: attr handle 0x%02x\n", attribute_handle);
     if (attribute_handle == instance->measurement_client_configuration_descriptor_handle){
         if (buffer_size < 2u){
             return ATT_ERROR_INVALID_OFFSET;
@@ -860,7 +851,6 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                         ((has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE) || 
                          (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE))
                 ){
-                    // printf("start offset compensation procedure, enhanced %d\n", (instance->request_opcode == CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION));
                     uint8_t event[7];
                     int index = 0;
                     event[index++] = HCI_EVENT_GATTSERVICE_META;
@@ -934,8 +924,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     instance->con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                     // print connection parameters (without using float operations)
                     instance->con_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                    // printf("Initial Connection Interval: %u, %u.%02u ms\n", instance->con_interval, instance->con_interval * 125 / 100, 25 * (instance->con_interval & 3));
-                    // printf("Initial Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
                     instance->con_interval_status = CP_CONNECTION_INTERVAL_STATUS_RECEIVED;
                     break;
 
@@ -1112,7 +1100,6 @@ void cycling_power_service_add_energy(uint16_t energy_kJ){
     } else {
         instance->accumulated_energy_kJ = 0xffff;
     }
-    // printf("energy %d\n", instance->accumulated_energy_kJ);
 } 
 
 void cycling_power_service_server_set_instantaneous_power(int16_t instantaneous_power_watt){
@@ -1234,7 +1221,6 @@ void cycling_power_service_server_packet_handler(btstack_packet_handler_t callba
 void cycling_power_server_calibration_done(cycling_power_sensor_measurement_context_t measurement_type, uint16_t calibrated_value){
     cycling_power_t * instance = &cycling_power;
     if (instance->response_value != CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE){
-        // printf("cycling_power_server_calibration_done : CP_RESPONSE_VALUE_W4_VALUE_AVAILABLE con_handle 0x%02x\n", instance->con_handle);
         return;
     } 
     instance->response_value = CP_RESPONSE_VALUE_SUCCESS;

@@ -46,7 +46,6 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -73,7 +72,8 @@ static bludroid_encoder_state_t bd_encoder_state;
 
 
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
-                        int blocks, int subbands, int allmethod, int sample_rate, int bitpool, int channel_mode){
+                        int blocks, int subbands, btstack_sbc_allocation_method_t allocation_method, 
+                        int sample_rate, int bitpool, btstack_sbc_channel_mode_t channel_mode){
 
     if (sbc_encoder_state_singleton && (sbc_encoder_state_singleton != state) ){
         log_error("SBC encoder: different sbc decoder state is allready registered");
@@ -91,10 +91,10 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
         case SBC_MODE_STANDARD:
             bd_encoder_state.context.s16NumOfBlocks = blocks;                          
             bd_encoder_state.context.s16NumOfSubBands = subbands;                       
-            bd_encoder_state.context.s16AllocationMethod = allmethod;                     
+            bd_encoder_state.context.s16AllocationMethod = (uint8_t)allocation_method;                     
             bd_encoder_state.context.s16BitPool = bitpool;  
             bd_encoder_state.context.mSBCEnabled = 0;
-            bd_encoder_state.context.s16ChannelMode = channel_mode;
+            bd_encoder_state.context.s16ChannelMode = (uint8_t)channel_mode;
             bd_encoder_state.context.s16NumOfChannels = 2;
             if (bd_encoder_state.context.s16ChannelMode == SBC_MONO){
                 bd_encoder_state.context.s16NumOfChannels = 1;
@@ -116,6 +116,9 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
             bd_encoder_state.context.s16NumOfChannels = 1;
             bd_encoder_state.context.mSBCEnabled = 1;
             bd_encoder_state.context.s16SamplingFreq = SBC_sf16000;
+            break;
+        default:
+            btstack_assert(false);
             break;
     }
     bd_encoder_state.context.pu8Packet = bd_encoder_state.sbc_packet;

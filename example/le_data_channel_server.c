@@ -38,9 +38,9 @@
 #define BTSTACK_FILE__ "le_data_channel_server.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_data_channel): LE Data Channel Server - Receive data via L2CAP
+/* EXAMPLE_START(le_data_channel): LE Data Channel Server - Receive data over L2CAP
  *
- * @text iOS 11 and newer supports LE Data Channels for fast transfer via LE
+ * @text iOS 11 and newer supports LE Data Channels for fast transfer over LE
  *       [https://github.com/bluekitchen/CBL2CAPChannel-Demo](Basic iOS example on GitHub)
  */
  // *****************************************************************************
@@ -62,7 +62,8 @@
 
 const uint16_t TSPX_le_psm = 0x25;
 
-static void  packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -72,7 +73,8 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 // support for multiple clients
 typedef struct {
@@ -115,8 +117,12 @@ static void le_data_channel_setup(void){
     att_server_init(profile_data, NULL, NULL);    
 
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &sm_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
 
     l2cap_register_packet_handler(&packet_handler);
 
@@ -198,7 +204,7 @@ static void streamer(void){
 
 
 /* 
- * @section Packet Handler
+ * @section HCI + L2CAP Packet Handler
  *
  * @text The packet handler is used to stop the notifications and reset the MTU on connect
  * It would also be a good place to request the connection parameter update as indicated 
@@ -249,6 +255,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("LE Connection Update:\n");
                             printf("%c: Connection Interval: %u.%02u ms\n", le_data_channel_connection.name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
                             printf("%c: Connection Latency: %u\n", le_data_channel_connection.name, hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                            break;
+                        default:
                             break;
                     }
                     break;  
@@ -311,6 +319,34 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             test_track_data(&le_data_channel_connection, size);
             break;
 
+        default:
+            break;
+    }
+}
+
+/*
+ * @section SM Packet Handler
+ *
+ * @text The packet handler is used to handle pairing requests
+ */
+static void sm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case SM_EVENT_JUST_WORKS_REQUEST:
+            printf("Just Works requested\n");
+            sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));
+            break;
+        case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+            printf("Confirming numeric comparison: %"PRIu32"\n", sm_event_numeric_comparison_request_get_passkey(packet));
+            sm_numeric_comparison_confirm(sm_event_passkey_display_number_get_handle(packet));
+            break;
+        case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+            printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
+            break;
         default:
             break;
     }

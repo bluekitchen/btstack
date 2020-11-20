@@ -9,6 +9,19 @@ include_directories( ${LIBUSB_INCLUDE_DIR} )
 link_directories( ${LIBUSB_LIBRARY_PATH} )
 link_libraries( usb-1.0 )
 
+# extra compiler warnings
+if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
+	# using Clang
+	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-variable -Wswitch-default -Werror")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+	# using GCC
+	SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wunused-but-set-variable -Wunused-variable -Wswitch-default -Werror")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+	# using Intel C++
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+	# using Visual Studio C++
+endif()
+
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)

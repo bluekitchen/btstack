@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "gatt_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
+/* EXAMPLE_START(gatt_counter): GATT Server - Heartbeat Counter over GATT
  *
  * @text All newer operating systems provide GATT Client functionality.
  * The LE Counter examples demonstrates how to specify a minimal GATT Database
@@ -203,19 +203,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    le_notification_enabled = 0;
-                    break;
-                case ATT_EVENT_CAN_SEND_NOW:
-                    att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
-                    break;
-            }
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            le_notification_enabled = 0;
+            break;
+        case ATT_EVENT_CAN_SEND_NOW:
+            att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+            break;
+        default:
             break;
     }
 }
+
 /* LISTING_END */
 
 /*

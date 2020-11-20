@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "spp_and_gatt_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(spp_and_le_counter): Dual mode example
+/* EXAMPLE_START(spp_and_le_counter): Dual Mode - SPP and LE Counter
  * 
  * @text The SPP and LE Counter example combines the Bluetooth Classic SPP Counter
  * and the Bluetooth LE Counter into a single application.

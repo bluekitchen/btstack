@@ -73,6 +73,8 @@ uint8_t ll_set_advertising_parameters(uint16_t advertising_interval_min, uint16_
 
 uint8_t ll_set_advertising_data(uint8_t adv_len, const uint8_t * adv_data);
 
+uint8_t ll_set_scan_response_data(uint8_t adv_len, const uint8_t * adv_data);
+
 bool ll_reserve_acl_packet(void);
 
 

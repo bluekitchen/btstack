@@ -88,8 +88,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case PROVISIONING_DATA_PACKET:
             pos = 0;
             // on provisioning PDU call packet handler with PROVISIONG_DATA type
-            msg_sar_field = packet[pos] >> 6;
-            msg_type = packet[pos] & 0x3F;
+            msg_sar_field = (mesh_msg_sar_field_t) (packet[pos] >> 6);
+            msg_type = (mesh_msg_type_t) (packet[pos] & 0x3F);
             pos++;
             if (msg_type != MESH_MSG_TYPE_PROVISIONING_PDU) return;
             if (!pb_gatt_packet_handler) return;
@@ -131,53 +131,59 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // send to provisioning device
                     pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+pos, pdu_segment_len); 
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
 
         case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_MESH_META:
-                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
-                        case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
-                            // Forward link open/close
-                            pb_gatt_mtu = ATT_DEFAULT_MTU;
-                            pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
-                            break; 
-                        case MESH_SUBEVENT_CAN_SEND_NOW:
-                            con_handle = little_endian_read_16(packet, 3); 
-                            if (con_handle == HCI_CON_HANDLE_INVALID) return;
+            if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META) break;
+            
+            switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
+                    // Forward link open/close
+                    pb_gatt_mtu = ATT_DEFAULT_MTU;
+                    pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
+                    break; 
+                case MESH_SUBEVENT_CAN_SEND_NOW:
+                    con_handle = little_endian_read_16(packet, 3); 
+                    if (con_handle == HCI_CON_HANDLE_INVALID) return;
 
-                            sar_buffer.segmentation_buffer[0] = (segmentation_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
-                            pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, pb_gatt_mtu - 1);
-                            (void)memcpy(&sar_buffer.segmentation_buffer[1],
-                                         &proxy_pdu[segmentation_offset],
-                                         pdu_segment_len);
-                            segmentation_offset += pdu_segment_len;
+                    sar_buffer.segmentation_buffer[0] = (segmentation_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
+                    pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, pb_gatt_mtu - 1);
+                    (void)memcpy(&sar_buffer.segmentation_buffer[1],
+                                 &proxy_pdu[segmentation_offset],
+                                 pdu_segment_len);
+                    segmentation_offset += pdu_segment_len;
 
-                            mesh_provisioning_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);
-                            
-                            switch (segmentation_state){
-                                case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
-                                case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
-                                    pb_gatt_emit_pdu_sent(0);
-                                    break;
-                                case MESH_MSG_SAR_FIELD_CONTINUE:
-                                case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
-                                    if ((proxy_pdu_size - segmentation_offset) > (pb_gatt_mtu - 1)){
-                                        segmentation_state = MESH_MSG_SAR_FIELD_CONTINUE;
-                                    } else {
-                                        segmentation_state = MESH_MSG_SAR_FIELD_LAST_SEGMENT;
-                                    }
-                                    mesh_provisioning_service_server_request_can_send_now(con_handle);
-                                    break;
+                    mesh_provisioning_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);
+                    
+                    switch (segmentation_state){
+                        case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
+                        case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
+                            pb_gatt_emit_pdu_sent(0);
+                            break;
+                        case MESH_MSG_SAR_FIELD_CONTINUE:
+                        case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
+                            if ((proxy_pdu_size - segmentation_offset) > (pb_gatt_mtu - 1)){
+                                segmentation_state = MESH_MSG_SAR_FIELD_CONTINUE;
+                            } else {
+                                segmentation_state = MESH_MSG_SAR_FIELD_LAST_SEGMENT;
                             }
+                            mesh_provisioning_service_server_request_can_send_now(con_handle);
                             break;
                         default:
+                            btstack_assert(false);
                             break;
                     }
+                    break;
+                default:
+                    break;
             }
             break;
+            
         default:
             break;
     }

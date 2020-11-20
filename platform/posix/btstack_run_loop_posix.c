@@ -122,12 +122,14 @@ static bool btstack_run_loop_posix_remove_timer(btstack_timer_source_t *ts){
 }
 
 static void btstack_run_loop_posix_dump_timer(void){
+#ifdef ENABLE_LOG_INFO    
     btstack_linked_item_t *it;
-    int i = 0;
+    int i = 1;
     for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %u\n", i, ts, ts->timeout);
+        log_info("timer %u (%p): timeout %u\n", i++, ts, ts->timeout);
     }
+#endif
 }
 
 static void btstack_run_loop_posix_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){

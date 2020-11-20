@@ -62,6 +62,11 @@ const char * h6_key_string 	    = "ec0234a3 57c8ad05 341010a6 0a397d9b";
 const char * h6_key_id_string 	= "6c656272";
 const char * h6_cmac_string     = "2d9ae102 e76dc91c e8d3a9e2 80b16399";
 
+// h7
+const char * h7_key_string 	    = "ec0234a3 57c8ad05 341010a6 0a397d9b";
+const char * h7_cmac_string     = "fb173597 c6a3c0ec d2998c2a 75a57011";
+
+
 static uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
     return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
 }
@@ -204,13 +209,21 @@ static uint32_t g2(const sm_key256_t u, const sm_key256_t v, const sm_key_t x, c
 	return big_endian_read_32(cmac, 12);
 }
 
-// h6(W, keyID) = AES-CMACW(keyID)
+// h6(W, keyID) = AES-CMAC_W(keyID)
 // - W is 128 bits
 // - keyID is 32 bits
 static void h6(sm_key_t res, const sm_key_t w, const uint32_t key_id){
 	uint8_t key_id_buffer[4];
 	big_endian_store_32(key_id_buffer, 0, key_id);
 	aes_cmac(res, w, key_id_buffer, 4);
+}
+
+// h7(SALT, W) = AES-CMAC_SALT(W)
+// - SALT is 128 bit
+// - W is 128 bits
+static void h7(sm_key_t res, const sm_key_t salt, const sm_key_t w){
+	uint8_t key_id_buffer[4];
+	aes_cmac(res, salt, w, 16);
 }
 
 int main(void){
@@ -323,6 +336,20 @@ int main(void){
 	h6(h6_res, h6_key, h6_key_id);
 	hexdump2(h6_res, 16);
 	if (memcmp(h6_res, h6_cmac, 16)){
+		printf("CMAC incorrect!\n");
+	} else {
+		printf("CMAC correct!\n");
+	}
+
+	// validate h7
+	printf("-- verify h7\n");
+	sm_key_t h7_key, h7_res, h7_cmac;
+	const uint8_t salt[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x74, 0x6D, 0x70, 0x31 };  // "tmp1"
+	parse_hex(h7_key, h7_key_string);
+	parse_hex(h7_cmac, h7_cmac_string);
+	h7(h7_res, salt, h7_key);
+	hexdump2(h7_res, 16);
+	if (memcmp(h7_res, h7_cmac, 16)){
 		printf("CMAC incorrect!\n");
 	} else {
 		printf("CMAC correct!\n");

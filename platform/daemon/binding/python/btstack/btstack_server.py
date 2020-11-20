@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from threading import Thread
 from ctypes import *
 

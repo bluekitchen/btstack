@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 
 CFLAGS  = -g -Wall \
 		  -I. \
-		  -I.. \
 		  -I${BTSTACK_ROOT}/src \
 		  -I${BTSTACK_ROOT}/platform/embedded
 		  
@@ -23,6 +22,7 @@ VPATH += ${BTSTACK_ROOT}/platform/freertos
 
 COMMON = \
 	btstack_em9304_spi_embedded.c \
+	btstack_memory.c \
 	btstack_run_loop.c \
 	btstack_run_loop_embedded.c \
 	btstack_stdin_embedded.c \

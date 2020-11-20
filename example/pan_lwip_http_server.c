@@ -38,7 +38,7 @@
 #define __BTSTACK_FILE__ "pan_lwip_http_server.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(pan_lwip_http_server): PAN - HTTP Server using lwIP
+/* EXAMPLE_START(pan_lwip_http_server): PAN - lwIP HTTP and DHCP Server 
  *
  * @text Bluetooth PAN is mainly used for Internet Tethering, where e.g. a mobile
  * phone provides internet connection to a laptop or a tablet.

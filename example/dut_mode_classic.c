@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "dut_mode_classic.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(dut_mode_classic): Enable Device Under Test (DUT) Mode for BR/EDR
+/* EXAMPLE_START(dut_mode_classic): Testing - Enable Device Under Test (DUT) Mode for Classic
  *
  * @text DUT mode can be used for production testing. This example just configures 
  * the Bluetooth Controller for DUT mode.

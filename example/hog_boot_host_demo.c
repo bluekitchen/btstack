@@ -41,7 +41,7 @@
  * hog_boot_host_demo.c
  */
 
-/* EXAMPLE_START(hog_boot_host_demo): HID-over-GATT Boot Host Demo
+/* EXAMPLE_START(hog_boot_host_demo): HID Boot Host LE
  *
  * @text This example implements a minimal HID-over-GATT Boot Host. It scans for LE HID devices, connects to it,
  * discovers the Characteristics relevant for the HID Service and enables Notifications on them.

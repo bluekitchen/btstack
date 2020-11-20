@@ -224,7 +224,7 @@ int btstack_main(int argc, const char * argv[]){
     (void) argc;
     (void) argv;
     local_stream_endpoint = avdtp_source_create_stream_endpoint(AVDTP_SOURCE, AVDTP_AUDIO);
-    btstack_sbc_encoder_init(&(local_stream_endpoint->sbc_encoder_state), SBC_MODE_STANDARD, 16, 8, 2, 44100, 53);
+    btstack_sbc_encoder_init(&(local_stream_endpoint->sbc_encoder_state), SBC_MODE_STANDARD, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 44100, 53, SBC_CHANNEL_MODE_STEREO);
                     
     /* initialise sinusoidal wavetable */
     int i;

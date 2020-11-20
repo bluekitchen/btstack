@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Simulate network of Bluetooth Controllers
 #
@@ -17,8 +17,19 @@ import sys
 import bisect
 import time
 
-from Crypto.Cipher import AES
-from Crypto import Random
+# fallback: try to import PyCryptodome as (an almost drop-in) replacement for the PyCrypto library
+try:
+    from Cryptodome.Cipher import AES
+    import Cryptodome.Random as Random
+except ImportError:
+    # fallback: try to import PyCryptodome as (an almost drop-in) replacement for the PyCrypto library
+    try:
+        from Crypto.Cipher import AES
+        import Crypto.Random as Random
+    except ImportError:
+        print("\n[!] PyCryptodome required but not installed (using random value instead)")
+        print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'\n")
+
 
 def little_endian_read_16(buffer, pos):
     return ord(buffer[pos]) + (ord(buffer[pos+1]) << 8)

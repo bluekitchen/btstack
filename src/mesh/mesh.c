@@ -300,38 +300,36 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+    
+    if (packet_type != HCI_EVENT_PACKET) return;
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-                    // get TLV instance
-                    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+    switch (hci_event_packet_get_type(packet)) {
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            // get TLV instance
+            btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
-                    // startup from static provisioning data stored in TLV
-                    provisioned = mesh_node_startup_from_tlv();
-                    break;
-                
+            // startup from static provisioning data stored in TLV
+            provisioned = mesh_node_startup_from_tlv();
+            break;
+        
 #ifdef ENABLE_MESH_PROXY_SERVER
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // enable PB_GATT
-                    if (provisioned == 0){
-                        mesh_proxy_start_advertising_unprovisioned_device();
-                    } else {
-                        mesh_proxy_start_advertising_with_network_id();
-                    }
-                    break;
-                    
-                case HCI_EVENT_LE_META:
-                    if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-                    // disable PB_GATT
-                    mesh_proxy_stop_advertising_unprovisioned_device();
-                    break;
-#endif
-                default:
-                    break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // enable PB_GATT
+            if (provisioned == 0){
+                mesh_proxy_start_advertising_unprovisioned_device();
+            } else {
+                mesh_proxy_start_advertising_with_network_id();
             }
+            break;
+            
+        case HCI_EVENT_LE_META:
+            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            // disable PB_GATT
+            mesh_proxy_stop_advertising_unprovisioned_device();
+            break;
+#endif
+        default:
             break;
     }
 }

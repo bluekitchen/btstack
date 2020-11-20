@@ -71,32 +71,18 @@ static btstack_sbc_decoder_state_t state;
 static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
 #endif
 
+// PortAudio - live playback
+
 #if defined(HAVE_PORTAUDIO) 
 #define PREBUFFER_MS        200
-static int audio_stream_started = 0;
-static int audio_stream_paused = 0;
-static btstack_ring_buffer_t ring_buffer;
-#endif
-
-// PortAudio - live playback
-#ifdef HAVE_PORTAUDIO
 #define PA_SAMPLE_TYPE      paInt16
 #define SAMPLE_RATE 48000
 #define FRAMES_PER_BUFFER   128
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
-static PaStream * stream;
+
+static int audio_stream_started = 0;
 #endif
 
-// WAV File
-#ifdef STORE_SBC_TO_WAV_FILE    
-static int frame_count = 0;
-static char * wav_filename = "avdtp_sink.wav";
-#endif
-
-#ifdef STORE_SBC_TO_SBC_FILE    
-static FILE * sbc_file;
-static char * sbc_filename = "avdtp_sink.sbc";
-#endif
 
 static int media_initialized = 0;
 static btstack_resample_t resample_instance;
@@ -113,8 +99,6 @@ static unsigned int sbc_frame_size;
 static uint8_t decoded_audio_storage[(128+16) * BYTES_PER_FRAME];
 static btstack_ring_buffer_t decoded_audio_ring_buffer;
  
-static int audio_stream_started;
-
 typedef struct {
     // bitmaps
     uint8_t sampling_frequency_bitmap;
@@ -136,7 +120,6 @@ typedef struct {
     int allocation_method;
     int min_bitpool_value;
     int max_bitpool_value;
-    int frames_per_buffer;
 } avdtp_media_codec_configuration_sbc_t;
 
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
@@ -153,7 +136,6 @@ static bd_addr_t device_addr;
 
 static uint8_t is_cmd_triggered_localy = 0;
 static uint8_t is_media_header_reported_once = 0;
-static uint8_t is_media_initialized = 0;
 
 static uint16_t avdtp_cid = 0;
 static uint8_t  local_seid = 0;
@@ -174,48 +156,6 @@ static avdtp_capabilities_t remote_configuration;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 #if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
-#endif
-
-#ifdef HAVE_PORTAUDIO
-static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
-                           unsigned long framesPerBuffer,
-                           const PaStreamCallbackTimeInfo* timeInfo,
-                           PaStreamCallbackFlags statusFlags,
-                           void *userData ) {
-
-    /** portaudio_callback is called from different thread, don't use hci_dump / log_info here without additional checks */
-
-    // Prevent unused variable warnings.
-    (void) timeInfo; 
-    (void) statusFlags;
-    (void) inputBuffer;
-    (void) userData;
-    
-    int bytes_to_copy = framesPerBuffer * BYTES_PER_FRAME;
-
-    // fill ring buffer with silence while stream is paused
-    if (audio_stream_paused){
-        if (btstack_ring_buffer_bytes_available(&ring_buffer) < PREBUFFER_BYTES){
-            memset(outputBuffer, 0, bytes_to_copy);
-            return 0;
-        } else {
-            // resume playback
-            audio_stream_paused = 0;
-        }
-    }
-
-    // get data from ring buffer
-    uint32_t bytes_read = 0;
-    btstack_ring_buffer_read(&ring_buffer, outputBuffer, bytes_to_copy, &bytes_read);
-    bytes_to_copy -= bytes_read;
-
-    // fill ring buffer  with silence if there are not enough bytes to copy
-    if (bytes_to_copy){
-        memset(outputBuffer + bytes_read, 0, bytes_to_copy);
-        audio_stream_paused = 1;
-    }
-    return 0;
-}
 #endif
 
 
@@ -600,7 +540,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             sbc_configuration.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             dump_sbc_configuration(sbc_configuration);
             
             avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
@@ -814,6 +753,10 @@ int btstack_main(int argc, const char * argv[]){
         printf("AVDTP Sink: not enough memory to create local_stream_endpoint\n");
         return 1;
     }
+    // store user codec configuration buffer
+    local_stream_endpoint->media_codec_configuration_info = media_sbc_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_sbc_codec_configuration);
+
     local_seid = avdtp_local_seid(local_stream_endpoint);
     avdtp_sink_register_media_transport_category(local_seid);
     avdtp_sink_register_media_codec_category(local_seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));

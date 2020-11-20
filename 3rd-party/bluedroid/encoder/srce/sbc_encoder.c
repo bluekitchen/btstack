@@ -270,20 +270,6 @@ void SBC_Encoder(SBC_ENC_PARAMS *pstrEncParams)
         // pu8 = pstrEncParams->pu8NextPacket;
         /* Quantize the encoded audio */
         EncPacking(pstrEncParams);
-
-/* BK4BTSTACK_CHANGE START */
-        /* scramble the code */
-        //SBC_PRTC_CHK_INIT(pu8);
-        //SBC_PRTC_CHK_CRC(pu8);
-#if 0
-        if(pstrEncParams->u16PacketLength > ((sbc_prtc_cb.fr[sbc_prtc_cb.index].idx * 2) + sbc_prtc_cb.base))
-            printf("len: %d, idx: %d\n", pstrEncParams->u16PacketLength, sbc_prtc_cb.fr[sbc_prtc_cb.index].idx);
-        else
-            printf("len: %d, idx: %d!!!!\n", pstrEncParams->u16PacketLength, sbc_prtc_cb.fr[sbc_prtc_cb.index].idx);
-#endif
-        //SBC_PRTC_SCRMB((&pu8[sbc_prtc_cb.base]));
-/* BK4BTSTACK_CHANGE STOP */
-
     }
     while(--(pstrEncParams->u8NumPacketToEncode));
 

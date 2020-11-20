@@ -5,7 +5,7 @@ TOOL_DIR=`dirname "$0"`
 BTSTACK_ROOT=`realpath ${TOOL_DIR}/..`
 
 # get tag from git
-tag=`git tag --points-at`
+tag=`git tag --points-at HEAD`
 
 # get git version
 commit=`git rev-parse --short HEAD`

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "nordic_spp_le_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(nordic_le_counter): LE Peripheral - Nordic SPP-like profile
+/* EXAMPLE_START(nordic_le_counter): LE Nordic SPP-like Heartbeat Server 
  *
  */
  // *****************************************************************************
@@ -146,15 +146,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    con_handle = HCI_CON_HANDLE_INVALID;
-                    break;
-                default:
-                    break;
-            }
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    switch (hci_event_packet_get_type(packet)) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            con_handle = HCI_CON_HANDLE_INVALID;
+            break;
+        default:
             break;
     }
 }

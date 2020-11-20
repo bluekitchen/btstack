@@ -362,31 +362,33 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(channel);
     UNUSED(size);
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case ATT_EVENT_CONNECTED:
-                    le_connection_handle = att_event_connected_get_handle(packet);
-                    att_mtu = att_server_get_mtu(le_connection_handle);
-                    le_test_data_len = btstack_min(att_server_get_mtu(le_connection_handle) - 3, sizeof(test_data));
-                    printf("ATT MTU = %u\n", att_mtu);
-                    break;
+    if (packet_type != HCI_EVENT_PACKET) return;
 
-                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                    att_mtu = att_event_mtu_exchange_complete_get_MTU(packet);
-                    le_test_data_len = btstack_min(att_mtu - 3, sizeof(test_data));
-                    printf("ATT MTU = %u\n", att_mtu);
-                    break;
+    switch (hci_event_packet_get_type(packet)) {
+        case ATT_EVENT_CONNECTED:
+            le_connection_handle = att_event_connected_get_handle(packet);
+            att_mtu = att_server_get_mtu(le_connection_handle);
+            le_test_data_len = btstack_min(att_server_get_mtu(le_connection_handle) - 3, sizeof(test_data));
+            printf("ATT MTU = %u\n", att_mtu);
+            break;
 
-                case ATT_EVENT_CAN_SEND_NOW:
-                    le_streamer();
-                    break;
+        case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+            att_mtu = att_event_mtu_exchange_complete_get_MTU(packet);
+            le_test_data_len = btstack_min(att_mtu - 3, sizeof(test_data));
+            printf("ATT MTU = %u\n", att_mtu);
+            break;
 
-                case ATT_EVENT_DISCONNECTED:
-                    le_notification_enabled = 0;
-                    le_connection_handle = HCI_CON_HANDLE_INVALID;
-                    break;
-            }
+        case ATT_EVENT_CAN_SEND_NOW:
+            le_streamer();
+            break;
+
+        case ATT_EVENT_DISCONNECTED:
+            le_notification_enabled = 0;
+            le_connection_handle = HCI_CON_HANDLE_INVALID;
+            break;
+            
+        default:
+            break;
     }
 }
 

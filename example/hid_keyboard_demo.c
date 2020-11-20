@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "hid_keyboard_demo.c"
  
 // *****************************************************************************
-/* EXAMPLE_START(hid_keyboard_demo): HID Keyboard (Server) Demo
+/* EXAMPLE_START(hid_keyboard_demo): HID Keyboard Classic
  *
  * @text This HID Device example demonstrates how to implement
  * an HID keyboard. Without a HAVE_BTSTACK_STDIN, a fixed demo text is sent
@@ -256,6 +256,9 @@ static void stdin_process(char character){
         case APP_NOT_CONNECTED:
             printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
             hid_device_connect(device_addr, &hid_cid);
+            break;
+        default:
+            btstack_assert(false);
             break;
     }
 }

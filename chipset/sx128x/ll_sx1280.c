@@ -325,6 +325,10 @@ static struct {
     uint8_t  adv_map;
     uint32_t adv_interval_us;
 
+	// adv data
+	uint8_t scan_resp_len;
+	uint8_t scan_resp_data[31];
+
     // next expected sequence number
     volatile uint8_t next_expected_sequence_number;
 
@@ -395,6 +399,18 @@ static void btstack_memory_ll_pdu_free(ll_pdu_t *acl_le_pdu){
     btstack_memory_pool_free(&ll_pdu_pool, acl_le_pdu);
 }
 
+static void radio_auto_tx_on(void){
+	// SetAutoTX(150 ms) - direct write / ignore compensation
+	uint8_t buf[2];
+	big_endian_store_16(buf, 0, AUTO_RX_TX_TIME_US);
+	SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+}
+
+static void radio_auto_tx_off(void){
+	// SetAutoTX(0) - direct write / ignore compensation
+	uint8_t buf[2] = { 0, 0 };
+	SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+}
 
 static bool receive_prepare_rx_bufffer(void){
     if (ctx.rx_pdu == NULL){
@@ -410,7 +426,8 @@ static bool receive_prepare_rx_bufffer(void){
 
 static void receive_response(void){
     if (receive_prepare_rx_bufffer()) {
-        Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 10 } );  // 220 us
+        // 150 us would be enough, but the timeout seems to apply for AutoTx as well, so we use 250 us
+        Radio.SetRx( ( TickTime_t ) { RADIO_TICK_SIZE_0015_US, 16 } );
     }
 }
 
@@ -426,19 +443,25 @@ static void receive_master(void){
     }
 }
 
-
-static void send_adv(void){
-    // setup advertisement: header (2) + addr (6) + data (31)
-    uint8_t adv_buffer[39];
-    adv_buffer[0] = PDU_ADV_TYPE_ADV_IND;  // TODO: also set private address bits
-    adv_buffer[1] = 6 + ctx.adv_len;
-    memcpy(&adv_buffer[2], ctx.bd_addr_le, 6);
-    memcpy(&adv_buffer[8], ctx.adv_data, ctx.adv_len);
-    uint16_t packet_size = 2 + adv_buffer[1];
-    SX1280HalWriteBuffer( tx_buffer_offset[ctx.next_tx_buffer], adv_buffer, packet_size );
-    SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
+static void setup_adv_pdu(uint8_t offset, uint8_t header, uint8_t len, const uint8_t * data){
+	uint8_t buffer[39];
+	buffer[0] = header;
+	buffer[1] = 6 + len;
+	memcpy(&buffer[2], ctx.bd_addr_le, 6);
+	memcpy(&buffer[8], data, len);
+	uint16_t packet_size = 2 + buffer[1];
+	SX1280HalWriteBuffer( offset, buffer, packet_size );
 }
 
+static void send_adv(void){
+
+	// enable AutoTX for potential Scan Response
+	// TODO: only if adv type allows for scanning
+	radio_auto_tx_on();
+
+	SX1280SetBufferBaseAddresses( SX1280_TX0_OFFSET, SX1280_RX0_OFFSET);
+    SX1280SetTx( ( TickTime_t ){ RADIO_TICK_SIZE_1000_US, 1 } );
+}
 
 static void select_channel(uint8_t channel){
     // Set Whitening seed
@@ -509,7 +532,11 @@ static void start_advertising(void){
     // Set AccessAddress for ADV packets
     Radio.SetBleAdvertizerAccessAddress( );
 
-    radio_state = RADIO_LOWPOWER;
+    // prepare adv and scan data in tx0 and tx1
+	setup_adv_pdu(SX1280_TX0_OFFSET, PDU_ADV_TYPE_ADV_IND,  ctx.adv_len,       ctx.adv_data);
+	setup_adv_pdu(SX1280_TX1_OFFSET, PDU_ADV_TYPE_SCAN_RSP, ctx.scan_resp_len, ctx.scan_resp_data);
+
+	radio_state = RADIO_LOWPOWER;
     ll_state = LL_STATE_ADVERTISING;
 
     // prepare
@@ -711,25 +738,92 @@ static void radio_on_tx_done(void ){
             break;
     }
 }
+static void radio_prepare_auto_tx(uint16_t packet_end_ticks, uint8_t rx_len){
+	// restart supervision timeout
+	ctx.time_without_any_packets_us = 0;
+
+	// check if we can sent a full packet before sync hop
+	int16_t now_ticks = packet_end_ticks - ctx.anchor_ticks;
+	if (ctx.synced && (now_ticks > ctx.conn_latest_tx_ticks)){
+		// disable AutoTX to abort sending of next packet
+		Radio.SetFs();
+		log_info("Close before Sync hop: now %u > %u", now_ticks, ctx.conn_latest_tx_ticks);
+
+		// get rx pdu and
+		radio_fetch_rx_pdu();
+		return;
+	}
+
+	// setup empty packet in ll buffer if no tx packet was preloaded
+	if (ctx.num_tx_pdus_on_controller == 0) {
+		ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_tx_packet;
+		ctx.num_tx_pdus_on_controller++;
+		ll_tx_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
+		ll_tx_packet.len = 0;
+	}
+
+	// setup pdu header
+	uint8_t packet_header[2];
+	uint8_t md = btstack_linked_queue_empty(&ctx.tx_queue) ? 0 : 1;
+	packet_header[0] = (md << 4) | (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | ctx.tx_buffer_pdu[ctx.next_tx_buffer]->header;
+	packet_header[1] = ctx.tx_buffer_pdu[ctx.next_tx_buffer]->len;
+
+	// select outgoing tx buffer and update pdu header
+	SX1280SetBufferBaseAddresses( tx_buffer_offset[ctx.next_tx_buffer], SX1280_RX0_OFFSET);
+	SX1280HalWriteBuffer( tx_buffer_offset[ctx.next_tx_buffer], (uint8_t *) packet_header, sizeof(packet_header));
+
+	// update operating state
+	SX1280AutoTxWillStart();
+
+	// set anchor on first packet in connection event
+	if (ctx.packet_nr_in_connection_event == 0){
+
+		// preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 35 us
+		uint16_t timestamp_delay = (10 + rx_len) * 8 - 35;
+		uint16_t packet_start_ticks = packet_end_ticks - US_TO_TICKS(timestamp_delay);
+
+		ctx.anchor_ticks = packet_start_ticks;
+		ctx.synced = true;
+		radio_set_timer_ticks(ctx.conn_sync_hop_ticks);
+	}
+
+	ctx.packet_nr_in_connection_event++;
+
+	// printf("RX %02x -- tx buffer %u, %02x %02x\n", rx_header, ctx.next_tx_buffer, packet_header[0], packet_header[1]);
+}
 
 static void radio_on_rx_done(void ){
     uint16_t packet_end_ticks = hal_timer_get_ticks();
 
 	if (ll_state == LL_STATE_ADVERTISING){
 		
-		// fetch reserved rx pdu
-		ll_pdu_t * rx_packet = ctx.rx_pdu;
-		btstack_assert(rx_packet != NULL);
-		ctx.rx_pdu = NULL;
+		// get rx pdu header
+		uint8_t rx_header;
+		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_header, 1);
 
-		// no data packet
-		rx_packet->flags = 0;
-		uint16_t max_packet_len = 2 + LL_MAX_PAYLOAD;
+		// check for Scan Request
+		uint8_t pdu_type = rx_header & 0x0f;
+		if (pdu_type == PDU_ADV_TYPE_SCAN_REQ){
+			// scan request, select TX1 for active AutoTx
+			SX1280SetBufferBaseAddresses( SX1280_TX1_OFFSET, SX1280_RX0_OFFSET);
+		} else {
 
-		SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+			// fetch reserved rx pdu
+			ll_pdu_t * rx_packet = ctx.rx_pdu;
+			btstack_assert(rx_packet != NULL);
+			ctx.rx_pdu = NULL;
 
-		// queue received packet
-		btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+			// no data packet
+			rx_packet->flags = 0;
+			uint16_t max_packet_len = 2 + LL_MAX_PAYLOAD;
+
+			// no scan request, disable auto tx and read complete buffer
+			radio_auto_tx_off();
+			SX1280HalReadBuffer( SX1280_RX0_OFFSET, &rx_packet->header, max_packet_len);
+
+			// queue received packet
+			btstack_linked_queue_enqueue(&ctx.rx_queue, (btstack_linked_item_t *) rx_packet);
+		}
 
 	} else if (ll_state == LL_STATE_CONNECTED){
 
@@ -770,57 +864,8 @@ static void radio_on_rx_done(void ){
             ctx.transmit_sequence_number = next_expected_sequence_number;
         }
 
-        // restart supervision timeout
-        ctx.time_without_any_packets_us = 0;
-
-        // check if we can sent a full packet before sync hop
-        int16_t now_ticks = packet_end_ticks - ctx.anchor_ticks;
-        if (ctx.synced && (now_ticks > ctx.conn_latest_tx_ticks)){
-            // disable AutoTX to abort sending of next packet
-            Radio.SetFs();
-            log_info("Close before Sync hop: now %u > %u", now_ticks, ctx.conn_latest_tx_ticks);
-
-            // get rx pdu and
-			radio_fetch_rx_pdu();
-            return;
-        }
-
-        // setup empty packet in ll buffer if no tx packet was preloaded
-		if (ctx.num_tx_pdus_on_controller == 0) {
-			ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_tx_packet;
-			ctx.num_tx_pdus_on_controller++;
-			ll_tx_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
-			ll_tx_packet.len = 0;
-		}
-
-		// setup pdu header
-		uint8_t packet_header[2];
-		uint8_t md = btstack_linked_queue_empty(&ctx.tx_queue) ? 0 : 1;
-		packet_header[0] = (md << 4) | (ctx.transmit_sequence_number << 3) | (ctx.next_expected_sequence_number << 2) | ctx.tx_buffer_pdu[ctx.next_tx_buffer]->header;
-		packet_header[1] = ctx.tx_buffer_pdu[ctx.next_tx_buffer]->len;
-
-		// select outgoing tx buffer and update pdu header
-		SX1280SetBufferBaseAddresses( tx_buffer_offset[ctx.next_tx_buffer], SX1280_RX0_OFFSET);
-		SX1280HalWriteBuffer( tx_buffer_offset[ctx.next_tx_buffer], (uint8_t *) packet_header, sizeof(packet_header));
-
-        // update operating state
-        SX1280AutoTxWillStart();
-
-        // set anchor on first packet in connection event
-        if (ctx.packet_nr_in_connection_event == 0){
-
-            // preamble (1) + aa (4) + header (1) + len (1) + payload (len) + crc (3) -- ISR handler ca. 35 us
-            uint16_t timestamp_delay = (10 + rx_len) * 8 - 35;
-            uint16_t packet_start_ticks = packet_end_ticks - US_TO_TICKS(timestamp_delay);
-
-            ctx.anchor_ticks = packet_start_ticks;
-            ctx.synced = true;
-            radio_set_timer_ticks(ctx.conn_sync_hop_ticks);
-        }
-
-        ctx.packet_nr_in_connection_event++;
-
-		// printf("RX %02x -- tx buffer %u, %02x %02x\n", rx_header, ctx.next_tx_buffer, packet_header[0], packet_header[1]);
+        // packet received, now prepare for AutoTX
+		radio_prepare_auto_tx(packet_end_ticks, rx_len);
     }
 }
 
@@ -840,10 +885,19 @@ static void radio_on_rx_timeout(void ){
 }
 
 static void radio_on_rx_error(IrqErrorCode_t errorCode ){
+	uint16_t packet_end_ticks = hal_timer_get_ticks();
+	uint8_t rx_buffer[2];
+	uint8_t rx_len;
     switch (ll_state){
         case LL_STATE_ADVERTISING:
             radio_state = RADIO_RX_ERROR;
             break;
+		case LL_STATE_CONNECTED:
+			// get len from rx pdu header
+			SX1280HalReadBuffer(SX1280_RX0_OFFSET, rx_buffer, 2);
+			rx_len = rx_buffer[1];
+			radio_prepare_auto_tx(packet_end_ticks, rx_len);
+			break;
         default:
             break;
     }
@@ -911,16 +965,16 @@ void ll_radio_on(void){
     // Go back to Frequcency Synthesis Mode, reduces transition time between Rx<->TX
     Radio.SetAutoFS(1);
 
-    // quick test
-    uint8_t data[] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-    Radio.WriteBuffer(0, data, sizeof(data));
-    uint8_t check[8];
-    Radio.ReadBuffer(0, check, sizeof(data));
-    if (memcmp(data, check, sizeof(data)) != 0){
-        printf_hexdump(data, sizeof(data));
-        printf_hexdump(check, sizeof(data));
-        btstack_assert(false);
-    }
+	// quick test
+	uint8_t data[] = {1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128 };
+	Radio.WriteBuffer(0, data, sizeof(data));
+	uint8_t check[32];
+	Radio.ReadBuffer(0, check, sizeof(data));
+	if (memcmp(data, check, sizeof(data)) != 0) {
+		printf("GOOD: "); printf_hexdump(data, sizeof(data));
+		printf("BAD:  "); printf_hexdump(check, sizeof(data));
+		btstack_assert(false);
+	}
 
     ll_state = LL_STATE_STANDBY;
 }
@@ -1003,15 +1057,8 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     next_channel();
 
     start_hopping();
-    
-    // Enable Rx->Tx in 150 us for BLE
-    // Note: Driver subtracts AUTO_RX_TX_OFFSET (33) from it and 150 should be correct, Raccoon reports 181 us then, so -31
-    // Radio.SetAutoTx(119);
 
-    // SetAutoTX(100) - direct write / ignore compensation
-    uint8_t buf[2];
-    big_endian_store_16(buf, 0, AUTO_RX_TX_TIME_US);
-    SX1280HalWriteCommand( RADIO_SET_AUTOTX, buf, 2 );
+    radio_auto_tx_on();
 
 	// pre-load tx pdu
 	ctx.num_tx_pdus_on_controller = 0;
@@ -1209,8 +1256,17 @@ uint8_t ll_set_advertising_data(uint8_t adv_len, const uint8_t * adv_data){
     ctx.adv_len = adv_len;
     memcpy(ctx.adv_data, adv_data, adv_len);
 
-    // TODO:
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t ll_set_scan_response_data(uint8_t adv_len, const uint8_t * adv_data){
+	// COMMAND DISALLOWED if wrong state.
+	if (ll_state == LL_STATE_ADVERTISING) return ERROR_CODE_COMMAND_DISALLOWED;
+	if (adv_len > 31) return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+	ctx.scan_resp_len = adv_len;
+	memcpy(ctx.scan_resp_data, adv_data, adv_len);
+
+	return ERROR_CODE_SUCCESS;
 }
 
 void ll_execute_once(void){

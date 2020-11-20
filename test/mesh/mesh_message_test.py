@@ -5,6 +5,18 @@
 
 from mesh_crypto import *
 
+try:
+    from Cryptodome.Cipher import AES
+    from Cryptodome.Hash import CMAC
+except ImportError:
+    # fallback: try to import PyCryptodome as (an almost drop-in) replacement for the PyCrypto library
+    try:
+        from Crypto.Cipher import AES
+        from Crypto.Hash import CMAC
+    except ImportError:
+        print("\n[!] PyCryptodome required but not installed (using random value instead)")
+        print("[!] Please install PyCryptodome, e.g. 'pip3 install pycryptodomex' or 'pip3 install pycryptodome'\n")
+        
 # S1('test') = b73cefbd641ef2ea598c2b6efb62f79c
 s1_input  = b'test'
 s1_actual = s1(s1_input)

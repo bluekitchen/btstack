@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Delete project files for all BTstack embedded examples in local port/esp32 folder
 

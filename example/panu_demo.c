@@ -42,16 +42,17 @@
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
  */
 
-/* EXAMPLE_START(panu_demo): PANU Demo
+/* EXAMPLE_START(panu_demo): BNEP/PANU (Linux only)
  *
  * @text This example implements both a PANU client and a server. In server mode, it 
  * sets up a BNEP server and registers a PANU SDP record and waits for incoming connections.
  * In client mode, it connects to a remote device, does an SDP Query to identify the PANU
  * service and initiates a BNEP connection.
  *
- * Note: currently supported only on Linux and Mac.
+ * Note: currently supported only on Linux and provides a TAP network interface which you
+ *       can configure yourself.
  *
- * To enable client mode, uncomment ENABLE_PANU_CLIENT below
+ * To enable client mode, uncomment ENABLE_PANU_CLIENT below.
  */
 
 #include <stdio.h>
@@ -66,11 +67,15 @@
 #define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
 
-static int record_id = -1;
-static uint16_t bnep_l2cap_psm      = 0;
-static uint32_t bnep_remote_uuid    = 0;
-static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
+
+#ifdef ENABLE_PANU_CLIENT
+
+static int record_id = -1;
+
+static uint16_t bnep_version        = 0;
+static uint32_t bnep_remote_uuid    = 0;
+static uint16_t bnep_l2cap_psm      = 0;
 
 static uint16_t sdp_bnep_l2cap_psm      = 0;
 static uint16_t sdp_bnep_version        = 0;
@@ -78,6 +83,7 @@ static uint32_t sdp_bnep_remote_uuid    = 0;
 
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
+#endif
 
 // MBP 2016
 static const char * remote_addr_string = "78:4F:43:8C:B2:5D";

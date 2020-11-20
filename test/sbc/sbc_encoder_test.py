@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import wave
 import struct
@@ -20,9 +20,9 @@ def sbc_compare_subband_samples(frame_count, actual_frame, expected_frame):
                 max_error = M
 
             if max_error > error:
-                print "Frame %d: sb_sample error %f (ch %d, blk %d)" % (frame_count, max_error, ch, blk)
-                print actual_frame.sb_sample[blk]
-                print expected_frame.sb_sample[blk]
+                print ("Frame %d: sb_sample error %f (ch %d, blk %d)" % (frame_count, max_error, ch, blk))
+                print (actual_frame.sb_sample[blk])
+                print (expected_frame.sb_sample[blk])
                 return -1
     return 0 
 
@@ -36,65 +36,65 @@ def sbc_compare_audio_frames(frame_count, actual_frame, expected_frame):
                 max_error = M
 
         if max_error > error:
-            print "audio_sample error (%d, %f ) " % (frame_count, max_error)
-            print actual_frame.audio_sample[blk]
-            print expected_frame.audio_sample[blk]
+            print ("audio_sample error (%d, %f ) " % (frame_count, max_error))
+            print (actual_frame.audio_sample[blk])
+            print (expected_frame.audio_sample[blk])
 
             return -1
     return 0 
 
 def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     if actual_frame.syncword != expected_frame.syncword:
-        print "syncword wrong ", actual_frame.syncword
+        print ("syncword wrong ", actual_frame.syncword)
         return -1
 
     if actual_frame.sampling_frequency != expected_frame.sampling_frequency:
-        print "sampling_frequency wrong ", actual_frame.sampling_frequency
+        print ("sampling_frequency wrong ", actual_frame.sampling_frequency)
         return -1
 
     if actual_frame.nr_blocks != expected_frame.nr_blocks:
-        print "nr_blocks wrong ", actual_frame.nr_blocks
+        print ("nr_blocks wrong ", actual_frame.nr_blocks)
         return -1
 
     if actual_frame.channel_mode != expected_frame.channel_mode:
-        print "channel_mode wrong ", actual_frame.channel_mode
+        print ("channel_mode wrong ", actual_frame.channel_mode)
         return -1
 
     if actual_frame.nr_channels != expected_frame.nr_channels:
-        print "nr_channels wrong ", actual_frame.nr_channels
+        print ("nr_channels wrong ", actual_frame.nr_channels)
         return -1
 
     if actual_frame.allocation_method != expected_frame.allocation_method:
-        print "allocation_method wrong ", actual_frame.allocation_method
+        print ("allocation_method wrong ", actual_frame.allocation_method)
         return -1
 
     if actual_frame.nr_subbands != expected_frame.nr_subbands:
-        print "nr_subbands wrong ", actual_frame.nr_subbands
+        print ("nr_subbands wrong ", actual_frame.nr_subbands)
         return -1
 
     if actual_frame.bitpool != expected_frame.bitpool:
-        print "bitpool wrong (E: %d, D: %d)" % (actual_frame.bitpool, expected_frame.bitpool)
+        print ("bitpool wrong (E: %d, D: %d)" % (actual_frame.bitpool, expected_frame.bitpool))
         return -1
     
     if  mse(actual_frame.join, expected_frame.join) > 0:
-        print "join error \nE:\n %s \nD:\n %s" % (actual_frame.join, expected_frame.join)
+        print ("join error \nE:\n %s \nD:\n %s" % (actual_frame.join, expected_frame.join))
         return -1
     
     
     if  mse(actual_frame.scale_factor, expected_frame.scale_factor) > 0:
-        print "scale_factor error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.scale_factor, expected_frame.scale_factor)
+        print ("scale_factor error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.scale_factor, expected_frame.scale_factor))
         return -1
 
     if  mse(actual_frame.scalefactor, expected_frame.scalefactor) > 0:
-        print "scalefactor error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.scalefactor, expected_frame.scalefactor)
+        print ("scalefactor error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.scalefactor, expected_frame.scalefactor))
         return -1
     
     if  mse(actual_frame.bits, expected_frame.bits) > 0:
-        print "bits error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.bits, expected_frame.bits)
+        print ("bits error %d \nE:\n %s \nD:\n %s" % (frame_count, actual_frame.bits, expected_frame.bits))
         return -1
 
     if actual_frame.crc_check != expected_frame.crc_check:
-        print "crc_check wrong (E: %d, D: %d)" % (actual_frame.crc_check, expected_frame.crc_check)
+        print ("crc_check wrong (E: %d, D: %d)" % (actual_frame.crc_check, expected_frame.crc_check))
         return -1
 
     return 0

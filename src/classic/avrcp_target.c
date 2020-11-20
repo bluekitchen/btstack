@@ -142,7 +142,7 @@ static int avrcp_target_abort_continue_response(uint16_t cid, avrcp_connection_t
     connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
     connection->subunit_id      = AVRCP_SUBUNIT_ID;
 
-    packet[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    packet[pos++] = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
     // Profile IDentifier (PID)
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -173,7 +173,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
     uint8_t * packet = l2cap_get_outgoing_buffer();
     uint16_t  size   = l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid);
    
-    packet[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    packet[pos++] = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
     // Profile IDentifier (PID)
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -310,7 +310,7 @@ static int avrcp_target_send_response(uint16_t cid, avrcp_connection_t * connect
     // TODO: check for fragmentation
     connection->packet_type = AVRCP_SINGLE_PACKET;
 
-    packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    packet[pos++] = (connection->transaction_id << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
     // Profile IDentifier (PID)
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
@@ -753,7 +753,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
     uint16_t pid = 0;
     uint8_t transport_header = packet[0];
-    connection->transaction_label = transport_header >> 4;
+    connection->transaction_id = transport_header >> 4;
 
     avrcp_packet_type_t packet_type = (avrcp_packet_type_t) ((transport_header & 0x0F) >> 2);
     switch (packet_type){
@@ -774,7 +774,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 log_info("Invalid pid 0x%02x, expected 0x%02x", connection->invalid_pid, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL);
                 connection->reject_transport_header = 1;
                 connection->invalid_pid = pid;
-                connection->transport_header = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2 ) | (AVRCP_RESPONSE_FRAME << 1) | 1;
+                connection->transport_header = (connection->transaction_id << 4) | (AVRCP_SINGLE_PACKET << 2 ) | (AVRCP_RESPONSE_FRAME << 1) | 1;
                 connection->state = AVCTP_W2_SEND_RESPONSE;
                 avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                 return;
@@ -933,7 +933,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     // 2-3 param length 
                     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) pdu[4];
                     uint16_t event_mask = (1 << event_id);
-                    avrcp_target_set_transaction_label_for_notification(connection, event_id, connection->transaction_label);
+                    avrcp_target_set_transaction_label_for_notification(connection, event_id, connection->transaction_id);
                             
                     switch (event_id){
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:
@@ -1017,7 +1017,7 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     connection->command_type    = AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
     connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
     connection->subunit_id      = AVRCP_SUBUNIT_ID;
-    connection->transaction_label = avrcp_target_get_transaction_label_for_notification(connection, notification_id);
+    connection->transaction_id = avrcp_target_get_transaction_label_for_notification(connection, notification_id);
                         
     uint16_t pos = 0; 
     l2cap_reserve_packet_buffer();
@@ -1025,7 +1025,7 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     uint16_t  size   = l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid);
 
     connection->packet_type = AVRCP_SINGLE_PACKET;
-    packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    packet[pos++] = (connection->transaction_id << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
     // Profile IDentifier (PID)
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;

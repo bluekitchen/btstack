@@ -552,6 +552,14 @@ int gap_secure_connection(hci_con_handle_t con_handle);
  */
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle);
 
+/**
+ * @brief Get bonded property (BR/EDR/LE)
+ * @note LE: has to be called after identity resolving is complete
+ * @param con_handle
+ * @return true if bonded
+ */
+bool gap_bonded(hci_con_handle_t con_handle);
+
 // Classic
 
 /**
@@ -598,6 +606,17 @@ void gap_delete_all_link_keys(void);
  *       power up, this function only works, when the stack is in working state for these ports.
  */
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
+
+/**
+ * @brief Get link for remote device with basband address
+ * @param addr
+ * @param link_key (out) is stored here
+ * @param link_key_type (out) is stored here
+ * @note On most desktop ports, the Link Key DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
+ */
+bool gap_get_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t * type);
 
 /**
  * @brief Setup Link Key iterator
@@ -752,6 +771,16 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
  * @return 1 if security setup is active
  */
 int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
+
+/**
+ * @brief Delete bonding information for remote device
+ * @note On most desktop ports, the LE Device DB uses a TLV and there is one TLV storage per
+ *       Controller resp. its Bluetooth Address. As the Bluetooth Address is retrieved during
+ *       power up, this function only works, when the stack is in working state for these ports.
+ * @param address_type
+ * @param address
+ */
+void gap_delete_bonding(bd_addr_type_t address_type, bd_addr_t address);
 
 /**
  * LE Privacy 1.2 - requires support by Controller and ENABLE_LE_RESOLVING_LIST to be defined

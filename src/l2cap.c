@@ -39,10 +39,7 @@
 
 /*
  *  l2cap.c
- *
- *  Logical Link Control and Adaption Protocl (L2CAP)
- *
- *  Created by Matthias Ringwald on 5/16/09.
+ *  Logical Link Control and Adaption Protocol (L2CAP)
  */
 
 #include "l2cap.h"
@@ -54,6 +51,11 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
+
+#ifdef ENABLE_LE_DATA_CHANNELS
+// TODO avoid dependency on higher layer: used to trigger pairing for outgoing connections
+#include "ble/sm.h"
+#endif
 
 #include <stdarg.h>
 #include <string.h>
@@ -165,8 +167,7 @@ static uint16_t l2cap_next_local_cid(void);
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
 static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t event_code);
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
-static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
-static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type, 
+static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type,
         uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level);
 static void l2cap_free_channel_entry(l2cap_channel_t * channel);
 #endif
@@ -830,6 +831,9 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->reassembly_buffer, l2cap_channel->reassembly_pos);
             l2cap_channel->reassembly_pos = 0;    
             break; 
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 
@@ -1856,7 +1860,7 @@ static void l2cap_run(void){
 
 #ifdef ENABLE_LE_DATA_CHANNELS
     l2cap_run_le_data_channels();
-    #endif
+#endif
 
 #ifdef ENABLE_BLE
     // send l2cap con paramter update if necessary
@@ -1919,12 +1923,10 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
     // we have been waiting for remote supported features
-    log_info("l2cap received remote supported features, sec_level_0_allowed for psm %u = %u", channel->psm, l2cap_security_level_0_allowed_for_PSM(channel->psm));
-    if (l2cap_security_level_0_allowed_for_PSM(channel->psm) == 0){
-        // request security level 2
+    if (channel->required_security_level > LEVEL_0){
+        // request security level
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
-        channel->required_security_level = gap_get_security_level();
-        gap_request_security_level(channel->con_handle, gap_get_security_level());
+        gap_request_security_level(channel->con_handle, channel->required_security_level);
         return;
     }
 
@@ -1991,12 +1993,14 @@ static void l2cap_free_channel_entry(l2cap_channel_t * channel){
  */
 
 uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
-    // limit MTU to the size of our outtgoing HCI buffer
+    // limit MTU to the size of our outgoing HCI buffer
     uint16_t local_mtu = btstack_min(mtu, l2cap_max_mtu());
 
-    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u", bd_addr_to_str(address), psm, mtu, local_mtu);
+	// determine security level based on psm
+	const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
+	log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u, sec level %u", bd_addr_to_str(address), psm, mtu, local_mtu, (int) security_level);
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2013,13 +2017,19 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
        *out_local_cid = channel->local_cid;
     }
 
-    // check if hci connection is already usable
+	// state: L2CAP_STATE_WILL_SEND_CREATE_CONNECTION
+
+    // check if hci connection is already usable,
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
     if (conn && conn->con_handle != HCI_CON_HANDLE_INVALID){
-        log_info("l2cap_create_channel, hci connection 0x%04x already exists", conn->con_handle);
-        l2cap_handle_connection_complete(conn->con_handle, channel);
-        // check if remote supported fearures are already received
+    	// simulate connection complete
+	    l2cap_handle_connection_complete(conn->con_handle, channel);
+
+		// state: L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES
+
+        // check if remote supported features are already received
         if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+        	// simulate remote features received
             l2cap_handle_remote_supported_features_received(channel);
         }
     }
@@ -2223,10 +2233,12 @@ static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
         case L2CAP_STATE_INVALID:
         case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
             return 0;
-        // no default here, to get a warning about new states
+
+        default:
+            // get a "warning" about new states
+            btstack_assert(false);
+            return 0;
     }
-    // still, the compiler insists on a return value
-    return 0;
 }
 #endif
 
@@ -3454,6 +3466,9 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
                     max_payload_size = l2cap_channel->local_mps;
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             if (payload_len > max_payload_size){
                 log_info("payload len %u > max payload %u -> drop packet", payload_len, max_payload_size);
@@ -3957,12 +3972,55 @@ uint8_t l2cap_le_decline_connection(uint16_t local_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, 
+static gap_security_level_t l2cap_le_security_level_for_connection(hci_con_handle_t con_handle){
+    uint8_t encryption_key_size = gap_encryption_key_size(con_handle);
+    if (encryption_key_size == 0) return LEVEL_0;
+
+    uint8_t authenticated = gap_authenticated(con_handle);
+    if (!authenticated) return LEVEL_2;
+
+    return encryption_key_size == 16 ? LEVEL_4 : LEVEL_3;
+}
+
+// used to handle pairing complete after triggering to increase
+static void l2cap_sm_packet_handler(uint8_t packet_type, uint16_t channel_nr, uint8_t *packet, uint16_t size) {
+    UNUSED(channel_nr);
+    UNUSED(size);
+    UNUSED(packet_type);
+    btstack_assert(packet_type = HCI_EVENT_PACKET);
+    if (hci_event_packet_get_type(packet) != SM_EVENT_PAIRING_COMPLETE) return;
+    hci_con_handle_t con_handle = sm_event_pairing_complete_get_handle(packet);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)) {
+        l2cap_channel_t *channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (channel->con_handle != con_handle) continue;
+        if (channel->state != L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE) continue;
+
+        // found channel, check security level
+        if (l2cap_le_security_level_for_connection(con_handle) < channel->required_security_level){
+            // pairing failed or wasn't good enough, inform user
+            l2cap_emit_le_channel_opened(channel, ERROR_CODE_INSUFFICIENT_SECURITY);
+            // discard channel
+            btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+            l2cap_free_channel_entry(channel);
+        } else {
+            // send conn request now
+            channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST;
+            l2cap_run();
+        }
+    }
+}
+
+uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle,
     uint16_t psm, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits, gap_security_level_t security_level,
     uint16_t * out_local_cid) {
 
-    log_info("L2CAP_LE_CREATE_CHANNEL handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
+    static btstack_packet_callback_registration_t sm_event_callback_registration;
+    static bool sm_callback_registered = false;
 
+    log_info("L2CAP_LE_CREATE_CHANNEL handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
 
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) {
@@ -3981,18 +4039,33 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
        *out_local_cid = channel->local_cid;
     }
 
-    // provide buffer
+    // setup channel entry
     channel->con_handle = con_handle;
     channel->receive_sdu_buffer = receive_sdu_buffer;
-    channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST;
     channel->new_credits_incoming = initial_credits;
     channel->automatic_credits    = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
 
     // add to connections list
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
-    // go
-    l2cap_run();
+    // check security level
+    if (l2cap_le_security_level_for_connection(con_handle) < channel->required_security_level){
+        if (!sm_callback_registered){
+            sm_callback_registered = true;
+            // lazy registration for SM events
+            sm_event_callback_registration.callback = &l2cap_sm_packet_handler;
+            sm_add_event_handler(&sm_event_callback_registration);
+        }
+
+        // start pairing
+        channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
+        sm_request_pairing(con_handle);
+    } else {
+        // send conn request right away
+        channel->state = L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST;
+        l2cap_run();
+    }
+
     return ERROR_CODE_SUCCESS;
 }
 

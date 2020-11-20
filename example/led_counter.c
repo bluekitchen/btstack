@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "led_counter.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(led_counter): Hello World: blinking LED without Bluetooth
+/* EXAMPLE_START(led_counter): Hello World - Blinking an LED without Bluetooth
  *
  * @text The example demonstrates how to provide a periodic timer to toggle an
  * LED and send debug messages to the console as a minimal BTstack test.

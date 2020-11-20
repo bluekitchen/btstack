@@ -12,7 +12,51 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
+
+## Release v1.2
+
+### Fixed
+- L2CAP: trigger pairing for outgoing LE Data Channels if security level insufficient
+- SM: fix update of sc flag for re-encrypted connection in peripheral role
+- SM: send security request on re-connect if bonded and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is defined
+- ESP32: fix audio sink driver
+
+### Added
+- GAP: `gap_delete_bonding` removes device from LE Resolving List and from discards LE bonding information
+- GATT Client: delete bonding information if re-encryption fails and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is not defined
+- GATT Client: gatt_client_set_required_security_level allows to set required minimum security level for all GATT requests
+- SM: emit events for re-encryption started/complete
+
+### Changed
+- AVRCP Controller: allow to send multiple absolute volume commands without waiting for response. 
+- GAP: replaced `ENABLE_LE_CENTRAL_AUTO_ENCRYPION` with `ENABLE_LE_PROACTIVE_AUTHENTICATION`
+
+
 ## Changes October 2020
+
+### Fixed
+- AVDTP Initiator: avoid use of remote seid for stream endpoint lookup, fixes issue with two connected devices 
+- AVDTP Source: buffer for SBC media codec information got discarded, leading to invalid Set Configuration command in second connection
+- SM: only trigger Cross-Transport Key Derivation (CTKD) when bonding is enabled
+- SM: set LinkKey flag to request CTKD if enabled
+- SM: store CTKD key with Public Identity Address
+- SM: only allow CTKD to overwrite existing link key if derived key has same or higher authentication
+- SM: start SMP Timeout when sending Security Request
+- HFP HF: fix response to AG Codec Selection while waiting for OK of parallel command
+- HCI: fix reject of LE remote connection param request via HCI
+
+### Added
+- GAP: add `gap_get_link_key_for_bd_addr`
+- GAP: add `gap_bonded` to check if bonding information is available for active connection
+- SM: support h7 for CTKD
+
+### Changed
+- SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now
+- SM: block connection if encryption fails for bonded devices as Central
+- SM: support pairing as Central after failed re-ecnryption
+
+
+## Release v1.1
 
 ### Fixed
 - AVRCP/AVCTP: report AVRCP 1.6 and AVCTP 1.4 in SDP record
@@ -88,7 +132,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - HFP: Fix parsing of empty fields, e.g. phone number in +CLCC and other AT commands
-- sm: Fix validation of confirm value for secure connection Passkey entry
+- SM: Fix validation of confirm value for secure connection Passkey entry
 - AVRCP: handle concurrent signaling establishment with reject and retry
 
 ### Added
@@ -104,7 +148,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - hfp_hf, hsp_hs: use eSCO params in accept sco connection only for incoming eSCO connections
 - pbap_client: fix PBAP UUID len on connect message
-- sm: fix secure connection pairing as peripheral when local user confirmation happens after remote one
+- SM: fix secure connection pairing as peripheral when local user confirmation happens after remote one
 - A2DP Source: only connect to remote sink stream endpoints
 - btstack_hal_flash_memory: fix write of 0xff bytes to simulated flash
 - hsp_hs: fix disconnect if audio not connected
@@ -115,7 +159,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_set_security_level sets required security level for incoming and outgoing connections
 - cc256x: allow to specify power vector for each modulation type
 - FreeRTOS: btstack_run_loop_freertos_trigger_exit allows to request run loop exit
-- sm: support LE Secure Connections Only mode with sm_set_secure_connections_only_mode
+- SM: support LE Secure Connections Only mode with sm_set_secure_connections_only_mode
 - GAP: enable BR/EDR Secure Connections if supported, add gap_secure_connections_enable
 
 ### Changed

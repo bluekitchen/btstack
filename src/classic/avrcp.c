@@ -413,7 +413,10 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->role = role;
-    connection->transaction_label = 0xFF;
+
+    connection->transaction_id = 0xFF;
+    connection->transaction_id_counter = 0;
+
     connection->max_num_fragments = 0xFF;
     log_info("avrcp_create_connection, role %d", role);
     (void)memcpy(connection->remote_addr, remote_addr, 6);
@@ -458,7 +461,7 @@ static void avrcp_emit_connection_closed(uint16_t avrcp_cid){
     (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-uint16_t avrcp_sdp_sdp_query_browsing_l2cap_psm(void){
+uint16_t avrcp_sdp_query_browsing_l2cap_psm(void){
     return sdp_query_context.browsing_l2cap_psm;
 }
 

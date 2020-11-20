@@ -86,9 +86,7 @@ void SBC_FastIDCT8(SINT32 *pInVect, SINT32 *pOutVect)
 
     register SINT32 x0, x1, x2, x3, x4, x5, x6, x7,temp;
     SINT32 res_even[4], res_odd[4];
-    /*x0= (pInVect[4])/2 ;*/
     SBC_IDCT_MULT(SBC_COS_PI_SUR_4,pInVect[4], x0);
-    /*printf("x0 0x%x = %d = %d * %d\n", x0, x0, SBC_COS_PI_SUR_4, pInVect[4]);*/
 
     x1 = (pInVect[3] + pInVect[5])  >>1;
     x2 = (pInVect[2] + pInVect[6])  >>1;
@@ -173,8 +171,6 @@ void SBC_FastIDCT8(SINT32 *pInVect, SINT32 *pOutVect)
         pOutVect[Index] = temp;
     }
 #endif
-/*    printf("pOutVect: 0x%x;0x%x;0x%x;0x%x;0x%x;0x%x;0x%x;0x%x\n",\
-        pOutVect[0],pOutVect[1],pOutVect[2],pOutVect[3],pOutVect[4],pOutVect[5],pOutVect[6],pOutVect[7]);*/
 }
 
 /*******************************************************************************

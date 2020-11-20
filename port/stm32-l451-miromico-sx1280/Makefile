@@ -248,7 +248,7 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
-$(BUILD_DIR)/%.h: %.gatt
+$(BUILD_DIR)/%.h: %.gatt | $(BUILD_DIR)
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 

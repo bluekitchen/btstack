@@ -42,6 +42,7 @@
  */
 
 #include "btstack_base64_decoder.h"
+#include "btstack_debug.h"
 #include <string.h>
 
 /**
@@ -119,6 +120,9 @@ int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uin
         case 99:
             result = BTSTACK_BASE64_DECODER_INVALID;
             break;
+		default:
+			btstack_assert(false);
+			break;
     }
     return result;
 }

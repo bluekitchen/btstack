@@ -48,6 +48,8 @@ OI_UINT32 OI_SBC_MaxBitpool(OI_CODEC_SBC_FRAME_INFO *frame)
         case SBC_STEREO:
         case SBC_JOINT_STEREO:
             return 32 * frame->nrof_subbands;
+        default:
+            break;
     }
 
     ERROR(("Invalid frame mode %d", frame->mode));

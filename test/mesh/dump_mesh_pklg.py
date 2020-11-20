@@ -602,7 +602,7 @@ if len(sys.argv) == 1:
     print ('Dump Mesh PacketLogger file')
     print ('Copyright 2019, BlueKitchen GmbH')
     print ('')
-    print ('Usage: ' + sys.argv[0] + 'hci_dump.pklg')
+    print ('Usage: ' + sys.argv[0] + ' hci_dump.pklg')
     exit(0)
 
 infile = sys.argv[1]

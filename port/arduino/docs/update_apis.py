@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import sys 
@@ -37,7 +37,7 @@ def replacePlaceholder(template, title, lable):
 def writeAPI(fout, infile_name):
     global code_identation
     state = State.SearchStartAPI
-    with open(infile_name, 'rb') as fin:
+    with open(infile_name, 'r') as fin:
         for line in fin:
             if state == State.SearchStartAPI:
                 parts = re.match('\s*(/\*).*API_START.*(\*/)',line)

@@ -442,6 +442,7 @@ static int rfcomm_multiplexer_has_channels(rfcomm_multiplexer_t * multiplexer){
 // MARK: RFCOMM CHANNEL HELPER
 
 static void rfcomm_dump_channels(void){
+#ifdef ENABLE_LOG_INFO
     btstack_linked_item_t * it;
     int channels = 0;
     for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
@@ -449,6 +450,7 @@ static void rfcomm_dump_channels(void){
         log_info("Channel #%u: addr %p, state %u", channels, channel, channel->state);
         channels++;
     }
+#endif
 }
 
 static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiplexer_t *multiplexer, 

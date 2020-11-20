@@ -209,16 +209,16 @@ typedef struct {
 
 typedef struct {
     int reconfigure;
+    
     int num_channels;
     int sampling_frequency;
-    int channel_mode;
     int block_length;
     int subbands;
-    int allocation_method;
     int min_bitpool_value;
     int max_bitpool_value;
-    int frames_per_buffer;
-} avdtp_media_codec_configuration_sbc_t;
+    btstack_sbc_channel_mode_t      channel_mode;
+    btstack_sbc_allocation_method_t allocation_method;
+} media_codec_configuration_sbc_t;
 
 
 static uint8_t ertm_buffer[10000];
@@ -308,6 +308,10 @@ static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
 };
 
+static avrcp_media_attribute_id_t now_playing_info_attributes [] = {
+    AVRCP_MEDIA_ATTR_TITLE
+};
+
 typedef struct {
     uint8_t track_id[8];
     uint32_t song_length_ms;
@@ -325,7 +329,7 @@ avrcp_track_t tracks[] = {
 };
 int current_track_index;
 avrcp_play_status_info_t play_info;
-static avdtp_media_codec_configuration_sbc_t sbc_configuration;
+static media_codec_configuration_sbc_t sbc_configuration;
 static btstack_sbc_encoder_state_t sbc_encoder_state;
 
 static uint8_t media_sbc_codec_configuration[4];
@@ -394,6 +398,9 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
     bd_addr_t address;
     uint16_t cid;
 
+    uint8_t channel_mode;
+    uint8_t allocation_method;
+
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case HCI_EVENT_PIN_CODE_REQUEST:
@@ -446,24 +453,42 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
             sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sbc_configuration.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             sbc_configuration.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
             sbc_configuration.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sbc_configuration.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             sbc_configuration.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             
+            allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
+            channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            
+            // Adapt Bluetooth spec definition to SBC Encoder expected input
+            sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
+            sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
+            switch (channel_mode){
+                case AVDTP_SBC_JOINT_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
+                    break;
+                case AVDTP_SBC_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
+                    break;
+                case AVDTP_SBC_DUAL_CHANNEL:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
+                    break;
+                case AVDTP_SBC_MONO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
+                    sbc_configuration.num_channels = 1;
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
+            }
+
             btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
                 sbc_configuration.block_length, sbc_configuration.subbands, 
                 sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
                 sbc_configuration.max_bitpool_value,
                 sbc_configuration.channel_mode);
             
-            // status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
-            // if (status != ERROR_CODE_SUCCESS){
-            //     printf("Could not perform command, status 0x%2x\n", status);
-            // }
             break;
         }  
 
@@ -861,8 +886,15 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             // response to set shuffle and repeat mode
             printf("\n");
             break;
+        case AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE:
+            volume_percentage = avrcp_subevent_set_absolute_volume_response_get_absolute_volume(packet) * 100 / 127;
+            printf("absolute volume response %d %%\n", volume_percentage);
+            break;
+        case AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE:
+            printf("Playing info done with receiving\n");
+            break;
         default:
-            printf("AVRCP controller: event not parsed.\n");
+            printf("AVRCP controller: event not parsed 0x%02x\n", packet[2]);
             break;
     }             
 }
@@ -1138,7 +1170,8 @@ static void show_usage(void){
     printf("* - get subunit info\n");
     printf("r - get play status\n");
     printf("/ - get now playing info\n");
-    
+    printf("$ - get TITLE of now playing song\n");
+
     printf("01 - play\n");
     printf("02 - pause\n");
     printf("03 - stop\n");
@@ -1324,6 +1357,11 @@ static void stdin_process(char * cmd, int size){
             printf("AVRCP: get now playing info\n");
             avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
+        case '$':
+            printf("AVRCP: get TITLE of now playing song\n");
+            avrcp_controller_get_element_attributes(avrcp_cid, sizeof(now_playing_info_attributes)/4, now_playing_info_attributes);
+            break;
+
         case '0':
             switch (cmd[1]){
                 case '1':
@@ -1793,6 +1831,12 @@ static bool avrcp_set_addressed_player_handler(uint16_t player_id){
     return true;
 }
 
+static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
+    UNUSED(seid);
+    UNUSED(packet);
+    UNUSED(size);
+}
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
@@ -1812,6 +1856,7 @@ int btstack_main(int argc, const char * argv[]){
     local_stream_endpoint->sep.seid = 1;
     avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
     avdtp_source_init();
     avdtp_source_register_packet_handler(&avdtp_source_connection_establishment_packet_handler);

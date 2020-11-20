@@ -24,11 +24,13 @@ SUBDIRS =  \
 	map_test \
 	mesh \
 	obex \
+	pts \
 	ring_buffer \
 	sdp \
 	sdp_client \
 	security_manager \
 	tlv_posix \
+	embedded \
 
 # not testing anything in source tree
 #	maths \
@@ -55,7 +57,7 @@ SUBDIRS_BLE = \
 	ring_buffer \
     gatt_server \
     security_manager \
-
+    embedded \
 # test fails
 
 # not unit-tests
@@ -101,7 +103,7 @@ coverage-pts.info:
 
 coverage-sm-sc.info:
 	# download pts coverage and fix paths
-	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop/build|`realpath ..`|" > coverage-sm-sc.info
+	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop-sm-sc/build|`realpath ..`|" > coverage-sm-sc.info
 
 
 coverage-unit.info: subdirs

@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "gap_inquiry.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(gap_inquiry): GAP Inquiry Example
+/* EXAMPLE_START(gap_inquiry): GAP Classic Inquiry
  *
  * @text The Generic Access Profile (GAP) defines how Bluetooth devices discover
  * and establish a connection with each other. In this example, the application

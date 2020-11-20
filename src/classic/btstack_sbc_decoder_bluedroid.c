@@ -46,9 +46,13 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef LOG_FRAME_STATUS
+#include <stdio.h>
+#endif
 
 #include "btstack_sbc.h"
 #include "btstack_sbc_plc.h"
@@ -196,8 +200,6 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
 
 static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t * buffer, int size){
     int numFreeBytes = sizeof(state->frame_buffer) - state->bytes_in_frame_buffer;
-
-    // printf("append_received_sbc_data: bytes to append %u, sizeof %u, bytes in buffer %u, free %u\n", size,sizeof(state->frame_buffer), state->bytes_in_frame_buffer, numFreeBytes);
 
     if (size > numFreeBytes){
         log_error("SBC data: more bytes read %u than free bytes in buffer %u", size, numFreeBytes);

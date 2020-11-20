@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "gatt_browser.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(gatt_browser): GATT Client - Discovering primary services and their characteristics
+/* EXAMPLE_START(gatt_browser): GATT Client - Discover Primary Services
  * 
  * @text This example shows how to use the GATT Client
  * API to discover primary services and their characteristics of the first found

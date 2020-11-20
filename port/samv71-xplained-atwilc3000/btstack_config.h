@@ -1,21 +1,22 @@
-// 
+//
 // btstack_config.h for SAMV71 + ATWILC3000
 //
 
-#ifndef __BTSTACK_CONFIG
-#define __BTSTACK_CONFIG
+#ifndef BTSTACK_CONFIG_H
+#define BTSTACK_CONFIG_H
 
-#define HAVE_INIT_SCRIPT
-#define HAVE_EMBEDDED_TICK
-#define HAVE_UART_DMA_SET_FLOWCONTROL
 #define HAVE_BTSTACK_STDIN
+#define HAVE_EMBEDDED_TICK
+#define HAVE_INIT_SCRIPT
+#define HAVE_UART_DMA_SET_FLOWCONTROL
 
 #define ENABLE_BLE
-#define ENABLE_LOG_INFO
-#define ENABLE_LOG_ERROR
-#define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_CHANNELS
+#define ENABLE_LE_PERIPHERAL
+#define ENABLE_LOG_ERROR
+#define ENABLE_LOG_INFO
+#define ENABLE_PRINTF_HEXDUMP
 
 #define HCI_ACL_PAYLOAD_SIZE 300
 
@@ -31,9 +32,6 @@
 #define MAX_NR_SERVICE_RECORD_ITEMS 0
 #define MAX_NR_SM_LOOKUP_ENTRIES 1
 #define MAX_NR_WHITELIST_ENTRIES 1
-
-// if defined, le_device_db_memory will not be compiled
-// #define NVM_NUM_DEVICE_DB_ENTRIES      16
 
 #endif
 

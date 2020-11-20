@@ -172,6 +172,9 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             ancs_bytes_needed   = 1;
             chunk_parser_state  = W4_ATTRIBUTE_ID;
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
 }
 

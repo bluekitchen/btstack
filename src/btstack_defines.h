@@ -1182,12 +1182,29 @@ typedef uint8_t sm_key_t[16];
 #define SM_EVENT_JUST_WORKS_REQUEST                              0xD0
 
  /**
+  * @format H1B4
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  */
+#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xD1
+
+ /**
   * @format H1B
   * @param handle
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_JUST_WORKS_CANCEL                               0xD1 
+#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xD2
+
+ /**
+  * @format H1B
+  * @param handle
+  * @param addr_type
+  * @param address
+  */
+#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xD3
 
  /**
   * @format H1B4
@@ -1196,7 +1213,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param passkey
   */
-#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xD2
+#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xD4
 
  /**
   * @format H1B
@@ -1204,7 +1221,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xD3
+#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xD5
 
  /**
   * @format H1B
@@ -1212,48 +1229,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xD4
-
- /**
-  * @format H1B
-  * @param handle
-  * @param addr_type
-  * @param address
-  */
-#define SM_EVENT_PASSKEY_INPUT_CANCEL                            0xD5
-
- /**
-  * @format H1B4
-  * @param handle
-  * @param addr_type
-  * @param address
-  * @param passkey
-  */
-#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xD6
-
- /**
-  * @format H1B
-  * @param handle
-  * @param addr_type
-  * @param address
-  */
-#define SM_EVENT_NUMERIC_COMPARISON_CANCEL                       0xD7
-
- /**
-  * @format H1B
-  * @param handle
-  * @param addr_type
-  * @param address
-  */
-#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xD8
-
- /**
-  * @format H1B
-  * @param handle
-  * @param addr_type
-  * @param address
-  */
-#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD9
+#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD6
 
  /**
   * @brief Identify resolving succeeded
@@ -1267,7 +1243,7 @@ typedef uint8_t sm_key_t[16];
   * @param index
   *
   */
-#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xDA
+#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xD7
 
  /**
   * @format H1B
@@ -1275,7 +1251,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_AUTHORIZATION_REQUEST                           0xDB
+#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD8
 
  /**
   * @format H1B1
@@ -1284,14 +1260,14 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param authorization_result
   */
-#define SM_EVENT_AUTHORIZATION_RESULT                            0xDC
+#define SM_EVENT_AUTHORIZATION_RESULT                            0xD9
 
  /**
   * @format H1
   * @param handle
   * @param action see SM_KEYPRESS_*
   */
-#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xDD
+#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xDA
 
  /**
   * @brief Emitted during pairing to inform app about address used as identity
@@ -1304,7 +1280,7 @@ typedef uint8_t sm_key_t[16];
   * @param identity_address
   * @param index
   */
-#define SM_EVENT_IDENTITY_CREATED                                0xDE
+#define SM_EVENT_IDENTITY_CREATED                                0xDB
 
  /**
   * @brief Emitted to inform app that pairing is complete. Possible status values:
@@ -1320,8 +1296,30 @@ typedef uint8_t sm_key_t[16];
   * @param status
   * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
   */
-#define SM_EVENT_PAIRING_COMPLETE                                0xDF
+#define SM_EVENT_PAIRING_COMPLETE                                0xDC
 
+
+/**
+ * @brief Proactive Authentication for bonded devices started.
+ * @format H1B
+ * @param handle
+ * @param addr_type
+ * @param address
+ */
+#define SM_EVENT_REENCRYPTION_STARTED                            0xDD
+
+/**
+ * @brief Proactive Authentication for bonded devices complete. Possible status values:
+ *         ERROR_CODE_SUCCESS                           -> connection secure
+ *         ERROR_CODE_CONNECTION_TIMEOUT                -> timeout
+ *         ERROR_CODE_AUTHENTICATION_FAILURE            -> remote did not provide LTK locally
+ * @format H1B1
+ * @param handle
+ * @param addr_type
+ * @param address
+ * @param status
+ */
+#define SM_EVENT_REENCRYPTION_COMPLETE                           0xDE
 
 // GAP
 
@@ -1752,10 +1750,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_SEP_FOUND                  0x06
 
 /**
- * @format 121111111111
+ * @format 12111111111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param media_type
  * @param sampling_frequency_bitmap
@@ -1769,10 +1766,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
 
 /**
- * @format 121112LV
+ * @format 12112LV
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param media_type
  * @param media_codec_type
@@ -1783,30 +1779,27 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY        0x09
 
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0A
 
 
 /**
- * @format 1211111
+ * @format 121111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param recovery_type
  * @param maximum_recovery_window_size
@@ -1816,10 +1809,9 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 12112LV
+ * @format 1212LV
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param cp_type
  * @param cp_type_value_len
@@ -1829,10 +1821,9 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 121111111111
+ * @format 12111111111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param fragmentation
  * @param transport_identifiers_num
@@ -1847,20 +1838,18 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x0E
 
 
 /**
- * @format 1211111
+ * @format 121111
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  * @param back_ch
  * @param media
@@ -1931,10 +1920,9 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x14
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
- * @param local_seid
  * @param remote_seid
  */
 #define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE           0x15

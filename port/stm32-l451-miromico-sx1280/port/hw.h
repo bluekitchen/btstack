@@ -18,7 +18,11 @@
 #include "sx1280.h"
 #include "sx1280-hal.h"
 
-// #define USE_BK_SPI
+#define RADIO_SPI_HANDLE hspi2
+#define RADIO_SPI_DMA_RX hdma_spi2_rx
+#define RADIO_SPI_DMA_TX hdma_spi2_tx
+
+#define USE_BK_SPI
 
 /* Define the board */
 #define BOARD_MIROMICO_L451RE

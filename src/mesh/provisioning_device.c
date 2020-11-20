@@ -494,6 +494,9 @@ static void provisioning_handle_start(uint8_t * packet, uint16_t size){
                 break;
             }
             break;
+        default:
+            // TODO check
+            break;
     }
     if (!ok){
         printf("PROV_START arguments incorrect\n");
@@ -758,8 +761,10 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
 
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            if (packet[0] != HCI_EVENT_MESH_META)  break;
-            switch (packet[2]){
+        
+            if (hci_event_packet_get_type(packet) != HCI_EVENT_MESH_META)  break;
+
+            switch (hci_event_mesh_meta_get_subevent_code(packet)){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                     pb_transport_cid = mesh_subevent_pb_transport_link_open_get_pb_transport_cid(packet);
                     pb_type = mesh_subevent_pb_transport_link_open_get_pb_type(packet);
@@ -778,6 +783,8 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                     printf("Link close, reset state\n");
                     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
                     provisioning_done();
+                    break;
+                default:
                     break;
             }
             break;

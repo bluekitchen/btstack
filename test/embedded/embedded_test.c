@@ -23,6 +23,9 @@
 #include "hal_time_ms.h"
 #include "hal_uart_dma.h"
 
+#include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
+#include "btstack_memory.h"
 // quick mock
 
 // hal_cpu
@@ -73,10 +76,36 @@ void hal_audio_source_start(void){}
 void hal_audio_source_stop(void){}
 void hal_audio_source_close(void){}
 
+
+#define HEARTBEAT_PERIOD_MS 1000
+
+static btstack_timer_source_t heartbeat;
+
+static void heartbeat_timeout_handler(btstack_timer_source_t * timer){
+    UNUSED(timer);
+}
+
 TEST_GROUP(Embedded){
+
     void setup(void){
+        // start with BTstack init - especially configure HCI Transport
+        btstack_memory_init();
+        btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+        btstack_run_loop_set_timer_handler(&heartbeat, heartbeat_timeout_handler);
     }
 };
+
+TEST(Embedded, Init){
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
+
+    btstack_run_loop_embedded_execute_once();
+    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_embedded_execute_once();
+    btstack_run_loop_get_time_ms();
+
+    btstack_run_loop_remove_timer(&heartbeat);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

@@ -702,6 +702,7 @@ typedef enum {
 #define SM_AUTHREQ_MITM_PROTECTION   0x04
 #define SM_AUTHREQ_SECURE_CONNECTION 0x08
 #define SM_AUTHREQ_KEYPRESS          0x10
+#define SM_AUTHREQ_CT2               0x20
 
 // Key distribution flags used by spec
 #define SM_KEYDIST_ENC_KEY  0x01

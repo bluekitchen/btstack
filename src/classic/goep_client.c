@@ -339,6 +339,10 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 #endif
             log_info("Remote GOEP RFCOMM Server Channel: %u", context->rfcomm_port);
             rfcomm_create_channel(&goep_client_packet_handler, context->bd_addr, context->rfcomm_port, &context->bearer_cid);
+            break;
+
+        default:
+            break;
     }
 }
 

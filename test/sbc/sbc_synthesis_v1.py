@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import wave
 import struct
@@ -56,11 +56,11 @@ def remap_V(i):
     return V_remap[i]
 
 def sbc_frame_synthesis_v1_4subbands(frame, ch, blk):
-    print "sbc_frame_synthesis_v1_4subbands(frame, ch, blk) not implemented yet"
+    print ("sbc_frame_synthesis_v1_4subbands(frame, ch, blk) not implemented yet")
     exit(1)
 
 def sbc_frame_synthesis_v1_8subbands(frame, ch, blk):
-    print "sbc_frame_synthesis_v1_8subbands(frame, ch, blk) not implemented yet"
+    print ("sbc_frame_synthesis_v1_8subbands(frame, ch, blk) not implemented yet")
     exit(1)
 
 def matrix_R():

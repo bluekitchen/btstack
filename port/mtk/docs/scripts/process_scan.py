@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import struct
 import math
 import sys, os
-import cPickle
+import pickle
 
 devices   = dict()
 delays    = dict()
@@ -36,17 +36,17 @@ def reset_timestamp(packet_type, packet, time_sec):
     if (int(packet[3])): 
         scan_start_timestamp = time_sec
         scan_nr = scan_nr + 1
-        print "Scanning started at %u"%scan_start_timestamp
+        print("Scanning started at %u"%scan_start_timestamp)
         
     else:          
-        print "Scanning stopped"
+        print("Scanning stopped")
 
 def read_scan(packet_type, packet, time_sec):
     if packet_type != 0x01 or packet[0] != 0x3E or packet[2] != 0x02:
         return
     
     if packet[3] != 1:
-        print "More then one report"
+        print("More then one report")
         return
 
     (event_type, addr_type, addr, data_len) = struct.unpack('<BB6sB', packet[4:13])
@@ -66,7 +66,7 @@ def read_scan(packet_type, packet, time_sec):
     
     normalized_timestamp = time_sec - scan_start_timestamp
     if not bt_addr_str in devices.keys():
-        print "new device at %u %u" % (time_sec, scan_start_timestamp)
+        print("new device at %u %u" % (time_sec, scan_start_timestamp))
         devices[bt_addr_str] = list()
         delays[bt_addr_str] = list()
         
@@ -78,7 +78,7 @@ def read_scan(packet_type, packet, time_sec):
     return
 
 def process_pklg(exp_name, sensor_name, scanning_type, pklg_file_name):
-    print "Opening %s" % pklg_file_name
+    print("Opening %s" % pklg_file_name)
     with open(pklg_file_name, "rb") as f:
         while True:
             try:
@@ -108,13 +108,13 @@ def process_pklg(exp_name, sensor_name, scanning_type, pklg_file_name):
         if not data_file_name:
             continue
         
-        cPickle.dump(devices[k], open(data_file_name, 'wb'))
+        pickle.dump(devices[k], open(data_file_name, 'wb'))
         mes_index = 0
         # take the last measurement
         for i in range(len(devices[k])-1):
             if devices[k][i] > devices[k][i+1]:
                 mes_index = i+1
-        cPickle.dump(devices[k][mes_index:len(devices[k])], open(data_file_name, 'wb'))
+        pickle.dump(devices[k][mes_index:len(devices[k])], open(data_file_name, 'wb'))
 
 def init():
     global devices, delays, scan_start_timestamp, scan_nr

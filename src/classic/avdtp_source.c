@@ -244,7 +244,7 @@ void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8
         return;
     }
     stream_endpoint->request_can_send_now = true;
-    avdtp_request_can_send_now_initiator(stream_endpoint->connection, stream_endpoint->l2cap_media_cid);
+	l2cap_request_can_send_now_event(stream_endpoint->l2cap_media_cid);
 }
 
 int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid){

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import wave
 import struct
@@ -190,7 +190,7 @@ if __name__ == "__main__":
             sbc_encoder_frame = SBCFrame(nr_blocks, nr_subbands, nr_channels, bitpool, sampling_frequency, allocation_method, force_channel_mode)
             
             if subband_frame_count == 0:
-                print sbc_encoder_frame
+                print (sbc_encoder_frame)
             fetch_samples_for_next_sbc_frame(fin, sbc_encoder_frame)
             
             sbc_encode(sbc_encoder_frame, force_channel_mode)

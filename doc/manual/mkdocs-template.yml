@@ -11,7 +11,7 @@ pages:
 - 'Protocols': protocols.md
 - 'Profiles':  profiles.md
 - 'Implemented GATT Services': gatt_services.md
-- 'Embedded Examples': examples/examples.md
+- 'Examples': examples/examples.md
 - 'Chipsets': chipsets.md
 - 'Porting to Other Platforms': porting.md
 - 'Existing Ports': ports/existing_ports.md

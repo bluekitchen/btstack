@@ -42,6 +42,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef ENABLE_OBEX_DUMP
+#include <stdio.h>
+#endif
+
 #include "hci_cmd.h"
 #include "btstack_debug.h"
 #include "hci.h"
@@ -155,6 +159,7 @@ const uint8_t * obex_iterator_get_data(const obex_iterator_t * context){
     }
 }
 
+#ifdef ENABLE_OBEX_DUMP
 void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
     obex_iterator_t it;
     printf("OBEX Opcode: 0x%02x\n", request_opcode);
@@ -178,7 +183,11 @@ void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
             case 3:
                 printf("%08x\n", (int) obex_iterator_get_data_32(&it));
                 break;
+            default:
+                btstack_assert(false);
+                break;
         }
 
     }
 }
+#endif

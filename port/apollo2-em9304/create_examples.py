@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Create project files for all BTstack embedded examples in AmbiqSuite/boards/apollo2_evb_am_ble
 

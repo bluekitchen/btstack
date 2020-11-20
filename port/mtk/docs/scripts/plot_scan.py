@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
 #from pylab import *
-import cPickle
+import pickle
 import pylab as P
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
@@ -125,29 +125,29 @@ def prepare_data(exp_name, sensor_name):
     prefix = '../data/processed/'
     
     scanning_type = exp_name+'_continuous'
-    mn = cPickle.load(open(prefix+scanning_type+'_mac_'+sensor_name+'.data', 'rb')) # mac nio, 
-    mm = cPickle.load(open(prefix+scanning_type+'_mac_mac.data', 'rb')) # mac mac, 
-    rn = cPickle.load(open(prefix+scanning_type+'_rug_'+sensor_name+'.data', 'rb')) # ruggear nio, 
-    rm = cPickle.load(open(prefix+scanning_type+'_rug_mac.data', 'rb')) # ruggear mac, 
+    mn = pickle.load(open(prefix+scanning_type+'_mac_'+sensor_name+'.data', 'rb')) # mac nio, 
+    mm = pickle.load(open(prefix+scanning_type+'_mac_mac.data', 'rb')) # mac mac, 
+    rn = pickle.load(open(prefix+scanning_type+'_rug_'+sensor_name+'.data', 'rb')) # ruggear nio, 
+    rm = pickle.load(open(prefix+scanning_type+'_rug_mac.data', 'rb')) # ruggear mac, 
     
     scanning_type = exp_name+'_normal'
     try:
-        normal_rn = cPickle.load(open(prefix + scanning_type+'_rug_'+sensor_name+'.data', 'rb')) # ruggear mac, normal
+        normal_rn = pickle.load(open(prefix + scanning_type+'_rug_'+sensor_name+'.data', 'rb')) # ruggear mac, normal
     except:
         normal_rn = list()
 
     try:
-        normal_mn = cPickle.load(open(prefix + scanning_type+'_mac_'+sensor_name+'.data', 'rb')) # ruggear mac, normal
+        normal_mn = pickle.load(open(prefix + scanning_type+'_mac_'+sensor_name+'.data', 'rb')) # ruggear mac, normal
     except:
         normal_mn = list()
     
     try:
-        normal_rm = cPickle.load(open(prefix + scanning_type+'_rug_mac.data', 'rb')) # ruggear mac, normal
+        normal_rm = pickle.load(open(prefix + scanning_type+'_rug_mac.data', 'rb')) # ruggear mac, normal
     except:
         normal_rm = list()
 
     try:
-        normal_mm = cPickle.load(open(prefix + scanning_type+'_mac_mac.data', 'rb')) # ruggear mac, normal
+        normal_mm = pickle.load(open(prefix + scanning_type+'_mac_mac.data', 'rb')) # ruggear mac, normal
     except:
         normal_mm = list()
 
@@ -156,7 +156,7 @@ def prepare_data(exp_name, sensor_name):
     L  = mean_common_len([mm, mn, rm, rn, normal_rm, normal_rn, normal_mm, normal_mn])
     Z  = 15
 
-    print "mct %d, mcl %d" % (T,L)
+    print("mct %d, mcl %d" % (T,L))
     mac_mac = normalize(mm)
     mac_nio = normalize(mn)
     ruggeer_mac = normalize(rm)

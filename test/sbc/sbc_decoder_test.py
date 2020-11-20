@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import wave
 import struct
@@ -18,38 +18,38 @@ def sbc_compare_pcm(frame_count, actual_frame, expected_frame):
             max_error = M
 
         if max_error > error:
-            print "pcm error (%d, %f ) " % (frame_count, max_error)
+            print("pcm error (%d, %f ) " % (frame_count, max_error))
             return -1
     return 0 
 
 
 def sbc_compare_headers(frame_count, actual_frame, expected_frame):
     if actual_frame.sampling_frequency != expected_frame.sampling_frequency:
-        print "sampling_frequency wrong ", actual_frame.sampling_frequency
+        print("sampling_frequency wrong ", actual_frame.sampling_frequency)
         return -1
 
     if actual_frame.nr_blocks != expected_frame.nr_blocks:
-        print "nr_blocks wrong ", actual_frame.nr_blocks
+        print("nr_blocks wrong ", actual_frame.nr_blocks)
         return -1
 
     if actual_frame.channel_mode != expected_frame.channel_mode:
-        print "channel_mode wrong ", actual_frame.channel_mode
+        print("channel_mode wrong ", actual_frame.channel_mode)
         return -1
 
     if actual_frame.nr_channels != expected_frame.nr_channels:
-        print "nr_channels wrong ", actual_frame.nr_channels
+        print("nr_channels wrong ", actual_frame.nr_channels)
         return -1
 
     if actual_frame.allocation_method != expected_frame.allocation_method:
-        print "allocation_method wrong ", actual_frame.allocation_method
+        print("allocation_method wrong ", actual_frame.allocation_method)
         return -1
 
     if actual_frame.nr_subbands != expected_frame.nr_subbands:
-        print "nr_subbands wrong ", actual_frame.nr_subbands
+        print("nr_subbands wrong ", actual_frame.nr_subbands)
         return -1
 
     if actual_frame.bitpool != expected_frame.bitpool:
-        print "bitpool wrong (E: %d, D: %d)" % (actual_frame.bitpool, expected_frame.bitpool)
+        print("bitpool wrong (E: %d, D: %d)" % (actual_frame.bitpool, expected_frame.bitpool))
         return -1
     
     return 0
@@ -62,7 +62,7 @@ def get_actual_frame(fin, implementation, frame_count):
     sbc_reconstruct_subband_samples(actual_frame)
     if subband_frame_count == 0:
         sbc_init_sythesis(actual_frame.nr_subbands, implementation)
-        print actual_frame
+        print(actual_frame)
     sbc_synthesis(actual_frame, implementation)
     return actual_frame
 
@@ -108,7 +108,7 @@ try:
 
             while True:
                 if subband_frame_count % 200 == 0:
-                    print ("== Frame %d ==" % subband_frame_count)
+                    print("== Frame %d ==" % subband_frame_count)
                 
                 
                 actual_frame = get_actual_frame(fin, implementation, subband_frame_count)
@@ -121,12 +121,12 @@ try:
                 err = sbc_compare_headers(subband_frame_count, actual_frame, expected_frame)
 
                 if err < 0:
-                    print ("Frame %d: Headers differ \n%s\n%s" % (subband_frame_count, actual_frame, expected_frame))
+                    print("Frame %d: Headers differ \n%s\n%s" % (subband_frame_count, actual_frame, expected_frame))
                     sys.exit(1)
 
                 err = sbc_compare_pcm(subband_frame_count, actual_frame, expected_frame)
                 if err < 0:
-                    print ("Frame %d: PCMs differ %f \n%s\n%s" % (subband_frame_count, max_error, actual_frame.pcm, expected_frame.pcm))
+                    print("Frame %d: PCMs differ %f \n%s\n%s" % (subband_frame_count, max_error, actual_frame.pcm, expected_frame.pcm))
                     sys.exit(1)
 
                 
@@ -135,7 +135,7 @@ try:
         except TypeError:
             fin_expected.close()
             fin.close()
-            print ("DONE, max MSE PCM error %f" % max_error)
+            print("DONE, max MSE PCM error %f" % max_error)
 
 except IOError as e:
     print(usage)

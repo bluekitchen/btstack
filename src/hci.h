@@ -275,6 +275,7 @@ typedef enum {
     SM_GENERAL_IDLE,
     SM_GENERAL_SEND_PAIRING_FAILED,
     SM_GENERAL_TIMEOUT, // no other security messages are exchanged
+    SM_GENERAL_REENCRYPTION_FAILED,
 
     // Phase 1: Pairing Feature Exchange
     SM_PH1_W4_USER_RESPONSE,
@@ -318,6 +319,9 @@ typedef enum {
     SM_PH3_DISTRIBUTE_KEYS,
     SM_PH3_RECEIVE_KEYS,
 
+    // Phase 4: re-establish previously distributed LTK
+    SM_PH4_W4_CONNECTION_ENCRYPTED,
+
     // RESPONDER ROLE
     SM_RESPONDER_IDLE,
     SM_RESPONDER_SEND_SECURITY_REQUEST,
@@ -331,23 +335,17 @@ typedef enum {
     SM_RESPONDER_PH2_W4_PAIRING_RANDOM,
     SM_RESPONDER_PH2_W4_LTK_REQUEST,
     SM_RESPONDER_PH2_SEND_LTK_REPLY,
-
-    // Phase 4: re-establish previously distributed LTK
-    SM_RESPONDER_PH4_Y_GET_ENC,
     SM_RESPONDER_PH4_Y_W4_ENC,
     SM_RESPONDER_PH4_SEND_LTK_REPLY,
 
-    // INITITIATOR ROLE
+    // INITIATOR ROLE
     SM_INITIATOR_CONNECTED,
-    SM_INITIATOR_PH0_HAS_LTK,
-    SM_INITIATOR_PH0_SEND_START_ENCRYPTION,
-    SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED,
     SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST,
-    SM_INITIATOR_PH1_SEND_PAIRING_REQUEST,
     SM_INITIATOR_PH1_W4_PAIRING_RESPONSE,
     SM_INITIATOR_PH2_W4_PAIRING_CONFIRM,
     SM_INITIATOR_PH2_W4_PAIRING_RANDOM,
     SM_INITIATOR_PH3_SEND_START_ENCRYPTION,
+    SM_INITIATOR_PH4_HAS_LTK,
 
     // LE Secure Connections
     SM_SC_RECEIVED_LTK_REQUEST,
@@ -379,10 +377,11 @@ typedef enum {
     SM_SC_SEND_DHKEY_CHECK_COMMAND,
     SM_SC_W4_DHKEY_CHECK_COMMAND,
     SM_SC_W4_LTK_REQUEST_SC,
-    SM_SC_W2_CALCULATE_H6_ILK,
-    SM_SC_W4_CALCULATE_H6_ILK,
-    SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY,
-    SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY,
+    SM_SC_W2_CALCULATE_ILK_USING_H6,
+	SM_SC_W2_CALCULATE_ILK_USING_H7,
+    SM_SC_W4_CALCULATE_ILK,
+    SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY,
+    SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY,
 } security_manager_state_t;
 
 typedef enum {
@@ -404,7 +403,7 @@ typedef struct sm_connection {
     uint8_t                  sm_peer_addr_type;
     bd_addr_t                sm_peer_address;
     security_manager_state_t sm_engine_state;
-    irk_lookup_state_t      sm_irk_lookup_state;
+    irk_lookup_state_t       sm_irk_lookup_state;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
     uint8_t                  sm_connection_sc;
@@ -414,6 +413,8 @@ typedef struct sm_connection {
     uint16_t                 sm_local_ediv;
     uint8_t                  sm_local_rand[8];
     int                      sm_le_db_index;
+    bool                     sm_pairing_active;
+    bool                     sm_reencryption_active;
 } sm_connection_t;
 
 //
@@ -790,6 +791,7 @@ typedef struct {
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
     bool               secure_connections_enable;
+    bool               secure_connections_active;
     inquiry_mode_t     inquiry_mode;
 #ifdef ENABLE_CLASSIC
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default

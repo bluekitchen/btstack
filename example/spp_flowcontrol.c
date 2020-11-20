@@ -38,7 +38,7 @@
 #define BTSTACK_FILE__ "spp_flowcontrol.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(spp_flowcontrol): SPP Server - Flow Control
+/* EXAMPLE_START(spp_flowcontrol): SPP Server - RFCOMM Flow Control
  *
  * @text This example adds explicit flow control for incoming RFCOMM data to the 
  * SPP heartbeat counter example. We will highlight the changes compared to the 
