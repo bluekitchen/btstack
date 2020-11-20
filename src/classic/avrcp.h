@@ -633,57 +633,7 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
  */
 uint8_t avrcp_disconnect(uint16_t avrcp_cid);
 
-/**
- * @brief Set up AVRCP Browsing service
- */
-void avrcp_browsing_init(void);
-
-/**
- * @brief Register callback for the AVRCP Browsing Controller client. 
- * @param callback
- */
-void avrcp_browsing_register_packet_handler(btstack_packet_handler_t callback);
-
-/**
- * @brief   Connect to AVRCP Browsing service on a remote device, emits AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED with status
- * @param   remote_addr
- * @param   ertm_buffer
- * @param   ertm_buffer_size
- * @param   ertm_config
- * @param   avrcp_browsing_cid  outgoing parameter, valid if status == ERROR_CODE_SUCCESS
- * @returns status     
- */
-uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
-
-/**
- * @brief Configure incoming connection for Browsing Service.
- * @param avrcp_browsing_cid
- * @param ertm_buffer
- * @param ertm_buffer_size
- * @param ertm_config
- * @returns status
- */
-uint8_t avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t ertm_buffer_size, l2cap_ertm_config_t * ertm_config);
-
-/**
- * @brief Decline incoming connection Browsing Service.
- * @param avrcp_browsing_cid
- * @returns status
- */
-uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
-
-/**
- * @brief   Disconnect from AVRCP Browsing service
- * @param   avrcp_browsing_cid
- * @returns status
- */
-uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid);
-
 /* API_END */
-
-void avrcp_browsing_register_controller_packet_handler(btstack_packet_handler_t callback);
-void avrcp_browsing_register_target_packet_handler(btstack_packet_handler_t callback);
-void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid);
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 void avrcp_init_fuzz(void);
