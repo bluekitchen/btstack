@@ -12,17 +12,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Changed
 
-## Changes November 2020
+
+## Release v1.2
 
 ### Fixed
 - L2CAP: trigger pairing for outgoing LE Data Channels if security level insufficient
 - SM: fix update of sc flag for re-encrypted connection in peripheral role
 - SM: send security request on re-connect if bonded and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is defined
-- GATT Client: gatt_client_set_required_security_level allows to set required minimum security level for all GATT requests
 
 ### Added
 - GAP: `gap_delete_bonding` removes device from LE Resolving List and from discards LE bonding information
 - GATT Client: delete bonding information if re-encryption fails and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is not defined
+- GATT Client: gatt_client_set_required_security_level allows to set required minimum security level for all GATT requests
 - SM: emit events for re-encryption started/complete
 
 ### Changed
