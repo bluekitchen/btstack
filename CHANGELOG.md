@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: trigger pairing for outgoing LE Data Channels if security level insufficient
 - SM: fix update of sc flag for re-encrypted connection in peripheral role
 - SM: send security request on re-connect if bonded and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is defined
+- ESP32: fix audio sink driver
 
 ### Added
 - GAP: `gap_delete_bonding` removes device from LE Resolving List and from discards LE bonding information

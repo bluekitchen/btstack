@@ -181,6 +181,10 @@ static int btstack_audio_esp32_sink_init(
     return 0;
 }
 
+static void btstack_audio_esp32_sink_gain(uint8_t gain) {
+    UNUSED(gain);
+}
+
 static void btstack_audio_esp32_sink_start_stream(void){
 
     if (playback_callback){
@@ -191,8 +195,6 @@ static void btstack_audio_esp32_sink_start_stream(void){
             fill_buffer();
         }
     }
-
-    // TODO: setup input
 
     // start i2s
     i2s_start(i2s_num);
@@ -214,7 +216,7 @@ static void btstack_audio_esp32_sink_stop_stream(void){
     btstack_run_loop_remove_timer(&driver_timer);
 
     // stop i2s
-     i2s_stop(i2s_num);
+    i2s_stop(i2s_num);
 
     // state
     sink_streaming = 0;
@@ -232,6 +234,7 @@ static void btstack_audio_esp32_sink_close(void){
 
 static const btstack_audio_sink_t btstack_audio_sink_esp32 = {
     /* int (*init)(..);*/                                       &btstack_audio_esp32_sink_init,
+    /* void (*set_gain)(uint8_t gain); */                       &btstack_audio_esp32_sink_gain,
     /* void (*start_stream(void));*/                            &btstack_audio_esp32_sink_start_stream,
     /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_sink_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_esp32_sink_close
