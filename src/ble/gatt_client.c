@@ -886,8 +886,8 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     if ((gatt_client->reencryption_result != ERROR_CODE_SUCCESS) && (gatt_client->gatt_client_state != P_READY)){
 #ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
         // re-encryption failed and we have a pending client request
-        // try to resolve it by deleting bonding information if we started pairing before
-        if (gatt_client->wait_for_pairing_complete){
+        // reactive authentication: try to resolve it by deleting bonding information if we started pairing before
+        if ((gatt_client_required_security_level == LEVEL_0) && gatt_client->wait_for_pairing_complete){
             // delete bonding information
             int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
             btstack_assert(le_device_db_index >= 0);
