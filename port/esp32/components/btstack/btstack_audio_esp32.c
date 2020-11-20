@@ -74,8 +74,8 @@ static void set_i2s0_mclk(void)
 #endif
 
 #define DRIVER_POLL_INTERVAL_MS          5
-#define DMA_BUFFER_COUNT                 2
-#define DMA_BUFFER_SAMPLES               512
+#define DMA_BUFFER_COUNT                 3
+#define DMA_BUFFER_SAMPLES               300
 #define BYTES_PER_SAMPLE_STEREO          4
 
 
@@ -131,21 +131,20 @@ static int btstack_audio_esp32_sink_init(
     num_channels       = channels;
     bytes_per_sample   = channels * 2;  // 16-bit
 
+    i2s_config_t config =
+            {
+                    .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
+                    .sample_rate          = samplerate,
+                    .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
+                    .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
+                    .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+                    .dma_buf_count        = DMA_BUFFER_COUNT,              // Number of DMA buffers. Max 128.
+                    .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
+                    .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
+            };
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
-    i2s_config_t config = 
-    {
-        .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
-        .sample_rate          = samplerate,
-        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        .communication_format = I2S_COMM_FORMAT_I2S,
-        .dma_buf_count        = 3,              // Number of DMA buffers. Max 128.
-        .dma_buf_len          = 300,            // Size of each DMA buffer in samples. Max 1024.
-        .use_apll = 1,
-        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
-    };
-    i2s_pin_config_t pins = 
+    i2s_pin_config_t pins =
     {
         .bck_io_num           = GPIO_NUM_5,
         .ws_io_num            = GPIO_NUM_25,
@@ -153,29 +152,14 @@ static int btstack_audio_esp32_sink_init(
         .data_in_num          = GPIO_NUM_35
     };
 #else
-
-    i2s_config_t config = 
-    {
-        .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
-        .sample_rate          = samplerate,
-        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
-        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        .communication_format = I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB,
-        .dma_buf_count        = DMA_BUFFER_COUNT,              // Number of DMA buffers. Max 128.
-        .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
-        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
-    };
-
-    i2s_pin_config_t pins = 
-    {
-        .bck_io_num           = 26,
-        .ws_io_num            = 25,
-        .data_out_num         = 22,
-        .data_in_num          = I2S_PIN_NO_CHANGE
-    };
+    i2s_pin_config_t pins =
+            {
+                    .bck_io_num           = 26,
+                    .ws_io_num            = 25,
+                    .data_out_num         = 22,
+                    .data_in_num          = I2S_PIN_NO_CHANGE
+            };
 #endif
-
-
 
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     set_i2s0_mclk();
