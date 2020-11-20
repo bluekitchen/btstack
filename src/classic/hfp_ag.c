@@ -106,8 +106,6 @@ static int hfp_ag_response_and_hold_active = 0;
 static hfp_phone_number_t * subscriber_numbers = NULL;
 static int subscriber_numbers_count = 0;
 
-hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
-
 
 static void hfp_ag_emit_simple_event(uint8_t event_subtype){
 	uint8_t event[3];

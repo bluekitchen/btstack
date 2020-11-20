@@ -167,8 +167,7 @@ static uint16_t l2cap_next_local_cid(void);
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
 static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t event_code);
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
-static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
-static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type, 
+static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type,
         uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level);
 static void l2cap_free_channel_entry(l2cap_channel_t * channel);
 #endif
