@@ -913,15 +913,17 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
-            
             if (status){
                 printf("A2DP  Sink      : Streaming connection failed, status 0x%02x\n", status);
                 break;
             }
             
             a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            memcpy(device_addr, address, 6);
             printf("A2DP  Sink      : Streaming connection is established, address %s, cid 0x%02X, local seid %d\n", bd_addr_to_str(address), a2dp_cid, a2dp_local_seid);
+#ifdef HAVE_BTSTACK_STDIN
+            // use address for outgoing connections
+            memcpy(device_addr, address, 6);
+#endif
             break;
         
         case A2DP_SUBEVENT_STREAM_STARTED:
