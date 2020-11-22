@@ -40,6 +40,8 @@ IPATH += ${BTSTACK_ROOT}/platform/embedded
 IPATH += ${BTSTACK_ROOT}/chipset/cc256x
 IPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 IPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+IPATH += ${BTSTACK_ROOT}/3rd-party/md5
+IPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 IPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 IPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 IPATH += .
@@ -65,12 +67,15 @@ avrcp_controller.c \
 avrcp_media_item_iterator.c \
 avrcp_target.c \
 battery_service_server.c \
+btstack_cvsd_plc.c \
 btstack_crypto.c \
+btstack_audio.c \
 btstack_hid_parser.c \
 btstack_link_key_db_tlv.c \
 btstack_linked_list.c \
 btstack_memory.c \
 btstack_memory_pool.c \
+btstack_resample.c \
 btstack_ring_buffer.c \
 btstack_run_loop.c \
 btstack_run_loop_embedded.c \
@@ -133,53 +138,58 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 BTSTACK_SOURCES += ${SBC_ENCODER}
 BTSTACK_SOURCES += ${SBC_DECODER}
 
-EXAMPLES = 					\
-	a2dp_sink_demo			\
-	a2dp_source_demo       \
-	ancs_client_demo		\
-	dut_mode_classic        \
-	gap_dedicated_bonding	\
-	gap_inquiry 			\
-	gap_le_advertisements   \
-	gatt_battery_query		\
-	gatt_browser            \
-	hfp_ag_demo             \
-	hfp_hf_demo             \
-	hid_host_demo           \
-	hid_keyboard_demo 	    \
-	hid_mouse_demo          \
-	hog_keyboard_demo       \
-	hog_mouse_demo          \
-	hsp_ag_demo             \
-	hsp_hs_demo             \
-	le_counter              \
-	le_streamer				\
-	le_streamer_client      \
-	led_counter             \
-	pbap_client_demo		\
-	sdp_bnep_query 			\
-	sdp_general_query		\
-	sdp_rfcomm_query		\
-	sm_pairing_central      \
-	sm_pairing_peripheral   \
-	spp_and_le_counter 		\
-	spp_and_le_streamer     \
-	spp_counter 			\
-	spp_streamer			\
-	spp_streamer_client     \
+EXAMPLES =                                      \
+        audio_duplex            \
+        a2dp_sink_demo                  \
+        a2dp_source_demo        \
+        ancs_client_demo                \
+        dut_mode_classic        \
+        gap_dedicated_bonding   \
+        gap_inquiry                     \
+        gap_le_advertisements   \
+        gatt_battery_query              \
+        gatt_browser            \
+        gatt_counter            \
+        gatt_streamer_server    \
+        hfp_ag_demo             \
+        hfp_hf_demo             \
+        hid_host_demo           \
+        hid_keyboard_demo           \
+        hid_mouse_demo          \
+        hog_keyboard_demo       \
+        hog_mouse_demo          \
+        hsp_ag_demo             \
+        hsp_hs_demo             \
+        mod_player              \
+        le_streamer_client      \
+        led_counter             \
+        sdp_bnep_query                  \
+        sdp_general_query               \
+        sdp_rfcomm_query                \
+        sine_player             \
+        sm_pairing_central      \
+        sm_pairing_peripheral   \
+        spp_and_gatt_counter            \
+        spp_and_gatt_streamer     \
+        spp_counter                     \
+        spp_streamer                    \
+        spp_streamer_client     \
+#         pbap_client_demo                \
+#         pan_lwip_http_server    \
 
 GATT_FILES = \
-	ancs_client_demo.gatt \
-	le_counter.gatt \
-	le_streamer.gatt \
-	gatt_browser.gatt \
-	gatt_battery_query.gatt \
-	hog_keyboard_demo.gatt \
-	hog_mouse_demo.gatt \
-	sm_pairing_peripheral.gatt \
-	sm_pairing_central.gatt \
-	spp_and_le_counter.gatt \
-	spp_and_le_streamer.gatt \
+        ancs_client_demo.gatt \
+        gatt_counter.gatt \
+        gatt_streamer_server.gatt \
+        gatt_browser.gatt \
+        gatt_battery_query.gatt \
+        hog_keyboard_demo.gatt \
+        hog_mouse_demo.gatt \
+        sm_pairing_peripheral.gatt \
+        sm_pairing_central.gatt \
+        spp_and_gatt_counter.gatt \
+        spp_and_gatt_streamer.gatt \
+
 
 #
 # The default rule, which causes the le_counter example to be built.
