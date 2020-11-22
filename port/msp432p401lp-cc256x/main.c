@@ -313,6 +313,17 @@ static uint16_t hal_dma_rx_bytes_avail(uint8_t buffer, uint16_t offset){
     return HAL_DMA_RX_BUFFER_SIZE - MAP_DMA_getChannelSize(channel) - offset;
 }
 
+static void hal_uart_dma_update_rts(void){
+    // get active transfer
+    uint32_t attribute = MAP_DMA_getChannelAttribute(DMA_CH5_EUSCIA2RX & 0x0F);
+    uint8_t  active_transfer_buffer = (attribute & UDMA_ATTR_ALTSELECT) ? 1 : 0;
+    if (hal_dma_rx_active_buffer == active_transfer_buffer){
+        GPIO_setOutputLowOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
+    } else {
+        GPIO_setOutputHighOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
+    }
+}
+
 // directly called from timer or similar interrupt. to call from non-isr context, interrupts must be disabled
 static void hal_uart_dma_harvest(void){
     if (bytes_to_read == 0) {
@@ -336,7 +347,7 @@ static void hal_uart_dma_harvest(void){
         hal_dma_rx_offset = 0;
         hal_dma_rx_start_transfer(hal_dma_rx_active_buffer);
         hal_dma_rx_active_buffer = 1 - hal_dma_rx_active_buffer;
-        GPIO_setOutputLowOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
+        hal_uart_dma_update_rts();
     }
 
     if (bytes_to_read == 0){
@@ -354,9 +365,9 @@ void DMA_INT1_IRQHandler(void)
 void DMA_INT2_IRQHandler(void)
 {
     MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
-    // raise our RTS
-    GPIO_setOutputHighOnPin(BLUETOOTH_CTS_PORT, BLUETOOTH_CTS_PIN);
-
+    // update RTS
+    hal_uart_dma_update_rts();
+    // process data
     hal_uart_dma_harvest();
 }
 
