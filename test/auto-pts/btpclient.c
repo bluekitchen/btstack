@@ -111,7 +111,7 @@ static uint8_t  gap_scan_response[31];
 static uint16_t gap_scan_response_len;
 static uint8_t gap_inquriy_scan_active;
 
-static bool gap_delete_bonding;
+static bool gap_delete_bonding_on_start;
 
 static uint32_t current_settings;
 
@@ -242,9 +242,9 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                                 current_settings |= BTP_GAP_SETTING_POWERED;
                                 btp_send_gap_settings(BTP_GAP_OP_SET_POWERED);
                             }
-                            if (gap_delete_bonding){
+                            if (gap_delete_bonding_on_start){
                                 MESSAGE("Delete all bonding information");
-                                gap_delete_bonding = false;
+                                gap_delete_bonding_on_start = false;
 #ifdef ENABLE_CLASSIC
                                 gap_delete_all_link_keys();
 #endif
@@ -1911,7 +1911,7 @@ int btstack_main(int argc, const char * argv[])
     gap_set_class_of_device(gap_cod);
 #endif
     // delete all bonding information on start
-    gap_delete_bonding = true;
+    gap_delete_bonding_on_start = true;
 
     // configure GAP LE
 
