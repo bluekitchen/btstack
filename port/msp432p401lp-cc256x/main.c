@@ -8,11 +8,14 @@
 
 #include <stdbool.h>
 #include <string.h>
-
 #include <stdio.h>
+
 #include "btstack_config.h"
+
+#include "bluetooth_company_id.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_defines.h"
+#include "btstack_event.h"
 #include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "btstack_tlv.h"
@@ -545,6 +548,7 @@ uint32_t hal_time_ms(void){
     return systick;
 }
 
+// main.c
 #include "SEGGER_RTT.h"
 
 // HAL FLASH MSP432 Configuration - use two last 4kB sectors
@@ -555,6 +559,42 @@ uint32_t hal_time_ms(void){
 #define HAL_FLASH_BANK_1_ADDR    0x3F000
 
 int btstack_main(const int argc, const char * argvp[]);
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+    UNUSED(channel);
+    bd_addr_t local_addr;
+    if (packet_type != HCI_EVENT_PACKET) return;
+    switch(hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+            gap_local_bd_addr(local_addr);
+            printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+                uint16_t manufacturer   = little_endian_read_16(packet, 10);
+                uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+                // assert manufacturer is TI
+                if (manufacturer != BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
+                    printf("ERROR: Expected Bluetooth Chipset from TI but got manufacturer 0x%04x\n", manufacturer);
+                    break;
+                }
+                // assert correct init script is used based on expected lmp_subversion
+                if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
+                    printf("Error: LMP Subversion does not match initscript! ");
+                    printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
+                    printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
+                    break;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
 
 int main(void)
 {
@@ -601,12 +641,9 @@ int main(void)
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
-#if 0
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-#endif
 
     // hand over to btstack embedded code
     btstack_main(0, NULL);
