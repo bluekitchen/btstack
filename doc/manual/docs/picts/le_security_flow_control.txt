@@ -1,67 +1,4 @@
 @startuml
-start
-: A connects to B;
-: App triggers GATT Client request on A;
-if (called gatt_client_set_required_security_level) then (yes)
-
-  if (LTK available) then (yes)
-     : start encryption;
-  else (no)
-     : start pairing;
-  endif
-  if (paired/re-encrypted) then (yes)
-     : GATT Client request sent;
-     #23DB2B : App receives GATT Response;
-     stop
-  else (no)
-     #FD5B41 : App receives a GATT Client error;
-     stop
-  endif
-endif
-
-if (ENABLE_LE_PROACTIVE_AUTHENTICATION and LTK available) then (yes)
-  : starts encryption;
-  if (re-encrypted) then (yes)
-     : GATT Client request sent;
-     #23DB2B : App receives GATT Response;
-     stop
-  else (no) 
-     #FD5B41 : App receives a GATT Client error;
-     stop
-     note left
-        App can delete bonding 
-        information and repeat 
-        the GATT Client request
-     end note
-  endif
-endif
-
-: GATT Client request is sent to GATT Server;
-if (GATT Server returns an 'insufficient x' error) then (yes)
-  if (ENABLE_GATT_CLIENT_PAIRING) then (yes)
-    if (LTK available) then (yes)
-      : start encryption;
-    else (no)
-      : start pairing;
-    endif
-    if (paired/re-encrypted) then (yes)
-      : GATT Client request sent;
-      #23DB2B : App receives GATT Response;
-      stop
-    else (no)
-      #FD5B41 : App receives a GATT Client error;
-      stop
-    endif
-  else (no)
-    #FD5B41 : App receives a GATT Client error;
-    stop
-  endif
-endif
-#23DB2B : App receives GATT Response;
-stop
-@enduml
-
-@startuml
 title Mandatory Authentication
 start
 : App calls gatt_client_set_required_security_level (level > 0);
@@ -70,17 +7,34 @@ start
 
 if (LTK available) then (yes)
    : start encryption;
+   if (re-encrypted) then (yes)
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+  else (no)
+     #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_BONDING_INFORMATION_MISSING;
+     stop
+  endif 
+
 else (no)
    : start pairing;
-endif
-if (paired/re-encrypted) then (yes)
-   : GATT Client request sent;
-   #23DB2B : App receives GATT Response;
-   stop
-else (no)
-   #FD5B41 : App receives a GATT Client error;
-   stop
-endif
+
+  if (paired) then (yes)
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+  else (no)
+    if (level >= 3) then (yes)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event
+          with ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+      stop
+    else (no)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_INSUFFICIENT_ENCRYPTION;  
+      stop
+    endif     
+  endif
 @enduml
 
 
@@ -99,7 +53,8 @@ if (re-encrypted) then (yes)
    #23DB2B : App receives GATT Response;
    stop
 else (no) 
-   #FD5B41 : App receives a GATT Client error;
+   #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_BONDING_INFORMATION_MISSING;
    stop
    note right
       App can delete bonding 
@@ -127,9 +82,9 @@ if (GATT Server returns an 'insufficient x' error) then (yes)
       else (no)
         : delete bonding information;
       endif
-      -> no;
+      
    endif
-    -> no;
+    
     : start pairing;
       if (paired) then (yes)
         : GATT Client request sent;
