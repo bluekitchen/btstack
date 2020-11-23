@@ -102,7 +102,7 @@ extern void SysTick_Handler(void);
 /* the program if located at a start address other than 0.                            */
 void (* const interruptVectors[])(void) __attribute__ ((section (".intvecs"))) =
 {
-    (void (*)(void))((uint32_t)0x20004000),
+    (void (*)(void))((uint32_t)0x20010000),
                                             /* The initial stack pointer */
     resetISR,                               /* The reset handler         */
     nmiISR,                                 /* The NMI handler           */
