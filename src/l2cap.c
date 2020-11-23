@@ -2117,6 +2117,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
     switch (channel->channel_type){
 #ifdef ENABLE_CLASSIC
         case L2CAP_CHANNEL_TYPE_CLASSIC:
+            if (channel->state != L2CAP_STATE_OPEN) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
             // send if we have more data and remote windows isn't full yet
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
@@ -2136,6 +2137,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             return hci_can_send_acl_le_packet_now() != 0;
 #ifdef ENABLE_LE_DATA_CHANNELS
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
             if (channel->credits_outgoing == 0u) return false;
             return hci_can_send_acl_le_packet_now() != 0;
@@ -3335,6 +3337,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
 #ifdef ENABLE_CLASSIC
 static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channel, uint8_t * packet, uint16_t size){
+
+    // forward data only in OPEN state
+    if (l2cap_channel->state != L2CAP_STATE_OPEN) return;
+
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
