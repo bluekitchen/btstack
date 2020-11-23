@@ -32,7 +32,7 @@ static void delay_ms(uint32_t ms);
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    460800,      // main baudrate
+    3000000,      // main baudrate
     1,      // flow control
     NULL,
 };
@@ -611,7 +611,8 @@ int main(void)
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
-    hci_dump_open( NULL, HCI_DUMP_STDOUT );
+    // uncomment to enable packet logger
+    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
 
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
