@@ -3538,8 +3538,11 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
         return;
     }
 #endif
-    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
 
+    // check size
+    if (l2cap_channel->local_mtu < size) return;
+
+    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
 }
 #endif
 

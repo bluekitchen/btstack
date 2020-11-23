@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: use connection handle for channel lookups
 - L2CAP: forward data only in open state
 ### Added
+
 ### Changed
+- L2CAP: check packet size against local mtu for classic basic channels
 
 
 ## Release v1.2
