@@ -580,7 +580,7 @@ typedef enum {
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
 
-// MARK: ATT Error Codes used internally by BTstack
+// MARK: ATT Error Codes defined by BTstack
 #define ATT_ERROR_HCI_DISCONNECT_RECEIVED          0x1f
 #define ATT_ERROR_BONDING_INFORMATION_MISSING      0x70
 #define ATT_ERROR_DATA_MISMATCH                    0x7e
