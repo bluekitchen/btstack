@@ -71,7 +71,7 @@ start
 : App triggers GATT Client request on A;
 : GATT Client request sent;
 
-if (GATT Server returns an 'insufficient x' error) then (yes)
+if (GATT Server returns an ATT_ERROR_INSUFFICIENT_X error) then (yes)
   if (ENABLE_GATT_CLIENT_PAIRING) then (yes)
     if (LTK available) then (yes)
       : start encryption;
@@ -95,7 +95,8 @@ if (GATT Server returns an 'insufficient x' error) then (yes)
         stop
       endif
   else (no)
-    #FD5B41 : App receives a GATT Client error;
+    #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_INSUFFICIENT_X;
     stop
     note left
       App can trigger pairing and 
