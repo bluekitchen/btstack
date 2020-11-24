@@ -1,150 +1,100 @@
 #!/usr/bin/env python3
 import os
 import re
+import sys
 
-copyright = """/*
- * Copyright (C) 2014 BlueKitchen GmbH
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holders nor the names of
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- * 4. Any redistribution, use, or modification is done solely for
- *    personal benefit and not for any commercial purpose or for
- *    monetary gain.
- *
- * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
- * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * Please inquire about commercial licensing options at 
- * contact@bluekitchen-gmbh.com
- *
- */
-"""
+copyrightTitle = ".*(Copyright).*(BlueKitchen GmbH)"
+copyrightSubtitle = ".*All rights reserved.*" 
 
-onlyDumpDifferentCopyright = False
-copyrightString = "Copyright \(C\) 2014 BlueKitchen GmbH"
-copyrighters = ["BlueKitchen", "Matthias Ringwald"]
+findAndReplace = {
+	"MATTHIAS" : "BLUEKITCHEN",
+	"RINGWALD" : "GMBH"
+}
 
-ignoreFolders = ["cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset/cc256x", "docs", "mtk"]
-ignoreFiles = ["ant_cmds.h", "rijndael.c", "btstack_config.h", "btstack_version.h", "profile.h", "bluetoothdrv.h", 
-	"ancs_client_demo.h", "spp_and_le_counter.h", "bluetoothdrv-stub.c", "minimal_peripheral.c", "BTstackDaemonRespawn.c"]
+ignoreFolders = ["cpputest", "test", "docs", "3rd-party"]
+ignoreFiles = ["ant_cmds.h", "btstack_config.h", "bluetoothdrv.h", "bluetoothdrv-stub.c", "BTstackDaemonRespawn.c"]
+
 
 class State:
-	SearchStartComment = 0
-	SearchCopyrighter = 1
-	SearchEndComment = 2
-	SkipCopyright = 3
+	SearchStartCopyright = 0
+	SearchEndCopyright = 1
+	CopyrightEnd = 2
 
 def updateCopyright(dir_name, file_name):
+	global copyrightTitle, copyrightSubtitle
+
 	infile = dir_name + "/" + file_name
 	outfile = dir_name + "/tmp_" + file_name
-	
-	#print "Update copyright: ", infile
-	
+		
 	with open(outfile, 'wt') as fout:
-		fout.write(copyright)
-
 		bufferComment = ""
-		state = State.SearchStartComment
+		state = State.SearchStartCopyright
 
 		with open(infile, 'rt') as fin:
 			for line in fin:
-				if state == State.SearchStartComment:
-					parts = re.match('\s*(/\*).*(\*/)',line)
+				# search Copyright start
+				if state == State.SearchStartCopyright:
+					fout.write(line)
+					parts = re.match(copyrightTitle, line)
 					if parts:
-						if len(parts.groups()) == 2:
-							# one line comment
-							fout.write(line)
-							continue
-						
-					parts = re.match('\s*(/\*).*',line)
-					if parts: 
-						# beginning of comment
-						state = State.SearchCopyrighter
-					else:
-						# command line
-						fout.write(line)
+						fout.write(" * All rights reserved\n")
+						state = State.SearchEndCopyright
 						continue
 					
-				if state == State.SearchCopyrighter:
-					parts = re.match('.*(Copyright).*',line)
+				if state == State.SearchEndCopyright:
+					parts = re.match(copyrightSubtitle, line)
 					if parts:
-						# ignore Copyright
-						# drop buffer
-						bufferComment = ""
-						state = State.SkipCopyright
+						continue
+
+					# search end of Copyright
+					parts = re.match('\s*(\*\/)\s*',line)
+					if parts:
+						state = State.CopyrightEnd
 					else:
-						bufferComment = bufferComment + line
-						parts = re.match('.*(\*/)',line)
-						if parts:
-							# end of comment
-							fout.write(bufferComment)
-							bufferComment = ""
-							state = State.SearchStartComment
+						for key, value in findAndReplace.items():
+							line = line.replace(key, value)
+					
+					fout.write(line)
+					continue
 
-				if state == State.SkipCopyright:
-					parts = re.match('.*(\*/)',line)
-					if parts:
-						state = State.SearchStartComment
-
+				# write rest of the file
+				if state == State.CopyrightEnd:
+					fout.write(line)
+					
 	os.rename(outfile, infile)
 
 
 def requiresCopyrightUpdate(file_name):
-	global copyrightString, onlyDumpDifferentCopyright
-	exactCopyrightFound = False
+	global copyrightTitle, copyrightSubtitle
 
+	state = State.SearchStartCopyright
 	with open(file_name, "rt") as fin:
-		print("File: " + file_name)
-		for line in fin:
-			print("Line: " + line)
-			parts = re.match('.*('+copyrightString+').*',line)
-			if parts:
-				exactCopyrightFound = True
-				continue
-			
-			parts = re.match('.*(Copyright).*',line)
-			if not parts:
-				continue
-			for name in copyrighters:
-				allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
-				if allowedCopyrighters:
+		try:
+			for line in fin:
+				if state == State.SearchStartCopyright:
+					parts = re.match(copyrightTitle, line)
+					if parts:
+						state = State.SearchEndCopyright
+						continue
+				if state == State.SearchEndCopyright:
+					parts = re.match(copyrightSubtitle, line)
+					if parts:
+						return False
 					return True
-			
-			if onlyDumpDifferentCopyright:
-				print(file_name, ": Copyrighter not allowed > ", parts.group())
+
+		except UnicodeDecodeError:
 			return False
-				
-	if not exactCopyrightFound:
-		print(file_name, ": File has no copyright")
-	
+
 	return False
 
 
-# if requiresCopyrightUpdate("../example/panu_demo.c"):
-# 	print "UPdate"
-# 	updateCopyright("../example", "panu_demo.c")
-
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../..')
+
+# file_name = btstack_root + "/example/panu_demo.c"
+# if requiresCopyrightUpdate(file_name):
+# 	print(file_name, ": update")
+	# updateCopyright(btstack_root + "/example", "panu_demo.c")
+
 
 for root, dirs, files in os.walk(btstack_root, topdown=True):
 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
@@ -153,7 +103,6 @@ for root, dirs, files in os.walk(btstack_root, topdown=True):
 		if f.endswith(".h") or f.endswith(".c"):
 			file_name = root + "/" + f
 			if requiresCopyrightUpdate(file_name):
-				updateCopyright(root, f)
-
-
-    
+				print(file_name)
+    			updateCopyright(root, f)
+				
