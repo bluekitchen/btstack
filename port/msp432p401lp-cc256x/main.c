@@ -170,10 +170,10 @@ void hal_led_toggle(void){
 #include "hal_uart_dma.h"
 
 // DMA Control Table
-// if not all channels are used, the alignment can be finer
+// 8 channels are implemented => 16 channel control data structures (a 16 bytes) are needed
 // GCC
-__attribute__ ((aligned (1024)))
-static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[32];
+__attribute__ ((aligned (256)))
+static DMA_ControlTable MSP_EXP432P401RLP_DMAControlTable[16];
 
 // RX Ping Pong Buffer - similar to circular buffer on other MCUs
 #define HAL_DMA_RX_BUFFER_SIZE 64
