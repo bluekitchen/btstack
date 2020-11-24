@@ -55,7 +55,6 @@ static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 #include <errno.h>
 int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
-#if 1
     uint8_t cr = '\r';
     int i;
 
@@ -70,14 +69,10 @@ int _write(int file, char *ptr, int len){
     }
     errno = EIO;
     return -1;
-#else
-    return len;
-#endif
 }
 
 #endif
 
-#if 1
 int _read(int file, char * ptr, int len){
     UNUSED(file);
     UNUSED(ptr);
@@ -106,8 +101,11 @@ int _fstat(int file){
     return -1;
 }
 
-extern int _end;
+// with current Makefile, compiler, and linker flags, printf will call malloc -> sbrk
+// we define printf, but compiler will replace call to printf with call to puts, which causes malloc -> sbrk again
 
+// end of bss, start of heap
+extern int _end;
 void * _sbrk(int incr){
     static unsigned char *heap = NULL;
     unsigned char *prev_heap;
@@ -116,16 +114,11 @@ void * _sbrk(int incr){
         heap = (unsigned char *)&_end;
     }
     prev_heap = heap;
-
     heap += incr;
-
     return prev_heap;
 }
-#endif
 
-#if 1
-// with current Makefile, compiler, and linker flags, printf will call malloc -> sbrk
-// for now, use SEGGER's printf
+#ifdef ENABLE_SEGGER_RTT
 
 #include "SEGGER_RTT.h"
 
@@ -143,7 +136,8 @@ int vprintf(const char * format,  va_list argptr){
 }
 #endif
 
-// hal_cpu.h implementation
+
+// HAL CPU
 #include "hal_cpu.h"
 
 void hal_cpu_disable_irqs(void){
@@ -173,8 +167,8 @@ void hal_led_toggle(void){
 }
 
 // HAL UART DMA
-
 #include "hal_uart_dma.h"
+
 // DMA Control Table
 // if not all channels are used, the alignment can be finer
 // GCC
@@ -490,8 +484,6 @@ void hal_uart_dma_set_sleep(uint8_t sleep){
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
     UNUSED(the_irq_handler);
-#ifdef HAVE_CTS_IRQ
-#endif
 }
 
 void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
@@ -518,10 +510,8 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
     hal_cpu_enable_irqs();
 }
 
-// End of HAL UART DMA
-
-// HAL TIME Implementation
-
+// HAL TIME MS Implementation
+#include "hal_time_ms.h"
 static volatile uint32_t systick;
 
 void SysTick_Handler(void){
@@ -584,7 +574,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 }
                 // assert correct init script is used based on expected lmp_subversion
                 if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
-                    printf("Error: LMP Subversion does not match initscript! ");
+                    printf("Error: LMP Subversion does not match initscript!");
                     printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
                     printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
                     break;
