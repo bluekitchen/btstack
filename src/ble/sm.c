@@ -3865,6 +3865,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // store s_confirm
             reverse_128(&packet[1], setup->sm_peer_confirm);
 
+            // abort if s_confirm matches m_confirm
+            if (memcmp(setup->sm_local_confirm, setup->sm_peer_confirm, 16) == 0){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+
 #ifdef ENABLE_TESTING_SUPPORT
             if (test_pairing_failure == SM_REASON_CONFIRM_VALUE_FAILED){
                 log_info("testing_support: reset confirm value");
