@@ -211,6 +211,9 @@ Pin 36: BTRTS=GPIO-P6.6
 Pin 37: BTCTS=GPIO-P5.6
 */
 
+// #define BLUETOOTH_DEBUG_PORT     GPIO_PORT_P5
+// #define BLUETOOTH_DEBUG_PIN      GPIO_PIN0
+
 #if 0
 // Unclear
 #define BLUETOOTH_TX_PORT        GPIO_PORT_P3
@@ -360,20 +363,24 @@ static void hal_uart_dma_harvest(void){
     }
 }
 
-void DMA_INT1_IRQHandler(void)
-{
+void DMA_INT1_IRQHandler(void){
     MAP_DMA_clearInterruptFlag(DMA_CH4_EUSCIA2TX & 0x0F);
     MAP_DMA_disableChannel(DMA_CH4_EUSCIA2TX & 0x0F);
     (*tx_done_handler)();
 }
 
-void DMA_INT2_IRQHandler(void)
-{
+void DMA_INT2_IRQHandler(void){
     MAP_DMA_clearInterruptFlag(DMA_CH5_EUSCIA2RX & 0x0F);
     // update RTS
     hal_uart_dma_update_rts();
     // process data
+#ifdef BLUETOOTH_DEBUG_PORT
+    MAP_GPIO_setOutputHighOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
+#endif
     hal_uart_dma_harvest();
+#ifdef BLUETOOTH_DEBUG_PORT
+    MAP_GPIO_setOutputLowOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
+#endif
 }
 
 
@@ -388,6 +395,12 @@ void hal_uart_dma_init(void){
     // UART pins
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(BLUETOOTH_TX_PORT, BLUETOOTH_TX_PIN, GPIO_PRIMARY_MODULE_FUNCTION);
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(BLUETOOTH_RX_PORT, BLUETOOTH_RX_PIN, GPIO_PRIMARY_MODULE_FUNCTION);
+
+#ifdef BLUETOOTH_DEBUG_PORT
+    // debug pin
+    MAP_GPIO_setAsOutputPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
+    MAP_GPIO_setOutputLowOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
+#endif
 
     // UART
 
@@ -525,7 +538,13 @@ static volatile uint32_t systick;
 void SysTick_Handler(void){
     systick++;
     // process received data
+#ifdef BLUETOOTH_DEBUG_PORT
+    MAP_GPIO_setOutputHighOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
+#endif
     hal_uart_dma_harvest();
+#ifdef BLUETOOTH_DEBUG_PORT
+    MAP_GPIO_setOutputLowOnPin(BLUETOOTH_DEBUG_PIN, BLUETOOTH_DEBUG_PORT);
+#endif
 }
 
 
