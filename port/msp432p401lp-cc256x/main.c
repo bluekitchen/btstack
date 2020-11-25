@@ -538,6 +538,12 @@ uint32_t hal_time_ms(void){
     return systick;
 }
 
+// btstack assert
+void btstack_assert_failed(const char * file, uint16_t line_nr){
+    printf("ASSERT failed in %s, line %u\n", file, line_nr);
+    while (1);
+}
+
 // main.c
 #include "SEGGER_RTT.h"
 

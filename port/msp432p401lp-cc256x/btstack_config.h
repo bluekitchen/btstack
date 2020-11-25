@@ -1,5 +1,5 @@
 //
-// btstack_config.h for STM32F103RB Nucleo + TI CC256B port
+// btstack_config.h for MSP432P401R + TI CC256B port
 //
 
 #ifndef __BTSTACK_CONFIG
@@ -10,15 +10,15 @@
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
+#define ENABLE_BTSTACK_ASSERT
+#define ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+#define ENABLE_CLASSIC
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
-#define ENABLE_CLASSIC
 #define ENABLE_LE_DATA_CHANNELS
-#define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
+#define ENABLE_LOG_INFO
 #define ENABLE_PRINTF_HEXDUMP
-#define ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-// #define ENABLE_EHCILL
 #define ENABLE_SEGGER_RTT
 
 // BTstack configuration. buffers, sizes, ...
