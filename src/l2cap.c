@@ -1125,6 +1125,14 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     return (l2cap_channel_t*) l2cap_channel_item_by_cid(local_cid);
 }
 
+static l2cap_channel_t * l2cap_get_channel_for_local_cid_and_handle(uint16_t local_cid, hci_con_handle_t con_handle){
+    if (local_cid < 0x40u) return NULL;
+    l2cap_channel_t * l2cap_channel = (l2cap_channel_t*) l2cap_channel_item_by_cid(local_cid);
+    if (l2cap_channel == NULL)  return NULL;
+    if (l2cap_channel->con_handle != con_handle) return NULL;
+    return l2cap_channel;
+}
+
 void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return;
@@ -2109,6 +2117,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
     switch (channel->channel_type){
 #ifdef ENABLE_CLASSIC
         case L2CAP_CHANNEL_TYPE_CLASSIC:
+            if (channel->state != L2CAP_STATE_OPEN) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
             // send if we have more data and remote windows isn't full yet
             if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
@@ -2128,6 +2137,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             return hci_can_send_acl_le_packet_now() != 0;
 #ifdef ENABLE_LE_DATA_CHANNELS
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            if (channel->state != L2CAP_STATE_OPEN) return false;
             if (channel->send_sdu_buffer == NULL) return false;
             if (channel->credits_outgoing == 0u) return false;
             return hci_can_send_acl_le_packet_now() != 0;
@@ -3280,7 +3290,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
-            channel = l2cap_get_channel_for_local_cid(local_cid);
+            channel = l2cap_get_channel_for_local_cid_and_handle(local_cid, handle);
             if (!channel) {
                 log_error("l2cap: no channel for cid 0x%02x", local_cid);
                 break;
@@ -3304,7 +3314,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
-            channel = l2cap_get_channel_for_local_cid(local_cid);
+            channel = l2cap_get_channel_for_local_cid_and_handle(local_cid, handle);
             if (!channel) {
                 log_error("l2cap: no channel for cid 0x%02x", local_cid);
                 break;
@@ -3328,6 +3338,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
 #ifdef ENABLE_CLASSIC
 static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channel, uint8_t * packet, uint16_t size){
+
+    // forward data only in OPEN state
+    if (l2cap_channel->state != L2CAP_STATE_OPEN) return;
+
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
@@ -3525,8 +3539,11 @@ static void l2cap_acl_classic_handler_for_channel(l2cap_channel_t * l2cap_channe
         return;
     }
 #endif
-    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
 
+    // check size
+    if (l2cap_channel->local_mtu < size) return;
+
+    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
 }
 #endif
 
@@ -3535,10 +3552,12 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
     l2cap_channel_t * l2cap_channel;
     l2cap_fixed_channel_t * l2cap_fixed_channel;
 
-    uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
+    uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet);
+    uint8_t  broadcast_flag = READ_ACL_FLAGS(packet) >> 2;
     switch (channel_id) {
             
         case L2CAP_CID_SIGNALING: {
+            if (broadcast_flag != 0) break;
             uint32_t command_offset = 8;
             while ((command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET) < size) {
                 // assert signaling command is fully inside packet
@@ -3556,16 +3575,18 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
             break;
         }
         case L2CAP_CID_CONNECTIONLESS_CHANNEL:
+            if (broadcast_flag == 0) break;
             l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_CONNECTIONLESS_CHANNEL);
             if (!l2cap_fixed_channel) break;
             if (!l2cap_fixed_channel->packet_handler) break;
             (*l2cap_fixed_channel->packet_handler)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             break;
 
-        default: 
+        default:
+            if (broadcast_flag != 0) break;
             // Find channel for this channel_id and connection handle
-            l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
-            if (l2cap_channel) {
+            l2cap_channel = l2cap_get_channel_for_local_cid_and_handle(channel_id, handle);
+            if (l2cap_channel != NULL){
                 l2cap_acl_classic_handler_for_channel(l2cap_channel, packet, size);
             }
             break;
@@ -3616,11 +3637,11 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
         default:
 
 #ifdef ENABLE_LE_DATA_CHANNELS
-            l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
-            if (l2cap_channel) {
+            l2cap_channel = l2cap_get_channel_for_local_cid_and_handle(channel_id, handle);
+            if (l2cap_channel != NULL) {
                 // credit counting
                 if (l2cap_channel->credits_incoming == 0u){
-                    log_error("LE Data Channel packet received but no incoming credits");
+                    log_info("LE Data Channel packet received but no incoming credits");
                     l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
                     break;
                 }
@@ -3654,8 +3675,6 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
                     l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->receive_sdu_buffer, l2cap_channel->receive_sdu_len);
                     l2cap_channel->receive_sdu_len = 0;
                 }
-            } else {
-                log_error("LE Data Channel packet received but no channel found for cid 0x%02x", channel_id);
             }
 #endif
             break;
