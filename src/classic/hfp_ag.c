@@ -850,11 +850,11 @@ static void hfp_ag_trigger_incoming_call(void){
     }
 }
 
-static void hfp_ag_transfer_callsetup_state(void){
-    int indicator_index = get_ag_indicator_index_for_name("callsetup");
+static void hfp_ag_transfer_indicator(const char * name){
+    int indicator_index = get_ag_indicator_index_for_name(name);
     if (indicator_index < 0) return;
 
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
@@ -863,36 +863,18 @@ static void hfp_ag_transfer_callsetup_state(void){
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_ag_run_for_context(hfp_connection);
     }
+}
+
+static void hfp_ag_transfer_callsetup_state(void){
+    hfp_ag_transfer_indicator("callsetup");
 }
 
 static void hfp_ag_transfer_call_state(void){
-    int indicator_index = get_ag_indicator_index_for_name("call");
-    if (indicator_index < 0) return;
-
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, hfp_get_connections());
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
-        hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-        hfp_ag_run_for_context(hfp_connection);
-    }
+    hfp_ag_transfer_indicator("call");
 }
 
 static void hfp_ag_transfer_callheld_state(void){
-    int indicator_index = get_ag_indicator_index_for_name("callheld");
-    if (indicator_index < 0) return;
-
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, hfp_get_connections());
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
-        hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-        hfp_ag_run_for_context(hfp_connection);
-    }
+    hfp_ag_transfer_indicator("callheld");
 }
 
 static void hfp_ag_hf_accept_call(hfp_connection_t * source){
