@@ -101,9 +101,6 @@ int _fstat(int file){
     return -1;
 }
 
-// with current Makefile, compiler, and linker flags, printf will call malloc -> sbrk
-// we define printf, but compiler will replace call to printf with call to puts, which causes malloc -> sbrk again
-
 // end of bss, start of heap
 extern int _end;
 void * _sbrk(int incr){
@@ -124,11 +121,22 @@ void * _sbrk(int incr){
 
 int SEGGER_RTT_vprintf(unsigned BufferIndex, const char * sFormat, va_list * pParamList);
 
+// gcc/clang map printf to puts or putchar for printf("...\n"), or printf("%c", c) respectively
+
+int puts(const char * s){
+    SEGGER_RTT_WriteString(0, s);
+    SEGGER_RTT_PutChar(0, '\n');
+}
+
+int putchar(int c){
+    SEGGER_RTT_PutChar(0, c);
+}
+
 int printf(const char * format, ...){
     va_list argptr;
     va_start(argptr, format);
     SEGGER_RTT_vprintf(0, format, &argptr);
-     va_end(argptr);
+    va_end(argptr);
 }
 
 int vprintf(const char * format,  va_list argptr){
