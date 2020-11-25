@@ -547,7 +547,8 @@ static void init_systick(void){
 
 static void delay_ms(uint32_t ms){
     uint32_t delay_until = systick + ms;
-    while (systick < delay_until);
+    // assumes mcu runs fast enough to check once every ms
+    while (systick != delay_until);
 }
 
 uint32_t hal_time_ms(void){
