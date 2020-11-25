@@ -1282,9 +1282,9 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                     break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     hfp_gsm_handler(HFP_AG_TERMINATE_CALL_BY_HF, 0, 0, NULL);
+                    hfp_ag_set_callsetup_indicator();
                     hfp_ag_set_call_indicator();
-                    hfp_ag_transfer_call_state();
-                    hfp_connection->call_state = HFP_CALL_IDLE;
+                    hfp_ag_trigger_terminate_call();
                     log_info("AG terminate call");
                     break;
                 default:
