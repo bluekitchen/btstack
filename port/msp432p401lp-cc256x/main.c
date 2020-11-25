@@ -203,23 +203,16 @@ static uint8_t * tx_buffer_ptr = 0;
 static void (*rx_done_handler)(void);
 static void (*tx_done_handler)(void);
 
-/*
-Pin 3: BTTX=UCA2RXD-P3.2
-Pin 4: BTRX=UCA2TXD-P3.3
-Pin 19: BTSHUTDN=GPIO-P2.5
-Pin 36: BTRTS=GPIO-P6.6
-Pin 37: BTCTS=GPIO-P5.6
-*/
-
 // #define BLUETOOTH_DEBUG_PORT     GPIO_PORT_P5
 // #define BLUETOOTH_DEBUG_PIN      GPIO_PIN0
 
-#if 0
-// Unclear
 #define BLUETOOTH_TX_PORT        GPIO_PORT_P3
 #define BLUETOOTH_TX_PIN         GPIO_PIN2
 #define BLUETOOTH_RX_PORT        GPIO_PORT_P3
 #define BLUETOOTH_RX_PIN         GPIO_PIN3
+
+#if 0
+// BOOST-CC2564MODA (CC2564B BoosterPack)
 #define BLUETOOTH_RTS_PORT       GPIO_PORT_P6
 #define BLUETOOTH_RTS_PIN        GPIO_PIN6
 #define BLUETOOTH_CTS_PORT       GPIO_PORT_P5
@@ -228,10 +221,6 @@ Pin 37: BTCTS=GPIO-P5.6
 #define BLUETOOTH_nSHUTDOWN_PIN  GPIO_PIN5
 #else
 // EM Wireless BoosterPack with CC256x module
-#define BLUETOOTH_TX_PORT        GPIO_PORT_P3
-#define BLUETOOTH_TX_PIN         GPIO_PIN2
-#define BLUETOOTH_RX_PORT        GPIO_PORT_P3
-#define BLUETOOTH_RX_PIN         GPIO_PIN3
 #define BLUETOOTH_RTS_PORT       GPIO_PORT_P3
 #define BLUETOOTH_RTS_PIN        GPIO_PIN6
 #define BLUETOOTH_CTS_PORT       GPIO_PORT_P5
@@ -607,9 +596,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 }
                 // assert correct init script is used based on expected lmp_subversion
                 if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
-                    printf("Error: LMP Subversion does not match initscript!");
+                    printf("Error: LMP Subversion does not match initscript!\n");
                     printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
                     printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
+                    btstack_assert(false);
                     break;
                 }
             }

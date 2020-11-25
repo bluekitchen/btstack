@@ -121,9 +121,18 @@ sm.c \
 spp_server.c \
 uECC.c \
 
+# CC2564B
+# - BOOST-CC2564MODA
+# - EM Wireless BoosterPacket with CC2564B module
+# INIT_SCRIPT = bluetooth_init_cc2564B_1.8_BT_Spec_4.1
+
+# CC2564C
+# - EM Wireless BoosterPacket with CC2564C module
+INIT_SCRIPT = bluetooth_init_cc2564C_1.4
+
 PORT_SOURCES = \
-	btstack_chipset_cc256x.o \
- 	bluetooth_init_cc2564C_1.4.o \
+	${INIT_SCRIPT}.o \
+ 	btstack_chipset_cc256x.o \
 	hal_flash_bank_msp432.o \
 	main.o \
 	startup_msp432p401r_${COMPILER}.o \
