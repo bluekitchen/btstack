@@ -660,7 +660,6 @@ void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback);
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
-void hfp_set_hf_run_for_context(void (*callbcack)(hfp_connection_t * hfp_connection));
 
 void hfp_init(void);
 

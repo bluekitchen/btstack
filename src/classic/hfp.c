@@ -160,8 +160,6 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
-static void (*hfp_hf_run_for_context_fn)(hfp_connection_t * hfp_connection);
-
 static hfp_connection_t * sco_establishment_active;
 
 // HFP_SCO_PACKET_TYPES_NONE == no choice/override
@@ -694,8 +692,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     }
                     log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
                     sco_establishment_active = hfp_connection;
-                    if (!hfp_hf_run_for_context_fn) break;
-                    (*hfp_hf_run_for_context_fn)(hfp_connection);
                     break;
                 default:
                     break;                    
@@ -1616,10 +1612,6 @@ void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler){
 
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
-}
-
-void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connection)){
-    hfp_hf_run_for_context_fn = callback;
 }
 
 void hfp_init(void){

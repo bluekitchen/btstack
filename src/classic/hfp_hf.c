@@ -1141,10 +1141,6 @@ static void hfp_hf_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
 
 static void hfp_hf_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
-    
-    // allow for sco established -> ring transition and sco retry
-    if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE) return;
     hfp_hf_run();
 }
 
@@ -1158,9 +1154,7 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
 
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_hf_rfcomm_packet_handler(&hfp_hf_rfcomm_packet_handler);
-
-    hfp_set_hf_run_for_context(hfp_hf_run_for_context);
-
+    
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_codecs_nr = 0;
     hfp_indicators_nr = 0;
