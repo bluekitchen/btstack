@@ -79,7 +79,7 @@ void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
 // gobals
 static const char default_hfp_ag_service_name[] = "Voice gateway";
@@ -1999,7 +1999,7 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-static void hfp_run(void){
+static void hfp_ag_run(void){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -2009,7 +2009,7 @@ static void hfp_run(void){
     }
 }
 
-static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
             hfp_ag_handle_rfcomm_data(packet_type, channel, packet, size);
@@ -2026,16 +2026,16 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
             break;
     }
 
-    hfp_run();
+    hfp_ag_run();
 }
 
-static void hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
 
     // allow for sco established -> ring transition
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE) return;
-    hfp_run();
+    hfp_ag_run();
 }
 
 void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs){
@@ -2078,13 +2078,13 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 
     hfp_init();
 
-    hci_event_callback_registration.callback = &hci_event_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    hfp_ag_hci_event_callback_registration.callback = &hfp_ag_hci_event_packet_handler;
+    hci_add_event_handler(&hfp_ag_hci_event_callback_registration);
 
-    rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+    rfcomm_register_service(&hfp_ag_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
 
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
-    hfp_set_ag_rfcomm_packet_handler(&rfcomm_packet_handler);
+    hfp_set_ag_rfcomm_packet_handler(&hfp_ag_rfcomm_packet_handler);
     
     hfp_ag_response_and_hold_active = 0;
     subscriber_numbers = NULL;
