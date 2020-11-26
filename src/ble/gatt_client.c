@@ -877,10 +877,10 @@ static int is_value_valid(gatt_client_t *gatt_client, uint8_t *packet, uint16_t 
 // returns 1 if packet was sent
 static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 
-    // wait until re-encryption as central is complete
+    // wait until re-encryption is complete
     if (gap_reconnect_security_setup_active(gatt_client->con_handle)) return 0;
 
-    // wait until re-encryption complete
+    // wait until re-encryption is complete
     if (gatt_client->reencryption_active) return 0;
 
     bool client_request_pending = gatt_client->gatt_client_state != P_READY;
@@ -911,7 +911,7 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     // wait until pairing complete (either reactive authentication or due to required security level)
     if (gatt_client->wait_for_authentication_complete) return 0;
 
-    // verify security level
+    // verify security level for Mandatory Authentication
     if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level)){
         log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
         gatt_client->wait_for_authentication_complete = 1;
