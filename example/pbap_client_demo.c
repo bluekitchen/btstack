@@ -93,8 +93,6 @@ static uint16_t pbap_cid;
 
 static int sim1_selected;
 
-#ifdef HAVE_BTSTACK_STDIN
-
 static void select_phonebook(const char * phonebook){
     phonebook_name = phonebook;
     sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
@@ -103,6 +101,8 @@ static void select_phonebook(const char * phonebook){
     printf("[-] Phonebook folder '%s'\n", phonebook_folder);
     printf("[-] Phonebook path   '%s'\n", phonebook_path);
 }
+
+#ifdef HAVE_BTSTACK_STDIN
 
 // Testig User Interface 
 static void show_usage(void){
@@ -335,7 +335,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case PBAP_SUBEVENT_CONNECTION_OPENED:
                             printf("[+] Connected\n");
                             printf("[+] Pull phonebook\n");
-                            pbap_pull_phonebook(pbap_cid);
+                            pbap_pull_phonebook(pbap_cid, phonebook_path);
                             break;
                         case PBAP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
