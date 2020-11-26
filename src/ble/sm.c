@@ -3513,7 +3513,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                     sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
                                 }
                             } else {
-                                status = ERROR_CODE_AUTHENTICATION_FAILURE;
+                                status = hci_event_encryption_change_get_status(packet);
                                 // set state to 'RE-ENCRYPTION FAILED' to allow pairing but prevent other interactions
                                 // also, gap_reconnect_security_setup_active will return true
                                 sm_conn->sm_engine_state = SM_GENERAL_REENCRYPTION_FAILED;
