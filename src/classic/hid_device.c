@@ -312,7 +312,6 @@ static inline void hid_device_emit_connected_event(hid_device_t * context, uint8
     pos += 2;
     event[pos++] = context->incoming;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("hid_device_emit_connected_event size %u", pos);
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }   
 
@@ -325,7 +324,6 @@ static inline void hid_device_emit_connection_closed_event(hid_device_t * contex
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("hid_device_emit_connection_closed_event size %u", pos);
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }   
 
@@ -338,12 +336,11 @@ static inline void hid_device_emit_can_send_now_event(hid_device_t * context){
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("hid_device_emit_can_send_now_event size %u", pos);
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
 static inline void hid_device_emit_event(hid_device_t * context, uint8_t subevent_type){
-    uint8_t event[4];
+    uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
@@ -351,7 +348,6 @@ static inline void hid_device_emit_event(hid_device_t * context, uint8_t subeven
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
     event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("hid_device_emit_event size %u", pos);
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
@@ -905,6 +901,7 @@ void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message
     if (!hid_device || !hid_device->interrupt_cid) return;
     l2cap_send(hid_device->interrupt_cid, (uint8_t*) message, message_len);
     if (hid_device->user_request_can_send_now){
+        printf("request user can send now because pending\n");
         l2cap_request_can_send_now_event((hid_device->interrupt_cid));
     }
 }
