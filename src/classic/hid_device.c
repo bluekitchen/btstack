@@ -315,30 +315,6 @@ static inline void hid_device_emit_connected_event(hid_device_t * context, uint8
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }   
 
-static inline void hid_device_emit_connection_closed_event(hid_device_t * context){
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_HID_META;
-    pos++;  // skip len
-    event[pos++] = HID_SUBEVENT_CONNECTION_CLOSED;
-    little_endian_store_16(event,pos,context->cid);
-    pos+=2;
-    event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}   
-
-static inline void hid_device_emit_can_send_now_event(hid_device_t * context){
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_HID_META;
-    pos++;  // skip len
-    event[pos++] = HID_SUBEVENT_CAN_SEND_NOW;
-    little_endian_store_16(event,pos,context->cid);
-    pos+=2;
-    event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
-}
-
 static inline void hid_device_emit_event(hid_device_t * context, uint8_t subevent_type){
     uint8_t event[5];
     int pos = 0;
@@ -729,7 +705,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         device->connected = 0;
                         device->con_handle = HCI_CON_HANDLE_INVALID;
                         device->cid = 0;
-                        hid_device_emit_connection_closed_event(device);
+                        hid_device_emit_event(device, HID_SUBEVENT_CONNECTION_CLOSED);
                     }
                     break;
 
@@ -815,7 +791,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         default:
                             if (device->user_request_can_send_now){
                                 device->user_request_can_send_now = 0;
-                                hid_device_emit_can_send_now_event(device);
+                                hid_device_emit_event(device, HID_SUBEVENT_CAN_SEND_NOW);
                             }
                             break;
                     }
