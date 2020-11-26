@@ -115,6 +115,11 @@ void * _sbrk(int incr){
     return prev_heap;
 }
 
+void abort(void){
+    btstack_assert(false);
+    while (1);
+}
+
 #ifdef ENABLE_SEGGER_RTT
 
 #include "SEGGER_RTT.h"
