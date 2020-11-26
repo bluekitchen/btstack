@@ -889,7 +889,7 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
 #ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
         // re-encryption failed and we have a pending client request
         // reactive authentication: try to resolve it by deleting bonding information if we started pairing before
-        if ((gatt_client_required_security_level == LEVEL_0) && gatt_client->wait_for_pairing_complete){
+        if ((gatt_client_required_security_level == LEVEL_0) && gatt_client->wait_for_authentication_complete){
             // delete bonding information
             int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
             btstack_assert(le_device_db_index >= 0);
@@ -909,12 +909,12 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     }
 
     // wait until pairing complete (either reactive authentication or due to required security level)
-    if (gatt_client->wait_for_pairing_complete) return 0;
+    if (gatt_client->wait_for_authentication_complete) return 0;
 
     // verify security level
     if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level)){
         log_info("Trigger pairing, current security level %u, required %u\n", gatt_client->security_level, gatt_client_required_security_level);
-        gatt_client->wait_for_pairing_complete = 1;
+        gatt_client->wait_for_authentication_complete = 1;
         // set att error code for pairing failure based on required level
         switch (gatt_client_required_security_level){
             case LEVEL_4:
@@ -1211,8 +1211,8 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             // update security level
             gatt_client->security_level = gatt_client_le_security_level_for_connection(con_handle);
 
-            if (gatt_client->wait_for_pairing_complete){
-                gatt_client->wait_for_pairing_complete = 0;
+            if (gatt_client->wait_for_authentication_complete){
+                gatt_client->wait_for_authentication_complete = 0;
                 if (sm_event_pairing_complete_get_status(packet)){
                     log_info("pairing failed, report previous error 0x%x", gatt_client->pending_error_code);
                     gatt_client_report_error_if_pending(gatt_client, gatt_client->pending_error_code);
@@ -1714,7 +1714,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     log_info("security error, start pairing");
 
                     // start pairing for higher security level
-                    gatt_client->wait_for_pairing_complete = 1;
+                    gatt_client->wait_for_authentication_complete = 1;
                     gatt_client->pending_error_code = error_code;
                     sm_request_pairing(gatt_client->con_handle);
                     break;
