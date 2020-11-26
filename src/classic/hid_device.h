@@ -172,13 +172,13 @@ void hid_device_disconnect(uint16_t hid_cid);
 void hid_device_request_can_send_now_event(uint16_t hid_cid);
 
 /**
- * @brief Send HID messageon interrupt channel
+ * @brief Send HID message on interrupt channel
  * @param hid_cid
  */
 void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
 
 /**
- * @brief Send HID messageon control channel
+ * @brief Send HID message on control channel
  * @param hid_cid
  */
 void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);

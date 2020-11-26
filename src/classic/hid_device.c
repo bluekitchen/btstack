@@ -897,21 +897,20 @@ void hid_device_request_can_send_now_event(uint16_t hid_cid){
 }
 
 /**
- * @brief Send HID messageon interrupt channel
+ * @brief Send HID message on interrupt channel
  * @param hid_cid
  */
 void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len){
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
     if (!hid_device || !hid_device->interrupt_cid) return;
     l2cap_send(hid_device->interrupt_cid, (uint8_t*) message, message_len);
-    // request user can send now if pending
-    if (hid_device->interrupt_cid){
+    if (hid_device->user_request_can_send_now){
         l2cap_request_can_send_now_event((hid_device->interrupt_cid));
     }
 }
 
 /**
- * @brief Send HID messageon control channel
+ * @brief Send HID message on control channel
  * @param hid_cid
  */
 void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len){
