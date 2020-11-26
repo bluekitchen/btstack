@@ -883,33 +883,10 @@ static int gatt_client_run_for_gatt_client(gatt_client_t * gatt_client){
     // wait until re-encryption is complete
     if (gatt_client->reencryption_active) return 0;
 
-    bool client_request_pending = gatt_client->gatt_client_state != P_READY;
-
-    if (client_request_pending && (gatt_client->reencryption_result != ERROR_CODE_SUCCESS)){
-#ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
-        // re-encryption failed and we have a pending client request
-        // reactive authentication: try to resolve it by deleting bonding information if we started pairing before
-        if ((gatt_client_required_security_level == LEVEL_0) && gatt_client->wait_for_authentication_complete){
-            // delete bonding information
-            int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
-            btstack_assert(le_device_db_index >= 0);
-#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
-            hci_remove_le_device_db_entry_from_resolving_list((uint16_t) le_device_db_index);
-#endif
-            le_device_db_remove(le_device_db_index);
-            // trigger pairing again
-            sm_request_pairing(gatt_client->con_handle);
-            return 0;
-        }
-#endif
-        // report bonding information missing
-        gatt_client_handle_transaction_complete(gatt_client);
-        emit_gatt_complete_event(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
-        return 0;
-    }
-
     // wait until pairing complete (either reactive authentication or due to required security level)
     if (gatt_client->wait_for_authentication_complete) return 0;
+
+    bool client_request_pending = gatt_client->gatt_client_state != P_READY;
 
     // verify security level for Mandatory Authentication
     if (client_request_pending && (gatt_client_required_security_level > gatt_client->security_level)){
@@ -1250,6 +1227,44 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
 
             gatt_client->reencryption_result = sm_event_reencryption_complete_get_status(packet);
             gatt_client->reencryption_active = false;
+            gatt_client->wait_for_authentication_complete = 0;
+
+            bool client_request_pending = gatt_client->gatt_client_state != P_READY;
+            if (!client_request_pending) break;
+
+            switch (sm_event_reencryption_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    log_info("re-encryption success, retry operation");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                case ERROR_CODE_PIN_OR_KEY_MISSING:
+#ifndef ENABLE_LE_PROACTIVE_AUTHENTICATION
+                    if (gatt_client_required_security_level == LEVEL_0) {
+                        // re-encryption failed for reactive authentication and we have a pending client request
+                        // => try to resolve it by deleting bonding information if we started pairing before
+                        // delete bonding information
+                        int le_device_db_index = sm_le_device_index(gatt_client->con_handle);
+                        btstack_assert(le_device_db_index >= 0);
+                        log_info("reactive auth with pairing: delete bonding and start pairing");
+#ifdef ENABLE_LE_PRIVACY_ADDRESS_RESOLUTION
+                        hci_remove_le_device_db_entry_from_resolving_list((uint16_t) le_device_db_index);
+#endif
+                        le_device_db_remove(le_device_db_index);
+                        // trigger pairing again
+                        sm_request_pairing(gatt_client->con_handle);
+                        break;
+                    }
+#endif
+                    // report bonding information missing
+                    gatt_client_handle_transaction_complete(gatt_client);
+                    emit_gatt_complete_event(gatt_client, ATT_ERROR_BONDING_INFORMATION_MISSING);
+                    break;
+                default:
+                    // report bonding information missing
+                    gatt_client_handle_transaction_complete(gatt_client);
+                    emit_gatt_complete_event(gatt_client, gatt_client->pending_error_code);
+                    break;
+            }
             break;
         default:
             break;
