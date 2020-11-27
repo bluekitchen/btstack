@@ -120,6 +120,7 @@
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"
+#include "classic/hid.h"
 #include "classic/hid_device.h"
 #include "classic/hsp_ag.h"
 #include "classic/hsp_hs.h"
