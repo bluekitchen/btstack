@@ -2,7 +2,7 @@ use hid_device_test with #define REPORT_ID_DECLARED:
 
 HID11/DEV/DCE/BV-10-I: l, (OK), L, (OK)
 
-HID11/DEV/DRE/BV-09-I: 
+HID11/DEV/DRE/BV-09-I: (wait), c
 
 HID11/DEV/DCR/BV-01-I: (wait), c, M, M
 HID11/DEV/DCR/BV-02-I: I, C, c, M, I, C, (wait), M
@@ -12,7 +12,7 @@ HID11/DEV/DCT/BV-02-C: (wait)
 HID11/DEV/DCT/BV-03-C: (wait)
 HID11/DEV/DCT/BV-04-C: (wait)
 HID11/DEV/DCT/BV-08-C: (wait)
-HID11/DEV/DCT/BV-09-C: m?
+HID11/DEV/DCT/BV-09-C: m
 HID11/DEV/DCT/BI-01-C: (wait)
 HID11/DEV/DCT/BI-03-C: (wait)
 HID11/DEV/DCT/BI-04-C: (wait)
