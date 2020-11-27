@@ -61,7 +61,7 @@
 #include "btstack_stdin.h"
 #endif
 
-// #define REPORT_ID_DECLARED 
+#define REPORT_ID_DECLARED 
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
@@ -127,49 +127,6 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
 #define CHAR_TAB         '\t'
 #define CHAR_BACKSPACE   0x7f
 
-// Simplified US Keyboard with Shift modifier
-
-/**
- * English (US)
- */
-static const uint8_t keytable_us_none [] = {
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*   0-3 */
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',                   /*  4-13 */
-    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',                   /* 14-23 */
-    'u', 'v', 'w', 'x', 'y', 'z',                                       /* 24-29 */
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',                   /* 30-39 */
-    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
-    '-', '=', '[', ']', '\\', CHAR_ILLEGAL, ';', '\'', 0x60, ',',       /* 45-54 */
-    '.', '/', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
-    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
-    '6', '7', '8', '9', '0', '.', 0xa7,                                 /* 97-100 */
-}; 
-
-static const uint8_t keytable_us_shift[] = {
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*  0-3  */
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',                   /*  4-13 */
-    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',                   /* 14-23 */
-    'U', 'V', 'W', 'X', 'Y', 'Z',                                       /* 24-29 */
-    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',                   /* 30-39 */
-    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
-    '_', '+', '{', '}', '|', CHAR_ILLEGAL, ':', '"', 0x7E, '<',         /* 45-54 */
-    '>', '?', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
-    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
-    '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
-}; 
-
 // STATE
 
 static uint8_t hid_service_buffer[250];
@@ -185,7 +142,7 @@ static int send_mouse_on_interrupt_channel = 0;
 static int send_keyboard_on_interrupt_channel = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 #endif
 
 static enum {
@@ -199,52 +156,24 @@ static enum {
 // static uint8_t keycode = 0;
 // static uint8_t report[] = { /* 0xa1, */ modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
 
-// HID Keyboard lookup
-static int lookup_keycode(uint8_t character, const uint8_t * table, int size, uint8_t * keycode){
-    int i;
-    for (i=0;i<size;i++){
-        if (table[i] != character) continue;
-        *keycode = i;
-        return 1;
-    }
-    return 0;
-}
-
-static int keycode_and_modifer_us_for_character(uint8_t character, uint8_t * keycode, uint8_t * modifier){
-    int found;
-    found = lookup_keycode(character, keytable_us_none, sizeof(keytable_us_none), keycode);
-    if (found) {
-        *modifier = 0;  // none
-        return 1;
-    }
-    found = lookup_keycode(character, keytable_us_shift, sizeof(keytable_us_shift), keycode);
-    if (found) {
-        *modifier = 2;  // shift
-        return 1;
-    }
-    return 0;
-}
-
 // HID Report sending
 static int send_keycode;
 static int send_modifier;
 
-static void send_key(int modifier, int keycode){
-    send_keycode = keycode;
-    send_modifier = modifier;
-    hid_device_request_can_send_now_event(hid_cid);
-}
-
 static void send_keyboard_report_on_interrupt_channel(int modifier, int keycode){
     uint8_t report[] = {0xa1, 
+#ifdef REPORT_ID_DECLARED
         0x01, 
+#endif
         modifier, 0, 0, keycode, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
 static void send_mouse_report_on_interrupt_channel(uint8_t buttons, int8_t dx, int8_t dy){
     uint8_t report[] = {0xa1, 
+#ifdef REPORT_ID_DECLARED
         0x02, 
+#endif
         buttons, dx, dy, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
@@ -346,9 +275,6 @@ static void show_usage(void){
 #endif
 
 static void stdin_process(char character){
-    uint8_t modifier;
-    uint8_t keycode;
-    int found;
     switch (character){
         case 'D':
             printf("Disconnect from %s...\n", bd_addr_to_str(device_addr));
@@ -395,16 +321,10 @@ static void stdin_process(char character){
     switch (app_state){
         case APP_BOOTING:
         case APP_CONNECTING:
+        case APP_CONNECTED:
             // ignore
             break;
 
-        case APP_CONNECTED:
-            found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
-            if (found){
-                send_key(modifier, keycode);
-                return;
-            }
-            break;
         case APP_NOT_CONNECTED:
             printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
             hid_device_connect(device_addr, &hid_cid);
@@ -510,7 +430,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_mouse_on_interrupt_channel){
                                 send_mouse_on_interrupt_channel = 0;
-                                printf("send mouse on interrupt channel\n");
                                 send_mouse_report_on_interrupt_channel(0,0,0);
                                 break;     
                             }
@@ -519,6 +438,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
                                 send_keycode = 0;
                                 send_modifier = 0;
+                                break;
                             }
                         
                             if (send_keycode){

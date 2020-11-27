@@ -148,7 +148,7 @@ SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
-# EXAMPLES += hog_demo_test hid_device_test hid_host_test 
+EXAMPLES += hog_demo_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
 all: ${EXAMPLES}
