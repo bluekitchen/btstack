@@ -71,6 +71,7 @@ void hid_create_sdp_record(
     uint16_t        hid_device_subclass,
     uint8_t         hid_country_code,
     uint8_t         hid_virtual_cable,
+    uint8_t         hid_remote_wake,
     uint8_t         hid_reconnect_initiate,
     uint8_t         hid_boot_device,
     const uint8_t * hid_descriptor,
