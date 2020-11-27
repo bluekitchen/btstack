@@ -185,7 +185,7 @@ typedef struct gatt_client{
     btstack_timer_source_t gc_timeout;
 
     uint8_t  security_counter;
-    uint8_t  wait_for_pairing_complete;
+    uint8_t  wait_for_authentication_complete;
     uint8_t  pending_error_code;
 
     bool     reencryption_active;

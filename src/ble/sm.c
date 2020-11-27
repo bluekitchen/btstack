@@ -3513,7 +3513,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                     sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
                                 }
                             } else {
-                                status = ERROR_CODE_AUTHENTICATION_FAILURE;
+                                status = hci_event_encryption_change_get_status(packet);
                                 // set state to 'RE-ENCRYPTION FAILED' to allow pairing but prevent other interactions
                                 // also, gap_reconnect_security_setup_active will return true
                                 sm_conn->sm_engine_state = SM_GENERAL_REENCRYPTION_FAILED;
@@ -3864,6 +3864,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // store s_confirm
             reverse_128(&packet[1], setup->sm_peer_confirm);
+
+            // abort if s_confirm matches m_confirm
+            if (memcmp(setup->sm_local_confirm, setup->sm_peer_confirm, 16) == 0){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
 
 #ifdef ENABLE_TESTING_SUPPORT
             if (test_pairing_failure == SM_REASON_CONFIRM_VALUE_FAILED){
