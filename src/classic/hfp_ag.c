@@ -1861,17 +1861,17 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                             hfp_connection->send_error = 1;
                             return;
                         }
-                        log_info("HF Indicator 'enhanced security' set to %u", hfp_connection->parser_indicator_value);
+                        log_info("HF Indicator 'enhanced security' set to %u", (unsigned int) hfp_connection->parser_indicator_value);
                         break;
                     case 2: // battery level
                         if (hfp_connection->parser_indicator_value > 100){
                             hfp_connection->send_error = 1;
                             return;
                         }
-                        log_info("HF Indicator 'battery' set to %u", hfp_connection->parser_indicator_value);
+                        log_info("HF Indicator 'battery' set to %u", (unsigned int) hfp_connection->parser_indicator_value);
                         break;
                     default:
-                        log_info("HF Indicator unknown set to %u", hfp_connection->parser_indicator_value);
+                        log_info("HF Indicator unknown set to %u", (unsigned int) hfp_connection->parser_indicator_value);
                         break;
                 }
                 hfp_connection->ok_pending = 1;

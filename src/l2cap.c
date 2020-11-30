@@ -4005,7 +4005,7 @@ static void l2cap_sm_packet_handler(uint8_t packet_type, uint16_t channel_nr, ui
     UNUSED(channel_nr);
     UNUSED(size);
     UNUSED(packet_type);
-    btstack_assert(packet_type = HCI_EVENT_PACKET);
+    btstack_assert(packet_type == HCI_EVENT_PACKET);
     if (hci_event_packet_get_type(packet) != SM_EVENT_PAIRING_COMPLETE) return;
     hci_con_handle_t con_handle = sm_event_pairing_complete_get_handle(packet);
     btstack_linked_list_iterator_t it;

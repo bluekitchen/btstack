@@ -69,7 +69,7 @@
 #define REMOTE_SERVICE 0x1111
 
 // Fixed passkey - used with sm_pairing_peripheral. Passkey is random in general
-#define FIXED_PASSKEY 123456
+#define FIXED_PASSKEY 123456U
 
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -237,7 +237,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
         case SM_EVENT_PASSKEY_INPUT_NUMBER:
             printf("Passkey Input requested\n");
-            printf("Sending fixed passkey %"PRIu32"\n", FIXED_PASSKEY);
+            printf("Sending fixed passkey %"PRIu32"\n", (uint32_t) FIXED_PASSKEY);
             sm_passkey_input(sm_event_passkey_input_number_get_handle(packet), FIXED_PASSKEY);
             break;
         case SM_EVENT_PAIRING_COMPLETE:
