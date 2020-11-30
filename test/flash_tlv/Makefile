@@ -29,21 +29,20 @@ CFLAGS  = \
 CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-TESTS = tlv_test
+all: build-coverage/tlv_test
 
-all: ${TESTS}
+build-coverage:
+	mkdir -p build-coverage
 
 clean:
-	rm -rf *.o $(TESTS) *.dSYM *.pklg
+	rm -rf *.o *.dSYM *.pklg build-coverage
 	rm -f *.gcno *.gcda
 
-tlv_test: ${COMMON_OBJ} btstack_link_key_db_tlv.o tlv_test.o  
+build-coverage/tlv_test: ${COMMON_OBJ} btstack_link_key_db_tlv.o tlv_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	@echo Run all test
-	@set -e; \
-	for test in $(TESTS); do \
-	  ./$$test; \
-	done
+	build-coverage/tlv_test
 
+coverage: all
+	build-coverage/tlv_test

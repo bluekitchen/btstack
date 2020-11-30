@@ -36,20 +36,27 @@ MEMORY = \
 FS_OBJ = $(FS:.c=.o)
 MEMORY_OBJ = $(MEMORY:.c=.o)
 
-all:  btstack_link_key_db_memory_test btstack_link_key_db_fs_test
+all:  build-coverage/btstack_link_key_db_memory_test build-coverage/btstack_link_key_db_fs_test
 
-btstack_link_key_db_memory_test: ${MEMORY_OBJ} btstack_link_key_db_memory_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/btstack_link_key_db_memory_test: ${MEMORY_OBJ} btstack_link_key_db_memory_test.c | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-btstack_link_key_db_fs_test: ${FS_OBJ} btstack_link_key_db_fs_test.c
+build-coverage/btstack_link_key_db_fs_test: ${FS_OBJ} btstack_link_key_db_fs_test.c | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./btstack_link_key_db_memory_test
-	./btstack_link_key_db_fs_test
+	build-coverage/btstack_link_key_db_memory_test
+	build-coverage/btstack_link_key_db_fs_test
+
+coverage: all
+	build-coverage/btstack_link_key_db_memory_test
+	build-coverage/btstack_link_key_db_fs_test
 
 clean:
-	rm -f btstack_link_key_db_memory_test btstack_link_key_db_fs_test  *.o ../src/*.o 
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -f  *.o
+	rm -f  *.gcno *.gcda
+	rm -rf *.dSYM build-coverage
 

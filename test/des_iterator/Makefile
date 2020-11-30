@@ -19,15 +19,21 @@ COMMON = \
  
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: des_iterator_test
+all: build-coverage/des_iterator_test
 
-des_iterator_test: ${COMMON_OBJ} des_iterator_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/des_iterator_test: ${COMMON_OBJ} des_iterator_test.c  | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./des_iterator_test
+	build-coverage/des_iterator_test
+
+coverage: all
+	build-coverage/des_iterator_test
 
 clean:
-	rm -f des_iterator_test *.o
-	rm -rf *.dSYM
-	
+	rm -f *.o
+	rm -rf *.dSYM build-coverage
+

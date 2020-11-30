@@ -4,7 +4,7 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I../ 
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I../
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/test/mock
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
@@ -37,31 +37,38 @@ COMMON = \
 	ublox_spp_service_server.c \
 
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: battery_service_test device_information_service_test
+all: build-coverage/battery_service_test build-coverage/device_information_service_test
 
-battery_service_profile.h: battery_service_profile.gatt
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/battery_service_profile.h: battery_service_profile.gatt | build-coverage
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-battery_service_test: battery_service_profile.h ${COMMON_OBJ} battery_service_test.o
-	${CC} ${COMMON_OBJ} battery_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
-
-device_information_service_profile.h: device_information_service.gatt
+build-coverage/device_information_service_profile.h: device_information_service.gatt| build-coverage
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-device_information_service_test: device_information_service_profile.h ${COMMON_OBJ} device_information_service_test.o
-	${CC} ${COMMON_OBJ} device_information_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) $< -o $@
 
+build-coverage/battery_service_test: build-coverage/battery_service_profile.h ${COMMON_OBJ} build-coverage/battery_service_test.o | build-coverage
+	${CC} ${COMMON_OBJ} build-coverage//battery_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
+
+build-coverage/device_information_service_test: build-coverage/device_information_service_profile.h ${COMMON_OBJ} build-coverage/device_information_service_test.o  | build-coverage
+	${CC} ${COMMON_OBJ} build-coverage//device_information_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./battery_service_test
-	./device_information_service_test
+	build-coverage/battery_service_test
+	build-coverage/device_information_service_test
 		
+coverage: all
+	build-coverage/battery_service_test
+	build-coverage/device_information_service_test
+
 clean:
-	rm -f  battery_service_test battery_service_profile.h
-	rm -f  device_information_service_test device_information_service_profile.h
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 

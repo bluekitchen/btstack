@@ -67,31 +67,50 @@ mesh_pts: mesh_pts.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${S
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o  pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o mesh_network.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-mesh_message_test: mesh_message_test.cpp mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
-	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o mesh_keys.o mesh_network.o mesh_foundation.o sniffer.c 
+sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o mesh_keys.o mesh_network.o mesh_foundation.o sniffer.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o
+
+build-coverage/mesh_message_test: $(addprefix build-coverage/, mesh_message_test.o mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o)
+	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+build-coverage/provisioning_device_test:  $(addprefix build-coverage/, provisioning_device_test.o uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o)
 	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
 
-provisioning_provisioner_test: provisioning_provisioner_test.cpp uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o
+build-coverage/provisioning_provisioner_test:  $(addprefix build-coverage/, provisioning_provisioner_test.o uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o)
 	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
 
-mesh_configuration_composition_data_message_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${MESH_OBJ} mesh_configuration_composition_data_message_test.cpp 
+build-coverage/mesh_configuration_composition_data_message_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${MESH_OBJ} build-coverage/mesh_configuration_composition_data_message_test.o
 	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@
 
-EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_message_test mesh_configuration_composition_data_message_test
+TESTS_SRCS = mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
+EXAMPLES = mesh_pts provisioner sniffer
 
 all: ${EXAMPLES}
+tests: $(addprefix build-coverage/,$(TESTS_SRCS))
 
-test: mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/%.o: %.cpp | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage:
+	mkdir -p build-coverage
+
+test: tests
 	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
-	ASAN_OPTIONS=detect_leaks=0 ./mesh_message_test
-	./provisioning_device_test
-	./provisioning_provisioner_test
-	./mesh_configuration_composition_data_message_test
+	ASAN_OPTIONS=detect_leaks=0 build-coverage/mesh_message_test
+	build-coverage/provisioning_device_test
+	build-coverage/provisioning_provisioner_test
+	build-coverage/mesh_configuration_composition_data_message_test
+
+coverage: tests
+	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
+	ASAN_OPTIONS=detect_leaks=0 build-coverage/mesh_message_test
+	build-coverage/provisioning_device_test
+	build-coverage/provisioning_provisioner_test
+	build-coverage/mesh_configuration_composition_data_message_test
 
 clean:
 	rm -f  *.o *.out *.exe

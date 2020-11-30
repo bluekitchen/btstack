@@ -18,17 +18,26 @@ COMMON = \
     hci_dump.c \
     btstack_util.c \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: btstack_linked_list_test
+all: build-coverage/btstack_linked_list_test
 
-btstack_linked_list_test: ${COMMON_OBJ} btstack_linked_list_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/btstack_linked_list_test: ${COMMON_OBJ} build-coverage/btstack_linked_list_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./btstack_linked_list_test
+	build-coverage/btstack_linked_list_test
 	
+coverage: all
+	build-coverage/btstack_linked_list_test
+
 clean:
-	rm -fr btstack_linked_list_test *.dSYM *.o ../src/*.o 
 	rm -f *.gcno *.gcda
-	
+	rm -fr *.dSYM build-coverage
+

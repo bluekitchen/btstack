@@ -24,18 +24,25 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: avdtp_util_test
+all: build-coverage/avdtp_util_test
 
-avdtp_util_test: ${COMMON_OBJ} avdtp_util_test.o
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/avdtp_util_test: ${COMMON_OBJ} avdtp_util_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
 	rm -f *.gcda
-	./avdtp_util_test
+	build-coverage/avdtp_util_test
+
+coverage: all
+	rm -f *.gcda
+	build-coverage/avdtp_util_test
 
 clean:
 	rm -f  avdtp_util_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 	

@@ -19,17 +19,26 @@ COMMON = \
     hci_dump.c \
     obex_message_builder.c \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: obex_message_builder_test
+all: build-coverage/obex_message_builder_test
 
-obex_message_builder_test: ${COMMON_OBJ} obex_message_builder_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/obex_message_builder_test: ${COMMON_OBJ} build-coverage/obex_message_builder_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./obex_message_builder_test
+	build-coverage/obex_message_builder_test
 	
+coverage: all
+	build-coverage/obex_message_builder_test
+
 clean:
-	rm -fr obex_message_builder_test *.dSYM *.o
+	rm -fr build-coverage *.dSYM *.o
 	rm -f *.gcno *.gcda
 	

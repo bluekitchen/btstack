@@ -48,21 +48,28 @@ FREERTOS_OBJS = \
 	btstack_run_loop_freertos.o \
 	btstack_uart_block_freertos.o \
 
-all: embedded_test freertos_test
+all: build-coverage/embedded_test build-coverage/freertos_test
 
-embedded_test: ${COMMON_OBJ} embedded_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/embedded_test: ${COMMON_OBJ} embedded_test.c | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} freertos_test.c
+build-coverage/freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} freertos_test.c | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./embedded_test
-	./freertos_test
+	build-coverage/embedded_test
+	build-coverage/freertos_test
+
+coverage: all
+	build-coverage/embedded_test
+	build-coverage/freertos_test
 
 clean:
 	rm -f  embedded_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 	

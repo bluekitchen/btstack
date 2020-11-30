@@ -14,17 +14,26 @@ VPATH += ${BTSTACK_ROOT}/src
 COMMON = \
     btstack_ring_buffer.c \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: btstack_ring_buffer_test
+all: build-coverage/btstack_ring_buffer_test
 
-btstack_ring_buffer_test: ${COMMON_OBJ} btstack_ring_buffer_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/btstack_ring_buffer_test: ${COMMON_OBJ} build-coverage/btstack_ring_buffer_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./btstack_ring_buffer_test
+	build-coverage/btstack_ring_buffer_test
 	
+coverage: all
+	build-coverage/btstack_ring_buffer_test
+
 clean:
-	rm -fr btstack_ring_buffer_test *.dSYM *.o ../src/*.o *.gcda *.gcno
+	rm -fr build-coverage *.dSYM *.o ../src/*.o *.gcda *.gcno
 	rm -f *.gcno *.gcda
 	

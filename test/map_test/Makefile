@@ -27,17 +27,25 @@ COMMON = \
     map_util.c  \
     btstack_util.c \
 
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-COMMON_OBJ = $(COMMON:.c=.o)
+all: build-coverage/map_xml_test
 
-all: map_xml_test
+build-coverage:
+	mkdir -p build-coverage
 
-map_xml_test: ${COMMON_OBJ} map_xml_test.c
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/map_xml_test: ${COMMON_OBJ} build-coverage/map_xml_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./map_xml_test
+	build-coverage/map_xml_test
 	
+coverage: all
+	build-coverage/map_xml_test
+
 clean:
 	rm -fr map_xml_test *.dSYM *.o ../src/*.o
 	rm -f *.gcno *.gcda

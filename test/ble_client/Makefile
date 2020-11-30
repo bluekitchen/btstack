@@ -25,17 +25,22 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: ad_parser_test
+all: build-coverage/ad_parser_test
 
-ad_parser_test: ${CORE_OBJ} ${COMMON_OBJ} ad_parser_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/ad_parser_test: ${CORE_OBJ} ${COMMON_OBJ} ad_parser_test.c | build-coverage
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser_test.c ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./ad_parser_test
+	build-coverage/ad_parser_test
+
+coverage: all
+	build-coverage/ad_parser_test
 
 clean:
-	rm -f  ad_parser_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 

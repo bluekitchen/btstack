@@ -38,27 +38,28 @@ COMMON = \
 	btstack_util.c			            \
 	btstack_tlv.c \
 	
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
+CORE_OBJ = $(addprefix build-coverage/,$(CORE:.c=.o))
 
-MBEDTLS = \
-	ecp.c \
-	ecp_curves.c \
-	bignum.c \
+all: build-coverage/security_manager
 
-MICROECC = \
-	uECC.c
+build-coverage:
+	mkdir -p build-coverage
 
-all: security_manager
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
 
-security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
+build-coverage/security_manager: ${CORE_OBJ} ${COMMON_OBJ} build-coverage/security_manager.o | build-coverage
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./security_manager
+	build-coverage/security_manager
 	
+coverage: all
+	build-coverage/security_manager
+
 clean:
-	rm -f  security_manager
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 	

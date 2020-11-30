@@ -26,16 +26,25 @@ COMMON = \
 	btstack_tlv_flash_bank.c    \
 	hal_flash_bank_memory.c     \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: le_device_db_tlv_test
+all: build-coverage/le_device_db_tlv_test
 
-le_device_db_tlv_test: ${COMMON_OBJ} le_device_db_tlv_test.o
-	${CC} ${COMMON_OBJ} le_device_db_tlv_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/le_device_db_tlv_test: ${COMMON_OBJ} build-coverage/le_device_db_tlv_test.o | build-coverage
+	${CC} ${COMMON_OBJ}  build-coverage/le_device_db_tlv_test.o ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./le_device_db_tlv_test
+	build-coverage/le_device_db_tlv_test
 		
+coverage: all
+	build-coverage/le_device_db_tlv_test
+
 clean:
 	rm -f  le_device_db_tlv_test
 	rm -f  *.o

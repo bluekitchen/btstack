@@ -248,3 +248,5 @@ clean: myclean
 
 test:
 	echo "No unit tests in PTS"
+coverage: all
+	echo "No coverage tests in PTS"

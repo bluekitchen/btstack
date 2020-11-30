@@ -45,6 +45,7 @@ CFLAGS += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -W
 CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -DCOVERAGE
 CFLAGS += -I.
+CFLAGS += -Ibuild-coverage
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
@@ -69,27 +70,35 @@ LDFLAGS += -fprofile-arcs -ftest-coverage
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
-
-CORE_OBJ    = $(CORE:.c=.o)
-COMMON_OBJ  = $(COMMON:.c=.o) 
-ATT_OBJ     = $(ATT:.c=.o)
-SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
-GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
-GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
+CORE_OBJ = $(addprefix build-coverage/,$(CORE:.c=.o))
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
+ATT_OBJ = $(addprefix build-coverage/,$(ATT:.c=.o))
+SM_OBJ = $(addprefix build-coverage/,$(SM:.c=.o))
+GATT_CLIENT_OBJ = $(addprefix build-coverage/,$(GATT_CLIENT:.c=.o))
+GATT_SERVER_OBJ = $(addprefix build-coverage/,$(GATT_SERVER:.c=.o))
 
 # compile .gatt descriptions
-%.h: %.gatt
+build-coverage/%.h: %.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 .PHONY: all coverage test
 
-all: sm_test
+all: build-coverage/sm_test
 
-sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} sm_test.o
-	${CC} $(filter-out sm_test.h,$^) ${LDFLAGS} -o $@
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/sm_test.h: sm_test.gatt | build-coverage
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/sm_test: build-coverage/sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} build-coverage/sm_test.o | build-coverage
+	${CC} $(filter-out build-coverage/sm_test.h,$^) ${LDFLAGS} -o $@
 
 myclean:
-	rm -rf sm_test.h sm_test
+	rm -rf build-coverage
 	rm -f  *.o
 	rm -rf *.dSYM
 	rm -f *.gcno *.gcda

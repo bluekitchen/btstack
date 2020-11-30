@@ -55,19 +55,27 @@ COMMON = \
 	spp_server.c \
 	btstack_hid_parser.c \
 	
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: sdp_record_builder
+all: build-coverage/sdp_record_builder
 
-sdp_record_builder: ${COMMON_OBJ} sdp_record_builder.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/sdp_record_builder: ${COMMON_OBJ} build-coverage/sdp_record_builder.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./sdp_record_builder
+	build-coverage/sdp_record_builder
+
+coverage: all
+	build-coverage/sdp_record_builder
 
 clean:
-	rm -f  sdp_record_builder
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 	

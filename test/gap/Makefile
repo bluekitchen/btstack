@@ -25,23 +25,32 @@ COMMON = \
 	hci_dump.c                  \
 	le_device_db_memory.c       \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: test_le_scan
+all: build-coverage/test_le_scan
+
+build-coverage:
+	mkdir -p build-coverage
 
 # compile .ble description
-profile.h: profile.gatt
+build-coverage/profile.h: profile.gatt | build-coverage
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-test_le_scan: ${COMMON_OBJ} test_le_scan.o
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) $< -o $@
+
+build-coverage/test_le_scan: ${COMMON_OBJ} test_le_scan.o | build-coverage
 	${CC} ${COMMON_OBJ} test_le_scan.o ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./test_le_scan
+	build-coverage/test_le_scan
+
+coverage: all
+	build-coverage/test_le_scan
 
 clean:
 	rm -f  test_le_scan
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 

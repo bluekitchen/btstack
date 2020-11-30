@@ -29,21 +29,28 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: att_db_util_test att_db_test
+all: build-coverage/att_db_util_test build-coverage/att_db_test
 
-att_db_util_test: ${COMMON_OBJ} att_db_util_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/att_db_util_test: ${COMMON_OBJ} att_db_util_test.c | build-coverage/
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-att_db_test: att_db_test.c att_db.o btstack_util.o hci_dump.o att_db_util.o
+build-coverage/att_db_test: att_db_test.c att_db.o btstack_util.o hci_dump.o att_db_util.o | build-coverage/
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./att_db_util_test
-	./att_db_test
+	build-coverage/att_db_util_test
+	build-coverage/att_db_test
+
+coverage: all
+	build-coverage/att_db_util_test
+	build-coverage/att_db_test
 
 clean:
 	rm -f  att_db_util_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 	

@@ -13,21 +13,31 @@ LDFLAGS +=  -lCppUTest -lCppUTestExt
 VPATH += ${BTSTACK_ROOT}/src
 
 COMMON = \
+	btstack_util.c \
+	btstack_hid_parser.c \
+	hci_dump.c
 	
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
+all: build-coverage/hid_parser_test
 
-all: hid_parser_test
+build-coverage:
+	mkdir -p build-coverage
 
-hid_parser_test: btstack_hid_parser.c btstack_util.c hid_parser_test.c hci_dump.c
-	${CC} ${CFLAGS} ${CPPFLAGS} $^ ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+build-coverage/hid_parser_test: ${COMMON_OBJ} build-coverage/hid_parser_test.o | build-coverage
+	${CC} ${CFLAGS}  $^ ${LDFLAGS} -o $@
 
 test: all
-	./hid_parser_test
+	build-coverage/hid_parser_test
 	
+coverage: all
+	build-coverage/hid_parser_test
+
 clean:
-	rm -f  hid_parser_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 

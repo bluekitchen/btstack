@@ -20,21 +20,27 @@ COMMON = \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: btstack_memory_pool_test btstack_memory_test
+all: build-coverage/btstack_memory_pool_test build-coverage/btstack_memory_test
 
-btstack_memory_pool_test: ${COMMON_OBJ} btstack_memory_pool_test.c
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/btstack_memory_pool_test: ${COMMON_OBJ} btstack_memory_pool_test.c | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-btstack_memory_test: ${COMMON_OBJ} btstack_memory_test.c
+build-coverage/btstack_memory_test: ${COMMON_OBJ} btstack_memory_test.c | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./btstack_memory_pool_test
-	./btstack_memory_test
+	build-coverage/btstack_memory_pool_test
+	build-coverage/btstack_memory_test
+
+coverage: all
+	build-coverage/btstack_memory_pool_test
+	build-coverage/btstack_memory_test
 
 clean:
-	rm -f btstack_memory_pool_test *.o
-	rm -f btstack_memory_test *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -f  *.o
+	rm -rf *.dSYM build-coverage
+	rm -f  *.gcno *.gcda
 	

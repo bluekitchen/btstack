@@ -27,29 +27,37 @@ MBEDTLS = \
 MICROECC = \
 	uECC.c
 
-all: aes_ccm_test aestest ecc_micro_ecc aes_cmac_test
+all: build-coverage/aes_ccm_test build-coverage/aestest build-coverage/ecc_micro_ecc build-coverage/aes_cmac_test
 
-aes_ccm_test: aes_ccm.o aes_ccm_test.o btstack_crypto.o btstack_linked_list.o hci_cmd.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o mock.o
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/aes_ccm_test: aes_ccm.o aes_ccm_test.o btstack_crypto.o btstack_linked_list.o hci_cmd.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o mock.o | build-coverage
 	${CC} ${CFLAGS} $^ -o $@
 
-aestest: aestest.o rijndael.o
+build-coverage/aestest: aestest.o rijndael.o | build-coverage
 	${CC} ${CFLAGS} $^ -o $@
 
-ecc_micro_ecc: ecc_micro_ecc.o ${MICROECC}
+build-coverage/ecc_micro_ecc: ecc_micro_ecc.o ${MICROECC} | build-coverage
 	gcc ${CFLAGS} $^ -o $@ 
 
-aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o
+build-coverage/aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o | build-coverage
 	gcc ${CFLAGS} $^ -o $@ 
 
 test: all
-	./aes_cmac_test
-	./aestest
-	./ecc_micro_ecc
-	./aes_cmac_test
+	build-coverage/aes_cmac_test
+	build-coverage/aestest
+	build-coverage/ecc_micro_ecc
+	build-coverage/aes_cmac_test
 	
+coverage: all
+	build-coverage/aes_cmac_test
+	build-coverage/aestest
+	build-coverage/ecc_micro_ecc
+	build-coverage/aes_cmac_test
+
 clean:
-	rm -f  aestest ecc_micro_ecc aes_cmac_test
 	rm -f  *.o
-	rm -rf *.dSYM
 	rm -f *.gcno *.gcda
+	rm -rf *.dSYM
 

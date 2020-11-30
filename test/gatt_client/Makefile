@@ -4,7 +4,7 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I${BTSTACK_ROOT}/src
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -Ibuild-coverage -I${BTSTACK_ROOT}/src
 CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
@@ -27,27 +27,36 @@ COMMON = \
 	le_device_db_memory.c       \
 	mock.c                      \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: gatt_client_test le_central
+all: build-coverage/gatt_client_test build-coverage/le_central
+
+build-coverage:
+	mkdir -p build-coverage
 
 # compile .ble description
-profile.h: profile.gatt
+build-coverage/profile.h: profile.gatt | build-coverage
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-gatt_client_test: profile.h ${COMMON_OBJ} gatt_client_test.o expected_results.h
-	${CC} ${COMMON_OBJ} gatt_client_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) $< -o $@
 
-le_central: ${COMMON_OBJ} le_central.o
-	${CC} ${COMMON_OBJ} le_central.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/gatt_client_test: profile.h ${COMMON_OBJ} build-coverage/gatt_client_test.o expected_results.h | build-coverage
+	${CC} ${COMMON_OBJ} build-coverage/gatt_client_test.o ${CFLAGS} ${LDFLAGS} -o $@
+
+build-coverage/le_central: ${COMMON_OBJ} build-coverage/le_central.o | build-coverage
+	${CC} ${COMMON_OBJ} build-coverage/le_central.o ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./gatt_client_test
-	./le_central
+	build-coverage/gatt_client_test
+	build-coverage/le_central
 		
+coverage: all
+	build-coverage/gatt_client_test
+	build-coverage/le_central
+
 clean:
-	rm -f  gatt_client_test le_central
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 

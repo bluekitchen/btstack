@@ -16,14 +16,20 @@ COMMON_OBJ = \
     btstack_util.o \
     hci_dump.o \
 
-all: base64_decoder_test
+all: build-coverage/base64_decoder_test
 
-base64_decoder_test: ${COMMON_OBJ} base64_decoder_test.o
+build-coverage:
+	mkdir -p build-coverage
+
+build-coverage/base64_decoder_test: ${COMMON_OBJ} base64_decoder_test.o | build-coverage
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./base64_decoder_test
+	build-coverage/base64_decoder_test
 	
+coverage: all
+	build-coverage/base64_decoder_test
+
 clean:
-	rm -fr base64_decoder_test *.dSYM *.o
+	rm -fr base64_decoder_test *.dSYM *.o build-coverage
 	rm -f *.gcno *.gcda

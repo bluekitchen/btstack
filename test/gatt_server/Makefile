@@ -42,23 +42,31 @@ COMMON = \
 	rijndael.c 					\
 	ublox_spp_service_server.c \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
 
-all: gatt_server_test
+all: build-coverage/gatt_server_test
+
+build-coverage:
+	mkdir -p build-coverage
 
 # compile .ble description
-profile.h: profile.gatt
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+build-coverage/profile.h: profile.gatt | build-coverage
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-gatt_server_test: profile.h ${COMMON_OBJ} gatt_server_test.o
-	${CC} ${COMMON_OBJ} gatt_server_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) $< -o $@
+
+build-coverage/gatt_server_test: build-coverage/profile.h ${COMMON_OBJ} build-coverage/gatt_server_test.o | build-coverage
+	${CC} ${COMMON_OBJ} build-coverage/gatt_server_test.o ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
-	./gatt_server_test
+	build-coverage/gatt_server_test
 		
+coverage: all
+	build-coverage/gatt_server_test
+
 clean:
-	rm -f  gatt_server_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 
