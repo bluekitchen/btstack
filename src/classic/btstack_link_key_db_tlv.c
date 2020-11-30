@@ -92,7 +92,7 @@ static int btstack_link_key_db_tlv_get_link_key(bd_addr_t bd_addr, link_key_t li
         uint32_t tag = btstack_link_key_db_tag_for_index(i);
         int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
         if (size == 0) continue;
-        log_info("tag %x, addr %s", tag, bd_addr_to_str(entry.bd_addr));
+        log_info("tag %x, addr %s", (unsigned int) tag, bd_addr_to_str(entry.bd_addr));
         if (memcmp(bd_addr, entry.bd_addr, 6)) continue;
         // found, pass back
         (void)memcpy(link_key, entry.link_key, 16);
@@ -148,7 +148,8 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
         }
     }
 
-    log_info("tag_for_addr %x, tag_for_empy %x, tag_for_lowest_seq_nr %x", tag_for_addr, tag_for_empty, tag_for_lowest_seq_nr);
+    log_info("tag_for_addr %x, tag_for_empy %x, tag_for_lowest_seq_nr %x",
+             (unsigned int) tag_for_addr, (unsigned int) tag_for_empty, (unsigned int) tag_for_lowest_seq_nr);
 
     uint32_t tag_to_use = 0;
     if (tag_for_addr){
@@ -162,7 +163,7 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
         return;
     }
 
-    log_info("store with tag %x", tag_to_use);
+    log_info("store with tag %x", (unsigned int) tag_to_use);
 
     link_key_nvm_t entry;
     

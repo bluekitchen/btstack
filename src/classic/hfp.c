@@ -1394,7 +1394,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
             log_info("Parsed Support call hold: %s\n", hfp_connection->line_buffer);
             if (hfp_connection->line_size > 2 ) break;
-            strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
+            memcpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE-1);
             hfp_connection->remote_call_services[hfp_connection->remote_call_services_index].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
             hfp_next_remote_call_services_index(hfp_connection);
             break;

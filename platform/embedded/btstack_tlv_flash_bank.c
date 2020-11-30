@@ -208,7 +208,7 @@ static void btstack_tlv_flash_bank_write_header(btstack_tlv_flash_bank_t * self,
  * @brief Check if erased from offset
  */
 static int btstack_tlv_flash_bank_test_erased(btstack_tlv_flash_bank_t * self, int bank, uint32_t offset){
-	log_info("test erased: bank %u, offset %u", bank, offset);
+	log_info("test erased: bank %u, offset %u", bank, (unsigned int) offset);
 	uint32_t size = self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context);
 	uint8_t buffer[16];
 	uint8_t empty16[16];
@@ -217,7 +217,7 @@ static int btstack_tlv_flash_bank_test_erased(btstack_tlv_flash_bank_t * self, i
 		uint32_t copy_size = (offset + sizeof(empty16) < size) ? sizeof(empty16) : (size - offset); 
 		btstack_tlv_flash_bank_read(self, bank, offset, buffer, copy_size);
 		if (memcmp(buffer, empty16, copy_size)) {
-			log_info("not erased %x - %x", offset, offset + copy_size);
+			log_info("not erased %x - %x", (unsigned int) offset, (unsigned int) (offset + copy_size));
 			return 0;
 		}
 		offset += copy_size;
@@ -253,7 +253,8 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 			uint32_t tag_len = it.len;
 			uint32_t tag_index = it.offset;
 
-			log_info("migrate pos %u, tag '%x' len %u -> new pos %u", tag_index, it.tag, tag_len, next_write_pos);
+			log_info("migrate pos %u, tag '%x' len %u -> new pos %u",
+                (unsigned  int)  tag_index, (unsigned int)  it.tag, (unsigned int) tag_len, next_write_pos);
 
 			// copy header
 			uint8_t header_buffer[8];
@@ -295,7 +296,7 @@ static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_ban
 	btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_bank_iterator_has_next(self, &it) && it.offset < offset){
 		if (it.tag == tag){
-			log_info("Erase tag '%x' at position %u", tag, it.offset);
+			log_info("Erase tag '%x' at position %u", (unsigned int) tag, (unsigned int) it.offset);
 
 			// mark entry as invalid
 			uint32_t zero_value = 0;
@@ -329,7 +330,7 @@ static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t 
 	btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_bank_iterator_has_next(self, &it)){
 		if (it.tag == tag){
-			log_info("Found tag '%x' at position %u", tag, it.offset);
+			log_info("Found tag '%x' at position %u", (unsigned int) tag, (unsigned int) it.offset);
 			tag_index = it.offset;
 			tag_len   = it.len;
 			break;
@@ -374,7 +375,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	big_endian_store_32(entry, 0, tag);
 	big_endian_store_32(entry, 4, data_size);
 
-	log_info("write '%x', len %u at %u", tag, data_size, self->write_offset);
+	log_info("write '%x', len %u at %u", (unsigned int) tag, (unsigned int) data_size, self->write_offset);
 
 	uint32_t value_offset = self->write_offset + 8;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
