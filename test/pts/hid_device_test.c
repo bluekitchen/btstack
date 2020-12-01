@@ -152,10 +152,10 @@ static enum {
     APP_CONNECTED
 } app_state = APP_BOOTING;
 
-// static uint8_t modifier = 0;
-// static uint8_t keycode = 0;
-// static uint8_t report[] = { /* 0xa1, */ modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+static bool virtual_cable_enabled  = false;
+static bool virtual_cable_unplugged = false;
 
+static hci_con_handle_t hid_con_handle = 0;
 // HID Report sending
 static int send_keycode;
 static int send_modifier;
@@ -176,6 +176,18 @@ static void send_mouse_report_on_interrupt_channel(uint8_t buttons, int8_t dx, i
 #endif
         buttons, dx, dy, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
+}
+
+/**
+ * @brief Initiate a Virtual Cable unplug from the already pluged remote device. Reconnection requests after unplug will be rejected.
+ * @param  hid_cid
+ * @return status 
+ */
+static uint8_t hid_device_send_virtual_cable_unplug(uint16_t hcid){
+    if (!virtual_cable_enabled) return ERROR_CODE_COMMAND_DISALLOWED;
+    uint8_t report[] = { (HID_MESSAGE_TYPE_HID_CONTROL << 4) | HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG };
+    hid_device_send_control_message(hcid, &report[0], sizeof(report));
+    return ERROR_CODE_SUCCESS;
 }
 
 // HID Report sending
@@ -281,8 +293,12 @@ static void stdin_process(char character){
             hid_device_disconnect(hid_cid);
             break;
         case 'c':
-            printf("Connecting %s...\n", bd_addr_to_str(device_addr));
-            hid_device_connect(device_addr, &hid_cid);
+            if (virtual_cable_unplugged){
+                printf("Cannot connect to %s, device has been unplugged...\n", bd_addr_to_str(device_addr));
+            } else {
+                printf("Connecting %s...\n", bd_addr_to_str(device_addr));
+                hid_device_connect(device_addr, &hid_cid);
+            }
             return;
         case 'I':
             printf("Disconnect from intrrupt channel %s...\n", bd_addr_to_str(device_addr));
@@ -307,9 +323,13 @@ static void stdin_process(char character){
             hid_device_request_can_send_now_event(hid_cid);
             break;
         case 'L':
-            gap_discoverable_control(0);
             printf("reset limited discoverable mode\n");
+            gap_discoverable_control(0);
             return;
+        case 'u':
+            printf("Send unplug request to %s...\n", bd_addr_to_str(device_addr));
+            hid_device_send_virtual_cable_unplug(hid_cid);
+            break;
         case '\n':
         case '\r':
             break;
@@ -405,8 +425,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 return;
                             }
                             app_state = APP_CONNECTED;
+                            virtual_cable_unplugged = false;
+
                             hid_subevent_connection_opened_get_bd_addr(packet, device_addr);
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
+                            hid_con_handle = hid_subevent_connection_opened_get_con_handle(packet);
 #ifdef HAVE_BTSTACK_STDIN                        
                             printf("HID Connected, please start typing... %s\n", bd_addr_to_str(device_addr));
 #else                        
@@ -416,6 +439,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             printf("HID Disconnected\n");
+                            if (virtual_cable_enabled){
+                                virtual_cable_unplugged = true;
+                                gap_drop_link_key_for_bd_addr(device_addr);
+                                gap_disconnect(hid_con_handle);
+                            }
                             app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
                             break;
@@ -426,7 +454,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_SUBEVENT_EXIT_SUSPEND:
                             printf("HID Exit Suspend\n");
                             break;
-                            
+                        case HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG:
+                            if (virtual_cable_enabled){
+                                printf("HID Device is unplugged.\n");
+                                virtual_cable_unplugged = true;
+                                gap_drop_link_key_for_bd_addr(device_addr);
+                            }
+                            break;
+
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_mouse_on_interrupt_channel){
                                 send_mouse_on_interrupt_channel = 0;
@@ -463,7 +498,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     }
 }
 
-
+static int hid_device_connection_filter(bd_addr_t addr){
+    if (virtual_cable_enabled && !virtual_cable_unplugged && (memcmp(addr, device_addr, 6) != 0)){
+        return 0;  
+    }
+    return 1;
+}
 
 /* @section Main Application Setup
  *
@@ -480,6 +520,7 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     gap_discoverable_control(1);
+    
     gap_set_class_of_device(0x2540);
     gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
     
@@ -490,10 +531,14 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
 
-    uint8_t hid_virtual_cable = 0;
+    uint8_t hid_virtual_cable = 1;
     uint8_t hid_remote_wake = 1;
     uint8_t hid_reconnect_initiate = 1;
     
+    if (hid_virtual_cable == 1){
+        virtual_cable_enabled = true;
+        virtual_cable_unplugged = false;
+    }
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable on, hid reconnect initiate on, hid boot device off 
     hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
         hid_virtual_cable, hid_remote_wake, hid_reconnect_initiate, 
@@ -518,6 +563,8 @@ int btstack_main(int argc, const char * argv[]){
     hid_device_register_report_request_callback(&hid_get_report_callback);
     hid_device_register_set_report_callback(&hid_set_report_callback);
     hid_device_register_report_data_callback(&hid_report_data_callback);
+    
+    gap_register_classic_connection_filter(&hid_device_connection_filter);
 
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
