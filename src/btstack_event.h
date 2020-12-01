@@ -8658,22 +8658,32 @@ static inline uint16_t hid_subevent_can_send_now_get_hid_cid(const uint8_t * eve
 }
 
 /**
- * @brief Get field con_handle from event HID_SUBEVENT_SUSPEND
+ * @brief Get field hid_cid from event HID_SUBEVENT_SUSPEND
  * @param event packet
- * @return con_handle
+ * @return hid_cid
  * @note: btstack_type 2
  */
-static inline uint16_t hid_subevent_suspend_get_con_handle(const uint8_t * event){
+static inline uint16_t hid_subevent_suspend_get_hid_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HID_SUBEVENT_EXIT_SUSPEND
+ * @brief Get field hid_cid from event HID_SUBEVENT_EXIT_SUSPEND
  * @param event packet
- * @return con_handle
+ * @return hid_cid
  * @note: btstack_type 2
  */
-static inline uint16_t hid_subevent_exit_suspend_get_con_handle(const uint8_t * event){
+static inline uint16_t hid_subevent_exit_suspend_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_virtual_cable_unplug_get_hid_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 

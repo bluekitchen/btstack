@@ -569,6 +569,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case HID_CONTROL_PARAM_EXIT_SUSPEND:
                             hid_device_emit_event(device, HID_SUBEVENT_EXIT_SUSPEND);
                             break;
+                        case HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG:
+                            device->unplugged = true;
+                            hid_device_emit_event(device, HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG);
+                            break;
                         default:
                             device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
                             l2cap_request_can_send_now_event(device->control_cid);

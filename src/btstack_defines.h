@@ -2892,16 +2892,24 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 12
  * @param subevent_code
- * @param con_handle
+ * @param hid_cid
 */
 #define HID_SUBEVENT_SUSPEND                                               0x04
 
 /**
  * @format 12
  * @param subevent_code
- * @param con_handle
+ * @param hid_cid
 */
 #define HID_SUBEVENT_EXIT_SUSPEND                                          0x05
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param hid_cid
+*/
+#define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x06
+
 
 
 // HIDS Meta Event Group
