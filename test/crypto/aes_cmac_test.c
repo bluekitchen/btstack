@@ -37,7 +37,7 @@ const char * f5_n1_string      = "d5cb8454 d177733e ffffb2ec 712baeab";
 const char * f5_n2_string      = "a6e8e7cc 25a75f6e 216583f7 ff3dc4cf";
 const char * f5_a1_string      = "00561237 37bfce";
 const char * f5_a2_string      = "00a71370 2dcfc1";
-const char * f5_cmac_string    = "2965f176 a1084a02 fd3f6a20 ce636e20 69867911 69d7cd23 980522b5 94750a38";
+const char * f5_cmac_string    = "2965f176 a1084a02 fd3f6a20 ce636e20";
 
 // f6
 const char * f6_n1_string 	 	= "d5cb8454 d177733e ffffb2ec 712baeab";

@@ -85,8 +85,8 @@ build-coverage/%.h: %.gatt
 
 all: build-coverage/sm_test
 
-build-coverage:
-	mkdir -p build-coverage
+build-%:
+	mkdir -p $@
 
 build-coverage/sm_test.h: sm_test.gatt | build-coverage
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
@@ -112,7 +112,7 @@ test: sm_test
 
 coverage: sm_test
 	# delete trace data
-	find . -name "*.gcda" -type f -delete
+	rm -f build-coverage/*.gcda
 	# run tests
 	make test
 	# collect traces

@@ -175,7 +175,7 @@ void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_
 
     int message_found = 0;
     int handle_found = 0;
-    char handle[MAP_MESSAGE_HANDLE_SIZE * 2];
+    char handle[MAP_MESSAGE_HANDLE_SIZE * 2 + 1];
     map_message_handle_t msg_handle;
     yxml_init(&xml_parser, xml_buffer, sizeof(xml_buffer));
 
@@ -190,7 +190,7 @@ void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_
                 if (message_found == 0) break;
                 message_found = 0;
                 if (strlen(handle) != MAP_MESSAGE_HANDLE_SIZE * 2){
-                    log_info("message handle string length != 16");
+                    log_info("message handle string length %u != %u", (unsigned int) strlen(handle), MAP_MESSAGE_HANDLE_SIZE*2);
                     break;
                 }
                 map_message_str_to_handle(handle, msg_handle);
@@ -206,6 +206,8 @@ void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_
                 break;
             case YXML_ATTRVAL:
                 if (handle_found == 1) {
+                    if (strlen(xml_parser.data) != 1) break;
+                    if (strlen(handle) >= (MAP_MESSAGE_HANDLE_SIZE * 2)) break;
                     strcat(handle, xml_parser.data);
                     break;
                 }

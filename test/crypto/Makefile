@@ -10,8 +10,13 @@ CFLAGS += -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS +=  -lCppUTest -lCppUTestExt
+
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -19,45 +24,58 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 
-MBEDTLS = \
-	ecp.c \
-	ecp_curves.c \
-	bignum.c \
+all: build-coverage/aes_ccm_test build-coverage/aestest build-coverage/ecc_micro_ecc build-coverage/aes_cmac_test \
+	 build-asan/aes_ccm_test build-asan/aestest build-asan/ecc_micro_ecc build-asan/aes_cmac_test
 
-MICROECC = \
-	uECC.c
+build-%:
+	mkdir -p $@
 
-all: build-coverage/aes_ccm_test build-coverage/aestest build-coverage/ecc_micro_ecc build-coverage/aes_cmac_test
+build-coverage/%.o: %.c | build-coverage
+	gcc -c ${CFLAGS_COVERAGE} $< -o $@ 
 
-build-coverage:
-	mkdir -p build-coverage
+build-asan/%.o: %.c | build-asan
+	gcc -c $(CFLAGS_ASAN) $< -o $@
 
-build-coverage/aes_ccm_test: aes_ccm.o aes_ccm_test.o btstack_crypto.o btstack_linked_list.o hci_cmd.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o mock.o | build-coverage
-	${CC} ${CFLAGS} $^ -o $@
 
-build-coverage/aestest: aestest.o rijndael.o | build-coverage
-	${CC} ${CFLAGS} $^ -o $@
+build-coverage/aes_ccm_test: build-coverage/aes_ccm.o build-coverage/aes_ccm_test.o build-coverage/btstack_crypto.o build-coverage/btstack_linked_list.o build-coverage/hci_cmd.o build-coverage/btstack_util.o build-coverage/hci_dump.o build-coverage/aes_cmac.o build-coverage/rijndael.o build-coverage/mock.o | build-coverage
+	${CC} ${LDFLAGS_COVERAGE} $^ -o $@
 
-build-coverage/ecc_micro_ecc: ecc_micro_ecc.o ${MICROECC} | build-coverage
-	gcc ${CFLAGS} $^ -o $@ 
+build-coverage/aestest: build-coverage/aestest.o build-coverage/rijndael.o | build-coverage
+	${CC} ${LDFLAGS_COVERAGE} $^ -o $@
 
-build-coverage/aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o | build-coverage
-	gcc ${CFLAGS} $^ -o $@ 
+build-coverage/ecc_micro_ecc: build-coverage/ecc_micro_ecc.o build-coverage/uECC.o | build-coverage
+	gcc ${LDFLAGS_COVERAGE} $^ -o $@ 
+
+build-coverage/aes_cmac_test: build-coverage/aes_cmac_test.o build-coverage/aes_cmac.o build-coverage/rijndael.o | build-coverage
+	gcc ${LDFLAGS_COVERAGE} $^ -o $@ 
+
+
+build-asan/aes_ccm_test: build-asan/aes_ccm.o build-asan/aes_ccm_test.o build-asan/btstack_crypto.o build-asan/btstack_linked_list.o build-asan/hci_cmd.o build-asan/btstack_util.o build-asan/hci_dump.o build-asan/aes_cmac.o build-asan/rijndael.o build-asan/mock.o | build-asan
+	${CC} ${LDFLAGS_ASAN} $^ -o $@
+
+build-asan/aestest: build-asan/aestest.o build-asan/rijndael.o | build-asan
+	${CC} ${LDFLAGS_ASAN} $^ -o $@
+
+build-asan/ecc_micro_ecc: build-asan/ecc_micro_ecc.o build-asan/uECC.o | build-asan
+	gcc ${LDFLAGS_ASAN} $^ -o $@ 
+
+build-asan/aes_cmac_test: build-asan/aes_cmac_test.o build-asan/aes_cmac.o build-asan/rijndael.o | build-asan
+	gcc ${LDFLAGS_ASAN} $^ -o $@ 
+
 
 test: all
-	build-coverage/aes_cmac_test
-	build-coverage/aestest
-	build-coverage/ecc_micro_ecc
-	build-coverage/aes_cmac_test
+	build-asan/aes_cmac_test
+	build-asan/aestest
+	build-asan/ecc_micro_ecc
+	build-asan/aes_cmac_test
 	
 coverage: all
+	rm -f build-coverage/*.gcda
 	build-coverage/aes_cmac_test
 	build-coverage/aestest
 	build-coverage/ecc_micro_ecc
 	build-coverage/aes_cmac_test
 
 clean:
-	rm -f  *.o
-	rm -f *.gcno *.gcda
-	rm -rf *.dSYM
+	rm -rf build-coverage build-asan
 

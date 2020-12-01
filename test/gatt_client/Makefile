@@ -5,8 +5,6 @@ CC = g++
 BTSTACK_ROOT =  ../..
 
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -Ibuild-coverage -I${BTSTACK_ROOT}/src
-CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -27,36 +25,52 @@ COMMON = \
 	le_device_db_memory.c       \
 	mock.c                      \
 
-COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: build-coverage/gatt_client_test build-coverage/le_central
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-build-coverage:
-	mkdir -p build-coverage
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+all: build-coverage/gatt_client_test build-coverage/le_central build-asan/gatt_client_test build-asan/le_central
+
+build-%:
+	mkdir -p $@
 
 # compile .ble description
-build-coverage/profile.h: profile.gatt | build-coverage
+build-%/profile.h: profile.gatt | build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS) $< -o $@
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
-build-coverage/gatt_client_test: profile.h ${COMMON_OBJ} build-coverage/gatt_client_test.o expected_results.h | build-coverage
-	${CC} ${COMMON_OBJ} build-coverage/gatt_client_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
-build-coverage/le_central: ${COMMON_OBJ} build-coverage/le_central.o | build-coverage
-	${CC} ${COMMON_OBJ} build-coverage/le_central.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/gatt_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/profile.h build-coverage/gatt_client_test.o expected_results.h | build-coverage
+	${CC} $(filter-out build-coverage/profile.h expected_results.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-coverage/le_central: ${COMMON_OBJ_COVERAGE} build-coverage/le_central.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/gatt_client_test: ${COMMON_OBJ_ASAN} build-asan/profile.h  build-asan/gatt_client_test.o expected_results.h | build-asan
+	${CC} $(filter-out build-asan/profile.h expected_results.h,$^) ${LDFLAGS_ASAN} -o $@
+
+build-asan/le_central: ${COMMON_OBJ_ASAN} build-asan/le_central.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	build-coverage/gatt_client_test
-	build-coverage/le_central
+	build-asan/gatt_client_test
+	build-asan/le_central
 		
 coverage: all
+	rm -f build-coverage/*.gcda
 	build-coverage/gatt_client_test
 	build-coverage/le_central
 
 clean:
-	rm -f  *.o
-	rm -rf *.dSYM build-coverage
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 

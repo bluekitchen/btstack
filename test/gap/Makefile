@@ -6,8 +6,6 @@ BTSTACK_ROOT =  ../..
 
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I${BTSTACK_ROOT}/src
 CFLAGS += -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -25,32 +23,44 @@ COMMON = \
 	hci_dump.c                  \
 	le_device_db_memory.c       \
 
-COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: build-coverage/test_le_scan
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-build-coverage:
-	mkdir -p build-coverage
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+all: build-coverage/test_le_scan build-asan/test_le_scan
+
+build-%:
+	mkdir -p $@
 
 # compile .ble description
-build-coverage/profile.h: profile.gatt | build-coverage
+build-%/profile.h: profile.gatt | build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS) $< -o $@
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
-build-coverage/test_le_scan: ${COMMON_OBJ} test_le_scan.o | build-coverage
-	${CC} ${COMMON_OBJ} test_le_scan.o ${CFLAGS} ${LDFLAGS} -o $@
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+build-coverage/test_le_scan: ${COMMON_OBJ_COVERAGE} build-coverage/test_le_scan.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/test_le_scan: ${COMMON_OBJ_ASAN} build-asan/test_le_scan.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	build-coverage/test_le_scan
+	build-asan/test_le_scan
 
 coverage: all
+	rm -f build-coverage/*.gcda
 	build-coverage/test_le_scan
 
 clean:
-	rm -f  test_le_scan
-	rm -f  *.o
-	rm -rf *.dSYM build-coverage
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 

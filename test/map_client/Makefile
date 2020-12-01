@@ -46,8 +46,8 @@ CORE_OBJ = $(addprefix build-coverage/,$(CORE:.c=.o))
 
 all: map_client_test
 
-build-coverage:
-	mkdir -p build-coverage
+build-%:
+	mkdir -p $@
 
 build-coverage/%.o: %.c | build-coverage
 	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@

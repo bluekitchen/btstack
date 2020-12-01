@@ -9,11 +9,14 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src \
 		  -I${BTSTACK_ROOT}/platform/embedded
 		  
-CFLAGS += -fprofile-arcs -ftest-coverage
-
 CFLAGS += -DHAVE_HAL_AUDIO
 
-LDFLAGS += -lCppUTest -lCppUTestExt 
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
@@ -42,34 +45,48 @@ COMMON = \
     hci_transport_h4.c \
     hci_transport_h5.c \
 	
-COMMON_OBJ = $(COMMON:.c=.o)
+FREERTOS = \
+	btstack_run_loop_freertos.c \
+	btstack_uart_block_freertos.c \
 
-FREERTOS_OBJS = \
-	btstack_run_loop_freertos.o \
-	btstack_uart_block_freertos.o \
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: build-coverage/embedded_test build-coverage/freertos_test
+FREERTOS_OBJ_COVERAGE = $(addprefix build-coverage/,$(FREERTOS:.c=.o))
+FREERTOS_OBJ_ASAN     = $(addprefix build-asan/,    $(FREERTOS:.c=.o))
 
-build-coverage:
-	mkdir -p build-coverage
+all: build-coverage/embedded_test build-coverage/freertos_test build-asan/embedded_test build-asan/freertos_test
 
-build-coverage/embedded_test: ${COMMON_OBJ} embedded_test.c | build-coverage
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+build-%:
+	mkdir -p $@
 
-build-coverage/freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} freertos_test.c | build-coverage
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+
+build-coverage/embedded_test: ${COMMON_OBJ} build-coverage/embedded_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-coverage/freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} build-coverage/freertos_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/embedded_test: ${COMMON_OBJ} build-asan/embedded_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+build-asan/freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} build-asan/freertos_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	build-coverage/embedded_test
-	build-coverage/freertos_test
+	build-asan/embedded_test
+	build-asan/freertos_test
 
 coverage: all
+	rm -f build-coverage/*.gcda
 	build-coverage/embedded_test
 	build-coverage/freertos_test
 
 clean:
-	rm -f  embedded_test
-	rm -f  *.o
-	rm -rf *.dSYM build-coverage
-	rm -f *.gcno *.gcda
-	
+	rm -rf build-coverage build-asan

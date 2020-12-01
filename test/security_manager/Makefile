@@ -5,14 +5,12 @@ CC = g++
 BTSTACK_ROOT =  ../..
 
 CFLAGS  = -DUNIT_TEST -g
-CPPFLAGS =  -x c++ -Wall -Wno-unused
+CFLAGS += -x c++ -Wall -Wno-unused
 CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src
-#CFLAGS += -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -38,28 +36,44 @@ COMMON = \
 	btstack_util.c			            \
 	btstack_tlv.c \
 	
-COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
-CORE_OBJ = $(addprefix build-coverage/,$(CORE:.c=.o))
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: build-coverage/security_manager
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-build-coverage:
-	mkdir -p build-coverage
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+CORE_OBJ_COVERAGE = $(addprefix build-coverage/,$(CORE:.c=.o))
+CORE_OBJ_ASAN     = $(addprefix build-asan/,    $(CORE:.c=.o))
+
+all: build-coverage/security_manager build-asan/security_manager
+
+build-%:
+	mkdir -p $@
 
 build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
-build-coverage/security_manager: ${CORE_OBJ} ${COMMON_OBJ} build-coverage/security_manager.o | build-coverage
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+
+build-coverage/security_manager: ${CORE_OBJ_COVERAGE} ${COMMON_OBJ_COVERAGE} build-coverage/security_manager.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/security_manager: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} build-asan/security_manager.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 
 test: all
-	build-coverage/security_manager
+	build-asan/security_manager
 	
 coverage: all
+	rm -f build-coverage/*.gcda
 	build-coverage/security_manager
 
 clean:
-	rm -f  *.o
-	rm -rf *.dSYM build-coverage
-	rm -f *.gcno *.gcda
-	
+	rm -rf build-coverage build-asan

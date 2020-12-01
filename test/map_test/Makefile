@@ -18,8 +18,6 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
 VPATH  += ${BTSTACK_ROOT}/test/map_client
 CFLAGS += -I${BTSTACK_ROOT}/test/map_client
 
-CFLAGS += -fprofile-arcs -ftest-coverage
-
 COMMON = \
     yxml.c \
     btstack_util.c \
@@ -27,26 +25,43 @@ COMMON = \
     map_util.c  \
     btstack_util.c \
 
-COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: build-coverage/map_xml_test
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-build-coverage:
-	mkdir -p build-coverage
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+all: build-coverage/map_xml_test build-asan/map_xml_test
+
+
+build-%:
+	mkdir -p $@
 
 build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
-build-coverage/map_xml_test: ${COMMON_OBJ} build-coverage/map_xml_test.o | build-coverage
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+
+build-coverage/map_xml_test: ${COMMON_OBJ_COVERAGE} build-coverage/map_xml_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/map_xml_test: ${COMMON_OBJ_ASAN} build-asan/map_xml_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 
 test: all
-	build-coverage/map_xml_test
+	build-asan/map_xml_test
 	
 coverage: all
+	rm -f build-coverage/*.gcda
 	build-coverage/map_xml_test
 
 clean:
-	rm -fr map_xml_test *.dSYM *.o ../src/*.o
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 	
