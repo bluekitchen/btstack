@@ -163,6 +163,7 @@ void hid_create_sdp_record(
     uint8_t  hid_virtual_cable,
     uint8_t  hid_remote_wake,
     uint8_t  hid_reconnect_initiate,
+    uint8_t  hid_normally_connectable,
     uint8_t  hid_boot_device,
     const uint8_t * descriptor, uint16_t descriptor_size,
     const char *device_name){
@@ -264,6 +265,9 @@ void hid_create_sdp_record(
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_RECONNECT_INITIATE); 
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_reconnect_initiate); 
+
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_NORMALLY_CONNECTABLE); 
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_normally_connectable); 
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
@@ -542,7 +546,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         break;
                     }
                     param = packet[0] & 0x01;
-                    if ((param == HID_PROTOCOL_MODE_BOOT) && !hid_boot_protocol_mode_supported){
+                    if (((hid_protocol_mode_t)param == HID_PROTOCOL_MODE_BOOT) && !hid_boot_protocol_mode_supported){
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
                     }
@@ -562,7 +566,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                 case HID_MESSAGE_TYPE_HID_CONTROL:
                     param = packet[0] & 0x0F;
-                    switch (param){
+
+                    switch ((hid_control_param_t)param){
                         case HID_CONTROL_PARAM_SUSPEND:
                             hid_device_emit_event(device, HID_SUBEVENT_SUSPEND);
                             break;
@@ -570,7 +575,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             hid_device_emit_event(device, HID_SUBEVENT_EXIT_SUSPEND);
                             break;
                         case HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG:
-                            device->unplugged = true;
                             hid_device_emit_event(device, HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG);
                             break;
                         default:

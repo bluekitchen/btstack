@@ -59,7 +59,9 @@ extern "C" {
  * @param hid_device_subclass
  * @param hid_country_code
  * @param hid_virtual_cable
+ * @param hid_remote_wake
  * @param hid_reconnect_initiate
+ * @param hid_normally_connectable
  * @param hid_boot_device
  * @param hid_descriptor
  * @param hid_descriptor_size size of hid_descriptor
@@ -73,6 +75,7 @@ void hid_create_sdp_record(
     uint8_t         hid_virtual_cable,
     uint8_t         hid_remote_wake,
     uint8_t         hid_reconnect_initiate,
+    uint8_t         hid_normally_connectable,
     uint8_t         hid_boot_device,
     const uint8_t * hid_descriptor,
     uint16_t 		hid_descriptor_size,
