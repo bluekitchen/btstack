@@ -98,12 +98,8 @@ static void sm_pairing_central_setup(void){
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);
 
-    /**
-     * Choose ONE of the following configurations
-     * Bonding is disabled to allow for repeated testing. It can be enabled by or'ing
-     * SM_AUTHREQ_BONDING to the authentication requirements like this:
-     * sm_set_authentication_requirements( X | SM_AUTHREQ_BONDING)
-     */
+    // setup GATT Client
+    gatt_client_init();
 
     // register handler
     hci_event_callback_registration.callback = &hci_packet_handler;
@@ -111,6 +107,20 @@ static void sm_pairing_central_setup(void){
 
     sm_event_callback_registration.callback = &sm_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
+
+
+    // Configuration
+
+    // Enable mandatory authentication for GATT Client
+    // - if un-encrypted connections are not supported, e.g. when connecting to own device, this enforces authentication
+    // gatt_client_set_required_security_level(LEVEL_2);
+
+    /**
+     * Choose ONE of the following configurations
+     * Bonding is disabled to allow for repeated testing. It can be enabled by or'ing
+     * SM_AUTHREQ_BONDING to the authentication requirements like this:
+     * sm_set_authentication_requirements( X | SM_AUTHREQ_BONDING)
+     */
 
     // LE Legacy Pairing, Just Works
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
@@ -131,8 +141,8 @@ static void sm_pairing_central_setup(void){
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
 
     // LE Secure Connections, Numeric Comparison
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 
     // LE Secure Pairing, Passkey entry initiator (us) enters, responder displays
     // sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
@@ -163,6 +173,7 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
     if (packet_type != HCI_EVENT_PACKET) return;
     hci_con_handle_t con_handle;
+    uint8_t status;
 
     switch (hci_event_packet_get_type(packet)) {
         case BTSTACK_EVENT_STATE:
@@ -193,12 +204,41 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
             printf("Connection complete\n");
-            // start pairing
+
+            // for testing, choose one of the following actions
+
+            // manually start pairing
             sm_request_pairing(con_handle);
+
+            // gatt client request to authenticated characteristic in sm_pairing_peripheral (short cut, uses hard-coded value handle)
+            // gatt_client_read_value_of_characteristic_using_value_handle(&hci_packet_handler, con_handle, 0x0009);
+
+            // general gatt client request to trigger mandatory authentication
+            // gatt_client_discover_primary_services(&hci_packet_handler, con_handle);
             break;
         case HCI_EVENT_ENCRYPTION_CHANGE: 
             con_handle = hci_event_encryption_change_get_connection_handle(packet);
             printf("Connection encrypted: %u\n", hci_event_encryption_change_get_encryption_enabled(packet));
+            break;
+        case GATT_EVENT_QUERY_COMPLETE:
+            status = gatt_event_query_complete_get_att_status(packet);
+            switch (status){
+                case ATT_ERROR_INSUFFICIENT_ENCRYPTION:
+                    printf("GATT Query result: Insufficient Encryption\n");
+                    break;
+                case ATT_ERROR_INSUFFICIENT_AUTHENTICATION:
+                    printf("GATT Query result: Insufficient Authentication\n");
+                    break;
+                case ATT_ERROR_BONDING_INFORMATION_MISSING:
+                    printf("GATT Query result: Bonding Information Missing\n");
+                    break;
+                case ATT_ERROR_SUCCESS:
+                    printf("GATT Query result: OK\n");
+                    break;
+                default:
+                    printf("GATT Query result: 0x%02x\n", gatt_event_query_complete_get_att_status(packet));
+                    break;
+            }
             break;
         default:
             break;
