@@ -599,10 +599,16 @@ static void sm_reencryption_started(sm_connection_t * sm_conn){
 
     sm_conn->sm_reencryption_active = true;
 
-    // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
     bd_addr_t identity_addr;
-    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    if (sm_conn->sm_le_db_index >= 0){
+        // fetch addr and addr type from db, only called for valid entries
+        le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    } else {
+        // for legacy pairing with LTK re-construction, use current peer addr
+        identity_addr_type = sm_conn->sm_peer_addr_type;
+        memcpy(identity_addr, sm_conn->sm_peer_address, 6);
+    }
 
     sm_notify_client_base(SM_EVENT_REENCRYPTION_STARTED, sm_conn->sm_handle, identity_addr_type, identity_addr);
 }
@@ -613,10 +619,16 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 
     sm_conn->sm_reencryption_active = false;
 
-    // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
     bd_addr_t identity_addr;
-    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    if (sm_conn->sm_le_db_index >= 0){
+        // fetch addr and addr type from db, only called for valid entries
+        le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    } else {
+        // for legacy pairing with LTK re-construction, use current peer addr
+        identity_addr_type = sm_conn->sm_peer_addr_type;
+        memcpy(identity_addr, sm_conn->sm_peer_address, 6);
+    }
 
     sm_notify_client_status(SM_EVENT_REENCRYPTION_COMPLETE, sm_conn->sm_handle, identity_addr_type, identity_addr, status);
 }
