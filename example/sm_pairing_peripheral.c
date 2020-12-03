@@ -228,6 +228,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             sm_event_identity_created_get_address(packet, addr);
             printf("Identity resolving failed\n");
             break;
+        case SM_EVENT_PAIRING_STARTED:
+            printf("Pairing started\n");
+            break;
         case SM_EVENT_PAIRING_COMPLETE:
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:

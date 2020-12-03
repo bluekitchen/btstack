@@ -280,6 +280,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             printf("Sending fixed passkey %"PRIu32"\n", (uint32_t) FIXED_PASSKEY);
             sm_passkey_input(sm_event_passkey_input_number_get_handle(packet), FIXED_PASSKEY);
             break;
+        case SM_EVENT_PAIRING_STARTED:
+            printf("Pairing started\n");
+            break;
         case SM_EVENT_PAIRING_COMPLETE:
             switch (sm_event_pairing_complete_get_status(packet)){
                 case ERROR_CODE_SUCCESS:
