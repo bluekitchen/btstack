@@ -2442,6 +2442,7 @@ static void sm_run(void){
 				sm_init_setup(connection);
 				sm_timeout_start(connection);
                 connection->sm_pairing_active = true;
+                sm_notify_client_base(SM_EVENT_PAIRING_STARTED, connection->sm_handle, connection->sm_peer_addr_type, connection->sm_peer_address);
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
@@ -2631,6 +2632,7 @@ static void sm_run(void){
 				sm_reset_setup();
 				sm_init_setup(connection);
                 connection->sm_pairing_active = true;
+                sm_notify_client_base(SM_EVENT_PAIRING_STARTED, connection->sm_handle, connection->sm_peer_addr_type, connection->sm_peer_address);
 
 				// recover pairing request
 				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
