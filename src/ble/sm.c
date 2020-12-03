@@ -1323,7 +1323,6 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         if (trigger_reencryption){
                             log_info("central: enable encryption for bonded device");
                             sm_connection->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
-                            sm_reencryption_started(sm_connection);
                             break;
                         }
 
@@ -2426,6 +2425,7 @@ static void sm_run(void){
             case SM_INITIATOR_PH4_HAS_LTK: {
 				sm_reset_setup();
 				sm_load_security_info(connection);
+                sm_reencryption_started(connection);
 
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
@@ -4404,7 +4404,6 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                         if (have_ltk){
                             sm_conn->sm_pairing_requested = 1;
                             sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
-                            sm_reencryption_started(sm_conn);
                             break;
                         }
                         /* fall through */
