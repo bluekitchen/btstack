@@ -2150,7 +2150,7 @@ static bool sm_run_oob(void){
 static bool sm_run_basic(void){
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
-    while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
+    while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         switch(sm_connection->sm_engine_state){
@@ -2164,7 +2164,7 @@ static bool sm_run_basic(void){
             case SM_SC_RECEIVED_LTK_REQUEST:
                 switch (sm_connection->sm_irk_lookup_state){
                     case IRK_LOOKUP_FAILED:
-                        log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
+                        log_info("LTK Request: IRK Lookup Failed)");
                         sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
                         hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
                         return true;
