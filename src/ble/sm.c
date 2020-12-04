@@ -4363,18 +4363,6 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
     return &hci_con->sm_connection;
 }
 
-static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
-    switch (sm_conn->sm_engine_state){
-        case SM_GENERAL_IDLE:
-        case SM_RESPONDER_IDLE:
-            sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-            sm_trigger_run();
-            break;
-        default:
-            break;
-    }
-}
-
 // @deprecated: map onto sm_request_pairing
 void sm_send_security_request(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
@@ -4390,7 +4378,15 @@ void sm_request_pairing(hci_con_handle_t con_handle){
 
     log_info("sm_request_pairing in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
     if (IS_RESPONDER(sm_conn->sm_role)){
-        sm_send_security_request_for_connection(sm_conn);
+        switch (sm_conn->sm_engine_state){
+            case SM_GENERAL_IDLE:
+            case SM_RESPONDER_IDLE:
+                sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                sm_trigger_run();
+                break;
+            default:
+                break;
+        }
     } else {
         // used as a trigger to start central/master/initiator security procedures
         bool have_ltk;
