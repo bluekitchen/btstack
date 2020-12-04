@@ -202,7 +202,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
                     // we need to be paired to enable notifications
                     tc_state = TC_W4_ENCRYPTED_CONNECTION;
-                    sm_send_security_request(gc_handle);
+                    sm_request_pairing(gc_handle);
                     break;
                 default:
                     break;

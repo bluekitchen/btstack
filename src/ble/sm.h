@@ -124,7 +124,7 @@ void sm_set_request_security(int enable);
 
 /** 
  * @brief Trigger Security Request
- * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
+ * @deprecated please use sm_request_pairing instead
  */
 void sm_send_security_request(hci_con_handle_t con_handle);
 
@@ -161,7 +161,7 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action);
 
 /**
- * @brief Used by att_server.c to request user authorization.
+ * @brief Used by att_server.c and gatt_client.c to request user authentication
  * @param con_handle
  */
 void sm_request_pairing(hci_con_handle_t con_handle);

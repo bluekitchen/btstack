@@ -4375,13 +4375,12 @@ static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
     }
 }
 
-/**
- * @brief Trigger Security Request
- */
+// @deprecated: map onto sm_request_pairing
 void sm_send_security_request(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;
-    sm_send_security_request_for_connection(sm_conn);
+    if (!IS_RESPONDER(sm_conn->sm_role)) return;
+    sm_request_pairing(con_handle);
 }
 
 // request pairing
