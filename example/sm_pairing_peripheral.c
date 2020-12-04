@@ -194,7 +194,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // for testing, choose one of the following actions
 
                     // manually start pairing
-                    // sm_send_security_request(con_handle);
+                    // sm_request_pairing(con_handle);
 
                     // gatt client request to authenticated characteristic in sm_pairing_central (short cut, uses hard-coded value handle)
                     // gatt_client_read_value_of_characteristic_using_value_handle(&packet_handler, con_handle, 0x0009);
