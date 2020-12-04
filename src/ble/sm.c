@@ -633,6 +633,17 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
     sm_notify_client_status(SM_EVENT_REENCRYPTION_COMPLETE, sm_conn->sm_handle, identity_addr_type, identity_addr, status);
 }
 
+static void sm_pairing_started(sm_connection_t * sm_conn){
+
+    if (sm_conn->sm_pairing_active) return;
+
+    sm_conn->sm_pairing_active = true;
+
+    uint8_t event[11];
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_STARTED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
+
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
 
     if (!sm_conn->sm_pairing_active) return;
@@ -2441,8 +2452,7 @@ static void sm_run(void){
 				sm_reset_setup();
 				sm_init_setup(connection);
 				sm_timeout_start(connection);
-                connection->sm_pairing_active = true;
-                sm_notify_client_base(SM_EVENT_PAIRING_STARTED, connection->sm_handle, connection->sm_peer_addr_type, connection->sm_peer_address);
+				sm_pairing_started(connection);
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
@@ -2631,8 +2641,7 @@ static void sm_run(void){
 			case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
 				sm_reset_setup();
 				sm_init_setup(connection);
-                connection->sm_pairing_active = true;
-                sm_notify_client_base(SM_EVENT_PAIRING_STARTED, connection->sm_handle, connection->sm_peer_addr_type, connection->sm_peer_address);
+                sm_pairing_started(connection);
 
 				// recover pairing request
 				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
