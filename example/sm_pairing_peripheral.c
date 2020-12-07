@@ -180,6 +180,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     hci_con_handle_t con_handle;
     bd_addr_t addr;
+    bd_addr_type_t addr_type;
     uint8_t status;
 
     switch (hci_event_packet_get_type(packet)) {
@@ -265,8 +266,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
                     printf("Re-encryption failed, disconnected\n");
                     break;
-                case ERROR_CODE_AUTHENTICATION_FAILURE:
-                    printf("Re-encryption failed, authentication failure\n");
+                case ERROR_CODE_PIN_OR_KEY_MISSING:
+                    printf("Re-encryption failed, bonding information missing\n\n");
+                    printf("Assuming remote lost bonding information\n");
+                    printf("Deleting local bonding information to allow for new pairing...\n");
+                    sm_event_reencryption_complete_get_address(packet, addr);
+                    addr_type = sm_event_reencryption_started_get_addr_type(packet);
+                    gap_delete_bonding(addr_type, addr);
                     break;
                 default:
                     break;

@@ -317,8 +317,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
                     printf("Re-encryption failed, disconnected\n");
                     break;
-                case ERROR_CODE_AUTHENTICATION_FAILURE:
-                    printf("Re-encryption failed, authentication failure\n\n");
+                case ERROR_CODE_PIN_OR_KEY_MISSING:
+                    printf("Re-encryption failed, bonding information missing\n\n");
                     printf("Assuming remote lost bonding information\n");
                     printf("Deleting local bonding information and start new pairing...\n");
                     sm_event_reencryption_complete_get_address(packet, addr);
