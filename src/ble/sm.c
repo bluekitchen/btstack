@@ -2368,6 +2368,8 @@ static void sm_run(void){
         UNUSED(key_distribution_flags);
 		int err;
 		UNUSED(err);
+        bool have_ltk;
+        uint8_t ltk[16];
 
         log_info("sm_run: state %u", connection->sm_engine_state);
         if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
@@ -2657,7 +2659,24 @@ static void sm_run(void){
 #endif /* ENABLE_LE_SECURE_CONNECTIONS */
 
 			case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
-				sm_reset_setup();
+                sm_reset_setup();
+
+			    // handle Pairing Request with LTK available
+                switch (connection->sm_irk_lookup_state) {
+                    case IRK_LOOKUP_SUCCEEDED:
+                        le_device_db_encryption_get(connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                        have_ltk = !sm_is_null_key(ltk);
+                        if (have_ltk){
+                            log_info("pairing request but LTK available");
+                            // emit re-ecnryption start/fail sequence
+                            sm_reencryption_started(connection);
+                            sm_reencryption_complete(connection, ERROR_CODE_PIN_OR_KEY_MISSING);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
 				sm_init_setup(connection);
                 sm_pairing_started(connection);
 
