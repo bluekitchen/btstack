@@ -1288,9 +1288,13 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 
                     if (sm_connection->sm_role) {
 #ifdef ENABLE_LE_PERIPHERAL
-                        // LTK request received before, IRK required -> start LTK calculation
+                        // IRK required before, continue
                         if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
                             sm_connection->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                            break;
+                        }
+                        if (sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED_W4_IRK){
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
                             break;
                         }
                         bool trigger_security_request = (sm_connection->sm_pairing_requested != 0) || (sm_slave_request_security != 0);
@@ -3781,6 +3785,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         return;
     }
 
+    int have_ltk;
+    uint8_t ltk[16];
+
     switch (sm_conn->sm_engine_state){
 
         // a sm timeout requires a new physical connection
@@ -3797,8 +3804,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // IRK complete?
-            int have_ltk;
-            uint8_t ltk[16];
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
                     // start pairing
@@ -3932,9 +3937,18 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // store pairing request
-            (void)memcpy(&sm_conn->sm_m_preq, packet,
-                         sizeof(sm_pairing_packet_t));
-            sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
+            (void)memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
+
+            // check if IRK completed
+            switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_SUCCEEDED:
+                case IRK_LOOKUP_FAILED:
+                    sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
+                    break;
+                default:
+                    sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED_W4_IRK;
+                    break;
+            }
             break;
 #endif
 
