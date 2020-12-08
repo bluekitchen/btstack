@@ -2674,23 +2674,8 @@ static void sm_run(void){
                         }
                         break;
                     default:
-                        have_ltk = false;
                         break;
                 }
-
-#ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
-                // Reject pairing if we (still) have LTK
-                if (have_ltk){
-                    memset(ltk, 0, 16);
-                    le_device_db_encryption_get(connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
-                    have_ltk = !sm_is_null_key(ltk);
-                    if (have_ltk){
-                        connection->sm_le_db_index = -1;
-                        sm_pairing_error(connection, SM_REASON_UNSPECIFIED_REASON);
-                        break;
-                    }
-                }
-#endif
 
 				sm_init_setup(connection);
                 sm_pairing_started(connection);
