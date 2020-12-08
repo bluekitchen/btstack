@@ -71,7 +71,6 @@ static uint8_t clip_type;
 static char clip_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
 static char last_dialed_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
 
-static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
 static inline int get_number_active_calls(void);
 
 static void set_callsetup_status(hfp_callsetup_status_t status){
@@ -363,23 +362,7 @@ int hfp_gsm_call_possible(void){
     return get_number_none_calls() > 0;
 }
 
-void hfp_gsm_handle_event(hfp_ag_call_event_t event){
-    hfp_gsm_handler(event, 0, 0, NULL);
-}
-
-void hfp_gsm_handle_event_with_clip(hfp_ag_call_event_t event, uint8_t type, const char * number){
-    hfp_gsm_handler(event, 0, type, number);
-}
-
-void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t index){
-    hfp_gsm_handler(event, index, 0, NULL);
-}
-
-void hfp_gsm_handle_event_with_call_number(hfp_ag_call_event_t event, const char * number){
-    hfp_gsm_handler(event, 0, 0, number);
-}
-
-static void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number){
+void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number){
     int next_free_slot = get_next_free_slot();
     int current_call_index = get_active_call_index();
     int initiated_call_index = get_initiated_call_index();

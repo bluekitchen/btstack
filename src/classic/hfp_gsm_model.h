@@ -84,10 +84,7 @@ char *  hfp_gsm_clip_number(void);
 
 void hfp_gsm_init(void);
 
-void hfp_gsm_handle_event_with_clip(hfp_ag_call_event_t event, uint8_t type, const char * number);
-void hfp_gsm_handle_event_with_call_index(hfp_ag_call_event_t event, uint8_t index);
-void hfp_gsm_handle_event_with_call_number(hfp_ag_call_event_t event, const char * number);
-void hfp_gsm_handle_event(hfp_ag_call_event_t event);
+void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
 
 /* API_END */
 
