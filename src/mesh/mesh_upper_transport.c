@@ -241,6 +241,9 @@ static void mesh_segmented_store_payload(const uint8_t * payload, uint16_t paylo
         uint16_t bytes_to_copy = btstack_min(bytes_current_segment, payload_len - payload_offset);
         (void) memcpy(&network_pdu->data[network_pdu->len], &payload[payload_offset], bytes_to_copy);
         bytes_current_segment -= bytes_to_copy;
+
+        // on enter, bytes_current_segment = 0 => network_pdu = pop (in segements) + assert (network != NULL)
+        // cppcheck-suppress nullPointer
         network_pdu->len += bytes_to_copy;
         payload_offset += bytes_to_copy;
     }
