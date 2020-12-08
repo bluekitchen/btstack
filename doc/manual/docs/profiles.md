@@ -341,8 +341,7 @@ into the Connected state. However, it does not start broadcasting
 advertisements on disconnect again. To re-enable it, please send the
 *hci_le_set_advertise_enable* again .
 
-## GATT - Generic Attribute Profile
-
+## GATT Client {#sec:GATTClientProfiles}
 
 The GATT profile uses ATT Attributes to represent a hierarchical
 structure of GATT Services and GATT Characteristics. Each Service has
@@ -352,8 +351,6 @@ Services are queried and modified via ATT operations.
 
 GATT defines both a server and a client role. A device can implement one
 or both GATT roles.
-
-### GATT Client {#sec:GATTClientProfiles}
 
 The GATT Client is used to discover services, characteristics
 and their descriptors on a peer device. It allows to subscribe for
@@ -382,7 +379,7 @@ completes the query.
 For more details on the available GATT queries, please consult
 [GATT Client API](#sec:gattClientAPIAppendix).
 
-#### Authentication
+### Authentication
 
 By default, the GATT Server is responsible for security and the GATT Client does not enforce any kind of authentication.
 If the GATT Client accesses Characteristic that require encrytion or authentication, the remote GATT Server will return an error,
@@ -412,7 +409,7 @@ The following diagrams provide a detailed overview about the GATT Client securit
 -  [Mandatory Authentication as Central](picts/gatt_client_security_mandatory_authentication_central.svg)
 -  [Mandatory Authentication as Peripheral](picts/gatt_client_security_mandatory_authentication_peripheral.svg)
 
-### GATT Server {#sec:GATTServerProfiles}
+## GATT Server {#sec:GATTServerProfiles}
 
 The GATT server stores data and accepts GATT client requests, commands
 and confirmations. The GATT server sends responses to requests and when
