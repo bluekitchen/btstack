@@ -301,7 +301,7 @@ static void octave_fprintf_plot_output(btstack_cvsd_plc_state_t *plc_state, FILE
 
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
-    int   i = 0;
+    int   i;
     float sf = 1;
     plc_state->nbf++;
     
@@ -327,38 +327,38 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
         
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
         sf = btstack_cvsd_plc_amplitude_match(plc_state, num_samples, plc_state->hist, plc_state->bestlag);
-        for (i=0;i<CVSD_OLAL;i++){
+        for (i=0; i<CVSD_OLAL; i++){
             val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<num_samples;i++){
+        for (i=CVSD_OLAL; i<num_samples; i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<(num_samples+CVSD_OLAL);i++){
+        for (i=num_samples; i<(num_samples+CVSD_OLAL); i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
             val = (left*rcos[i-num_samples]) + (right*rcos[CVSD_OLAL-1-i+num_samples]);
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
 
-        for (;i<(num_samples+CVSD_RT+CVSD_OLAL);i++){
+        for (i=(num_samples+CVSD_OLAL); i<(num_samples+CVSD_RT+CVSD_OLAL); i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
-        for (;i<(num_samples+CVSD_RT+CVSD_OLAL);i++){
+        for (i=0; i<(num_samples+CVSD_RT+CVSD_OLAL); i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
 
-    for (i=0;i<num_samples;i++){
+    for (i=0; i<num_samples; i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
     
     // shift the history buffer 
-    for (i=0;i<(CVSD_LHIST+CVSD_RT+CVSD_OLAL);i++){
+    for (i=0; i<(CVSD_LHIST+CVSD_RT+CVSD_OLAL); i++){
         plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
 
