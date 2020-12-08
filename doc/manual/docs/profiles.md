@@ -376,12 +376,41 @@ queries in sequence, or you can check if you can perform a GATT query
 on a particular connection right now using
 *gatt_client_is_ready*, and retry later if it is not ready.
 As a result to a GATT query, zero to many
-*le_event*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
+*GATT_EVENT_X*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
 completes the query.
 
 For more details on the available GATT queries, please consult
 [GATT Client API](#sec:gattClientAPIAppendix).
 
+#### Authentication
+
+By default, the GATT Server is responsible for security and the GATT Client does not enforce any kind of authentication.
+If the GATT Client accesses Characteristic that require encrytion or authentication, the remote GATT Server will return an error,
+which is returned in the *att status* of the *GATT_EVENT_QUERY_COMPLETE*.
+
+You can define *ENABLE_GATT_CLIENT_PAIRING* to instruct the GATT Client to trigger pairing in this case and to repeat the request.
+
+This model allows for an attacker to spoof another device, but don't require authentication for the Characteristics.
+As a first improvement, you can define *ENABLE_LE_PROACTIVE_AUTHENTICATION* in *btstack_config.h*. When defined, the GATT Client will
+request the Security Manager to re-encrypt the connection if there is stored bonding information available.
+If this fails, the  *GATT_EVENT_QUERY_COMPLETE* will return with the att status *ATT_ERROR_BONDING_INFORMATION_MISSING*.
+
+With *ENABLE_LE_PROACTIVE_AUTHENTICATION* defined and in Central role, you need to delete the local bonding information if the remote
+lost its bonding information, e.g. because of a device reset. See *example/sm_pairing_central.c*.
+
+Even with the Proactive Authentication, your device may still connect to an attacker that provides the same advertising data as 
+your actual device. If the device that you want to connect requires pairing, you can instruct the GATT Client to automatically
+request an encrypted connection before sending any GATT Client request by calling *gatt_client_set_required_security_level()*.
+If the device provides sufficient IO capabilities, a MITM attack can then be prevented. We call this 'Mandatory Authentication'.
+
+The following diagrams provide a detailed overview about the GATT Client security mechanisms in different configurations:
+
+-  [Reactive Authentication as Central](picts/gatt_client_security_reactive_authentication_central.svg)
+-  [Reactive Authentication as Peripheral](picts/gatt_client_security_reactive_authentication_peripheral.svg)
+-  [Proactive Authentication as Central](picts/gatt_client_security_proactive_authentication_central.svg)
+-  [Proactive Authentication as Peripheral](picts/gatt_client_security_proactive_authentication_peripheral.svg)
+-  [Mandatory Authentication as Central](picts/gatt_client_security_mandatory_authentication_central.svg)
+-  [Mandatory Authentication as Peripheral](picts/gatt_client_security_mandatory_authentication_peripheral.svg)
 
 ### GATT Server {#sec:GATTServerProfiles}
 

@@ -824,8 +824,9 @@ To facilitate the creation of such a keypairs and the calculation of the LTK,
 the Bluetooth Core V4.2 specification introduced appropriate commands for the Bluetooth controller.
 
 As an alternative for controllers that don't provide these primitives, BTstack provides the relevant cryptographic functions in software via the BSD-2-Clause licensed [micro-ecc library](https://github.com/kmackay/micro-ecc/tree/static).
-
 When using using LE Secure Connections, the Peripheral must store LTK in non-volatile memory.
+
+To only allow LE Secure Connections, you can call *sm_set_secure_connections_only_mode(true)*.
 
 
 ### Initialization
@@ -842,6 +843,7 @@ derived from the ER key seed. See
 Bluetooth Core V4.0, Vol 3, Part G, 5.2.2 for more details on deriving
 the different keys. The IR key is used to identify a device if private,
 resolvable Bluetooth addresses are used.
+
 
 ### Configuration
 
@@ -866,7 +868,7 @@ The default SMP configuration in BTstack is to be as open as possible:
 
 -   expect no authentication requirements,
 
--   don't support LE Secure Connections, and
+-   don't require LE Secure Connections, and
 
 -   IO Capabilities set to *IO_CAPABILITY_NO_INPUT_NO_OUTPUT*.
 
@@ -898,37 +900,62 @@ and later:
 
 -   *SM_EVENT_IDENTITY_RESOLVING_FAILED* on lookup failure.
 
-### User interaction
+
+### User interaction during Pairing
+
+BTstack will inform the app about pairing via theses events: 
+
+  - *SM_EVENT_PAIRING_STARTED*: inform user that pairing has started
+  - *SM_EVENT_PAIRING_COMPLETE*: inform user that pairing is complete, see status
 
 Depending on the authentication requirements, IO capabilities, 
 available OOB data, and the enabled STK generation methods,
 BTstack will request feedback from
 the app in the form of an event:
 
--   *SM_EVENT_JUST_WORKS_REQUEST*: request a user to accept a Just Works
-    pairing
+  - *SM_EVENT_JUST_WORKS_REQUEST*: request a user to accept a Just Works pairing
+  - *SM_EVENT_PASSKEY_INPUT_NUMBER*: request user to input a passkey
+  - *SM_EVENT_PASSKEY_DISPLAY_NUMBER*: show a passkey to the user
+  - *SM_EVENT_PASSKEY_DISPLAY_CANCEL*: cancel show passkey to user
+  - *SM_EVENT_NUMERIC_COMPARISON_REQUEST*: show a passkey to the user and request confirmation
 
--   *SM_EVENT_PASSKEY_INPUT_NUMBER*: request user to input a passkey
+To accept Just Works/Numeric Comparison, or provide a Passkey, *sm_just_works_confirm* or *sm_passkey_input* can be called respectively.
+Othwerise, *sm_bonding_decline* aborts the pairing.
 
--   *SM_EVENT_PASSKEY_DISPLAY_NUMBER*: show a passkey to the user
+After the bonding process, *SM_EVENT_PAIRING_COMPLETE*, is emitted. Any active dialog can be closed on this.
 
--   *SM_EVENT_NUMERIC_COMPARISON_REQUEST*: show a passkey to the user and request confirmation
+### Connection with Bonded Devices
 
-To stop the bonding process, *sm_bonding_decline* should be called.
-Otherwise, *sm_just_works_confirm* or *sm_passkey_input* can be
-called.
+During pairing, two devices exchange bonding information, notably a Long-Term Key (LTK) and their respective Identity Resolving Key (IRK).
+On a subsequent connection, the Securit Manager will use this information to establish an encrypted connection.
 
-After the bonding process, *SM_EVENT_JUST_WORKS_CANCEL*, *SM_EVENT_PASSKEY_DISPLAY_CANCEL*, or *SM_EVENT_NUMERIC_COMPARISON_CANCEL* is emitted to update the user interface if an Just Works request or a passkey has been shown before.
+To inform about this, the following events are emitted:
+
+  - *SM_EVENT_REENCRYPTION_STARTED*: we have stored bonding information and either trigger encryption (as Central), or, sent a security request (as Peripheral).
+  - *SM_EVENT_REENCRYPTION_COMPLETE*: re-encryption is complete. If the remote device does not have a stored LTK, the status code will be *ERROR_CODE_PIN_OR_KEY_MISSING*.
+
+The *SM_EVENT_REENCRYPTION_COMPLETE* with  *ERROR_CODE_PIN_OR_KEY_MISSING* can be caused:
+
+  - if the remote device was reset or the bonding was removed, or,
+  - we're connected to an attacker that uses the Bluetooth address of a bonded device.
+    
+In Peripheral role, pairing will start even in case of an re-encryption error. It might be helpful to inform the user about the lost bonding or reject it right away due to security considerations.
+
 
 ### Keypress Notifications
 
 As part of Bluetooth Core V4.2 specification, a device with a keyboard but no display can send keypress notifications to provide better user feedback. In BTstack, the *sm_keypress_notification()* function is used for sending notifications. Notifications are received by BTstack via the *SM_EVENT_KEYPRESS_NOTIFICATION* event.
 
-### Cross-transport Key Derivation for LE Secure Connections
+### Cross-transport Key Derivation (CTKD) for LE Secure Connections
 
-In a dual-mode configuration, BTstack automatically generates an BR/EDR Link Key from the LE LTK via the Link Key Conversion function *h6*. It is then stored in the link key db.
+In a dual-mode configuration, BTstack  generates an BR/EDR Link Key from the LE LTK via the Link Key Conversion functions *h6* ,
+(or *h7* if supported) when *ENABLE_CROSS_TRANSPORT_KEY_DERIVATION* is defined.
+The derived key then stored in local LE Device DB. 
 
-To derive an LE LTK from a BR/EDR link key, the Bluetooth controller needs to support Secure Connections via NIST P-256 elliptic curves and the LE Secure Connections needs to get established via the LE Transport. BTstack does not support LE Secure Connections via LE Transport currently.
+The main use case for this is connections with smartphones. E.g. iOS provides APIs for LE scanning and connection, but none for BR/EDR. This allows an application to connect and pair with
+a device and also later setup a BR/EDR connection without the need for the smartphone user to use the system Settings menu.
+
+To derive an LE LTK from a BR/EDR link key, the Bluetooth controller needs to support Secure Connections via NIST P-256 elliptic curves. BTstack does not support LE Secure Connections via LE Transport currently.
 
 ### Out-of-Band Data with LE Legacy Pairing
 
