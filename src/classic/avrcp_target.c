@@ -1012,7 +1012,9 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
         log_error("avrcp tartget: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    
+
+    btstack_assert((value_len == 0) || (value != NULL));
+
     connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type    = AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
     connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
@@ -1023,6 +1025,8 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     l2cap_reserve_packet_buffer();
     uint8_t * packet = l2cap_get_outgoing_buffer();
     uint16_t  size   = l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid);
+
+    btstack_assert((14 + value_len) <= size);
 
     connection->packet_type = AVRCP_SINGLE_PACKET;
     packet[pos++] = (connection->transaction_id << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
@@ -1043,14 +1047,14 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
 
     packet[pos++] = AVRCP_PDU_ID_REGISTER_NOTIFICATION; 
     packet[pos++] = 0;
-    uint16_t remainig_outgoing_buffer_size = size - pos - 2;
 
-    uint16_t caped_value_len = btstack_min(value_len + 1, remainig_outgoing_buffer_size);
-    big_endian_store_16(packet, pos, caped_value_len);
+    big_endian_store_16(packet, pos, value_len);
     pos += 2;
     packet[pos++] = notification_id;
-    (void)memcpy(packet + pos, value, caped_value_len - 1);    
-    pos += caped_value_len - 1;
+    if (value_len > 0){
+        (void)memcpy(packet + pos, value, value_len);
+        pos += value_len;
+    }
     connection->wait_to_send = false;
     return l2cap_send_prepared(cid, pos);
 }
