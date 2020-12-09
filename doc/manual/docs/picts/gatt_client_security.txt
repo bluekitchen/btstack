@@ -97,7 +97,6 @@ endif
 @enduml
 
 
-
 @startuml
 title Mandatory Authentication in Central Role
 start
@@ -193,6 +192,12 @@ else (no)
 title Proactive Authentication in Central Role
 start
 : A connects to B;
+: SM checks if LTK available;
+note right
+  SM actions triggered by
+  connection complete
+  (independent from GATT Client)
+end note
 : App triggers GATT Client request on A;
 if (LTK available?) then (no)
   : GATT Client request sent;
@@ -246,6 +251,12 @@ endif
 title Proactive Authentication in Peripheral Role
 start
 : A connects to B;
+: SM checks if LTK available;
+note right
+  SM actions triggered by
+  connection complete
+  (independent from GATT Client)
+end note
 : App triggers GATT Client request on A;
 if (LTK available?) then (no)
   : GATT Client request sent;
