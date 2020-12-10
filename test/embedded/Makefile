@@ -67,16 +67,16 @@ build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
 
-build-coverage/embedded_test: ${COMMON_OBJ} build-coverage/embedded_test.o | build-coverage
+build-coverage/embedded_test: ${COMMON_OBJ_COVERAGE} build-coverage/embedded_test.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-coverage/freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} build-coverage/freertos_test.o | build-coverage
+build-coverage/freertos_test: ${COMMON_OBJ_COVERAGE} ${FREERTOS_OBJS} build-coverage/freertos_test.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-asan/embedded_test: ${COMMON_OBJ} build-asan/embedded_test.o | build-asan
+build-asan/embedded_test: ${COMMON_OBJ_ASAN} build-asan/embedded_test.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
-build-asan/freertos_test: ${COMMON_OBJ} ${FREERTOS_OBJS} build-asan/freertos_test.o | build-asan
+build-asan/freertos_test: ${COMMON_OBJ_ASAN} ${FREERTOS_OBJS} build-asan/freertos_test.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
