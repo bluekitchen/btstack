@@ -1282,7 +1282,16 @@ typedef uint8_t sm_key_t[16];
   */
 #define SM_EVENT_IDENTITY_CREATED                                0xDB
 
- /**
+/**
+ * @brief Emitted to inform app that pairing has started.
+ * @format H1B
+ * @param handle
+ * @param addr_type
+ * @param address
+ */
+#define SM_EVENT_PAIRING_STARTED                                 0xDC
+
+/**
   * @brief Emitted to inform app that pairing is complete. Possible status values:
   *        ERROR_CODE_SUCCESS                            -> pairing success
   *        ERROR_CODE_CONNECTION_TIMEOUT                 -> timeout
@@ -1296,7 +1305,7 @@ typedef uint8_t sm_key_t[16];
   * @param status
   * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
   */
-#define SM_EVENT_PAIRING_COMPLETE                                0xDC
+#define SM_EVENT_PAIRING_COMPLETE                                0xDD
 
 
 /**
@@ -1306,20 +1315,20 @@ typedef uint8_t sm_key_t[16];
  * @param addr_type
  * @param address
  */
-#define SM_EVENT_REENCRYPTION_STARTED                            0xDD
+#define SM_EVENT_REENCRYPTION_STARTED                            0xDE
 
 /**
  * @brief Proactive Authentication for bonded devices complete. Possible status values:
  *         ERROR_CODE_SUCCESS                           -> connection secure
  *         ERROR_CODE_CONNECTION_TIMEOUT                -> timeout
- *         ERROR_CODE_AUTHENTICATION_FAILURE            -> remote did not provide LTK locally
+ *         ERROR_CODE_PIN_OR_KEY_MISSING                -> remote did not provide (as Peripheral) or use LTK (as Central)
  * @format H1B1
  * @param handle
  * @param addr_type
  * @param address
  * @param status
  */
-#define SM_EVENT_REENCRYPTION_COMPLETE                           0xDE
+#define SM_EVENT_REENCRYPTION_COMPLETE                           0xDF
 
 // GAP
 

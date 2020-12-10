@@ -308,7 +308,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     if (de_get_element_type(attribute_value) != DE_UINT) break;
                     if (de_get_size_type(attribute_value)    != DE_SIZE_32) break;
                     context->pbap_supported_features  = big_endian_read_32(attribute_value, de_get_header_size(attribute_value));
-                    log_info("pbap_supported_features 0x%x", context->pbap_supported_features);
+                    log_info("pbap_supported_features 0x%x", (unsigned int) context->pbap_supported_features);
                     break;
                 default:
                     break;

@@ -599,10 +599,16 @@ static void sm_reencryption_started(sm_connection_t * sm_conn){
 
     sm_conn->sm_reencryption_active = true;
 
-    // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
     bd_addr_t identity_addr;
-    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    if (sm_conn->sm_le_db_index >= 0){
+        // fetch addr and addr type from db, only called for valid entries
+        le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    } else {
+        // for legacy pairing with LTK re-construction, use current peer addr
+        identity_addr_type = sm_conn->sm_peer_addr_type;
+        memcpy(identity_addr, sm_conn->sm_peer_address, 6);
+    }
 
     sm_notify_client_base(SM_EVENT_REENCRYPTION_STARTED, sm_conn->sm_handle, identity_addr_type, identity_addr);
 }
@@ -613,12 +619,29 @@ static void sm_reencryption_complete(sm_connection_t * sm_conn, uint8_t status){
 
     sm_conn->sm_reencryption_active = false;
 
-    // fetch addr and addr type from db, only called for valid entries
     int       identity_addr_type;
     bd_addr_t identity_addr;
-    le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    if (sm_conn->sm_le_db_index >= 0){
+        // fetch addr and addr type from db, only called for valid entries
+        le_device_db_info(sm_conn->sm_le_db_index, &identity_addr_type, identity_addr, NULL);
+    } else {
+        // for legacy pairing with LTK re-construction, use current peer addr
+        identity_addr_type = sm_conn->sm_peer_addr_type;
+        memcpy(identity_addr, sm_conn->sm_peer_address, 6);
+    }
 
     sm_notify_client_status(SM_EVENT_REENCRYPTION_COMPLETE, sm_conn->sm_handle, identity_addr_type, identity_addr, status);
+}
+
+static void sm_pairing_started(sm_connection_t * sm_conn){
+
+    if (sm_conn->sm_pairing_active) return;
+
+    sm_conn->sm_pairing_active = true;
+
+    uint8_t event[11];
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_STARTED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
@@ -1264,30 +1287,39 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     have_ltk = !sm_is_null_key(ltk);
 
                     if (sm_connection->sm_role) {
-
 #ifdef ENABLE_LE_PERIPHERAL
-
-                        // LTK request received before, IRK required -> start LTK calculation
+                        // IRK required before, continue
                         if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
                             sm_connection->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
                             break;
                         }
-
-                        if (have_ltk) {
+                        if (sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED_W4_IRK){
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
+                            break;
+                        }
+                        bool trigger_security_request = (sm_connection->sm_pairing_requested != 0) || (sm_slave_request_security != 0);
+                        sm_connection->sm_pairing_requested = 0;
 #ifdef ENABLE_LE_PROACTIVE_AUTHENTICATION
-                            log_info("central: enable encryption for bonded device");
-                            sm_connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-                            sm_reencryption_started(sm_connection);
-                            sm_trigger_run();
-#else
-                            log_info("central: defer security request for bonded device");
+                        // trigger security request for Proactive Authentication if LTK available
+                        trigger_security_request = trigger_security_request || have_ltk;
 #endif
+
+                        log_info("peripheral: pairing request local %u, have_ltk %u => trigger_security_request %u",
+                                 sm_connection->sm_pairing_requested, have_ltk, trigger_security_request);
+
+                        if (trigger_security_request){
+                            sm_connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                            if (have_ltk){
+                                sm_reencryption_started(sm_connection);
+                            } else {
+                                sm_pairing_started(sm_connection);
+                            }
+                            sm_trigger_run();
                         }
 #endif
                     } else {
 
 #ifdef ENABLE_LE_CENTRAL
-
                         // check if pairing already requested and reset requests
                         trigger_pairing = sm_connection->sm_pairing_requested || sm_connection->sm_security_request_received;
                         log_info("central: pairing request local %u, remote %u => trigger_pairing %u. have_ltk %u",
@@ -1311,7 +1343,6 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         if (trigger_reencryption){
                             log_info("central: enable encryption for bonded device");
                             sm_connection->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
-                            sm_reencryption_started(sm_connection);
                             break;
                         }
 
@@ -1326,11 +1357,20 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                 case ADDRESS_RESOLUTION_FAILED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
                     if (sm_connection->sm_role) {
+#ifdef ENABLE_LE_PERIPHERAL
                         // LTK request received before, IRK required -> negative LTK reply
                         if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
                             sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                         }
+                        // send security request if requested
+                        bool trigger_security_request = (sm_connection->sm_pairing_requested != 0) || (sm_slave_request_security != 0);
+                        sm_connection->sm_pairing_requested = 0;
+                        if (trigger_security_request){
+                            sm_connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                            sm_pairing_started(sm_connection);
+                        }
                         break;
+#endif
                     }
 #ifdef ENABLE_LE_CENTRAL
                     if (!sm_connection->sm_pairing_requested && !sm_connection->sm_security_request_received) break;
@@ -2138,7 +2178,7 @@ static bool sm_run_oob(void){
 static bool sm_run_basic(void){
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
-    while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
+    while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         switch(sm_connection->sm_engine_state){
@@ -2152,7 +2192,7 @@ static bool sm_run_basic(void){
             case SM_SC_RECEIVED_LTK_REQUEST:
                 switch (sm_connection->sm_irk_lookup_state){
                     case IRK_LOOKUP_FAILED:
-                        log_info("LTK Request: ediv & random are empty, but no stored LTK (IRK Lookup Failed)");
+                        log_info("LTK Request: IRK Lookup Failed)");
                         sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
                         hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_connection->sm_handle);
                         return true;
@@ -2328,6 +2368,8 @@ static void sm_run(void){
         UNUSED(key_distribution_flags);
 		int err;
 		UNUSED(err);
+        bool have_ltk;
+        uint8_t ltk[16];
 
         log_info("sm_run: state %u", connection->sm_engine_state);
         if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
@@ -2414,6 +2456,7 @@ static void sm_run(void){
             case SM_INITIATOR_PH4_HAS_LTK: {
 				sm_reset_setup();
 				sm_load_security_info(connection);
+                sm_reencryption_started(connection);
 
                 sm_key_t peer_ltk_flipped;
                 reverse_128(setup->sm_peer_ltk, peer_ltk_flipped);
@@ -2429,7 +2472,7 @@ static void sm_run(void){
 				sm_reset_setup();
 				sm_init_setup(connection);
 				sm_timeout_start(connection);
-                connection->sm_pairing_active = true;
+				sm_pairing_started(connection);
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
@@ -2616,9 +2659,26 @@ static void sm_run(void){
 #endif /* ENABLE_LE_SECURE_CONNECTIONS */
 
 			case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
-				sm_reset_setup();
+                sm_reset_setup();
+
+			    // handle Pairing Request with LTK available
+                switch (connection->sm_irk_lookup_state) {
+                    case IRK_LOOKUP_SUCCEEDED:
+                        le_device_db_encryption_get(connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                        have_ltk = !sm_is_null_key(ltk);
+                        if (have_ltk){
+                            log_info("pairing request but LTK available");
+                            // emit re-encryption start/fail sequence
+                            sm_reencryption_started(connection);
+                            sm_reencryption_complete(connection, ERROR_CODE_PIN_OR_KEY_MISSING);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
 				sm_init_setup(connection);
-                connection->sm_pairing_active = true;
+                sm_pairing_started(connection);
 
 				// recover pairing request
 				(void)memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
@@ -3417,16 +3477,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // just connected -> everything else happens in sm_run()
                             if (IS_RESPONDER(sm_conn->sm_role)){
-                                // slave - state already could be SM_RESPONDER_SEND_SECURITY_REQUEST instead
-                                if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
-                                    if (sm_slave_request_security) {
-                                        // request security if requested by app
-                                        sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-                                    } else {
-                                        // otherwise, wait for pairing request
-                                        sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
-                                    }
-                                }
+                                // peripheral
+                                sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                                 break;
                             } else {
                                 // master
@@ -3752,6 +3804,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         return;
     }
 
+    int have_ltk;
+    uint8_t ltk[16];
+
     switch (sm_conn->sm_engine_state){
 
         // a sm timeout requires a new physical connection
@@ -3768,8 +3823,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // IRK complete?
-            int have_ltk;
-            uint8_t ltk[16];
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
                     // start pairing
@@ -3903,9 +3956,18 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // store pairing request
-            (void)memcpy(&sm_conn->sm_m_preq, packet,
-                         sizeof(sm_pairing_packet_t));
-            sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
+            (void)memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
+
+            // check if IRK completed
+            switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_SUCCEEDED:
+                case IRK_LOOKUP_FAILED:
+                    sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED;
+                    break;
+                default:
+                    sm_conn->sm_engine_state = SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED_W4_IRK;
+                    break;
+            }
             break;
 #endif
 
@@ -4349,25 +4411,12 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
     return &hci_con->sm_connection;
 }
 
-static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
-    switch (sm_conn->sm_engine_state){
-        case SM_GENERAL_IDLE:
-        case SM_RESPONDER_IDLE:
-            sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-            sm_trigger_run();
-            break;
-        default:
-            break;
-    }
-}
-
-/**
- * @brief Trigger Security Request
- */
+// @deprecated: map onto sm_request_pairing
 void sm_send_security_request(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;
-    sm_send_security_request_for_connection(sm_conn);
+    if (!IS_RESPONDER(sm_conn->sm_role)) return;
+    sm_request_pairing(con_handle);
 }
 
 // request pairing
@@ -4375,13 +4424,42 @@ void sm_request_pairing(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
 
+    bool have_ltk;
+    uint8_t ltk[16];
     log_info("sm_request_pairing in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
     if (IS_RESPONDER(sm_conn->sm_role)){
-        sm_send_security_request_for_connection(sm_conn);
+        switch (sm_conn->sm_engine_state){
+            case SM_GENERAL_IDLE:
+            case SM_RESPONDER_IDLE:
+                switch (sm_conn->sm_irk_lookup_state){
+                    case IRK_LOOKUP_SUCCEEDED:
+                        le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                        have_ltk = !sm_is_null_key(ltk);
+                        log_info("have ltk %u", have_ltk);
+                        if (have_ltk){
+                            sm_conn->sm_pairing_requested = 1;
+                            sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                            sm_reencryption_started(sm_conn);
+                            break;
+                        }
+                        /* fall through */
+
+                    case IRK_LOOKUP_FAILED:
+                        sm_conn->sm_pairing_requested = 1;
+                        sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                        sm_pairing_started(sm_conn);
+                        break;
+                    default:
+                        log_info("irk lookup pending");
+                        sm_conn->sm_pairing_requested = 1;
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
     } else {
         // used as a trigger to start central/master/initiator security procedures
-        bool have_ltk;
-        uint8_t ltk[16];
         switch (sm_conn->sm_engine_state){
             case SM_INITIATOR_CONNECTED:
                 switch (sm_conn->sm_irk_lookup_state){
@@ -4392,7 +4470,6 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                         if (have_ltk){
                             sm_conn->sm_pairing_requested = 1;
                             sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
-                            sm_reencryption_started(sm_conn);
                             break;
                         }
                         /* fall through */

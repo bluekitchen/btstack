@@ -1,0 +1,307 @@
+@startuml
+title Reactive Authentication in Central Role
+start
+: App on A connects to B;
+: App on A triggers GATT Client request;
+: GATT Client request sent;
+if (GATT Server returns an ATT_ERROR_INSUFFICIENT_X error?) then (yes)
+  if (ENABLE_GATT_CLIENT_PAIRING defined?) then (yes)
+    if (LTK available?) then (yes)
+      : SM_EVENT_REENCRYPTION_STARTED;
+      : start encryption;
+      if (re-encrypted) then (yes)
+        : SM_EVENT_REENCRYPTION_COMPLETE(ERROR_CODE_SUCCESS);
+        : GATT Client request re-sent;
+        #23DB2B : App receives GATT Response;
+        stop
+      else (no)
+        : SM_EVENT_REENCRYPTION_COMPLETE(error);
+        : delete bonding information;
+      endif
+    endif
+    : SM_EVENT_PAIRING_STARTED;
+    : start pairing;
+    if (pairing success?) then (yes)
+        : SM_EVENT_PAIRING_COMPLETE(ERROR_CODE_SUCCESS);
+        : GATT Client request re-sent;
+        #23DB2B : App receives GATT Response;
+        stop
+    else (no)
+        : SM_EVENT_PAIRING_COMPLETE(error);
+        #FD5B41 : App receives a GATT Client error;
+        stop
+    endif
+  else (no)
+    #FD5B41: ATT_QUERY_COMPLETE(ATT_ERROR_INSUFFICIENT_X);
+    stop
+    note left
+      App can trigger pairing and 
+      repeat the GATT Client request
+    end note
+  endif
+else (no)
+  #23DB2B : App receives GATT Response;
+  stop
+endif
+@enduml
+
+
+
+@startuml
+title Reactive Authentication in Peripheral Role
+start
+: App on B connects to A;
+: App on A triggers GATT Client request;
+: GATT Client request sent;
+if (GATT Server returns an ATT_ERROR_INSUFFICIENT_X error?) then (yes)
+  if (ENABLE_GATT_CLIENT_PAIRING define?) then (yes)
+    if (LTK available?) then (yes)
+      : SM_EVENT_REENCRYPTION_STARTED;
+      : SM on A sends SECURITY REQUEST;
+      : SM on B should encrypt connection if LTK available;
+      if (re-encrypted) then (yes)
+        : SM_EVENT_REENCRYPTION_COMPLETE(ERROR_CODE_SUCCESS);
+        : GATT Client request re-sent;
+        #23DB2B : App receives GATT Response;
+        stop
+      else (no)
+        : SM_EVENT_REENCRYPTION_COMPLETE(error);
+        : delete bonding information;
+      endif
+    endif
+    : SM_EVENT_PAIRING_STARTED;
+    : SM on A sends SECURITY REQUEST;
+    : SM on B should perform pairing sequence;
+    if (pairing success?) then (yes)
+        : SM_EVENT_PAIRING_COMPLETE(ERROR_CODE_SUCCESS);
+        : GATT Client request re-sent;
+        #23DB2B : App receives GATT Response;
+        stop
+    else (no)
+        : SM_EVENT_PAIRING_COMPLETE(error);
+        #FD5B41 : App receives a GATT Client error;
+        stop
+    endif
+  else (no)
+    #FD5B41: ATT_QUERY_COMPLETE(ATT_ERROR_INSUFFICIENT_X);
+    stop
+    note left
+      App can trigger pairing and 
+      repeat the GATT Client request
+    end note
+  endif
+else (no)
+  #23DB2B : App receives GATT Response;
+  stop
+endif
+@enduml
+
+
+@startuml
+title Mandatory Authentication in Central Role
+start
+: App calls gatt_client_set_required_security_level (level > 0);
+: App on A connects to B;
+: App on A triggers GATT Client request;
+: GATT Client request sent;
+if (LTK available?) then (yes)
+   : SM_EVENT_REENCRYPTION_STARTED;
+   : start encryption;
+   if (re-encrypted) then (yes)
+     : SM_EVENT_REENCRYPTION_COMPLETE(ERROR_CODE_SUCCESS);
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+  else (no)
+     : SM_EVENT_REENCRYPTION_COMPLETE(error);
+     #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_BONDING_INFORMATION_MISSING;
+     stop
+  endif 
+else (no)
+  : SM_EVENT_PAIRING_STARTED;
+  : start pairing;
+  if (pairing success?) then (yes)
+     : SM_EVENT_PAIRING_COMPLETE(ERROR_CODE_SUCCESS);
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+  else (no)
+    : SM_EVENT_PAIRING_COMPLETE(error);
+    if (level >= 3) then (yes)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event
+          with ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+      stop
+    else (no)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_INSUFFICIENT_ENCRYPTION;  
+      stop
+    endif     
+  endif
+@enduml
+
+
+
+@startuml
+title Mandatory Authentication in Peripheral Role
+start
+: App calls gatt_client_set_required_security_level (level > 0);
+: App on B connects to A;
+: App on A triggers GATT Client request;
+: GATT Client request sent;
+if (LTK available?) then (yes)
+   : SM_EVENT_REENCRYPTION_STARTED;
+   : SM on A sends SECURITY REQUEST;
+   : SM on B should encrypt connection if LTK available;
+   if (re-encrypted) then (yes)
+     : SM_EVENT_REENCRYPTION_COMPLETE(ERROR_CODE_SUCCESS);
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+  else (no)
+     : SM_EVENT_REENCRYPTION_COMPLETE(error);
+     #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_BONDING_INFORMATION_MISSING;
+     stop
+  endif 
+else (no)
+  : SM_EVENT_PAIRING_STARTED;
+  : SM on A sends SECURITY REQUEST;
+  : SM on B should perform pairing sequence;
+  if (pairing success?) then (yes)
+     : SM_EVENT_PAIRING_COMPLETE(ERROR_CODE_SUCCESS);
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+  else (no)
+    : SM_EVENT_PAIRING_COMPLETE(error);
+    if (level >= 3) then (yes)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event
+          with ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+      stop
+    else (no)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_INSUFFICIENT_ENCRYPTION;  
+      stop
+    endif     
+  endif
+@enduml
+
+
+@startuml
+title Proactive Authentication in Central Role
+start
+: A connects to B;
+: SM checks if LTK available;
+note right
+  SM actions triggered by
+  connection complete
+  (independent from GATT Client)
+end note
+: App triggers GATT Client request on A;
+if (LTK available?) then (no)
+  : GATT Client request sent;
+  if (GATT Server returns an ATT_ERROR_INSUFFICIENT_X error?) then (no)
+    #23DB2B : App receives GATT Response;
+    stop
+  else (yes)
+    if (ENABLE_GATT_CLIENT_PAIRING defined?) then (no)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event
+          with ATT_ERROR_INSUFFICIENT_X;
+      stop
+    else (yes)
+      : SM_EVENT_PAIRING_STARTED;
+      : start pairing;
+      if (pairing success?) then (yes)
+          : SM_EVENT_PAIRING_COMPLETE(ERROR_CODE_SUCCESS);
+          : GATT Client request re-sent;
+          #23DB2B : App receives GATT Response;
+          stop
+      else (no)
+          : SM_EVENT_PAIRING_COMPLETE(error);
+         #FD5B41: App receives GATT_QUERY_COMPLETE event 
+              with ATT_ERROR_INSUFFICIENT_X;
+          stop
+      endif
+    endif
+  endif
+else (yes)
+   : SM_EVENT_REENCRYPTION_STARTED;
+   : start encryption;
+   if (re-encrypted) then (yes)
+     : SM_EVENT_REENCRYPTION_COMPLETE(ERROR_CODE_SUCCESS);
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+   else (no)
+     : SM_EVENT_REENCRYPTION_COMPLETE(error);
+     #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_BONDING_INFORMATION_MISSING;
+     stop
+     note right
+       App can delete bonding 
+       information and repeat 
+       the GATT Client request
+    end note
+  endif
+endif
+@enduml
+
+@startuml
+title Proactive Authentication in Peripheral Role
+start
+: A connects to B;
+: SM checks if LTK available;
+note right
+  SM actions triggered by
+  connection complete
+  (independent from GATT Client)
+end note
+: App triggers GATT Client request on A;
+if (LTK available?) then (no)
+  : GATT Client request sent;
+  if (GATT Server returns an ATT_ERROR_INSUFFICIENT_X error?) then (no)
+    #23DB2B : App receives GATT Response;
+    stop
+  else (yes)
+    if (ENABLE_GATT_CLIENT_PAIRING defined?) then (no)
+      #FD5B41: App receives GATT_QUERY_COMPLETE event
+          with ATT_ERROR_INSUFFICIENT_X;
+      stop
+    else (yes)
+      : SM_EVENT_PAIRING_STARTED;
+      : start pairing;
+      if (pairing success?) then (yes)
+          : SM_EVENT_PAIRING_COMPLETE(ERROR_CODE_SUCCESS);
+          : GATT Client request re-sent;
+          #23DB2B : App receives GATT Response;
+          stop
+      else (no)
+          : SM_EVENT_PAIRING_COMPLETE(error);
+         #FD5B41: App receives GATT_QUERY_COMPLETE event 
+              with ATT_ERROR_INSUFFICIENT_X;
+          stop
+      endif
+    endif
+  endif
+else (yes)
+   : SM_EVENT_REENCRYPTION_STARTED;
+   : start encryption;
+   if (re-encrypted) then (yes)
+     : SM_EVENT_REENCRYPTION_COMPLETE(ERROR_CODE_SUCCESS);
+     : GATT Client request sent;
+     #23DB2B : App receives GATT Response;
+     stop
+   else (no)
+     : SM_EVENT_REENCRYPTION_COMPLETE(error);
+     #FD5B41: App receives GATT_QUERY_COMPLETE event 
+          with ATT_ERROR_BONDING_INFORMATION_MISSING;
+     stop
+     note right
+       App can delete bonding 
+       information and repeat 
+       the GATT Client request
+    end note
+  endif
+endif
+@enduml

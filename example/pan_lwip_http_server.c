@@ -242,7 +242,7 @@ int fs_open_custom(struct fs_file *file, const char *name){
     if (*name != '/') return 0;
     uint32_t file_size = btstack_atoi(&name[1]);
     if (file_size > 0) {
-        printf("Serving '%s' with %u bytes\n", name, file_size);
+        printf("Serving '%s' with %"PRIu32" bytes\n", name, file_size);
         /* initialize fs_file correctly */
         memset(file, 0, sizeof(struct fs_file));
         file->len = file_size;

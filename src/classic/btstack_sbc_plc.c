@@ -306,12 +306,13 @@ static void octave_fprintf_plot_output(btstack_sbc_plc_state_t *plc_state, FILE 
 
 void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT *ZIRbuf, SAMPLE_FORMAT *out){
     float val;
-    int   i = 0;
+    int   i;
     float sf = 1;
-    plc_state->nbf++;
-   
+
+    plc_state->nbf++;   
     plc_state->bad_frames_nr++;
     plc_state->frame_count++;
+
     if (plc_state->max_consecutive_bad_frames_nr < plc_state->nbf){
         plc_state->max_consecutive_bad_frames_nr = plc_state->nbf;
     }
@@ -336,7 +337,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
         // printf("sf Apmlitude Match %f, new data %d, bestlag+M %d\n", sf, ZIRbuf[0], plc_state->hist[plc_state->bestlag]);
-        for (i=0;i<SBC_OLAL;i++){
+        for (i=0; i<SBC_OLAL; i++){
             float left  = ZIRbuf[i];
             float right = sf*plc_state->hist[plc_state->bestlag+i];
             val = (left*rcos[i]) + (right*rcos[SBC_OLAL-1-i]);
@@ -344,33 +345,33 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
             plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
         
-        for (;i<SBC_FS;i++){
+        for (i=SBC_OLAL; i<SBC_FS; i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
         
-        for (;i<(SBC_FS+SBC_OLAL);i++){
+        for (i=SBC_FS; i<(SBC_FS+SBC_OLAL); i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
             val = (left*rcos[i-SBC_FS])+(right*rcos[SBC_OLAL-1-i+SBC_FS]);
             plc_state->hist[SBC_LHIST+i] = crop_sample(val);
         }
 
-        for (;i<(SBC_FS+SBC_RT+SBC_OLAL);i++){
+        for (i=(SBC_FS+SBC_OLAL); i<(SBC_FS+SBC_RT+SBC_OLAL); i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
         // printf("succesive bad frame nr %d\n", plc_state->nbf);
-        for (;i<(SBC_FS+SBC_RT+SBC_OLAL);i++){
+        for (i=0; i<(SBC_FS+SBC_RT+SBC_OLAL); i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
-    for (i=0;i<SBC_FS;i++){
+    for (i=0; i<SBC_FS; i++){
         out[i] = plc_state->hist[SBC_LHIST+i];
     }
         
    // shift the history buffer 
-    for (i=0;i<(SBC_LHIST+SBC_RT+SBC_OLAL);i++){
+    for (i=0; i<(SBC_LHIST+SBC_RT+SBC_OLAL); i++){
         plc_state->hist[i] = plc_state->hist[i+SBC_FS];
     }
 

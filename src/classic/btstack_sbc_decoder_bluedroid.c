@@ -349,7 +349,7 @@ static void btstack_sbc_decoder_insert_missing_frames(btstack_sbc_decoder_state_
         }
 
         if (bytes_in_frame_buffer){
-            log_error("PLC: not all bytes of zero frame processed, left %u\n", bytes_in_frame_buffer);
+            log_error("PLC: not all bytes of zero frame processed, left %u\n", (unsigned int) bytes_in_frame_buffer);
         }
 
         if (plc_enabled) {

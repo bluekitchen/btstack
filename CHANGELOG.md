@@ -6,12 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 
-## [Unreleased]
+## Release v1.2.1
 
 ### Fixed
 - L2CAP: use connection handle for channel lookups
 - L2CAP: forward data only in open state
-### Added
 
 ### Changed
 - L2CAP: check packet size against local mtu for classic basic channels
@@ -28,8 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - GAP: `gap_delete_bonding` removes device from LE Resolving List and from discards LE bonding information
 - GATT Client: delete bonding information if re-encryption fails and `ENABLE_LE_PROACTIVE_AUTHENTICATION` is not defined
-- GATT Client: gatt_client_set_required_security_level allows to set required minimum security level for all GATT requests
-- SM: emit events for re-encryption started/complete
+- GATT Client: gatt_client_set_required_security_level() allows to set required minimum security level for all GATT requests
+- SM: emit events for re-encryption started/complete when bonding information is available
 
 ### Changed
 - AVRCP Controller: allow to send multiple absolute volume commands without waiting for response. 

@@ -741,7 +741,7 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
             config |= (AVDTP_SBC_16000 << 4);
             break;
         default:
-            log_error("Unsupported sampling frequency %u", sampling_frequency);
+            log_error("Unsupported sampling frequency %u", (int) sampling_frequency);
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
     sc.local_stream_endpoint->media_codec_sbc_info[0] = config;

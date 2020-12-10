@@ -156,7 +156,7 @@ static void le_device_db_tlv_scan(void){
         entry_map[i] = 1;
         num_valid_entries++;
     }
-    log_info("num valid le device entries %u", num_valid_entries);
+    log_info("num valid le device entries %u", (unsigned int) num_valid_entries);
 }
 
 void le_device_db_init(void){
@@ -242,7 +242,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
         return -1;
     }
 
-    log_info("new entry for index %u", index_to_use);
+    log_info("new entry for index %u", (unsigned int) index_to_use);
 
     // store entry at index
 	le_device_db_entry_t entry;
@@ -460,7 +460,7 @@ void le_device_db_dump(void){
 		// fetch entry
 		le_device_db_entry_t entry;
 		le_device_db_tlv_fetch(i, &entry);
-        log_info("%u: %u %s", i, entry.addr_type, bd_addr_to_str(entry.addr));
+        log_info("%u: %u %s", (unsigned int) i, entry.addr_type, bd_addr_to_str(entry.addr));
         log_info_key("irk", entry.irk);
 #ifdef ENABLE_LE_SIGNED_WRITE
         log_info_key("local csrk", entry.local_csrk);

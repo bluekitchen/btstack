@@ -215,7 +215,7 @@ static int fill_options(void *dest,
 	return ptr - (uint8_t *)dest;
 }
 
-static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const struct ip4_addr *addr, u16_t port)
+static void udp_recv_proc(void *arg, struct udp_pcb *upcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
 	(void) arg;
 	(void) addr;
