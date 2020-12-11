@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 CC256x: With ENABLE_CC256X_ASSISTED_HFP, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
+SDP Client RFCOMM: add `sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid`
 
 ### Fixed
 L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)
