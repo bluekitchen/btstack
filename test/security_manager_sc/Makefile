@@ -106,11 +106,11 @@ myclean:
 
 clean: myclean
 
-test: sm_test
+test: build-coverage/sm_test
 	rm -rf SM_*
 	python3 ./sm_test.py
 
-coverage: sm_test
+coverage: build-coverage/sm_test
 	# delete trace data
 	rm -f build-coverage/*.gcda
 	# run tests
