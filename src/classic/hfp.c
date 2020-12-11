@@ -1510,7 +1510,7 @@ static void hfp_handle_start_sdp_client_query(void * context){
         connection->state = HFP_W4_SDP_QUERY_COMPLETE;
         sdp_query_context.local_role = connection->local_role;
         (void)memcpy(sdp_query_context.remote_address, connection->remote_addr, 6);
-        sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
+        sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
         return;
     }
 }

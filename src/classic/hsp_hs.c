@@ -301,7 +301,7 @@ static void hsp_hs_handle_start_sdp_client_query(void * context){
     
     hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
     log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
-    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
+    sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET_AUDIO_GATEWAY_AG);
 }
 
 void hsp_hs_connect(bd_addr_t bd_addr){
