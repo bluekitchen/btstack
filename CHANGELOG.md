@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 
+## Unreleased
+
+### Fixed
+L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)
+
+
 ## Release v1.2.1
 
 ### Fixed
