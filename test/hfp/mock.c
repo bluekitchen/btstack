@@ -239,7 +239,7 @@ static void sdp_client_query_rfcomm_service_response(uint8_t status){
     (*registered_sdp_app_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-uint8_t sdp_client_query_rfcomm_channel_and_name_for_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
 	// printf("sdp_client_query_rfcomm_channel_and_name_for_uuid %p\n", registered_sdp_app_callback);
     registered_sdp_app_callback = callback;
 	sdp_client_query_rfcomm_service_response(0);
