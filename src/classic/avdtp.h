@@ -256,12 +256,33 @@ typedef struct {
     uint8_t num_frames;
 } avdtp_sbc_codec_header_t;
 
-// typedef struct {
-//     uint8_t transaction_label;
-//     avdtp_packet_type_t packet_type;
-//     avdtp_message_type_t message_type;
-//     uint8_t signal_identifier;
-// } avdtp_signaling_packet_header_t;
+typedef enum {
+    AVDTP_MPEG_LAYER_1 = 1,
+    AVDTP_MPEG_LAYER_2,
+    AVDTP_MPEG_LAYER_3,
+} avdtp_mpeg_layer_t;
+
+
+typedef enum {
+    AVDTP_AAC_MPEG2_LC = 1,
+    AVDTP_AAC_MPEG4_LC,
+    AVDTP_AAC_MPEG4_LTP,
+    AVDTP_AAC_MPEG4_SCALABLE
+} avdtp_aac_object_type_t;
+
+typedef enum {
+    AVDTP_ATRAC_VERSION_1 = 1,
+    AVDTP_ATRAC_VERSION_2,
+    AVDTP_ATRAC_VERSION_3
+} avdtp_atrac_version_t;
+
+// used for MPEG1/2 Audio, ATRAC (no stereo mode)
+typedef enum {
+    AVDTP_CHANNEL_MODE_MONO = 1,
+    AVDTP_CHANNEL_MODE_DUAL_CHANNEL,
+    AVDTP_CHANNEL_MODE_STEREO,
+    AVDTP_CHANNEL_MODE_JOINT_STEREO,
+} avdtp_channel_mode_t;
 
 typedef struct {
     uint8_t version;
