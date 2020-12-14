@@ -16,6 +16,9 @@ HFP AG/HSP AG: avoid connecting to remote service with same role
 ### Fixed
 L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)
 
+### Changed
+HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP record is found
+
 ## Release v1.2.1
 
 ### Fixed

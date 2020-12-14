@@ -612,8 +612,13 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
             } else {
                 hfp_connection->state = HFP_IDLE;
-                hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
-                log_info("rfcomm service not found, status 0x%02x", sdp_event_query_complete_get_status(packet));
+                uint8_t status = sdp_event_query_complete_get_status(packet);
+                if (status == ERROR_CODE_SUCCESS){
+                    // report service not found
+                    status = SDP_SERVICE_NOT_FOUND;
+                }
+                hfp_emit_slc_connection_event(hfp_connection, status, HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+                log_info("rfcomm service not found, status 0x%02x", status);
             }
 
             // register the SDP Query request to check if there is another connection waiting for the query

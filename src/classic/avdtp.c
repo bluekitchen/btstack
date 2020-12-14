@@ -623,12 +623,8 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 case SDP_EVENT_QUERY_COMPLETE:
                     status = sdp_event_query_complete_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS) break;
-                    if (!connection->sink_supported) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                        break;
-                    }
-                    if (connection->avdtp_l2cap_psm == 0) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                    if (!connection->sink_supported || (connection->avdtp_l2cap_psm == 0)) {
+                        status = SDP_SERVICE_NOT_FOUND;
                         break;
                     }
                     break;
@@ -645,12 +641,8 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 case SDP_EVENT_QUERY_COMPLETE:
                     status = sdp_event_query_complete_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS) break;
-                    if (!connection->source_supported) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                        break;
-                    }
-                    if (connection->avdtp_l2cap_psm == 0) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                    if (!connection->source_supported || (connection->avdtp_l2cap_psm == 0)) {
+                        status = SDP_SERVICE_NOT_FOUND;
                         break;
                     }
                     break;
@@ -666,6 +658,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                     avdtp_handle_sdp_client_query_attribute_value(connection, packet);
                     return;        
                 case SDP_EVENT_QUERY_COMPLETE:
+                    // without suitable SDP Record, avdtp version v0.0 is assumed
                     status = sdp_event_query_complete_get_status(packet);
                     break;
                 default:

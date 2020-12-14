@@ -326,7 +326,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             if ((context->rfcomm_port == 0) && (context->l2cap_psm == 0)){
                 log_info("No GOEP RFCOMM or L2CAP server found");
                 context->state = GOEP_INIT;
-                goep_client_emit_connected_event(goep_client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
+                goep_client_emit_connected_event(goep_client, SDP_SERVICE_NOT_FOUND);
                 break;
             }
 #ifdef ENABLE_GOEP_L2CAP
