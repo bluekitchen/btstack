@@ -1306,11 +1306,16 @@ static void HCD_HC_IN_IRQHandler(HCD_HandleTypeDef *hhcd, uint8_t chnum)
     else if (hhcd->hc[ch_num].state == HC_NAK)
     {
       hhcd->hc[ch_num].urb_state  = URB_NOTREADY;
-      /* re-activate the channel  */
-      tmpreg = USBx_HC(ch_num)->HCCHAR;
-      tmpreg &= ~USB_OTG_HCCHAR_CHDIS;
-      tmpreg |= USB_OTG_HCCHAR_CHENA;
-      USBx_HC(ch_num)->HCCHAR = tmpreg;
+
+      // BK: don't re-activate the channel for BULK endpoints
+      if (hhcd->hc[ch_num].ep_type != EP_TYPE_BULK){
+          /* re-activate the channel  */
+          tmpreg = USBx_HC(ch_num)->HCCHAR;
+          tmpreg &= ~USB_OTG_HCCHAR_CHDIS;
+          tmpreg |= USB_OTG_HCCHAR_CHENA;
+          USBx_HC(ch_num)->HCCHAR = tmpreg;
+      }
+      // BK: end fix
     }
     else if (hhcd->hc[ch_num].state == HC_BBLERR)
     {
