@@ -104,6 +104,8 @@ ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS | Force HCI to fragment ACL-LE packet
 ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
 ENABLE_CONTROLLER_WARM_BOOT      | Enable stack startup without power cycle (if supported/possible)
 ENABLE_SEGGER_RTT                | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)
+ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL | Disable calls to control Connectable Mode by L2CAP
+
 Notes:
 
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.

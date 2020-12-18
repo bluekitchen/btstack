@@ -913,8 +913,10 @@ void l2cap_init(void){
 
     hci_register_acl_packet_handler(&l2cap_acl_handler);
 
+#ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
 #ifdef ENABLE_CLASSIC
     gap_connectable_control(0); // no services yet
+#endif
 #endif
 }
 
@@ -3770,8 +3772,10 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     // add to services list
     btstack_linked_list_add(&l2cap_services, (btstack_linked_item_t *) service);
     
+#ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
     // enable page scan
     gap_connectable_control(1);
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -3784,11 +3788,14 @@ uint8_t l2cap_unregister_service(uint16_t psm){
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
     btstack_linked_list_remove(&l2cap_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
-    
+
+#ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
     // disable page scan when no services registered
     if (btstack_linked_list_empty(&l2cap_services)) {
         gap_connectable_control(0);
     }
+#endif
+
     return ERROR_CODE_SUCCESS;
 }
 #endif
