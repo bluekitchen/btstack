@@ -175,6 +175,16 @@ int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
 int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
 /**
+ * @brief Send media packet
+ * @param a2dp_cid 			A2DP channel identifyer.
+ * @param local_seid  		ID of a local stream endpoint.
+ * @param packet
+ * @param size
+ * @return status
+ */
+uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size);
+
+/**
  * @brief Select and configure SBC endpoint
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.

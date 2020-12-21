@@ -235,6 +235,24 @@ int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_sei
     return size;
 }
 
+uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size){
+    UNUSED(avdtp_cid);
+
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    if (!stream_endpoint) {
+        log_error("avdtp source: no stream_endpoint with seid %d", local_seid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (stream_endpoint->l2cap_media_cid == 0){
+        log_error("avdtp source: no media connection for seid %d", local_seid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    return l2cap_send(stream_endpoint->l2cap_media_cid, (uint8_t*) packet, size);
+}
+
+
 void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avdtp_cid, uint8_t local_seid){
     UNUSED(avdtp_cid);
     

@@ -805,6 +805,10 @@ int a2dp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid
     return avdtp_source_stream_send_media_payload(avdtp_cid, local_seid, storage, num_bytes_to_copy, num_frames, marker);
 }
 
+uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size){
+    return avdtp_source_stream_send_media_packet(a2dp_cid, local_seid, packet, size);
+}
+
 static void avdtp_config_sbc_store(uint8_t * config, uint16_t sampling_frequency, avdtp_sbc_channel_mode_t channel_mode, uint8_t block_length, uint8_t subbands,
                                   avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value) {
     config[0] = (sampling_frequency << 4) | channel_mode;
