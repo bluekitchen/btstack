@@ -537,7 +537,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t set_config_remote_seid;
     avdtp_media_codec_type_t media_codec_type;
     avdtp_media_type_t media_type;
-    uint8_t media_codec_sbc_info[8];
+    uint8_t media_codec_info[8];
 
     // preferred SBC codec settings
     uint32_t preferred_sampling_frequency; 

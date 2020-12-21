@@ -742,12 +742,12 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
 
     log_info("Reconfigure avdtp_cid 0x%02x", avdtp_cid);
 
-    (void)memcpy(sc.local_stream_endpoint->media_codec_sbc_info,
+    (void)memcpy(sc.local_stream_endpoint->media_codec_info,
                  sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information,
                  4);
 
     // update sampling frequency
-    uint8_t config = sc.local_stream_endpoint->media_codec_sbc_info[0] & 0x0f;
+    uint8_t config = sc.local_stream_endpoint->media_codec_info[0] & 0x0f;
     switch (sampling_frequency){
         case 48000:
             config |= (AVDTP_SBC_48000 << 4);
@@ -765,13 +765,13 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
             log_error("Unsupported sampling frequency %u", (int) sampling_frequency);
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-    sc.local_stream_endpoint->media_codec_sbc_info[0] = config;
+    sc.local_stream_endpoint->media_codec_info[0] = config;
 
     avdtp_capabilities_t new_configuration;
     new_configuration.media_codec.media_type = AVDTP_AUDIO;
     new_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
     new_configuration.media_codec.media_codec_information_len = 4;
-    new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_sbc_info;
+    new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_info;
 
     // start reconfigure
     a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
@@ -939,7 +939,7 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid,  uint8_t local_seid, uint8
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    a2dp_source_config_init(remote_seid, AVDTP_CODEC_SBC, sc.local_stream_endpoint->media_codec_sbc_info, 4);
+    a2dp_source_config_init(remote_seid, AVDTP_CODEC_SBC, sc.local_stream_endpoint->media_codec_info, 4);
     avdtp_config_sbc_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
                             sampling_frequency, channel_mode, block_length, subbands, allocation_method, min_bitpool_value, max_bitpool_value);
 
@@ -960,7 +960,7 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid,  uint8_t local_seid
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    a2dp_source_config_init(remote_seid, AVDTP_CODEC_MPEG_1_2_AUDIO, sc.local_stream_endpoint->media_codec_sbc_info, 4);
+    a2dp_source_config_init(remote_seid, AVDTP_CODEC_MPEG_1_2_AUDIO, sc.local_stream_endpoint->media_codec_info, 4);
     avdtp_config_mpeg_audio_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
                                    layer, crc, channel_mode, media_payload_format, sampling_frequency, vbr, bit_rate_index);
 
@@ -980,7 +980,7 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    a2dp_source_config_init(remote_seid, AVDTP_CODEC_MPEG_2_4_AAC, sc.local_stream_endpoint->media_codec_sbc_info, 6);
+    a2dp_source_config_init(remote_seid, AVDTP_CODEC_MPEG_2_4_AAC, sc.local_stream_endpoint->media_codec_info, 6);
     avdtp_config_mpeg_aac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
                                    object_type, sampling_frequency, channels, bit_rate, vbr);
 
@@ -1000,7 +1000,7 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uin
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    a2dp_source_config_init(remote_seid, AVDTP_CODEC_ATRAC_FAMILY, sc.local_stream_endpoint->media_codec_sbc_info, 7);
+    a2dp_source_config_init(remote_seid, AVDTP_CODEC_ATRAC_FAMILY, sc.local_stream_endpoint->media_codec_info, 7);
     avdtp_config_atrac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
                                  version, channel_mode, sampling_frequency, vbr, bit_rate_index, maximum_sul);
 
