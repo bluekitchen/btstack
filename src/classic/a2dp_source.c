@@ -398,29 +398,32 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 sep_found_w2_set_configuration = true;
                 connection->supported_codecs_bitmap |= (1 << AVDTP_CODEC_SBC);
             }
-            break;
-        
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
-            log_info("received non SBC codec. not implemented");
+
+            // forward codec capability
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
             break;
 
+        // forward codec capability
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY);
+            break;
+
+        // not forwarded
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, remote seid 0x%02x", avdtp_subevent_signaling_media_transport_capability_get_remote_seid(packet));
-            break;
         case AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, remote seid 0x%02x", avdtp_subevent_signaling_reporting_capability_get_remote_seid(packet));
-            break;
         case AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY, remote seid 0x%02x", avdtp_subevent_signaling_recovery_capability_get_remote_seid(packet));
-            break;
         case AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY, remote seid 0x%02x", avdtp_subevent_signaling_content_protection_capability_get_remote_seid(packet));
-            break;
         case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY, remote seid 0x%02x", avdtp_subevent_signaling_header_compression_capability_get_remote_seid(packet));
-            break;
         case AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY, remote seid 0x%02x", avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(packet));
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
@@ -491,8 +494,19 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             log_info("A2DP received SBC Config: sample rate %u, max bitpool %u., remote seid 0x%02x", sc.sampling_frequency, sc.max_bitpool_value, avdtp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet));
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION);
             break;
-        
+
+        // forward codec configuration
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION);
+            break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
