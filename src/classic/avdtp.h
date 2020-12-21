@@ -499,7 +499,6 @@ typedef struct {
     btstack_timer_source_t retry_timer;
 
     bool    a2dp_source_discover_seps;
-    uint8_t supported_codecs_bitmap;
 
 } avdtp_connection_t;
 

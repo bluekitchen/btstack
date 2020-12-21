@@ -174,6 +174,22 @@ int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
  */
 int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
+/**
+ * @brief Select and configure SBC endpoint
+ * @param a2dp_cid 			A2DP channel identifier.
+ * @param local_seid  		ID of a local stream endpoint.
+ * @param sampling_frequency
+ * @param channel_mode
+ * @param block_length
+ * @param subbands
+ * @param allocation_method
+ * @param min_bitpool_value
+ * @param max_bitpool_value
+ * @return status
+ */
+uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint16_t sampling_frequency, avdtp_sbc_channel_mode_t channel_mode, uint8_t block_length, uint8_t subbands,
+                           avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value);
+
 /* API_END */
 
 #if defined __cplusplus
