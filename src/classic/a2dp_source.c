@@ -394,6 +394,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
                 sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[3] = max_bitpool_value;
 
+                // store remote seid
+                sc.local_stream_endpoint->set_config_remote_seid = remote_seps[sc.active_remote_sep_index].seid;
+
                 // suitable Sink SEP found, configure SEP
                 sep_found_w2_set_configuration = true;
                 connection->supported_codecs_bitmap |= (1 << AVDTP_CODEC_SBC);
@@ -442,14 +445,29 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
-            if (sep_found_w2_set_configuration){
-                a2dp_source_state = A2DP_SET_CONFIGURATION;
-                sep_found_w2_set_configuration = false;
-                break;
-            }
+            // forward capabilities done for endpoint
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
+
             // endpoint was not suitable, check next one
             sc.active_remote_sep_index++;
             if (sc.active_remote_sep_index >= num_remote_seps){
+
+                // emit 'all capabilities for all seps reported'
+                uint8_t event[6];
+                uint8_t pos = 0;
+                event[pos++] = HCI_EVENT_A2DP_META;
+                event[pos++] = sizeof(event) - 2;
+                event[pos++] = A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE;
+                little_endian_store_16(event, pos, cid);
+                (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+
+                // do we have a valid config?
+                if (sep_found_w2_set_configuration){
+                    a2dp_source_state = A2DP_SET_CONFIGURATION;
+                    sep_found_w2_set_configuration = false;
+                    break;
+                }
+
                 // we didn't find a suitable SBC stream endpoint, sorry.
                 if (outgoing_active){
                     outgoing_active = false;
@@ -559,7 +577,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     return;
 
                 case A2DP_SET_CONFIGURATION:
-                    remote_seid = remote_seps[sc.active_remote_sep_index].seid;
+                    remote_seid = sc.local_stream_endpoint->set_config_remote_seid;
                     log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid);
                     a2dp_source_state = A2DP_W4_SET_CONFIGURATION;
                     avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
