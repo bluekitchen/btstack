@@ -68,7 +68,6 @@
 
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
-static bool sep_found_w2_set_configuration = false;
 static btstack_timer_source_t a2dp_source_set_config_timer;
 
 //
@@ -79,6 +78,7 @@ static a2dp_state_t a2dp_source_state = A2DP_IDLE;
 static uint16_t     a2dp_source_cid;
 static uint16_t     num_remote_seps = 0;
 static avdtp_sep_t  remote_seps[AVDTP_MAX_SEP_NUM];
+static bool a2dp_source_have_config;
 
 static bool stream_endpoint_configured = false;
 
@@ -344,6 +344,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (num_remote_seps > 0){
                 a2dp_source_state = A2DP_GET_CAPABILITIES;
                 sc.active_remote_sep_index = 0;
+                a2dp_source_have_config = false;
             } else {
                 if (outgoing_active){
                     outgoing_active = false;
@@ -360,11 +361,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_sbc_capability_get_avdtp_cid(packet);
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state == A2DP_GET_CAPABILITIES) {
+            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
-                log_info("A2DP received SBC capability, received: remote seid 0x%02x", avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet));
+            // forward codec capability
+            a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
 
-                // choose SBC config params
+            // select SEP if none configured yet
+            if (a2dp_source_have_config == false){
+               // choose SBC config params
                 uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
                 uint8_t channel_mode       = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
                 uint8_t block_length       = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
@@ -377,9 +381,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 uint8_t local_seid = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                 remote_seid = avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet);
                 a2dp_source_set_config_sbc(cid, local_seid, remote_seid, sampling_frequency, channel_mode, block_length, subbands, allocation_method, min_bitpool_value, max_bitpool_value);
-
-                // forward codec capability
-                a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
             }
             break;
 
@@ -451,9 +452,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 
                 // do we have a valid config?
-                if (sep_found_w2_set_configuration){
+                if (a2dp_source_have_config){
                     a2dp_source_state = A2DP_SET_CONFIGURATION;
-                    sep_found_w2_set_configuration = false;
+                    a2dp_source_have_config = false;
                     break;
                 }
 
@@ -926,7 +927,7 @@ static void a2dp_source_config_init(uint8_t remote_seid, avdtp_media_codec_type_
     // store SBC configuration in reserved field
     sc.local_stream_endpoint->set_config_remote_seid = remote_seid;
     // suitable Sink SEP found, configure SEP
-    sep_found_w2_set_configuration = true;
+    a2dp_source_have_config = true;
 }
 
 uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_sbc_channel_mode_t channel_mode,
