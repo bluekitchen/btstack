@@ -1038,35 +1038,37 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
 
     log_info("Reconfigure avdtp_cid 0x%02x", avdtp_cid);
 
-    (void)memcpy(sc.local_stream_endpoint->media_codec_info,
-                 sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information,
-                 4);
-
-    // update sampling frequency
-    uint8_t config = sc.local_stream_endpoint->media_codec_info[0] & 0x0f;
-    switch (sampling_frequency){
-        case 48000:
-            config |= (AVDTP_SBC_48000 << 4);
+    avdtp_media_codec_type_t codec_type = sc.local_stream_endpoint->sep.capabilities.media_codec.media_codec_type;
+    uint8_t codec_info_len;
+    switch (codec_type){
+        case AVDTP_CODEC_SBC:
+            codec_info_len = 4;
+            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_sbc_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
-        case 44100:
-            config |= (AVDTP_SBC_44100 << 4);
+        case AVDTP_CODEC_MPEG_1_2_AUDIO:
+            codec_info_len = 4;
+            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_mpeg_audio_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
-        case 32000:
-            config |= (AVDTP_SBC_32000 << 4);
+        case AVDTP_CODEC_MPEG_2_4_AAC:
+            codec_info_len = 6;
+            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_mpeg_aac_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
-        case 16000:
-            config |= (AVDTP_SBC_16000 << 4);
+        case AVDTP_CODEC_ATRAC_FAMILY:
+            codec_info_len = 7;
+            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_atrac_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
-        default:
-            log_error("Unsupported sampling frequency %u", (int) sampling_frequency);
+        case AVDTP_CODEC_NON_A2DP:
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
-    sc.local_stream_endpoint->media_codec_info[0] = config;
 
     avdtp_capabilities_t new_configuration;
     new_configuration.media_codec.media_type = AVDTP_AUDIO;
-    new_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
-    new_configuration.media_codec.media_codec_information_len = 4;
+    new_configuration.media_codec.media_codec_type = codec_type;
+    new_configuration.media_codec.media_codec_information_len = codec_info_len;
     new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_info;
 
     // start reconfigure
