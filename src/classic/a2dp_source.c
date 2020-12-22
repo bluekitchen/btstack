@@ -369,13 +369,13 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // select SEP if none configured yet
             if (a2dp_source_have_config == false){
                // choose SBC config params
-                uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-                uint8_t channel_mode       = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-                uint8_t block_length       = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-                uint8_t subbands           = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
-                uint8_t allocation_method  = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
-                uint8_t max_bitpool_value  = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-                uint8_t min_bitpool_value  = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
+                uint16_t sampling_frequency       = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
+                avdtp_channel_mode_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
+                uint8_t block_length        = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
+                uint8_t subbands            = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
+                avdtp_sbc_allocation_method_t allocation_method = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+                uint8_t max_bitpool_value   = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+                uint8_t min_bitpool_value   = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
                 // and pre-select this (safe) endpoint
                 uint8_t local_seid = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
@@ -810,9 +810,39 @@ uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_se
     return avdtp_source_stream_send_media_packet(a2dp_cid, local_seid, packet, size);
 }
 
-static void avdtp_config_sbc_store(uint8_t * config, uint16_t sampling_frequency, avdtp_sbc_channel_mode_t channel_mode, uint8_t block_length, uint8_t subbands,
+static void avdtp_config_sbc_store(uint8_t * config, uint16_t sampling_frequency_hz, avdtp_channel_mode_t channel_mode, uint8_t block_length, uint8_t subbands,
                                   avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value) {
-    config[0] = (sampling_frequency << 4) | channel_mode;
+    avdtp_sbc_sampling_frequency_t sampling_frequency;
+    switch (sampling_frequency_hz){
+        case 16000:
+            sampling_frequency = AVDTP_SBC_16000;
+            break;
+        case 32000:
+            sampling_frequency = AVDTP_SBC_32000;
+            break;
+        case 48000:
+            sampling_frequency = AVDTP_SBC_48000;
+            break;
+        default:
+            sampling_frequency = AVDTP_SBC_44100;
+            break;
+    }
+    avdtp_sbc_channel_mode_t sbc_channel_mode;
+    switch (channel_mode){
+        case AVDTP_CHANNEL_MODE_MONO:
+            sbc_channel_mode = AVDTP_SBC_MONO;
+            break;
+        case AVDTP_CHANNEL_MODE_DUAL_CHANNEL:
+            sbc_channel_mode = AVDTP_SBC_DUAL_CHANNEL;
+            break;
+        case AVDTP_CHANNEL_MODE_STEREO:
+            sbc_channel_mode = AVDTP_SBC_STEREO;
+            break;
+        default:
+            sbc_channel_mode = AVDTP_SBC_JOINT_STEREO;
+            break;
+    }
+    config[0] = (((uint8_t) sampling_frequency) << 4) | ((uint8_t) sbc_channel_mode);
     config[1] = (block_length << 4) | (subbands << 2) | allocation_method;
     config[2] = min_bitpool_value;
     config[3] = max_bitpool_value;
@@ -930,8 +960,8 @@ static void a2dp_source_config_init(uint8_t remote_seid, avdtp_media_codec_type_
     a2dp_source_have_config = true;
 }
 
-uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_sbc_channel_mode_t channel_mode,
-                                   uint8_t block_length, uint8_t subbands, avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value){
+uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_channel_mode_t channel_mode,
+                                   uint8_t block_length, uint8_t subbands, avdtp_sbc_allocation_method_t allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value){
 
     UNUSED(local_seid);
 

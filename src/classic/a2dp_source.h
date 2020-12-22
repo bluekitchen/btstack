@@ -198,7 +198,7 @@ uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_se
  * @param max_bitpool_value
  * @return status
  */
-uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_sbc_channel_mode_t channel_mode,
+uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_channel_mode_t channel_mode,
                                    uint8_t block_length, uint8_t subbands, avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value);
 
 /**

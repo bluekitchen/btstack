@@ -1325,41 +1325,40 @@ void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoi
 }
 
 
-uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
+avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t channel_mode_bitmap = (media_codec[0] & 0x0F) & remote_channel_mode_bitmap;
-    
-    uint8_t channel_mode = AVDTP_SBC_STEREO;
+
     // use preferred channel mode if possible
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_JOINT_STEREO){
-        return AVDTP_SBC_JOINT_STEREO;
+        return AVDTP_CHANNEL_MODE_JOINT_STEREO;
     }
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_STEREO){
-        return AVDTP_SBC_STEREO;
+        return AVDTP_CHANNEL_MODE_STEREO;
     }
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_DUAL_CHANNEL){
-        return AVDTP_SBC_DUAL_CHANNEL;
+        return AVDTP_CHANNEL_MODE_DUAL_CHANNEL;
     }
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_MONO){
-        return AVDTP_SBC_MONO;
+        return AVDTP_CHANNEL_MODE_MONO;
     }
 
 
     if (channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO){
-        channel_mode = AVDTP_SBC_JOINT_STEREO;
+        return AVDTP_CHANNEL_MODE_JOINT_STEREO;
     } else if (channel_mode_bitmap & AVDTP_SBC_STEREO){
-        channel_mode = AVDTP_SBC_STEREO;
+        return AVDTP_CHANNEL_MODE_STEREO;
     } else if (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL){
-        channel_mode = AVDTP_SBC_DUAL_CHANNEL;
+        return AVDTP_CHANNEL_MODE_DUAL_CHANNEL;
     } else if (channel_mode_bitmap & AVDTP_SBC_MONO){
-        channel_mode = AVDTP_SBC_MONO;
+        return AVDTP_CHANNEL_MODE_MONO;
     } 
-    return channel_mode;
+    return AVDTP_CHANNEL_MODE_JOINT_STEREO;
 }
 
-uint8_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
+avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
-    uint8_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
+    avdtp_sbc_allocation_method_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
     
     uint8_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
     if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS){
@@ -1406,39 +1405,39 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
     return block_length;
 }
 
-uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
+uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t supported_sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
 
     // use preferred sampling frequency if possible
     if ((stream_endpoint->preferred_sampling_frequency == 48000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_48000)){
-        return AVDTP_SBC_48000;
+        return stream_endpoint->preferred_sampling_frequency;
     }
     if ((stream_endpoint->preferred_sampling_frequency == 44100) && (supported_sampling_frequency_bitmap & AVDTP_SBC_44100)){
-        return AVDTP_SBC_44100;
+        return stream_endpoint->preferred_sampling_frequency;
     }
     if ((stream_endpoint->preferred_sampling_frequency == 32000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_32000)){
-        return AVDTP_SBC_32000;
+        return stream_endpoint->preferred_sampling_frequency;
     }
     if ((stream_endpoint->preferred_sampling_frequency == 16000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_16000)){
-        return AVDTP_SBC_16000;
+        return stream_endpoint->preferred_sampling_frequency;
     }
 
     // otherwise, use highest available
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
-        return AVDTP_SBC_48000;
+        return 48000;
     }
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
-        return AVDTP_SBC_44100;
+        return 44100;
     }
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
-        return AVDTP_SBC_32000;
+        return 32000;
     }
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
-        return AVDTP_SBC_16000;
+        return 16000;
     } 
-    return AVDTP_SBC_44100; // some default
+    return 44100; // some default
 }
 
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value){
