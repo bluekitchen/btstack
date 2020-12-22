@@ -725,66 +725,6 @@ uint8_t a2dp_source_disconnect(uint16_t avdtp_cid){
     return avdtp_disconnect(avdtp_cid);
 }
 
-uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, uint32_t sampling_frequency){
-    btstack_assert(sc.local_stream_endpoint != NULL);
-
-    if (a2dp_source_cid != avdtp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
-    if (connection == NULL){
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    } 
-
-    if (a2dp_source_state != A2DP_STREAMING_OPENED) {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    log_info("Reconfigure avdtp_cid 0x%02x", avdtp_cid);
-
-    (void)memcpy(sc.local_stream_endpoint->media_codec_info,
-                 sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information,
-                 4);
-
-    // update sampling frequency
-    uint8_t config = sc.local_stream_endpoint->media_codec_info[0] & 0x0f;
-    switch (sampling_frequency){
-        case 48000:
-            config |= (AVDTP_SBC_48000 << 4);
-            break;
-        case 44100:
-            config |= (AVDTP_SBC_44100 << 4);
-            break;
-        case 32000:
-            config |= (AVDTP_SBC_32000 << 4);
-            break;
-        case 16000:
-            config |= (AVDTP_SBC_16000 << 4);
-            break;
-        default:
-            log_error("Unsupported sampling frequency %u", (int) sampling_frequency);
-            return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-    sc.local_stream_endpoint->media_codec_info[0] = config;
-
-    avdtp_capabilities_t new_configuration;
-    new_configuration.media_codec.media_type = AVDTP_AUDIO;
-    new_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
-    new_configuration.media_codec.media_codec_information_len = 4;
-    new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_info;
-
-    // start reconfigure
-    a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
-
-    return avdtp_source_reconfigure(
-        avdtp_cid,
-        avdtp_stream_endpoint_seid(sc.local_stream_endpoint),
-        sc.local_stream_endpoint->remote_sep.seid,
-        1 << AVDTP_MEDIA_CODEC,
-        new_configuration
-    );
-}
 
 uint8_t a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_start_stream(avdtp_cid, local_seid);
@@ -1078,4 +1018,65 @@ uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uin
     a2dp_source_config_init(remote_seid, AVDTP_CODEC_NON_A2DP, media_codec_information, media_codec_information_len);
 
     return ERROR_CODE_SUCCESS;
+}
+
+uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, uint32_t sampling_frequency){
+    btstack_assert(sc.local_stream_endpoint != NULL);
+
+    if (a2dp_source_cid != avdtp_cid){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (connection == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (a2dp_source_state != A2DP_STREAMING_OPENED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    log_info("Reconfigure avdtp_cid 0x%02x", avdtp_cid);
+
+    (void)memcpy(sc.local_stream_endpoint->media_codec_info,
+                 sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information,
+                 4);
+
+    // update sampling frequency
+    uint8_t config = sc.local_stream_endpoint->media_codec_info[0] & 0x0f;
+    switch (sampling_frequency){
+        case 48000:
+            config |= (AVDTP_SBC_48000 << 4);
+            break;
+        case 44100:
+            config |= (AVDTP_SBC_44100 << 4);
+            break;
+        case 32000:
+            config |= (AVDTP_SBC_32000 << 4);
+            break;
+        case 16000:
+            config |= (AVDTP_SBC_16000 << 4);
+            break;
+        default:
+            log_error("Unsupported sampling frequency %u", (int) sampling_frequency);
+            return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+    sc.local_stream_endpoint->media_codec_info[0] = config;
+
+    avdtp_capabilities_t new_configuration;
+    new_configuration.media_codec.media_type = AVDTP_AUDIO;
+    new_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+    new_configuration.media_codec.media_codec_information_len = 4;
+    new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_info;
+
+    // start reconfigure
+    a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
+
+    return avdtp_source_reconfigure(
+            avdtp_cid,
+            avdtp_stream_endpoint_seid(sc.local_stream_endpoint),
+            sc.local_stream_endpoint->remote_sep.seid,
+            1 << AVDTP_MEDIA_CODEC,
+            new_configuration
+    );
 }
