@@ -139,6 +139,19 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid){
     return NULL;
 }
 
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != codec_type) continue;
+        return stream_endpoint;
+    }
+    return NULL;
+}
+
+
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &connections);
