@@ -114,11 +114,10 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Open stream.
- * @param remote
- * @param local_seid	 	ID assigned to a local stream endpoint
- * @param out_a2dp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands. 
+ * @param remote_addr
+ * @param avdtp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands.
  */
-uint8_t a2dp_source_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
+uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid);
 
     /**
      * @brief Reconfigure stream.
