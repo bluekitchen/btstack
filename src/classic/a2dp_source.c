@@ -66,6 +66,12 @@
 #define AVDTP_MAX_SEP_NUM 10
 #define A2DP_SET_CONFIG_DELAY_MS 150
 
+typedef struct {
+    avdtp_stream_endpoint_t * local_stream_endpoint;
+    uint8_t active_remote_sep_index;
+} avdtp_stream_endpoint_context_t;
+
+
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 static btstack_timer_source_t a2dp_source_set_config_timer;

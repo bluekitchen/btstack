@@ -554,27 +554,6 @@ typedef struct avdtp_stream_endpoint {
     uint16_t sequence_number;
 } avdtp_stream_endpoint_t;
 
-typedef struct {
-    uint32_t fill_audio_ring_buffer_timeout_ms;
-    uint32_t time_audio_data_sent; // msstream
-    uint32_t acc_num_missed_samples;
-    uint32_t samples_ready;
-    btstack_timer_source_t fill_audio_ring_buffer_timer;
-    btstack_ring_buffer_t sbc_ring_buffer;
-    
-    int reconfigure;
-    int num_channels;
-    int sampling_frequency;
-    int channel_mode;
-    int block_length;
-    int subbands;
-    int allocation_method;
-    int min_bitpool_value;
-    int max_bitpool_value;
-    avdtp_stream_endpoint_t * local_stream_endpoint;
-    uint8_t active_remote_sep_index;
-} avdtp_stream_endpoint_context_t;
-
 void avdtp_init(void);
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
