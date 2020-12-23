@@ -115,7 +115,7 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
 /**
  * @brief Open stream.
  * @param remote_addr
- * @param avdtp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands.
+ * @param avdtp_cid 		Assigned A2DP channel identifier used for further A2DP commands.
  */
 uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid);
 
@@ -128,34 +128,34 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uin
 
 /**
  * @brief Start stream.
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid	 	ID of a local stream endpoint.
  */
 uint8_t a2dp_source_start_stream(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
  * @brief Pause stream.
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  */
 uint8_t a2dp_source_pause_stream(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
  * @brief Release stream and disconnect from remote. 
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  */
 uint8_t a2dp_source_disconnect(uint16_t a2dp_cid);
 
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  */
 void 	a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
  * @brief Return maximal media payload size, does not include media header.
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @return max_media_payload_size_without_media_header
  */
@@ -163,7 +163,7 @@ int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
  * @brief Send media payload.
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @param storage
  * @param num_bytes_to_copy
@@ -175,7 +175,7 @@ int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_sei
 
 /**
  * @brief Send media packet
- * @param a2dp_cid 			A2DP channel identifyer.
+ * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @param packet
  * @param size
