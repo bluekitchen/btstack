@@ -107,7 +107,7 @@ static att_write_callback_t                   att_server_client_write_callback;
 static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
 
 static att_connection_t * att_connection_for_hci_connection(hci_connection_t * hci_connection){
-    return &hci_connection->att_server.connection;
+    return &hci_connection->att_connection;
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE

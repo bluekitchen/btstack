@@ -448,8 +448,6 @@ typedef struct {
     int                     value_indication_handle;    
     btstack_timer_source_t  value_indication_timer;
 
-    att_connection_t        connection;
-
     btstack_linked_list_t   notification_requests;
     btstack_linked_list_t   indication_requests;
 
@@ -585,8 +583,12 @@ typedef struct {
     uint16_t le_max_tx_octets;
 #endif
 
+    // ATT Connection
+    att_connection_t att_connection;
+
     // ATT Server
     att_server_t    att_server;
+
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
