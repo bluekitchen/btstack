@@ -2221,7 +2221,11 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	}
 #endif
 
-	// TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
+    // init unenhanced att bearer mtu
+    conn->att_connection.mtu = ATT_DEFAULT_MTU;
+    conn->att_connection.mtu_exchanged = false;
+
+    // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
 
 	// restart timer
 	// btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
