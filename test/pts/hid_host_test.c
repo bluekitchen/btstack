@@ -193,7 +193,7 @@ static uint8_t hid_host_send_get_report(uint16_t hid_cid,  hid_report_type_t rep
     if (!hid_host || !hid_host->control_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     } 
-    if (hid_host->state != HID_HOST_CONTROL_CONNECTION_ESTABLISHED){
+    if (hid_host->state != HID_HOST_CONNECTION_ESTABLISHED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
@@ -222,7 +222,9 @@ static uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t repo
     if (!hid_host || !hid_host->control_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     } 
-    if (hid_host->state != HID_HOST_CONTROL_CONNECTION_ESTABLISHED){
+
+    if (hid_host->state != HID_HOST_CONNECTION_ESTABLISHED){
+        printf("hid_host_send_set_report: unexpected state 0%02x\n", HID_HOST_CONNECTION_ESTABLISHED);
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
@@ -251,7 +253,7 @@ static uint8_t hid_host_send_set_input_report(uint16_t hid_cid, uint8_t report_i
 static uint8_t hid_host_send_get_protocol(uint16_t hid_cid){
     hid_host_t * hid_host = hid_host_get_instance_for_hid_cid(hid_cid);
     if (!hid_host || !hid_host->control_cid) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    if (hid_host->state != HID_HOST_CONTROL_CONNECTION_ESTABLISHED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hid_host->state != HID_HOST_CONNECTION_ESTABLISHED) return ERROR_CODE_COMMAND_DISALLOWED;
 
     hid_host->state = HID_HOST_W2_SEND_GET_PROTOCOL;
 
@@ -327,7 +329,7 @@ static hid_host_t * hid_host_get_instance_for_l2cap_cid(uint16_t cid){
     return NULL;
 }
 
-static void hid_host_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len){
+static void _hid_host_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len){
     hid_host_t * hid_host = hid_host_get_instance_for_hid_cid(hid_cid);
     if (!hid_host || !hid_host->control_cid) return;
     l2cap_send(hid_host->control_cid, (uint8_t*) message, message_len);
@@ -335,19 +337,19 @@ static void hid_host_send_control_message(uint16_t hid_cid, const uint8_t * mess
 
 static uint8_t hid_host_send_suspend(uint16_t hcid){
     uint8_t report[] = { (HID_MESSAGE_TYPE_HID_CONTROL << 4) | HID_CONTROL_PARAM_SUSPEND };
-    hid_host_send_control_message(hcid, &report[0], sizeof(report));
+    _hid_host_send_control_message(hcid, &report[0], sizeof(report));
     return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t hid_host_send_exit_suspend(uint16_t hcid){
     uint8_t report[] = { (HID_MESSAGE_TYPE_HID_CONTROL << 4) | HID_CONTROL_PARAM_EXIT_SUSPEND };
-    hid_host_send_control_message(hcid, &report[0], sizeof(report));
+    _hid_host_send_control_message(hcid, &report[0], sizeof(report));
     return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t hid_host_send_virtual_cable_unplug(uint16_t hcid){
     uint8_t report[] = { (HID_MESSAGE_TYPE_HID_CONTROL << 4) | HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG };
-    hid_host_send_control_message(hcid, &report[0], sizeof(report));
+    _hid_host_send_control_message(hcid, &report[0], sizeof(report));
     return ERROR_CODE_SUCCESS;
 }
 
@@ -375,7 +377,7 @@ static void hid_host_disconnect_control_channel(uint16_t hid_cid){
     }
 }
 
-static void hid_host_disconnect(uint16_t hid_cid){
+static void _hid_host_disconnect(uint16_t hid_cid){
     hid_host_t * hid_host = hid_host_get_instance_for_hid_cid(hid_cid);
     if (!hid_host){
         log_error("hid_host_disconnect: could not find hid device instace");
@@ -402,9 +404,9 @@ static void hid_host_setup(void){
 
     // Initialize L2CAP 
     l2cap_init();
-    // register L2CAP Services for reconnections
-    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 0xffff, gap_get_security_level());
-    l2cap_register_service(packet_handler, PSM_HID_CONTROL, 0xffff, gap_get_security_level());
+    
+    // Initialize HID Host    
+    hid_host_init(hid_descriptor, hid_descriptor_len);
 
     // Allow sniff mode requests by HID device and support role switch
     gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
@@ -740,7 +742,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                     hid_host->state = HID_HOST_CONTROL_CONNECTION_ESTABLISHED;
                                     break;
                                 }
-                                _hid_host.state = HID_HOST_CONTROL_CONNECTION_ESTABLISHED;
+                                hid_host->state = HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED;
                             }   
                             break;
                         case PSM_HID_INTERRUPT:
@@ -905,7 +907,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("HID_MESSAGE_TYPE_DATA ???\n");
                             break;
                     }
-                    hid_host->state =  HID_HOST_CONTROL_CONNECTION_ESTABLISHED;
+                    hid_host->state =  HID_HOST_CONNECTION_ESTABLISHED;
                     break;
 
                 case HID_MESSAGE_TYPE_HID_CONTROL:

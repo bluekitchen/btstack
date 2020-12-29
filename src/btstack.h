@@ -122,6 +122,7 @@
 #include "classic/hfp_hf.h"
 #include "classic/hid.h"
 #include "classic/hid_device.h"
+#include "classic/hid_host.h"
 #include "classic/hsp_ag.h"
 #include "classic/hsp_hs.h"
 #include "classic/pan.h"
