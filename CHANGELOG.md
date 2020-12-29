@@ -18,6 +18,7 @@ L2CAP: fix packet size check for incoming classic basic channels (regression int
 
 ### Changed
 HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP record is found
+GATT Client: Skip MTU exchange after MTU exchange on ATT Server
 
 ## Release v1.2.1
 
