@@ -879,6 +879,7 @@ static void show_usage(void){
     printf("B      - A2DP Source disconnect\n");
     printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
     printf("C      - AVRCP disconnect\n");
+    printf("D      - delete all link keys\n");
 
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
@@ -891,7 +892,7 @@ static void show_usage(void){
     printf("T      - volume down\n");
     printf("v      - volume up (via set absolute volume)\n");
     printf("V      - volume down (via set absolute volume)\n");
-    
+
     printf("---\n");
 }
 
@@ -914,7 +915,10 @@ static void stdin_process(char cmd){
             printf("%c - AVRCP disconnect\n", cmd);
             status = avrcp_disconnect(media_tracker.avrcp_cid);
             break;
-
+        case 'D':
+            printf("Deleting all link keys\n");
+            gap_delete_all_link_keys();
+            break;
         case '\n':
         case '\r':
             break;

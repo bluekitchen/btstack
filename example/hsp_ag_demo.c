@@ -112,6 +112,7 @@ static void show_usage(void){
     printf("C - Disconnect\n");
     printf("a - establish audio connection\n");
     printf("A - release audio connection\n");
+    printf("D - delete all link keys\n");
     printf("m - set microphone gain 8\n");
     printf("M - set microphone gain 15\n");
     printf("o - set speaker gain 0\n");
@@ -124,6 +125,14 @@ static void show_usage(void){
 
 static void stdin_process(char c){
     switch (c){
+        case 'a':
+            printf("Establish audio connection\n");
+            hsp_ag_establish_audio_connection();
+            break;
+        case 'A':
+            printf("Release audio connection\n");
+            hsp_ag_release_audio_connection();
+            break;
         case 'c':
             printf("Connect to %s\n", device_addr_string);
             hsp_ag_connect(device_addr);
@@ -132,13 +141,9 @@ static void stdin_process(char c){
             printf("Disconnect.\n");
             hsp_ag_disconnect();
             break;
-        case 'a':
-            printf("Establish audio connection\n");
-            hsp_ag_establish_audio_connection();
-            break;
-        case 'A': 
-            printf("Release audio connection\n");
-            hsp_ag_release_audio_connection();
+        case 'D':
+            printf("Deleting all link keys\n");
+            gap_delete_all_link_keys();
             break;
         case 'm':
             printf("Setting microphone gain 8\n");
