@@ -58,15 +58,16 @@ extern "C" {
 #include "l2cap.h"
 
 // Classic
-#include "classic/bnep.h"
-#include "classic/hfp.h"
-#include "classic/btstack_link_key_db.h"
-#include "classic/btstack_link_key_db_memory.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
 #include "classic/avrcp.h"
+#include "classic/bnep.h"
+#include "classic/btstack_link_key_db.h"
+#include "classic/btstack_link_key_db_memory.h"
+#include "classic/hfp.h"
+#include "classic/hid_host.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp_server.h"
 
 // BLE
 #ifdef ENABLE_BLE
@@ -127,6 +128,10 @@ void   btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel);
 // hfp_connection
 hfp_connection_t * btstack_memory_hfp_connection_get(void);
 void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
+
+// hid_host_connection
+hid_host_connection_t * btstack_memory_hid_host_connection_get(void);
+void   btstack_memory_hid_host_connection_free(hid_host_connection_t *hid_host_connection);
 
 // service_record_item
 service_record_item_t * btstack_memory_service_record_item_get(void);
