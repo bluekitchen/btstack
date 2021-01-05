@@ -1498,11 +1498,17 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
             hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
             break;
-        // only sent if ENABLE_SCO_OVER_HCI and manufacturer is Broadcom
+        // only sent if manufacturer is Broadcom and ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM is defined
         case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+#ifdef ENABLE_SCO_OVER_HCI
             log_info("BCM: Route SCO data via HCI transport");
             hci_send_cmd(&hci_bcm_write_sco_pcm_int, 1, 0, 0, 0, 0);
+#endif
+#ifdef ENABLE_SCO_OVER_PCM
+            log_info("BCM: Route SCO data via PCM interface");
+            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 4, 0, 1, 1);
+#endif
             break;
 
 #endif
@@ -1859,7 +1865,16 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #else /* !ENABLE_SCO_OVER_HCI */
 
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
-#ifdef ENABLE_BLE            
+#ifdef ENABLE_SCO_OVER_PCM
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) {
+                hci_stack->substate = HCI_INIT_BCM_WRITE_SCO_PCM_INT;
+                return;
+            }
+#endif
+            /* fall through */
+
+        case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
+#ifdef ENABLE_BLE
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE;
                 return;
