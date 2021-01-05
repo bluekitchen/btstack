@@ -648,7 +648,11 @@ typedef struct hfp_connection {
     bool cc256x_send_wbs_associate;
     bool cc256x_send_wbs_disassociate;
 #endif
-
+#ifdef ENABLE_BCM_PCM_WBS
+    bool bcm_send_enable_wbs;
+    bool bcm_send_disable_wbs;
+    bool bcm_send_write_i2spcm_interface_param;
+#endif
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
@@ -710,6 +714,10 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index);
 #ifdef ENABLE_CC256X_ASSISTED_HFP
 void hfp_cc256x_prepare_for_sco(hfp_connection_t * hfp_connection);
 void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection);
+#endif
+#ifdef ENABLE_BCM_PCM_WBS
+void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection);
+void hfp_bcm_write_i2spcm_interface_param (hfp_connection_t * hfp_connection);
 #endif
 
 /**

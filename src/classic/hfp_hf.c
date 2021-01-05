@@ -567,6 +567,26 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 #endif
+#ifdef ENABLE_BCM_PCM_WBS
+    // Enable WBS
+    if (hfp_connection->bcm_send_enable_wbs){
+        hfp_connection->bcm_send_enable_wbs = false;
+        hci_send_cmd(&hci_bcm_enable_wbs, 1, 2);
+        return;
+    }
+    // Write I2S/PCM params
+    if (hfp_connection->bcm_send_write_i2spcm_interface_param){
+        hfp_connection->bcm_send_write_i2spcm_interface_param = false;
+        hfp_bcm_write_i2spcm_interface_param(hfp_connection);
+        return;
+    }
+    // Disable WBS
+    if (hfp_connection->bcm_send_disable_wbs){
+        hfp_connection->bcm_send_disable_wbs = false;
+        hci_send_cmd(&hci_bcm_enable_wbs, 0, 2);
+        return;
+    }
+#endif
 
     if (hfp_connection->hf_accept_sco){
 
@@ -599,7 +619,11 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         // mSBC only allows for transparent data
         uint16_t sco_voice_setting = hci_get_sco_voice_setting();
         if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-            sco_voice_setting = 0x0043; // Transparent data
+#ifdef ENABLE_BCM_PCM_WBS
+            sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
+#else
+            sco_voice_setting = 0x0043; // Transparent data, 8-bit otherwise
+#endif
         }
 
         // filter packet types

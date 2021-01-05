@@ -1737,6 +1737,26 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         return;
     }
 #endif
+#ifdef ENABLE_BCM_PCM_WBS
+    // Enable WBS
+    if (hfp_connection->bcm_send_enable_wbs){
+        hfp_connection->bcm_send_enable_wbs = false;
+        hci_send_cmd(&hci_bcm_enable_wbs, 1, 2);
+        return;
+    }
+    // Write I2S/PCM params
+    if (hfp_connection->bcm_send_write_i2spcm_interface_param){
+        hfp_connection->bcm_send_write_i2spcm_interface_param = false;
+        hfp_bcm_write_i2spcm_interface_param(hfp_connection);
+        return;
+    }
+    // Disable WBS
+    if (hfp_connection->bcm_send_disable_wbs){
+        hfp_connection->bcm_send_disable_wbs = false;
+        hci_send_cmd(&hci_bcm_enable_wbs, 0, 2);
+        return;
+    }
+#endif
 
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);

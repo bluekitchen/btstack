@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 CC256x: With ENABLE_CC256X_ASSISTED_HFP, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
+BCM: With ENABLE_BCM_PCM_WBS, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
 SDP Client RFCOMM: add `sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid`
 HFP AG/HSP AG: avoid connecting to remote service with same role
 

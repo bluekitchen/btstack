@@ -63,6 +63,10 @@
 #error "Assisted HFP is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
 #endif
 
+#if defined(ENABLE_BCM_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
+#error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
 
@@ -702,6 +706,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_CC256X_ASSISTED_HFP
                     hfp_cc256x_prepare_for_sco(hfp_connection);
 #endif
+#ifdef ENABLE_BCM_PCM_WBS
+                    hfp_bcm_prepare_for_sco(hfp_connection);
+#endif
                     log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
                     sco_establishment_active = hfp_connection;
                     break;
@@ -793,7 +800,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_CC256X_ASSISTED_HFP
             hfp_connection->cc256x_send_wbs_disassociate = true;
 #endif
-
+#ifdef ENABLE_BCM_PCM_WBS
+            hfp_connection->bcm_send_disable_wbs = true;
+#endif
             hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
             hfp_connection->release_audio_connection = 0;
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -1607,7 +1616,11 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-        sco_voice_setting = 0x0043; // Transparent data
+#ifdef ENABLE_BCM_PCM_WBS
+        sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
+#else
+        sco_voice_setting = 0x0043; // Transparent data, 8-bit otherwise
+#endif
     }
     // get packet types - bits 6-9 are 'don't allow'
     uint16_t packet_types = hfp_link_settings[setting].packet_types ^ 0x03c0;
@@ -1647,6 +1660,20 @@ void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection){
                  frame_sync_edge, frame_sync_polarity, reserved,
                  size, chan_1_offset, out_edge, size, chan_1_offset, in_edge, reserved,
                  size, chan_2_offset, out_edge, size, chan_2_offset, in_edge, reserved);
+}
+#endif
+
+#ifdef ENABLE_BCM_PCM_WBS
+void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection){
+    hfp_connection->bcm_send_write_i2spcm_interface_param = true;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        hfp_connection->bcm_send_enable_wbs = true;
+    }
+}
+void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
+    uint8_t sample_rate = (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? 1 : 0;
+    // i2s enable, master, 8/16 kHz, 2048 kHz
+    hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, sample_rate, 4);
 }
 #endif
 
