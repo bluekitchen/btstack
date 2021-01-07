@@ -689,6 +689,7 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
 	avdtp_source_register_delay_reporting_category(avdtp_stream_endpoint_seid(stream_endpoint));
 
 	// store user codec configuration buffer
+	stream_endpoint->media_codec_type = media_codec_type;
 	stream_endpoint->media_codec_configuration_info = codec_configuration;
     stream_endpoint->media_codec_configuration_len  = codec_configuration_len;
 
