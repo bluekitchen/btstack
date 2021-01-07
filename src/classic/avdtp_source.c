@@ -235,7 +235,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);
-    (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE +1], payload, payload_size);
+    (void)memcpy(&media_packet[AVDTP_MEDIA_PAYLOAD_HEADER_SIZE], payload, payload_size);
     stream_endpoint->sequence_number++;
     return l2cap_send_prepared(stream_endpoint->l2cap_media_cid, packet_size);
 }

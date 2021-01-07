@@ -375,7 +375,10 @@ static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
-    a2dp_source_stream_send_media_payload(media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
+    // Prepend SBC Header
+    media_tracker.sbc_storage[0] = num_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    avdtp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0, media_tracker.sbc_storage, bytes_in_storage + 1);
+
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
 }
@@ -449,7 +452,8 @@ static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * contex
         uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
-        memcpy(&context->sbc_storage[context->sbc_storage_count], sbc_frame, sbc_frame_size);
+        // first byte in sbc storage contains sbc media header
+        memcpy(&context->sbc_storage[1 + context->sbc_storage_count], sbc_frame, sbc_frame_size);
         context->sbc_storage_count += sbc_frame_size;
         context->samples_ready -= num_audio_samples_per_sbc_buffer;
     }
