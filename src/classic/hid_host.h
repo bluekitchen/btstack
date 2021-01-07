@@ -69,10 +69,15 @@ typedef enum {
     HID_HOST_W2_SEND_SET_PROTOCOL,
     HID_HOST_W4_SET_PROTOCOL_RESPONSE,
     HID_HOST_W2_SEND_REPORT,
-    HID_HOST_W4_SEND_REPORT_RESPONSE
+    HID_HOST_W4_SEND_REPORT_RESPONSE,
+
+    HID_HOST_W4_INTERRUPT_CONNECTION_DISCONNECTED,
+    HID_HOST_W4_CONTROL_CONNECTION_DISCONNECTED
 } hid_host_state_t;
 
 typedef struct {
+    btstack_linked_item_t item;
+
     uint16_t  hid_cid;
     hci_con_handle_t con_handle;
     
@@ -152,6 +157,24 @@ void hid_host_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, 
  */
 void hid_host_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
 
+
+uint8_t hid_host_send_set_protocol_mode(uint16_t hid_cid, hid_protocol_mode_t protocol_mode);
+uint8_t hid_host_send_get_protocol(uint16_t hid_cid);
+
+uint8_t hid_host_send_suspend(uint16_t hid_cid);
+uint8_t hid_host_send_exit_suspend(uint16_t hid_cid);
+
+uint8_t hid_host_send_virtual_cable_unplug(uint16_t hid_cid);
+
+uint8_t hid_host_send_output_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
+
+uint8_t hid_host_send_set_output_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_set_feature_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_set_input_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
+
+uint8_t hid_host_send_get_output_report(uint16_t hid_cid, uint8_t report_id);
+uint8_t hid_host_send_get_feature_report(uint16_t hid_cid, uint8_t report_id);
+uint8_t hid_host_send_get_input_report(uint16_t hid_cid, uint8_t report_id);
 
 
 /* API_END */
