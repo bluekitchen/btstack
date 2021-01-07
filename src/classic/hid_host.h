@@ -48,6 +48,62 @@
 extern "C" {
 #endif
 
+typedef enum {
+    HID_HOST_IDLE,
+    HID_HOST_W2_SEND_SDP_QUERY,
+    HID_HOST_W4_SDP_QUERY_RESULT,
+    
+    HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED,
+    HID_HOST_CONTROL_CONNECTION_ESTABLISHED,
+
+    HID_HOST_W4_SET_BOOT_MODE,
+    HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED,
+    HID_HOST_CONNECTION_ESTABLISHED,
+    
+    HID_HOST_W2_SEND_GET_REPORT,
+    HID_HOST_W4_GET_REPORT_RESPONSE,
+    HID_HOST_W2_SEND_SET_REPORT,
+    HID_HOST_W4_SET_REPORT_RESPONSE,
+    HID_HOST_W2_SEND_GET_PROTOCOL,
+    HID_HOST_W4_GET_PROTOCOL_RESPONSE,
+    HID_HOST_W2_SEND_SET_PROTOCOL,
+    HID_HOST_W4_SET_PROTOCOL_RESPONSE,
+    HID_HOST_W2_SEND_REPORT,
+    HID_HOST_W4_SEND_REPORT_RESPONSE
+} hid_host_state_t;
+
+typedef struct {
+    uint16_t  hid_cid;
+    hci_con_handle_t con_handle;
+    
+    bd_addr_t remote_addr;
+    bool incoming;
+    bool boot_mode;
+
+    uint16_t  control_cid;
+    uint16_t  control_psm;
+    uint16_t  interrupt_cid;
+    uint16_t  interrupt_psm;
+
+    hid_host_state_t state;
+    hid_protocol_mode_t protocol_mode;
+    bool unplugged;
+
+    uint16_t hid_descriptor_offset;
+    uint16_t hid_descriptor_len;
+    uint16_t hid_descriptor_max_len;
+
+    uint8_t   user_request_can_send_now; 
+
+    // get report
+    hid_report_type_t report_type;
+    uint8_t           report_id;
+
+    // set report
+    uint8_t * report;
+    uint16_t  report_len;
+} hid_host_connection_t;
+
 /* API_START */
 /**
  * @brief Set up HID Host 
@@ -55,7 +111,7 @@ extern "C" {
  * @param hid_descriptor_storage
  * @param hid_descriptor_storage_len
  */
-void hid_host_init(const uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len);
+void hid_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len);
 
 /**
  * @brief Register callback for the HID Device Host. 
@@ -65,11 +121,11 @@ void hid_host_register_packet_handler(btstack_packet_handler_t callback);
 
 /*
  * @brief Create HID connection to HID Host
- * @param addr
+ * @param remote_addr
  * @param hid_cid to use for other commands
  * @result status
  */
-uint8_t hid_host_connect(bd_addr_t addr, hid_protocol_mode_t protocol_mode, uint16_t * hid_cid);
+uint8_t hid_host_connect(bd_addr_t remote_addr, hid_protocol_mode_t protocol_mode, uint16_t * hid_cid);
 
 /*
  * @brief Disconnect from HID Host
