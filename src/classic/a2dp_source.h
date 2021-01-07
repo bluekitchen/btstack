@@ -174,6 +174,18 @@ int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
 int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
 /**
+ * @brief Send media payload.
+ * @param a2dp_cid 			A2DP channel identifier.
+ * @param local_seid  		ID of a local stream endpoint.
+ * @param marker
+ * @param payload
+ * @param payload_size
+ * @param marker
+ * @return status
+ */
+uint8_t a2dp_source_stream_send_media_payload_rtp(uint16_t a2dp_cid, uint8_t local_seid, uint8_t marker, uint8_t * payload, uint16_t payload_size);
+
+/**
  * @brief Send media packet
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
