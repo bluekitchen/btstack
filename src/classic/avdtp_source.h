@@ -238,7 +238,29 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
 void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 /**
- * @brief Send media payload.
+ * @brief Send media packet
+ * @param avdtp_cid         AVDTP channel identifyer.
+ * @param local_seid        ID of a local stream endpoint.
+ * @param packet
+ * @param size
+ * @return status
+ */
+uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size);
+
+/**
+ * @brief Send media payload including RTP header
+ * @param avdtp_cid         AVDTP channel identifyer.
+ * @param local_seid        ID of a local stream endpoint.
+ * @param marker
+ * @param payload
+ * @param size
+ * @return status
+ */
+uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t local_seid, uint8_t marker, uint8_t * payload, uint16_t size);
+
+/**
+ * @brief Send media payload including RTP header and the SBC media header
+ * @deprecated Please use avdtp_source_stream_send_media_payload_rtp
  * @param avdtp_cid         AVDTP channel identifyer.
  * @param local_seid        ID of a local stream endpoint.
  * @param storage
@@ -249,15 +271,7 @@ void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endp
  */
 int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
-/**
- * @brief Send media packet.
- * @param avdtp_cid         AVDTP channel identifyer.
- * @param local_seid        ID of a local stream endpoint.
- * @param packet
- * @param size
- * @return status
- */
-uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_seid, const uint8_t * packet, uint16_t size);
+
 
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
