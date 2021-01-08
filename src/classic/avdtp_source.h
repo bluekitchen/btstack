@@ -287,6 +287,11 @@ void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avddp_cid, uint8
  */
 int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid);
 
+/**
+ * @brief De-Init AVDTP Source.
+ */
+void avdtp_source_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus

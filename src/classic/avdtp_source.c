@@ -164,6 +164,9 @@ void avdtp_source_init(void) {
     avdtp_init();
 }
 
+void avdtp_source_deinit(void){
+    avdtp_deinit();
+}
 
 static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t marker, uint16_t sequence_number){
     uint8_t  rtp_version = 2;

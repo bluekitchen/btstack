@@ -55,6 +55,8 @@
 
 btstack_linked_list_t stream_endpoints;
 
+static bool l2cap_registered;
+
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
 static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
@@ -66,8 +68,8 @@ static uint16_t stream_endpoints_id_counter = 0;
 static btstack_linked_list_t connections;
 static uint16_t transaction_id_counter = 0;
 
-static int record_id = -1;
-static uint8_t   attribute_value[45];
+static int record_id;
+static uint8_t attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 static void (*avdtp_sink_handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
@@ -261,6 +263,7 @@ static void avdtp_handle_start_sdp_client_query(void * context){
                 continue;
         }
         sdp_query_context_avdtp_cid = connection->avdtp_cid;
+        record_id = -1;
         sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
         return;
     }
@@ -1473,9 +1476,20 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
 }
 
 void avdtp_init(void){
-    static bool l2cap_registered = false;
     if (!l2cap_registered){
         l2cap_registered = true;
         l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
     }
+}
+
+void avdtp_deinit(void){
+    l2cap_registered = false;
+    stream_endpoints = NULL;
+    connections = NULL;
+    avdtp_sink_handle_media_data = NULL;
+
+    sdp_query_context_avdtp_cid = 0;
+    stream_endpoints_id_counter = 0;
+    transaction_id_counter = 0;
+    avdtp_cid_counter = 0;
 }

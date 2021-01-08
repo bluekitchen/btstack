@@ -103,6 +103,10 @@ void avdtp_sink_init(void) {
     avdtp_init();
 }
 
+void avdtp_sink_deinit(void){
+    avdtp_deinit();
+}
+
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
     return avdtp_create_stream_endpoint(sep_type, media_type);
 }
