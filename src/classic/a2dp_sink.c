@@ -162,6 +162,14 @@ void a2dp_sink_init(void){
     avdtp_sink_init();
 }
 
+void a2dp_sink_deinit(void){
+    avdtp_sink_deinit();
+
+    outgoing_active = false;
+    a2dp_sink_cid = 0;
+    stream_endpoint_configured = false;
+}
+
 avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
 														   uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
 														   uint8_t * codec_configuration, uint16_t codec_configuration_len){

@@ -80,14 +80,14 @@ static btstack_timer_source_t a2dp_source_set_config_timer;
 static bool     outgoing_active;
 
 // discover remote seps
-static a2dp_state_t a2dp_source_state = A2DP_IDLE;
+static a2dp_state_t a2dp_source_state;
 static uint16_t     a2dp_source_cid;
-static uint16_t     num_remote_seps = 0;
+static uint16_t     num_remote_seps;
 static avdtp_sep_t  remote_seps[AVDTP_MAX_SEP_NUM];
 
 static bool a2dp_source_have_config;
 
-static bool stream_endpoint_configured = false;
+static bool stream_endpoint_configured;
 
 static avdtp_stream_endpoint_context_t sc;
 static btstack_packet_handler_t a2dp_source_packet_handler_user;
@@ -673,7 +673,19 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 void a2dp_source_init(void){
+    a2dp_source_state = A2DP_IDLE;
+    (void) memset(&sc, 0, sizeof(avdtp_stream_endpoint_context_t));
+
     avdtp_source_init();
+}
+
+void a2dp_source_deinit(void){
+    avdtp_source_deinit();
+
+    outgoing_active = false;
+    stream_endpoint_configured = false;
+    a2dp_source_cid = 0;
+    num_remote_seps = 0;
 }
 
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,

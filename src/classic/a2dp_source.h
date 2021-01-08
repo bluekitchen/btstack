@@ -274,6 +274,11 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uin
  */
 uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, const uint8_t * media_codec_information, uint8_t media_codec_information_len);
 
+/**
+ * @brief De-Init A2DP Source device.
+ */
+void a2dp_source_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus

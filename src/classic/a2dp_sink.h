@@ -128,6 +128,11 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_
  */
 void a2dp_sink_disconnect(uint16_t a2dp_cid);
 
+/**
+ * @brief De-Init A2DP Sink device.
+ */
+void a2dp_sink_deinit(void);
+
 /* API_END */
 
 
