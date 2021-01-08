@@ -282,6 +282,11 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t l
 void btstack_aes128_calc(const uint8_t * key, const uint8_t * plaintext, uint8_t * ciphertext);
 #endif
 
+/**
+ * @brief De-Init BTstack Crypto
+ */
+void btstack_crypto_deinit(void);
+
 // PTS testing only - not possible when using Buetooth Controller for ECC operations
 void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key);
 
