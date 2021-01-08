@@ -200,10 +200,10 @@ static btstack_linked_list_t l2cap_le_services;
 static btstack_linked_list_t l2cap_channels;
 #ifdef L2CAP_USES_CHANNELS
 // next channel id for new connections
-static uint16_t  local_source_cid  = 0x40;
+static uint16_t  local_source_cid;
 #endif
 // next signaling sequence number
-static uint8_t   sig_seq_nr  = 0xff;
+static uint8_t   sig_seq_nr;
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
@@ -873,7 +873,8 @@ static uint8_t l2cap_next_sig_id(void){
 
 void l2cap_init(void){
     signaling_responses_pending = 0;
-    
+    local_source_cid  = 0x40;
+    sig_seq_nr  = 0xff;
     l2cap_channels = NULL;
 
 #ifdef ENABLE_CLASSIC
@@ -918,6 +919,14 @@ void l2cap_init(void){
     gap_connectable_control(0); // no services yet
 #endif
 #endif
+}
+
+/**
+ * @brief De-Init L2CAP
+ */
+void l2cap_deinit(void){
+    memset(l2cap_outgoing_classic_addr, 0, 6);
+    signaling_responses_pending = 0;
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
