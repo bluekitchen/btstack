@@ -1311,6 +1311,11 @@ uint8_t hci_get_allow_role_switch(void);
  */
 HCI_STATE hci_get_state(void);
 
+/**
+ * @brief De-Init HCI
+ */
+void hci_deinit(void);
+
 // setup test connections, used for fuzzing
 void hci_setup_test_connections_fuzz(void);
 

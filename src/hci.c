@@ -3124,6 +3124,16 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_state_reset();
 }
 
+void hci_deinit(void){
+#ifdef HAVE_MALLOC
+    if (hci_stack) {
+        free(hci_stack);
+    }
+#endif
+    hci_stack = NULL;
+    disable_l2cap_timeouts = 0;
+}
+
 /**
  * @brief Configure Bluetooth chipset driver. Has to be called before power on, or right after receiving the local version information
  */
