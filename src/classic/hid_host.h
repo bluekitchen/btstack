@@ -92,8 +92,7 @@ typedef struct {
 
     hid_host_state_t state;
     hid_protocol_mode_t protocol_mode;
-    bool unplugged;
-
+    
     uint16_t hid_descriptor_offset;
     uint16_t hid_descriptor_len;
     uint16_t hid_descriptor_max_len;
@@ -104,6 +103,12 @@ typedef struct {
     hid_report_type_t report_type;
     uint8_t           report_id;
 
+    // control message, bit mask:
+    // SUSSPEND             1
+    // EXIT_SUSSPEND        2
+    // VIRTUAL_CABLE_UNPLUG 4
+    uint8_t control_tasks;
+    
     // set report
     uint8_t * report;
     uint16_t  report_len;
@@ -132,18 +137,20 @@ void hid_host_register_packet_handler(btstack_packet_handler_t callback);
  */
 uint8_t hid_host_connect(bd_addr_t remote_addr, hid_protocol_mode_t protocol_mode, uint16_t * hid_cid);
 
+uint8_t hid_host_accept_connection(uint16_t hid_cid);
+uint8_t hid_host_decline_connection(uint16_t hid_cid);
+
 /*
  * @brief Disconnect from HID Host
  * @param hid_cid
  */
 void hid_host_disconnect(uint16_t hid_cid);
 
-/**
- * @brief Request can send now event to send HID Report
- * Generates an HID_SUBEVENT_CAN_SEND_NOW subevent
- * @param hid_cid
- */
-void hid_host_request_can_send_now_event(uint16_t hid_cid);
+// Control messages:
+uint8_t hid_host_send_suspend(uint16_t hid_cid);
+uint8_t hid_host_send_exit_suspend(uint16_t hid_cid);
+
+uint8_t hid_host_send_virtual_cable_unplug(uint16_t hid_cid);
 
 /**
  * @brief Send HID message on interrupt channel
@@ -151,20 +158,10 @@ void hid_host_request_can_send_now_event(uint16_t hid_cid);
  */
 void hid_host_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
 
-/**
- * @brief Send HID message on control channel
- * @param hid_cid
- */
-void hid_host_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
-
 
 uint8_t hid_host_send_set_protocol_mode(uint16_t hid_cid, hid_protocol_mode_t protocol_mode);
 uint8_t hid_host_send_get_protocol(uint16_t hid_cid);
 
-uint8_t hid_host_send_suspend(uint16_t hid_cid);
-uint8_t hid_host_send_exit_suspend(uint16_t hid_cid);
-
-uint8_t hid_host_send_virtual_cable_unplug(uint16_t hid_cid);
 
 uint8_t hid_host_send_output_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
 

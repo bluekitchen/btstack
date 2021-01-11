@@ -63,7 +63,6 @@ static bool send_through_interrupt_channel = false;
 
 // SDP
 static uint8_t            hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
-static uint16_t           hid_descriptor_len;
 
 // PTS
 static const char * remote_addr_string = "00:1B:DC:08:E2:5C";
@@ -78,7 +77,7 @@ static void hid_host_setup(void){
     l2cap_init();
     
     // Initialize HID Host    
-    hid_host_init(hid_descriptor, hid_descriptor_len);
+    hid_host_init(hid_descriptor, sizeof(hid_descriptor));
     hid_host_register_packet_handler(packet_handler);
 
     // Allow sniff mode requests by HID device and support role switch
@@ -130,7 +129,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 case HCI_EVENT_HID_META:
                     switch (hci_event_hid_meta_get_subevent_code(packet)){
+                        case HID_SUBEVENT_INCOMING_CONNECTION:
+                            if (unplugged){
+                                hid_host_decline_connection(hid_subevent_incoming_connection_get_hid_cid(packet));
+                                break;
+                            }
+                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet));
+                            break;
                         
+                        case HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG:
+                            if (hid_host_cid != hid_subevent_virtual_cable_unplug_get_hid_cid(packet)) return;
+                            unplugged = true;
+                            break;
+
                         case HID_SUBEVENT_CONNECTION_OPENED:
                             status = hid_subevent_connection_opened_get_status(packet);
                             if (status) {
@@ -170,7 +181,13 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - start SDP scan and connect");
+    printf("c      - start SDP scan and connect to %s\n", remote_addr_string);
+    printf("C      - disconnect from %s\n", remote_addr_string);
+    printf("\n");
+    printf("s      - suspend\n");
+    printf("S      - exit suspend\n");
+    printf("U      - unplug\n");
+    printf("\n");
     printf("o      - get output report\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -200,7 +217,7 @@ static void stdin_process(char cmd){
                 printf("Cannot connect, host is unplugged.\n");
                 break;  
             } 
-            printf("Start SDP scan and connect to %s.\n", bd_addr_to_str(remote_addr));
+            printf("Start SDP scan and connect to %s.\n", remote_addr_string);
             
             if (boot_mode){
                 status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_BOOT, &hid_host_cid);
@@ -210,7 +227,7 @@ static void stdin_process(char cmd){
             break;
 
         case 'C':
-            printf("Disconnect from  %s...\n", bd_addr_to_str(remote_addr));
+            printf("Disconnect from  %s...\n", remote_addr_string);
             hid_host_disconnect(hid_host_cid);
             break;
 
@@ -222,7 +239,7 @@ static void stdin_process(char cmd){
             printf("Send \'Exit suspend\'\n");
             hid_host_send_exit_suspend(hid_host_cid);
             break;
-        case 'u':
+        case 'U':
             printf("Send \'Unplug\'\n");
             unplugged = true;
             hid_host_send_virtual_cable_unplug(hid_host_cid);
