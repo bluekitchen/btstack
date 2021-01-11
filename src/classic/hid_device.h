@@ -189,6 +189,11 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
  */
 int hid_device_in_boot_protocol_mode(uint16_t hid_cid);
 
+/**
+ * @brief De-Init HID Device
+ */
+void hid_device_deinit(void);
+
 /* API_END */
 
 /* Only needed for PTS Testing */
