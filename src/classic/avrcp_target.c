@@ -1180,6 +1180,10 @@ void avrcp_target_init(void){
     avrcp_register_target_packet_handler(&avrcp_target_packet_handler);
 }
 
+void avrcp_target_deinit(void){
+    memset(&avrcp_target_context, 0, sizeof(avrcp_context_t));
+}
+
 void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     avrcp_target_context.avrcp_callback = callback;

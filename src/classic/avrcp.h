@@ -633,6 +633,11 @@ uint8_t avrcp_connect(bd_addr_t remote_addr, uint16_t * avrcp_cid);
  */
 uint8_t avrcp_disconnect(uint16_t avrcp_cid);
 
+/**
+ * @brief De-Init AVRCP
+ */
+void avrcp_deinit(void);
+
 /* API_END */
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
