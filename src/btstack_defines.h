@@ -2865,6 +2865,15 @@ typedef uint8_t sm_key_t[16];
 // HID Meta Event Group
 
 /**
+ * @format 12BH
+ * @param subevent_code
+ * @param hid_cid
+ * @param address
+ * @param handle
+ */
+#define HID_SUBEVENT_INCOMING_CONNECTION                                   0x01
+
+/**
  * @format 121BH1
  * @param subevent_code
  * @param hid_cid
@@ -2873,42 +2882,42 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define HID_SUBEVENT_CONNECTION_OPENED                                     0x01
+#define HID_SUBEVENT_CONNECTION_OPENED                                     0x02
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x02
+#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x03
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
+#define HID_SUBEVENT_CAN_SEND_NOW                                          0x04
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_SUSPEND                                               0x04
+#define HID_SUBEVENT_SUSPEND                                               0x05
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_EXIT_SUSPEND                                          0x05
+#define HID_SUBEVENT_EXIT_SUSPEND                                          0x06
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x06
+#define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x07
 
 
 
