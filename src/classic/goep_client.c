@@ -380,6 +380,9 @@ void goep_client_init(void){
     goep_client->obex_connection_id = OBEX_CONNECTION_ID_INVALID;
 }
 
+void goep_client_deinit(void){
+}
+
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
     goep_client_t * context = goep_client;
     if (context->state != GOEP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;

@@ -236,6 +236,11 @@ void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32
  */
 int goep_client_execute(uint16_t goep_cid);
 
+/**
+ * @brief De-Init GOEP Client
+ */
+void goep_client_deinit(void);
+
 /* API_END */
 
 // int goep_client_body_add_dynamic(uint16_t goep_cid, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));
