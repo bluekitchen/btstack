@@ -217,6 +217,12 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
  * @brief Unregister BNEP service.
  */
 void bnep_unregister_service(uint16_t service_uuid);
+
+/**
+ * @brief De-Init BNEP
+ */
+void bnep_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus
