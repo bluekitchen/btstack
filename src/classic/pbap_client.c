@@ -894,6 +894,9 @@ void pbap_client_init(void){
     pbap_client->cid = 1;
 }
 
+void pbap_client_deinit(void){
+}
+
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     if (pbap_client->state != PBAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
 
