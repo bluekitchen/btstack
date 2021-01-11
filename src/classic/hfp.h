@@ -672,6 +672,7 @@ void hfp_set_hf_callback(btstack_packet_handler_t callback);
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
 void hfp_init(void);
+void hfp_deinit(void);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);

@@ -357,6 +357,11 @@ void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
  */
 void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error);
 
+/**
+ * @brief De-Init HFP AG
+ */
+void hfp_ag_deinit(void);
+
 /* API_END */
 
 // testing

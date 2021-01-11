@@ -64,19 +64,22 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+// const
+static const char default_hfp_hf_service_name[] = "Hands-Free unit";
+
+// globals
 static btstack_packet_callback_registration_t hfp_hf_hci_event_callback_registration;
 
-static const char default_hfp_hf_service_name[] = "Hands-Free unit";
 static uint16_t hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
-static uint8_t hfp_codecs_nr = 0;
+static uint8_t hfp_codecs_nr;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
-static uint8_t hfp_indicators_nr = 0;
+static uint8_t hfp_indicators_nr;
 static uint8_t hfp_indicators[HFP_MAX_NUM_INDICATORS];
 static uint32_t hfp_indicators_value[HFP_MAX_NUM_INDICATORS];
 
-static uint8_t hfp_hf_speaker_gain = 9;
-static uint8_t hfp_hf_microphone_gain = 9;
+static uint8_t hfp_hf_speaker_gain;
+static uint8_t hfp_hf_microphone_gain;
 
 static btstack_packet_handler_t hfp_hf_callback;
 
@@ -1194,6 +1197,15 @@ static void hfp_hf_hci_event_packet_handler(uint8_t packet_type, uint16_t channe
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
     hfp_init();
+    hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
+    hfp_call_status = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
+    hfp_callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+    hfp_callheld_status= HFP_CALLHELD_STATUS_NO_CALLS_HELD;
+    hfp_codecs_nr = 0;
+    hfp_hf_speaker_gain = 9;
+    hfp_hf_microphone_gain = 9;
+    hfp_indicators_nr = 0;
+    hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
 
     hfp_hf_hci_event_callback_registration.callback = &hfp_hf_hci_event_packet_handler;
     hci_add_event_handler(&hfp_hf_hci_event_callback_registration);
@@ -1202,12 +1214,13 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
 
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_hf_rfcomm_packet_handler(&hfp_hf_rfcomm_packet_handler);
-    
-    hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
-    hfp_codecs_nr = 0;
-    hfp_indicators_nr = 0;
-    hfp_hf_speaker_gain = 9;
-    hfp_hf_microphone_gain = 9;
+}
+
+void hfp_hf_deinit(void){
+    hfp_deinit();
+    (void) memset(&hfp_hf_hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
+    (void) memset(&hfp_hf_callback, 0, sizeof(btstack_packet_handler_t));
+    (void) memset(phone_number, 0, sizeof(phone_number));
 }
 
 void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs){

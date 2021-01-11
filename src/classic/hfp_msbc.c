@@ -56,6 +56,7 @@
 #define MSBC_PADDING_SIZE 1
 #define MSBC_EXTRA_SIZE (MSBC_HEADER_H2_SIZE + MSBC_PADDING_SIZE)
 
+// const
 static const uint8_t msbc_header_h2_byte_0         = 1;
 static const uint8_t msbc_header_h2_byte_1_table[] = { 0x08, 0x38, 0xc8, 0xf8 };
 
@@ -69,6 +70,10 @@ void hfp_msbc_init(void){
     btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, SBC_ALLOCATION_METHOD_LOUDNESS, 16000, 26, SBC_CHANNEL_MODE_MONO);
     msbc_buffer_offset = 0;
     msbc_sequence_number = 0;
+}
+
+void hfp_msbc_deinit(void){
+    (void) memset(&state, 0, sizeof(btstack_sbc_encoder_state_t));
 }
 
 int hfp_msbc_can_encode_audio_frame_now(void){

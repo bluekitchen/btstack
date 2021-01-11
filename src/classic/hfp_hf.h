@@ -422,6 +422,11 @@ void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, i
  */
 int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
 
+/**
+ * @brief De-Init HFP HF
+ */
+void hfp_hf_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus

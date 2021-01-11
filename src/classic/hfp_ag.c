@@ -79,34 +79,36 @@ void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
-static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
-// gobals
+// const
 static const char default_hfp_ag_service_name[] = "Voice gateway";
 
-static uint16_t hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
+// globals
+static btstack_packet_callback_registration_t hfp_ag_hci_event_callback_registration;
 
-static uint8_t hfp_codecs_nr = 0;
+static uint16_t hfp_supported_features;
+
+static uint8_t hfp_codecs_nr;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
-static int  hfp_ag_indicators_nr = 0;
+static int  hfp_ag_indicators_nr;
 static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_INDICATORS];
 
-static int hfp_generic_status_indicators_nr = 0;
+static int hfp_generic_status_indicators_nr;
 static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_INDICATORS];
 
-static int  hfp_ag_call_hold_services_nr = 0;
+static int  hfp_ag_call_hold_services_nr;
 static char *hfp_ag_call_hold_services[6];
 static btstack_packet_handler_t hfp_ag_callback;
 
 static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
-static int hfp_ag_response_and_hold_active = 0;
+static int hfp_ag_response_and_hold_active;
 
-// Subcriber information entries
-static hfp_phone_number_t * subscriber_numbers = NULL;
-static int subscriber_numbers_count = 0;
+// Subscriber information entries
+static hfp_phone_number_t * subscriber_numbers;
+static int subscriber_numbers_count;
 
-
+// code
 static void hfp_ag_emit_simple_event(uint8_t event_subtype){
 	uint8_t event[3];
 	event[0] = HCI_EVENT_HFP_META;
@@ -2101,6 +2103,13 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
 
     hfp_init();
+    hfp_ag_call_hold_services_nr = 0;
+    hfp_ag_response_and_hold_active = 0;
+    hfp_ag_indicators_nr = 0;
+    hfp_codecs_nr = 0;
+    hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
+    subscriber_numbers = NULL;
+    subscriber_numbers_count = 0;
 
     hfp_ag_hci_event_callback_registration.callback = &hfp_ag_hci_event_packet_handler;
     hci_add_event_handler(&hfp_ag_hci_event_callback_registration);
@@ -2109,12 +2118,17 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_ag_rfcomm_packet_handler(&hfp_ag_rfcomm_packet_handler);
-    
-    hfp_ag_response_and_hold_active = 0;
-    subscriber_numbers = NULL;
-    subscriber_numbers_count = 0;
 
     hfp_gsm_init();
+}
+
+void hfp_ag_deinit(void){
+    hfp_deinit();
+    hfp_gsm_deinit();
+    (void) memset(&hfp_ag_hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
+    (void) memset(&hfp_ag_callback, 0, sizeof(btstack_packet_handler_t));
+    (void) memset(&hfp_ag_call_hold_services, 0, sizeof(hfp_ag_call_hold_services));
+    (void) memset(&hfp_ag_response_and_hold_state, 0, sizeof(hfp_response_and_hold_state_t));
 }
 
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){

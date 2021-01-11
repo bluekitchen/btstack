@@ -86,6 +86,11 @@ int  hfp_msbc_num_bytes_in_stream(void);
  */
 void hfp_msbc_read_from_stream(uint8_t * buffer, int size);
 
+/**
+ * @brief De-Init HFP mSBC Codec
+ */
+void hfp_msbc_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus

@@ -70,64 +70,90 @@
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
 
+typedef struct {
+    hfp_role_t local_role;
+    bd_addr_t  remote_address;
+} hfp_sdp_query_context_t;
+
+// globals
+
+static hfp_sdp_query_context_t sdp_query_context;
+static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
+
+static btstack_linked_list_t hfp_connections ;
+
+static btstack_packet_handler_t hfp_hf_callback;
+static btstack_packet_handler_t hfp_ag_callback;
+
+static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
+static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
+
+static hfp_connection_t * sco_establishment_active;
+
+static uint16_t hfp_allowed_sco_packet_types;
+
+// prototypes
+static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
+static void parse_sequence(hfp_connection_t * context);
+
 
 static const char * hfp_hf_features[] = {
-    "EC and/or NR function",
-    "Three-way calling",
-    "CLI presentation capability",
-    "Voice recognition activation",
-    "Remote volume control",
+        "EC and/or NR function",
+        "Three-way calling",
+        "CLI presentation capability",
+        "Voice recognition activation",
+        "Remote volume control",
 
-    "Enhanced call status",
-    "Enhanced call control",
-    
-    "Codec negotiation",
-    
-    "HF Indicators",
-    "eSCO S4 (and T2) Settings Supported",
-    "Reserved for future definition"
+        "Enhanced call status",
+        "Enhanced call control",
+
+        "Codec negotiation",
+
+        "HF Indicators",
+        "eSCO S4 (and T2) Settings Supported",
+        "Reserved for future definition"
 };
 
 static const char * hfp_ag_features[] = {
-    "Three-way calling",
-    "EC and/or NR function",
-    "Voice recognition function",
-    "In-band ring tone capability",
-    "Attach a number to a voice tag",
-    "Ability to reject a call",
-    "Enhanced call status",
-    "Enhanced call control",
-    "Extended Error Result Codes",
-    "Codec negotiation",
-    "HF Indicators",
-    "eSCO S4 (and T2) Settings Supported",
-    "Reserved for future definition"
+        "Three-way calling",
+        "EC and/or NR function",
+        "Voice recognition function",
+        "In-band ring tone capability",
+        "Attach a number to a voice tag",
+        "Ability to reject a call",
+        "Enhanced call status",
+        "Enhanced call control",
+        "Extended Error Result Codes",
+        "Codec negotiation",
+        "HF Indicators",
+        "eSCO S4 (and T2) Settings Supported",
+        "Reserved for future definition"
 };
 
 static const char * hfp_enhanced_call_dir[] = {
-    "outgoing",
-    "incoming"
+        "outgoing",
+        "incoming"
 };
 
 static const char * hfp_enhanced_call_status[] = {
-    "active",
-    "held",
-    "outgoing dialing",
-    "outgoing alerting",
-    "incoming",
-    "incoming waiting",
-    "call held by response and hold"
+        "active",
+        "held",
+        "outgoing dialing",
+        "outgoing alerting",
+        "incoming",
+        "incoming waiting",
+        "call held by response and hold"
 };
 
 static const char * hfp_enhanced_call_mode[] = {
-    "voice",
-    "data",
-    "fax"
+        "voice",
+        "data",
+        "fax"
 };
 
 static const char * hfp_enhanced_call_mpty[] = {
-    "not a conference call",
-    "conference call"
+        "not a conference call",
+        "conference call"
 };
 
 const char * hfp_enhanced_call_dir2str(uint16_t index){
@@ -149,32 +175,6 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index){
     if (index <= HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL) return hfp_enhanced_call_mpty[index];
     return "not defined";
 }
-
-typedef struct {
-    hfp_role_t local_role;
-    bd_addr_t  remote_address;
-} hfp_sdp_query_context_t;
-
-static hfp_sdp_query_context_t sdp_query_context;
-static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
-
-static void parse_sequence(hfp_connection_t * context);
-
-static btstack_linked_list_t hfp_connections = NULL;
-
-static btstack_packet_handler_t hfp_hf_callback;
-static btstack_packet_handler_t hfp_ag_callback;
-
-static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
-static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
-
-static hfp_connection_t * sco_establishment_active;
-
-// HFP_SCO_PACKET_TYPES_NONE == no choice/override
-static uint16_t hfp_allowed_sco_packet_types;
-
-// prototypes
-static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 
 static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
     uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -1695,6 +1695,17 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
 
 void hfp_init(void){
     hfp_allowed_sco_packet_types = SCO_PACKET_TYPES_ALL;
+}
+
+void hfp_deinit(void){
+    hfp_connections = NULL;
+    hfp_hf_callback = NULL;
+    hfp_ag_callback = NULL;
+    hfp_hf_rfcomm_packet_handler = NULL;
+    hfp_ag_rfcomm_packet_handler = NULL;
+    sco_establishment_active = NULL;
+    (void) memset(&sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
+    (void) memset(&hfp_handle_sdp_client_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
 
 void hfp_set_sco_packet_types(uint16_t packet_types){
