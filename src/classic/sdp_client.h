@@ -62,6 +62,11 @@ typedef struct de_state {
 void de_state_init(de_state_t * state);
 int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 
+/**
+ * @brief SDP Client Init
+ */
+void sdp_client_init(void);
+
 /** 
  * @brief Checks if the SDP Client is ready
  * @deprecated Please use sdp_client_register_query_callback instead
@@ -123,6 +128,11 @@ uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t r
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 void sdp_client_parse_service_record_handle_list(uint8_t* packet, uint16_t total_count, uint16_t current_count);
 #endif
+
+/**
+ * @brief De-Init SDP Client
+ */
+void sdp_client_deinit(void);
 
 /* API_END */
 

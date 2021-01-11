@@ -83,7 +83,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void sdp_client_init(void){
+static void sdp_general_query_init(void){
     // init L2CAP
     l2cap_init();
 
@@ -205,8 +205,8 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
     sscanf_bd_addr(remote_addr_string, remote_addr);
 #endif
-    
-    sdp_client_init();
+
+    sdp_general_query_init();
     // turn on!
     hci_power_control(HCI_POWER_ON);
             
