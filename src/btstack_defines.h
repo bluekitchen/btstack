@@ -2919,7 +2919,15 @@ typedef uint8_t sm_key_t[16];
 */
 #define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x07
 
-
+/** 
+ * @format 121LV
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+ * @param report_len
+ * @param report
+*/
+#define HID_SUBEVENT_GET_REPORT_RESPONSE                                   0x08
 
 // HIDS Meta Event Group
 
