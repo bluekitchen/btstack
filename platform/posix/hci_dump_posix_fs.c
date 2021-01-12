@@ -1,0 +1,152 @@
+/*
+ * Copyright (C) 2014-2020 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+
+#define BTSTACK_FILE__ "hci_dump_posix_fs.c"
+
+/*
+ *  hci_dump_posix_fs.c
+ *
+ *  Dump HCI trace in various formats into a file:
+ *
+ *  - BlueZ's hcidump format
+ *  - Apple's PacketLogger
+ *  - stdout hexdump
+ *
+ */
+
+#include "btstack_config.h"
+
+// enable POSIX functions (needed for -std=c99)
+#define _POSIX_C_SOURCE 200809
+
+#include "hci_dump_posix_fs.h"
+
+#include "btstack_debug.h"
+#include "hci_cmd.h"
+
+#include <time.h>
+#include <stdio.h>        // printf
+#include <fcntl.h>        // open
+#include <unistd.h>       // write
+#include <errno.h>        // errno
+#include <sys/time.h>     // for timestamps
+#include <sys/stat.h>     // file modes
+
+static int  dump_file = -1;
+static int  dump_format;
+static char log_message_buffer[256];
+
+static void hci_dump_posix_fs_reset(void){
+    btstack_assert(dump_file >= 0);
+    (void) lseek(dump_file, 0, SEEK_SET);
+    (void) ftruncate(dump_file, 0);
+}
+
+static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
+    if (dump_file < 0) return;
+
+    static union {
+        uint8_t header_bluez[HCI_DUMP_HEADER_SIZE_BLUEZ];
+        uint8_t header_packetlogger[HCI_DUMP_HEADER_SIZE_PACKETLOGGER];
+    } header;
+
+    uint32_t tv_sec = 0;
+    uint32_t tv_us  = 0;
+
+    // get time
+    struct timeval curr_time;
+    gettimeofday(&curr_time, NULL);
+    tv_sec = curr_time.tv_sec;
+    tv_us  = curr_time.tv_usec;
+
+    uint16_t header_len = 0;
+    switch (dump_format){
+        case HCI_DUMP_BLUEZ:
+            hci_dump_setup_header_bluez(header.header_bluez, tv_sec, tv_us, packet_type, in, len);
+            header_len = HCI_DUMP_HEADER_SIZE_BLUEZ;
+            break;
+        case HCI_DUMP_PACKETLOGGER:
+            hci_dump_setup_header_packetlogger(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
+            header_len = HCI_DUMP_HEADER_SIZE_PACKETLOGGER;
+            break;
+        default:
+            return;
+    }
+
+    (void) write(dump_file, &header, header_len);
+    (void) write(dump_file, packet, len );
+}
+
+static void hci_dump_posix_fs_log_message(const char * format, va_list argptr){
+    if (dump_file < 0) return;
+    int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+    hci_dump_posix_fs_log_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
+}
+
+// returns system errno
+int hci_dump_posix_fs_open(const char *filename, hci_dump_format_t format){
+    btstack_assert(format == HCI_DUMP_BLUEZ || format == HCI_DUMP_PACKETLOGGER);
+
+    dump_format = format;
+    int oflags = O_WRONLY | O_CREAT | O_TRUNC;
+#ifdef _WIN32
+    oflags |= O_BINARY;
+#endif
+    dump_file = open(filename, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+    if (dump_file < 0){
+        printf("failed to open file %s, errno = %d\n", filename, errno);
+        return errno;
+    }
+    return 0;
+}
+
+void hci_dump_posix_fs_close(void){
+    close(dump_file);
+    dump_file = -1;
+}
+
+const hci_dump_t * hci_dump_posix_fs_get_instance(void){
+    static const hci_dump_t hci_dump_instance = {
+        // void (*reset)(void);
+        &hci_dump_posix_fs_reset,
+        // void (*log_packet)(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len);
+        &hci_dump_posix_fs_log_packet,
+        // void (*log_message)(int log_level, const char * format, va_list argptr);
+        &hci_dump_posix_fs_log_message,
+    };
+    return &hci_dump_instance;
+}
