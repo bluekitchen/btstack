@@ -74,7 +74,9 @@ typedef enum {
     HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST,  // The device does not support the request. This result code shall be used if the HIDP message type is unsupported.
     HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER,    // A parameter value is out of range or inappropriate for the request.
     HID_HANDSHAKE_PARAM_TYPE_ERR_UNKNOWN = 0x0E,       // Device could not identify the error condition.
-    HID_HANDSHAKE_PARAM_TYPE_ERR_FATAL = 0x0F          // Restart is essential to resume functionality
+    HID_HANDSHAKE_PARAM_TYPE_ERR_FATAL = 0x0F,         // Restart is essential to resume functionality
+    // BTstack custom error codes
+    HID_HANDSHAKE_PARAM_TYPE_ERR_DISCONNECT            
 } hid_handshake_param_type_t;
 
 typedef enum {
