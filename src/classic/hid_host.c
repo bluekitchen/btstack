@@ -213,6 +213,19 @@ static void hid_emit_event(hid_host_connection_t * context, uint8_t subevent_typ
     hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
 }
 
+static void hid_emit_event_with_status(hid_host_connection_t * context, uint8_t subevent_type, hid_handshake_param_type_t status){
+    uint8_t event[6];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_HID_META;
+    pos++;  // skip len
+    event[pos++] = subevent_type;
+    little_endian_store_16(event,pos,context->hid_cid);
+    pos += 2;
+    event[pos++] = status;
+    event[1] = pos - 2;
+    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
+}
+
 static void hid_emit_incoming_connection_event(hid_host_connection_t * context){
     uint8_t event[13];
     uint16_t pos = 0;
@@ -241,6 +254,20 @@ static void hid_setup_get_report_event(hid_host_connection_t * context, hid_hand
     little_endian_store_16(buffer, pos, report_len);
     pos += 2;
     buffer[1] = pos + report_len - 2;
+}
+
+static void hid_emit_get_protocol_event(hid_host_connection_t * context, hid_handshake_param_type_t status, hid_protocol_mode_t protocol_mode){
+    uint8_t event[7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_HID_META;
+    pos++;  // skip len
+    event[pos++] = HID_SUBEVENT_GET_PROTOCOL_RESPONSE;
+    little_endian_store_16(event,pos,context->hid_cid);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = protocol_mode;
+    event[1] = pos - 2;
+    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
 }
 
 // HID Host
@@ -520,7 +547,8 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
     uint8_t param;
     hid_message_type_t         message_type;
     hid_handshake_param_type_t message_status;
-    // hid_report_type_t          report_type;
+    hid_protocol_mode_t        protocol_mode;
+
     uint8_t * in_place_event;
     uint8_t status;
 
@@ -537,12 +565,13 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
         }
     }
 
+    message_status = (hid_handshake_param_type_t)(packet[0] & 0x0F);
+
     switch (connection->state){
         case HID_HOST_W4_GET_REPORT_RESPONSE:
             switch (message_type){
                 case HID_MESSAGE_TYPE_HANDSHAKE:{
                     uint8_t event[8];
-                    message_status = (hid_handshake_param_type_t)(packet[0] & 0x0F);
                     hid_setup_get_report_event(connection, message_status, event, 0);
                     hid_callback(HCI_EVENT_PACKET, connection->hid_cid, event, sizeof(event));
                     break;
@@ -557,18 +586,37 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
                     break;
             }
             break;
+        
         case HID_HOST_W4_SET_REPORT_RESPONSE:
-            printf("HID_HOST_W4_SET_REPORT_RESPONSE \n");
+            hid_emit_event_with_status(connection, HID_SUBEVENT_SET_REPORT_RESPONSE, message_status);
             break;
+        
         case HID_HOST_W4_GET_PROTOCOL_RESPONSE:
-            printf("HID_HOST_W4_GET_PROTOCOL_RESPONSE \n");
+            protocol_mode = connection->protocol_mode;
+
+            switch (message_type){
+                case HID_MESSAGE_TYPE_DATA:
+                    protocol_mode = (hid_protocol_mode_t)packet[1];
+                    switch (protocol_mode){
+                        case HID_PROTOCOL_MODE_BOOT:
+                        case HID_PROTOCOL_MODE_REPORT:
+                            message_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+                            break;
+                        default:
+                            message_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            hid_emit_get_protocol_event(connection, message_status, protocol_mode); 
             break;
-        case HID_HOST_W4_SEND_REPORT_RESPONSE:
-            printf("HID_HOST_W4_SEND_REPORT_RESPONSE\n");
-            break;
+
         case HID_HOST_W4_SET_PROTOCOL_RESPONSE:
             printf("HID_HOST_W4_SET_PROTOCOL_RESPONSE \n");
-            message_status = (hid_handshake_param_type_t)(packet[0] & 0x0F);
+            hid_emit_event_with_status(connection, HID_SUBEVENT_SET_PROTOCOL_RESPONSE, message_status);
+
             switch (message_status){
                 case HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL:
                     switch(connection->protocol_mode){
@@ -591,6 +639,11 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
                     break;
             }
             break;
+        
+        case HID_HOST_W4_SEND_REPORT_RESPONSE:
+            printf("HID_HOST_W4_SEND_REPORT_RESPONSE\n");
+            break;
+            
         default:
             printf("HID_MESSAGE_TYPE_DATA ???\n");
             break;
@@ -1046,9 +1099,13 @@ static uint8_t hid_host_send_set_report(uint16_t hid_cid, hid_report_type_t repo
     } 
 
     if (connection->state != HID_HOST_CONNECTION_ESTABLISHED){
-        printf("hid_host_send_set_report: unexpected state 0%02x\n", HID_HOST_CONNECTION_ESTABLISHED);
+        log_info("hid_host_send_set_report: unexpected state 0%02x", HID_HOST_CONNECTION_ESTABLISHED);
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
+
+    if ((l2cap_max_mtu() - 2) < report_len ){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     connection->state = HID_HOST_W2_SEND_SET_REPORT;
     connection->report_type = report_type;
@@ -1074,11 +1131,14 @@ uint8_t hid_host_send_set_input_report(uint16_t hid_cid, uint8_t report_id, uint
 
 uint8_t hid_host_send_get_protocol(uint16_t hid_cid){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
-    if (!connection || !connection->control_cid) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    if (connection->state != HID_HOST_CONNECTION_ESTABLISHED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (!connection || !connection->control_cid){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    } 
+    if (connection->state != HID_HOST_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
 
     connection->state = HID_HOST_W2_SEND_GET_PROTOCOL;
-
     l2cap_request_can_send_now_event(connection->control_cid);
     return ERROR_CODE_SUCCESS;
 }

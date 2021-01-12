@@ -166,12 +166,48 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         case HID_SUBEVENT_GET_REPORT_RESPONSE:
                             status = hid_subevent_get_report_response_get_handshake_status(packet);
                             if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
-                                printf("Error get report result, status 0x%02x\n", status);
+                                printf("Error get report, status 0x%02x\n", status);
                                 break;
                             }
                             printf("Received report[%d]: ", hid_subevent_get_report_response_get_report_len(packet));
                             printf_hexdump(hid_subevent_get_report_response_get_report(packet), hid_subevent_get_report_response_get_report_len(packet));
                             printf("\n");
+                            break;
+
+                        case HID_SUBEVENT_SET_REPORT_RESPONSE:
+                            status = hid_subevent_set_report_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error set report, status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("Report set.\n");
+                            break;
+
+                        case HID_SUBEVENT_GET_PROTOCOL_RESPONSE:
+                            status = hid_subevent_get_protocol_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error get report, status 0x%02x\n", status);
+                                break;
+                            }
+                            switch ((hid_protocol_mode_t)hid_subevent_get_protocol_response_get_protocol_mode(packet)){
+                                case HID_PROTOCOL_MODE_BOOT:
+                                    printf("HID device is in BOOT mode.\n");
+                                    break;
+                                case HID_PROTOCOL_MODE_REPORT:
+                                    printf("HID device is in REPORT mode.\n");
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+
+                        case HID_SUBEVENT_SET_PROTOCOL_RESPONSE:
+                            status = hid_subevent_set_report_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error set protocol, status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("Protocol set.\n");
                             break;
 
                         default:
@@ -206,9 +242,18 @@ static void show_usage(void){
     printf("\n");
     printf("1      - Get report with id 0x05\n");
     printf("2      - Get report with id 0x03\n");
-    printf("3      - Get input report from with id 0x02\n");
+    printf("3      - Get report with id 0x02\n");
 
-    printf("o      - get output report\n");
+    printf("\n");
+    printf("4      - Set report with id 0x03\n");
+    printf("5      - Set report with id 0x05\n");
+    // printf("6      - Set report with id 0x02\n");
+
+    printf("\n");
+    printf("p      - Get protocol\n");
+    printf("r      - Set protocol in REPORT mode\n");
+    printf("b      - Set protocol in BOOT mode\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -216,22 +261,6 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
-        
-        case 'R':
-            printf("Set Protocol mode\n");
-            boot_mode = false;
-            status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_REPORT);
-            break;
-        case 'b':
-            printf("Set Boot mode\n");
-            boot_mode = false;
-            status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_BOOT);
-            break;
-        case 'B':
-            printf("Set Boot mode\n");
-            boot_mode = true;
-            break;
-
         case 'c':
             if (unplugged){
                 printf("Cannot connect, host is unplugged.\n");
@@ -251,6 +280,23 @@ static void stdin_process(char cmd){
             hid_host_disconnect(hid_host_cid);
             break;
 
+
+        case 'p':
+            printf("Get protocol\n");
+            status = hid_host_send_get_protocol(hid_host_cid);
+            break;
+        case 'r':
+            printf("Set protocol in REPORT mode");
+            boot_mode = false;
+            status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_REPORT);
+            break;
+        case 'b':
+            printf("Set protocol in BOOT mode\n");
+            boot_mode = true;
+            status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_BOOT);
+            break;
+
+        
         case 's':
             printf("Send \'Suspend\'\n");
             hid_host_send_suspend(hid_host_cid);
@@ -295,22 +341,21 @@ static void stdin_process(char cmd){
             break;
         }
 
-        case '6':{
-            uint8_t report[] = {0, 0, 0, 0};
-            printf("Set input report with id 0x02\n");
-            status = hid_host_send_set_input_report(hid_host_cid, 0x02, report, sizeof(report));
-            break;
-        }
+        // case '6':{
+        //     uint8_t report[] = {0, 0, 0, 0};
+        //     printf("Set input report with id 0x02\n");
+        //     status = hid_host_send_set_input_report(hid_host_cid, 0x02, report, sizeof(report));
+        //     break;
+        // }
+
+       
+
         case '7':{
             uint8_t report[] = {0,0,0, 0,0,0, 0,0};
             printf("Set output report with id 0x01\n");
             status = hid_host_send_set_output_report(hid_host_cid, 0x01, report, sizeof(report));
             break;
         }
-        case 'p':
-            printf("Get Protocol\n");
-            status = hid_host_send_get_protocol(hid_host_cid);
-            break;
         
         case 'X':
             printf("Set send through interrupt channel\n");
