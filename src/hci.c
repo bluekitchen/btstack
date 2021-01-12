@@ -2520,12 +2520,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_LINK_KEY_REQUEST:
             log_info("HCI_EVENT_LINK_KEY_REQUEST");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
-            // non-bondable mode: link key negative reply will be sent by HANDLE_LINK_KEY_REQUEST
-            if (hci_stack->bondable && !hci_stack->link_key_db) break;
+            // request handled by hci_run()
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
-            hci_run();
-            // request handled by hci_run() as HANDLE_LINK_KEY_REQUEST gets set
-            return;
+            break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
             reverse_bd_addr(&packet[2], addr);
@@ -4095,7 +4092,7 @@ static bool hci_run_general_pending_commands(void){
         }
 
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
-            log_info("responding to link key request");
+            log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
 
             link_key_t link_key;
