@@ -2929,6 +2929,32 @@ typedef uint8_t sm_key_t[16];
 */
 #define HID_SUBEVENT_GET_REPORT_RESPONSE                                   0x08
 
+/** 
+ * @format 121
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+*/
+#define HID_SUBEVENT_SET_REPORT_RESPONSE                                   0x09
+
+/** 
+ * @format 1211
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+ * @param protocol_mode
+*/
+#define HID_SUBEVENT_GET_PROTOCOL_RESPONSE                                 0x0A
+
+/** 
+ * @format 121
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+*/
+#define HID_SUBEVENT_SET_PROTOCOL_RESPONSE                                 0x0B
+
+
 // HIDS Meta Event Group
 
 /**
