@@ -183,9 +183,9 @@ static const uint16_t hid_descriptor_storage_get_descriptor_len(hid_host_connect
 
 
 // HID Util
-static inline void hid_emit_connected_event(hid_host_connection_t * context, uint8_t status){
+static void hid_emit_connected_event(hid_host_connection_t * context, uint8_t status){
     uint8_t event[15];
-    int pos = 0;
+    uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = HID_SUBEVENT_CONNECTION_OPENED;
@@ -201,9 +201,9 @@ static inline void hid_emit_connected_event(hid_host_connection_t * context, uin
     hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
 }   
 
-static inline void hid_emit_event(hid_host_connection_t * context, uint8_t subevent_type){
+static void hid_emit_event(hid_host_connection_t * context, uint8_t subevent_type){
     uint8_t event[5];
-    int pos = 0;
+    uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = subevent_type;
@@ -213,9 +213,9 @@ static inline void hid_emit_event(hid_host_connection_t * context, uint8_t subev
     hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
 }
 
-static inline void hid_emit_incoming_connection_event(hid_host_connection_t * context){
+static void hid_emit_incoming_connection_event(hid_host_connection_t * context){
     uint8_t event[13];
-    int pos = 0;
+    uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = HID_SUBEVENT_INCOMING_CONNECTION;
@@ -228,6 +228,20 @@ static inline void hid_emit_incoming_connection_event(hid_host_connection_t * co
     event[1] = pos - 2;
     hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
 }   
+
+// setup get report response event - potentially in-place of original l2cap packet
+static void hid_setup_get_report_event(hid_host_connection_t * context, hid_handshake_param_type_t status, uint8_t *buffer, uint16_t report_len){
+    uint16_t pos = 0;
+    buffer[pos++] = HCI_EVENT_HID_META;
+    pos++;  // skip len
+    buffer[pos++] = HID_SUBEVENT_GET_REPORT_RESPONSE;
+    little_endian_store_16(buffer, pos, context->hid_cid);
+    pos += 2;
+    buffer[pos++] = (uint8_t) status;
+    little_endian_store_16(buffer, pos, report_len);
+    pos += 2;
+    buffer[1] = pos + report_len - 2;
+}
 
 // HID Host
 
@@ -388,11 +402,9 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                                     for (i = 0; i < descriptor_len; i++){
                                         hid_descriptor_storage_store(connection, descriptor[i]);
                                     }
-                                    printf("HID Descriptor:\n");
-                                    printf_hexdump(descriptor, descriptor_len);
 
-                                    printf("Stored Descriptor %d\n", hid_descriptor_storage_get_descriptor_len(connection));
-                                    printf_hexdump(hid_descriptor_storage_get_descriptor_data(connection), hid_descriptor_storage_get_descriptor_len(connection));
+                                    // printf("Stored Descriptor %d\n", hid_descriptor_storage_get_descriptor_len(connection));
+                                    // printf_hexdump(hid_descriptor_storage_get_descriptor_data(connection), hid_descriptor_storage_get_descriptor_len(connection));
                                 }
                             }                        
                             break;
@@ -407,21 +419,16 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             
         case SDP_EVENT_QUERY_COMPLETE:
             if (!connection->control_psm) {
-                printf("HID Control PSM missing\n");
                 status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 break;
             }
             if (!connection->interrupt_psm) {
-                printf("HID Interrupt PSM missing\n");
                 status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 break;
             }
             
             connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
             status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, connection->control_psm, 48, &connection->control_cid);
-            if (status){
-                printf("Connecting to HID Control failed: 0x%02x\n", connection->control_cid);
-            }
             break;
 
         default:
@@ -513,73 +520,82 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
     uint8_t param;
     hid_message_type_t         message_type;
     hid_handshake_param_type_t message_status;
+    // hid_report_type_t          report_type;
+    uint8_t * in_place_event;
     uint8_t status;
-    
+
     message_type   = (hid_message_type_t)(packet[0] >> 4);
-    message_status = (hid_handshake_param_type_t)(packet[0] & 0x0F);
-    printf("HID Control data, message_type 0x%02x, status 0x%02x: \n", message_type, message_status);
-    
-    // TODO handle handshake message_status
-    switch (message_type){
-        case HID_MESSAGE_TYPE_DATA:
-            switch (connection->state){
-                case HID_HOST_W4_GET_REPORT_RESPONSE:
-                    printf("HID_HOST_W4_GET_REPORT_RESPONSE \n");
+    if (message_type == HID_MESSAGE_TYPE_HID_CONTROL){
+        param = packet[0] & 0x0F;
+        switch ((hid_control_param_t)param){
+            case HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG:
+                hid_emit_event(connection, HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG);
+                hid_host_disconnect(connection->hid_cid);
+                return;
+            default:
+                break;
+        }
+    }
+
+    switch (connection->state){
+        case HID_HOST_W4_GET_REPORT_RESPONSE:
+            switch (message_type){
+                case HID_MESSAGE_TYPE_HANDSHAKE:{
+                    uint8_t event[8];
+                    message_status = (hid_handshake_param_type_t)(packet[0] & 0x0F);
+                    hid_setup_get_report_event(connection, message_status, event, 0);
+                    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, event, sizeof(event));
                     break;
-                case HID_HOST_W4_SET_REPORT_RESPONSE:
-                    printf("HID_HOST_W4_SET_REPORT_RESPONSE \n");
+                }
+                case HID_MESSAGE_TYPE_DATA:
+                    // reuse hci+l2cap header - max 8 byte (7 bytes + 1 bytes overwriting hid header)
+                    in_place_event = packet - 7;
+                    hid_setup_get_report_event(connection, HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL, in_place_event, size-1);
+                    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
                     break;
-                case HID_HOST_W4_GET_PROTOCOL_RESPONSE:
-                    printf("HID_HOST_W4_GET_PROTOCOL_RESPONSE \n");
+                default:
                     break;
-                case HID_HOST_W4_SEND_REPORT_RESPONSE:
-                    printf("HID_HOST_W4_SEND_REPORT_RESPONSE\n");
-                    break;
-                case HID_HOST_W4_SET_PROTOCOL_RESPONSE:
-                    printf("HID_HOST_W4_SET_PROTOCOL_RESPONSE \n");
-                    switch (message_status){
-                        case HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL:
-                            switch(connection->protocol_mode){
-                                case HID_PROTOCOL_MODE_BOOT:{
-                                    status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, connection->interrupt_psm, 48, &connection->interrupt_cid);
-                                    if (status){
-                                        printf("Connecting to HID Control failed: 0x%02x\n", status);
-                                        connection->state = HID_HOST_CONTROL_CONNECTION_ESTABLISHED;
-                                        break;
-                                    }
-                                    connection->state = HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED;
-                                    break;
-                                }
-                                case HID_PROTOCOL_MODE_REPORT:
-                                    break;
-                                default:
-                                    break;
+            }
+            break;
+        case HID_HOST_W4_SET_REPORT_RESPONSE:
+            printf("HID_HOST_W4_SET_REPORT_RESPONSE \n");
+            break;
+        case HID_HOST_W4_GET_PROTOCOL_RESPONSE:
+            printf("HID_HOST_W4_GET_PROTOCOL_RESPONSE \n");
+            break;
+        case HID_HOST_W4_SEND_REPORT_RESPONSE:
+            printf("HID_HOST_W4_SEND_REPORT_RESPONSE\n");
+            break;
+        case HID_HOST_W4_SET_PROTOCOL_RESPONSE:
+            printf("HID_HOST_W4_SET_PROTOCOL_RESPONSE \n");
+            message_status = (hid_handshake_param_type_t)(packet[0] & 0x0F);
+            switch (message_status){
+                case HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL:
+                    switch(connection->protocol_mode){
+                        case HID_PROTOCOL_MODE_BOOT:{
+                            status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, connection->interrupt_psm, 48, &connection->interrupt_cid);
+                            if (status){
+                                printf("Connecting to HID Control failed: 0x%02x\n", status);
+                                connection->state = HID_HOST_CONTROL_CONNECTION_ESTABLISHED;
+                                break;
                             }
+                            connection->state = HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED;
+                            break;
+                        }
+                        case HID_PROTOCOL_MODE_REPORT:
+                            break;
                         default:
                             break;
                     }
-                    break;
-                default:
-                    printf("HID_MESSAGE_TYPE_DATA ???\n");
-                    break;
-            }
-            connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
-            break;
-
-        case HID_MESSAGE_TYPE_HID_CONTROL:
-            param = packet[0] & 0x0F;
-
-            switch ((hid_control_param_t)param){
-                case HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG:
-                    hid_emit_event(connection, HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG);
-                    break;
                 default:
                     break;
             }
             break;
         default:
+            printf("HID_MESSAGE_TYPE_DATA ???\n");
             break;
     }
+    connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
 }
 
 
@@ -596,7 +612,6 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
     switch (packet_type) {
 
         case L2CAP_DATA_PACKET:
-            printf("L2CAP_DATA_PACKET channel 0x%02x\n", channel);
             connection = hid_host_get_connection_for_l2cap_cid(channel);
             if (!connection) break;
 
@@ -765,8 +780,6 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                             case HID_HOST_W2_SEND_GET_REPORT:{
                                 uint8_t header = (HID_MESSAGE_TYPE_GET_REPORT << 4) | connection->report_type;
                                 uint8_t report[] = {header, connection->report_id};
-                                // TODO: optional Report ID (1)
-                                // TODO: optional Maximum number of bytes to transfer during data phase, little end. (2)
                                 
                                 connection->state = HID_HOST_W4_GET_REPORT_RESPONSE;
                                 l2cap_send(connection->control_cid, (uint8_t*) report, sizeof(report));
@@ -808,8 +821,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                         }
                     }
 
-
-                    printf("L2CAP_EVENT_CAN_SEND_NOW, hid_host.state = %d\n", connection->state);
+                    // printf("L2CAP_EVENT_CAN_SEND_NOW, hid_host.state = %d\n", connection->state);
                     switch(connection->state){
                         
                         case HID_HOST_W2_SEND_SET_REPORT:{
@@ -886,7 +898,6 @@ static void hid_host_handle_start_sdp_client_query(void * context){
             default:
                 continue;
         }
-        printf("hid_descriptor_storage_init, start query, cid 0x%02x, %s \n", connection->hid_cid, bd_addr_to_str(connection->remote_addr));
         hid_descriptor_storage_init(connection);
         sdp_query_context_hid_host_control_cid = connection->hid_cid;
         sdp_client_query_uuid16(&hid_host_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);

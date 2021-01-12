@@ -58,11 +58,13 @@ static enum {
 
 static uint16_t hid_host_cid = 0;
 static bool unplugged;
+
+
 static bool boot_mode = false;
 static bool send_through_interrupt_channel = false;
 
 // SDP
-static uint8_t            hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
+static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
 
 // PTS
 static const char * remote_addr_string = "00:1B:DC:08:E2:5C";
@@ -139,6 +141,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         
                         case HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG:
                             if (hid_host_cid != hid_subevent_virtual_cable_unplug_get_hid_cid(packet)) return;
+                            printf("Received UNPLUG event, disconnecting...\n");
                             unplugged = true;
                             break;
 
@@ -153,13 +156,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             }
                             app_state = APP_CONNECTED;
                             hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
-                            printf("HID Host connected..\n");
+                            printf("HID Host connected...\n");
                             break;
 
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             printf("HID Host disconnected..\n");
                             break;
                         
+                        case HID_SUBEVENT_GET_REPORT_RESPONSE:
+                            status = hid_subevent_get_report_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error get report result, status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("Received report[%d]: ", hid_subevent_get_report_response_get_report_len(packet));
+                            printf_hexdump(hid_subevent_get_report_response_get_report(packet), hid_subevent_get_report_response_get_report_len(packet));
+                            printf("\n");
+                            break;
+
                         default:
                             break;
                     }
@@ -187,7 +201,13 @@ static void show_usage(void){
     printf("s      - suspend\n");
     printf("S      - exit suspend\n");
     printf("U      - unplug\n");
+    printf("u      - reset unplug (for the next PTS test)\n");
+    
     printf("\n");
+    printf("1      - Get report with id 0x05\n");
+    printf("2      - Get report with id 0x03\n");
+    printf("3      - Get input report from with id 0x02\n");
+
     printf("o      - get output report\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -244,17 +264,21 @@ static void stdin_process(char cmd){
             unplugged = true;
             hid_host_send_virtual_cable_unplug(hid_host_cid);
             break;
-        
+        case 'u':
+            printf("Reset \'Unplug\'\n");
+            unplugged = false;
+            break;
+
         case '1':
-            printf("Get feature report with id 0x03 from %s\n", remote_addr_string);
-            status = hid_host_send_get_feature_report(hid_host_cid, 0x03);
+            printf("Get report with id 0x05\n");
+            status = hid_host_send_get_feature_report(hid_host_cid, 0x05);
             break;
         case '2':
-            printf("Get output report with id 0x05 from %s\n", remote_addr_string);
-            status = hid_host_send_get_output_report(hid_host_cid, 0x05);
+            printf("Get report with id 0x03\n");
+            status = hid_host_send_get_output_report(hid_host_cid, 0x03);
             break;
         case '3':
-            printf("Get input report from with id 0x02 %s\n", remote_addr_string);
+            printf("Get report from with id 0x02\n");
             status = hid_host_send_get_input_report(hid_host_cid, 0x02);
             break;
         
