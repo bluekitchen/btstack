@@ -9,17 +9,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
-CC256x: With ENABLE_CC256X_ASSISTED_HFP, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
-BCM: With ENABLE_BCM_PCM_WBS, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
+CC256x: with ENABLE_CC256X_ASSISTED_HFP, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
+BCM: with ENABLE_BCM_PCM_WBS, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
 SDP Client RFCOMM: add `sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid`
 HFP AG/HSP AG: avoid connecting to remote service with same role
+A2DP, AVDTP: provide capabilities and configuration events for A2DP codecs: SBC, MPEG Audio, MPEG AAC, ATRAC
+A2DP Source: emit `A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE`
+A2DP Source: allow to configure non-SBC endpoints by calling `a2dp_source_set_config_{TYPE}` during SEP discovery
+A2DP Source, AVDTP Source: allow to send complete media packet with `avdtp_source_stream_send_media_packet` and `a2dp_source_stream_send_media_packet`
+A2DP Source AVDTP Source: add `avdtp_source_stream_send_media_payload_rtp`
+A2DP Source: support multiple Stream Endpoints with different Media Codec types
 
 ### Fixed
 L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)
+A2DP Source: emit codec configure event with reconfigure flag set on reconfigure
 
 ### Changed
 HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP record is found
 GATT Client: Skip MTU exchange after MTU exchange on ATT Server
+AVDTP Source: `avdtp_source_stream_send_media_payload` includes SBC Header and was deprecated
 
 ## Release v1.2.1
 
