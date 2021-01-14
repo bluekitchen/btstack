@@ -28,6 +28,7 @@ A2DP Source: emit codec configure event with reconfigure flag set on reconfigure
 HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP record is found
 GATT Client: Skip MTU exchange after MTU exchange on ATT Server
 AVDTP Source: `avdtp_source_stream_send_media_payload` includes SBC Header and was deprecated
+Ports: STM32-F103RB Nucleo + CC256x port removed
 
 ## Release v1.2.1
 
