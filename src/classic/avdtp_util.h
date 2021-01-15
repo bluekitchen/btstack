@@ -92,14 +92,9 @@ void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, 
 
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay);
 
-void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                        avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
-
-void avdtp_signaling_emit_media_codec_sbc_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                        avdtp_media_type_t media_type,
-                                                        const uint8_t *media_codec_information);
-void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                          adtvp_media_codec_capabilities_t * media_codec);
+void
+avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
+                                   avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
 
 void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status);
 

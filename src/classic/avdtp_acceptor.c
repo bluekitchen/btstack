@@ -137,7 +137,8 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
 		if  (stream_endpoint->media_codec_configuration_len == sep.configuration.media_codec.media_codec_information_len){
 			(void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
 		}
-		avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
+        avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 0, &sep.configuration,
+                                           sep.configured_service_categories);
 	}
 
     avdtp_signaling_emit_accept(connection->avdtp_cid, avdtp_local_seid(stream_endpoint),
@@ -325,7 +326,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
 						if (stream_endpoint->media_codec_configuration_len == sep.configuration.media_codec.media_codec_information_len){
 							(void) memcpy(stream_endpoint->media_codec_configuration_info, sep.configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
 						}
-						avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, &sep.configuration, sep.configured_service_categories);
+                        avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 1, &sep.configuration, sep.configured_service_categories);
 					}
                     break;
                 }

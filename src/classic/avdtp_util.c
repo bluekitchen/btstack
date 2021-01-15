@@ -1210,7 +1210,7 @@ avdtp_signaling_emit_media_codec_atrac_configuration(avdtp_stream_endpoint_t *st
     (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void avdtp_signaling_emit_media_codec_other(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+static void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
                                                    uint8_t reconfigure, adtvp_media_codec_capabilities_t *media_codec) {
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
@@ -1253,50 +1253,37 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     avdtp_emit_source(event, sizeof(event));
 }
 
-void avdtp_signaling_emit_media_codec_sbc_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                        avdtp_media_type_t media_type,
-                                                        const uint8_t *media_codec_information) {
-    avdtp_signaling_emit_media_codec_sbc(stream_endpoint, avdtp_cid, 0, media_type,
-                                         media_codec_information);
-}
-
-void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                          adtvp_media_codec_capabilities_t * media_codec) {
-    avdtp_signaling_emit_media_codec_other(stream_endpoint, avdtp_cid, 0, media_codec);
-}
-
-void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                        avdtp_capabilities_t *configuration, uint16_t configured_service_categories) {
+void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
+                                   avdtp_capabilities_t *configuration, uint16_t configured_service_categories) {
     
     if (get_bit16(configured_service_categories, AVDTP_MEDIA_CODEC)){
         switch (configuration->media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC:
-                avdtp_signaling_emit_media_codec_sbc_configuration(
-                        stream_endpoint, avdtp_cid,
-                        configuration->media_codec.media_type,
-                        configuration->media_codec.media_codec_information);
+            case AVDTP_CODEC_SBC: {
+                avdtp_signaling_emit_media_codec_sbc(stream_endpoint, avdtp_cid, reconfigure,
+                                                     configuration->media_codec.media_type,
+                                                     configuration->media_codec.media_codec_information);
+            }
                 break;
             case AVDTP_CODEC_MPEG_1_2_AUDIO:
                 avdtp_signaling_emit_media_codec_mpeg_audio_configuration(
-                        stream_endpoint, avdtp_cid, 0,
+                        stream_endpoint, avdtp_cid, reconfigure,
                         configuration->media_codec.media_type,
                         configuration->media_codec.media_codec_information);
                 break;
             case AVDTP_CODEC_MPEG_2_4_AAC:
                 avdtp_signaling_emit_media_codec_mpeg_aac_configuration(
-                        stream_endpoint, avdtp_cid, 0,
+                        stream_endpoint, avdtp_cid, reconfigure,
                         configuration->media_codec.media_type,
                         configuration->media_codec.media_codec_information);
                 break;
             case AVDTP_CODEC_ATRAC_FAMILY:
                 avdtp_signaling_emit_media_codec_atrac_configuration(
-                        stream_endpoint, avdtp_cid, 0,
+                        stream_endpoint, avdtp_cid, reconfigure,
                         configuration->media_codec.media_type,
                         configuration->media_codec.media_codec_information);
                 break;
             default:
-                avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint, avdtp_cid,
-                                                                     &configuration->media_codec);
+                avdtp_signaling_emit_media_codec_other_configuration(stream_endpoint, avdtp_cid, reconfigure, &configuration->media_codec);
                 break;
         }
     }
