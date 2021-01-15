@@ -585,7 +585,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             cid  = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
             if (cid != media_tracker.a2dp_cid) return;
 
-            media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet);
+            media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet);
             
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
@@ -600,8 +600,8 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             
             printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x.\n", 
                 sbc_configuration.sampling_frequency, cid,
-                a2dp_subevent_signaling_media_codec_sbc_configuration_get_int_seid(packet),
-                a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet));
+                   a2dp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet),
+                   a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet));
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);

@@ -29,6 +29,7 @@ HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP re
 GATT Client: Skip MTU exchange after MTU exchange on ATT Server
 AVDTP Source: `avdtp_source_stream_send_media_payload` includes SBC Header and was deprecated
 Ports: STM32-F103RB Nucleo + CC256x port removed
+A2DP: fix events and use `a2dp_cid`, `local_seid,` `remote_seid` in A2DP subevents
 
 ## Release v1.2.1
 
