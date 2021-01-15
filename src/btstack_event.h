@@ -8819,6 +8819,34 @@ static inline uint8_t hid_subevent_set_protocol_response_get_handshake_status(co
 }
 
 /**
+ * @brief Get field hid_cid from event HID_SUBEVENT_REPORT
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_report_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field report_len from event HID_SUBEVENT_REPORT
+ * @param event packet
+ * @return report_len
+ * @note: btstack_type L
+ */
+static inline uint16_t hid_subevent_report_get_report_len(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field report from event HID_SUBEVENT_REPORT
+ * @param event packet
+ * @return report
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hid_subevent_report_get_report(const uint8_t * event){
+    return &event[7];
+}
+
+/**
  * @brief Get field con_handle from event HIDS_SUBEVENT_CAN_SEND_NOW
  * @param event packet
  * @return con_handle

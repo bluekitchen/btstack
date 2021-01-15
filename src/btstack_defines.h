@@ -2954,6 +2954,15 @@ typedef uint8_t sm_key_t[16];
 */
 #define HID_SUBEVENT_SET_PROTOCOL_RESPONSE                                 0x0B
 
+/** 
+ * @format 12LV
+ * @param subevent_code
+ * @param hid_cid
+ * @param report_len
+ * @param report
+*/
+#define HID_SUBEVENT_REPORT                                                0x0C
+
 
 // HIDS Meta Event Group
 
