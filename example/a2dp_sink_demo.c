@@ -512,11 +512,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
 
     // start stream if enough frames buffered
     if (!audio_stream_started && sbc_frames_in_buffer >= OPTIMAL_FRAMES_MIN){
-        audio_stream_started = 1;
-        // setup audio playback
-        if (audio){
-            audio->start_stream();
-        }
+        media_processing_start();
     }
 }
 
@@ -928,7 +924,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         
         case A2DP_SUBEVENT_STREAM_STARTED:
             printf("A2DP  Sink      : Stream started\n");
-            media_processing_start();
+            // audio stream is started when buffer reaches minimal level
             break;
         
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
