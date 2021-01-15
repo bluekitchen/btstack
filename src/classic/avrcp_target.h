@@ -125,21 +125,107 @@ uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids,
  */
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status); 
 
-
+/**
+ * @param Set Now Playing Info that is send to Controller if notifications are enabled
+ * @param avrcp_cid
+ * @param current_track
+ * @param total_tracks
+ */
 void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks);
+
+/**
+ * @param Set Playing status and send to Controller
+ * @param avrcp_cid
+ * @param playback_status
+ * @return
+ */
 uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status);
+
+/**
+ * @param Set Unit Info
+ * @param avrcp_cid
+ * @param unit_type
+ * @param company_id
+ */
 void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id);
+
+/**
+ * @param Set Subunit Info
+ * @param avrcp_cid
+ * @param subunit_type
+ * @param subunit_info_data
+ * @param subunit_info_data_size
+ */
 void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size);
 
+/**
+ * @param Send Playing Content Changed Notification if enabled
+ * @param avrcp_cid
+ * @return
+ */
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid);
+
+/**
+ * @param Send Addressed Player Changed Notification if enabled
+ * @param avrcp_cid
+ * @param player_id
+ * @param uid_counter
+ * @return
+ */
 uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter);
 
+/**
+ * @param Set Battery Status Changed and send notification if enabled
+ * @param avrcp_cid
+ * @param battery_status
+ * @return
+ */
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
+
+/**
+ * @param Set Volume and send notification if enabled
+ * @param avrcp_cid
+ * @param volume_percentage
+ * @return
+ */
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
+
+/**
+ * @param Set Track and send notification if enabled
+ * @param avrcp_cid
+ * @param trackID
+ * @return
+ */
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * trackID);
 
+/**
+ * @param Send Operation Rejected message
+ * @param avrcp_cid
+ * @param opid
+ * @param operands_length
+ * @param operand
+ * @return
+ */
 uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
+
+/**
+ * @param Send Operation Accepted message
+ * @param avrcp_cid
+ * @param opid
+ * @param operands_length
+ * @param operand
+ * @return
+ */
 uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
+
+/**
+ * @param Send Operation Not Implemented message
+ * @param avrcp_cid
+ * @param opid
+ * @param operands_length
+ * @param operand
+ * @return
+ */
 uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
 /* API_END */
