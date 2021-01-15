@@ -50,16 +50,68 @@
 #include "btstack.h"
 
 #define MAX_ATTRIBUTE_VALUE_SIZE 300
+#define NUM_KEYS 6
+
+// Simplified US Keyboard with Shift modifier
+
+#define CHAR_ILLEGAL     0xff
+#define CHAR_RETURN     '\n'
+#define CHAR_ESCAPE      27
+#define CHAR_TAB         '\t'
+#define CHAR_BACKSPACE   0x7f
+
+
+// English (US)
+//
+static const uint8_t keytable_us_none [] = {
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             //   0-3  
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',                   //  4-13  
+    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',                   // 14-23  
+    'u', 'v', 'w', 'x', 'y', 'z',                                       // 24-29  
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',                   // 30-39  
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            // 40-44  
+    '-', '=', '[', ']', '\\', CHAR_ILLEGAL, ';', '\'', 0x60, ',',       // 45-54  
+    '.', '/', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   // 55-60  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 61-64  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 65-68  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 69-72  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 73-76  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 77-80  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 81-84  
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       // 85-97  
+    '6', '7', '8', '9', '0', '.', 0xa7,                                 // 97-100 
+}; 
+
+static const uint8_t keytable_us_shift[] = {
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             //  0-3   
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',                   //  4-13  
+    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',                   // 14-23  
+    'U', 'V', 'W', 'X', 'Y', 'Z',                                       // 24-29  
+    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',                   // 30-39  
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            // 40-44  
+    '_', '+', '{', '}', '|', CHAR_ILLEGAL, ':', '"', 0x7E, '<',         // 45-54  
+    '>', '?', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   // 55-60  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 61-64  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 65-68  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 69-72  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 73-76  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 77-80  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 81-84  
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       // 85-97  
+    '6', '7', '8', '9', '0', '.', 0xb1,                                 // 97-100 
+}; 
+
+
+static uint8_t last_keys[NUM_KEYS];
 
 static enum {
     APP_IDLE,
     APP_CONNECTED
 } app_state = APP_IDLE;
 
-static uint16_t hid_host_cid = 0;
 static bool unplugged;
 
-
+static uint16_t hid_host_cid = 0;
 static bool boot_mode = false;
 static bool send_through_interrupt_channel = false;
 
@@ -94,6 +146,80 @@ static void hid_host_setup(void){
 
     // Disable stdout buffering
     setbuf(stdout, NULL);
+}
+
+static void handle_input_report(const uint8_t * report, uint16_t report_len){
+    // check if HID Input Report
+    if (report_len < 1){
+        printf("ignore report: len 0");
+        return;
+    } 
+
+    if (*report != 0xa1) {
+        printf("ignore report: header 0x%02x", report[0]);
+        return;
+    } 
+    printf_hexdump(report, report_len);
+    
+    report++;
+    report_len--;
+    
+    btstack_hid_parser_t parser;
+    btstack_hid_parser_init(&parser, 
+        hid_descriptor_storage_get_descriptor_data(hid_host_cid), 
+        hid_descriptor_storage_get_descriptor_len(hid_host_cid), 
+        HID_REPORT_TYPE_INPUT, report, report_len);
+    
+    int shift = 0;
+    uint8_t new_keys[NUM_KEYS];
+    memset(new_keys, 0, sizeof(new_keys));
+    int     new_keys_count = 0;
+    while (btstack_hid_parser_has_more(&parser)){
+        uint16_t usage_page;
+        uint16_t usage;
+        int32_t  value;
+        btstack_hid_parser_get_field(&parser, &usage_page, &usage, &value);
+        if (usage_page != 0x07) continue;   
+        switch (usage){
+            case 0xe1:
+            case 0xe6:
+                if (value){
+                    shift = 1;
+                }
+                continue;
+            case 0x00:
+                continue;
+            default:
+                break;
+        }
+        if (usage >= sizeof(keytable_us_none)) continue;
+
+        // store new keys
+        new_keys[new_keys_count++] = usage;
+
+        // check if usage was used last time (and ignore in that case)
+        int i;
+        for (i=0;i<NUM_KEYS;i++){
+            if (usage == last_keys[i]){
+                usage = 0;
+            }
+        }
+        if (usage == 0) continue;
+
+        uint8_t key;
+        if (shift){
+            key = keytable_us_shift[usage];
+        } else {
+            key = keytable_us_none[usage];
+        }
+        if (key == CHAR_ILLEGAL) continue;
+        if (key == CHAR_BACKSPACE){ 
+            printf("\b \b");    // go back one char, print space, go back one char again
+            continue;
+        }
+        printf("%c", key);
+    }
+    memcpy(last_keys, new_keys, NUM_KEYS);
 }
 
 
@@ -160,6 +286,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             break;
 
                         case HID_SUBEVENT_CONNECTION_CLOSED:
+                            hid_host_cid = 0;
+                            boot_mode = false;
+                            send_through_interrupt_channel = false;
                             printf("HID Host disconnected..\n");
                             break;
                         
@@ -210,6 +339,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("Protocol set.\n");
                             break;
 
+                        case HID_SUBEVENT_REPORT:
+                            printf("Received input report[%d]: ", hid_subevent_report_get_report_len(packet));
+                            handle_input_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            printf("\n");
+                            break;
+
                         default:
                             break;
                     }
@@ -247,7 +382,10 @@ static void show_usage(void){
     printf("\n");
     printf("4      - Set report with id 0x03\n");
     printf("5      - Set report with id 0x05\n");
-    // printf("6      - Set report with id 0x02\n");
+    printf("6      - Set report with id 0x02\n");
+    
+    printf("\n");
+    printf("7      - Send output report with id 0x03 on interrupt channel\n");
 
     printf("\n");
     printf("p      - Get protocol\n");
@@ -286,7 +424,7 @@ static void stdin_process(char cmd){
             status = hid_host_send_get_protocol(hid_host_cid);
             break;
         case 'r':
-            printf("Set protocol in REPORT mode");
+            printf("Set protocol in REPORT mode\n");
             boot_mode = false;
             status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_REPORT);
             break;
@@ -307,13 +445,9 @@ static void stdin_process(char cmd){
             break;
         case 'U':
             printf("Send \'Unplug\'\n");
-            unplugged = true;
             hid_host_send_virtual_cable_unplug(hid_host_cid);
             break;
-        case 'u':
-            printf("Reset \'Unplug\'\n");
-            unplugged = false;
-            break;
+        
 
         case '1':
             printf("Get report with id 0x05\n");
@@ -328,62 +462,60 @@ static void stdin_process(char cmd){
             status = hid_host_send_get_input_report(hid_host_cid, 0x02);
             break;
         
-        case '4':{
-            uint8_t report[] = {0, 0};
-            printf("Set output report with id 0x03\n");
-            status = hid_host_send_set_output_report(hid_host_cid, 0x03, report, sizeof(report));
-            break;
-        }
-        case '5':{
-            uint8_t report[] = {0, 0, 0};
-            printf("Set feature report with id 0x05\n");
-            status = hid_host_send_set_feature_report(hid_host_cid, 0x05, report, sizeof(report));
-            break;
-        }
 
-        // case '6':{
-        //     uint8_t report[] = {0, 0, 0, 0};
-        //     printf("Set input report with id 0x02\n");
-        //     status = hid_host_send_set_input_report(hid_host_cid, 0x02, report, sizeof(report));
-        //     break;
-        // }
-
-       
-
-        case '7':{
-            uint8_t report[] = {0,0,0, 0,0,0, 0,0};
-            printf("Set output report with id 0x01\n");
-            status = hid_host_send_set_output_report(hid_host_cid, 0x01, report, sizeof(report));
-            break;
-        }
-        
-        case 'X':
+        case 'x':
             printf("Set send through interrupt channel\n");
             send_through_interrupt_channel = true;
             break;
-        case 'x':
-            printf("Set send through control channel\n");
-            send_through_interrupt_channel = true;
+
+
+        case '4':{
+            printf("Set output report with id 0x03\n");
+            uint8_t report[] = {0, 0};
+            status = hid_host_send_set_report_on_control_channel(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03, report, sizeof(report));
+            break;
+        }
+
+        case '5':{
+            printf("Set feature report with id 0x05\n");
+            uint8_t report[] = {0, 0, 0};
+            status = hid_host_send_set_report_on_control_channel(hid_host_cid, HID_REPORT_TYPE_FEATURE, 0x05, report, sizeof(report));
+            break;
+        }
+
+        case '6':{
+            printf("Set input report with id 0x02\n");
+            uint8_t report[] = {0, 0, 0, 0};
+            status = hid_host_send_set_report_on_control_channel(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x02, report, sizeof(report));
+            break;
+        }
+
+        case '7':
+            printf("Send output report with id 0x03 on interrupt channel\n");
+            uint8_t report[] = {0, 0};
+            status = hid_host_send_report_on_interrupt_channel(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03, report, sizeof(report));
             break;
 
-         case '8':{
-            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Send output report with id 0x03\n");
-            status = hid_host_send_output_report(hid_host_cid, 0x03, report, sizeof(report));
-            break;
-        }
-        case '9':{
-            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Set output report with id 0x01\n");
-            status = hid_host_send_set_output_report(hid_host_cid, 0x01, report, sizeof(report));
-            break;
-        }
-        case '0':{
-            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Send output report with id 0x01\n");
-            status = hid_host_send_output_report(hid_host_cid, 0x01, report, sizeof(report));
-            break;
-        }
+
+        //  case '8':{
+        //     uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        //     printf("Send output report with id 0x03\n");
+        //     status = hid_host_send_output_report(hid_host_cid, 0x03, report, sizeof(report));
+        //     break;
+        // }
+        // case '9':{
+        //     uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+        //     printf("Set output report with id 0x01\n");
+        //     status = hid_host_send_set_output_report(hid_host_cid, 0x01, report, sizeof(report));
+        //     break;
+        // }
+        // case '0':{
+        //     uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+        //     printf("Send output report with id 0x01\n");
+        //     status = hid_host_send_output_report(hid_host_cid, 0x01, report, sizeof(report));
+        //     break;
+        // }
+
 
         case '\n':
         case '\r':

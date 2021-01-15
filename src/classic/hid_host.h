@@ -110,7 +110,7 @@ typedef struct {
     uint8_t control_tasks;
     
     // set report
-    uint8_t * report;
+    const uint8_t * report;
     uint16_t  report_len;
 } hid_host_connection_t;
 
@@ -156,15 +156,16 @@ uint8_t hid_host_send_virtual_cable_unplug(uint16_t hid_cid);
  * @brief Send HID message on interrupt channel
  * @param hid_cid
  */
-void hid_host_send_interrupt_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
-
 
 uint8_t hid_host_send_set_protocol_mode(uint16_t hid_cid, hid_protocol_mode_t protocol_mode);
 uint8_t hid_host_send_get_protocol(uint16_t hid_cid);
 
 
-uint8_t hid_host_send_output_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_report_on_interrupt_channel(uint16_t hid_cid, hid_report_type_t report_type, uint8_t report_id, const uint8_t * report, uint8_t report_len);
+uint8_t hid_host_send_report_on_control_channel(uint16_t hid_cid,  hid_report_type_t report_type, const uint8_t report_id, uint8_t * report, uint8_t report_len);
 
+
+uint8_t hid_host_send_set_report_on_control_channel(uint16_t hid_cid, hid_report_type_t report_type, uint8_t report_id, const uint8_t * report, uint8_t report_len);
 uint8_t hid_host_send_set_output_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
 uint8_t hid_host_send_set_feature_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
 uint8_t hid_host_send_set_input_report(uint16_t hid_cid, uint8_t report_id, uint8_t * report, uint8_t report_len);
@@ -174,6 +175,8 @@ uint8_t hid_host_send_get_feature_report(uint16_t hid_cid, uint8_t report_id);
 uint8_t hid_host_send_get_input_report(uint16_t hid_cid, uint8_t report_id);
 
 
+const uint8_t * hid_descriptor_storage_get_descriptor_data(uint16_t hid_cid);
+const uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid);
 /* API_END */
 
 
