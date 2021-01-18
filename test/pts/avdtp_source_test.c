@@ -128,7 +128,10 @@ static int sine_phase;
 
 static uint8_t sdp_avdtp_source_service_buffer[150];
 
-static avdtp_stream_endpoint_context_t sc;
+static struct {
+    avdtp_stream_endpoint_t * local_stream_endpoint;
+    uint32_t sampling_frequency;
+}  sc;
 
 static btstack_sbc_encoder_state_t sbc_encoder_state;
 static uint8_t is_cmd_triggered_localy = 0;
