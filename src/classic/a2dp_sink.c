@@ -320,6 +320,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             if (stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet)) break;
 
+            stream_endpoint_configured = false;
+
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
         
