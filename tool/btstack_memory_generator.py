@@ -140,18 +140,16 @@ typedef struct btstack_memory_buffer {
 
 static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
 
-static void btstack_memory_tracking_add(void * raw_buffer){
-    btstack_assert(raw_buffer != NULL);
-    btstack_memory_buffer_t * buffer = (btstack_memory_buffer_t*) raw_buffer;
+static void btstack_memory_tracking_add(btstack_memory_buffer_t * buffer){
+    btstack_assert(buffer != NULL);
     btstack_memory_malloc_buffers = buffer;
     buffer->prev = NULL;
     buffer->next = btstack_memory_malloc_buffers;
     btstack_memory_malloc_buffers = buffer;
 }
 
-static void btstack_memory_tracking_remove(void * raw_buffer){
-    btstack_assert(raw_buffer != NULL);
-    btstack_memory_buffer_t * buffer = (btstack_memory_buffer_t*) raw_buffer;
+static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
+    btstack_assert(buffer != NULL);
     if (buffer->prev == NULL){
         // first item
         btstack_memory_malloc_buffers = buffer->next;
@@ -211,19 +209,25 @@ void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    STRUCT_NAME_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_STRUCT_NAME_t;
+
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
-    void * buffer = malloc(sizeof(STRUCT_TYPE) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_STRUCT_NAME_t * buffer = (btstack_memory_STRUCT_NAME_t *) malloc(sizeof(btstack_memory_STRUCT_NAME_t));
     if (buffer){
-        memset(buffer, 0, sizeof(STRUCT_TYPE) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (STRUCT_NAME_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(STRUCT_NAME_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
-    void * buffer =  ((void *) STRUCT_NAME) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_STRUCT_NAME_t * buffer =  (btstack_memory_STRUCT_NAME_t *) STRUCT_NAME;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif

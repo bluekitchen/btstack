@@ -63,20 +63,16 @@ typedef struct btstack_memory_buffer {
 
 static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
 
-static void btstack_memory_tracking_add(void * raw_buffer){
-    btstack_assert(raw_buffer != NULL);
-    btstack_memory_buffer_t * buffer = (btstack_memory_buffer_t*) raw_buffer;
+static void btstack_memory_tracking_add(btstack_memory_buffer_t * buffer){
+    btstack_assert(buffer != NULL);
+    btstack_memory_malloc_buffers = buffer;
     buffer->prev = NULL;
     buffer->next = btstack_memory_malloc_buffers;
-    if (btstack_memory_malloc_buffers) {
-        btstack_memory_malloc_buffers->prev = buffer;
-    }
     btstack_memory_malloc_buffers = buffer;
 }
 
-static void btstack_memory_tracking_remove(void * raw_buffer){
-    btstack_assert(raw_buffer != NULL);
-    btstack_memory_buffer_t * buffer = (btstack_memory_buffer_t*) raw_buffer;
+static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
+    btstack_assert(buffer != NULL);
     if (buffer->prev == NULL){
         // first item
         btstack_memory_malloc_buffers = buffer->next;
@@ -132,19 +128,25 @@ void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    hci_connection_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_hci_connection_t;
+
 hci_connection_t * btstack_memory_hci_connection_get(void){
-    void * buffer = malloc(sizeof(hci_connection_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_hci_connection_t * buffer = (btstack_memory_hci_connection_t *) malloc(sizeof(btstack_memory_hci_connection_t));
     if (buffer){
-        memset(buffer, 0, sizeof(hci_connection_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (hci_connection_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(hci_connection_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
-    void * buffer =  ((void *) hci_connection) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hci_connection_t * buffer =  (btstack_memory_hci_connection_t *) hci_connection;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -183,19 +185,25 @@ void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    l2cap_service_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_l2cap_service_t;
+
 l2cap_service_t * btstack_memory_l2cap_service_get(void){
-    void * buffer = malloc(sizeof(l2cap_service_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_l2cap_service_t * buffer = (btstack_memory_l2cap_service_t *) malloc(sizeof(btstack_memory_l2cap_service_t));
     if (buffer){
-        memset(buffer, 0, sizeof(l2cap_service_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (l2cap_service_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(l2cap_service_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
-    void * buffer =  ((void *) l2cap_service) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_l2cap_service_t * buffer =  (btstack_memory_l2cap_service_t *) l2cap_service;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -233,19 +241,25 @@ void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    l2cap_channel_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_l2cap_channel_t;
+
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
-    void * buffer = malloc(sizeof(l2cap_channel_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_l2cap_channel_t * buffer = (btstack_memory_l2cap_channel_t *) malloc(sizeof(btstack_memory_l2cap_channel_t));
     if (buffer){
-        memset(buffer, 0, sizeof(l2cap_channel_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (l2cap_channel_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(l2cap_channel_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
-    void * buffer =  ((void *) l2cap_channel) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_l2cap_channel_t * buffer =  (btstack_memory_l2cap_channel_t *) l2cap_channel;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -285,19 +299,25 @@ void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multipl
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    rfcomm_multiplexer_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_rfcomm_multiplexer_t;
+
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
-    void * buffer = malloc(sizeof(rfcomm_multiplexer_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_rfcomm_multiplexer_t * buffer = (btstack_memory_rfcomm_multiplexer_t *) malloc(sizeof(btstack_memory_rfcomm_multiplexer_t));
     if (buffer){
-        memset(buffer, 0, sizeof(rfcomm_multiplexer_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (rfcomm_multiplexer_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(rfcomm_multiplexer_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
-    void * buffer =  ((void *) rfcomm_multiplexer) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_rfcomm_multiplexer_t * buffer =  (btstack_memory_rfcomm_multiplexer_t *) rfcomm_multiplexer;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -335,19 +355,25 @@ void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    rfcomm_service_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_rfcomm_service_t;
+
 rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
-    void * buffer = malloc(sizeof(rfcomm_service_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_rfcomm_service_t * buffer = (btstack_memory_rfcomm_service_t *) malloc(sizeof(btstack_memory_rfcomm_service_t));
     if (buffer){
-        memset(buffer, 0, sizeof(rfcomm_service_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (rfcomm_service_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(rfcomm_service_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
-    void * buffer =  ((void *) rfcomm_service) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_rfcomm_service_t * buffer =  (btstack_memory_rfcomm_service_t *) rfcomm_service;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -385,19 +411,25 @@ void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    rfcomm_channel_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_rfcomm_channel_t;
+
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
-    void * buffer = malloc(sizeof(rfcomm_channel_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_rfcomm_channel_t * buffer = (btstack_memory_rfcomm_channel_t *) malloc(sizeof(btstack_memory_rfcomm_channel_t));
     if (buffer){
-        memset(buffer, 0, sizeof(rfcomm_channel_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (rfcomm_channel_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(rfcomm_channel_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
-    void * buffer =  ((void *) rfcomm_channel) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_rfcomm_channel_t * buffer =  (btstack_memory_rfcomm_channel_t *) rfcomm_channel;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -436,19 +468,25 @@ void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_me
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_link_key_db_memory_entry_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_btstack_link_key_db_memory_entry_t;
+
 btstack_link_key_db_memory_entry_t * btstack_memory_btstack_link_key_db_memory_entry_get(void){
-    void * buffer = malloc(sizeof(btstack_link_key_db_memory_entry_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_btstack_link_key_db_memory_entry_t * buffer = (btstack_memory_btstack_link_key_db_memory_entry_t *) malloc(sizeof(btstack_memory_btstack_link_key_db_memory_entry_t));
     if (buffer){
-        memset(buffer, 0, sizeof(btstack_link_key_db_memory_entry_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (btstack_link_key_db_memory_entry_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(btstack_link_key_db_memory_entry_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_btstack_link_key_db_memory_entry_free(btstack_link_key_db_memory_entry_t *btstack_link_key_db_memory_entry){
-    void * buffer =  ((void *) btstack_link_key_db_memory_entry) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_btstack_link_key_db_memory_entry_t * buffer =  (btstack_memory_btstack_link_key_db_memory_entry_t *) btstack_link_key_db_memory_entry;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -487,19 +525,25 @@ void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    bnep_service_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_bnep_service_t;
+
 bnep_service_t * btstack_memory_bnep_service_get(void){
-    void * buffer = malloc(sizeof(bnep_service_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_bnep_service_t * buffer = (btstack_memory_bnep_service_t *) malloc(sizeof(btstack_memory_bnep_service_t));
     if (buffer){
-        memset(buffer, 0, sizeof(bnep_service_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (bnep_service_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(bnep_service_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
-    void * buffer =  ((void *) bnep_service) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_bnep_service_t * buffer =  (btstack_memory_bnep_service_t *) bnep_service;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -537,19 +581,25 @@ void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    bnep_channel_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_bnep_channel_t;
+
 bnep_channel_t * btstack_memory_bnep_channel_get(void){
-    void * buffer = malloc(sizeof(bnep_channel_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_bnep_channel_t * buffer = (btstack_memory_bnep_channel_t *) malloc(sizeof(btstack_memory_bnep_channel_t));
     if (buffer){
-        memset(buffer, 0, sizeof(bnep_channel_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (bnep_channel_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(bnep_channel_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
-    void * buffer =  ((void *) bnep_channel) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_bnep_channel_t * buffer =  (btstack_memory_bnep_channel_t *) bnep_channel;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -588,19 +638,25 @@ void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    hfp_connection_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_hfp_connection_t;
+
 hfp_connection_t * btstack_memory_hfp_connection_get(void){
-    void * buffer = malloc(sizeof(hfp_connection_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_hfp_connection_t * buffer = (btstack_memory_hfp_connection_t *) malloc(sizeof(btstack_memory_hfp_connection_t));
     if (buffer){
-        memset(buffer, 0, sizeof(hfp_connection_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (hfp_connection_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(hfp_connection_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
-    void * buffer =  ((void *) hfp_connection) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_hfp_connection_t * buffer =  (btstack_memory_hfp_connection_t *) hfp_connection;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -639,19 +695,25 @@ void btstack_memory_service_record_item_free(service_record_item_t *service_reco
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    service_record_item_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_service_record_item_t;
+
 service_record_item_t * btstack_memory_service_record_item_get(void){
-    void * buffer = malloc(sizeof(service_record_item_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_service_record_item_t * buffer = (btstack_memory_service_record_item_t *) malloc(sizeof(btstack_memory_service_record_item_t));
     if (buffer){
-        memset(buffer, 0, sizeof(service_record_item_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (service_record_item_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(service_record_item_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_service_record_item_free(service_record_item_t *service_record_item){
-    void * buffer =  ((void *) service_record_item) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_service_record_item_t * buffer =  (btstack_memory_service_record_item_t *) service_record_item;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -690,19 +752,25 @@ void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_st
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    avdtp_stream_endpoint_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_avdtp_stream_endpoint_t;
+
 avdtp_stream_endpoint_t * btstack_memory_avdtp_stream_endpoint_get(void){
-    void * buffer = malloc(sizeof(avdtp_stream_endpoint_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_avdtp_stream_endpoint_t * buffer = (btstack_memory_avdtp_stream_endpoint_t *) malloc(sizeof(btstack_memory_avdtp_stream_endpoint_t));
     if (buffer){
-        memset(buffer, 0, sizeof(avdtp_stream_endpoint_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (avdtp_stream_endpoint_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(avdtp_stream_endpoint_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_avdtp_stream_endpoint_free(avdtp_stream_endpoint_t *avdtp_stream_endpoint){
-    void * buffer =  ((void *) avdtp_stream_endpoint) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avdtp_stream_endpoint_t * buffer =  (btstack_memory_avdtp_stream_endpoint_t *) avdtp_stream_endpoint;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -741,19 +809,25 @@ void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    avdtp_connection_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_avdtp_connection_t;
+
 avdtp_connection_t * btstack_memory_avdtp_connection_get(void){
-    void * buffer = malloc(sizeof(avdtp_connection_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_avdtp_connection_t * buffer = (btstack_memory_avdtp_connection_t *) malloc(sizeof(btstack_memory_avdtp_connection_t));
     if (buffer){
-        memset(buffer, 0, sizeof(avdtp_connection_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (avdtp_connection_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(avdtp_connection_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection){
-    void * buffer =  ((void *) avdtp_connection) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avdtp_connection_t * buffer =  (btstack_memory_avdtp_connection_t *) avdtp_connection;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -792,19 +866,25 @@ void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    avrcp_connection_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_avrcp_connection_t;
+
 avrcp_connection_t * btstack_memory_avrcp_connection_get(void){
-    void * buffer = malloc(sizeof(avrcp_connection_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_avrcp_connection_t * buffer = (btstack_memory_avrcp_connection_t *) malloc(sizeof(btstack_memory_avrcp_connection_t));
     if (buffer){
-        memset(buffer, 0, sizeof(avrcp_connection_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (avrcp_connection_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(avrcp_connection_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
-    void * buffer =  ((void *) avrcp_connection) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avrcp_connection_t * buffer =  (btstack_memory_avrcp_connection_t *) avrcp_connection;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -843,19 +923,25 @@ void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    avrcp_browsing_connection_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_avrcp_browsing_connection_t;
+
 avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void){
-    void * buffer = malloc(sizeof(avrcp_browsing_connection_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_avrcp_browsing_connection_t * buffer = (btstack_memory_avrcp_browsing_connection_t *) malloc(sizeof(btstack_memory_avrcp_browsing_connection_t));
     if (buffer){
-        memset(buffer, 0, sizeof(avrcp_browsing_connection_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (avrcp_browsing_connection_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(avrcp_browsing_connection_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
-    void * buffer =  ((void *) avrcp_browsing_connection) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_avrcp_browsing_connection_t * buffer =  (btstack_memory_avrcp_browsing_connection_t *) avrcp_browsing_connection;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -896,19 +982,25 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    gatt_client_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_gatt_client_t;
+
 gatt_client_t * btstack_memory_gatt_client_get(void){
-    void * buffer = malloc(sizeof(gatt_client_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_gatt_client_t * buffer = (btstack_memory_gatt_client_t *) malloc(sizeof(btstack_memory_gatt_client_t));
     if (buffer){
-        memset(buffer, 0, sizeof(gatt_client_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (gatt_client_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(gatt_client_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
-    void * buffer =  ((void *) gatt_client) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_gatt_client_t * buffer =  (btstack_memory_gatt_client_t *) gatt_client;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -946,19 +1038,25 @@ void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    whitelist_entry_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_whitelist_entry_t;
+
 whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
-    void * buffer = malloc(sizeof(whitelist_entry_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_whitelist_entry_t * buffer = (btstack_memory_whitelist_entry_t *) malloc(sizeof(btstack_memory_whitelist_entry_t));
     if (buffer){
-        memset(buffer, 0, sizeof(whitelist_entry_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (whitelist_entry_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(whitelist_entry_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
-    void * buffer =  ((void *) whitelist_entry) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_whitelist_entry_t * buffer =  (btstack_memory_whitelist_entry_t *) whitelist_entry;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -996,19 +1094,25 @@ void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    sm_lookup_entry_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_sm_lookup_entry_t;
+
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
-    void * buffer = malloc(sizeof(sm_lookup_entry_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_sm_lookup_entry_t * buffer = (btstack_memory_sm_lookup_entry_t *) malloc(sizeof(btstack_memory_sm_lookup_entry_t));
     if (buffer){
-        memset(buffer, 0, sizeof(sm_lookup_entry_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (sm_lookup_entry_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(sm_lookup_entry_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
-    void * buffer =  ((void *) sm_lookup_entry) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_sm_lookup_entry_t * buffer =  (btstack_memory_sm_lookup_entry_t *) sm_lookup_entry;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1049,19 +1153,25 @@ void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_network_pdu_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_network_pdu_t;
+
 mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
-    void * buffer = malloc(sizeof(mesh_network_pdu_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_network_pdu_t * buffer = (btstack_memory_mesh_network_pdu_t *) malloc(sizeof(btstack_memory_mesh_network_pdu_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_network_pdu_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_network_pdu_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_network_pdu_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
-    void * buffer =  ((void *) mesh_network_pdu) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_network_pdu_t * buffer =  (btstack_memory_mesh_network_pdu_t *) mesh_network_pdu;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1099,19 +1209,25 @@ void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_segmented_pdu_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_segmented_pdu_t;
+
 mesh_segmented_pdu_t * btstack_memory_mesh_segmented_pdu_get(void){
-    void * buffer = malloc(sizeof(mesh_segmented_pdu_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_segmented_pdu_t * buffer = (btstack_memory_mesh_segmented_pdu_t *) malloc(sizeof(btstack_memory_mesh_segmented_pdu_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_segmented_pdu_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_segmented_pdu_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_segmented_pdu_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_segmented_pdu_free(mesh_segmented_pdu_t *mesh_segmented_pdu){
-    void * buffer =  ((void *) mesh_segmented_pdu) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_segmented_pdu_t * buffer =  (btstack_memory_mesh_segmented_pdu_t *) mesh_segmented_pdu;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1149,19 +1265,25 @@ void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *me
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_upper_transport_pdu_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_upper_transport_pdu_t;
+
 mesh_upper_transport_pdu_t * btstack_memory_mesh_upper_transport_pdu_get(void){
-    void * buffer = malloc(sizeof(mesh_upper_transport_pdu_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_upper_transport_pdu_t * buffer = (btstack_memory_mesh_upper_transport_pdu_t *) malloc(sizeof(btstack_memory_mesh_upper_transport_pdu_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_upper_transport_pdu_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_upper_transport_pdu_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_upper_transport_pdu_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_upper_transport_pdu_free(mesh_upper_transport_pdu_t *mesh_upper_transport_pdu){
-    void * buffer =  ((void *) mesh_upper_transport_pdu) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_upper_transport_pdu_t * buffer =  (btstack_memory_mesh_upper_transport_pdu_t *) mesh_upper_transport_pdu;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1199,19 +1321,25 @@ void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_network_key_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_network_key_t;
+
 mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
-    void * buffer = malloc(sizeof(mesh_network_key_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_network_key_t * buffer = (btstack_memory_mesh_network_key_t *) malloc(sizeof(btstack_memory_mesh_network_key_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_network_key_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_network_key_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_network_key_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
-    void * buffer =  ((void *) mesh_network_key) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_network_key_t * buffer =  (btstack_memory_mesh_network_key_t *) mesh_network_key;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1249,19 +1377,25 @@ void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_transport_key_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_transport_key_t;
+
 mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
-    void * buffer = malloc(sizeof(mesh_transport_key_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_transport_key_t * buffer = (btstack_memory_mesh_transport_key_t *) malloc(sizeof(btstack_memory_mesh_transport_key_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_transport_key_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_transport_key_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_transport_key_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
-    void * buffer =  ((void *) mesh_transport_key) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_transport_key_t * buffer =  (btstack_memory_mesh_transport_key_t *) mesh_transport_key;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1299,19 +1433,25 @@ void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtu
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_virtual_address_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_virtual_address_t;
+
 mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
-    void * buffer = malloc(sizeof(mesh_virtual_address_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_virtual_address_t * buffer = (btstack_memory_mesh_virtual_address_t *) malloc(sizeof(btstack_memory_mesh_virtual_address_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_virtual_address_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_virtual_address_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_virtual_address_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
-    void * buffer =  ((void *) mesh_virtual_address) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_virtual_address_t * buffer =  (btstack_memory_mesh_virtual_address_t *) mesh_virtual_address;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
@@ -1349,19 +1489,25 @@ void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    mesh_subnet_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_mesh_subnet_t;
+
 mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
-    void * buffer = malloc(sizeof(mesh_subnet_t) + sizeof(btstack_memory_buffer_t));
+    btstack_memory_mesh_subnet_t * buffer = (btstack_memory_mesh_subnet_t *) malloc(sizeof(btstack_memory_mesh_subnet_t));
     if (buffer){
-        memset(buffer, 0, sizeof(mesh_subnet_t) + sizeof(btstack_memory_buffer_t));
-        btstack_memory_tracking_add(buffer);
-        return (mesh_subnet_t *) (buffer + sizeof(btstack_memory_buffer_t));
+        memset(buffer, 0, sizeof(mesh_subnet_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
     } else {
         return NULL;
     }
 }
 void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
-    void * buffer =  ((void *) mesh_subnet) - sizeof(btstack_memory_buffer_t);
-    btstack_memory_tracking_remove(buffer);
+    btstack_memory_mesh_subnet_t * buffer =  (btstack_memory_mesh_subnet_t *) mesh_subnet;
+    btstack_memory_tracking_remove(&buffer->tracking);
     free(buffer);
 }
 #endif
