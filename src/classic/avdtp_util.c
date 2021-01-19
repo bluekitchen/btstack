@@ -1160,7 +1160,7 @@ avdtp_signaling_emit_media_codec_atrac_configuration(avdtp_stream_endpoint_t *st
     event[pos++] = remote_seid;
     event[pos++] = reconfigure;
 
-    avdtp_atrac_version_t  version     =  media_codec_information[0] >> 5;
+    avdtp_atrac_version_t  version     = (avdtp_atrac_version_t) (media_codec_information[0] >> 5);
     uint8_t  channel_mode_bitmap       = (media_codec_information[0] >> 2) & 0x07;
     uint16_t sampling_frequency_bitmap = (media_codec_information[1] >> 4) & 0x03;
     uint8_t  vbr                       = (media_codec_information[1] >> 3) & 0x01;

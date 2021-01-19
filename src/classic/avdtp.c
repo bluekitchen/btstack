@@ -1374,9 +1374,9 @@ avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * str
 
 avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
-    avdtp_sbc_allocation_method_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
-    
-    uint8_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
+    uint8_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
+
+    avdtp_sbc_allocation_method_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
     if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS){
         allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
     } else if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_SNR){

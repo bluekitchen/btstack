@@ -873,7 +873,9 @@ static uint8_t l2cap_next_sig_id(void){
 
 void l2cap_init(void){
     signaling_responses_pending = 0;
+#ifdef L2CAP_USES_CHANNELS
     local_source_cid  = 0x40;
+#endif
     sig_seq_nr  = 0xff;
     l2cap_channels = NULL;
 
@@ -925,7 +927,9 @@ void l2cap_init(void){
  * @brief De-Init L2CAP
  */
 void l2cap_deinit(void){
+#ifdef ENABLE_CLASSIC
     memset(l2cap_outgoing_classic_addr, 0, 6);
+#endif
     signaling_responses_pending = 0;
 }
 

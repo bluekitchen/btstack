@@ -3131,7 +3131,10 @@ void hci_deinit(void){
     }
 #endif
     hci_stack = NULL;
+
+#ifdef ENABLE_CLASSIC
     disable_l2cap_timeouts = 0;
+#endif
 }
 
 /**
