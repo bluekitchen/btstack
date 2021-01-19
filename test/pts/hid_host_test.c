@@ -109,11 +109,8 @@ static enum {
     APP_CONNECTED
 } app_state = APP_IDLE;
 
-static bool unplugged;
-
+static bool     unplugged    = false;
 static uint16_t hid_host_cid = 0;
-static bool boot_mode = false;
-static bool send_through_interrupt_channel = false;
 
 // SDP
 static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
@@ -287,8 +284,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             hid_host_cid = 0;
-                            boot_mode = false;
-                            send_through_interrupt_channel = false;
                             printf("HID Host disconnected..\n");
                             break;
                         
@@ -366,7 +361,8 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - start SDP scan and connect to %s\n", remote_addr_string);
+    printf("a      - start SDP scan and connect to %s in BOOT mode\n", remote_addr_string);
+    printf("c      - start SDP scan and connect to %s in REPORT mode\n", remote_addr_string);
     printf("C      - disconnect from %s\n", remote_addr_string);
     printf("\n");
     printf("s      - suspend\n");
@@ -383,10 +379,12 @@ static void show_usage(void){
     printf("4      - Set report with id 0x03\n");
     printf("5      - Set report with id 0x05\n");
     printf("6      - Set report with id 0x02\n");
-    
-    printf("\n");
-    printf("7      - Send output report with id 0x03 on interrupt channel\n");
+    printf("7      - Set report with id 0x01\n");
 
+    printf("\n");
+    printf("t      - Send report with id 0x03\n");
+    printf("o      - Send report with id 0x01\n");
+    
     printf("\n");
     printf("p      - Get protocol\n");
     printf("r      - Set protocol in REPORT mode\n");
@@ -399,18 +397,22 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
+        case 'a':
+            if (unplugged){
+                printf("Cannot connect, host is unplugged.\n");
+                break;  
+            } 
+            printf("Start SDP scan and connect to %s in boot mode.\n", remote_addr_string);
+            status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_BOOT, &hid_host_cid);
+            break;
+
         case 'c':
             if (unplugged){
                 printf("Cannot connect, host is unplugged.\n");
                 break;  
             } 
-            printf("Start SDP scan and connect to %s.\n", remote_addr_string);
-            
-            if (boot_mode){
-                status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_BOOT, &hid_host_cid);
-            } else {
-                status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_REPORT, &hid_host_cid);
-            }
+            printf("Start SDP scan and connect to %s in report mode.\n", remote_addr_string);
+            status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_REPORT, &hid_host_cid);
             break;
 
         case 'C':
@@ -425,12 +427,10 @@ static void stdin_process(char cmd){
             break;
         case 'r':
             printf("Set protocol in REPORT mode\n");
-            boot_mode = false;
             status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_REPORT);
             break;
         case 'b':
             printf("Set protocol in BOOT mode\n");
-            boot_mode = true;
             status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_BOOT);
             break;
 
@@ -451,71 +451,59 @@ static void stdin_process(char cmd){
 
         case '1':
             printf("Get report with id 0x05\n");
-            status = hid_host_send_get_feature_report(hid_host_cid, 0x05);
+            status = hid_host_send_get_report(hid_host_cid, HID_REPORT_TYPE_FEATURE, 0x05);
             break;
         case '2':
             printf("Get report with id 0x03\n");
-            status = hid_host_send_get_output_report(hid_host_cid, 0x03);
+            status = hid_host_send_get_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03);
             break;
         case '3':
             printf("Get report from with id 0x02\n");
-            status = hid_host_send_get_input_report(hid_host_cid, 0x02);
-            break;
-        
-
-        case 'x':
-            printf("Set send through interrupt channel\n");
-            send_through_interrupt_channel = true;
+            status = hid_host_send_get_report(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x02);
             break;
 
 
         case '4':{
             printf("Set output report with id 0x03\n");
             uint8_t report[] = {0, 0};
-            status = hid_host_send_set_report_on_control_channel(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03, report, sizeof(report));
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03, report, sizeof(report));
             break;
         }
 
         case '5':{
             printf("Set feature report with id 0x05\n");
             uint8_t report[] = {0, 0, 0};
-            status = hid_host_send_set_report_on_control_channel(hid_host_cid, HID_REPORT_TYPE_FEATURE, 0x05, report, sizeof(report));
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_FEATURE, 0x05, report, sizeof(report));
             break;
         }
 
         case '6':{
             printf("Set input report with id 0x02\n");
             uint8_t report[] = {0, 0, 0, 0};
-            status = hid_host_send_set_report_on_control_channel(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x02, report, sizeof(report));
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x02, report, sizeof(report));
             break;
         }
 
-        case '7':
-            printf("Send output report with id 0x03 on interrupt channel\n");
-            uint8_t report[] = {0, 0};
-            status = hid_host_send_report_on_interrupt_channel(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03, report, sizeof(report));
+        case '7':{
+            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            printf("Set output report with id 0x01\n");
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x01, report, sizeof(report));
             break;
+        }
 
+        case 't':{
+            printf("Send report with id 0x03\n");
+            uint8_t report[] = {0, 0};
+            status = hid_host_send_report(hid_host_cid, 0x03, report, sizeof(report));
+            break;
+        }
 
-        //  case '8':{
-        //     uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        //     printf("Send output report with id 0x03\n");
-        //     status = hid_host_send_output_report(hid_host_cid, 0x03, report, sizeof(report));
-        //     break;
-        // }
-        // case '9':{
-        //     uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-        //     printf("Set output report with id 0x01\n");
-        //     status = hid_host_send_set_output_report(hid_host_cid, 0x01, report, sizeof(report));
-        //     break;
-        // }
-        // case '0':{
-        //     uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-        //     printf("Send output report with id 0x01\n");
-        //     status = hid_host_send_output_report(hid_host_cid, 0x01, report, sizeof(report));
-        //     break;
-        // }
-
+        case 'o':{
+            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            printf("Set output report with id 0x01\n");
+            status = hid_host_send_report(hid_host_cid, 0x01, report, sizeof(report));
+            break;
+        }
 
         case '\n':
         case '\r':
