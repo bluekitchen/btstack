@@ -928,11 +928,19 @@ avdtp_signaling_emit_media_codec_sbc(avdtp_stream_endpoint_t *stream_endpoint, u
     uint8_t subbands_bitmap = (media_codec_information[1] & 0x0F) >> 2;
 
     uint8_t num_channels = 0;
-    if ((channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO) ||
-        (channel_mode_bitmap & AVDTP_SBC_STEREO) ||
-        (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL)) {
+    avdtp_channel_mode_t channel_mode;
+
+    if (channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO){
+        channel_mode = AVDTP_CHANNEL_MODE_JOINT_STEREO;
         num_channels = 2;
-    } else if (channel_mode_bitmap & AVDTP_SBC_MONO) {
+    } else if (channel_mode_bitmap & AVDTP_SBC_STEREO){
+        channel_mode = AVDTP_CHANNEL_MODE_STEREO;
+        num_channels = 2;
+    } else if (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL){
+        channel_mode = AVDTP_CHANNEL_MODE_DUAL_CHANNEL;
+        num_channels = 2;
+    } else {
+        channel_mode = AVDTP_CHANNEL_MODE_MONO;
         num_channels = 1;
     }
 
@@ -969,7 +977,7 @@ avdtp_signaling_emit_media_codec_sbc(avdtp_stream_endpoint_t *stream_endpoint, u
     little_endian_store_16(event, pos, sampling_frequency);
     pos += 2;
 
-    event[pos++] = channel_mode_bitmap;
+    event[pos++] = (uint8_t) channel_mode;
     event[pos++] = num_channels;
     event[pos++] = block_length;
     event[pos++] = subbands;
@@ -1463,7 +1471,7 @@ void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t s
 void avdtp_config_mpeg_audio_store(uint8_t * config, avdtp_mpeg_layer_t layer, uint8_t crc, avdtp_channel_mode_t channel_mode, uint8_t media_payload_format,
                                           uint16_t sampling_frequency, uint8_t vbr, uint8_t bit_rate_index){
 
-    config[0] = (((uint8_t) layer) << 5) | ((crc & 0x01) << 4) | (1 << (channel_mode - AVDTP_CHANNEL_MODE_MONO));
+    config[0] = (1 << (7 - (layer - AVDTP_MPEG_LAYER_1))) | ((crc & 0x01) << 4) | (1 << (channel_mode - AVDTP_CHANNEL_MODE_MONO));
     config[1] = ((media_payload_format & 0x01) << 6) ;
     uint16_t bit_rate_mask = 1 << bit_rate_index;
     config[2] = ((vbr & 0x01) << 7) | ((bit_rate_mask >> 8) & 0x3f);
@@ -1525,21 +1533,21 @@ void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampli
 
 void avdtp_config_atrac_store(uint8_t * config, avdtp_atrac_version_t version, avdtp_channel_mode_t channel_mode, uint16_t sampling_frequency, uint8_t vbr,
                                      uint8_t bit_rate_index, uint16_t maximum_sul) {
-    uint8_t channel_mode_bitamp = 0;
+    uint8_t channel_mode_bitmap = 0;
     switch (channel_mode){
         case AVDTP_CHANNEL_MODE_MONO:
-            channel_mode_bitamp = 4;
+            channel_mode_bitmap = 4;
             break;
         case AVDTP_CHANNEL_MODE_DUAL_CHANNEL:
-            channel_mode_bitamp = 2;
+            channel_mode_bitmap = 2;
             break;
         case AVDTP_CHANNEL_MODE_JOINT_STEREO:
-            channel_mode_bitamp = 1;
+            channel_mode_bitmap = 1;
             break;
         default:
             break;
     }
-    config[0] = ((version - AVDTP_ATRAC_VERSION_1 + 1) << 5) | (channel_mode_bitamp << 2);
+    config[0] = ((version - AVDTP_ATRAC_VERSION_1 + 1) << 5) | (channel_mode_bitmap << 2);
     uint32_t bit_rate_bitmap = 1 << (0x18 - bit_rate_index);
     config[1] = ((vbr & 0x01) << 3) | ((bit_rate_bitmap >> 16) & 0x07);
     config[2] = (bit_rate_bitmap >> 8) & 0xff;
