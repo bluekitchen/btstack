@@ -23,9 +23,9 @@
 
 #include "usb_host.h"
 #include "usbh_core.h"
-#include "usbh_hid.h"
 
 /* USER CODE BEGIN Includes */
+#include "usbh_bluetooth.h"
 
 /* USER CODE END Includes */
 
@@ -77,7 +77,7 @@ void MX_USB_HOST_Init(void)
   {
     Error_Handler();
   }
-  if (USBH_RegisterClass(&hUsbHostFS, USBH_HID_CLASS) != USBH_OK)
+  if (USBH_RegisterClass(&hUsbHostFS, USBH_BLUETOOTH_CLASS) != USBH_OK)
   {
     Error_Handler();
   }

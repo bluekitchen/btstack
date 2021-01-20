@@ -38,6 +38,7 @@ BTSTACK_ROOT ?= ../..
 ######################################
 # C sources
 C_SOURCES =  \
+port/usbh_bluetooth.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
