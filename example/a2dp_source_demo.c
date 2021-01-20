@@ -558,7 +558,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
     bd_addr_t address;
     uint16_t cid;
 
-    uint8_t channel_mode;
+    avdtp_channel_mode_t channel_mode;
     uint8_t allocation_method;
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -595,7 +595,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             
-            channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            channel_mode = (avdtp_channel_mode_t) a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             
             printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x.\n", 
@@ -605,20 +605,18 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
-            sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
             switch (channel_mode){
-                case AVDTP_SBC_JOINT_STEREO:
+                case AVDTP_CHANNEL_MODE_JOINT_STEREO:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
                     break;
-                case AVDTP_SBC_STEREO:
+                case AVDTP_CHANNEL_MODE_STEREO:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
                     break;
-                case AVDTP_SBC_DUAL_CHANNEL:
+                case AVDTP_CHANNEL_MODE_DUAL_CHANNEL:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
                     break;
-                case AVDTP_SBC_MONO:
+                case AVDTP_CHANNEL_MODE_MONO:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
-                    sbc_configuration.num_channels = 1;
                     break;
                 default:
                     btstack_assert(false);
