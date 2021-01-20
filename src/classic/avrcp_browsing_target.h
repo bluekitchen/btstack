@@ -86,7 +86,7 @@ uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t browsin
 /**
  * @brief De-Init AVRCP Browsing Controller
  */
-void avrcp_browsing_controller_deinit(void);
+void avrcp_browsing_target_deinit(void);
 
 /* API_END */
 
