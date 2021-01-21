@@ -239,6 +239,10 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     if (err){
         log_error("rfcomm_send -> error 0x%02x \n", err);
     } 
+#ifdef ENABLE_HFP_AT_MESSAGES
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(cid);
+    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, command);
+#endif
     return 1;
 }
 

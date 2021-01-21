@@ -19,6 +19,7 @@ A2DP Source: allow to configure non-SBC endpoints by calling `a2dp_source_set_co
 A2DP Source, AVDTP Source: allow to send complete media packet with `avdtp_source_stream_send_media_packet` and `a2dp_source_stream_send_media_packet`
 A2DP Source AVDTP Source: add `avdtp_source_stream_send_media_payload_rtp`
 A2DP Source: support multiple Stream Endpoints with different Media Codec types
+HFP: `ENABLE_HFP_AT_MESSAGES` lets HFP emit  `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED`
 
 ### Fixed
 L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)

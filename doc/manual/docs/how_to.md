@@ -83,7 +83,8 @@ ENABLE_LOG_INFO                  | Enable log_info messages
 ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (if supported)
 ENABLE_SCO_OVER_PCM              | Enable SCO ofer PCM/I2S for chipsets (if supported)
 ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP profile for Wide-Band Speech
-ENBALE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
+ENABLE_HFP_AT_MESSAGES           | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events
+ENABLE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
 ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
 ENABLE_LE_SECURE_CONNECTIONS     | Enable LE Secure Connections
 ENABLE_LE_PROACTIVE_AUTHENTICATION | Enable automatic encryption for bonded devices on re-connect

@@ -4241,6 +4241,26 @@ static inline const char * hfp_subevent_response_and_hold_status_get_value(const
     return (const char *) &event[3];
 }
 
+/**
+ * @brief Get field command from event HFP_SUBEVENT_AT_MESSAGE_SENT
+ * @param event packet
+ * @return command
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_at_message_sent_get_command(const uint8_t * event){
+    return (const char *) &event[3];
+}
+
+/**
+ * @brief Get field command from event HFP_SUBEVENT_AT_MESSAGE_RECEIVED
+ * @param event packet
+ * @return command
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_at_message_received_get_command(const uint8_t * event){
+    return (const char *) &event[3];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED

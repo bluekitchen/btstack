@@ -1672,6 +1672,20 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
 
+/**
+ * @format 1T
+ * @param subevent_code
+ * @param command
+ */
+#define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1B
+
+/**
+ * @format 1T
+ * @param subevent_code
+ * @param command
+ */
+#define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C
+
 // ANCS Client
 
 /**

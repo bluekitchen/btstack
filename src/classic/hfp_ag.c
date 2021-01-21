@@ -1846,7 +1846,10 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
     if (!hfp_connection) return;
     
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
-    
+#ifdef ENABLE_HFP_AT_MESSAGES
+    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
+#endif
+
     // process messages byte-wise
     int pos;
     for (pos = 0; pos < size ; pos++){
