@@ -32,23 +32,137 @@ OPT = -Og
 BUILD_DIR = build
 
 BTSTACK_ROOT ?= ../..
+VPATH += ${BTSTACK_ROOT}/example
 
 ######################################
 # source
 ######################################
 # C sources
 C_SOURCES =  \
+${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c \
+${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c \
+${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
+${BTSTACK_ROOT}/3rd-party/yxml/yxml.c \
+${BTSTACK_ROOT}/3rd-party/md5/md5.c \
+${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c \
+${BTSTACK_ROOT}/example/sco_demo_util.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
+${BTSTACK_ROOT}/src/ad_parser.c \
+${BTSTACK_ROOT}/src/ble/ancs_client.c \
+${BTSTACK_ROOT}/src/ble/att_db.c \
+${BTSTACK_ROOT}/src/ble/att_dispatch.c \
+${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
+${BTSTACK_ROOT}/src/ble/gatt_client.c \
+${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
+${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
+${BTSTACK_ROOT}/src/ble/sm.c \
+${BTSTACK_ROOT}/src/btstack_audio.c \
+${BTSTACK_ROOT}/src/btstack_crypto.c \
+${BTSTACK_ROOT}/src/btstack_hid_parser.c \
+${BTSTACK_ROOT}/src/btstack_linked_list.c \
+${BTSTACK_ROOT}/src/btstack_memory.c \
+${BTSTACK_ROOT}/src/btstack_memory_pool.c \
+${BTSTACK_ROOT}/src/btstack_resample.c \
+${BTSTACK_ROOT}/src/btstack_ring_buffer.c \
+${BTSTACK_ROOT}/src/btstack_run_loop.c \
+${BTSTACK_ROOT}/src/btstack_tlv.c \
+${BTSTACK_ROOT}/src/btstack_util.c \
+${BTSTACK_ROOT}/src/classic/a2dp_sink.c \
+${BTSTACK_ROOT}/src/classic/a2dp_source.c \
+${BTSTACK_ROOT}/src/classic/avdtp.c \
+${BTSTACK_ROOT}/src/classic/avdtp_acceptor.c \
+${BTSTACK_ROOT}/src/classic/avdtp_initiator.c \
+${BTSTACK_ROOT}/src/classic/avdtp_sink.c \
+${BTSTACK_ROOT}/src/classic/avdtp_source.c \
+${BTSTACK_ROOT}/src/classic/avdtp_util.c \
+${BTSTACK_ROOT}/src/classic/avrcp.c \
+${BTSTACK_ROOT}/src/classic/avrcp_browsing_controller.c \
+${BTSTACK_ROOT}/src/classic/avrcp_controller.c \
+${BTSTACK_ROOT}/src/classic/avrcp_media_item_iterator.c \
+${BTSTACK_ROOT}/src/classic/avrcp_target.c \
+${BTSTACK_ROOT}/src/classic/bnep.c \
+${BTSTACK_ROOT}/src/classic/btstack_cvsd_plc.c \
+${BTSTACK_ROOT}/src/classic/btstack_link_key_db_tlv.c \
+${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.c \
+${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bluedroid.c \
+${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
+${BTSTACK_ROOT}/src/classic/device_id_server.c \
+${BTSTACK_ROOT}/src/classic/goep_client.c \
+${BTSTACK_ROOT}/src/classic/hfp.c \
+${BTSTACK_ROOT}/src/classic/hfp_ag.c \
+${BTSTACK_ROOT}/src/classic/hfp_gsm_model.c \
+${BTSTACK_ROOT}/src/classic/hfp_hf.c \
+${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+${BTSTACK_ROOT}/src/classic/hid_device.c \
+${BTSTACK_ROOT}/src/classic/hsp_ag.c \
+${BTSTACK_ROOT}/src/classic/hsp_hs.c \
+${BTSTACK_ROOT}/src/classic/obex_iterator.c \
+${BTSTACK_ROOT}/src/classic/obex_message_builder.c \
+${BTSTACK_ROOT}/src/classic/pan.c \
+${BTSTACK_ROOT}/src/classic/pbap_client.c \
+${BTSTACK_ROOT}/src/classic/rfcomm.c \
+${BTSTACK_ROOT}/src/classic/sdp_client.c \
+${BTSTACK_ROOT}/src/classic/sdp_client_rfcomm.c \
+${BTSTACK_ROOT}/src/classic/sdp_server.c \
+${BTSTACK_ROOT}/src/classic/sdp_util.c \
+${BTSTACK_ROOT}/src/classic/spp_server.c \
+${BTSTACK_ROOT}/src/hci.c \
+${BTSTACK_ROOT}/src/hci_cmd.c \
+${BTSTACK_ROOT}/src/hci_dump.c \
+${BTSTACK_ROOT}/src/hci_transport_h4.c \
+${BTSTACK_ROOT}/src/l2cap.c \
+${BTSTACK_ROOT}/src/l2cap_signaling.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ip.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/mem.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/memp.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/netif.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/pbuf.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_in.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/tcp_out.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/timeouts.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/udp.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/acd.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/dhcp.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/etharp.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/icmp.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_addr.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4/ip4_frag.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif/ethernet.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c \
+${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c \
+${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c \
+${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
+${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
+port/port.c \
 port/usbh_bluetooth.c \
+port/hci_transport_h2_stm32.c \
+port/hal_flash_bank_stm32.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
-${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
-${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
+Core/Src/system_stm32f4xx.c \
+USB_HOST/App/usb_host.c \
 USB_HOST/Target/usbh_conf.c \
 USB_HOST/Target/usbh_platform.c \
-USB_HOST/App/usb_host.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_hcd.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
@@ -62,17 +176,12 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-Core/Src/system_stm32f4xx.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_hcd.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_core.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ioreq.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_pipes.c \
-Middlewares/ST/STM32_USB_Host_Library/Class/HID/Src/usbh_hid.c \
-Middlewares/ST/STM32_USB_Host_Library/Class/HID/Src/usbh_hid_keybd.c \
-Middlewares/ST/STM32_USB_Host_Library/Class/HID/Src/usbh_hid_mouse.c \
-Middlewares/ST/STM32_USB_Host_Library/Class/HID/Src/usbh_hid_parser.c  
 
 # ASM sources
 ASM_SOURCES =  \
@@ -129,17 +238,39 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
--IUSB_HOST/App \
--IUSB_HOST/Target \
 -ICore/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
--IMiddlewares/ST/STM32_USB_Host_Library/Core/Inc \
--IMiddlewares/ST/STM32_USB_Host_Library/Class/HID/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
--Iport
+-IMiddlewares/ST/STM32_USB_Host_Library/Core/Inc \
+-IMiddlewares/ST/STM32_USB_Host_Library/Class/HID/Inc \
 
+C_INCLUDES += -I$(BUILD_DIR)
+C_INCLUDES += -I${BTSTACK_ROOT}/src/ble
+C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
+C_INCLUDES += -I${BTSTACK_ROOT}/src/classic
+C_INCLUDES += -I${BTSTACK_ROOT}/src
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/lwip/core/src/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/md5
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/yxml
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
+C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
+C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
+C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
+
+C_INCLUDES += -I bsp
+C_INCLUDES += -I pdm
+C_INCLUDES += -I port
+C_INCLUDES += -I Core/Src
+C_INCLUDES += -I USB_HOST/Target
+C_INCLUDES += -I USB_HOST/App
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -167,7 +298,64 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+EXAMPLES = 					\
+	audio_duplex            \
+	a2dp_sink_demo			\
+	a2dp_source_demo        \
+	ancs_client_demo		\
+	dut_mode_classic        \
+	gap_dedicated_bonding	\
+	gap_inquiry 			\
+	gap_le_advertisements   \
+	gatt_battery_query		\
+	gatt_browser            \
+	gatt_counter            \
+	gatt_streamer_server    \
+	hfp_ag_demo             \
+	hfp_hf_demo             \
+	hid_host_demo           \
+	hid_keyboard_demo 	    \
+	hid_mouse_demo          \
+	hog_keyboard_demo       \
+	hog_mouse_demo          \
+	hsp_ag_demo             \
+	hsp_hs_demo             \
+	mod_player              \
+	le_streamer_client      \
+	pan_lwip_http_server    \
+	pbap_client_demo		\
+	sdp_bnep_query 			\
+	sdp_general_query		\
+	sdp_rfcomm_query		\
+	sine_player             \
+	sm_pairing_central      \
+	sm_pairing_peripheral   \
+	spp_and_gatt_counter 		\
+	spp_and_gatt_streamer     \
+	spp_counter 			\
+	spp_streamer			\
+	spp_streamer_client     \
+
+GATT_FILES = \
+	ancs_client_demo.gatt \
+	gatt_counter.gatt \
+	gatt_streamer_server.gatt \
+	gatt_browser.gatt \
+	gatt_battery_query.gatt \
+	hog_keyboard_demo.gatt \
+	hog_mouse_demo.gatt \
+	sm_pairing_peripheral.gatt \
+	sm_pairing_central.gatt \
+	spp_and_gatt_counter.gatt \
+	spp_and_gatt_streamer.gatt \
+
+# SBC codec
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
+C_SOURCES += ${SBC_ENCODER}
+C_SOURCES += ${SBC_DECODER}
 
 
 #######################################
@@ -179,15 +367,26 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 # list of ASM program objects
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
+all: \
+	$(OBJECTS) \
+	$(addprefix $(BUILD_DIR)/,$(GATT_FILES:.gatt=.h)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.elf)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.hex)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
+
+
+$(BUILD_DIR)/%.h: %.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
-
-$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+$(BUILD_DIR)/%.elf: Makefile $(OBJECTS) $(BUILD_DIR)/%.o
+	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
 	$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
@@ -196,6 +395,9 @@ $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
 	
+$(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
+	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
+
 $(BUILD_DIR):
 	mkdir $@		
 
