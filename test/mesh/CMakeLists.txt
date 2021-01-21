@@ -11,13 +11,14 @@ set(CMAKE_XCODE_GENERATE_SCHEME ON)
 set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER ON)
 set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
 
-# add libusb
-find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
-find_library(LIBUSB_LIBRARY NAMES usb-1.0 PATH_SUFFIXES "lib" "lib32" "lib64" "dylib")
-get_filename_component(LIBUSB_LIBRARY_PATH ${LIBUSB_LIBRARY} DIRECTORY)
-include_directories( ${LIBUSB_INCLUDE_DIR} )
-link_directories( ${LIBUSB_LIBRARY_PATH} )
-link_libraries( usb-1.0 )
+# fink pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# libusb
+pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+include_directories(${LIBUSB_INCLUDE_DIRS})
+link_directories(${LIBUSB_LIBRARY_DIRS})
+link_libraries(${LIBUSB_LIBRARIES})
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/tinydir)
