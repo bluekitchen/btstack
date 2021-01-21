@@ -1973,7 +1973,7 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x15
 
 /**
- * @format 12111113111
+ * @format 12111113131
  * @param subevent_code
  * @param avdtp_cid
  * @param local_seid
@@ -2125,7 +2125,7 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x03
 
 /**
- * @format 12111113111
+ * @format 12111113131
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
