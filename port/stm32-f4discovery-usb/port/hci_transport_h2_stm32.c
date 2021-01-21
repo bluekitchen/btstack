@@ -43,12 +43,30 @@
  *  HCI Transport API implementation for STM32Cube USB Host Stack
  */
 
-#include "hci_transport_h2_stm32.h"
+// include STM32 first to avoid warning about redefinition of UNUSED
+#include "usb_host.h"
+
 #include <stddef.h>
+
+#include "hci_transport_h2_stm32.h"
+
 #include "btstack_debug.h"
+#include "btstack_run_loop.h"
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
 
+// data source for integration with BTstack Runloop
+static btstack_data_source_t transport_data_source;
+
+static void hci_transport_h2_stm32_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    switch (callback_type){
+        case DATA_SOURCE_CALLBACK_POLL:
+            MX_USB_HOST_Process();
+            break;
+        default:
+            break;
+    }
+}
 
 static void hci_transport_h2_stm32_init(const void * transport_config){
     UNUSED(transport_config);
@@ -56,12 +74,17 @@ static void hci_transport_h2_stm32_init(const void * transport_config){
 }
 
 static int hci_transport_h2_stm32_open(void){
-    log_info("hci_transport_h2_stm32_open");
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_transport_h2_stm32_process);
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&transport_data_source);
     return 0;
 }
 
 static int hci_transport_h2_stm32_close(void){
-    log_info("hci_transport_h2_stm32_close");
+    // remove data source
+    btstack_run_loop_disable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_remove_data_source(&transport_data_source);
     return -1;
 }
 
@@ -70,7 +93,6 @@ static void hci_transport_h2_stm32_register_packet_handler(void (*handler)(uint8
 }
 
 static int hci_transport_h2_stm32_can_send_now(uint8_t packet_type){
-    log_info("hci_transport_h2_stm32_can_send_now");
     return 0;
 }
 
