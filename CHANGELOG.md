@@ -24,6 +24,7 @@ HFP: `ENABLE_HFP_AT_MESSAGES` lets HFP emit  `HFP_SUBEVENT_AT_MESSAGE_SENT` and 
 ### Fixed
 L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)
 A2DP Source: emit codec configure event with reconfigure flag set on reconfigure
+HCI: keep `le connecting request` on command complete, fixes gap_auto_connection_stop() + gap_auto_connection_start()
 
 ### Changed
 HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP record is found

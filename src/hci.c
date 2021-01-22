@@ -2182,7 +2182,6 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 			// whitelist connect
 			if (hci_is_le_connection_type(addr_type)){
 				hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-				hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 			}
 			// get outgoing connection conn struct for direct connect
 			conn = gap_get_outgoing_connection();
@@ -2312,7 +2311,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_LE_CENTRAL
                     if (hci_is_le_connection_type(addr_type)){
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-                        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
                     }
 #endif
                     // error => outgoing connection failed
@@ -3748,18 +3746,24 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_CENTRAL
     // connecting control
-    if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
-        // stop connecting if:
-        // - connecting uses white and whitelist modification pending
-        // - if it got disabled
-        // - resolving list modified
-        bool connecting_uses_whitelist = hci_stack->le_connecting_request == LE_CONNECTING_WHITELIST;
-        if ((connecting_uses_whitelist && whitelist_modification_pending) ||
-            (hci_stack->le_connecting_request == LE_CONNECTING_IDLE) ||
-            resolving_list_modification_pending) {
+    bool connecting_with_whitelist;
+    switch (hci_stack->le_connecting_state){
+        case LE_CONNECTING_DIRECT:
+        case LE_CONNECTING_WHITELIST:
+            // stop connecting if:
+            // - connecting uses white and whitelist modification pending
+            // - if it got disabled
+            // - resolving list modified
+            connecting_with_whitelist = hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST;
+            if ((connecting_with_whitelist && whitelist_modification_pending) ||
+                (hci_stack->le_connecting_request == LE_CONNECTING_IDLE) ||
+                resolving_list_modification_pending) {
 
-            connecting_stop = true;
-        }
+                connecting_stop = true;
+            }
+            break;
+        default:
+            break;
     }
 #endif
 
@@ -3795,10 +3799,8 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_CENTRAL
     if (connecting_stop){
-        if (hci_stack->le_connecting_state != LE_CONNECTING_CANCEL){
-            hci_send_cmd(&hci_le_create_connection_cancel);
-            return true;
-        }
+        hci_send_cmd(&hci_le_create_connection_cancel);
+        return true;
     }
 #endif
 
