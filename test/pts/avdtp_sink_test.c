@@ -49,6 +49,10 @@
 
 #include "wav_util.h"
 
+#ifdef HAVE_AAC_FDK
+#include <fdk-aac/aacdecoder_lib.h>
+#endif
+
 //
 // Configuration
 //
@@ -96,6 +100,15 @@ typedef struct {
 } avdtp_media_codec_configuration_sbc_t;
 
 typedef struct {
+    int reconfigure;
+    int sampling_frequency;
+    int aot;
+    int bitrate;
+    int channel_mode;
+    int vbr;
+} avdtp_media_codec_configuration_aac_t;
+
+typedef struct {
     uint8_t  num_channels;
     uint32_t sampling_frequency;
 } playback_configuration_t;
@@ -139,20 +152,18 @@ static btstack_sbc_decoder_state_t state;
 static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
 static adtvp_media_codec_information_sbc_t   sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
-static unsigned int sbc_frame_size;
 
-// xxx
-// ..
-
-
-static int16_t * request_buffer;
-static int       request_frames;
+// AAC
+#ifdef HAVE_AAC_FDK
+// AAC handle
+static HANDLE_AACDECODER aac_handle;
+static avdtp_media_codec_configuration_aac_t aac_configuration;
+#endif
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
 
 // prototypes
-static void handle_pcm_data(int16_t * data, uint16_t num_samples, uint8_t num_channels, int sample_rate, void * context);
 static int read_media_data_header(uint8_t * packet, uint16_t size, uint16_t * offset, avdtp_media_packet_header_t * media_header);
 static int read_sbc_header(uint8_t * packet, uint16_t size, uint16_t * offset, avdtp_sbc_codec_header_t * sbc_header);
 
@@ -204,7 +215,7 @@ static int playback_init(playback_configuration_t * configuration){
     // setup audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
-        printf("Open audio stream\n");
+        printf("Playback: start stream\n");
         audio->init(NUM_CHANNELS, configuration->sampling_frequency, &playback_handler);
         audio->start_stream();
     }
@@ -235,7 +246,7 @@ static void playback_close(void){
     // stop audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
-        printf("Open audio stream\n");
+        printf("PlaybackL: stop stream\n");
         audio->close();
     }
 }
@@ -312,6 +323,34 @@ static void handle_l2cap_media_data_packet_sbc(uint8_t *packet, uint16_t size){
     btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
 }
 
+// AAC using fdk-aac
+#ifdef HAVE_AAC_FDK
+static void handle_l2cap_media_data_packet_aac(uint8_t *packet, uint16_t size){
+    uint16_t pos = 0;
+
+    avdtp_media_packet_header_t media_header;
+    if (!read_media_data_header(packet, size, &pos, &media_header)) return;
+
+    int16_t decode_buf[2048 * 2]; // 2 == num_channel
+    uint32_t framesize;
+    AAC_DECODER_ERROR err;
+    UINT uValid;
+    UINT uSize;
+
+    uSize = size - 12; // RTP header length
+    uValid = uSize;
+    UCHAR *ptr = (UCHAR *) (packet+pos);
+    if ((err = aacDecoder_Fill(aac_handle, &ptr, &uSize, &uValid)) != AAC_DEC_OK) return;
+    if ((err = aacDecoder_DecodeFrame(aac_handle, (INT_PCM *) decode_buf, sizeof(decode_buf) / sizeof(INT_PCM), 0)) != AAC_DEC_OK) {
+        printf("decode error %d\n", err);
+        return;
+    }
+    CStreamInfo *aac_info = aacDecoder_GetStreamInfo(aac_handle);
+    framesize = aac_info->frameSize * 2; // 2 channels
+
+    playback_queue_audio(decode_buf, aac_info->frameSize, 2);
+}
+#endif
 
 // Codec XXX
 //
@@ -364,6 +403,9 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     switch (codec_type){
         case AVDTP_CODEC_SBC:
             handle_l2cap_media_data_packet_sbc(packet, size);
+            break;
+        case AVDTP_CODEC_MPEG_2_4_AAC:
+            handle_l2cap_media_data_packet_aac(packet, size);
             break;
         default:
             printf("Media Codec %u not supported yet\n", codec_type);
@@ -460,6 +502,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
 
             codec_type = AVDTP_CODEC_SBC;
+            local_seid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet);
             playback_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             playback_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);;
             btstack_sbc_decoder_init(&state, mode, sbc_handle_pcm_data, NULL);
@@ -478,6 +521,43 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
             break;
+
+#ifdef HAVE_AAC_FDK
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:{
+
+            codec_type = AVDTP_CODEC_MPEG_2_4_AAC;
+            local_seid = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_local_seid(packet);
+            playback_configuration.num_channels = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_num_channels(packet);
+            playback_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_sampling_frequency(packet);;
+
+            aac_configuration.reconfigure = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_reconfigure(packet);
+            aac_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_sampling_frequency(packet);
+            aac_configuration.aot = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_object_type(packet);
+            aac_configuration.channel_mode = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_num_channels(packet);
+            aac_configuration.bitrate = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_bit_rate(packet);
+            aac_configuration.vbr = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_vbr(packet);
+            if (aac_configuration.reconfigure){
+                printf("A2DP Sink: Remote requested reconfiguration, ignoring it.\n");
+            }
+
+            printf("A2DP Sink: Received AAC configuration! Sampling frequency: %u, object type %u, channel mode %u, bitrate %u, vbr: %u\n",
+                   aac_configuration.sampling_frequency, aac_configuration.aot, aac_configuration.channel_mode,
+                   aac_configuration.bitrate, aac_configuration.vbr);
+
+            // initialize decoder
+            AAC_DECODER_ERROR err;
+            aac_handle = aacDecoder_Open(TT_MP4_LATM_MCP1, 1);
+            if ((err = aacDecoder_SetParam(aac_handle, AAC_PCM_MAX_OUTPUT_CHANNELS, aac_configuration.channel_mode)) != AAC_DEC_OK) {
+                printf("Couldn't set output channels: %d", err);
+                break;
+            }
+            if ((err = aacDecoder_SetParam(aac_handle, AAC_PCM_MIN_OUTPUT_CHANNELS, aac_configuration.channel_mode)) != AAC_DEC_OK) {
+                printf("Couldn't set output channels: %d", err);
+                break;
+            }
+            break;
+        }
+#endif
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             avdtp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
@@ -553,12 +633,28 @@ static uint8_t media_sbc_codec_reconfiguration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_MONO,
     (AVDTP_SBC_BLOCK_LENGTH_8 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     32, 32 
-}; 
+};
+
+static uint8_t media_aac_codec_capabilities[] = {
+        0xFF,
+        0xFF,
+        0xFF,
+        0x80,
+        0,
+        0
+};
+
+static uint8_t media_aac_codec_configuration[6];
 
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP SINK Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("Supported Codecs: SBC");
+#ifdef HAVE_AAC_FDK
+    printf(", MPEG AAC");
+#endif
+    printf("\n");
     printf("c      - create connection to addr %s\n", device_addr_string);
     printf("d      - discover stream endpoints\n");
     printf("g      - get capabilities\n");
@@ -679,18 +775,27 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_init();
     avdtp_sink_register_packet_handler(&packet_handler);
 
-    avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
-    if (!local_stream_endpoint) {
-        printf("AVDTP Sink: not enough memory to create local_stream_endpoint\n");
-        return 1;
-    }
-    // store user codec configuration buffer
+    avdtp_stream_endpoint_t * local_stream_endpoint;
+
+    // Setup SBC Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
     local_stream_endpoint->media_codec_configuration_info = media_sbc_codec_configuration;
     local_stream_endpoint->media_codec_configuration_len  = sizeof(media_sbc_codec_configuration);
-
     local_seid = avdtp_local_seid(local_stream_endpoint);
     avdtp_sink_register_media_transport_category(local_seid);
     avdtp_sink_register_media_codec_category(local_seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+
+#ifdef HAVE_AAC_FDK
+    // Setup AAC Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
+    local_stream_endpoint->media_codec_configuration_info = media_aac_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_aac_codec_configuration);
+    local_seid = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid);
+    avdtp_sink_register_media_codec_category(local_seid, AVDTP_AUDIO, AVDTP_CODEC_MPEG_2_4_AAC, media_aac_codec_capabilities, sizeof(media_aac_codec_capabilities));
+#endif
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
     // Initialize SDP 
@@ -699,7 +804,7 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
     // printf("BTstack AVDTP Sink, supported features 0x%04x\n", );
-    gap_set_local_name("BTstack AVDTP Sink PTS 00:00:00:00:00:00");
+    gap_set_local_name("AVDTP Sink 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
 

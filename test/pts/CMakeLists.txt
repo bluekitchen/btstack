@@ -17,6 +17,16 @@ link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_libraries(${PORTAUDIO_LIBRARIES})
 add_compile_definitions(HAVE_PORTAUDIO)
 
+# fdk-aac
+pkg_check_modules(FDK_AAC fdk-aac)
+if(FDK_AAC_FOUND)
+	message("HAVE_AAC_FDK")
+	include_directories(${FDK_AAC_INCLUDE_DIRS})
+	link_directories(${FDK_AAC_LIBRARY_DIRS})
+	link_libraries(${FDK_AAC_LIBRARIES})
+	add_compile_definitions(HAVE_AAC_FDK)
+endif()
+
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)
