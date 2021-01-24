@@ -978,7 +978,7 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
             (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
             avdtp_config_atrac_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
-        case AVDTP_CODEC_NON_A2DP:
+        default:
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
