@@ -2268,7 +2268,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
     int create_connection_cmd;
 
 #ifdef ENABLE_CLASSIC
-    uint8_t link_type;
+    hci_link_type_t link_type;
     bd_addr_t addr;
 #endif
 
@@ -2369,8 +2369,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
+            link_type = (hci_link_type_t) packet[11];
             if (hci_stack->gap_classic_accept_callback != NULL){
-                if ((*hci_stack->gap_classic_accept_callback)(addr) == 0){
+                if ((*hci_stack->gap_classic_accept_callback)(addr, link_type) == 0){
                     hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
                     bd_addr_copy(hci_stack->decline_addr, addr);
                     break;
@@ -2378,9 +2379,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
             } 
 
             // TODO: eval COD 8-10
-            link_type = packet[11];
-            log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
-            addr_type = (link_type == 1) ? BD_ADDR_TYPE_ACL : BD_ADDR_TYPE_SCO;
+            log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), (unsigned int) link_type);
+            addr_type = (link_type == HCI_LINK_TYPE_ACL) ? BD_ADDR_TYPE_ACL : BD_ADDR_TYPE_SCO;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, addr_type);
@@ -2394,7 +2394,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
             // store info about eSCO
-            if (link_type == 0x02){
+            if (link_type == HCI_LINK_TYPE_ESCO){
                 conn->remote_supported_features[0] |= 1;
             }
             hci_run();
@@ -5899,7 +5899,7 @@ HCI_STATE hci_get_state(void){
 }
 
 #ifdef ENABLE_CLASSIC
-void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr)){
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr, hci_link_type_t link_type)){
     hci_stack->gap_classic_accept_callback = accept_callback;
 }
 #endif

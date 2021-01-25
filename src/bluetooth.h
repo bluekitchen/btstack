@@ -75,6 +75,14 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
     BD_ADDR_TYPE_UNKNOWN   = 0xfe,  // also used as 'invalid'
 } bd_addr_type_t;
 
+/**
+ * Link types for BR/EDR Connections
+ */
+typedef enum {
+    HCI_LINK_TYPE_SCO  = 0,
+    HCI_LINK_TYPE_ACL  = 1,
+    HCI_LINK_TYPE_ESCO = 2,
+} hci_link_type_t;
 
 
 /**
