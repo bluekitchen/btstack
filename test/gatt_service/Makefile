@@ -65,9 +65,6 @@ build-coverage/%.o: %.c | build-coverage
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
-build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS) $< -o $@
-
 build-coverage/battery_service_test: build-coverage/battery_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_test.o | build-coverage
 	${CC} $(filter-out build-coverage/battery_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
