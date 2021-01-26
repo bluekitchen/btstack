@@ -34,35 +34,85 @@ def indent(elem, level=0):
 def list_services():
     global headers
 
-    url     = 'https://www.bluetooth.com/specifications/gatt/services'
-    print("Fetching list of services from %s" % url)
-    print('')
+    print ("List of services cached from https://www.bluetooth.com/specifications/gatt/services/ on 2020-07-22")
+    print()
 
-    page = requests.get(url, headers=headers)
+    # url     = 'http://web.archive.org/web/20200722222310/https://www.bluetooth.com/specifications/gatt/services/'
+    # print("Fetching list of services from %s" % url)
+    # print('')
+    #
+    # page = requests.get(url, headers=headers)
+    #
+    # tree = html.fromstring(page.content)
+    # # get all <tr> elements in <table">
+    # rows = tree.xpath('//table/tbody/tr')
+    # print("%-55s| %-30s| %s" % ('Specification Type', 'Specification Name', 'UUID'))
+    # print('-'*55 + '+-' + '-' * 30 + '+-' + '-'*10)
+    # maxlen_type = 0
+    # maxlen_name = 0
+    # services = []
+    # for row in rows:
+    #     children = row.getchildren()
+    #     summary = children[0].text_content()
+    #     id      = children[1].text_content()
+    #     uuid    = children[2].text_content()
+    #     if (len(id)) and id != "GATT Service UUID":
+    #         services.append((id, summary, uuid))
+    # # sort
+    # services.sort(key=lambda tup: tup[1])
 
-    tree = html.fromstring(page.content)
-    # get all <tr> elements in <table">
-    rows = tree.xpath('//table/tbody/tr')
-    print("%-55s| %-30s| %s" % ('Specification Type', 'Specification Name', 'UUID'))
-    print('-'*55 + '+-' + '-' * 30 + '+-' + '-'*10)
-    maxlen_type = 0
-    maxlen_name = 0
-    services = []
-    for row in rows:
-        children = row.getchildren()
-        summary = children[0].text_content()
-        id      = children[1].text_content()
-        uuid    = children[2].text_content()
-        if (len(id)):
-            services.append((id, summary, uuid))
-    # sort
-    services.sort(key=lambda tup: tup[1])
+    services = [
+        ( 'org.bluetooth.service.alert_notification', 'Alert Notification Service', '0x1811' ),
+        ( 'org.bluetooth.service.automation_io', 'Automation IO', '0x1815' ),
+        ( 'org.bluetooth.service.battery_service', 'Battery Service', '0x180F' ),
+        ( 'org.bluetooth.service.blood_pressure', 'Blood Pressure', '0x1810' ),
+        ( 'org.bluetooth.service.body_composition', 'Body Composition', '0x181B' ),
+        ( 'org.bluetooth.service.bond_management', 'Bond Management Service', '0x181E' ),
+        ( 'org.bluetooth.service.continuous_glucose_monitoring', 'Continuous Glucose Monitoring', '0x181F' ),
+        ( 'org.bluetooth.service.current_time', 'Current Time Service', '0x1805' ),
+        ( 'org.bluetooth.service.cycling_power', 'Cycling Power', '0x1818' ),
+        ( 'org.bluetooth.service.cycling_speed_and_cadence', 'Cycling Speed and Cadence', '0x1816' ),
+        ( 'org.bluetooth.service.device_information', 'Device Information', '0x180A' ),
+        ( 'org.bluetooth.service.environmental_sensing', 'Environmental Sensing', '0x181A' ),
+        ( 'org.bluetooth.service.fitness_machine', 'Fitness Machine', '0x1826' ),
+        ( 'org.bluetooth.service.generic_access', 'Generic Access', '0x1800' ),
+        ( 'org.bluetooth.service.generic_attribute', 'Generic Attribute', '0x1801' ),
+        ( 'org.bluetooth.service.glucose', 'Glucose', '0x1808' ),
+        ( 'org.bluetooth.service.http_proxy', 'HTTP Proxy', '0x1823' ),
+        ( 'org.bluetooth.service.health_thermometer', 'Health Thermometer', '0x1809' ),
+        ( 'org.bluetooth.service.heart_rate', 'Heart Rate', '0x180D' ),
+        ( 'org.bluetooth.service.human_interface_device', 'Human Interface Device', '0x1812' ),
+        ( 'org.bluetooth.service.immediate_alert', 'Immediate Alert', '0x1802' ),
+        ( 'org.bluetooth.service.indoor_positioning', 'Indoor Positioning', '0x1821' ),
+        ( 'org.bluetooth.service.insulin_delivery', 'Insulin Delivery', '0x183A' ),
+        ( 'org.bluetooth.service.internet_protocol_support', 'Internet Protocol Support Service', '0x1820' ),
+        ( 'org.bluetooth.service.link_loss', 'Link Loss', '0x1803' ),
+        ( 'org.bluetooth.service.location_and_navigation', 'Location and Navigation', '0x1819' ),
+        ( 'org.bluetooth.service.mesh_provisioning', 'Mesh Provisioning Service', '0x1827' ),
+        ( 'org.bluetooth.service.mesh_proxy', 'Mesh Proxy Service', '0x1828' ),
+        ( 'org.bluetooth.service.next_dst_change', 'Next DST Change Service', '0x1807' ),
+        ( 'org.bluetooth.service.object_transfer', 'Object Transfer Service', '0x1825' ),
+        ( 'org.bluetooth.service.phone_alert_status', 'Phone Alert Status Service', '0x180E' ),
+        ( 'org.bluetooth.service.pulse_oximeter', 'Pulse Oximeter Service', '0x1822' ),
+        ( 'org.bluetooth.service.reconnection_configuration', 'Reconnection Configuration', '0x1829' ),
+        ( 'org.bluetooth.service.reference_time_update', 'Reference Time Update Service', '0x1806' ),
+        ( 'org.bluetooth.service.running_speed_and_cadence', 'Running Speed and Cadence', '0x1814' ),
+        ( 'org.bluetooth.service.scan_parameters', 'Scan Parameters', '0x1813' ),
+        ( 'org.bluetooth.service.transport_discovery', 'Transport Discovery', '0x1824' ),
+        ( 'org.bluetooth.service.tx_power', 'Tx Power', '0x1804' ),
+        ( 'org.bluetooth.service.user_data', 'User Data', '0x181C' ),
+        ( 'org.bluetooth.service.weight_scale', 'Weight Scale', '0x181D' ),
+    ]
+
+    # pretty print
     for service in services:
-        if (len(id) > maxlen_type):
-            maxlen_type = len(id)
-        if (len(summary) > maxlen_name):
-            maxlen_name = len(summary)
         print("%-55s| %-30s| %s" % service)
+
+    # dump data
+    # print ('services = [')
+    # for service in services:
+    #     print('    ( \'%s\', \'%s\', \'%s\' ),' % service)
+    # print("]")
 
 def parse_properties(element):
     properties = element.find('Properties')
@@ -97,7 +147,7 @@ def convert_service(fout, specification_type):
 
     try:
         page = requests.get(url, headers=headers)
-        print(page.content)
+        # print(page.content)
         tree = ET.fromstring(page.content)
         service_attributes = tree.attrib
     except ET.ParseError:
