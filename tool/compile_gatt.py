@@ -143,6 +143,7 @@ defines_for_characteristics = []
 defines_for_services = []
 include_paths = []
 database_hash_message = bytearray()
+service_counter = {}
 
 handle = 1
 total_size = 0
@@ -356,10 +357,20 @@ def serviceDefinitionComplete(fout):
     global services
     if current_service_uuid_string:
         fout.write("\n")
-        # print("append service %s = [%d, %d]" % (current_characteristic_uuid_string, current_service_start_handle, handle-1))
-        defines_for_services.append('#define ATT_SERVICE_%s_START_HANDLE 0x%04x' % (current_service_uuid_string, current_service_start_handle))
-        defines_for_services.append('#define ATT_SERVICE_%s_END_HANDLE 0x%04x' % (current_service_uuid_string, handle-1))
-        services[current_service_uuid_string] = [current_service_start_handle, handle-1]
+        # update num instances for this service
+        count = 1
+        if current_service_uuid_string in service_counter:
+            count = service_counter[current_service_uuid_string] + 1
+        service_counter[current_service_uuid_string] = count
+        # add old defines without service counter for first instance
+        if count == 1:
+            defines_for_services.append('#define ATT_SERVICE_%s_START_HANDLE 0x%04x' % (current_service_uuid_string, current_service_start_handle))
+            defines_for_services.append('#define ATT_SERVICE_%s_END_HANDLE 0x%04x' % (current_service_uuid_string, handle-1))
+            services[current_service_uuid_string] = [current_service_start_handle, handle-1]
+        # unified defines indicating instance
+        defines_for_services.append('#define ATT_SERVICE_%s_%02x_START_HANDLE 0x%04x' % (current_service_uuid_string, count, current_service_start_handle))
+        defines_for_services.append('#define ATT_SERVICE_%s_%02x_END_HANDLE 0x%04x' % (current_service_uuid_string, count, handle-1))
+
 
 def dump_flags(fout, flags):
     global security_permsission
