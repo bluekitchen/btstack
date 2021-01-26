@@ -25,8 +25,11 @@ HID11/HOS/BHCT/BI-01-C: a, 3, (Confirmation) , 3, (Confirmation), 3, (Confirmati
 
 HID11/HOS/HIT/BV-01-C: c
 HID11/HOS/HIT/BV-02-C: c, 7
-HID11/HOS/HIT/BI-01-C: c, (Confirmation), (Confirmation), (Confirmation)
+HID11/HOS/HIT/BI-01-C: c, 3, (Confirmation), 3, (Confirmation), 3, (Confirmation)
 
 HID11/HOS/BHIT/BV-01-C: a
-HID11/HOS/BHIT/BV-02-C: a, 0 (ID 1, size 9)
+HID11/HOS/BHIT/BV-02-C: a, o (ID 1, size 9)
+    Channel ID: 0x0041  Length: 0x000A (10) [ A2 01 00 00 00 00 00 00 00 00 ]
+    Channel ID: 0x0040  Length: 0x000A (10) [ 52 01 00 00 00 00 00 00 00 00 ]
+
 HID11/HOS/BHIT/BI-01-C: a

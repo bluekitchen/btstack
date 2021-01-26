@@ -48,6 +48,7 @@
 extern "C" {
 #endif
 
+
 typedef enum {
     HID_HOST_IDLE,
     HID_HOST_W2_SEND_SDP_QUERY,
@@ -55,8 +56,9 @@ typedef enum {
     
     HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED,
     HID_HOST_CONTROL_CONNECTION_ESTABLISHED,
-
+    
     HID_HOST_W4_SET_BOOT_MODE,
+    HID_HOST_W4_INCOMING_INTERRUPT_CONNECTION,
     HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED,
     HID_HOST_CONNECTION_ESTABLISHED,
     
@@ -66,8 +68,7 @@ typedef enum {
     HID_HOST_W4_SET_REPORT_RESPONSE,
     HID_HOST_W2_SEND_GET_PROTOCOL,
     HID_HOST_W4_GET_PROTOCOL_RESPONSE,
-    HID_HOST_W2_SEND_SET_PROTOCOL,
-    HID_HOST_W4_SET_PROTOCOL_RESPONSE,
+
     HID_HOST_W2_SEND_REPORT,
     HID_HOST_W4_SEND_REPORT_RESPONSE,
 
@@ -82,7 +83,6 @@ typedef struct {
     hci_con_handle_t con_handle;
     
     bd_addr_t remote_addr;
-    bool incoming;
     
     uint16_t  control_cid;
     uint16_t  control_psm;
@@ -90,8 +90,13 @@ typedef struct {
     uint16_t  interrupt_psm;
 
     hid_host_state_t state;
+    bool incoming;
     hid_protocol_mode_t protocol_mode;
     
+    bool set_protocol;
+    bool w4_set_protocol_response;
+    hid_protocol_mode_t requested_protocol_mode;
+
     uint16_t hid_descriptor_offset;
     uint16_t hid_descriptor_len;
     uint16_t hid_descriptor_max_len;
@@ -136,7 +141,7 @@ void hid_host_register_packet_handler(btstack_packet_handler_t callback);
  */
 uint8_t hid_host_connect(bd_addr_t remote_addr, hid_protocol_mode_t protocol_mode, uint16_t * hid_cid);
 
-uint8_t hid_host_accept_connection(uint16_t hid_cid);
+uint8_t hid_host_accept_connection(uint16_t hid_cid, hid_protocol_mode_t protocol_mode);
 uint8_t hid_host_decline_connection(uint16_t hid_cid);
 
 /*

@@ -111,6 +111,7 @@ static enum {
 
 static bool     unplugged    = false;
 static uint16_t hid_host_cid = 0;
+static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT;
 
 // SDP
 static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
@@ -259,7 +260,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                 hid_host_decline_connection(hid_subevent_incoming_connection_get_hid_cid(packet));
                                 break;
                             }
-                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet));
+                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_protocol_mode);
                             break;
                         
                         case HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG:
