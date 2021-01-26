@@ -34,6 +34,7 @@ Ports: STM32-F103RB Nucleo + CC256x port removed
 A2DP: fix events and use `a2dp_cid`, `local_seid,` `remote_seid` in A2DP subevents
 AVDTP/A2DP: use `avdtp_channel_mode_t` in `A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION`
 GAP: provide Link Type parameter to incoming connection filter for `gap_register_classic_connection_filter`
+ESP32: enabled wide-band speech, disable classic secure connections HSP/HFP demos
 
 ## Release v1.2.1
 
