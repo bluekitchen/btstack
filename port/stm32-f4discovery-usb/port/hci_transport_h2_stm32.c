@@ -45,10 +45,13 @@
 
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "usb_host.h"
+#include "usbh_bluetooth.h"
 
 #include <stddef.h>
 
 #include "hci_transport_h2_stm32.h"
+
+#include "bluetooth.h"
 
 #include "btstack_debug.h"
 #include "btstack_run_loop.h"
@@ -68,8 +71,15 @@ static void hci_transport_h2_stm32_process(btstack_data_source_t *ds, btstack_da
     }
 }
 
+static void hci_transport_h2_stm32_block_sent(void) {
+    static const uint8_t packet_sent_event[] = {HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    // notify upper stack that it can send again
+    packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
+}
+
 static void hci_transport_h2_stm32_init(const void * transport_config){
     UNUSED(transport_config);
+    usbh_bluetooth_set_packet_sent(&hci_transport_h2_stm32_block_sent);
     log_info("hci_transport_h2_stm32_init");
 }
 
@@ -93,11 +103,17 @@ static void hci_transport_h2_stm32_register_packet_handler(void (*handler)(uint8
 }
 
 static int hci_transport_h2_stm32_can_send_now(uint8_t packet_type){
-    return 0;
+    return usbh_bluetooth_can_send_now();
 }
 
 static int hci_transport_h2_stm32_send_packet(uint8_t packet_type, uint8_t * packet, int size){
-    log_info("hci_transport_h2_stm32_send_packet");
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            usbh_bluetooth_send_cmd(packet, size);
+            return 0;
+        default:
+            break;
+    }
     return -1;
 }
 

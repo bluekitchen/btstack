@@ -45,7 +45,7 @@
 #define USBH_BLUETOOTH_H
 
 #include "btstack_config.h"
-// #include "btstack_bool.h"
+#include "btstack_bool.h"
 
 #include <stdint.h>
 
@@ -60,5 +60,11 @@ extern "C" {
 
 extern USBH_ClassTypeDef  Bluetooth_Class;
 #define USBH_BLUETOOTH_CLASS    &Bluetooth_Class
+
+bool usbh_bluetooth_can_send_now(void);
+
+void usbh_bluetooth_send_cmd(const uint8_t * packet, uint16_t len);
+
+void usbh_bluetooth_set_packet_sent(void (*callback)(void));
 
 #endif
