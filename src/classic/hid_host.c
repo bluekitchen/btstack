@@ -325,14 +325,15 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     uint8_t        status = ERROR_CODE_SUCCESS;
     bool try_fallback_to_boot;
 
+    printf("SDP query\n");
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(sdp_query_context_hid_host_control_cid);
     if (!connection) {
         log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context_hid_host_control_cid);
         return;
     }
- 
+    printf("SDP query 1\n");
     if (connection->state != HID_HOST_W4_SDP_QUERY_RESULT) return;
-
+    printf("SDP query 2\n");
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
 
@@ -419,6 +420,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             status = sdp_event_query_complete_get_status(packet);
             try_fallback_to_boot = false;
 
+            printf(" SDP_EVENT_QUERY_COMPLETE, status 0x%2x \n", status);
             switch (status){
                 // remote does not have SDP server:
                 case L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM:
@@ -698,15 +700,16 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                 case L2CAP_EVENT_CHANNEL_OPENED: 
                     l2cap_event_channel_opened_get_address(packet, address); 
                    
-                    status = l2cap_event_channel_opened_get_status(packet); 
-                    if (status){
-                        log_info("L2CAP connection %s failed: 0x%02xn", bd_addr_to_str(address), status);
-                        break;
-                    }
-
                     connection = hid_host_get_connection_for_bd_addr(address);
                     if (!connection){
                         log_error("Connection does not exist %s", bd_addr_to_str(address));
+                        break;
+                    }
+                    
+                    status = l2cap_event_channel_opened_get_status(packet); 
+                    if (status){
+                        log_info("L2CAP connection %s failed: 0x%02xn", bd_addr_to_str(address), status);
+                        hid_emit_connected_event(connection, status);
                         break;
                     }
                     
@@ -1006,6 +1009,7 @@ uint8_t hid_host_connect(bd_addr_t remote_addr, hid_protocol_mode_t protocol_mod
 
     uint8_t status = ERROR_CODE_SUCCESS;
 
+    printf("connect to %s, protocol_mode %d\n", bd_addr_to_str(remote_addr), connection->protocol_mode);
     switch (connection->protocol_mode){
         case HID_PROTOCOL_MODE_BOOT:
             connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
