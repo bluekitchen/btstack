@@ -470,6 +470,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
             break;
 
+        case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:
+            // select remote if there's only a single remote
+            if (num_remote_seps == 1){
+                media_tracker.remote_seid = remote_seps[0].sep.seid;
+                printf("Only one remote Stream Endpoint with SEID %u, select it for initiator commands\n", media_tracker.remote_seid);
+            }
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
             printf("CAPABILITY - MEDIA_TRANSPORT supported on remote.\n");
             break;
