@@ -509,7 +509,7 @@ typedef struct avdtp_stream_endpoint {
     // original capabilities configured via avdtp_register_x_category
     avdtp_sep_t sep;
 
-    // media codec configuration
+    // media codec configuration - provided by user
     uint16_t  media_codec_configuration_len;
     uint8_t * media_codec_configuration_info;
 

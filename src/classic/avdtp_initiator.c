@@ -149,13 +149,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     stream_endpoint->remote_sep.configuration = stream_endpoint->remote_configuration;
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
 
-					// copy media codec configuration if reconfigured
+					// copy media codec configuration if reconfigured and emit config
 					if ((stream_endpoint->remote_configuration_bitmap & (1 << AVDTP_MEDIA_CODEC)) != 0){
 						btstack_assert(stream_endpoint->remote_configuration.media_codec.media_codec_information_len == stream_endpoint->media_codec_configuration_len);
 						(void)memcpy(stream_endpoint->media_codec_configuration_info, stream_endpoint->remote_configuration.media_codec.media_codec_information, stream_endpoint->media_codec_configuration_len);
-					}
-                    avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 1,
-                                                       &sep.configuration, (1 << AVDTP_MEDIA_CODEC));
+						stream_endpoint->sep.configuration.media_codec = stream_endpoint->remote_configuration.media_codec;
+                        avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 1, &stream_endpoint->sep.configuration, (1 << AVDTP_MEDIA_CODEC));
+                    }
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:
@@ -177,20 +177,15 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
 
                     log_info("configured remote seid %d", stream_endpoint->remote_sep.seid);
 
-					if ((stream_endpoint->remote_configuration_bitmap & (1 << AVDTP_MEDIA_CODEC)) != 0) {
+                    // copy media codec configuration if configured and emit config
+                    if ((stream_endpoint->remote_configuration_bitmap & (1 << AVDTP_MEDIA_CODEC)) != 0) {
+                        btstack_assert(stream_endpoint->remote_configuration.media_codec.media_codec_information_len == stream_endpoint->media_codec_configuration_len);
                         // copy media codec configuration if length correct
-                        if (stream_endpoint->remote_configuration.media_codec.media_codec_information_len !=
-                                        stream_endpoint->media_codec_configuration_len){
-                            (void) memcpy(stream_endpoint->media_codec_configuration_info,
-                                          stream_endpoint->remote_configuration.media_codec.media_codec_information,
-                                          stream_endpoint->media_codec_configuration_len);
-                        } else {
-                            log_error("Remote codec info len %u !=> local buffer len %u", stream_endpoint->remote_configuration.media_codec.media_codec_information_len,
+                        (void) memcpy(stream_endpoint->media_codec_configuration_info,
+                                      stream_endpoint->remote_configuration.media_codec.media_codec_information,
                                       stream_endpoint->media_codec_configuration_len);
-                            (void) memset(stream_endpoint->media_codec_configuration_info, 0, stream_endpoint->media_codec_configuration_len);
-                        }
-                        avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 0,
-                                                           &sep.configuration, (1 << AVDTP_MEDIA_CODEC));
+                        stream_endpoint->sep.configuration.media_codec = stream_endpoint->remote_configuration.media_codec;
+                        avdtp_signaling_emit_configuration(stream_endpoint, connection->avdtp_cid, 0,  &sep.configuration, (1 << AVDTP_MEDIA_CODEC));
 					}
                     break;
 
