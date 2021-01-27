@@ -152,16 +152,21 @@ static btstack_sbc_decoder_state_t state;
 static btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
 static adtvp_media_codec_information_sbc_t   sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
+static uint8_t local_seid_sbc;
 
 // AAC
 #ifdef HAVE_AAC_FDK
 // AAC handle
 static HANDLE_AACDECODER aac_handle;
 static avdtp_media_codec_configuration_aac_t aac_configuration;
+static uint8_t local_seid_aac;
 #endif
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
+
+static uint8_t num_remote_seids;
+static uint8_t first_remote_seid;
 
 // prototypes
 static int read_media_data_header(uint8_t * packet, uint16_t size, uint16_t * offset, avdtp_media_packet_header_t * media_header);
@@ -179,7 +184,7 @@ static void playback_handler(int16_t * buffer, uint16_t num_audio_frames){
 
     // check for underrun
     if (playback_active && !sufficient_data_now){
-        printf("Playback: Underrun, pause (have %u, need %u\n", bytes_available, bytes_requested);
+        // printf("Playback: Underrun, pause (have %u, need %u\n", bytes_available, bytes_requested);
         playback_active = false;
     }
 
@@ -442,6 +447,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
                 remote_seid, avdtp_subevent_signaling_sep_found_get_in_use(packet), 
                 avdtp_subevent_signaling_sep_found_get_media_type(packet), avdtp_subevent_signaling_sep_found_get_sep_type(packet));
+            if (num_remote_seids == 0){
+                first_remote_seid = remote_seid;
+            }
+            num_remote_seids++;
+            break;
+
+        case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:
+            // select remote if there's only a single remote
+            if (num_remote_seids == 1){
+                printf("Only one remote Stream Endpoint with SEID %u, select it for initiator commands\n", first_remote_seid);
+                remote_seid = first_remote_seid;
+            }
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
@@ -454,8 +471,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_capability.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet);
             sbc_capability.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet);
             dump_sbc_capability(sbc_capability);
+            local_seid = local_seid_sbc;
+            printf("Selecting local SBC endpoint with SEID %u\n", local_seid);
             break;
 
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY:
+            local_seid = local_seid_aac;
+            printf("Selecting local MPEG AAC endpoint with SEID %u\n", local_seid);
+            break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
             printf("CAPABILITY - MEDIA_TRANSPORT supported on remote.\n");
             break;
@@ -500,7 +523,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-
             codec_type = AVDTP_CODEC_SBC;
             local_seid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet);
             playback_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
@@ -524,7 +546,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 #ifdef HAVE_AAC_FDK
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:{
-
             codec_type = AVDTP_CODEC_MPEG_2_4_AAC;
             local_seid = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_local_seid(packet);
             playback_configuration.num_channels = a2dp_subevent_signaling_media_codec_mpeg_aac_configuration_get_num_channels(packet);
@@ -661,12 +682,12 @@ static void show_usage(void){
     printf("a      - get all capabilities\n");
     printf("s      - set configuration\n");
     printf("f      - get configuration\n");
-    printf("R      - reconfigure stream with %d\n", remote_seid);
-    printf("o      - establish stream with seid %d\n", remote_seid);
-    printf("m      - start stream with %d\n", remote_seid);
-    printf("A      - abort stream with %d\n", remote_seid);
-    printf("P      - suspend (pause) stream with %d\n", remote_seid);
-    printf("S      - stop (release) stream with %d\n", remote_seid);
+    printf("R      - reconfigure stream with local seid %d\n", local_seid);
+    printf("o      - establish stream with local seid %d\n", local_seid);
+    printf("m      - start stream with local %d\n", local_seid);
+    printf("A      - abort stream with local %d\n", local_seid);
+    printf("P      - suspend (pause) stream with local %d\n", local_seid);
+    printf("S      - stop (release) stream with local %d\n", local_seid);
     printf("D      - send delay report\n");
     printf("C      - disconnect\n");
     printf("Ctrl-c - exit\n");
@@ -688,6 +709,8 @@ static void stdin_process(char cmd){
             break;
         case 'd':
             printf("Discover stream endpoints of %s\n", device_addr_string);
+            first_remote_seid = 0;
+            num_remote_seids  = 0;
             status = avdtp_sink_discover_stream_endpoints(avdtp_cid);
             break;
         case 'g':
@@ -703,7 +726,7 @@ static void stdin_process(char cmd){
             status = avdtp_sink_get_configuration(avdtp_cid, remote_seid);
             break;
         case 's':
-            printf("Set configuration of stream endpoint with seid %d\n", remote_seid);
+            printf("Set configuration of stream endpoint with local %u and remote seid %d\n", local_seid, remote_seid);
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
@@ -782,9 +805,9 @@ int btstack_main(int argc, const char * argv[]){
     btstack_assert(local_stream_endpoint != NULL);
     local_stream_endpoint->media_codec_configuration_info = media_sbc_codec_configuration;
     local_stream_endpoint->media_codec_configuration_len  = sizeof(media_sbc_codec_configuration);
-    local_seid = avdtp_local_seid(local_stream_endpoint);
-    avdtp_sink_register_media_transport_category(local_seid);
-    avdtp_sink_register_media_codec_category(local_seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    local_seid_sbc = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_sbc);
+    avdtp_sink_register_media_codec_category(local_seid_sbc, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
 #ifdef HAVE_AAC_FDK
     // Setup AAC Endpoint
@@ -792,9 +815,9 @@ int btstack_main(int argc, const char * argv[]){
     btstack_assert(local_stream_endpoint != NULL);
     local_stream_endpoint->media_codec_configuration_info = media_aac_codec_configuration;
     local_stream_endpoint->media_codec_configuration_len  = sizeof(media_aac_codec_configuration);
-    local_seid = avdtp_local_seid(local_stream_endpoint);
-    avdtp_sink_register_media_transport_category(local_seid);
-    avdtp_sink_register_media_codec_category(local_seid, AVDTP_AUDIO, AVDTP_CODEC_MPEG_2_4_AAC, media_aac_codec_capabilities, sizeof(media_aac_codec_capabilities));
+    local_seid_aac = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_aac);
+    avdtp_sink_register_media_codec_category(local_seid_aac, AVDTP_AUDIO, AVDTP_CODEC_MPEG_2_4_AAC, media_aac_codec_capabilities, sizeof(media_aac_codec_capabilities));
 #endif
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
