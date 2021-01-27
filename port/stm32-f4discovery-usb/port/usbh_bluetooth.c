@@ -39,6 +39,7 @@
 
 #include "usbh_bluetooth.h"
 #include "btstack_debug.h"
+#include "bluetooth.h"
 
 typedef struct {
     uint8_t acl_in_ep;
@@ -60,8 +61,15 @@ static enum {
     USBH_OUT_ACL
 } usbh_out_state;
 
-//
+static enum {
+    USBH_IN_OFF,
+    USBH_IN_SUBMIT_REQUEST,
+    USBH_IN_POLL,
+} usbh_in_state;
+
+// higher-layer callbacks
 static void (*usbh_packet_sent)(void);
+static void (*usbh_packet_received)(uint8_t packet_type, uint8_t * packet, uint16_t size);
 
 // class state
 static USB_Bluetooth_t usb_bluetooth;
@@ -69,6 +77,10 @@ static USB_Bluetooth_t usb_bluetooth;
 // outgoing
 static const uint8_t * cmd_packet;
 static uint16_t        cmd_len;
+
+// incoming
+static uint16_t hci_event_offset;
+static uint8_t hci_event[258];
 
 USBH_StatusTypeDef USBH_Bluetooth_InterfaceInit(USBH_HandleTypeDef *phost){
     log_info("USBH_Bluetooth_InterfaceInit");
@@ -115,6 +127,7 @@ USBH_StatusTypeDef USBH_Bluetooth_InterfaceInit(USBH_HandleTypeDef *phost){
     // Event In
     USB_Bluetooth_t * usb = &usb_bluetooth;
     usb->event_in_ep =   interface->Ep_Desc[event_in].bEndpointAddress;
+    usb->event_in_len =  interface->Ep_Desc[event_in].wMaxPacketSize;
     usb->event_in_pipe = USBH_AllocPipe(phost, usb->event_in_ep);
 
     /* Open pipe for IN endpoint */
@@ -124,6 +137,7 @@ USBH_StatusTypeDef USBH_Bluetooth_InterfaceInit(USBH_HandleTypeDef *phost){
     USBH_LL_SetToggle(phost, usb->event_in_ep, 0U);
 
     usbh_out_state = USBH_OUT_OFF;
+    usbh_in_state = USBH_IN_OFF;
 
     return USBH_OK;
 }
@@ -131,12 +145,14 @@ USBH_StatusTypeDef USBH_Bluetooth_InterfaceInit(USBH_HandleTypeDef *phost){
 USBH_StatusTypeDef USBH_Bluetooth_InterfaceDeInit(USBH_HandleTypeDef *phost){
     log_info("USBH_Bluetooth_InterfaceDeInit");
     usbh_out_state = USBH_OUT_OFF;
+    usbh_in_state = USBH_IN_OFF;
     return USBH_OK;
 }
 
 USBH_StatusTypeDef USBH_Bluetooth_ClassRequest(USBH_HandleTypeDef *phost){
     // ready!
     usbh_out_state = USBH_OUT_IDLE;
+    usbh_in_state = USBH_IN_SUBMIT_REQUEST;
     // notify host stack
     (*usbh_packet_sent)();
     return USBH_OK;
@@ -144,6 +160,7 @@ USBH_StatusTypeDef USBH_Bluetooth_ClassRequest(USBH_HandleTypeDef *phost){
 
 USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
     USBH_StatusTypeDef status;
+    USB_Bluetooth_t * usb = (USB_Bluetooth_t *) phost->pActiveClass->pData;
     switch (usbh_out_state){
         case USBH_OUT_CMD:
             // just send HCI Reset naively
@@ -163,9 +180,37 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
             break;
     }
 
+    USBH_URBStateTypeDef urb_state;
+    uint32_t data_size;
+    switch (usbh_in_state){
+        case USBH_IN_SUBMIT_REQUEST:
+            // schedule interrupt transfer
+            USBH_InterruptReceiveData(phost, hci_event, (uint8_t) sizeof(hci_event), usb->event_in_pipe);
+            usb->event_in_frame = phost->Timer;
+            usbh_in_state = USBH_IN_POLL;
+            break;
+        case USBH_IN_POLL:
+            // poll URB state
+            urb_state = USBH_LL_GetURBState(phost, usb->event_in_pipe);
+            switch (urb_state){
+                case USBH_URB_DONE:
+                    usbh_in_state = USBH_IN_SUBMIT_REQUEST;
+                    data_size = USBH_LL_GetLastXferSize(phost, usb->event_in_pipe);
+                    (*usbh_packet_received)(HCI_EVENT_PACKET, hci_event, data_size);
+                    return USBH_OK;
+                default:
+                    break;
+            }
+            if ((phost->Timer - usb->event_in_frame) > 2){
+                // resubmit request
+                usbh_in_state = USBH_IN_SUBMIT_REQUEST;
+                return USBH_BUSY;
+            }
+            break;
         default:
-            return USBH_OK;
+            break;
     }
+
     return USBH_OK;
 }
 
@@ -175,6 +220,11 @@ USBH_StatusTypeDef USBH_Bluetooth_SOFProcess(USBH_HandleTypeDef *phost){
 
 void usbh_bluetooth_set_packet_sent(void (*callback)(void)){
     usbh_packet_sent = callback;
+}
+
+
+void usbh_bluetooth_set_packet_received(void (*callback)(uint8_t packet_type, uint8_t * packet, uint16_t size)){
+    usbh_packet_received = callback;
 }
 
 bool usbh_bluetooth_can_send_now(void){

@@ -77,9 +77,14 @@ static void hci_transport_h2_stm32_block_sent(void) {
     packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
 }
 
+static void hci_transport_h2_stm32_packet_received(uint8_t packet_type, uint8_t * packet, uint16_t size){
+    packet_handler(packet_type, packet, size);
+}
+
 static void hci_transport_h2_stm32_init(const void * transport_config){
     UNUSED(transport_config);
     usbh_bluetooth_set_packet_sent(&hci_transport_h2_stm32_block_sent);
+    usbh_bluetooth_set_packet_received(&hci_transport_h2_stm32_packet_received);
     log_info("hci_transport_h2_stm32_init");
 }
 
