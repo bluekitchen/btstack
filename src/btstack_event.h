@@ -5528,10 +5528,10 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuratio
  * @brief Get field bit_rate from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
  * @param event packet
  * @return bit_rate
- * @note: btstack_type 1
+ * @note: btstack_type 3
  */
-static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_bit_rate(const uint8_t * event){
-    return event[14];
+static inline uint32_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_bit_rate(const uint8_t * event){
+    return little_endian_read_24(event, 14);
 }
 /**
  * @brief Get field vbr from event AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION
@@ -5540,7 +5540,7 @@ static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuratio
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_signaling_media_codec_mpeg_aac_configuration_get_vbr(const uint8_t * event){
-    return event[15];
+    return event[17];
 }
 
 /**
