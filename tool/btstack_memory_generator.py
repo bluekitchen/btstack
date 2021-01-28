@@ -357,3 +357,127 @@ writeln(f, "#endif")
 writeln(f, "}")
 f.close();
     
+# also generate test code
+test_header = """
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// malloc hook
+static int simulate_no_memory;
+extern "C" void * test_malloc(size_t size);
+void * test_malloc(size_t size){
+    if (simulate_no_memory) return NULL;
+    return malloc(size);
+}
+
+#include "btstack_config.h"
+
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/CommandLineTestRunner.h"
+
+#include "bluetooth_data_types.h"
+#include "btstack_util.h"
+#include "btstack_memory.h"
+
+
+TEST_GROUP(btstack_memory){
+    void setup(void){
+        btstack_memory_init();
+        simulate_no_memory = 0;
+    }
+};
+
+#ifdef HAVE_MALLOC
+TEST(btstack_memory, deinit){
+    // alloc buffers 1,2,3
+    hci_connection_t * buffer_1 = btstack_memory_hci_connection_get();
+    hci_connection_t * buffer_2 = btstack_memory_hci_connection_get();
+    hci_connection_t * buffer_3 = btstack_memory_hci_connection_get();
+    // free first one in list
+    btstack_memory_hci_connection_free(buffer_3);
+    // free second one in list
+    btstack_memory_hci_connection_free(buffer_1);
+    // leave buffer in list
+    (void) buffer_2;
+    btstack_memory_deinit();
+}
+#endif
+
+"""
+
+test_template = """
+
+TEST(btstack_memory, STRUCT_NAME_GetAndFree){
+    STRUCT_NAME_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context != NULL);
+    btstack_memory_STRUCT_NAME_free(context);
+#else
+#ifdef POOL_COUNT
+    // single
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context != NULL);
+    btstack_memory_STRUCT_NAME_free(context);
+#else
+    // none
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context == NULL);
+    btstack_memory_STRUCT_NAME_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, STRUCT_NAME_NotEnoughBuffers){
+    STRUCT_NAME_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef POOL_COUNT
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < POOL_COUNT; i++){
+        context = btstack_memory_STRUCT_NAME_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context == NULL);
+}
+"""
+
+test_footer = """
+int main (int argc, const char * argv[]){
+    return CommandLineTestRunner::RunAllTests(argc, argv);
+}
+"""
+
+file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.c"
+print ('Generating %s' % file_name)
+
+f = open(file_name, "w")
+writeln(f, copyright)
+writeln(f, test_header)
+for struct_names in list_of_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#ifdef ENABLE_CLASSIC")
+for struct_names in list_of_classic_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#endif")
+writeln(f, "#ifdef ENABLE_BLE")
+for struct_names in list_of_le_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#endif")
+writeln(f, "#ifdef ENABLE_MESH")
+for struct_names in list_of_mesh_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#endif")
+writeln(f, test_footer)
