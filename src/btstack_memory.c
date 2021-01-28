@@ -65,7 +65,6 @@ static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
 
 static void btstack_memory_tracking_add(btstack_memory_buffer_t * buffer){
     btstack_assert(buffer != NULL);
-    btstack_memory_malloc_buffers = buffer;
     buffer->prev = NULL;
     buffer->next = btstack_memory_malloc_buffers;
     btstack_memory_malloc_buffers = buffer;
