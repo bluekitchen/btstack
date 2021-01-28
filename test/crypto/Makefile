@@ -65,16 +65,16 @@ build-asan/aes_cmac_test: build-asan/aes_cmac_test.o build-asan/aes_cmac.o build
 
 test: all
 	build-asan/aes_cmac_test
+	build-asan/aes_ccm_test
 	build-asan/aestest
 	build-asan/ecc_micro_ecc
-	build-asan/aes_cmac_test
-	
+
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/aes_cmac_test
+	build-coverage/aes_ccm_test
 	build-coverage/aestest
 	build-coverage/ecc_micro_ecc
-	build-coverage/aes_cmac_test
 
 clean:
 	rm -rf build-coverage build-asan
