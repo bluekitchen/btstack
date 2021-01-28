@@ -78,20 +78,14 @@ void * btstack_run_loop_get_data_source_handle(btstack_data_source_t *ds){
 
 void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
     btstack_assert(the_run_loop != NULL);
-    if (the_run_loop->enable_data_source_callbacks){
-        the_run_loop->enable_data_source_callbacks(ds, callbacks);
-    } else {
-        log_error("btstack_run_loop_remove_data_source not implemented");
-    }
+    btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
+    the_run_loop->enable_data_source_callbacks(ds, callbacks);
 }
 
 void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
     btstack_assert(the_run_loop != NULL);
-    if (the_run_loop->disable_data_source_callbacks){
-        the_run_loop->disable_data_source_callbacks(ds, callbacks);
-    } else {
-        log_error("btstack_run_loop_disable_data_source_callbacks not implemented");
-    }
+    btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
+    the_run_loop->disable_data_source_callbacks(ds, callbacks);
 }
 
 /**
@@ -99,11 +93,8 @@ void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t *ds, u
  */
 void btstack_run_loop_add_data_source(btstack_data_source_t *ds){
     btstack_assert(the_run_loop != NULL);
-    if (the_run_loop->add_data_source){
-        the_run_loop->add_data_source(ds);
-    } else {
-        log_error("btstack_run_loop_add_data_source not implemented");
-    }
+    btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
+    the_run_loop->add_data_source(ds);
 }
 
 /**
@@ -111,12 +102,8 @@ void btstack_run_loop_add_data_source(btstack_data_source_t *ds){
  */
 int btstack_run_loop_remove_data_source(btstack_data_source_t *ds){
     btstack_assert(the_run_loop != NULL);
-    if (the_run_loop->remove_data_source){
-        return the_run_loop->remove_data_source(ds);
-    } else {
-        log_error("btstack_run_loop_remove_data_source not implemented");
-        return 0;
-    }
+    btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
+    return the_run_loop->remove_data_source(ds);
 }
 
 void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
