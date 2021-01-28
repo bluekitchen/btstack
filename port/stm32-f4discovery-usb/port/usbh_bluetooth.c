@@ -39,6 +39,7 @@
 
 #include "usbh_bluetooth.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
 #include "bluetooth.h"
 
 typedef struct {
@@ -181,30 +182,38 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
     }
 
     USBH_URBStateTypeDef urb_state;
-    uint32_t data_size;
+    uint8_t  event_transfer_size;
+    uint16_t event_size;
     switch (usbh_in_state){
         case USBH_IN_SUBMIT_REQUEST:
-            // schedule interrupt transfer
-            USBH_InterruptReceiveData(phost, hci_event, (uint8_t) sizeof(hci_event), usb->event_in_pipe);
+            event_transfer_size = btstack_min( usb->event_in_len, sizeof(hci_event) - hci_event_offset);
+            USBH_InterruptReceiveData(phost, &hci_event[hci_event_offset], event_transfer_size, usb->event_in_pipe);
             usb->event_in_frame = phost->Timer;
             usbh_in_state = USBH_IN_POLL;
             break;
         case USBH_IN_POLL:
-            // poll URB state
             urb_state = USBH_LL_GetURBState(phost, usb->event_in_pipe);
             switch (urb_state){
+                case USBH_URB_IDLE:
+                    break;
                 case USBH_URB_DONE:
                     usbh_in_state = USBH_IN_SUBMIT_REQUEST;
-                    data_size = USBH_LL_GetLastXferSize(phost, usb->event_in_pipe);
-                    (*usbh_packet_received)(HCI_EVENT_PACKET, hci_event, data_size);
-                    return USBH_OK;
+                    event_transfer_size = USBH_LL_GetLastXferSize(phost, usb->event_in_pipe);
+                    hci_event_offset += event_transfer_size;
+                    if (hci_event_offset < 2) break;
+                    event_size = 2 + hci_event[1];
+                    // event complete
+                    if (hci_event_offset >= event_size){
+                        hci_event_offset = 0;
+                        (*usbh_packet_received)(HCI_EVENT_PACKET, hci_event, event_size);
+                    }
+                    break;
                 default:
+                    log_info("URB State Event: %02x", urb_state);
                     break;
             }
             if ((phost->Timer - usb->event_in_frame) > 2){
-                // resubmit request
                 usbh_in_state = USBH_IN_SUBMIT_REQUEST;
-                return USBH_BUSY;
             }
             break;
         default:
