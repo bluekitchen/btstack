@@ -85,7 +85,11 @@ void hal_cpu_enable_irqs(void){
 
 void hal_cpu_enable_irqs_and_sleep(void){
     __enable_irq();
-    __asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+#if 0
+    // temp disable until effect on RTT is clear
+    // go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+    //  __asm__("wfe");
+#endif
 }
 
 #define HAL_FLASH_BANK_SIZE (128 * 1024)
