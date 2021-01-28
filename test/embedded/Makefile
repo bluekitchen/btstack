@@ -24,30 +24,32 @@ VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/freertos
 
 COMMON = \
-	btstack_em9304_spi_embedded.c \
+    btstack_linked_list.c  \
 	btstack_memory.c \
 	btstack_run_loop.c \
-	btstack_run_loop_embedded.c \
-	btstack_stdin_embedded.c \
-	btstack_tlv_flash_bank.c \
-	btstack_uart_block_embedded.c \
-	hal_flash_bank_memory.c \
-    btstack_audio.c \
-    btstack_audio_embedded.c \
-    btstack_linked_list.c  \
-    btstack_resample.c \
-    btstack_ring_buffer.c \
     btstack_run_loop_base.c \
-    btstack_slip.c \
+	btstack_run_loop_embedded.c \
     btstack_util.c		  \
     hci_dump.c    \
-    hci_transport_em9304_spi.c \
-    hci_transport_h4.c \
-    hci_transport_h5.c \
-	
+
+# not used yet
+#	btstack_em9304_spi_embedded.c \
+#	btstack_stdin_embedded.c \
+#	btstack_tlv_flash_bank.c \
+#	btstack_uart_block_embedded.c \
+#	hal_flash_bank_memory.c \
+#   btstack_audio.c \
+#   btstack_audio_embedded.c \
+#   btstack_resample.c \
+#   btstack_ring_buffer.c \
+#   btstack_slip.c \
+#   hci_transport_em9304_spi.c \
+#   hci_transport_h4.c \
+#   hci_transport_h5.c \
+
 FREERTOS = \
 	btstack_run_loop_freertos.c \
-	btstack_uart_block_freertos.c \
+#	btstack_uart_block_freertos.c \
 
 COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))

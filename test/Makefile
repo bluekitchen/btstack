@@ -59,7 +59,7 @@ SUBDIRS_BLE = \
 	ring_buffer \
     gatt_server \
     security_manager \
-    embedded \
+
 # test fails
 
 # not unit-tests
