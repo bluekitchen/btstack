@@ -418,7 +418,7 @@ static void avdtp_source_connection_establishment_packet_handler(uint8_t packet_
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
             printf("Create AVDTP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
-            status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            status = a2dp_source_establish_stream(device_addr, &media_tracker.a2dp_cid);
             if (status != ERROR_CODE_SUCCESS){
                 printf("Could not perform command, status 0x%2x\n", status);
             }

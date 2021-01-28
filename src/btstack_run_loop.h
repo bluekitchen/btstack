@@ -220,6 +220,11 @@ int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source);
  */
 void btstack_run_loop_execute(void);
 
+/**
+ * @brief De-Init Run Loop
+ */
+void btstack_run_loop_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus

@@ -3,11 +3,11 @@ CC=g++
 BTSTACK_ROOT = ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-COMMON_OBJ = \
-	btstack_tlv_posix.o \
-	btstack_util.o \
-	btstack_linked_list.o \
-	hci_dump.o \
+COMMON = \
+	btstack_tlv_posix.c \
+	btstack_util.c \
+	btstack_linked_list.c \
+	hci_dump.c \
 
 VPATH = \
 	${BTSTACK_ROOT}/src \
@@ -25,24 +25,43 @@ CFLAGS  = \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/posix \
 
-CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-TESTS = tlv_test
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: ${TESTS}
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-clean:
-	rm -rf *.o $(TESTS) *.dSYM *.pklg
-	rm -f *.gcno *.gcda
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-tlv_test: ${COMMON_OBJ} tlv_test.o  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+all: build-coverage/tlv_test build-asan/tlv_test
+
+build-%:
+	mkdir -p $@
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+
+build-coverage/tlv_test: ${COMMON_OBJ_COVERAGE} build-coverage/tlv_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/tlv_test: ${COMMON_OBJ_ASAN} build-asan/tlv_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 
 test: all
-	@echo Run all test
-	@set -e; \
-	for test in $(TESTS); do \
-	  ASAN_OPTIONS=detect_leaks=0 ./$$test; \
-	done
+	build-asan/tlv_test
 
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/tlv_test
+
+clean:
+	rm -rf build-coverage build-asan

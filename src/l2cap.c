@@ -200,10 +200,10 @@ static btstack_linked_list_t l2cap_le_services;
 static btstack_linked_list_t l2cap_channels;
 #ifdef L2CAP_USES_CHANNELS
 // next channel id for new connections
-static uint16_t  local_source_cid  = 0x40;
+static uint16_t  local_source_cid;
 #endif
 // next signaling sequence number
-static uint8_t   sig_seq_nr  = 0xff;
+static uint8_t   sig_seq_nr;
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
@@ -873,7 +873,10 @@ static uint8_t l2cap_next_sig_id(void){
 
 void l2cap_init(void){
     signaling_responses_pending = 0;
-    
+#ifdef L2CAP_USES_CHANNELS
+    local_source_cid  = 0x40;
+#endif
+    sig_seq_nr  = 0xff;
     l2cap_channels = NULL;
 
 #ifdef ENABLE_CLASSIC
@@ -913,9 +916,21 @@ void l2cap_init(void){
 
     hci_register_acl_packet_handler(&l2cap_acl_handler);
 
+#ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
 #ifdef ENABLE_CLASSIC
     gap_connectable_control(0); // no services yet
 #endif
+#endif
+}
+
+/**
+ * @brief De-Init L2CAP
+ */
+void l2cap_deinit(void){
+#ifdef ENABLE_CLASSIC
+    memset(l2cap_outgoing_classic_addr, 0, 6);
+#endif
+    signaling_responses_pending = 0;
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
@@ -3771,8 +3786,10 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     // add to services list
     btstack_linked_list_add(&l2cap_services, (btstack_linked_item_t *) service);
     
+#ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
     // enable page scan
     gap_connectable_control(1);
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -3785,11 +3802,14 @@ uint8_t l2cap_unregister_service(uint16_t psm){
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
     btstack_linked_list_remove(&l2cap_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
-    
+
+#ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
     // disable page scan when no services registered
     if (btstack_linked_list_empty(&l2cap_services)) {
         gap_connectable_control(0);
     }
+#endif
+
     return ERROR_CODE_SUCCESS;
 }
 #endif

@@ -183,3 +183,7 @@ void btstack_run_loop_init(const btstack_run_loop_t * run_loop){
     the_run_loop->init();
 }
 
+void btstack_run_loop_deinit(void){
+    the_run_loop = NULL;
+}
+

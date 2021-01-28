@@ -115,6 +115,7 @@ sine_encode_decode_performance_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ
 
 	
 test: all
+coverage: all
 
 clean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o

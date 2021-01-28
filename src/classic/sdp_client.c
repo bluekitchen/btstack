@@ -94,16 +94,16 @@ static uint8_t des_attributeIDList[] = { 0x35, 0x05, 0x0A, 0x00, 0x00, 0xff, 0xf
 static de_state_t de_header_state;
 
 // State SDP Parser
-static sdp_parser_state_t  state = GET_LIST_LENGTH;
+static sdp_parser_state_t state;
 static uint16_t attribute_id = 0;
-static uint16_t attribute_bytes_received = 0;
-static uint16_t attribute_bytes_delivered = 0;
-static uint16_t list_offset = 0;
+static uint16_t attribute_bytes_received;
+static uint16_t attribute_bytes_delivered;
+static uint16_t list_offset;
 static uint16_t list_size;
-static uint16_t record_offset = 0;
+static uint16_t record_offset;
 static uint16_t record_size;
 static uint16_t attribute_value_size;
-static int record_counter = 0;
+static int record_counter;
 static btstack_packet_handler_t sdp_parser_callback;
 
 // State SDP Client
@@ -111,7 +111,7 @@ static uint16_t  mtu;
 static uint16_t  sdp_cid = 0x40;
 static const uint8_t * service_search_pattern;
 static const uint8_t * attribute_id_list;
-static uint16_t  transactionID = 0;
+static uint16_t  transactionID;
 static uint8_t   continuationState[16];
 static uint8_t   continuationStateLen;
 static sdp_client_state_t sdp_client_state = INIT;
@@ -270,8 +270,43 @@ void sdp_parser_init(btstack_packet_handler_t callback){
     de_state_init(&de_header_state);
     state = GET_LIST_LENGTH;
     list_offset = 0;
+    list_size = 0;
     record_offset = 0;
     record_counter = 0;
+    record_size = 0;
+    attribute_id = 0;
+    attribute_bytes_received = 0;
+    attribute_bytes_delivered = 0;
+}
+
+static void sdp_parser_deinit(void) {
+    sdp_parser_callback = NULL;
+    attribute_value_size = 0;
+    record_counter = 0;
+}
+
+void sdp_client_init(void){
+}
+
+void sdp_client_deinit(void){
+    sdp_parser_deinit();
+    sdp_client_state = INIT;
+    sdp_cid = 0x40;
+    service_search_pattern = NULL;
+    attribute_id_list = NULL;
+    transactionID = 0;
+    continuationStateLen = 0;
+    sdp_client_state = INIT;
+    PDU_ID = SDP_Invalid;
+#ifdef ENABLE_SDP_EXTRA_QUERIES
+    serviceRecordHandle = 0;
+    record_handle = 0;
+#endif
+}
+
+// for testing only
+void sdp_client_reset(void){
+    sdp_client_deinit();
 }
 
 void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
@@ -694,11 +729,6 @@ static void sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_
     // offset+=continuationStateLen;
 }
 #endif
-
-// for testing only
-void sdp_client_reset(void){
-    sdp_client_state = INIT;
-}
 
 // Public API
 

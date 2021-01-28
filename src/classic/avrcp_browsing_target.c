@@ -204,6 +204,10 @@ void avrcp_browsing_target_init(void){
     avrcp_browsing_register_target_packet_handler(avrcp_browsing_target_packet_handler);
 }
 
+void avrcp_browsing_target_deinit(void){
+    avrcp_controller_context.browsing_packet_handler = NULL;
+}
+
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     avrcp_target_context.browsing_avrcp_callback = callback;

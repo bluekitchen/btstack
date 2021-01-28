@@ -8,7 +8,6 @@ CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
-# CFLAGS += -fprofile-arcs -ftest-coverage -fsanitize=address
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -26,19 +25,39 @@ COMMON = \
 	btstack_tlv_flash_bank.c    \
 	hal_flash_bank_memory.c     \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: le_device_db_tlv_test
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-le_device_db_tlv_test: ${COMMON_OBJ} le_device_db_tlv_test.o
-	${CC} ${COMMON_OBJ} le_device_db_tlv_test.o ${CFLAGS} ${LDFLAGS} -o $@
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+all: build-coverage/le_device_db_tlv_test build-asan/le_device_db_tlv_test
+
+build-%:
+	mkdir -p $@
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+build-coverage/le_device_db_tlv_test: ${COMMON_OBJ_COVERAGE} build-coverage/le_device_db_tlv_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/le_device_db_tlv_test: ${COMMON_OBJ_ASAN} build-asan/le_device_db_tlv_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	./le_device_db_tlv_test
+	build-asan/le_device_db_tlv_test
 		
-clean:
-	rm -f  le_device_db_tlv_test
-	rm -f  *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/le_device_db_tlv_test
 
+clean:
+	rm -rf build-coverage build-asan

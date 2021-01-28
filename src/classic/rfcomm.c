@@ -164,9 +164,9 @@ typedef struct rfcomm_channel_event_msc {
 static uint16_t      rfcomm_client_cid_generator;  // used for client channel IDs
 
 // linked lists for all
-static btstack_linked_list_t rfcomm_multiplexers = NULL;
-static btstack_linked_list_t rfcomm_channels = NULL;
-static btstack_linked_list_t rfcomm_services = NULL;
+static btstack_linked_list_t rfcomm_multiplexers;
+static btstack_linked_list_t rfcomm_channels;
+static btstack_linked_list_t rfcomm_services;
 
 static gap_security_level_t rfcomm_security_level;
 
@@ -2187,6 +2187,16 @@ void rfcomm_init(void){
     rfcomm_services     = NULL;
     rfcomm_channels     = NULL;
     rfcomm_security_level = gap_get_security_level();
+#ifdef RFCOMM_USE_ERTM
+    rfcomm_ertm_id = 0;
+#endif
+}
+
+void rfcomm_deinit(void){
+#ifdef RFCOMM_USE_ERTM
+    rfcomm_ertm_request_callback  = NULL;
+    rfcomm_ertm_released_callback = NULL;
+#endif
 }
 
 void rfcomm_set_required_security_level(gap_security_level_t security_level){

@@ -92,14 +92,9 @@ void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, 
 
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay);
 
-void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                        avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
-
-void avdtp_signaling_emit_media_codec_sbc_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                        avdtp_media_type_t media_type,
-                                                        const uint8_t *media_codec_information);
-void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
-                                                          adtvp_media_codec_capabilities_t * media_codec);
+void
+avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
+                                   avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
 
 void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status);
 
@@ -121,6 +116,21 @@ const char * avdtp_si2str(uint16_t index);
 void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id);
 
 void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t subevent_id);
+
+
+// helper to set/get configuration
+void avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+void avdtp_config_sbc_store(uint8_t * config, uint16_t sampling_frequency_hz, avdtp_channel_mode_t channel_mode, uint8_t block_length, uint8_t subbands,
+                            avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value);
+void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+void avdtp_config_mpeg_audio_store(uint8_t * config, avdtp_mpeg_layer_t layer, uint8_t crc, avdtp_channel_mode_t channel_mode, uint8_t media_payload_format,
+                                   uint16_t sampling_frequency, uint8_t vbr, uint8_t bit_rate_index);
+void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+void avdtp_config_mpeg_aac_store(uint8_t * config,  avdtp_aac_object_type_t object_type, uint32_t sampling_frequency, uint8_t channels, uint32_t bit_rate, uint8_t vbr);
+void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz);
+void avdtp_config_atrac_store(uint8_t * config, avdtp_atrac_version_t version, avdtp_channel_mode_t channel_mode, uint16_t sampling_frequency, uint8_t vbr,
+                              uint8_t bit_rate_index, uint16_t maximum_sul);
+
 
 #if defined __cplusplus
 }

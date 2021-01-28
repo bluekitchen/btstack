@@ -50,6 +50,7 @@ SUBDIRS_BLE = \
 	crypto \
 	gap \
 	gatt_client \
+	gatt_server \
 	gatt_service \
 	hid_parser \
 	le_device_db_tlv \
@@ -82,18 +83,32 @@ clean:
 	  $(MAKE) -C $$dir clean; \
 	done
 
-test:
-	echo Run all test
+subdirs-test:
+	echo Run all tests with ASAN
 	@set -e; \
 	for dir in $(SUBDIRS); do \
 	  $(MAKE) -C $$dir test; \
 	done
 
-test-ble:
-	echo Run all BLE tests
+subdirs-test-ble:
+	echo Run all BLE tests with ASAN
 	@set -e; \
 	for dir in $(SUBDIRS_BLE); do \
 	  $(MAKE) -C $$dir test; \
+	done
+
+subdirs-coverage:
+	echo Run all tests for coverage
+	@set -e; \
+	for dir in $(SUBDIRS); do \
+	  $(MAKE) -C $$dir coverage; \
+	done
+
+subdirs-coverage-ble:
+	echo Run all BLE tests for coverage
+	@set -e; \
+	for dir in $(SUBDIRS_BLE); do \
+	  $(MAKE) -C $$dir coverage; \
 	done
 
 
@@ -110,7 +125,7 @@ coverage-unit.info: subdirs
 	# delete trace data
 	find . -name "*.gcda" -type f -delete
 	# run tests
-	$(MAKE) test
+	$(MAKE) subdirs-coverage
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit.info
 	# demangle
@@ -120,7 +135,7 @@ coverage-unit-ble.info: subdirs
 	# delete trace data
 	find . -name "*.gcda" -type f -delete
 	# run tests
-	$(MAKE) test-ble
+	$(MAKE) subdirs-coverage-ble
 	# collect traces
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/test/*" --output-file coverage-unit-ble.info
 	# demangle

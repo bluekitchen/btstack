@@ -256,12 +256,33 @@ typedef struct {
     uint8_t num_frames;
 } avdtp_sbc_codec_header_t;
 
-// typedef struct {
-//     uint8_t transaction_label;
-//     avdtp_packet_type_t packet_type;
-//     avdtp_message_type_t message_type;
-//     uint8_t signal_identifier;
-// } avdtp_signaling_packet_header_t;
+typedef enum {
+    AVDTP_MPEG_LAYER_1 = 1,
+    AVDTP_MPEG_LAYER_2,
+    AVDTP_MPEG_LAYER_3,
+} avdtp_mpeg_layer_t;
+
+
+typedef enum {
+    AVDTP_AAC_MPEG2_LC = 1,
+    AVDTP_AAC_MPEG4_LC,
+    AVDTP_AAC_MPEG4_LTP,
+    AVDTP_AAC_MPEG4_SCALABLE
+} avdtp_aac_object_type_t;
+
+typedef enum {
+    AVDTP_ATRAC_VERSION_1 = 1,
+    AVDTP_ATRAC_VERSION_2,
+    AVDTP_ATRAC_VERSION_3
+} avdtp_atrac_version_t;
+
+// used for MPEG1/2 Audio, ATRAC (no stereo mode)
+typedef enum {
+    AVDTP_CHANNEL_MODE_MONO = 1,
+    AVDTP_CHANNEL_MODE_DUAL_CHANNEL,
+    AVDTP_CHANNEL_MODE_STEREO,
+    AVDTP_CHANNEL_MODE_JOINT_STEREO,
+} avdtp_channel_mode_t;
 
 typedef struct {
     uint8_t version;
@@ -478,7 +499,6 @@ typedef struct {
     btstack_timer_source_t retry_timer;
 
     bool    a2dp_source_discover_seps;
-    uint8_t supported_codecs_bitmap;
 
 } avdtp_connection_t;
 
@@ -489,7 +509,7 @@ typedef struct avdtp_stream_endpoint {
     // original capabilities configured via avdtp_register_x_category
     avdtp_sep_t sep;
 
-    // media codec configuration
+    // media codec configuration - provided by user
     uint16_t  media_codec_configuration_len;
     uint8_t * media_codec_configuration_info;
 
@@ -513,10 +533,11 @@ typedef struct avdtp_stream_endpoint {
     uint16_t remote_configuration_bitmap;
     avdtp_capabilities_t remote_configuration;  
 
-    // temporary SBC config used by A2DP Source
+    // temporary codec config used by A2DP Source
+    uint8_t set_config_remote_seid;
     avdtp_media_codec_type_t media_codec_type;
     avdtp_media_type_t media_type;
-    uint8_t media_codec_sbc_info[4];
+    uint8_t media_codec_info[8];
 
     // preferred SBC codec settings
     uint32_t preferred_sampling_frequency; 
@@ -533,34 +554,16 @@ typedef struct avdtp_stream_endpoint {
     uint16_t sequence_number;
 } avdtp_stream_endpoint_t;
 
-typedef struct {
-    uint32_t fill_audio_ring_buffer_timeout_ms;
-    uint32_t time_audio_data_sent; // msstream
-    uint32_t acc_num_missed_samples;
-    uint32_t samples_ready;
-    btstack_timer_source_t fill_audio_ring_buffer_timer;
-    btstack_ring_buffer_t sbc_ring_buffer;
-    
-    int reconfigure;
-    int num_channels;
-    int sampling_frequency;
-    int channel_mode;
-    int block_length;
-    int subbands;
-    int allocation_method;
-    int min_bitpool_value;
-    int max_bitpool_value;
-    avdtp_stream_endpoint_t * local_stream_endpoint;
-    uint8_t active_remote_sep_index;
-} avdtp_stream_endpoint_context_t;
-
 void avdtp_init(void);
+void avdtp_deinit(void);
+
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
 btstack_linked_list_t * avdtp_get_connections(void);
 btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
@@ -608,9 +611,9 @@ void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoi
 
 void    avdtp_set_preferred_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
 
-uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
-uint8_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap);
-uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap);
+avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
+avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap);
+uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap);
 uint8_t avdtp_choose_sbc_subbands(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_subbands_bitmap);
 uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_block_length_bitmap);
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value);

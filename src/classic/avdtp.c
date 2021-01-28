@@ -55,6 +55,8 @@
 
 btstack_linked_list_t stream_endpoints;
 
+static bool l2cap_registered;
+
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
 static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
@@ -66,8 +68,8 @@ static uint16_t stream_endpoints_id_counter = 0;
 static btstack_linked_list_t connections;
 static uint16_t transaction_id_counter = 0;
 
-static int record_id = -1;
-static uint8_t   attribute_value[45];
+static int record_id;
+static uint8_t attribute_value[45];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 static void (*avdtp_sink_handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
@@ -138,6 +140,19 @@ avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid){
     }
     return NULL;
 }
+
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != codec_type) continue;
+        return stream_endpoint;
+    }
+    return NULL;
+}
+
 
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
@@ -248,6 +263,7 @@ static void avdtp_handle_start_sdp_client_query(void * context){
                 continue;
         }
         sdp_query_context_avdtp_cid = connection->avdtp_cid;
+        record_id = -1;
         sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
         return;
     }
@@ -623,12 +639,8 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 case SDP_EVENT_QUERY_COMPLETE:
                     status = sdp_event_query_complete_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS) break;
-                    if (!connection->sink_supported) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                        break;
-                    }
-                    if (connection->avdtp_l2cap_psm == 0) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                    if (!connection->sink_supported || (connection->avdtp_l2cap_psm == 0)) {
+                        status = SDP_SERVICE_NOT_FOUND;
                         break;
                     }
                     break;
@@ -645,12 +657,8 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 case SDP_EVENT_QUERY_COMPLETE:
                     status = sdp_event_query_complete_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS) break;
-                    if (!connection->source_supported) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-                        break;
-                    }
-                    if (connection->avdtp_l2cap_psm == 0) {
-                        status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+                    if (!connection->source_supported || (connection->avdtp_l2cap_psm == 0)) {
+                        status = SDP_SERVICE_NOT_FOUND;
                         break;
                     }
                     break;
@@ -666,6 +674,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                     avdtp_handle_sdp_client_query_attribute_value(connection, packet);
                     return;        
                 case SDP_EVENT_QUERY_COMPLETE:
+                    // without suitable SDP Record, avdtp version v0.0 is assumed
                     status = sdp_event_query_complete_get_status(packet);
                     break;
                 default:
@@ -1332,43 +1341,42 @@ void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoi
 }
 
 
-uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
+avdtp_channel_mode_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t channel_mode_bitmap = (media_codec[0] & 0x0F) & remote_channel_mode_bitmap;
-    
-    uint8_t channel_mode = AVDTP_SBC_STEREO;
+
     // use preferred channel mode if possible
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_JOINT_STEREO){
-        return AVDTP_SBC_JOINT_STEREO;
+        return AVDTP_CHANNEL_MODE_JOINT_STEREO;
     }
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_STEREO){
-        return AVDTP_SBC_STEREO;
+        return AVDTP_CHANNEL_MODE_STEREO;
     }
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_DUAL_CHANNEL){
-        return AVDTP_SBC_DUAL_CHANNEL;
+        return AVDTP_CHANNEL_MODE_DUAL_CHANNEL;
     }
     if (stream_endpoint->preferred_channel_mode == AVDTP_SBC_MONO){
-        return AVDTP_SBC_MONO;
+        return AVDTP_CHANNEL_MODE_MONO;
     }
 
 
     if (channel_mode_bitmap & AVDTP_SBC_JOINT_STEREO){
-        channel_mode = AVDTP_SBC_JOINT_STEREO;
+        return AVDTP_CHANNEL_MODE_JOINT_STEREO;
     } else if (channel_mode_bitmap & AVDTP_SBC_STEREO){
-        channel_mode = AVDTP_SBC_STEREO;
+        return AVDTP_CHANNEL_MODE_STEREO;
     } else if (channel_mode_bitmap & AVDTP_SBC_DUAL_CHANNEL){
-        channel_mode = AVDTP_SBC_DUAL_CHANNEL;
+        return AVDTP_CHANNEL_MODE_DUAL_CHANNEL;
     } else if (channel_mode_bitmap & AVDTP_SBC_MONO){
-        channel_mode = AVDTP_SBC_MONO;
+        return AVDTP_CHANNEL_MODE_MONO;
     } 
-    return channel_mode;
+    return AVDTP_CHANNEL_MODE_JOINT_STEREO;
 }
 
-uint8_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
+avdtp_sbc_allocation_method_t avdtp_choose_sbc_allocation_method(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_allocation_method_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t allocation_method_bitmap = (media_codec[1] & 0x03) & remote_allocation_method_bitmap;
-    
-    uint8_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
+
+    avdtp_sbc_allocation_method_t allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
     if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS){
         allocation_method = AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS;
     } else if (allocation_method_bitmap & AVDTP_SBC_ALLOCATION_METHOD_SNR){
@@ -1413,39 +1421,39 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
     return block_length;
 }
 
-uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
+uint16_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t supported_sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
 
     // use preferred sampling frequency if possible
     if ((stream_endpoint->preferred_sampling_frequency == 48000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_48000)){
-        return AVDTP_SBC_48000;
+        return stream_endpoint->preferred_sampling_frequency;
     }
     if ((stream_endpoint->preferred_sampling_frequency == 44100) && (supported_sampling_frequency_bitmap & AVDTP_SBC_44100)){
-        return AVDTP_SBC_44100;
+        return stream_endpoint->preferred_sampling_frequency;
     }
     if ((stream_endpoint->preferred_sampling_frequency == 32000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_32000)){
-        return AVDTP_SBC_32000;
+        return stream_endpoint->preferred_sampling_frequency;
     }
     if ((stream_endpoint->preferred_sampling_frequency == 16000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_16000)){
-        return AVDTP_SBC_16000;
+        return stream_endpoint->preferred_sampling_frequency;
     }
 
     // otherwise, use highest available
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
-        return AVDTP_SBC_48000;
+        return 48000;
     }
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
-        return AVDTP_SBC_44100;
+        return 44100;
     }
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
-        return AVDTP_SBC_32000;
+        return 32000;
     }
     if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
-        return AVDTP_SBC_16000;
+        return 16000;
     } 
-    return AVDTP_SBC_44100; // some default
+    return 44100; // some default
 }
 
 uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_max_bitpool_value){
@@ -1468,9 +1476,20 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
 }
 
 void avdtp_init(void){
-    static bool l2cap_registered = false;
     if (!l2cap_registered){
         l2cap_registered = true;
         l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
     }
+}
+
+void avdtp_deinit(void){
+    l2cap_registered = false;
+    stream_endpoints = NULL;
+    connections = NULL;
+    avdtp_sink_handle_media_data = NULL;
+
+    sdp_query_context_avdtp_cid = 0;
+    stream_endpoints_id_counter = 0;
+    transaction_id_counter = 0;
+    avdtp_cid_counter = 0;
 }

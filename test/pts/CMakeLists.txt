@@ -1,13 +1,31 @@
 cmake_minimum_required (VERSION 3.5)
 project(PTS)
 
-# add libusb
-find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
-find_library(LIBUSB_LIBRARY NAMES usb-1.0 PATH_SUFFIXES "lib" "lib32" "lib64" "dylib")
-get_filename_component(LIBUSB_LIBRARY_PATH ${LIBUSB_LIBRARY} DIRECTORY)
-include_directories( ${LIBUSB_INCLUDE_DIR} )
-link_directories( ${LIBUSB_LIBRARY_PATH} )
-link_libraries( usb-1.0 )
+# fink pkgconfig
+find_package(PkgConfig REQUIRED)
+
+# libusb
+pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+include_directories(${LIBUSB_INCLUDE_DIRS})
+link_directories(${LIBUSB_LIBRARY_DIRS})
+link_libraries(${LIBUSB_LIBRARIES})
+
+# portaudio
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+include_directories(${PORTAUDIO_INCLUDE_DIRS})
+link_directories(${PORTAUDIO_LIBRARY_DIRS})
+link_libraries(${PORTAUDIO_LIBRARIES})
+add_compile_definitions(HAVE_PORTAUDIO)
+
+# fdk-aac
+pkg_check_modules(FDK_AAC fdk-aac)
+if(FDK_AAC_FOUND)
+	message("HAVE_AAC_FDK")
+	include_directories(${FDK_AAC_INCLUDE_DIRS})
+	link_directories(${FDK_AAC_LIBRARY_DIRS})
+	link_libraries(${FDK_AAC_LIBRARIES})
+	add_compile_definitions(HAVE_AAC_FDK)
+endif()
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)

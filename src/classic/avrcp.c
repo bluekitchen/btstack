@@ -69,7 +69,7 @@ static const char * default_avrcp_controller_service_provider_name = "BTstack AV
 static const char * default_avrcp_target_service_name = "BTstack AVRCP Target Service";
 static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP Target Service Provider";
 
-static uint16_t  avrcp_cid_counter = 0;
+static uint16_t  avrcp_cid_counter;
 
 static btstack_context_callback_registration_t avrcp_handle_sdp_client_query_request;
 
@@ -978,6 +978,19 @@ void avrcp_init(void){
     int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, gap_get_security_level());
     if (status != ERROR_CODE_SUCCESS) return;
     l2cap_service_registered = true;
+}
+
+void avrcp_deinit(void){
+    avrcp_cid_counter = 0;
+    l2cap_service_registered = false;
+
+    (void) memset(&sdp_query_context, 0, sizeof(avrcp_sdp_query_context_t));
+    (void) memset(attribute_value,0, sizeof(attribute_value));
+
+    avrcp_callback = NULL;
+    connections = NULL;
+    avrcp_controller_packet_handler = NULL;
+    avrcp_target_packet_handler = NULL;
 }
 
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t callback){

@@ -8,8 +8,6 @@ CFLAGS  = -g -Wall \
 		  -I.. \
 		  -I${BTSTACK_ROOT}/src \
 
-CFLAGS += -fprofile-arcs -ftest-coverage
-
 LDFLAGS += -lCppUTest -lCppUTestExt 
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -55,19 +53,43 @@ COMMON = \
 	spp_server.c \
 	btstack_hid_parser.c \
 	
-COMMON_OBJ = $(COMMON:.c=.o)
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: sdp_record_builder
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-sdp_record_builder: ${COMMON_OBJ} sdp_record_builder.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+
+all: build-coverage/sdp_record_builder build-asan/sdp_record_builder
+
+build-%:
+	mkdir -p $@
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+
+build-coverage/sdp_record_builder: ${COMMON_OBJ_COVERAGE} build-coverage/sdp_record_builder.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/sdp_record_builder: ${COMMON_OBJ_ASAN} build-asan/sdp_record_builder.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 
 test: all
-	./sdp_record_builder
+	build-asan/sdp_record_builder
+
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/sdp_record_builder
 
 clean:
-	rm -f  sdp_record_builder
-	rm -f  *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 	

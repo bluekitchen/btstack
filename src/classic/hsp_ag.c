@@ -78,22 +78,22 @@
 static const char default_hsp_ag_service_name[] = "Audio Gateway";
 
 static bd_addr_t remote;
-static uint8_t channel_nr = 0;
+static uint8_t channel_nr;
 
 static uint16_t mtu;
-static uint16_t rfcomm_cid = 0;
-static uint16_t sco_handle = HCI_CON_HANDLE_INVALID;
-static uint16_t rfcomm_handle = HCI_CON_HANDLE_INVALID;
+static uint16_t rfcomm_cid;
+static hci_con_handle_t sco_handle;
+static hci_con_handle_t rfcomm_handle;
 static btstack_timer_source_t hs_timeout;
 
-static int ag_microphone_gain = -1;
-static int ag_speaker_gain = -1;
-static uint8_t ag_ring = 0;
-static uint8_t ag_send_ok = 0;
-static uint8_t ag_send_error = 0;
-static uint8_t ag_support_custom_commands = 0;
-static uint8_t hsp_disconnect_rfcomm = 0;
-static uint8_t hsp_release_audio_connection = 0;
+static int ag_microphone_gain;
+static int ag_speaker_gain;
+static uint8_t ag_ring;
+static uint8_t ag_send_ok;
+static uint8_t ag_send_error;
+static uint8_t ag_support_custom_commands;
+static uint8_t hsp_disconnect_rfcomm;
+static uint8_t hsp_release_audio_connection;
 
 static uint16_t hsp_ag_sco_packet_types;
 
@@ -122,7 +122,7 @@ typedef enum {
     HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hsp_state_t;
 
-static hsp_state_t hsp_state = HSP_IDLE;
+static hsp_state_t hsp_state;
 
 static btstack_context_callback_registration_t hsp_ag_handle_sdp_client_query_request;
 static btstack_packet_handler_t hsp_ag_callback;
@@ -256,7 +256,8 @@ static void hsp_ag_reset_state(void){
     
     rfcomm_cid = 0;
     rfcomm_handle = HCI_CON_HANDLE_INVALID;
-    sco_handle = 0;
+    channel_nr = 0;
+    sco_handle = HCI_CON_HANDLE_INVALID;
 
     ag_send_ok = 0;
     ag_send_error = 0;
@@ -282,13 +283,21 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
     hsp_ag_reset_state();
 }
 
+void hsp_ag_deinit(void){
+    (void)memset(remote, 0, 6);
+    (void)memset(&hs_timeout, 0, sizeof(btstack_timer_source_t));
+    (void)memset(&hci_event_callback_registration, 0, sizeof(btstack_packet_callback_registration_t));
+    (void)memset(&hsp_ag_handle_sdp_client_query_request, 0, sizeof(btstack_context_callback_registration_t));
+    hsp_ag_callback = NULL;
+}
+
 static void hsp_ag_handle_start_sdp_client_query(void * context){
     UNUSED(context);
     if (hsp_state != HSP_W2_SEND_SDP_QUERY) return;
     
     hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
     log_info("Start SDP query %s, 0x%02x", bd_addr_to_str(remote), BLUETOOTH_SERVICE_CLASS_HEADSET);
-    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);
+    sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, remote, BLUETOOTH_SERVICE_CLASS_HEADSET);
 }
 
 void hsp_ag_connect(bd_addr_t bd_addr){

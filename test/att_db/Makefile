@@ -9,9 +9,12 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 
-CFLAGS += -fprofile-arcs -ftest-coverage
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-LDFLAGS += -lCppUTest -lCppUTestExt 
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/src
@@ -27,23 +30,41 @@ COMMON = \
     hci_cmd.c \
     rijndael.c
 	
-COMMON_OBJ = $(COMMON:.c=.o)
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
-all: att_db_util_test att_db_test
+all: build-coverage/att_db_util_test build-coverage/att_db_test build-asan/att_db_util_test build-asan/att_db_test
 
-att_db_util_test: ${COMMON_OBJ} att_db_util_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+build-%:
+	mkdir -p $@
 
-att_db_test: att_db_test.c att_db.o btstack_util.o hci_dump.o att_db_util.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+build-coverage/att_db_util_test: ${COMMON_OBJ_COVERAGE} build-coverage/att_db_util_test.o | build-coverage/
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-coverage/att_db_test: build-coverage/att_db_test.o build-coverage/att_db.o build-coverage/btstack_util.o build-coverage/hci_dump.o build-coverage/att_db_util.o | build-coverage/
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/att_db_util_test: ${COMMON_OBJ_ASAN} build-asan/att_db_util_test.o | build-asan/
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+build-asan/att_db_test: build-asan/att_db_test.o build-asan/att_db.o build-asan/btstack_util.o build-asan/hci_dump.o build-asan/att_db_util.o | build-asan/
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	./att_db_util_test
-	./att_db_test
+	build-asan/att_db_util_test
+	build-asan/att_db_test
+
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/att_db_util_test
+	build-coverage/att_db_test
 
 clean:
-	rm -f  att_db_util_test
-	rm -f  *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 	

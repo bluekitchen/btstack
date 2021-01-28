@@ -7,8 +7,6 @@ BTSTACK_ROOT =  ../..
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I../ 
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -42,23 +40,45 @@ COMMON = \
 	rijndael.c 					\
 	ublox_spp_service_server.c \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: gatt_server_test
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
+
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+
+all: build-coverage/gatt_server_test build-asan/gatt_server_test
+
+build-%:
+	mkdir -p $@
 
 # compile .ble description
-profile.h: profile.gatt
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+build-%/profile.h: profile.gatt | build-%
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-gatt_server_test: profile.h ${COMMON_OBJ} gatt_server_test.o
-	${CC} ${COMMON_OBJ} gatt_server_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+build-coverage/gatt_server_test: ${COMMON_OBJ_COVERAGE} build-coverage/profile.h build-coverage/gatt_server_test.o | build-coverage
+	${CC} $(filter-out build-coverage/profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/gatt_server_test: ${COMMON_OBJ_ASAN} build-asan/profile.h build-asan/gatt_server_test.o | build-asan
+	${CC} $(filter-out build-asan/profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
-	./gatt_server_test
+	build-asan/gatt_server_test
 		
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/gatt_server_test
+
 clean:
-	rm -f  gatt_server_test
-	rm -f  *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 

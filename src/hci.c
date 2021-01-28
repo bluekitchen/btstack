@@ -1498,11 +1498,17 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING;
             hci_send_cmd(&hci_write_default_erroneous_data_reporting, 1);
             break;
-        // only sent if ENABLE_SCO_OVER_HCI and manufacturer is Broadcom
+        // only sent if manufacturer is Broadcom and ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM is defined
         case HCI_INIT_BCM_WRITE_SCO_PCM_INT:
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+#ifdef ENABLE_SCO_OVER_HCI
             log_info("BCM: Route SCO data via HCI transport");
             hci_send_cmd(&hci_bcm_write_sco_pcm_int, 1, 0, 0, 0, 0);
+#endif
+#ifdef ENABLE_SCO_OVER_PCM
+            log_info("BCM: Route SCO data via PCM interface");
+            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 4, 0, 1, 1);
+#endif
             break;
 
 #endif
@@ -1859,7 +1865,16 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #else /* !ENABLE_SCO_OVER_HCI */
 
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
-#ifdef ENABLE_BLE            
+#ifdef ENABLE_SCO_OVER_PCM
+            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) {
+                hci_stack->substate = HCI_INIT_BCM_WRITE_SCO_PCM_INT;
+                return;
+            }
+#endif
+            /* fall through */
+
+        case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
+#ifdef ENABLE_BLE
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE;
                 return;
@@ -2167,7 +2182,6 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 			// whitelist connect
 			if (hci_is_le_connection_type(addr_type)){
 				hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-				hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 			}
 			// get outgoing connection conn struct for direct connect
 			conn = gap_get_outgoing_connection();
@@ -2221,7 +2235,11 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 	}
 #endif
 
-	// TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
+    // init unenhanced att bearer mtu
+    conn->att_connection.mtu = ATT_DEFAULT_MTU;
+    conn->att_connection.mtu_exchanged = false;
+
+    // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
 
 	// restart timer
 	// btstack_run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
@@ -2250,7 +2268,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
     int create_connection_cmd;
 
 #ifdef ENABLE_CLASSIC
-    uint8_t link_type;
+    hci_link_type_t link_type;
     bd_addr_t addr;
 #endif
 
@@ -2293,7 +2311,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_LE_CENTRAL
                     if (hci_is_le_connection_type(addr_type)){
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
-                        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
                     }
 #endif
                     // error => outgoing connection failed
@@ -2352,8 +2369,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
+            link_type = (hci_link_type_t) packet[11];
             if (hci_stack->gap_classic_accept_callback != NULL){
-                if ((*hci_stack->gap_classic_accept_callback)(addr) == 0){
+                if ((*hci_stack->gap_classic_accept_callback)(addr, link_type) == 0){
                     hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
                     bd_addr_copy(hci_stack->decline_addr, addr);
                     break;
@@ -2361,9 +2379,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
             } 
 
             // TODO: eval COD 8-10
-            link_type = packet[11];
-            log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
-            addr_type = (link_type == 1) ? BD_ADDR_TYPE_ACL : BD_ADDR_TYPE_SCO;
+            log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), (unsigned int) link_type);
+            addr_type = (link_type == HCI_LINK_TYPE_ACL) ? BD_ADDR_TYPE_ACL : BD_ADDR_TYPE_SCO;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, addr_type);
@@ -2377,7 +2394,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
             // store info about eSCO
-            if (link_type == 0x02){
+            if (link_type == HCI_LINK_TYPE_ESCO){
                 conn->remote_supported_features[0] |= 1;
             }
             hci_run();
@@ -2501,12 +2518,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_LINK_KEY_REQUEST:
             log_info("HCI_EVENT_LINK_KEY_REQUEST");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
-            // non-bondable mode: link key negative reply will be sent by HANDLE_LINK_KEY_REQUEST
-            if (hci_stack->bondable && !hci_stack->link_key_db) break;
+            // request handled by hci_run()
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
-            hci_run();
-            // request handled by hci_run() as HANDLE_LINK_KEY_REQUEST gets set
-            return;
+            break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
             reverse_bd_addr(&packet[2], addr);
@@ -3106,6 +3120,19 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 
     hci_state_reset();
+}
+
+void hci_deinit(void){
+#ifdef HAVE_MALLOC
+    if (hci_stack) {
+        free(hci_stack);
+    }
+#endif
+    hci_stack = NULL;
+
+#ifdef ENABLE_CLASSIC
+    disable_l2cap_timeouts = 0;
+#endif
 }
 
 /**
@@ -3719,18 +3746,24 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_CENTRAL
     // connecting control
-    if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
-        // stop connecting if:
-        // - connecting uses white and whitelist modification pending
-        // - if it got disabled
-        // - resolving list modified
-        bool connecting_uses_whitelist = hci_stack->le_connecting_request == LE_CONNECTING_WHITELIST;
-        if ((connecting_uses_whitelist && whitelist_modification_pending) ||
-            (hci_stack->le_connecting_request == LE_CONNECTING_IDLE) ||
-            resolving_list_modification_pending) {
+    bool connecting_with_whitelist;
+    switch (hci_stack->le_connecting_state){
+        case LE_CONNECTING_DIRECT:
+        case LE_CONNECTING_WHITELIST:
+            // stop connecting if:
+            // - connecting uses white and whitelist modification pending
+            // - if it got disabled
+            // - resolving list modified
+            connecting_with_whitelist = hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST;
+            if ((connecting_with_whitelist && whitelist_modification_pending) ||
+                (hci_stack->le_connecting_request == LE_CONNECTING_IDLE) ||
+                resolving_list_modification_pending) {
 
-            connecting_stop = true;
-        }
+                connecting_stop = true;
+            }
+            break;
+        default:
+            break;
     }
 #endif
 
@@ -3766,10 +3799,8 @@ static bool hci_run_general_gap_le(void){
 
 #ifdef ENABLE_LE_CENTRAL
     if (connecting_stop){
-        if (hci_stack->le_connecting_state != LE_CONNECTING_CANCEL){
-            hci_send_cmd(&hci_le_create_connection_cancel);
-            return true;
-        }
+        hci_send_cmd(&hci_le_create_connection_cancel);
+        return true;
     }
 #endif
 
@@ -4076,7 +4107,7 @@ static bool hci_run_general_pending_commands(void){
         }
 
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
-            log_info("responding to link key request");
+            log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
 
             link_key_t link_key;
@@ -5868,7 +5899,7 @@ HCI_STATE hci_get_state(void){
 }
 
 #ifdef ENABLE_CLASSIC
-void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr)){
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr, hci_link_type_t link_type)){
     hci_stack->gap_classic_accept_callback = accept_callback;
 }
 #endif

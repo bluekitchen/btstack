@@ -369,6 +369,7 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
     // find min(local max mtu, remote mtu) >= ATT_DEFAULT_MTU and use as mtu for this connection
     uint16_t min_mtu = btstack_min(client_rx_mtu, att_connection->max_mtu);
     uint16_t new_mtu = btstack_max(ATT_DEFAULT_MTU, min_mtu);
+    att_connection->mtu_exchanged = true;
     att_connection->mtu = new_mtu;
 
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;

@@ -8,10 +8,6 @@ CFLAGS  = -g -Wall \
 		  -I.. \
 		  -I${BTSTACK_ROOT}/src
 		  
-CFLAGS += -fprofile-arcs -ftest-coverage
-
-LDFLAGS += -lCppUTest -lCppUTestExt 
-
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -21,21 +17,42 @@ COMMON = \
 	btstack_linked_list.c \
 	hci_dump.c 			  \
     avdtp_util.c		  \
-	
-COMMON_OBJ = $(COMMON:.c=.o)
 
-all: avdtp_util_test
 
-avdtp_util_test: ${COMMON_OBJ} avdtp_util_test.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
+
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+all: build-coverage/avdtp_util_test build-asan/avdtp_util_test
+
+build-%:
+	mkdir -p $@
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+build-coverage/avdtp_util_test: ${COMMON_OBJ_COVERAGE} build-coverage/avdtp_util_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/avdtp_util_test: ${COMMON_OBJ_ASAN} build-asan/avdtp_util_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	rm -f *.gcda
-	./avdtp_util_test
+	build-asan/avdtp_util_test
+
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/avdtp_util_test
 
 clean:
-	rm -f  avdtp_util_test
-	rm -f  *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 	

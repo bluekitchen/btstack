@@ -4,12 +4,10 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I../ 
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I../
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/test/mock
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
-CFLAGS += -fprofile-arcs -ftest-coverage
-LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -37,31 +35,57 @@ COMMON = \
 	ublox_spp_service_server.c \
 
 
-COMMON_OBJ = $(COMMON:.c=.o)
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: battery_service_test device_information_service_test
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-battery_service_profile.h: battery_service_profile.gatt
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+
+all: build-coverage/battery_service_test build-coverage/device_information_service_test \
+	 build-asan/battery_service_test build-asan/device_information_service_test
+
+
+build-%:
+	mkdir -p $@
+
+build-%/battery_service_profile.h: battery_service_profile.gatt | build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-battery_service_test: battery_service_profile.h ${COMMON_OBJ} battery_service_test.o
-	${CC} ${COMMON_OBJ} battery_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
-
-device_information_service_profile.h: device_information_service.gatt
+build-%/device_information_service_profile.h: device_information_service.gatt| build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
-device_information_service_test: device_information_service_profile.h ${COMMON_OBJ} device_information_service_test.o
-	${CC} ${COMMON_OBJ} device_information_service_test.o ${CFLAGS} ${LDFLAGS} -o $@
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
 
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+build-coverage/battery_service_test: build-coverage/battery_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_test.o | build-coverage
+	${CC} $(filter-out build-coverage/battery_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-coverage/device_information_service_test: build-coverage/device_information_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_test.o  | build-coverage
+	${CC} $(filter-out build-coverage/device_information_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/battery_service_test: build-asan/battery_service_profile.h ${COMMON_OBJ_ASAN} build-asan/battery_service_test.o | build-asan
+	${CC} $(filter-out build-asan/battery_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+
+build-asan/device_information_service_test: build-asan/device_information_service_profile.h ${COMMON_OBJ_ASAN} build-asan/device_information_service_test.o  | build-asan
+	${CC} $(filter-out build-asan/device_information_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
-	./battery_service_test
-	./device_information_service_test
+	build-coverage/battery_service_test
+	build-coverage/device_information_service_test
 		
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/battery_service_test
+	build-coverage/device_information_service_test
+
 clean:
-	rm -f  battery_service_test battery_service_profile.h
-	rm -f  device_information_service_test device_information_service_profile.h
-	rm -f  *.o
-	rm -rf *.dSYM
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 

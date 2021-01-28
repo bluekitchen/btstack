@@ -83,7 +83,7 @@ static void assertBuffer(int size){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void sdp_client_init(void){
+static void sdp_bnep_qeury_init(void){
     // init L2CAP
     l2cap_init();
 
@@ -272,8 +272,8 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     printf("Client HCI init done\r\n");
-    
-    sdp_client_init();
+
+    sdp_bnep_qeury_init();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

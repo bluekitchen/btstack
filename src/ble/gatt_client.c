@@ -162,7 +162,8 @@ static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t c
     if (gatt_client) return gatt_client;
 
     // bail if no such hci connection
-    if (!hci_connection_for_handle(con_handle)){
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL){
         log_error("No connection for handle 0x%04x", con_handle);
         return NULL;
     }
@@ -179,6 +180,13 @@ static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t c
     }
     gatt_client->gatt_client_state = P_READY;
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)gatt_client);
+
+    // get unenhanced att bearer state
+    if (hci_connection->att_connection.mtu_exchanged){
+        gatt_client->mtu = hci_connection->att_connection.mtu;
+        gatt_client->mtu_state = MTU_EXCHANGED;
+    }
+
     return gatt_client;
 }
 
@@ -1319,8 +1327,17 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             if (size < 3u) break;
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
-            gatt_client->mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
+            uint16_t mtu = (remote_rx_mtu < local_rx_mtu) ? remote_rx_mtu : local_rx_mtu;
+
+            // set gatt client mtu
+            gatt_client->mtu = mtu;
             gatt_client->mtu_state = MTU_EXCHANGED;
+
+            // set per connection mtu state
+            hci_connection_t * hci_connection = hci_connection_for_handle(handle);
+            hci_connection->att_connection.mtu = gatt_client->mtu;
+            hci_connection->att_connection.mtu_exchanged = true;
+
             emit_gatt_mtu_exchanged_result_event(gatt_client, gatt_client->mtu);
             break;
         }

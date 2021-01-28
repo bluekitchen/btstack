@@ -44,6 +44,7 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_util.h"
+#include "btstack_bool.h"
 #include "hci.h"
 
 //
@@ -127,10 +128,10 @@ static void btstack_crypto_run(void);
 
 static const uint8_t zero[16] = { 0 };
 
-static uint8_t btstack_crypto_initialized;
+static bool btstack_crypto_initialized;
+static bool btstack_crypto_wait_for_hci_result;
 static btstack_linked_list_t btstack_crypto_operations;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static uint8_t btstack_crypto_wait_for_hci_result;
 
 // state for AES-CMAC
 #ifndef USE_BTSTACK_AES128
@@ -852,7 +853,7 @@ static void btstack_crypto_run(void){
     	btstack_crypto_t * btstack_crypto = (btstack_crypto_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
     	switch (btstack_crypto->operation){
     		case BTSTACK_CRYPTO_RANDOM:
-    			btstack_crypto_wait_for_hci_result = 1;
+    			btstack_crypto_wait_for_hci_result = true;
     		    hci_send_cmd(&hci_le_rand);
     		    break;
     		case BTSTACK_CRYPTO_AES128:
@@ -938,7 +939,7 @@ static void btstack_crypto_run(void){
                         log_info("start ecc random");
                         btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_GENERATING_RANDOM;
                         btstack_crypto_ecc_p256_random_offset = 0;
-                        btstack_crypto_wait_for_hci_result = 1;
+                        btstack_crypto_wait_for_hci_result = true;
                         hci_send_cmd(&hci_le_rand);
 #else
                         btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_W4_KEY;
@@ -949,7 +950,7 @@ static void btstack_crypto_run(void){
 #ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
                     case ECC_P256_KEY_GENERATION_GENERATING_RANDOM:
                         log_info("more ecc random");
-                        btstack_crypto_wait_for_hci_result = 1;
+                        btstack_crypto_wait_for_hci_result = true;
                         hci_send_cmd(&hci_le_rand);
                         break;
 #endif
@@ -1084,7 +1085,6 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
-            log_info("BTSTACK_EVENT_STATE");
             if (btstack_event_state_get_state(packet) != HCI_STATE_HALTING) break;
             if (!btstack_crypto_wait_for_hci_result) break;
             // request stack to defer shutdown a bit
@@ -1101,8 +1101,8 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 #endif
     	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_rand)){
                 if (!btstack_crypto_wait_for_hci_result) return;
-                btstack_crypto_wait_for_hci_result = 0;
-    	        btstack_crypto_handle_random_data(&packet[6], 8);
+                btstack_crypto_wait_for_hci_result = false;
+                btstack_crypto_handle_random_data(&packet[6], 8);
     	    }
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
                 int ecdh_operations_supported = (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+34u] & 0x06u) == 0x06u;
@@ -1163,7 +1163,7 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 
 void btstack_crypto_init(void){
 	if (btstack_crypto_initialized) return;
-	btstack_crypto_initialized = 1;
+	btstack_crypto_initialized = true;
 
 	// register with HCI
     hci_event_callback_registration.callback = &btstack_crypto_event_handler;
@@ -1346,6 +1346,13 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t b
     btstack_crypto_run();
 }
 
+// De-Init
+void btstack_crypto_deinit(void) {
+    btstack_crypto_initialized = false;
+    btstack_crypto_wait_for_hci_result = false;
+    btstack_crypto_operations = NULL;
+}
+
 // PTS only
 void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key){
 #ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
@@ -1357,11 +1364,12 @@ void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t *
     UNUSED(private_key);
 #endif
 }
+
 // Unit testing
 int btstack_crypto_idle(void){
     return btstack_linked_list_empty(&btstack_crypto_operations);
 }
 void btstack_crypto_reset(void){
-    btstack_crypto_operations = NULL;
-    btstack_crypto_wait_for_hci_result = 0;
+    btstack_crypto_deinit();
+    btstack_crypto_init();
 }

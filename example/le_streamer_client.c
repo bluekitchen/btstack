@@ -185,15 +185,12 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
         uint8_t data_type    = ad_iterator_get_data_type(&context);
         uint8_t data_size    = ad_iterator_get_data_len(&context);
         const uint8_t * data = ad_iterator_get_data(&context);
-        int i;
         switch (data_type){
             case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
             case BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME:
-                // compare common prefix
-                for (i=0; i<data_size && i<name_len;i++){
-                    if (data[i] != name[i]) break;
-                }
-                // prefix match
+                // compare prefix
+                if (data_size < name_len) break;
+                if (memcmp(data, name, name_len) == 0) return 1;
                 return 1;
             default:
                 break;

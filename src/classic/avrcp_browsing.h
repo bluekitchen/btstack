@@ -106,6 +106,11 @@ uint8_t avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
  */
 uint8_t avrcp_browsing_disconnect(uint16_t avrcp_browsing_cid);
 
+/**
+ * @brief De-Init AVRCP Browsing
+ */
+void avrcp_browsing_deinit(void);
+
 /* API_END */
 
 

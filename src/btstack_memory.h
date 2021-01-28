@@ -87,6 +87,12 @@ extern "C" {
  */
 void btstack_memory_init(void);
 
+/**
+ * @brief Deinitialize BTstack memory pools
+ * @note if HAVE_MALLOC is defined, all previously allocated buffers are free'd
+ */
+void btstack_memory_deinit(void);
+
 /* API_END */
 
 // hci_connection

@@ -81,8 +81,10 @@ ENABLE_LOG_DEBUG                 | Enable log_debug messages
 ENABLE_LOG_ERROR                 | Enable log_error messages
 ENABLE_LOG_INFO                  | Enable log_info messages
 ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (if supported)
+ENABLE_SCO_OVER_PCM              | Enable SCO ofer PCM/I2S for chipsets (if supported)
 ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP profile for Wide-Band Speech
-ENBALE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
+ENABLE_HFP_AT_MESSAGES           | Enable `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED` events
+ENABLE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
 ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
 ENABLE_LE_SECURE_CONNECTIONS     | Enable LE Secure Connections
 ENABLE_LE_PROACTIVE_AUTHENTICATION | Enable automatic encryption for bonded devices on re-connect
@@ -96,12 +98,16 @@ ENABLE_CROSS_TRANSPORT_KEY_DERIVATION | Enable Cross-Transport Key Derivation (C
 ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable L2CAP Enhanced Retransmission Mode. Mandatory for AVRCP Browsing
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
 ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
+ENABLE_BCM_PCM_WBS               | Enable support for Wide-Band Speech codec in BCM controller, requires ENABLE_SCO_OVER_PCM
+ENABLE_CC256X_ASSISTED_HFP       | Enable support for Assisted HFP mode in CC256x Controller, requires ENABLE_SCO_OVER_PCM
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
 ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS | Force HCI to fragment ACL-LE packets to fit into over-the-air packet
 ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
 ENABLE_CONTROLLER_WARM_BOOT      | Enable stack startup without power cycle (if supported/possible)
 ENABLE_SEGGER_RTT                | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)
+ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL | Disable calls to control Connectable Mode by L2CAP
+
 Notes:
 
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.

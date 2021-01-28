@@ -27,7 +27,12 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_SCO_OVER_HCI
+
+// work around to link layer issues in ESP32
+// https://github.com/espressif/esp-idf/issues/5494
+#define ENABLE_CLASSIC_LEGACY_CONNECTIONS_FOR_SCO_DEMOS
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
@@ -35,13 +40,13 @@
 // HCI Controller to Host Flow Control
 #define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 
-// Interal ring buffer: 21 kB
+// Internal ring buffer: 21 kB
 #define HCI_HOST_ACL_PACKET_LEN 1024
 #define HCI_HOST_ACL_PACKET_NUM 20
 #define HCI_HOST_SCO_PACKET_LEN 60
 #define HCI_HOST_SCO_PACKET_NUM 10
 
-// Link Key DB and LE Device DB using TLV on top of Flash Sector interface
+// Link Key DB and LE Device DB using TLV
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
 #define NVM_NUM_LINK_KEYS 16
 

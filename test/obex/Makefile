@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
-CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -19,17 +18,41 @@ COMMON = \
     hci_dump.c \
     obex_message_builder.c \
 
-COMMON_OBJ = $(COMMON:.c=.o)
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
 
-all: obex_message_builder_test
+LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-obex_message_builder_test: ${COMMON_OBJ} obex_message_builder_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
+
+all: build-coverage/obex_message_builder_test build-asan/obex_message_builder_test
+
+build-%:
+	mkdir -p $@
+
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
+
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) $< -o $@
+
+
+build-coverage/obex_message_builder_test: ${COMMON_OBJ_COVERAGE} build-coverage/obex_message_builder_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/obex_message_builder_test: ${COMMON_OBJ_ASAN} build-asan/obex_message_builder_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
-	./obex_message_builder_test
+	build-asan/obex_message_builder_test
 	
+coverage: all
+	rm -f build-coverage/*.gcda
+	build-coverage/obex_message_builder_test
+
 clean:
-	rm -fr obex_message_builder_test *.dSYM *.o
-	rm -f *.gcno *.gcda
+	rm -rf build-coverage build-asan
 	

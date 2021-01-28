@@ -278,7 +278,9 @@ The Texas Instruments CC256x series is currently in its fourth iteration and pro
 
 The CC256x chipset is connected via an UART connection and supports the H4, H5 (since third iteration), and eHCILL.
 
-The latest generation CC256xC chipsets support multiple LE roles in parallel.
+The latest generation `CC256xC` chipsets support multiple LE roles in parallel.
+
+TI provides an alternative firmware that integrates an SBC Codec in the Bluetooth Controller itself for Assisted A2DP (A3DP) and Assisted HFP (Wide-band speech support). While this can save computation and code size on the main host, it cannot be used together with BLE, making it useless in most projects.
 
 The different CC256x chipset can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric way (AKA) to identify their chipsets. The table shows the LMP Subversion and AKA number for the CC256x and the WL18xx series.
 
@@ -290,11 +292,14 @@ CC256xB |         0x1B90 | 6.7.16
 CC256xC |         0x9a1a | 6.12.26
 WL18xx  |         0xac20 | 11.8.32
 
-**SCO data** is routed to the I2S/PCM interface but can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
+**SCO data:** Routing of SCO data can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
 
 **Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29). The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. 
 
-If you've implemented the hal_uart_dma.h without an additional ring buffer (as recommended!) and you have a bit of delay, e.g. because of thread switching on a RTOS, this could cause a UART overrun. If this happens, BTstack provides a workaround in the HCI H4 transport implementation by adding #define ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND to your btstack_config.h. If this is enabled, the H4 transport layer will resort to "deep packet inspection" to first check if its a TI controller and then wait for the HCI_VS_Update_UART_HCI_Baudrate. When detected, it will tweak the next UART read to expect the HCI Command Complete event.
+If you've implemented the hal_uart_dma.h without an additional ring buffer (as recommended!) and you have a bit of delay, e.g. because of thread switching on a RTOS, this could cause a UART overrun.
+If this happens, BTstack provides a workaround in the HCI H4 transport implementation by adding `ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND`. 
+If this is enabled, the H4 transport layer will resort to "deep packet inspection" to first check if its a TI controller and then wait for the HCI_VS_Update_UART_HCI_Baudrate. 
+When detected, it will tweak the next UART read to expect the HCI Command Complete event.
 
 **BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
 
@@ -309,9 +314,10 @@ The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download 
 
     ./convert_bts_init_scripts.py main.bts [ble_add_on.bts] output_file.c
 
-**BTstack integration**: The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
-
-SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
+**BTstack integration**: 
+- The common code for all CC256x chipsets is provided by *btstack_chipset_cc256x.c*. During the setup, *btstack_chipset_cc256x_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. *btstack_chipset_cc256x_lmp_subversion* provides the LMP Subversion for the selected init script.
+- SCO Data is be routed over HCI with `ENABLE_SCO_OVER_HCI` or to PCM/I2S with `ENABLE_SCO_OVER_PCM`. Wide-band speech is supported in both cases. For SCO-over-HCI, BTstack implements the mSBC Codec. For SCO-over-I2S, Assisted HFP can be used.
+- Assisted HFP: BTstack provides support for Assisted HFP mode if enabled with `ENABLE_CC256X_ASSISTED_HFP` and SCO is routed over PCM/I2S with `ENABLE_SCO_OVER_PCM`. During startup, the PCM/I2S is configured and the HFP implementation will enable/disable the mSBC Codec for Wide-band-speech when needed.
 
 ## Toshiba
 

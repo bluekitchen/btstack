@@ -375,7 +375,10 @@ static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
-    a2dp_source_stream_send_media_payload(media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
+    // Prepend SBC Header
+    media_tracker.sbc_storage[0] = num_frames;  // (fragmentation << 7) | (starting_packet << 6) | (last_packet << 5) | num_frames;
+    avdtp_source_stream_send_media_payload_rtp(media_tracker.a2dp_cid, media_tracker.local_seid, 0, media_tracker.sbc_storage, bytes_in_storage + 1);
+
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
 }
@@ -449,7 +452,8 @@ static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * contex
         uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
-        memcpy(&context->sbc_storage[context->sbc_storage_count], sbc_frame, sbc_frame_size);
+        // first byte in sbc storage contains sbc media header
+        memcpy(&context->sbc_storage[1 + context->sbc_storage_count], sbc_frame, sbc_frame_size);
         context->sbc_storage_count += sbc_frame_size;
         context->samples_ready -= num_audio_samples_per_sbc_buffer;
     }
@@ -554,7 +558,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
     bd_addr_t address;
     uint16_t cid;
 
-    uint8_t channel_mode;
+    avdtp_channel_mode_t channel_mode;
     uint8_t allocation_method;
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -581,7 +585,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             cid  = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
             if (cid != media_tracker.a2dp_cid) return;
 
-            media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet);
+            media_tracker.remote_seid = a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet);
             
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
@@ -591,30 +595,28 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             
-            channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            channel_mode = (avdtp_channel_mode_t) a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             
             printf("A2DP Source: Received SBC codec configuration, sampling frequency %u, a2dp_cid 0x%02x, local seid 0x%02x, remote seid 0x%02x.\n", 
                 sbc_configuration.sampling_frequency, cid,
-                a2dp_subevent_signaling_media_codec_sbc_configuration_get_int_seid(packet),
-                a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(packet));
+                   a2dp_subevent_signaling_media_codec_sbc_configuration_get_local_seid(packet),
+                   a2dp_subevent_signaling_media_codec_sbc_configuration_get_remote_seid(packet));
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
-            sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
             switch (channel_mode){
-                case AVDTP_SBC_JOINT_STEREO:
+                case AVDTP_CHANNEL_MODE_JOINT_STEREO:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
                     break;
-                case AVDTP_SBC_STEREO:
+                case AVDTP_CHANNEL_MODE_STEREO:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
                     break;
-                case AVDTP_SBC_DUAL_CHANNEL:
+                case AVDTP_CHANNEL_MODE_DUAL_CHANNEL:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
                     break;
-                case AVDTP_SBC_MONO:
+                case AVDTP_CHANNEL_MODE_MONO:
                     sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
-                    sbc_configuration.num_channels = 1;
                     break;
                 default:
                     btstack_assert(false);
@@ -879,6 +881,7 @@ static void show_usage(void){
     printf("B      - A2DP Source disconnect\n");
     printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
     printf("C      - AVRCP disconnect\n");
+    printf("D      - delete all link keys\n");
 
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
@@ -891,7 +894,7 @@ static void show_usage(void){
     printf("T      - volume down\n");
     printf("v      - volume up (via set absolute volume)\n");
     printf("V      - volume down (via set absolute volume)\n");
-    
+
     printf("---\n");
 }
 
@@ -899,7 +902,7 @@ static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'b':
-            status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            status = a2dp_source_establish_stream(device_addr, &media_tracker.a2dp_cid);
             printf("%c - Create A2DP Source connection to addr %s, cid 0x%02x.\n", cmd, bd_addr_to_str(device_addr), media_tracker.a2dp_cid);
             break;
         case 'B':
@@ -914,7 +917,10 @@ static void stdin_process(char cmd){
             printf("%c - AVRCP disconnect\n", cmd);
             status = avrcp_disconnect(media_tracker.avrcp_cid);
             break;
-
+        case 'D':
+            printf("Deleting all link keys\n");
+            gap_delete_all_link_keys();
+            break;
         case '\n':
         case '\r':
             break;

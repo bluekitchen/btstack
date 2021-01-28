@@ -60,7 +60,7 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 static btstack_packet_handler_t avrcp_browsing_callback;
 static avrcp_browsing_sdp_query_context_t sdp_query_context;
 
-static bool l2cap_browsing_service_registered = false;
+static bool l2cap_browsing_service_registered;
 static btstack_packet_handler_t avrcp_browsing_controller_packet_handler;
 static btstack_packet_handler_t avrcp_browsing_target_packet_handler;
 static btstack_context_callback_registration_t avrcp_browsing_handle_sdp_client_query_request;
@@ -387,6 +387,15 @@ void avrcp_browsing_init(void){
 
     if (status != ERROR_CODE_SUCCESS) return;
     l2cap_browsing_service_registered = true;
+}
+
+void avrcp_browsing_deinit(void){
+    avrcp_browsing_callback = NULL;
+    l2cap_browsing_service_registered = false;
+    avrcp_browsing_controller_packet_handler = NULL;
+    avrcp_browsing_target_packet_handler = NULL;
+    (void) memset(&sdp_query_context, 0, sizeof(avrcp_browsing_sdp_query_context_t));
+    (void) memset(avrcp_browsing_sdp_addr, 0, 6);
 }
 
 static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

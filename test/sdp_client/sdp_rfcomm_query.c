@@ -15,6 +15,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
+#include "bluetooth_sdp.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_util.h"
 #include "classic/spp_server.h"
@@ -109,19 +110,19 @@ TEST_GROUP(SDPClient){
     void setup(void){
         service_index = 0;
         sdp_client_reset(); // avoid "not ready" warning
-        // start query using public API although data will be injected
-        sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, address, 0x1234);
     }
 };
 
 
 TEST(SDPClient, QueryRFCOMMWithSyntheticData){
-
     const char* expected_name[] = {"SDP Response Test1", "SDP Response Test2", "SDP Response Test3"};
     uint8_t expected_channel[] = {10, 11, 12};
     int record_nr = sizeof(expected_channel)/sizeof(uint8_t); 
     int i;
-    
+
+    // start query using public API although data will be injected
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, address, 0x1234);
+
     de_create_sequence(spp_buffer);
     for (i=0; i<record_nr; i++){
         uint8_t * record_start = de_push_sequence(spp_buffer);
@@ -131,7 +132,7 @@ TEST(SDPClient, QueryRFCOMMWithSyntheticData){
     
     sdp_parser_handle_chunk(spp_buffer, de_get_len(spp_buffer));
 
-    CHECK_EQUAL(service_index, record_nr);
+    CHECK_EQUAL(record_nr, service_index);
     for (i=0; i<service_index; i++){
         STRCMP_EQUAL(expected_name[i], service_name[i]);
         CHECK_EQUAL(expected_channel[i], channel_nr[i]);
@@ -139,14 +140,19 @@ TEST(SDPClient, QueryRFCOMMWithSyntheticData){
 }
 
 TEST(SDPClient, QueryRFCOMMWithMacOSXData){
-    const char* expected_name[] = {"OBEX Object Push", 
+
+    const char* expected_name[] = {"OBEX Object Push",
                                     "Hands Free Audio Gat", "OBEX File Transfer",
                                     "Bluetooth-PDA-Sync", "Headset Audio Gatewa"};
     uint8_t expected_channel[] = {10, 2, 15, 3, 4};
+
+    // start query using public API although data will be injected
+    sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, address, 0x1234);
+
     // de_dump_data_element(sdp_test_record_list);
     sdp_parser_handle_chunk(sdp_test_record_list, de_get_len(sdp_test_record_list));
    
-    CHECK_EQUAL(service_index, 5);
+    CHECK_EQUAL(5, service_index);
     int i;
     for (i=0; i<service_index; i++){
         STRCMP_EQUAL(expected_name[i], service_name[i]);
@@ -154,6 +160,23 @@ TEST(SDPClient, QueryRFCOMMWithMacOSXData){
     }          
 }
 
+TEST(SDPClient, QueryClassListValid){
+    // start query using public API although data will be injected
+    sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, address, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY);
+
+    // de_dump_data_element(sdp_test_record_list);
+    sdp_parser_handle_chunk(sdp_test_record_list, de_get_len(sdp_test_record_list));
+
+    CHECK_EQUAL(1, service_index);
+}
+
+TEST(SDPClient, QueryClassListInvalid){
+    // start query using public API although data will be injected
+    sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, address, BLUETOOTH_SERVICE_CLASS_HANDSFREE);
+    sdp_parser_handle_chunk(sdp_test_record_list, de_get_len(sdp_test_record_list));
+
+    CHECK_EQUAL(0, service_index);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

@@ -849,6 +849,10 @@ void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t descriptor_l
     l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, gap_get_security_level());
 }
 
+void hid_device_deinit(void){
+    (void) memset(&_hid_device, 0, sizeof(hid_device_t));
+}
+
 /**
  * @brief Register callback for the HID Device client. 
  * @param callback

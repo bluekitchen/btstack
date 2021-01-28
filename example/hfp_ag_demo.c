@@ -153,6 +153,7 @@ static void show_usage(void){
     printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
     printf("d - report AG failure\n");
+    printf("D - delete all link keys\n");
     printf("e - answer call on AG                   | E - reject call on AG\n");
     printf("r - disable in-band ring tone           | R - enable in-band ring tone\n");
     printf("f - Disable cellular network            | F - Enable cellular network\n");
@@ -210,6 +211,10 @@ static void stdin_process(char cmd){
             printf("Simulate incoming call from 1234567\n");
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
+            break;
+        case 'D':
+            printf("Deleting all link keys\n");
+            gap_delete_all_link_keys();
             break;
         case 'm':
             log_info("USER:\'%c\'", cmd);

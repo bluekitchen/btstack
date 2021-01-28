@@ -38,8 +38,6 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \
 	-I$(BTSTACK_ROOT)/3rd-party/rijndael \
 
-CFLAGS += -fprofile-arcs -ftest-coverage
-
 CFLAGS += -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
@@ -57,46 +55,86 @@ CC_UNIT = g++
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+
 # cppUTest
 LDFLAGS += -lCppUTest -lCppUTestExt
 
+LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
+LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-mesh_pts: mesh_pts.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${MESH_OBJ} main.o mesh_pts.o
-	${CC} $(filter-out mesh_pts.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+COMMON_OBJ_COVERAGE      = $(addprefix build-coverage/,$(COMMON_OBJ))
+CORE_OBJ_COVERAGE        = $(addprefix build-coverage/,$(CORE_OBJ))
+ATT_OBJ_COVERAGE         = $(addprefix build-coverage/,$(ATT_OBJ))
+GATT_SERVER_OBJ_COVERAGE = $(addprefix build-coverage/,$(GATT_SERVER_OBJ))
+SM_OB_COVERAGE           = $(addprefix build-coverage/,$(SM_OB))
+MESH_OBJ_COVERAGE        = $(addprefix build-coverage/,$(MESH_OBJ))
 
-provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o  pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o mesh_network.o provisioner.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+COMMON_OBJ_ASAN          = $(addprefix build-asan/,$(COMMON_OBJ))
+CORE_OBJ_ASAN            = $(addprefix build-asan/,$(CORE_OBJ))
+ATT_OBJ_ASAN             = $(addprefix build-asan/,$(ATT_OBJ))
+GATT_SERVER_OBJ_ASAN     = $(addprefix build-asan/,$(GATT_SERVER_OBJ))
+SM_OB_ASAN               = $(addprefix build-asan/,$(SM_OB))
+MESH_OBJ_ASAN            = $(addprefix build-asan/,$(MESH_OBJ))
 
-mesh_message_test: mesh_message_test.cpp mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
-	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
+TESTS_SRCS = mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
+EXAMPLES =   mesh_pts provisioner sniffer
 
-sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} main.o mesh_keys.o mesh_network.o mesh_foundation.o sniffer.c 
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o
-	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
+all:   $(addprefix build-asan/,$(EXAMPLES))
+tests: $(addprefix build-asan/,$(TESTS_SRCS))
 
-provisioning_provisioner_test: provisioning_provisioner_test.cpp uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o
-	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
+build-%:
+	mkdir -p $@
 
-mesh_configuration_composition_data_message_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${MESH_OBJ} mesh_configuration_composition_data_message_test.cpp 
-	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@
 
-EXAMPLES = mesh_pts provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_message_test mesh_configuration_composition_data_message_test
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) ${CPPFLAGS} $< -o $@
 
-all: ${EXAMPLES}
+build-coverage/%.o: %.cpp | build-coverage
+	${CC} -c $(CFLAGS_COVERAGE) ${CPPFLAGS} $< -o $@
 
-test: mesh_message_test provisioning_device_test provisioning_provisioner_test mesh_configuration_composition_data_message_test
+build-asan/%.o: %.c | build-asan
+	${CC} -c $(CFLAGS_ASAN) ${CPPFLAGS} $< -o $@
+
+build-asan/%.o: %.cpp | build-asan
+	${CC} -c $(CFLAGS_ASAN) ${CPPFLAGS} $< -o $@
+
+
+build-asan/mesh_pts: mesh_pts.h ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${GATT_SERVER_OBJ_ASAN} ${SM_OBJ_ASAN} ${MESH_OBJ_ASAN} build-asan/main.o build-asan/mesh_pts.o
+	${CC} $(filter-out mesh_pts.h,$^) ${LDFLAGS_ASAN} -o $@
+
+build-asan/provisioner: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${SM_OBJ_ASAN} build-asan/main.o build-asan/pb_adv.o build-asan/mesh_crypto.o build-asan/provisioning_provisioner.o build-asan/mesh_keys.o build-asan/mesh_foundation.o build-asan/mesh_network.o build-asan/provisioner.o
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+build-asan/sniffer: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${SM_OBJ_ASAN} build-asan/main.o build-asan/mesh_keys.o build-asan/mesh_network.o build-asan/mesh_foundation.o build-asan/sniffer.o
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+
+build-asan/mesh_message_test: $(addprefix build-asan/, mesh_message_test.o mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o) | build-asan
+	g++ $^ ${CFLAGS} ${LDFLAGS_ASAN} -o $@
+
+build-asan/provisioning_device_test:  $(addprefix build-asan/, provisioning_device_test.o uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o) | build-asan
+	${CC_UNIT} ${LDFLAGS_ASAN} $^ -lCppUTest -lCppUTestExt -o $@	
+
+build-asan/provisioning_provisioner_test:  $(addprefix build-asan/, provisioning_provisioner_test.o uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o) | build-asan
+	${CC_UNIT} ${LDFLAGS_ASAN} $^ -lCppUTest -lCppUTestExt -o $@
+
+build-asan/mesh_configuration_composition_data_message_test: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${MESH_OBJ_ASAN} build-asan/mesh_configuration_composition_data_message_test.o | build-asan
+	${CC_UNIT} ${LDFLAGS_ASAN} $^ -lCppUTest -lCppUTestExt -o $@
+
+
+test: tests
 	# Ignore leaks in mesh message test as tests stop before all PDUs are fully processed
-	ASAN_OPTIONS=detect_leaks=0 ./mesh_message_test
-	./provisioning_device_test
-	./provisioning_provisioner_test
-	./mesh_configuration_composition_data_message_test
+	ASAN_OPTIONS=detect_leaks=0 build-asan/mesh_message_test
+	build-asan/provisioning_device_test
+	build-asan/provisioning_provisioner_test
+	build-asan/mesh_configuration_composition_data_message_test
+
+coverage: tests
+	rm -f build-coverage/*.gcda
+	@echo "no coverage here"
 
 clean:
-	rm -f  *.o *.out *.exe
-	rm -rf *.dSYM
-	rm -f ${EXAMPLES}
-	rm -f  mesh_provisioning_device.h
-	rm -f *.gcno *.gcda
-	
+	rm -rf build-coverage build-asan

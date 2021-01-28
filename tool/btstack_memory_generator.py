@@ -95,6 +95,12 @@ extern "C" {
  */
 void btstack_memory_init(void);
 
+/**
+ * @brief Deinitialize BTstack memory pools
+ * @note if HAVE_MALLOC is defined, all previously allocated buffers are free'd
+ */
+void btstack_memory_deinit(void);
+
 /* API_END */
 """
 
@@ -122,9 +128,49 @@ cfile_header_begin = """
 
 #include "btstack_memory.h"
 #include "btstack_memory_pool.h"
+#include "btstack_debug.h"
 
 #include <stdlib.h>
 
+#ifdef HAVE_MALLOC
+typedef struct btstack_memory_buffer {
+    struct btstack_memory_buffer * next;
+    struct btstack_memory_buffer * prev;
+} btstack_memory_buffer_t;
+
+static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
+
+static void btstack_memory_tracking_add(btstack_memory_buffer_t * buffer){
+    btstack_assert(buffer != NULL);
+    btstack_memory_malloc_buffers = buffer;
+    buffer->prev = NULL;
+    buffer->next = btstack_memory_malloc_buffers;
+    btstack_memory_malloc_buffers = buffer;
+}
+
+static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
+    btstack_assert(buffer != NULL);
+    if (buffer->prev == NULL){
+        // first item
+        btstack_memory_malloc_buffers = buffer->next;
+    } else {
+        buffer->prev->next = buffer->next;
+    }
+    if (buffer->next != NULL){
+        buffer->next->prev = buffer->prev;
+    }
+}
+#endif
+
+void btstack_memory_deinit(void){
+#ifdef HAVE_MALLOC
+    while (btstack_memory_malloc_buffers != NULL){
+        btstack_memory_buffer_t * buffer = btstack_memory_malloc_buffers;
+        btstack_memory_malloc_buffers = buffer->next;
+        free(buffer);
+    }
+#endif
+}
 """
 
 header_template = """STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void);
@@ -159,20 +205,30 @@ STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
     return NULL;
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
-    // silence compiler warning about unused parameter in a portable way
-    (void) STRUCT_NAME;
+    UNUSED(STRUCT_NAME);
 };
 #endif
 #elif defined(HAVE_MALLOC)
+
+typedef struct {
+    STRUCT_NAME_t data;
+    btstack_memory_buffer_t tracking;
+} btstack_memory_STRUCT_NAME_t;
+
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
-    void * buffer = malloc(sizeof(STRUCT_TYPE));
+    btstack_memory_STRUCT_NAME_t * buffer = (btstack_memory_STRUCT_NAME_t *) malloc(sizeof(btstack_memory_STRUCT_NAME_t));
     if (buffer){
-        memset(buffer, 0, sizeof(STRUCT_TYPE));
+        memset(buffer, 0, sizeof(STRUCT_NAME_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
     }
-    return (STRUCT_NAME_t *) buffer;
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
-    free(STRUCT_NAME);
+    btstack_memory_STRUCT_NAME_t * buffer =  (btstack_memory_STRUCT_NAME_t *) STRUCT_NAME;
+    btstack_memory_tracking_remove(&buffer->tracking);
+    free(buffer);
 }
 #endif
 """

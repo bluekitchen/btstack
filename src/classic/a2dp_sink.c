@@ -162,6 +162,14 @@ void a2dp_sink_init(void){
     avdtp_sink_init();
 }
 
+void a2dp_sink_deinit(void){
+    avdtp_sink_deinit();
+
+    outgoing_active = false;
+    a2dp_sink_cid = 0;
+    stream_endpoint_configured = false;
+}
+
 avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
 														   uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
 														   uint8_t * codec_configuration, uint16_t codec_configuration_len){
@@ -207,6 +215,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
     uint8_t status;
     uint8_t local_seid;
     uint8_t signal_identifier;
+    bool reconfigure;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
@@ -214,7 +223,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             if (stream_endpoint_configured) return;
-            
+
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // only care for outgoing connections
@@ -229,18 +238,33 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             log_info("A2DP sink signaling connection established avdtp_cid 0x%02x", avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet));
             break;
 
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            if (stream_endpoint_configured) break;
-            stream_endpoint_configured = true;
-            a2dp_sink_cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
-            break;
-        
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
-            if (stream_endpoint_configured) break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION:
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION:
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
+            reconfigure = avdtp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet) != 0;
+            // accept configure if not configured and reconfigure if already configured
+            if (stream_endpoint_configured != reconfigure) break;
             stream_endpoint_configured = true;
             a2dp_sink_cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
-            a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION);
+            switch (packet[2]){
+                case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
+                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION);
+                    break;
+                case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION:
+                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION);
+                    break;
+                case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION:
+                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION);
+                    break;
+                case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION:
+                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION);
+                    break;
+                case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
+                    a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
+                    break;
+            }
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
@@ -303,6 +327,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
             if (stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet)) break;
+
+            stream_endpoint_configured = false;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;

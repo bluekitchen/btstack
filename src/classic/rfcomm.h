@@ -429,6 +429,11 @@ void      rfcomm_release_packet_buffer(void);
  */
 void rfcomm_enable_l2cap_ertm(void request_callback(rfcomm_ertm_request_t * request), void released_callback(uint16_t ertm_id));
 
+/**
+ * @brief De-Init RFCOMM
+ */
+void rfcomm_deinit(void);
+
 /* API_END */
 
 #if defined __cplusplus

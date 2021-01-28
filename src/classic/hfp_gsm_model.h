@@ -83,8 +83,10 @@ uint8_t hfp_gsm_clip_type(void);
 char *  hfp_gsm_clip_number(void);
 
 void hfp_gsm_init(void);
+void hfp_gsm_deinit(void);
 
 void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, const char * number);
+
 
 /* API_END */
 

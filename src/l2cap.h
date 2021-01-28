@@ -665,8 +665,6 @@ uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size);
  */
 uint8_t l2cap_le_disconnect(uint16_t cid);
 
-/* API_END */
-
 /**
  * @brief ERTM Set channel as busy.
  * @note Can be cleared by l2cap_ertm_set_ready
@@ -680,6 +678,13 @@ uint8_t l2cap_ertm_set_busy(uint16_t local_cid);
  * @param local_cid 
  */
 uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
+
+/**
+ * @brief De-Init L2CAP
+ */
+void l2cap_deinit(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

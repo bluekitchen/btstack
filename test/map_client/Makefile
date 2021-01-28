@@ -40,20 +40,26 @@ MAP = \
 	map_client.c \
 	map_server.c \
     
-MAP_OBJ = $(MAP:.c=.o)
+COMMON_OBJ = $(addprefix build-coverage/,$(COMMON:.c=.o))
+MAP_OBJ = $(addprefix build-coverage/,$(MAP:.c=.o))
+CORE_OBJ = $(addprefix build-coverage/,$(CORE:.c=.o))
 
 all: map_client_test
 
-map_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${MAP_OBJ} map_client_test.c 
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+build-%:
+	mkdir -p $@
 
+build-coverage/%.o: %.c | build-coverage
+	${CC} -c $(CFLAGS) ${CPPFLAGS} $< -o $@
+
+map_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${MAP_OBJ} map_client_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
 	./map_client_test
-		
+
 clean:
-	rm -f  map_client_test
 	rm -f  *.o
-	rm -rf *.dSYM
+	rm -rf *.dSYM build-coverage
 	rm -f *.gcno *.gcda
 	

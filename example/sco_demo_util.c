@@ -478,6 +478,12 @@ void sco_demo_set_codec(uint8_t codec){
 }
 
 void sco_demo_init(void){
+
+#ifdef ENABLE_CLASSIC_LEGACY_CONNECTIONS_FOR_SCO_DEMOS
+    printf("Disable BR/EDR Secure Connctions due to incompatibilities with SCO connections\n");
+    gap_secure_connections_enable(false);
+#endif
+
 	// status
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
     printf("SCO Demo: Sending and receiving audio via btstack_audio.\n");

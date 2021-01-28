@@ -448,8 +448,6 @@ typedef struct {
     int                     value_indication_handle;    
     btstack_timer_source_t  value_indication_timer;
 
-    att_connection_t        connection;
-
     btstack_linked_list_t   notification_requests;
     btstack_linked_list_t   indication_requests;
 
@@ -585,8 +583,12 @@ typedef struct {
     uint16_t le_max_tx_octets;
 #endif
 
+    // ATT Connection
+    att_connection_t att_connection;
+
     // ATT Server
     att_server_t    att_server;
+
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -671,7 +673,7 @@ typedef enum hci_init_state{
     HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
     HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
 
-    // SCO over HCI Broadcom
+    // Broadcom SCO Routing
     HCI_INIT_BCM_WRITE_SCO_PCM_INT,
     HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT,
 
@@ -774,7 +776,7 @@ typedef struct {
 
 #ifdef ENABLE_CLASSIC
     /* callback for reject classic connection */
-    int (*gap_classic_accept_callback)(bd_addr_t addr);
+    int (*gap_classic_accept_callback)(bd_addr_t addr, hci_link_type_t link_type);
 #endif
 
     // hardware error callback
@@ -1308,6 +1310,11 @@ uint8_t hci_get_allow_role_switch(void);
  * Get state
  */
 HCI_STATE hci_get_state(void);
+
+/**
+ * @brief De-Init HCI
+ */
+void hci_deinit(void);
 
 // setup test connections, used for fuzzing
 void hci_setup_test_connections_fuzz(void);

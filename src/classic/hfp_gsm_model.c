@@ -65,7 +65,7 @@
 #define HFP_GSM_MAX_CALL_NUMBER_SIZE 25
 
 static hfp_gsm_call_t gsm_calls[HFP_GSM_MAX_NR_CALLS]; 
-static hfp_callsetup_status_t callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
+static hfp_callsetup_status_t callsetup_status;
 
 static uint8_t clip_type;
 static char clip_number[HFP_GSM_MAX_CALL_NUMBER_SIZE];
@@ -147,7 +147,7 @@ static void free_call_slot(int index_in_table){
 }
 
 void hfp_gsm_init(void){
-    set_callsetup_status(HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS);
+    callsetup_status = HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS;
     clip_type = 0;
     memset(clip_number, 0, sizeof(clip_number));
     memset(last_dialed_number, 0, sizeof(last_dialed_number));
@@ -156,7 +156,10 @@ void hfp_gsm_init(void){
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
         free_call_slot(i);
     }
-} 
+}
+
+void hfp_gsm_deinit(void){
+}
 
 static int get_number_calls_with_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
     int i, count = 0;

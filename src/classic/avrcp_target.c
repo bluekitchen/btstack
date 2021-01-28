@@ -1024,9 +1024,9 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     uint16_t pos = 0; 
     l2cap_reserve_packet_buffer();
     uint8_t * packet = l2cap_get_outgoing_buffer();
-    uint16_t  size   = l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid);
 
-    btstack_assert((14 + value_len) <= size);
+    // value <= 8 ==> pdu <= 22 < L2CAP Default MTU
+    btstack_assert((14 + value_len) <= l2cap_get_remote_mtu_for_local_cid(connection->l2cap_signaling_cid));
 
     connection->packet_type = AVRCP_SINGLE_PACKET;
     packet[pos++] = (connection->transaction_id << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
@@ -1178,6 +1178,10 @@ void avrcp_target_init(void){
     avrcp_target_context.role = AVRCP_TARGET;
     avrcp_target_context.packet_handler = avrcp_target_packet_handler;
     avrcp_register_target_packet_handler(&avrcp_target_packet_handler);
+}
+
+void avrcp_target_deinit(void){
+    memset(&avrcp_target_context, 0, sizeof(avrcp_context_t));
 }
 
 void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){

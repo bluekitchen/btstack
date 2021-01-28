@@ -1068,6 +1068,10 @@ void avrcp_controller_init(void){
     avrcp_register_controller_packet_handler(&avrcp_controller_packet_handler);
 }
 
+void avrcp_controller_deinit(void){
+    memset(&avrcp_controller_context, 0, sizeof(avrcp_context_t));
+}
+
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     avrcp_controller_context.avrcp_callback = callback;

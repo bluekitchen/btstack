@@ -8,8 +8,41 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased
 
+### Added
 ### Fixed
+### Changed
+
+
+## Release v1.3
+
+### Added
+CC256x: with ENABLE_CC256X_ASSISTED_HFP, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
+BCM: with ENABLE_BCM_PCM_WBS, HFP enables WBS codec on demand and configures PCM/I2S interface for 8kH/16kHz
+SDP Client RFCOMM: add `sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid`
+HFP: `ENABLE_HFP_AT_MESSAGES` lets HFP emit  `HFP_SUBEVENT_AT_MESSAGE_SENT` and `HFP_SUBEVENT_AT_MESSAGE_RECEIVED`
+A2DP, AVDTP: provide capabilities and configuration events for A2DP codecs: SBC, MPEG Audio, MPEG AAC, ATRAC
+A2DP + AVDTP Source: allow to send media packet with `avdtp_source_stream_send_media_packet` and `a2dp_source_stream_send_media_packet`
+A2DP + AVDTP Source: add `avdtp_source_stream_send_media_payload_rtp` and `a2dp_source_stream_send_media_payload_rtp`
+A2DP Source: emit `A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE`
+A2DP Source: allow to configure endpoints by calling `a2dp_source_set_config_{TYPE}` during SEP discovery with SBC fallback
+
+### Fixed
+HCI: keep `le connecting request` on connection complete active, fixes gap_auto_connection_stop() + gap_auto_connection_start()
 L2CAP: fix packet size check for incoming classic basic channels (regression introduced in v1.2.1)
+HFP AG/HSP AG: avoid connecting to remote service with same role
+A2DP Source: support multiple Stream Endpoints with different Media Codec types
+A2DP Source: emit codec configure event with reconfigure flag set on reconfigure
+GATT Compiler: support multiple instances of the same service
+
+### Changed
+GAP: provide Link Type parameter to incoming connection filter for `gap_register_classic_connection_filter`
+HFP/GOEP Client/AVDTP/A2DP: return `SDP_SERVICE_NOT_FOUND` if no suitable SDP record is found
+AVDTP Source: `avdtp_source_stream_send_media_payload` includes SBC Header and was deprecated
+AVDTP/A2DP: use `avdtp_channel_mode_t` in `A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION`
+A2DP: fix events and use `a2dp_cid`, `local_seid,` `remote_seid` field names in A2DP sub-events
+GATT Client: Skip MTU exchange after MTU exchange on ATT Server
+Ports: STM32-F103RB Nucleo + CC256x port removed
+ESP32: enabled HFP Wide-Band Speech, disable classic secure connections in HSP/HFP demos
 
 
 ## Release v1.2.1

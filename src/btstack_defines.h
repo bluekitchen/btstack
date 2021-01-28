@@ -1672,6 +1672,20 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
 
+/**
+ * @format 1T
+ * @param subevent_code
+ * @param command
+ */
+#define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1B
+
+/**
+ * @format 1T
+ * @param subevent_code
+ * @param command
+ */
+#define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C
+
 // ANCS Client
 
 /**
@@ -1775,6 +1789,51 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x07
 
 /**
+ * @format 12111111112
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param layer_bitmap
+ * @param crc
+ * @param channel_mode_bitmap
+ * @param media_payload_format
+ * @param sampling_frequency_bitmap
+ * @param vbr
+ * @param bit_rate_index_bitmap
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY   0x08
+
+/**
+ * @format 121112131
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param object_type_bitmap
+ * @param sampling_frequency_bitmap
+ * @param channels_bitmap
+ * @param bit_rate
+ * @param vbr
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY     0x09
+
+/**
+ * @format 1211111132
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param version
+ * @param channel_mode_bitmap
+ * @param sampling_frequency_bitmap
+ * @param vbr
+ * @param bit_rate_index_bitmap
+ * @param maximum_sul
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x0A
+
+/**
  * @format 12112LV
  * @param subevent_code
  * @param avdtp_cid
@@ -1784,7 +1843,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x08
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x0B
 
 
 /**
@@ -1793,7 +1852,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY        0x09
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY         0x0C
 
 
 /**
@@ -1802,7 +1861,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0A
+#define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0D
 
 
 /**
@@ -1814,7 +1873,7 @@ typedef uint8_t sm_key_t[16];
  * @param maximum_recovery_window_size
  * @param maximum_number_media_packets
  */
-#define AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY        0x0B
+#define AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY        0x0E
 
 
 /**
@@ -1826,7 +1885,7 @@ typedef uint8_t sm_key_t[16];
  * @param cp_type_value_len
  * @param cp_type_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY        0x0C
+#define AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY        0x0F
 
 
 /**
@@ -1843,7 +1902,7 @@ typedef uint8_t sm_key_t[16];
  * @param tcid_2
  * @param tcid_3
  */
-#define AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY        0x0D
+#define AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY        0x10
 
 
 /**
@@ -1852,7 +1911,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x0E
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x11
 
 
 /**
@@ -1864,7 +1923,15 @@ typedef uint8_t sm_key_t[16];
  * @param media
  * @param recovery
  */
-#define AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY        0x0F
+#define AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY        0x12
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param remote_seid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x13
 
 
 /**
@@ -1884,7 +1951,60 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x10
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x14
+
+/**
+ * @format 12111111111211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param layer
+ * @param crc
+ * @param channel_mode
+ * @param num_channels
+ * @param media_payload_format
+ * @param sampling_frequency
+ * @param vbr
+ * @param bit_rate_index
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x15
+
+/**
+ * @format 12111113131
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param object_type
+ * @param sampling_frequency
+ * @param num_channels
+ * @param bit_rate
+ * @param vbr
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION     0x16
+
+/**
+ * @format 1211111112112
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param version
+ * @param channel_mode
+ * @param num_channels
+ * @param sampling_frequency
+ * @param vbr
+ * @param bit_rate_index
+ * @param maximum_sul
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x17
 
 /**
  * @format 1211112LV
@@ -1898,7 +2018,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x11
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x18
 
 /**
  * @format 12B111
@@ -1909,7 +2029,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_seid
  * @param status 0 == OK
  */
-#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x12
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x19
 
 /**
  * @format 121
@@ -1917,7 +2037,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param local_seid
  */
-#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x13
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x1A
 
 /**
  * @format 1212
@@ -1926,15 +2046,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param sequence_number
  */
-#define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x14
-
-/**
- * @format 121
- * @param subevent_code
- * @param avdtp_cid
- * @param remote_seid
- */
-#define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE           0x15
+#define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x1B
 
 
 /**
@@ -1942,7 +2054,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param avdtp_cid
  */
-#define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x16
+#define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x1C
 
 /**
  * @format 1212
@@ -1951,7 +2063,8 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param delay_100us
  */
-#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT               0x17
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT               0x1D
+
 
 /** A2DP Subevent */
 /* Stream goes through following states:
@@ -1977,8 +2090,8 @@ typedef uint8_t sm_key_t[16];
  * @format 12111121111111
  * @param subevent_code
  * @param a2dp_cid
- * @param int_seid
- * @param acp_seid
+ * @param local_seid
+ * @param remote_seid
  * @param reconfigure
  * @param media_type
  * @param sampling_frequency
@@ -1993,21 +2106,74 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION      0x02
 
 /**
+ * @format 12111111111211
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param layer
+ * @param crc
+ * @param channel_mode
+ * @param num_channels
+ * @param media_payload_format
+ * @param sampling_frequency
+ * @param vbr
+ * @param bit_rate_index
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION   0x03
+
+/**
+ * @format 12111113131
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param object_type
+ * @param sampling_frequency
+ * @param num_channels
+ * @param bit_rate
+ * @param vbr
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION     0x04
+
+/**
+ * @format 1211111112112
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param reconfigure
+ * @param media_type
+ * @param version
+ * @param channel_mode
+ * @param num_channels
+ * @param sampling_frequency
+ * @param vbr
+ * @param bit_rate_index
+ * @param maximum_sul
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION        0x05
+
+/**
  * @format 1211112LV
  * @param subevent_code
  * @param a2dp_cid
- * @param int_seid
- * @param acp_seid
+ * @param local_seid
+ * @param remote_seid
  * @param reconfigure
  * @param media_type
  * @param media_codec_type
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x03
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x06
 
 /**
- * @format 12B111          Stream is opened byt not started.
+ * @format 12B111          Stream is opened but not started.
  * @param subevent_code 
  * @param a2dp_cid
  * @param bd_addr
@@ -2015,7 +2181,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_seid
  * @param status
  */
-#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x04
+#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x07
 
 /**
  * @format 121            Indicates that media transfer is started.
@@ -2023,7 +2189,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_STARTED                               0x05
+#define A2DP_SUBEVENT_STREAM_STARTED                               0x08
 
 /**
  * @format 121           Stream is paused.
@@ -2031,15 +2197,15 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x06
+#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x09
 
 /**
- * @format 121           Stream is stoped or aborted.
+ * @format 121           Stream is stopped or aborted.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_STOPPED                                0x07
+#define A2DP_SUBEVENT_STREAM_STOPPED                                0x0A
 
 /**
  * @format 121            Stream is released.
@@ -2047,7 +2213,7 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_RELEASED                               0x08
+#define A2DP_SUBEVENT_STREAM_RELEASED                               0x0B
 
 /**
  * @format 1211
@@ -2056,7 +2222,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x09
+#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x0C
 
 /**
  * @format 1211
@@ -2065,7 +2231,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier 
  */
-#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0A
+#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0D
 
 /**
  * @format 12B21
@@ -2075,14 +2241,14 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param status 0 == OK
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0B
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0E
 
 /**
  * @format 12            Signaling channel is released.
  * @param subevent_code
  * @param a2dp_cid
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0C
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0F
 
 /**
  * @format 1211          Stream was reconfigured
@@ -2091,35 +2257,114 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param status
  */
-#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
+#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x10
 
 /**
- * @format 1211
+ * @format 12111111111
  * @param subevent_code
- * @param avdtp_cid
- * @param local_seid
+ * @param a2dp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param sampling_frequency_bitmap
+ * @param channel_mode_bitmap
+ * @param block_length_bitmap
+ * @param subbands_bitmap
+ * @param allocation_method_bitmap
+ * @param min_bitpool_value
+ * @param max_bitpool_value
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY          0x11
+
+/**
+ * @format 12111111112
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param layer_bitmap
+ * @param crc
+ * @param channel_mode_bitmap
+ * @param media_payload_format
+ * @param sampling_frequency_bitmap
+ * @param vbr
+ * @param bit_rate_index_bitmap
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY   0x12
+
+/**
+ * @format 121112131
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param object_type_bitmap
+ * @param sampling_frequency_bitmap
+ * @param channels_bitmap
+ * @param bit_rate
+ * @param vbr
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY     0x13
+
+/**
+ * @format 1211111132
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param version
+ * @param channel_mode_bitmap
+ * @param sampling_frequency_bitmap
+ * @param vbr
+ * @param bit_rate_index_bitmap
+ * @param maximum_sul
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY        0x14
+
+/**
+ * @format 12112LV
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param remote_seid
+ * @param media_type
+ * @param media_codec_type
+ * @param media_codec_information_len
+ * @param media_codec_information
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x15
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param a2dp_cid
  * @param remote_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x0E
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x16
 
 
 /**
  * @format 1212
  * @param subevent_code
- * @param avdtp_cid
+ * @param a2dp_cid
  * @param local_seid
  * @param delay_100us
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x0F
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x17
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
- * @param avdtp_cid
- * @param local_seid
+ * @param a2dp_cid
  * @param remote_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x10
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x18
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param a2dp_cid
+ */
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_COMPLETE                0x19
+
 
 /** AVRCP Subevent */
 

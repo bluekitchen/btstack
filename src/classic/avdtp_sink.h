@@ -177,6 +177,11 @@ uint8_t avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t local_seid);
  */
 uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_100us);
 
+/**
+ * @brief De-Init AVDTP Sink.
+ */
+void avdtp_sink_deinit(void);
+
 // AVDTP_SI_DELAYREPORT
 
 /* API_END */

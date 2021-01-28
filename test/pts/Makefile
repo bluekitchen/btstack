@@ -129,6 +129,9 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # use pkg-config for portaudio
 CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO 
 LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+# use pkg-config for fdk-aac
+CFLAGS  += $(shell pkg-config fdk-aac --cflags) -DHAVE_AAC_FDK
+LDFLAGS += $(shell pkg-config fdk-aac --libs)
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
@@ -248,3 +251,5 @@ clean: myclean
 
 test:
 	echo "No unit tests in PTS"
+coverage: all
+	echo "No coverage tests in PTS"

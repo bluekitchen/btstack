@@ -72,22 +72,29 @@
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // registered service records
-static btstack_linked_list_t sdp_service_records = NULL;
+static btstack_linked_list_t sdp_service_records;
 
 // our handles start after the reserved range
-static uint32_t sdp_next_service_record_handle = ((uint32_t) maxReservedServiceRecordHandle) + 2;
+static uint32_t sdp_next_service_record_handle;
 
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
-static uint16_t l2cap_cid = 0;
-static uint16_t sdp_response_size = 0;
+static uint16_t l2cap_cid;
+static uint16_t sdp_response_size;
 static uint16_t l2cap_waiting_list_cids[SDP_WAITING_LIST_MAX_COUNT];
 static int      l2cap_waiting_list_count;
 
 void sdp_init(void){
+    l2cap_cid = 0;
+    l2cap_waiting_list_count = 0;
+    sdp_service_records = NULL;
+    sdp_next_service_record_handle = ((uint32_t) maxReservedServiceRecordHandle) + 2;
+    sdp_response_size = 0;
     // register with l2cap psm sevices - max MTU
     l2cap_register_service(sdp_packet_handler, BLUETOOTH_PSM_SDP, 0xffff, LEVEL_0);
-    l2cap_waiting_list_count = 0;
+}
+
+void sdp_deinit(void){
 }
 
 uint32_t sdp_get_service_record_handle(const uint8_t * record){

@@ -1377,6 +1377,16 @@ const hci_cmd_t hci_le_set_phy = {
 // Broadcom / Cypress specific HCI commands
 
 /**
+ * @brief Enable Wide-Band Speech / mSBC decoding for PCM
+ * @param enable_wbs is 0 for disable, 1 for enable
+ * @param uuid_wbs is 2 for EV2/EV3
+ */
+const hci_cmd_t hci_bcm_enable_wbs = {
+        HCI_OPCODE_HCI_BCM_ENABLE_WBS, "12"
+        // return: status
+};
+
+/**
  * @brief Configure SCO Routing (BCM)
  * @param sco_routing is 0 for PCM, 1 for Transport, 2 for Codec and 3 for I2S
  * @param pcm_interface_rate is 0 for 128KBps, 1 for 256 KBps, 2 for 512KBps, 3 for 1024KBps, and 4 for 2048Kbps
@@ -1388,6 +1398,20 @@ const hci_cmd_t hci_bcm_write_sco_pcm_int = {
     HCI_OPCODE_HCI_BCM_WRITE_SCO_PCM_INT, "11111"
     // return: status
 };
+
+/**
+ * @brief Configure the I2S/PCM interface (BCM)
+ * @param i2s_enable is 0 for off, 1 for on
+ * @param is_master is 0 for slave, is 1 for master
+ * @param sample_rate is 0 for 8 kHz, 1 for 16 kHz, 2 for 4 kHz
+ * @param clock_rate is 0 for 128 kz, 1 for 256 kHz, 2 for 512 khz, 3 for 1024 kHz, 4 for 2048 khz
+ * @param clock_mode is 0 for slabe and 1 for master
+ */
+const hci_cmd_t hci_bcm_write_i2spcm_interface_param = {
+        HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM, "1111"
+        // return: status
+};
+
 
 /**
  * @brief Activates selected Sleep Mode
@@ -1455,4 +1479,61 @@ const hci_cmd_t hci_ti_drpb_tester_con_tx = {
  */
 const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
     0xFD85, "1111112112"
+};
+
+/**
+ * @brief This command is used to associate the requested ACL handle with Wide Band Speech configuration.
+ * @param enable 0=disable, 1=enable
+ * @param a3dp_role (NL5500, WL128x only) 0=source,1=sink
+ * @param code_upload (NL5500, WL128x only) 0=do not load a3dp code, 1=load a3dp code
+ * @param reserved for future use
+ */
+const hci_cmd_t hci_ti_avrp_enable = {
+        0xFD92, "1112"
+};
+
+/**
+ * @brief This command is used to associate the requested ACL handle with Wide Band Speech configuration.
+ * @param acl_con_handle
+ */
+const hci_cmd_t hci_ti_wbs_associate = {
+        0xFD78, "H"
+};
+
+/**
+ * @brief This command is used to disassociate Wide Band Speech configuration from any ACL handle.
+ */
+const hci_cmd_t hci_ti_wbs_disassociate = {
+        0xFD79, ""
+};
+
+/**
+ * @brief This command configures the codec interface parameters and the PCM clock rate, which is relevant when
+          the Bluetooth core generates the clock. This command must be used by the host to use the PCM
+          interface.
+ * @param clock_rate in kHz
+ * @param clock_direction 0=master/output, 1=slave/input
+ * @param frame_sync_frequency in Hz
+ * @param frame_sync_duty_cycle 0=50% (I2S Format), 0x0001-0xffff number of cycles of PCM clock
+ * @param frame_sync_edge 0=driven/sampled at rising edge, 1=driven/sampled at falling edge of PCM clock
+ * @param frame_sync_polariy 0=active high, 1=active low
+ * @param reserved1
+ * @param channel_1_data_out_size sample size in bits
+ * @param channel_1_data_out_offset number of PCM clock cycles between rising of frame sync and data start
+ * @param channel_1_data_out_edge 0=data driven at rising edge, 1=data driven at falling edge of PCM clock
+ * @param channel_1_data_in_size sample size in bits
+ * @param channel_1_data_in_offset number of PCM clock cycles between rising of frame sync and data start
+ * @param channel_1_data_in_edge 0=data sampled at rising edge, 1=data sampled at falling edge of PCM clock
+ * @param fsync_multiplier this field is only relevant to CC256XB from service pack 0.2 !!! -> use 0x00
+ * @param channel_2_data_out_size sample size in bits
+ * @param channel_2_data_out_offset number of PCM clock cycles between rising of frame sync and data start
+ * @param channel_2_data_out_edge 0=data driven at rising edge, 1=data driven at falling edge of PCM clock
+ * @param channel_2_data_in_size sample size in bits
+ * @param channel_2_data_in_offset number of PCM clock cycles between rising of frame sync and data start
+ * @param channel_2_data_in_edge 0=data sampled at rising edge, 1=data sampled at falling edge of PCM clock
+ * @param reserved2
+ *
+ */
+const hci_cmd_t hci_ti_write_codec_config = {
+        0xFD06, "214211122122112212211"
 };

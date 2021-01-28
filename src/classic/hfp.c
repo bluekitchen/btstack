@@ -59,67 +59,101 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+#if defined(ENABLE_CC256X_ASSISTED_HFP) && !defined(ENABLE_SCO_OVER_PCM)
+#error "Assisted HFP is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
+#if defined(ENABLE_BCM_PCM_WBS) && !defined(ENABLE_SCO_OVER_PCM)
+#error "WBS for PCM is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
+#endif
+
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
 
+typedef struct {
+    hfp_role_t local_role;
+    bd_addr_t  remote_address;
+} hfp_sdp_query_context_t;
+
+// globals
+
+static hfp_sdp_query_context_t sdp_query_context;
+static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
+
+static btstack_linked_list_t hfp_connections ;
+
+static btstack_packet_handler_t hfp_hf_callback;
+static btstack_packet_handler_t hfp_ag_callback;
+
+static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
+static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
+
+static hfp_connection_t * sco_establishment_active;
+
+static uint16_t hfp_allowed_sco_packet_types;
+
+// prototypes
+static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
+static void parse_sequence(hfp_connection_t * context);
+
 
 static const char * hfp_hf_features[] = {
-    "EC and/or NR function",
-    "Three-way calling",
-    "CLI presentation capability",
-    "Voice recognition activation",
-    "Remote volume control",
+        "EC and/or NR function",
+        "Three-way calling",
+        "CLI presentation capability",
+        "Voice recognition activation",
+        "Remote volume control",
 
-    "Enhanced call status",
-    "Enhanced call control",
-    
-    "Codec negotiation",
-    
-    "HF Indicators",
-    "eSCO S4 (and T2) Settings Supported",
-    "Reserved for future definition"
+        "Enhanced call status",
+        "Enhanced call control",
+
+        "Codec negotiation",
+
+        "HF Indicators",
+        "eSCO S4 (and T2) Settings Supported",
+        "Reserved for future definition"
 };
 
 static const char * hfp_ag_features[] = {
-    "Three-way calling",
-    "EC and/or NR function",
-    "Voice recognition function",
-    "In-band ring tone capability",
-    "Attach a number to a voice tag",
-    "Ability to reject a call",
-    "Enhanced call status",
-    "Enhanced call control",
-    "Extended Error Result Codes",
-    "Codec negotiation",
-    "HF Indicators",
-    "eSCO S4 (and T2) Settings Supported",
-    "Reserved for future definition"
+        "Three-way calling",
+        "EC and/or NR function",
+        "Voice recognition function",
+        "In-band ring tone capability",
+        "Attach a number to a voice tag",
+        "Ability to reject a call",
+        "Enhanced call status",
+        "Enhanced call control",
+        "Extended Error Result Codes",
+        "Codec negotiation",
+        "HF Indicators",
+        "eSCO S4 (and T2) Settings Supported",
+        "Reserved for future definition"
 };
 
 static const char * hfp_enhanced_call_dir[] = {
-    "outgoing",
-    "incoming"
+        "outgoing",
+        "incoming"
 };
 
 static const char * hfp_enhanced_call_status[] = {
-    "active",
-    "held",
-    "outgoing dialing",
-    "outgoing alerting",
-    "incoming",
-    "incoming waiting",
-    "call held by response and hold"
+        "active",
+        "held",
+        "outgoing dialing",
+        "outgoing alerting",
+        "incoming",
+        "incoming waiting",
+        "call held by response and hold"
 };
 
 static const char * hfp_enhanced_call_mode[] = {
-    "voice",
-    "data",
-    "fax"
+        "voice",
+        "data",
+        "fax"
 };
 
 static const char * hfp_enhanced_call_mpty[] = {
-    "not a conference call",
-    "conference call"
+        "not a conference call",
+        "conference call"
 };
 
 const char * hfp_enhanced_call_dir2str(uint16_t index){
@@ -141,34 +175,6 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index){
     if (index <= HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL) return hfp_enhanced_call_mpty[index];
     return "not defined";
 }
-
-typedef struct {
-    hfp_role_t local_role;
-    bd_addr_t  remote_address;
-} hfp_sdp_query_context_t;
-
-static hfp_sdp_query_context_t sdp_query_context;
-static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
-
-static void parse_sequence(hfp_connection_t * context);
-
-static btstack_linked_list_t hfp_connections = NULL;
-
-static btstack_packet_handler_t hfp_hf_callback;
-static btstack_packet_handler_t hfp_ag_callback;
-
-static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
-static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
-
-static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
-
-static hfp_connection_t * sco_establishment_active;
-
-// HFP_SCO_PACKET_TYPES_NONE == no choice/override
-static uint16_t hfp_allowed_sco_packet_types;
-
-// prototypes
-static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 
 static uint16_t hfp_parse_indicator_index(hfp_connection_t * hfp_connection){
     uint16_t index = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -233,6 +239,10 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     if (err){
         log_error("rfcomm_send -> error 0x%02x \n", err);
     } 
+#ifdef ENABLE_HFP_AT_MESSAGES
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(cid);
+    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, command);
+#endif
     return 1;
 }
 
@@ -610,8 +620,13 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
             } else {
                 hfp_connection->state = HFP_IDLE;
-                hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
-                log_info("rfcomm service not found, status 0x%02x", sdp_event_query_complete_get_status(packet));
+                uint8_t status = sdp_event_query_complete_get_status(packet);
+                if (status == ERROR_CODE_SUCCESS){
+                    // report service not found
+                    status = SDP_SERVICE_NOT_FOUND;
+                }
+                hfp_emit_slc_connection_event(hfp_connection, status, HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+                log_info("rfcomm service not found, status 0x%02x", status);
             }
 
             // register the SDP Query request to check if there is another connection waiting for the query
@@ -692,10 +707,14 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     } else {
                         hfp_connection->hf_accept_sco = 1;
                     }
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+                    hfp_cc256x_prepare_for_sco(hfp_connection);
+#endif
+#ifdef ENABLE_BCM_PCM_WBS
+                    hfp_bcm_prepare_for_sco(hfp_connection);
+#endif
                     log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
                     sco_establishment_active = hfp_connection;
-                    if (!hfp_hf_run_for_context) break;
-                    (*hfp_hf_run_for_context)(hfp_connection);
                     break;
                 default:
                     break;                    
@@ -782,6 +801,12 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             if (!hfp_connection) break;
 
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+            hfp_connection->cc256x_send_wbs_disassociate = true;
+#endif
+#ifdef ENABLE_BCM_PCM_WBS
+            hfp_connection->bcm_send_disable_wbs = true;
+#endif
             hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
             hfp_connection->release_audio_connection = 0;
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -798,6 +823,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
     }
 }
+
 
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(packet_type);
@@ -1502,7 +1528,7 @@ static void hfp_handle_start_sdp_client_query(void * context){
         connection->state = HFP_W4_SDP_QUERY_COMPLETE;
         sdp_query_context.local_role = connection->local_role;
         (void)memcpy(sdp_query_context.remote_address, connection->remote_addr, 6);
-        sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
+        sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
         return;
     }
 }
@@ -1594,13 +1620,66 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-        sco_voice_setting = 0x0043; // Transparent data
+#ifdef ENABLE_BCM_PCM_WBS
+        sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
+#else
+        sco_voice_setting = 0x0043; // Transparent data, 8-bit otherwise
+#endif
     }
     // get packet types - bits 6-9 are 'don't allow'
     uint16_t packet_types = hfp_link_settings[setting].packet_types ^ 0x03c0;
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types);
 }
+
+#ifdef ENABLE_CC256X_ASSISTED_HFP
+void hfp_cc256x_prepare_for_sco(hfp_connection_t * hfp_connection){
+    hfp_connection->cc256x_send_write_codec_config = true;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        hfp_connection->cc256x_send_wbs_associate = true;
+    }
+}
+
+void hfp_cc256x_write_codec_config(hfp_connection_t * hfp_connection){
+    uint32_t sample_rate_hz;
+    uint16_t clock_rate_khz;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        clock_rate_khz = 512;
+        sample_rate_hz = 16000;
+    } else {
+        clock_rate_khz = 256;
+        sample_rate_hz = 8000;
+    }
+    uint8_t clock_direction = 0;        // master
+    uint16_t frame_sync_duty_cycle = 0; // i2s with 50%
+    uint8_t  frame_sync_edge = 1;       // rising edge
+    uint8_t  frame_sync_polarity = 0;   // active high
+    uint8_t  reserved = 0;
+    uint16_t size = 16;
+    uint16_t chan_1_offset = 1;
+    uint16_t chan_2_offset = chan_1_offset + size;
+    uint8_t  out_edge = 1;              // rising
+    uint8_t  in_edge = 0;               // falling
+    hci_send_cmd(&hci_ti_write_codec_config, clock_rate_khz, clock_direction, sample_rate_hz, frame_sync_duty_cycle,
+                 frame_sync_edge, frame_sync_polarity, reserved,
+                 size, chan_1_offset, out_edge, size, chan_1_offset, in_edge, reserved,
+                 size, chan_2_offset, out_edge, size, chan_2_offset, in_edge, reserved);
+}
+#endif
+
+#ifdef ENABLE_BCM_PCM_WBS
+void hfp_bcm_prepare_for_sco(hfp_connection_t * hfp_connection){
+    hfp_connection->bcm_send_write_i2spcm_interface_param = true;
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+        hfp_connection->bcm_send_enable_wbs = true;
+    }
+}
+void hfp_bcm_write_i2spcm_interface_param(hfp_connection_t * hfp_connection){
+    uint8_t sample_rate = (hfp_connection->negotiated_codec == HFP_CODEC_MSBC) ? 1 : 0;
+    // i2s enable, master, 8/16 kHz, 2048 kHz
+    hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, sample_rate, 4);
+}
+#endif
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
     hfp_hf_callback = callback;
@@ -1618,12 +1697,19 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
 }
 
-void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connection)){
-    hfp_hf_run_for_context = callback;
-}
-
 void hfp_init(void){
     hfp_allowed_sco_packet_types = SCO_PACKET_TYPES_ALL;
+}
+
+void hfp_deinit(void){
+    hfp_connections = NULL;
+    hfp_hf_callback = NULL;
+    hfp_ag_callback = NULL;
+    hfp_hf_rfcomm_packet_handler = NULL;
+    hfp_ag_rfcomm_packet_handler = NULL;
+    sco_establishment_active = NULL;
+    (void) memset(&sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
+    (void) memset(&hfp_handle_sdp_client_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
 
 void hfp_set_sco_packet_types(uint16_t packet_types){
