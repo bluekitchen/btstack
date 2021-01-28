@@ -48,6 +48,7 @@ SUBDIRS_BLE = \
 	ble_client \
 	btstack_memory \
 	crypto \
+	embedded \
 	gap \
 	gatt_client \
 	gatt_server \

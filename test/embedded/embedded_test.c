@@ -80,9 +80,13 @@ void hal_audio_source_close(void){}
 #define HEARTBEAT_PERIOD_MS 1000
 
 static btstack_timer_source_t heartbeat;
-
-static void heartbeat_timeout_handler(btstack_timer_source_t * timer){
-    UNUSED(timer);
+static btstack_data_source_t  data_source;
+static void heartbeat_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
+}
+static void data_source_handler(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(ds);
+    UNUSED(callback_type);
 }
 
 TEST_GROUP(Embedded){
@@ -92,6 +96,10 @@ TEST_GROUP(Embedded){
         btstack_memory_init();
         btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
         btstack_run_loop_set_timer_handler(&heartbeat, heartbeat_timeout_handler);
+    }
+    void teardown(void){
+        btstack_run_loop_deinit();
+        btstack_memory_deinit();
     }
 };
 
@@ -103,8 +111,19 @@ TEST(Embedded, Init){
     btstack_run_loop_embedded_trigger();
     btstack_run_loop_embedded_execute_once();
     btstack_run_loop_get_time_ms();
-
+    btstack_run_loop_timer_dump();
     btstack_run_loop_remove_timer(&heartbeat);
+    (void) btstack_run_loop_get_timer_context(&heartbeat);
+}
+
+TEST(Embedded, DataSource){
+    btstack_run_loop_set_data_source_handler(&data_source, &data_source_handler);
+    btstack_run_loop_set_data_source_fd(&data_source, 0);
+    btstack_run_loop_set_data_source_handle(&data_source, NULL);
+    btstack_run_loop_enable_data_source_callbacks(&data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_disable_data_source_callbacks(&data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&data_source);
+    btstack_run_loop_remove_data_source(&data_source);
 }
 
 int main (int argc, const char * argv[]){
