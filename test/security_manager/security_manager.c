@@ -18,7 +18,7 @@
 
 #include "hci_cmd.h"
 #include "btstack_util.h"
-
+#include "btstack_debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -168,8 +168,8 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	}
 }
 
-#define CHECK_HCI_COMMAND(packet) { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
-#define CHECK_ACL_PACKET(packet)  { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
+#define CHECK_HCI_COMMAND(packet) { log_info("check " #packet) ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
+#define CHECK_ACL_PACKET(packet)  { log_info("check " #packet) ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 
 static int parse_hex(uint8_t * buffer, const char * hex_string){
     int len = 0;
@@ -223,6 +223,7 @@ TEST_GROUP(SecurityManager){
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
         sm_event_callback_registration.callback = &app_packet_handler;
         sm_add_event_handler(&sm_event_callback_registration);
+        hci_dump_open("security_manager.pklg", HCI_DUMP_PACKETLOGGER);
     }
 };
 
