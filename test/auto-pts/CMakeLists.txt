@@ -18,6 +18,7 @@ include_directories(../../3rd-party/micro-ecc)
 # include_directories(../../3rd-party/hxcmod-player)
 # include_directories(../../3rd-party/hxcmod-player/mod)
 # include_directories(../../3rd-party/yxml)
+include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../chipset/zephyr)
 include_directories(../../src)
@@ -61,6 +62,7 @@ set(SOURCES
 	${SOURCES_UECC}
 #	${SOURCES_HXCMOD}
 	${SOURCES_ZEPHYR}
+	"../../3rd-party/rijndael/rijndael.c"
 )
 
 add_compile_options(--coverage)
