@@ -18,6 +18,18 @@ TEST(LinkedListEmpty, CountAll){
     CHECK_EQUAL(0, btstack_linked_list_count(&testList)); 
 }
 
+TEST(LinkedListEmpty, IsEmpty){
+    CHECK_EQUAL(true, btstack_linked_list_empty(&testList));
+}
+
+TEST(LinkedListEmpty, Addtail){
+    CHECK_EQUAL(true, btstack_linked_list_add_tail(&testList, &itemA));
+}
+
+TEST(LinkedListEmpty, RemoveNonExisting){
+    CHECK_EQUAL(false, btstack_linked_list_remove(&testList, &itemA));
+}
+
 TEST_GROUP(LinkedList){
     void setup(void){
         testList = NULL;
@@ -38,11 +50,25 @@ TEST(LinkedList, GetFirst){
     CHECK_EQUAL(item, &itemA);
 }
 
+TEST(LinkedList, GetLast){
+    btstack_linked_item_t * item;
+    item = btstack_linked_list_get_last_item(&testList);
+    CHECK_EQUAL(item, &itemD);
+}
+
 TEST(LinkedList, Pop){
     btstack_linked_item_t * item;
     item = btstack_linked_list_pop(&testList);
     CHECK_EQUAL(item, &itemA);
     CHECK_EQUAL(3, btstack_linked_list_count(&testList)); 
+}
+
+TEST(LinkedList, AddExisting){
+    CHECK_EQUAL( false, btstack_linked_list_add(&testList, &itemD));
+}
+
+TEST(LinkedList, AddTailExisting){
+CHECK_EQUAL( false, btstack_linked_list_add_tail(&testList, &itemD));
 }
 
 TEST(LinkedList, Iterator){
