@@ -122,7 +122,7 @@ coverage-sm-sc.info:
 	curl https://bluekitchen-gmbh.com/btstack/develop/coverage-sm-sc.info | sed "s|/Users/mringwal/buildbot-worker/test-develop-sm-sc/build|`realpath ..`|" > coverage-sm-sc.info
 
 
-coverage-unit.info: subdirs
+coverage-unit.info: subdirs-coverage
 	# delete trace data
 	find . -name "*.gcda" -type f -delete
 	# run tests
@@ -132,7 +132,7 @@ coverage-unit.info: subdirs
 	# demangle
 	python3 coverage_demangle.py coverage-unit.info
 
-coverage-unit-ble.info: subdirs
+coverage-unit-ble.info: subdirs-coverage-ble
 	# delete trace data
 	find . -name "*.gcda" -type f -delete
 	# run tests
@@ -177,5 +177,9 @@ coverage-unit-ble: coverage-unit-ble.info
 coverage-sm-sc: coverage-sm-sc.info
 	# generate html output
 	genhtml coverage-sm-sc.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-sm-sc
+
+coverage-pts: coverage-pts.info
+	# generate html output
+	genhtml coverage-pts.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-pts
 
 coverage: coverage-all coverage-ble coverage-bat
