@@ -256,14 +256,16 @@ TEST(SecurityManager, MainTest){
 #endif
 #endif
 	
+#ifndef ENABLE_SOFTWARE_AES128
     // expect le encrypt commmand
     CHECK_HCI_COMMAND(test_command_packet_01);
     aes128_report_result();
 
     // expect le encrypt commmand
     CHECK_HCI_COMMAND(test_command_packet_02);
-
     aes128_report_result();
+#endif
+
 	mock_clear_packet_buffer();
 
     mock_simulate_connected();
@@ -289,31 +291,38 @@ TEST(SecurityManager, MainTest){
     uint8_t rand2_data_event[] = { 0x0e, 0x0c,0x01, 0x18,0x20, 0x00,0x48, 0x3f,0x27, 0x0e,0xeb, 0xd5,0x05, 0x7a };
 	mock_simulate_hci_event(&rand2_data_event[0], sizeof(rand2_data_event));
 
-	// expect le encrypt command
+#ifdef ENABLE_SOFTWARE_AES128
+	// process sm_run_trigger()
+    btstack_run_loop_embedded_execute_once();
+#else
+    // expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_06);
-
     aes128_report_result();
 
     // expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_07);
-
     aes128_report_result();
+#endif
 
-    // expect send paring confirm command
+
+    // expect send pairing confirm command
     CHECK_ACL_PACKET(test_acl_packet_08);
 
     uint8_t test_pairing_random_command[] ={0x04, 0xfd, 0xd4, 0x06, 0x45, 0x0f, 0x1e, 0xdc, 0x84, 0xd5, 0x43, 0xac, 0xf7, 0x5e, 0xc0, 0x36, 0x29};
     mock_simulate_sm_data_packet(&test_pairing_random_command[0], sizeof(test_pairing_random_command));
 
+#ifdef ENABLE_SOFTWARE_AES128
+    // process sm_run_trigger()
+    btstack_run_loop_embedded_execute_once();
+#else
     // expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_09);
-
     aes128_report_result();
 
     // expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_10);
-
     aes128_report_result();
+#endif
 
     // expect send pairing random command
     CHECK_ACL_PACKET(test_acl_packet_11);
@@ -323,10 +332,14 @@ TEST(SecurityManager, MainTest){
 	uint8_t test_le_ltk_request[] = { 0x3e, 0x0d, 0x05, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 00 };
 	mock_simulate_hci_event(&test_le_ltk_request[0], sizeof(test_le_ltk_request));
 
+#ifdef ENABLE_SOFTWARE_AES128
+    // process sm_run_trigger()
+    btstack_run_loop_embedded_execute_once();
+#else
 	// expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_12);
-
     aes128_report_result();
+#endif
 
 	// expect le ltk reply
     CHECK_HCI_COMMAND(test_command_packet_13);
@@ -346,21 +359,23 @@ TEST(SecurityManager, MainTest){
     uint8_t rand4_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0xf1, 0xe2, 0xbf, 0x7d, 0x84, 0x19, 0x32, 0x8b };
 	mock_simulate_hci_event(&rand4_data_event[0], sizeof(rand4_data_event));
 
+#ifdef ENABLE_SOFTWARE_AES128
+    // process sm_run_trigger()
+    btstack_run_loop_embedded_execute_once();
+#else
 	// expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_16);
-
     aes128_report_result();
 
 	// expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_17);
-
     aes128_report_result();
 
 	// expect le encrypt command
     CHECK_HCI_COMMAND(test_command_packet_18);
-
     aes128_report_result();
-
+#endif
+    
     //
 	uint8_t num_completed_packets_event[] = { 0x13, 0x05, 0x01, 0x4a, 0x00, 0x01, 00 };
 

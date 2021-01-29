@@ -24,6 +24,7 @@
 #define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LE_SIGNED_WRITE
 #define ENABLE_SDP_EXTRA_QUERIES
+#define ENABLE_SOFTWARE_AES128
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 69
