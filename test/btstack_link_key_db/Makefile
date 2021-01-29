@@ -13,7 +13,7 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage

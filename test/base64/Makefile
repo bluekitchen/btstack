@@ -8,7 +8,7 @@ CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage

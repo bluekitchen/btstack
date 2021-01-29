@@ -46,7 +46,7 @@ CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POS
 # CFLAGS  += -D OCTAVE_OUTPUT
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address
+CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage

@@ -6,7 +6,6 @@
 #define BTSTACK_CONFIG_H
 
 // Port related features
-#define HAVE_ASSERT
 #define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
