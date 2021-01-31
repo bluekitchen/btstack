@@ -197,6 +197,7 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
     USBH_StatusTypeDef status;
     USBH_URBStateTypeDef urb_state;
     USB_Bluetooth_t * usb = (USB_Bluetooth_t *) phost->pActiveClass->pData;
+    uint16_t transfer_size;
     switch (usbh_out_state){
         case USBH_OUT_CMD:
             // just send HCI Reset naively
@@ -213,7 +214,8 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
             }
             break;
         case USBH_OUT_ACL_SEND:
-            USBH_BulkSendData(phost, (uint8_t *) acl_packet, acl_len, usb->acl_out_pipe, 0);
+            transfer_size = btstack_min(usb->acl_out_len, acl_len);
+            USBH_BulkSendData(phost, (uint8_t *) acl_packet, transfer_size, usb->acl_out_pipe, 1);
             usbh_out_state = USBH_OUT_ACL_POLL;
             break;
         case USBH_OUT_ACL_POLL:
@@ -225,9 +227,16 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
                     usbh_out_state = USBH_OUT_ACL_SEND;
                     break;
                 case USBH_URB_DONE:
-                    usbh_out_state = USBH_OUT_IDLE;
-                    // notify host stack
-                    (*usbh_packet_sent)();
+                    transfer_size = btstack_min(usb->acl_out_len, acl_len);
+                    acl_len -= transfer_size;
+                    if (acl_len == 0){
+                        usbh_out_state = USBH_OUT_IDLE;
+                        // notify host stack
+                        (*usbh_packet_sent)();
+                    } else {
+                        acl_packet += transfer_size;
+                        usbh_out_state = USBH_OUT_ACL_SEND;
+                    }
                     break;
                 default:
                     log_info("URB State ACL Out: %02x", urb_state);
