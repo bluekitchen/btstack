@@ -54,7 +54,7 @@ typedef struct {
     uint8_t event_in_ep;
     uint8_t event_in_pipe;
     uint16_t event_in_len;
-    uint32_t event_in_frame
+    uint32_t event_in_frame;
 } USB_Bluetooth_t;
 
 static enum {
@@ -299,7 +299,12 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
             }
             break;
         case USBH_URB_NOTREADY:
-            break;
+            // The original USB Host code re-submits the request when it receives a NAK, resulting in about 80% MCU load
+            // With our patch, NOTREADY is returned, which allows to re-submit the request in the next frame.
+            if (phost->Timer != usb->acl_in_frame){
+                status = usbh_bluetooth_start_acl_in_transfer(phost, usb);
+                btstack_assert(status == USBH_OK);
+            }            break;
         case USBH_URB_DONE:
             acl_transfer_size = USBH_LL_GetLastXferSize(phost, usb->acl_in_pipe);
             hci_acl_in_offset += acl_transfer_size;
