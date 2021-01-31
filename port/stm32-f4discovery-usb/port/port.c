@@ -131,7 +131,7 @@ void port_main(void){
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
     // uncomment for packet log
-    hci_dump_open( NULL, HCI_DUMP_STDOUT );
+    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
 
     // init HCI
     hci_init(hci_transport_h2_stm32_instance(), NULL);
@@ -159,12 +159,10 @@ void port_main(void){
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
-#if  0
 #ifdef HAVE_HAL_AUDIO
     // setup audio
    	btstack_audio_sink_set_instance(btstack_audio_embedded_sink_get_instance());
     btstack_audio_source_set_instance(btstack_audio_embedded_source_get_instance());
-#endif
 #endif
 
     // inform about BTstack state

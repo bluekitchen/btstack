@@ -149,7 +149,12 @@ ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c \
 ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c \
 ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
 ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
+bsp/audio.c \
+bsp/cs43l22.c \
+bsp/stm32f4_discovery.c \
+bsp/stm32f4_discovery_audio.c \
 port/port.c \
+port/hal_audio_f4discovery.c \
 port/usbh_bluetooth.c \
 port/hci_transport_h2_stm32.c \
 port/hal_flash_bank_stm32.c \
@@ -171,13 +176,19 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_hcd.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
+Src/system_stm32f4xx.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_core.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c \
 Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ioreq.c \
@@ -218,7 +229,7 @@ CPU = -mcpu=cortex-m4
 FPU = -mfpu=fpv4-sp-d16
 
 # float-abi
-FLOAT-ABI = -mfloat-abi=hard
+FLOAT-ABI = -mfloat-abi=softfp
 
 # mcu
 MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
@@ -292,9 +303,8 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # link script
 LDSCRIPT = STM32F407VGTx_FLASH.ld
 
-# libraries
-LIBS = -lc -lm -lnosys 
-LIBDIR = 
+LIBS = -lPDMFilter_CM4_GCC -lc -lm -lnosys 
+LIBDIR = -Lpdm
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
