@@ -47,6 +47,7 @@ typedef struct {
     uint8_t acl_in_ep;
     uint8_t acl_in_pipe;
     uint16_t acl_in_len;
+    uint32_t acl_in_frame;
     uint8_t acl_out_ep;
     uint8_t acl_out_pipe;
     uint16_t acl_out_len;
@@ -91,11 +92,11 @@ static uint8_t hci_event[258];
 static uint16_t hci_acl_in_offset;
 static uint8_t  hci_acl_in_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE];
 static uint8_t  * hci_acl_in_packet = &hci_acl_in_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
-//static uint32_t hci_acl_in_timer;
 
 
 USBH_StatusTypeDef usbh_bluetooth_start_acl_in_transfer(USBH_HandleTypeDef *phost, USB_Bluetooth_t * usb){
     uint16_t acl_in_transfer_size = btstack_min(usb->acl_in_len, HCI_ACL_BUFFER_SIZE - hci_acl_in_offset);
+	usb->acl_in_frame = phost->Timer;
     return USBH_BulkReceiveData(phost, &hci_acl_in_packet[hci_acl_in_offset], acl_in_transfer_size, usb->acl_in_pipe);
 }
 
@@ -221,6 +222,7 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
                 case USBH_URB_IDLE:
                     break;
                 case USBH_URB_NOTREADY:
+                    usbh_out_state = USBH_OUT_ACL_SEND;
                     break;
                 case USBH_URB_DONE:
                     usbh_out_state = USBH_OUT_IDLE;
@@ -280,6 +282,13 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
     urb_state = USBH_LL_GetURBState(phost, usb->acl_in_pipe);
     switch (urb_state){
         case USBH_URB_IDLE:
+            // If state stays IDLE for longer than a full frame, something went wrong with submitting the request,
+            // just re-submits the request
+            if ((phost->Timer - usb->acl_in_frame) > 2){
+                status = usbh_bluetooth_start_acl_in_transfer(phost, usb);
+                btstack_assert(status == USBH_OK);
+            }
+            break;
         case USBH_URB_NOTREADY:
             break;
         case USBH_URB_DONE:
