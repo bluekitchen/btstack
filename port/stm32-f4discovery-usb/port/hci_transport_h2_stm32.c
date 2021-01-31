@@ -116,6 +116,9 @@ static int hci_transport_h2_stm32_send_packet(uint8_t packet_type, uint8_t * pac
         case HCI_COMMAND_DATA_PACKET:
             usbh_bluetooth_send_cmd(packet, size);
             return 0;
+        case HCI_ACL_DATA_PACKET:
+            usbh_bluetooth_send_acl(packet, size);
+            return 0;
         default:
             break;
     }

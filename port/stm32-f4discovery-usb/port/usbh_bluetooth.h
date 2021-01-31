@@ -61,12 +61,36 @@ extern "C" {
 extern USBH_ClassTypeDef  Bluetooth_Class;
 #define USBH_BLUETOOTH_CLASS    &Bluetooth_Class
 
+/**
+ * @brief Check stack if a packet can be sent now
+ * @return true if packet can be sent
+ */
 bool usbh_bluetooth_can_send_now(void);
 
+/**
+ * @brief Send HCI Command packet
+ * @param packet
+ * @param len
+ */
 void usbh_bluetooth_send_cmd(const uint8_t * packet, uint16_t len);
 
+/**
+ * @brief Send HCI ACL packet
+ * @param packet
+ * @param len
+ */
+void usbh_bluetooth_send_acl(const uint8_t * packet, uint16_t len);
+
+/**
+ * @brief Set packet sent callback
+ * @param callback
+ */
 void usbh_bluetooth_set_packet_sent(void (*callback)(void));
 
+/**
+ * @brief Set packet handler
+ * @param callback
+ */
 void usbh_bluetooth_set_packet_received(void (*callback)(uint8_t packet_type, uint8_t * packet, uint16_t size));
 
 #endif

@@ -60,7 +60,8 @@ static enum {
     USBH_OUT_OFF,
     USBH_OUT_IDLE,
     USBH_OUT_CMD,
-    USBH_OUT_ACL
+    USBH_OUT_ACL_SEND,
+    USBH_OUT_ACL_POLL,
 } usbh_out_state;
 
 static enum {
@@ -79,6 +80,9 @@ static USB_Bluetooth_t usb_bluetooth;
 // outgoing
 static const uint8_t * cmd_packet;
 static uint16_t        cmd_len;
+
+static const uint8_t * acl_packet;
+static uint16_t        acl_len;
 
 // incoming
 static uint16_t hci_event_offset;
@@ -162,6 +166,13 @@ USBH_StatusTypeDef USBH_Bluetooth_InterfaceInit(USBH_HandleTypeDef *phost){
     hci_acl_in_offset = 0;
     usbh_bluetooth_start_acl_in_transfer(phost, usb);
 
+    // ACL Out
+    usb->acl_out_ep  =  interface->Ep_Desc[acl_out].bEndpointAddress;
+    usb->acl_out_len =  interface->Ep_Desc[acl_out].wMaxPacketSize;
+    usb->acl_out_pipe = USBH_AllocPipe(phost, usb->acl_out_ep);
+    USBH_OpenPipe(phost, usb->acl_out_pipe, usb->acl_out_ep, phost->device.address, phost->device.speed, USB_EP_TYPE_BULK, usb->acl_out_len);
+    USBH_LL_SetToggle(phost, usb->acl_out_pipe, 0U);
+
     return USBH_OK;
 }
 
@@ -183,6 +194,7 @@ USBH_StatusTypeDef USBH_Bluetooth_ClassRequest(USBH_HandleTypeDef *phost){
 
 USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
     USBH_StatusTypeDef status;
+    USBH_URBStateTypeDef urb_state;
     USB_Bluetooth_t * usb = (USB_Bluetooth_t *) phost->pActiveClass->pData;
     switch (usbh_out_state){
         case USBH_OUT_CMD:
@@ -199,11 +211,31 @@ USBH_StatusTypeDef USBH_Bluetooth_Process(USBH_HandleTypeDef *phost){
                 (*usbh_packet_sent)();
             }
             break;
+        case USBH_OUT_ACL_SEND:
+            USBH_BulkSendData(phost, (uint8_t *) acl_packet, acl_len, usb->acl_out_pipe, 0);
+            usbh_out_state = USBH_OUT_ACL_POLL;
+            break;
+        case USBH_OUT_ACL_POLL:
+            urb_state = USBH_LL_GetURBState(phost, usb->acl_out_pipe);
+            switch (urb_state){
+                case USBH_URB_IDLE:
+                    break;
+                case USBH_URB_NOTREADY:
+                    break;
+                case USBH_URB_DONE:
+                    usbh_out_state = USBH_OUT_IDLE;
+                    // notify host stack
+                    (*usbh_packet_sent)();
+                    break;
+                default:
+                    log_info("URB State ACL Out: %02x", urb_state);
+                    break;
+            }
+            break;
         default:
             break;
     }
 
-    USBH_URBStateTypeDef urb_state;
     uint8_t  event_transfer_size;
     uint16_t event_size;
     switch (usbh_in_state){
@@ -297,6 +329,12 @@ void usbh_bluetooth_send_cmd(const uint8_t * packet, uint16_t len){
     usbh_out_state = USBH_OUT_CMD;
 }
 
+void usbh_bluetooth_send_acl(const uint8_t * packet, uint16_t len){
+    btstack_assert(usbh_out_state == USBH_OUT_IDLE);
+    acl_packet = packet;
+    acl_len    = len;
+    usbh_out_state = USBH_OUT_ACL_SEND;
+}
 
 USBH_ClassTypeDef  Bluetooth_Class = {
     "Bluetooth",
