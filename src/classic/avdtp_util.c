@@ -851,27 +851,31 @@ static void avdtp_signaling_emit_capability_done(uint16_t avdtp_cid, uint8_t rem
     avdtp_emit_sink_and_source(event, pos);
 }
 
+static void avdtp_signaling_emit_media_codec_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec){
+    switch (media_codec.media_codec_type){
+        case AVDTP_CODEC_SBC:
+            avdtp_signaling_emit_media_codec_sbc_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_MPEG_1_2_AUDIO:
+            avdtp_signaling_emit_media_codec_mpeg_audio_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_MPEG_2_4_AAC:
+            avdtp_signaling_emit_media_codec_mpeg_aac_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_ATRAC_FAMILY:
+            avdtp_signaling_emit_media_codec_atrac_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        default:
+            avdtp_signaling_emit_media_codec_other_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+    }
+}
+
 // emit events for all capabilities incl. final done event
 void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
 									   uint16_t registered_service_categories) {
     if (get_bit16(registered_service_categories, AVDTP_MEDIA_CODEC)){
-        switch (capabilities->media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC:
-				avdtp_signaling_emit_media_codec_sbc_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            case AVDTP_CODEC_MPEG_1_2_AUDIO:
-                avdtp_signaling_emit_media_codec_mpeg_audio_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            case AVDTP_CODEC_MPEG_2_4_AAC:
-                avdtp_signaling_emit_media_codec_mpeg_aac_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            case AVDTP_CODEC_ATRAC_FAMILY:
-                avdtp_signaling_emit_media_codec_atrac_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            default:
-				avdtp_signaling_emit_media_codec_other_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-        }
+        avdtp_signaling_emit_media_codec_capability(avdtp_cid, remote_seid, capabilities->media_codec);
     }
 
     if (get_bit16(registered_service_categories, AVDTP_MEDIA_TRANSPORT)){
