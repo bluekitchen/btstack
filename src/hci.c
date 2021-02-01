@@ -3431,6 +3431,7 @@ static int hci_power_control_state_halting(HCI_POWER_MODE power_mode) {
             btstack_assert(false);
             break;
     }
+    return ERROR_CODE_SUCCESS;
 }
 
 static int hci_power_control_state_falling_asleep(HCI_POWER_MODE power_mode) {
