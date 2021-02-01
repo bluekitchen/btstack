@@ -683,11 +683,11 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         // get current data
         const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4u;
         int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
-        int more_fragments = 0;
+        bool more_fragments = false;
 
         // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
         if (current_acl_data_packet_length > max_acl_data_packet_length){
-            more_fragments = 1;
+            more_fragments = true;
             current_acl_data_packet_length = max_acl_data_packet_length;
         }
 
@@ -703,7 +703,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
         // count packet
         connection->num_packets_sent++;
-        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", more_fragments);
+        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", (int) more_fragments);
 
         // update state for next fragment (if any) as "transport done" might be sent during send_packet already
         if (more_fragments){
@@ -722,7 +722,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         hci_stack->acl_fragmentation_tx_active = 1;
         err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
-        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", more_fragments);
+        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", (int) more_fragments);
 
         // done yet?
         if (!more_fragments) break;
@@ -1279,14 +1279,14 @@ static void hci_initializing_run(void){
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
                 hci_stack->chipset_result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
-                int send_cmd = 0;
+                bool send_cmd = false;
                 switch (hci_stack->chipset_result){
                     case BTSTACK_CHIPSET_VALID_COMMAND:
-                        send_cmd = 1;
+                        send_cmd = true;
                         hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
                         break;
                     case BTSTACK_CHIPSET_WARMSTART_REQUIRED:
-                        send_cmd = 1;
+                        send_cmd = true;
                         // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                         log_info("CSR Warm Boot");
                         btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);

@@ -131,15 +131,15 @@ static void att_server_request_can_send_now(hci_connection_t * hci_connection){
     att_dispatch_server_request_can_send_now_event(att_connection->con_handle);
 }
 
-static int att_server_can_send_packet(hci_connection_t * hci_connection){
+static bool att_server_can_send_packet(hci_connection_t * hci_connection){
 #ifdef ENABLE_GATT_OVER_CLASSIC
     att_server_t * att_server = &hci_connection->att_server;
     if (att_server->l2cap_cid != 0){
-        return l2cap_can_send_packet_now(att_server->l2cap_cid);
+        return l2cap_can_send_packet_now(att_server->l2cap_cid) != 0;
     }
 #endif
     att_connection_t * att_connection = &hci_connection->att_connection;
-    return att_dispatch_server_can_send_now(att_connection->con_handle);
+    return att_dispatch_server_can_send_now(att_connection->con_handle) != 0;
 }
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
@@ -674,7 +674,7 @@ static void att_run_for_context(hci_connection_t * hci_connection){
     }   
 }
 
-static int att_server_data_ready_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
+static bool att_server_data_ready_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
     switch (phase){
         case ATT_SERVER_RUN_PHASE_1_REQUESTS:
             return att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
@@ -684,7 +684,7 @@ static int att_server_data_ready_for_phase(att_server_t * att_server,  att_serve
             return (!btstack_linked_list_empty(&att_server->notification_requests));
         default:
             btstack_assert(false);
-            return 0;
+            return false;
     }
 }
 
@@ -715,7 +715,7 @@ static void att_server_handle_can_send_now(void){
 
     hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
     hci_connection_t * request_hci_connection   = NULL;
-    int can_send_now = 1;
+    bool can_send_now = true;
     int phase_index;
 
     for (phase_index = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase_index <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase_index++){
@@ -729,7 +729,7 @@ static void att_server_handle_can_send_now(void){
                 att_server_t * att_server = &connection->att_server;
                 att_connection_t * att_connection = &connection->att_connection;
 
-                int data_ready = att_server_data_ready_for_phase(att_server, phase);
+                bool data_ready = att_server_data_ready_for_phase(att_server, phase);
 
                 // log_debug("phase %u, handle 0x%04x, skip until 0x%04x, data ready %u", phase, att_connection->con_handle, skip_connections_until, data_ready);
 

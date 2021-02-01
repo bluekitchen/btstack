@@ -1271,14 +1271,14 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
 uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16, uint16_t descriptor_uuid16){
     att_iterator_t it;
     att_iterator_init(&it);
-    int characteristic_found = 0;
+    bool characteristic_found = false;
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0u) break;
         if (att_iterator_match_uuid16(&it, characteristic_uuid16)){
-            characteristic_found = 1;
+            characteristic_found = true;
             continue;
         }
         if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 

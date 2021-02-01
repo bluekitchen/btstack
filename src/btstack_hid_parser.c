@@ -374,8 +374,8 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
     *usage_page = parser->usage_minimum >> 16;
 
     // read field (up to 32 bit unsigned, up to 31 bit signed - 32 bit signed behaviour is undefined) - check report len
-    int is_variable   = parser->descriptor_item.item_value & 2;
-    int is_signed     = parser->global_logical_minimum < 0;
+    bool is_variable   = (parser->descriptor_item.item_value & 2) != 0;
+    bool is_signed     = parser->global_logical_minimum < 0;
     int pos_start     = btstack_min(  parser->report_pos_in_bit >> 3, parser->report_len);
     int pos_end       = btstack_min( (parser->report_pos_in_bit + parser->global_report_size - 1u) >> 3u, parser->report_len);
     int bytes_to_read = pos_end - pos_start + 1;
