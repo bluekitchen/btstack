@@ -3347,128 +3347,127 @@ static void hci_power_transition_to_initializing(void){
     hci_stack->substate = HCI_INIT_SEND_RESET;
 }
 
-int hci_power_control(HCI_POWER_MODE power_mode){
-    
-    log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
-    
-    int err = 0;
-    switch (hci_stack->state){
-            
-        case HCI_STATE_OFF:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    err = hci_power_control_on();
-                    if (err) {
-                        log_error("hci_power_control_on() error %d", err);
-                        return err;
-                    }
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    // do nothing
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // do nothing (with SLEEP == OFF)
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
+// returns error
+static int hci_power_control_state_off(HCI_POWER_MODE power_mode){
+    int err;
+    switch (power_mode){
+        case HCI_POWER_ON:
+            err = hci_power_control_on();
+            if (err != 0) {
+                log_error("hci_power_control_on() error %d", err);
+                return err;
             }
+            hci_power_transition_to_initializing();
             break;
-            
-        case HCI_STATE_INITIALIZING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    // do nothing
-                    break;
-                case HCI_POWER_OFF:
-                    // no connections yet, just turn it off
-                    hci_power_control_off();
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // no connections yet, just turn it off
-                    hci_power_control_sleep();
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+        case HCI_POWER_OFF:
+            // do nothing
             break;
-            
-        case HCI_STATE_WORKING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    // do nothing
-                    break;
-                case HCI_POWER_OFF:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+        case HCI_POWER_SLEEP:
+            // do nothing (with SLEEP == OFF)
             break;
-            
-        case HCI_STATE_HALTING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    // do nothing
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+        default:
+            btstack_assert(false);
             break;
-            
-        case HCI_STATE_FALLING_ASLEEP:
-            switch (power_mode){
-                case HCI_POWER_ON:
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_initializing(HCI_POWER_MODE power_mode){
+    switch (power_mode){
+        case HCI_POWER_ON:
+            // do nothing
+            break;
+        case HCI_POWER_OFF:
+            // no connections yet, just turn it off
+            hci_power_control_off();
+            break;
+        case HCI_POWER_SLEEP:
+            // no connections yet, just turn it off
+            hci_power_control_sleep();
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_working(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_ON:
+            // do nothing
+            break;
+        case HCI_POWER_OFF:
+            // see hci_run
+            hci_stack->state = HCI_STATE_HALTING;
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            break;
+        case HCI_POWER_SLEEP:
+            // see hci_run
+            hci_stack->state = HCI_STATE_FALLING_ASLEEP;
+            hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_halting(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_ON:
+            hci_power_transition_to_initializing();
+            break;
+        case HCI_POWER_OFF:
+            // do nothing
+            break;
+        case HCI_POWER_SLEEP:
+            // see hci_run
+            hci_stack->state = HCI_STATE_FALLING_ASLEEP;
+            hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+}
+
+static int hci_power_control_state_falling_asleep(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_ON:
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
-                    // nothing to do, if H4 supports power management
+            // nothing to do, if H4 supports power management
                     if (btstack_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
                         hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;   // init after sleep
                         break;
                     }
 #endif
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // do nothing
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+            hci_power_transition_to_initializing();
             break;
-            
-        case HCI_STATE_SLEEPING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    
+        case HCI_POWER_OFF:
+            // see hci_run
+            hci_stack->state = HCI_STATE_HALTING;
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            break;
+        case HCI_POWER_SLEEP:
+            // do nothing
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
+    int err;
+    switch (power_mode){
+        case HCI_POWER_ON:
 #ifdef HAVE_PLATFORM_IPHONE_OS
-                    // nothing to do, if H4 supports power management
+            // nothing to do, if H4 supports power management
                     if (btstack_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
                         hci_stack->substate = HCI_INIT_AFTER_SLEEP;
@@ -3476,26 +3475,52 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                         break;
                     }
 #endif
-                    err = hci_power_control_wake();
-                    if (err) return err;
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // do nothing
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+            err = hci_power_control_wake();
+            if (err) return err;
+            hci_power_transition_to_initializing();
             break;
-
+        case HCI_POWER_OFF:
+            hci_stack->state = HCI_STATE_HALTING;
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            break;
+        case HCI_POWER_SLEEP:
+            // do nothing
+            break;
         default:
             btstack_assert(false);
             break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+int hci_power_control(HCI_POWER_MODE power_mode){
+    log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
+    int err;
+    switch (hci_stack->state){
+        case HCI_STATE_OFF:
+            err = hci_power_control_state_off(power_mode);
+            break;
+        case HCI_STATE_INITIALIZING:
+            err = hci_power_control_state_initializing(power_mode);
+            break;
+        case HCI_STATE_WORKING:
+            err = hci_power_control_state_working(power_mode);
+            break;
+        case HCI_STATE_HALTING:
+            err = hci_power_control_state_halting(power_mode);
+            break;
+        case HCI_STATE_FALLING_ASLEEP:
+            err = hci_power_control_state_falling_asleep(power_mode);
+            break;
+        case HCI_STATE_SLEEPING:
+            err = hci_power_control_state_sleeping(power_mode);
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    if (err){
+        return err;
     }
 
     // create internal event
