@@ -2495,6 +2495,17 @@ static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t c
 
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
+    switch (channel->state){
+        case L2CAP_STATE_CONFIG:
+        case L2CAP_STATE_OPEN:
+        case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
+        case L2CAP_STATE_WAIT_DISCONNECT:
+            break;
+        default:
+            // ignore in other states
+            return;
+    }
+
     channel->remote_sig_id = identifier;
     channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE;
     l2cap_run();
@@ -2761,18 +2772,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
     
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
-        switch (channel->state){
-            case L2CAP_STATE_CONFIG:
-            case L2CAP_STATE_OPEN:
-            case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
-            case L2CAP_STATE_WAIT_DISCONNECT:
-                l2cap_handle_disconnect_request(channel, identifier);
-                break;
-
-            default:
-                // ignore in other states
-                break;
-        }
+        l2cap_handle_disconnect_request(channel, identifier);
         return;
     }
     
