@@ -2260,6 +2260,132 @@ static void sm_run_activate_connection(void){
     }
 }
 
+static void sm_run_send_keypress_notification(sm_connection_t * connection){
+    int i;
+    uint8_t flags       = setup->sm_keypress_notification & 0x1fu;
+    uint8_t num_actions = setup->sm_keypress_notification >> 5;
+    uint8_t action = 0;
+    for (i=SM_KEYPRESS_PASSKEY_ENTRY_STARTED;i<=SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED;i++){
+        if (flags & (1u<<i)){
+            bool clear_flag = true;
+            switch (i){
+                case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
+                case SM_KEYPRESS_PASSKEY_CLEARED:
+                case SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED:
+                default:
+                    break;
+                case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
+                case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
+                    num_actions--;
+                    clear_flag = num_actions == 0u;
+                    break;
+            }
+            if (clear_flag){
+                flags &= ~(1<<i);
+            }
+            action = i;
+            break;
+        }
+    }
+    setup->sm_keypress_notification = (num_actions << 5) | flags;
+
+    // send keypress notification
+    uint8_t buffer[2];
+    buffer[0] = SM_CODE_KEYPRESS_NOTIFICATION;
+    buffer[1] = action;
+    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+
+    // try
+    l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+}
+
+static void sm_run_distribute_keys(sm_connection_t * connection){
+    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
+        setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+        setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+        uint8_t buffer[17];
+        buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
+        reverse_128(setup->sm_ltk, &buffer[1]);
+        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_timeout_reset(connection);
+        return;
+    }
+    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
+        setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+        setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+        uint8_t buffer[11];
+        buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
+        little_endian_store_16(buffer, 1, setup->sm_local_ediv);
+        reverse_64(setup->sm_local_rand, &buffer[3]);
+        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_timeout_reset(connection);
+        return;
+    }
+    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+        setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+        setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+        uint8_t buffer[17];
+        buffer[0] = SM_CODE_IDENTITY_INFORMATION;
+        reverse_128(sm_persistent_irk, &buffer[1]);
+        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_timeout_reset(connection);
+        return;
+    }
+    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
+        setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+        setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+        bd_addr_t local_address;
+        uint8_t buffer[8];
+        buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
+        switch (gap_random_address_get_mode()){
+            case GAP_RANDOM_ADDRESS_TYPE_OFF:
+            case GAP_RANDOM_ADDRESS_TYPE_STATIC:
+                // public or static random
+                gap_le_get_own_address(&buffer[1], local_address);
+                break;
+            case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
+            case GAP_RANDOM_ADDRESS_RESOLVABLE:
+                // fallback to public
+                gap_local_bd_addr(local_address);
+                buffer[1] = 0;
+                break;
+            default:
+                btstack_assert(false);
+                break;
+        }
+        reverse_bd_addr(local_address, &buffer[2]);
+        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_timeout_reset(connection);
+        return;
+    }
+    if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+        setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+        setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+
+#ifdef ENABLE_LE_SIGNED_WRITE
+        // hack to reproduce test runs
+                    if (test_use_fixed_local_csrk){
+                        memset(setup->sm_local_csrk, 0xcc, 16);
+                    }
+
+                    // store local CSRK
+                    if (setup->sm_le_device_index >= 0){
+                        log_info("sm: store local CSRK");
+                        le_device_db_local_csrk_set(setup->sm_le_device_index, setup->sm_local_csrk);
+                        le_device_db_local_counter_set(setup->sm_le_device_index, 0);
+                    }
+#endif
+
+        uint8_t buffer[17];
+        buffer[0] = SM_CODE_SIGNING_INFORMATION;
+        reverse_128(setup->sm_local_csrk, &buffer[1]);
+        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_timeout_reset(connection);
+        return;
+    }
+    btstack_assert(false);
+}
+
 static void sm_run(void){
 
     // assert that stack has already bootet
@@ -2325,42 +2451,7 @@ static void sm_run(void){
 
         // send keypress notifications
         if (setup->sm_keypress_notification){
-            int i;
-            uint8_t flags       = setup->sm_keypress_notification & 0x1fu;
-            uint8_t num_actions = setup->sm_keypress_notification >> 5;
-            uint8_t action = 0;
-            for (i=SM_KEYPRESS_PASSKEY_ENTRY_STARTED;i<=SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED;i++){
-                if (flags & (1u<<i)){
-                    bool clear_flag = true;
-                    switch (i){
-                        case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
-                        case SM_KEYPRESS_PASSKEY_CLEARED:
-                        case SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED:
-                        default:
-                            break;
-                        case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
-                        case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
-                            num_actions--;
-                            clear_flag = num_actions == 0u;
-                            break;
-                    }
-                    if (clear_flag){
-                        flags &= ~(1<<i);
-                    }
-                    action = i;
-                    break;
-                }
-            }
-            setup->sm_keypress_notification = (num_actions << 5) | flags;
-
-            // send keypress notification
-            uint8_t buffer[2];
-            buffer[0] = SM_CODE_KEYPRESS_NOTIFICATION;
-            buffer[1] = action;
-            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-
-            // try
-            l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+            sm_run_send_keypress_notification(connection);
             return;
         }
 
@@ -2868,87 +2959,8 @@ static void sm_run(void){
 #endif
 
             case SM_PH3_DISTRIBUTE_KEYS:
-                if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
-                    setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-                    uint8_t buffer[17];
-                    buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
-                    reverse_128(setup->sm_ltk, &buffer[1]);
-                    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                    sm_timeout_reset(connection);
-                    return;
-                }
-                if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
-                    setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
-                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
-                    uint8_t buffer[11];
-                    buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
-                    little_endian_store_16(buffer, 1, setup->sm_local_ediv);
-                    reverse_64(setup->sm_local_rand, &buffer[3]);
-                    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                    sm_timeout_reset(connection);
-                    return;
-                }
-                if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
-                    setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-                    uint8_t buffer[17];
-                    buffer[0] = SM_CODE_IDENTITY_INFORMATION;
-                    reverse_128(sm_persistent_irk, &buffer[1]);
-                    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                    sm_timeout_reset(connection);
-                    return;
-                }
-                if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
-                    setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
-                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
-                    bd_addr_t local_address;
-                    uint8_t buffer[8];
-                    buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                    switch (gap_random_address_get_mode()){
-                        case GAP_RANDOM_ADDRESS_TYPE_OFF:
-                        case GAP_RANDOM_ADDRESS_TYPE_STATIC:
-                            // public or static random
-                            gap_le_get_own_address(&buffer[1], local_address);
-                            break;
-                        case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
-                        case GAP_RANDOM_ADDRESS_RESOLVABLE:
-                            // fallback to public
-                            gap_local_bd_addr(local_address);
-                            buffer[1] = 0;
-                            break;
-                        default:
-                            btstack_assert(false);
-                            break;
-                    }
-                    reverse_bd_addr(local_address, &buffer[2]);
-                    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                    sm_timeout_reset(connection);
-                    return;
-                }
-                if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                    setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-
-#ifdef ENABLE_LE_SIGNED_WRITE
-                    // hack to reproduce test runs
-                    if (test_use_fixed_local_csrk){
-                        memset(setup->sm_local_csrk, 0xcc, 16);
-                    }
-
-                    // store local CSRK
-                    if (setup->sm_le_device_index >= 0){
-                        log_info("sm: store local CSRK");
-                        le_device_db_local_csrk_set(setup->sm_le_device_index, setup->sm_local_csrk);
-                        le_device_db_local_counter_set(setup->sm_le_device_index, 0);
-                    }
-#endif
-
-                    uint8_t buffer[17];
-                    buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                    reverse_128(setup->sm_local_csrk, &buffer[1]);
-                    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                    sm_timeout_reset(connection);
+                if (setup->sm_key_distribution_send_set != 0){
+                    sm_run_distribute_keys(connection);
                     return;
                 }
 
