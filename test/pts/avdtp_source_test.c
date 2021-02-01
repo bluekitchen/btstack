@@ -96,7 +96,7 @@ typedef struct {
 // BT dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
 // BT dongle:   static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 #endif
 
 typedef struct {

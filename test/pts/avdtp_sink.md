@@ -34,7 +34,7 @@ AVDTP/SNK/INT/SIG/SMG/BV-15-C : [d, g,] s, o
 AVDTP/SNK/INT/SIG/SMG/BV-19-C : [d, g,] s, o, m, S
 AVDTP/SNK/INT/SIG/SMG/BV-23-C : [d, g,] s, o, m, A
 AVDTP/SNK/INT/SIG/SMG/BV-25-C : a
-AVDTP/SNK/INT/SIG/SMG/BV-28-C : (confirmation)
+AVDTP/SNK/INT/SIG/SMG/BV-28-C : a, (confirmation)
 AVDTP/SNK/INT/SIG/SMG/BV-31-C : [d,] g, s
 AVDTP/SNK/INT/SIG/SMG/ESR05/BV-13-C : R
 AVDTP/SNK/INT/SIG/SMG/BI-30-C : g, s 

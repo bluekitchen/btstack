@@ -1,5 +1,6 @@
 use avdtp_sink_test:
 A2DP/SNK/AS/BV-01-I : (wait)
+A2DP/SNK/AS/BV-02-I : (wait)
 
 A2DP/SNK/CC/BV-01-I : (confirm)
 A2DP/SNK/CC/BV-02-I : (confirm)
