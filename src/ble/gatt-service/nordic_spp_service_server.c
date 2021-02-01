@@ -71,7 +71,7 @@ static uint16_t nordic_spp_service_read_callback(hci_con_handle_t con_handle, ui
 	UNUSED(buffer_size);
 	
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
-		if (buffer){
+		if (buffer != NULL){
 			little_endian_store_16(buffer, 0, nordic_spp_tx_client_configuration_value);
 		}
 		return 2;
@@ -89,7 +89,7 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	}
 	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
 		nordic_spp_tx_client_configuration_value = little_endian_read_16(buffer, 0);
-		if (nordic_spp_tx_client_configuration_value){
+		if (nordic_spp_tx_client_configuration_value != 0){
 			client_callback(con_handle, NULL, 0);
 		}
 	}

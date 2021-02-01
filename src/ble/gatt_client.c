@@ -159,7 +159,7 @@ static gatt_client_t * gatt_client_get_context_for_handle(uint16_t handle){
 // returns existing one, or tries to setup new one
 static gatt_client_t * gatt_client_provide_context_for_handle(hci_con_handle_t con_handle){
     gatt_client_t * gatt_client = gatt_client_get_context_for_handle(con_handle);
-    if (gatt_client) return gatt_client;
+    if (gatt_client != NULL) return gatt_client;
 
     // bail if no such hci connection
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);

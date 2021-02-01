@@ -383,7 +383,7 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
         }
     }
 
-    if (result){
+    if (result != 0){
         bd_addr_copy(addr, buffer);
     }
 	return result;

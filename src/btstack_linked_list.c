@@ -60,7 +60,7 @@ btstack_linked_item_t * btstack_linked_list_get_last_item(btstack_linked_list_t 
     btstack_linked_item_t *lastItem = NULL;
     btstack_linked_item_t *it;
     for (it = *list; it != NULL; it = it->next){
-        if (it) {
+        if (it != NULL) {
             lastItem = it;
         }
     }

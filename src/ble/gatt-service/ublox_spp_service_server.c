@@ -117,14 +117,14 @@ static uint16_t ublox_spp_service_read_callback(hci_con_handle_t con_handle, uin
     if (!instance) return 0; 
 
     if (attribute_handle == instance->fifo_client_configuration_descriptor_handle){
-        if (buffer){
+        if (buffer != NULL){
             little_endian_store_16(buffer, 0, instance->fifo_client_configuration_descriptor_value);
         }
         return 2;
     }
 
     if (attribute_handle == instance->credits_client_configuration_descriptor_handle){
-        if (buffer){
+        if (buffer != NULL){
             little_endian_store_16(buffer, 0, instance->credits_client_configuration_descriptor_value);
         }
         return 2;

@@ -159,7 +159,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
 
 static void att_emit_event_to_all(const uint8_t * event, uint16_t size){
     // dispatch to app level handler
-    if (att_client_packet_handler){
+    if (att_client_packet_handler != NULL){
         (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
     }
 
@@ -923,7 +923,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         if (entry.att_handle   != att_handle)      continue;
 
         // found matching entry
-        if (value){
+        if (value != 0){
             // update
             if (entry.value == value) {
                 log_info("CCC Index %u: Up-to-date", index);
@@ -952,7 +952,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     }
 
     uint32_t tag_to_use = 0;
-    if (tag_for_empty){
+    if (tag_for_empty != 0){
         tag_to_use = tag_for_empty;
     } else if (tag_for_lowest_seq_nr){
         tag_to_use = tag_for_lowest_seq_nr;
@@ -1048,19 +1048,19 @@ static att_service_handler_t * att_service_handler_for_handle(uint16_t handle){
 }
 static att_read_callback_t att_server_read_callback_for_handle(uint16_t handle){
     att_service_handler_t * handler = att_service_handler_for_handle(handle);
-    if (handler) return handler->read_callback;
+    if (handler != NULL) return handler->read_callback;
     return att_server_client_read_callback;
 }
 
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle){
     att_service_handler_t * handler = att_service_handler_for_handle(handle);
-    if (handler) return handler->write_callback;
+    if (handler != NULL) return handler->write_callback;
     return att_server_client_write_callback;
 }
 
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle){
     att_service_handler_t * handler = att_service_handler_for_handle(handle);
-    if (handler) return handler->packet_handler;
+    if (handler != NULL) return handler->packet_handler;
     return att_client_packet_handler;
 }
 
@@ -1085,7 +1085,7 @@ static uint8_t att_validate_prepared_write(hci_con_handle_t con_handle){
         att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
         if (!handler->write_callback) continue;
         uint8_t error_code = (*handler->write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
-        if (error_code) return error_code;
+        if (error_code != 0) return error_code;
     }
     if (!att_server_client_write_callback) return 0;
     return (*att_server_client_write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);

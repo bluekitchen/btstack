@@ -1137,7 +1137,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 
     // query client for Legacy Pairing OOB data
     setup->sm_have_oob_data = 0;
-    if (sm_get_oob_data) {
+    if (sm_get_oob_data != NULL) {
         setup->sm_have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, setup->sm_tk);
     }
 
@@ -1146,7 +1146,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     memset(setup->sm_ra, 0, 16);
     memset(setup->sm_rb, 0, 16);
     if (setup->sm_have_oob_data && (sm_auth_req & SM_AUTHREQ_SECURE_CONNECTION)){
-        if (sm_get_sc_oob_data){
+        if (sm_get_sc_oob_data != NULL){
             if (IS_RESPONDER(sm_conn->sm_role)){
                 setup->sm_have_oob_data = (*sm_get_sc_oob_data)(
                     sm_conn->sm_peer_addr_type,
@@ -2690,7 +2690,7 @@ static void sm_run(void){
                         err = test_pairing_failure;
                     }
 #endif
-				if (err){
+				if (err != 0){
 					setup->sm_pairing_failed_reason = err;
 					connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 					sm_trigger_run();
@@ -3360,7 +3360,7 @@ static void sm_validate_er_ir(void){
 
 static void sm_handle_random_result_ir(void *arg){
     sm_persistent_keys_random_active = 0;
-    if (arg){
+    if (arg != NULL){
         // key generated, store in tlv
         int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16u);
         log_info("Generated IR key. Store in TLV status: %d", status);
@@ -3379,7 +3379,7 @@ static void sm_handle_random_result_ir(void *arg){
 
 static void sm_handle_random_result_er(void *arg){
     sm_persistent_keys_random_active = 0;
-    if (arg){
+    if (arg != 0){
         // key generated, store in tlv
         int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
         log_info("Generated ER key. Store in TLV status: %d", status);
@@ -3420,7 +3420,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                         // setup IR/ER with TLV
                         btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
-                        if (sm_tlv_impl){
+                        if (sm_tlv_impl != NULL){
                             int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16u);
                             if (key_size == 16){
                                 // ok, let's continue
@@ -3874,7 +3874,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 #endif
 
-            if (err){
+            if (err != 0){
                 setup->sm_pairing_failed_reason = err;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
@@ -3984,7 +3984,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // validate public key
             err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
-            if (err){
+            if (err != 0){
                 log_error("sm: peer public key invalid %x", err);
                 sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;

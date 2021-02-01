@@ -3091,7 +3091,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             // check size
             if (len < 8u) return 0u;
             connection = hci_connection_for_handle(handle);
-            if (connection){
+            if (connection != NULL){
                 if (connection->role != HCI_ROLE_MASTER){
                     // reject command without notifying upper layer when not in master role
                     return 0;
