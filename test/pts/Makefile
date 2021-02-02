@@ -91,7 +91,7 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 include ${BTSTACK_ROOT}/src/ble/gatt-service/Makefile.inc
 
-CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
+CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Wswitch-default
 CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -D ENABLE_LE_SIGNED_WRITE
 CFLAGS += -fsanitize=address -fno-omit-frame-pointer
