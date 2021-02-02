@@ -1468,6 +1468,9 @@ void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t s
         case 48000:
             sampling_frequency_index = 0;
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
     config[1] = (config[1] & 0xC0) | (1 << sampling_frequency_index);
 }

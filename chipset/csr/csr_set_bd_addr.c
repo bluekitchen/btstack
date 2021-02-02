@@ -157,6 +157,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             btstack_run_loop_set_timer(&warm_boot_timer, 1000);
             btstack_run_loop_add_timer(&warm_boot_timer);
             break;
+        default:
+            break;
     }
 }
 
