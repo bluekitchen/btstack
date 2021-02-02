@@ -206,14 +206,14 @@ static inline int next_index(int * index, int max_value){
     return (*index);
 }
 
-static int next_folder_index(){
+static int next_folder_index(void){
     return next_index(&folder_index, AVRCP_BROWSING_MAX_FOLDERS);
 }
 
-static int next_media_element_item_index(){
+static int next_media_element_item_index(void){
     return next_index(&media_element_item_index, AVRCP_BROWSING_MAX_MEDIA_ITEMS);
 }
-static int next_media_player_item_index(){
+static int next_media_player_item_index(void){
     return next_index(&media_player_item_index, AVRCP_BROWSING_MAX_MEDIA_ITEMS);
 }
 
