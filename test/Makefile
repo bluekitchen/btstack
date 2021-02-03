@@ -84,20 +84,6 @@ clean:
 	  $(MAKE) -C $$dir clean; \
 	done
 
-subdirs-test:
-	echo Run all tests with ASAN
-	@set -e; \
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir test; \
-	done
-
-subdirs-test-ble:
-	echo Run all BLE tests with ASAN
-	@set -e; \
-	for dir in $(SUBDIRS_BLE); do \
-	  $(MAKE) -C $$dir test; \
-	done
-
 subdirs-coverage:
 	echo Run all tests for coverage
 	@set -e; \
@@ -183,3 +169,17 @@ coverage-pts: coverage-pts.info
 	genhtml coverage-pts.info --branch-coverage --demangle-cpp --config-file lcovrc --output-directory coverage-pts
 
 coverage: coverage-all coverage-ble coverage-bat
+
+test:
+	echo Run all tests with ASAN
+	@set -e; \
+	for dir in $(SUBDIRS); do \
+	  $(MAKE) -C $$dir test; \
+	done
+
+test-ble:
+	echo Run all BLE tests with ASAN
+	@set -e; \
+	for dir in $(SUBDIRS_BLE); do \
+	  $(MAKE) -C $$dir test; \
+	done
