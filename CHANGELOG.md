@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 AVDTP: emit stream release for active stream if signaling is closed first, e.g. caused by hci disconnect
+L2CAP: make handling of hci disconnect more robust
 
 ### Changed
 
