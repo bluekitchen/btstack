@@ -971,11 +971,15 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     }
 
                     if (connection){
-                        btstack_linked_list_iterator_t it;    
+                        // closing signaling channel invalidates all other channels as well
+                        btstack_linked_list_iterator_t it;
                         btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
                         while (btstack_linked_list_iterator_has_next(&it)){
                             stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
                             if (stream_endpoint->connection == connection){
+                                avdtp_handle_close_recovery_channel(stream_endpoint);
+                                avdtp_handle_close_reporting_channel(stream_endpoint);
+                                avdtp_handle_close_media_channel(stream_endpoint);
                                 avdtp_reset_stream_endpoint(stream_endpoint);
                             }
                         }
