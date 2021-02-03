@@ -62,12 +62,19 @@ typedef struct btstack_memory_buffer {
 } btstack_memory_buffer_t;
 
 static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
+static uint32_t btstack_memory_malloc_counter;
 
 static void btstack_memory_tracking_add(btstack_memory_buffer_t * buffer){
     btstack_assert(buffer != NULL);
+    if (btstack_memory_malloc_buffers != NULL) {
+        // let current first item prev point to new first item
+        btstack_memory_malloc_buffers->prev = buffer;
+    }
     buffer->prev = NULL;
     buffer->next = btstack_memory_malloc_buffers;
     btstack_memory_malloc_buffers = buffer;
+
+    btstack_memory_malloc_counter++;
 }
 
 static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
@@ -81,6 +88,8 @@ static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
     if (buffer->next != NULL){
         buffer->next->prev = buffer->prev;
     }
+
+    btstack_memory_malloc_counter--;
 }
 #endif
 
@@ -91,6 +100,7 @@ void btstack_memory_deinit(void){
         btstack_memory_malloc_buffers = buffer->next;
         free(buffer);
     }
+    btstack_assert(btstack_memory_malloc_counter == 0);
 #endif
 }
 
