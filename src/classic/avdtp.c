@@ -739,6 +739,24 @@ static void avdtp_retry_timer_start(avdtp_connection_t * connection){
     btstack_run_loop_add_timer(&connection->retry_timer);
 }
 
+static void avdtp_handle_close_media_channel(avdtp_stream_endpoint_t * stream_endpoint){
+    avdtp_connection_t * connection = stream_endpoint->connection;
+    btstack_assert(connection != NULL);
+    avdtp_streaming_emit_connection_released(stream_endpoint, connection->avdtp_cid, avdtp_local_seid(stream_endpoint));
+    avdtp_reset_stream_endpoint(stream_endpoint);
+    connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
+}
+
+static void avdtp_handle_close_recovery_channel(avdtp_stream_endpoint_t * stream_endpoint){
+    log_info("L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", stream_endpoint->l2cap_recovery_cid);
+    stream_endpoint->l2cap_recovery_cid = 0;
+}
+
+static void avdtp_handle_close_reporting_channel(avdtp_stream_endpoint_t * stream_endpoint){
+    log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", stream_endpoint->l2cap_reporting_cid);
+    stream_endpoint->l2cap_reporting_cid = 0;
+}
+
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
@@ -939,25 +957,15 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                     if (stream_endpoint){
                         if (stream_endpoint->l2cap_media_cid == local_cid){
-                            connection = stream_endpoint->connection;
-                            if (connection) {
-                                avdtp_streaming_emit_connection_released(stream_endpoint,
-                                                                         connection->avdtp_cid,
-                                                                         avdtp_local_seid(stream_endpoint));
-                            }
-                            avdtp_reset_stream_endpoint(stream_endpoint);
-                            connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
+                            avdtp_handle_close_media_channel(stream_endpoint);
                             break;
                         }
                         if (stream_endpoint->l2cap_recovery_cid == local_cid){
-                            log_info("L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", local_cid);
-                            stream_endpoint->l2cap_recovery_cid = 0;
+                            avdtp_handle_close_recovery_channel(stream_endpoint);
                             break;
                         }
-                        
                         if (stream_endpoint->l2cap_reporting_cid == local_cid){
-                            log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", local_cid);
-                            stream_endpoint->l2cap_reporting_cid = 0;
+                            avdtp_handle_close_reporting_channel(stream_endpoint);
                             break;
                         }
                     }
