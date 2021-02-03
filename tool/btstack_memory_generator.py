@@ -138,6 +138,11 @@ typedef struct btstack_memory_buffer {
     struct btstack_memory_buffer * prev;
 } btstack_memory_buffer_t;
 
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    void * pointer;
+} test_buffer_t;
+
 static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
 static uint32_t btstack_memory_malloc_counter;
 
@@ -220,14 +225,14 @@ void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
 #elif defined(HAVE_MALLOC)
 
 typedef struct {
-    STRUCT_NAME_t data;
     btstack_memory_buffer_t tracking;
+    STRUCT_NAME_t data;
 } btstack_memory_STRUCT_NAME_t;
 
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
     btstack_memory_STRUCT_NAME_t * buffer = (btstack_memory_STRUCT_NAME_t *) malloc(sizeof(btstack_memory_STRUCT_NAME_t));
     if (buffer){
-        memset(buffer, 0, sizeof(STRUCT_NAME_t));
+        memset(buffer, 0, sizeof(btstack_memory_STRUCT_NAME_t));
         btstack_memory_tracking_add(&buffer->tracking);
         return &buffer->data;
     } else {
@@ -235,12 +240,22 @@ STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
     }
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
-    btstack_memory_STRUCT_NAME_t * buffer =  (btstack_memory_STRUCT_NAME_t *) STRUCT_NAME;
-    btstack_memory_tracking_remove(&buffer->tracking);
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) STRUCT_NAME)[-1];
+    btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
 #endif
 """
+init_header = '''
+// init
+void btstack_memory_init(void){
+#ifdef HAVE_MALLOC
+    // assert that there is no unexpected padding for combined buffer
+    btstack_assert(sizeof(test_buffer_t) == sizeof(btstack_memory_buffer_t) + sizeof(void *));
+#endif
+  
+'''
 
 init_template = """#if POOL_COUNT > 0
     btstack_memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
@@ -342,9 +357,7 @@ for struct_names in list_of_mesh_structs:
     writeln(f, "")
 writeln(f, "#endif")
 
-
-writeln(f, "// init")
-writeln(f, "void btstack_memory_init(void){")
+f.write(init_header)
 for struct_names in list_of_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))
