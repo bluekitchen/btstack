@@ -824,18 +824,28 @@ static void stdin_process(char cmd){
             avdtp_media_codec_type_t media_codec_type = remote_seps[selected_remote_sep_index].sep.capabilities.media_codec.media_codec_type;
             avdtp_capabilities_t new_configuration;
             new_configuration.media_codec.media_type = AVDTP_AUDIO;
+
+            uint16_t new_sampling_frequency = 44100;
+            switch (current_sample_rate){
+                case 44100:
+                    new_sampling_frequency = 48000;
+                    break;
+                default:
+                    break;
+            }
+
             switch (media_codec_type){
                 case AVDTP_CODEC_SBC:
-                    avdtp_config_sbc_set_sampling_frequency(media_codec_config_data, 44100);
+                    avdtp_config_sbc_set_sampling_frequency(media_codec_config_data, new_sampling_frequency);
                     break;
                 case AVDTP_CODEC_MPEG_1_2_AUDIO:
-                    avdtp_config_mpeg_audio_set_sampling_frequency(media_codec_config_data, 44100);
+                    avdtp_config_mpeg_audio_set_sampling_frequency(media_codec_config_data, new_sampling_frequency);
                     break;
                 case AVDTP_CODEC_MPEG_2_4_AAC:
-                    avdtp_config_mpeg_aac_set_sampling_frequency(media_codec_config_data, 44100);
+                    avdtp_config_mpeg_aac_set_sampling_frequency(media_codec_config_data, new_sampling_frequency);
                     break;
                 case AVDTP_CODEC_ATRAC_FAMILY:
-                    avdtp_config_atrac_set_sampling_frequency(media_codec_config_data, 44100);
+                    avdtp_config_atrac_set_sampling_frequency(media_codec_config_data, new_sampling_frequency);
                     break;
                 default:
                     printf("Reconfigure not implemented for %s\n", codec_name_for_type(media_codec_type));
