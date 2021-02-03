@@ -235,11 +235,7 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 
 		}
 	}
-
-	if (memcmp(mic, enc_msg + msg_len, mic_size)) {
-		return -EBADMSG;
-	}
-
+	
 	return 0;
 }
 
