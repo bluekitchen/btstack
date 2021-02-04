@@ -164,6 +164,7 @@ static uint8_t local_seid_aac;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
+static bool delay_reporting_supported_on_remote = false;
 
 static uint8_t num_remote_seids;
 static uint8_t first_remote_seid;
@@ -510,6 +511,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
             printf("CAPABILITY - DELAY_REPORTING supported on remote.\n");
+            delay_reporting_supported_on_remote = true;
             break;
         case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
             printf("CAPABILITY - HEADER_COMPRESSION supported on remote: \n");
@@ -732,6 +734,11 @@ static void stdin_process(char cmd){
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
             remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_configuration);
             remote_configuration.media_codec.media_codec_information = media_sbc_codec_configuration;
+
+            if (delay_reporting_supported_on_remote){
+                remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_DELAY_REPORTING, 1);
+            }
+
             status = avdtp_sink_set_configuration(avdtp_cid, local_seid, remote_seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'R':
@@ -808,6 +815,7 @@ int btstack_main(int argc, const char * argv[]){
     local_seid_sbc = avdtp_local_seid(local_stream_endpoint);
     avdtp_sink_register_media_transport_category(local_seid_sbc);
     avdtp_sink_register_media_codec_category(local_seid_sbc, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
 
 #ifdef HAVE_AAC_FDK
     // Setup AAC Endpoint
@@ -819,6 +827,8 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_media_transport_category(local_seid_aac);
     avdtp_sink_register_media_codec_category(local_seid_aac, AVDTP_AUDIO, AVDTP_CODEC_MPEG_2_4_AAC, media_aac_codec_capabilities, sizeof(media_aac_codec_capabilities));
 #endif
+
+    
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
     // Initialize SDP 
