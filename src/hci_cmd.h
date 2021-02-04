@@ -119,6 +119,7 @@ typedef enum {
     HCI_OPCODE_HCI_IO_CAPABILITY_REQUEST_NEGATIVE_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x34),
     HCI_OPCODE_HCI_ENHANCED_SETUP_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x3d),
     HCI_OPCODE_HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION = HCI_OPCODE (OGF_LINK_CONTROL, 0x3e),
+    HCI_OPCODE_HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY = HCI_OPCODE (OGF_LINK_CONTROL, 0x45),
     HCI_OPCODE_HCI_SNIFF_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x03),
     HCI_OPCODE_HCI_EXIT_SNIFF_MODE = HCI_OPCODE (OGF_LINK_POLICY, 0x04),
     HCI_OPCODE_HCI_QOS_SETUP = HCI_OPCODE (OGF_LINK_POLICY, 0x07),
@@ -264,7 +265,6 @@ extern const hci_cmd_t hci_read_inquiry_scan_activity;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
-extern const hci_cmd_t hci_read_local_extended_ob_data;
 extern const hci_cmd_t hci_read_local_extended_oob_data;
 extern const hci_cmd_t hci_read_local_name;
 extern const hci_cmd_t hci_read_page_timeout;
