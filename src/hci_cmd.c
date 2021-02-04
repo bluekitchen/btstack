@@ -869,7 +869,7 @@ const hci_cmd_t hci_write_secure_connections_host_support = {
 /**
  */
 const hci_cmd_t hci_read_local_extended_oob_data = {
-    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OB_DATA, ""
+    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA, ""
     // return status, C_192, R_192, R_256, C_256
 };
 

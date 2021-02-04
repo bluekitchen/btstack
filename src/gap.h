@@ -739,6 +739,16 @@ int gap_ssp_confirmation_response(const bd_addr_t addr);
 int gap_ssp_confirmation_negative(const bd_addr_t addr);
 
 /**
+ * @brief Report Remote OOB Data
+ * @param bd_addr
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, const uint8_t * r_192, const uint8_t * c_256, const uint8_t * r_256);
+
+/**
  * @brief Enter Sniff mode
  * @param con_handle
  * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms

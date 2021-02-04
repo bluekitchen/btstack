@@ -163,7 +163,7 @@ typedef enum {
     HCI_OPCODE_HCI_READ_LE_HOST_SUPPORTED = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x6c),
     HCI_OPCODE_HCI_WRITE_LE_HOST_SUPPORTED = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x6d),
     HCI_OPCODE_HCI_WRITE_SECURE_CONNECTIONS_HOST_SUPPORT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7a),
-    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7d),
+    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x7d),
     HCI_OPCODE_HCI_READ_LOOPBACK_MODE = HCI_OPCODE (OGF_TESTING, 0x01),
     HCI_OPCODE_HCI_WRITE_LOOPBACK_MODE = HCI_OPCODE (OGF_TESTING, 0x02),
     HCI_OPCODE_HCI_ENABLE_DEVICE_UNDER_TEST_MODE = HCI_OPCODE (OGF_TESTING, 0x03),
@@ -286,6 +286,7 @@ extern const hci_cmd_t hci_remote_name_request;
 extern const hci_cmd_t hci_remote_name_request_cancel;
 extern const hci_cmd_t hci_remote_oob_data_request_negative_reply;
 extern const hci_cmd_t hci_remote_oob_data_request_reply;
+extern const hci_cmd_t hci_remote_oob_extended_data_request_reply;
 extern const hci_cmd_t hci_reset;
 extern const hci_cmd_t hci_role_discovery;
 extern const hci_cmd_t hci_set_connection_encryption;

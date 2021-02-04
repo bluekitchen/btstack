@@ -199,6 +199,9 @@ typedef enum {
     SEND_USER_CONFIRM_REPLY        = 0x0200,
     SEND_USER_PASSKEY_REPLY        = 0x0400,
 
+    // Classic OOB
+    SEND_REMOTE_OOB_DATA_REPLY     = 0x0800,
+
     // pairing status
     LEGACY_PAIRING_ACTIVE          = 0x1000,
     SSP_PAIRING_ACTIVE             = 0x2000,
@@ -593,6 +596,13 @@ typedef struct {
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     l2cap_state_t l2cap_state;
+#endif
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    const uint8_t * classic_oob_c_192;
+    const uint8_t * classic_oob_r_192;
+    const uint8_t * classic_oob_c_256;
+    const uint8_t * classic_oob_r_256;
 #endif
 
 } hci_connection_t;

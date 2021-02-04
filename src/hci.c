@@ -2155,6 +2155,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             }
             break;
 #endif
+
         default:
             break;
     }
@@ -2557,7 +2558,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
             break;
-        
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        case HCI_EVENT_REMOTE_OOB_DATA_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_REMOTE_OOB_DATA_REPLY);
+            break;
+#endif
+
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
             if (!hci_stack->ssp_auto_accept) break;
@@ -2569,6 +2577,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (!hci_stack->ssp_auto_accept) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
             break;
+
         case HCI_EVENT_MODE_CHANGE:
             handle = hci_event_mode_change_get_handle(packet);
             conn = hci_connection_for_handle(handle);
@@ -4181,12 +4190,55 @@ static bool hci_run_general_pending_commands(void){
                 if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
                     authreq |= 1;
                 }
-                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, NULL, authreq);
+                uint8_t have_oob_data = 0;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+                if (connection->classic_oob_c_192 != NULL){
+                    have_oob_data |= 1;
+                }
+                if (connection->classic_oob_c_256 != NULL){
+                    have_oob_data |= 2;
+                }
+#endif
+                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, have_oob_data, authreq);
             } else {
                 hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
             }
             return true;
         }
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        if (connection->authentication_flags & SEND_REMOTE_OOB_DATA_REPLY){
+            connectionClearAuthenticationFlags(connection, SEND_REMOTE_OOB_DATA_REPLY);
+            const uint8_t zero[16] = { 0 };
+            const uint8_t * r_192 = zero;
+            const uint8_t * c_192 = zero;
+            const uint8_t * r_256 = zero;
+            const uint8_t * c_256 = zero;
+            // verify P-256 OOB
+            if ((connection->classic_oob_c_256 != NULL) && ((hci_stack->local_supported_commands[1] & 0x08u) != 0)) {
+                c_256 = connection->classic_oob_c_256;
+                if (connection->classic_oob_r_256 != NULL) {
+                    r_256 = connection->classic_oob_r_256;
+                }
+            }
+            // verify P-192 OOB
+            if ((connection->classic_oob_c_192 != NULL)) {
+                c_192 = connection->classic_oob_c_192;
+                if (connection->classic_oob_r_192 != NULL) {
+                    r_192 = connection->classic_oob_r_192;
+                }
+            }
+            // Reply
+            if (c_256 != zero) {
+                hci_send_cmd(&hci_remote_oob_extended_data_request_reply, &connection->address, c_192, r_192, c_256, r_256);
+            } else if (c_192 != zero){
+                hci_send_cmd(&hci_remote_oob_data_request_reply, &connection->address, c_192, r_192);
+            } else {
+                hci_send_cmd(&hci_remote_oob_data_request_negative_reply, &connection->address);
+            }
+            return true;
+        }
+#endif
 
         if (connection->authentication_flags & SEND_USER_CONFIRM_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_USER_CONFIRM_REPLY);
@@ -5852,6 +5904,28 @@ int gap_ssp_confirmation_negative(const bd_addr_t addr){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+/**
+ * @brief Report Remote OOB Data
+ * @param bd_addr
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, const uint8_t * r_192, const uint8_t * c_256, const uint8_t * r_256){
+    hci_connection_t * connection = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    connection->classic_oob_c_192 = c_192;
+    connection->classic_oob_r_192 = r_192;
+    connection->classic_oob_c_256 = c_256;
+    connection->classic_oob_r_256 = r_256;
+    return ERROR_CODE_SUCCESS;
+}
+#endif
 
 /**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
