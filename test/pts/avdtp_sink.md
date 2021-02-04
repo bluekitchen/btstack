@@ -10,7 +10,10 @@ AVDTP/SNK/ACP/SIG/SMG/BV-22-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BV-24-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BV-26-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BI-05-C : (wait)
-AVDTP/SNK/ACP/SIG/SMG/BI-08-C : (wait)
+
+// in PTS 7.6.1 Build 4, test AVDTP/SNK/ACP/SIG/SMG/BI-08-C fails if AAC Endpoint is defined last
+AVDTP/SNK/ACP/SIG/SMG/BI-08-C : (wait) 
+
 AVDTP/SNK/ACP/SIG/SMG/BI-11-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BI-14-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BI-17-C : (wait)

@@ -807,16 +807,7 @@ int btstack_main(int argc, const char * argv[]){
 
     avdtp_stream_endpoint_t * local_stream_endpoint;
 
-    // Setup SBC Endpoint
-    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
-    btstack_assert(local_stream_endpoint != NULL);
-    local_stream_endpoint->media_codec_configuration_info = media_sbc_codec_configuration;
-    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_sbc_codec_configuration);
-    local_seid_sbc = avdtp_local_seid(local_stream_endpoint);
-    avdtp_sink_register_media_transport_category(local_seid_sbc);
-    avdtp_sink_register_media_codec_category(local_seid_sbc, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
-    avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
-
+    // in PTS 7.6.1 Build 4, test AVDTP/SNK/ACP/SIG/SMG/BI-08-C fails if AAC Endpoint is defined last
 #ifdef HAVE_AAC_FDK
     // Setup AAC Endpoint
     local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
@@ -828,7 +819,16 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_media_codec_category(local_seid_aac, AVDTP_AUDIO, AVDTP_CODEC_MPEG_2_4_AAC, media_aac_codec_capabilities, sizeof(media_aac_codec_capabilities));
 #endif
 
-    
+    // Setup SBC Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
+    local_stream_endpoint->media_codec_configuration_info = media_sbc_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_sbc_codec_configuration);
+    local_seid_sbc = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_sbc);
+    avdtp_sink_register_media_codec_category(local_seid_sbc, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    avdtp_sink_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
+
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
     // Initialize SDP 
