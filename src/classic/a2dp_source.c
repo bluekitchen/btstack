@@ -397,18 +397,19 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_source_stream_endpoint_for_media_codec(AVDTP_CODEC_SBC);
                 if (stream_endpoint != NULL){
                     // choose SBC config params
-                    uint16_t sampling_frequency       = avdtp_choose_sbc_sampling_frequency(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-                    avdtp_channel_mode_t channel_mode = avdtp_choose_sbc_channel_mode(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-                    uint8_t block_length        = avdtp_choose_sbc_block_length(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-                    uint8_t subbands            = avdtp_choose_sbc_subbands(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
-                    avdtp_sbc_allocation_method_t allocation_method = avdtp_choose_sbc_allocation_method(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
-                    uint8_t max_bitpool_value   = avdtp_choose_sbc_max_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-                    uint8_t min_bitpool_value   = avdtp_choose_sbc_min_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
+                    avdtp_configuration_sbc_t configuration;
+                    configuration.sampling_frequency = avdtp_choose_sbc_sampling_frequency(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
+                    configuration.channel_mode       = avdtp_choose_sbc_channel_mode(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
+                    configuration.block_length       = avdtp_choose_sbc_block_length(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
+                    configuration.subbands           = avdtp_choose_sbc_subbands(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
+                    configuration.allocation_method  = avdtp_choose_sbc_allocation_method(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+                    configuration.max_bitpool_value  = avdtp_choose_sbc_max_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+                    configuration.min_bitpool_value  = avdtp_choose_sbc_min_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
                     // and pre-select this endpoint
                     local_seid = avdtp_stream_endpoint_seid(stream_endpoint);
                     remote_seid = avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet);
-                    a2dp_source_set_config_sbc(cid, local_seid, remote_seid, sampling_frequency, channel_mode, block_length, subbands, allocation_method, min_bitpool_value, max_bitpool_value);
+                    a2dp_source_set_config_sbc(cid, local_seid, remote_seid, &configuration);
                 }
             }
             break;
@@ -816,8 +817,7 @@ static uint8_t a2dp_source_config_init(uint8_t local_seid, uint8_t remote_seid, 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_channel_mode_t channel_mode,
-                                   uint8_t block_length, uint8_t subbands, avdtp_sbc_allocation_method_t allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value){
+uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_sbc_t * configuration){
 
     if (a2dp_source_cid != a2dp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
@@ -835,15 +835,13 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid,  uint8_t local_seid, uint8
     // set config in reserved buffer
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_sbc_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
-                            sampling_frequency, channel_mode, block_length, subbands, allocation_method, min_bitpool_value, max_bitpool_value);
+    avdtp_config_sbc_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, avdtp_mpeg_layer_t layer, uint8_t crc,
-                                          avdtp_channel_mode_t channel_mode, uint8_t media_payload_format,
-                                          uint16_t sampling_frequency, uint8_t vbr, uint8_t bit_rate_index){
+uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_mpeg_audio_t * configuration){
+
     if (a2dp_source_cid != a2dp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -861,14 +859,13 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid,  uint8_t local_seid
     // set config in reserved buffer
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_mpeg_audio_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
-                                   layer, crc, channel_mode, media_payload_format, sampling_frequency, vbr, bit_rate_index);
+    avdtp_config_mpeg_audio_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, avdtp_aac_object_type_t object_type,
-                                        uint32_t sampling_frequency, uint8_t channels, uint32_t bit_rate, uint8_t vbr){
+uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration){
+
     if (a2dp_source_cid != a2dp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -884,15 +881,13 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
     }
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
-    avdtp_config_mpeg_aac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
-                                   object_type, sampling_frequency, channels, bit_rate, vbr);
+    avdtp_config_mpeg_aac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, avdtp_atrac_version_t version,
-                                     avdtp_channel_mode_t channel_mode, uint16_t sampling_frequency, uint8_t vbr,
-                                     uint8_t bit_rate_index, uint16_t maximum_sul){
+uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration){
+
     if (a2dp_source_cid != a2dp_cid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -909,8 +904,7 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uin
 
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
     sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
-    avdtp_config_atrac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information,
-                                 version, channel_mode, sampling_frequency, vbr, bit_rate_index, maximum_sul);
+    avdtp_config_atrac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }

@@ -355,37 +355,59 @@ static int find_remote_seid(uint8_t remote_seid){
 static void setup_sbc_codec_config(uint8_t local_remote_seid_index){
     // choose SBC config params
     const uint8_t * packet = remote_seps[local_remote_seid_index].media_codec_event;
-    uint16_t sampling_frequency_hz = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-    uint8_t block_length = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-    uint8_t subbands = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
-    uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-    uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
-    avdtp_channel_mode_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-    avdtp_sbc_allocation_method_t allocation_method = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+
+    // choose SBC config params
+    avdtp_configuration_sbc_t configuration;
+    configuration.sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
+    configuration.channel_mode       = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
+    configuration.block_length       = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
+    configuration.subbands           = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
+    configuration.allocation_method  = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
+    configuration.max_bitpool_value  = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+    configuration.min_bitpool_value  = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
     // setup SBC configuration
-    avdtp_config_sbc_store(media_codec_config_data, sampling_frequency_hz, channel_mode, block_length, subbands, allocation_method, min_bitpool_value, max_bitpool_value);
+    avdtp_config_sbc_store(media_codec_config_data, &configuration);
     media_codec_config_len = 4;
 }
 
 static void setup_mpeg_audio_codec_config(uint8_t local_remote_seid_index) {
     UNUSED(local_remote_seid_index);
     // setup MPEG Audio configuration (layer 3, no crc, joint stereo, mpf = 1, 48 khz, vbr, bit rate index 14);
-    avdtp_config_mpeg_audio_store(media_codec_config_data, AVDTP_MPEG_LAYER_3, 0, AVDTP_CHANNEL_MODE_JOINT_STEREO, 0, 48000, 0, 14);
+    avdtp_configuration_mpeg_audio_t configuration;
+    configuration.layer = AVDTP_MPEG_LAYER_3;
+    configuration.crc = 0;
+    configuration.channel_mode = AVDTP_CHANNEL_MODE_JOINT_STEREO;
+    configuration.media_payload_format = 0;
+    configuration.sampling_frequency = 48000;
+    configuration.vbr = 0;
+    configuration.bit_rate_index = 14;
+    avdtp_config_mpeg_audio_store(media_codec_config_data, &configuration);
     media_codec_config_len = 4;
 }
 
 static void setup_mpeg_aac_codec_config(uint8_t local_remote_seid_index) {
     UNUSED(local_remote_seid_index);
     // setup MPEG AAC configuration (MPEG 2 LC, 48 kHz, 2 channels, 300 kbps, no vbr)
-    avdtp_config_mpeg_aac_store(media_codec_config_data, AVDTP_AAC_MPEG2_LC, 48000, 2, 300000, 0);
+    avdtp_configuration_mpeg_aac_t configuration;
+    configuration.object_type = AVDTP_AAC_MPEG2_LC;
+    configuration.channels = 2;
+    configuration.bit_rate = 300000;
+    configuration.vbr = 0;
+    avdtp_config_mpeg_aac_store(media_codec_config_data, &configuration);
     media_codec_config_len = 4;
 }
 
 static void setup_atrac_codec_config(uint8_t local_remote_seid_index) {
     UNUSED(local_remote_seid_index);
     // setup ATRAC configuration (ATRAC-3, joint stereo, no vbr, bit rate index 0x10, max sul 100)
-    avdtp_config_atrac_store(media_codec_config_data, AVDTP_ATRAC_VERSION_3, AVDTP_CHANNEL_MODE_JOINT_STEREO, 48000, 0, 0x10, 100);
+    avdtp_configuration_atrac_t configuration;
+    configuration.version = AVDTP_ATRAC_VERSION_3;
+    configuration.channel_mode = AVDTP_CHANNEL_MODE_JOINT_STEREO;
+    configuration.sampling_frequency = 48000;
+    configuration.bit_rate_index = 0x10;
+    configuration.maximum_sul = 100;
+    avdtp_config_atrac_store(media_codec_config_data, &configuration);
     media_codec_config_len = 4;
 }
 

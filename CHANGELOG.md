@@ -15,7 +15,7 @@ AVDTP: emit stream release for active stream if signaling is closed first, e.g. 
 L2CAP: make handling of hci disconnect more robust
 
 ### Changed
-
+A2DP, AVDTP: use `a2dp_source_set_config_{TYPE}` and `avdtp_config{TYPE}_store` to avoid large number of parameters
 
 ## Release v1.3
 
