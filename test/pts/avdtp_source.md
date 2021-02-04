@@ -1,3 +1,5 @@
+Tool: avdtp_source_test
+
 AVDTP/SRC/ACP/SIG/SMG/BV-06-C : (wait)
 AVDTP/SRC/ACP/SIG/SMG/BV-08-C : (wait)
 AVDTP/SRC/ACP/SIG/SMG/BV-10-C : (wait)

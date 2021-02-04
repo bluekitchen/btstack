@@ -1,3 +1,5 @@
+Tool: avdtp_sink_test
+
 AVDTP/SNK/ACP/SIG/SMG/BV-06-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BV-08-C : (wait)
 AVDTP/SNK/ACP/SIG/SMG/BV-10-C : (wait)
