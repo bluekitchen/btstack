@@ -659,9 +659,9 @@ static uint8_t media_sbc_codec_reconfiguration[] = {
 };
 
 static uint8_t media_aac_codec_capabilities[] = {
+        0xF0,
         0xFF,
-        0xFF,
-        0xFF,
+        0xFC,
         0x80,
         0,
         0
