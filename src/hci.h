@@ -838,6 +838,8 @@ typedef struct {
     /*  8 - Read Remote Extended Features           (Octet  2/bit 5) */
     /*  9 - Write Secure Connections Host           (Octet 32/bit 3) */
     /* 10 - LE Set Address Resolution Enable        (Octet 35/bit 1) */
+    /* 11 - Remote OOB Extended Data Request Reply  (Octet 32/bit 1) */
+    /* 12 - Read Local OOB Extended Data command    (Octet 32/bit 6) */
     uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */

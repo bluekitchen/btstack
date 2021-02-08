@@ -2129,7 +2129,9 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_stack->local_supported_commands[1] =
                 ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+ 2u] & 0x40u) >> 6u) |  // bit  8 = Octet  2, bit 6 / Read Remote Extended Features
                 ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x08u) >> 2u) |  // bit  9 = Octet 32, bit 3 / Write Secure Connections Host
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x02u) << 1u);   // bit 10 = Octet 35, bit 1 / LE Set Address Resolution Enable
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x02u) << 1u) |  // bit 10 = Octet 35, bit 1 / LE Set Address Resolution Enable
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x02u) << 2u) |  // bit 11 = Octet 32, bit 1 / Remote OOB Extended Data Request Reply
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x40u) >> 2u);   // bit 12 = Octet 32, bit 6 / Read Local OOB Extended Data command
             log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
             break;
 #ifdef ENABLE_CLASSIC
