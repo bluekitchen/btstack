@@ -325,7 +325,6 @@ static int avrcp_target_send_response(uint16_t cid, avrcp_connection_t * connect
                  connection->cmd_operands_length);
     pos += connection->cmd_operands_length;
     
-    connection->wait_to_send = false;
     return l2cap_send_prepared(cid, pos);
 }
 
@@ -1055,7 +1054,7 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
         (void)memcpy(packet + pos, value, value_len);
         pos += value_len;
     }
-    connection->wait_to_send = false;
+
     return l2cap_send_prepared(cid, pos);
 }
 
