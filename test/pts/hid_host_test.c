@@ -116,8 +116,10 @@ static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT;
 // SDP
 static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
 
-// PTS
+// Logitec static const char * remote_addr_string = "00:1F:20:86:DF:52";
+// PTS 
 static const char * remote_addr_string = "00:1B:DC:08:E2:5C";
+
 static bd_addr_t remote_addr;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;

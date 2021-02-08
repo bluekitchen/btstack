@@ -1,4 +1,4 @@
-use hid_host_test with #define REPORT_ID_DECLARED:
+Tool: hid_host_test with #define REPORT_ID_DECLARED
 
 HID11/HOS/HCE/BV-08-I: OK, c, (Confirmation)
 
@@ -7,7 +7,7 @@ HID11/HOS/HRE/BV-09-I: c, s, S
 HID11/HOS/HCR/BV-01-I: c, C, c, (Confirmation), C, (Confirmation)
 HID11/HOS/HCR/BV-02-I: c, c, (Confirmation), (Confirmation)
 HID11/HOS/HCR/BV-03-I: c, U, c, "OK"
-HID11/HOS/HCR/BV-04-I: c
+HID11/HOS/HCR/BV-04-I: c, c, (ok)
 
 HID11/HOS/HCT/BV-01-C: c, 1, 2, 3
 HID11/HOS/HCT/BV-02-C: c, 4
@@ -20,7 +20,8 @@ HID11/HOS/HCT/BV-08-C: c, s, S
 HID11/HOS/HCT/BI-01-C: c, (wait)
 HID11/HOS/HCT/BI-02-C: c, 1, (Confirmation), 3, (Confirmation), 3, (Confirmation)
 
-HID11/HOS/BHCT/BV-03-C: a, 9???
+HID11/HOS/BHCT/BV-03-C: a, o // PTS test fails
+
 HID11/HOS/BHCT/BI-01-C: a, 3, (Confirmation) , 3, (Confirmation), 3, (Confirmation)
 
 HID11/HOS/HIT/BV-01-C: c

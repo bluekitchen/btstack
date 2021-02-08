@@ -1,4 +1,4 @@
-use hid_device_test with #define REPORT_ID_DECLARED:
+Tool: hid_device_test with #define REPORT_ID_DECLARED
 
 HID11/DEV/DCE/BV-10-I: l, (OK), L, (OK)
 
