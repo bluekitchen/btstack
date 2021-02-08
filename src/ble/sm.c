@@ -180,6 +180,8 @@ typedef uint8_t sm_key256_t[32];
 // GLOBAL DATA
 //
 
+static bool sm_initialized;
+
 static bool test_use_fixed_local_csrk;
 static bool test_use_fixed_local_irk;
 
@@ -489,6 +491,7 @@ static void sm_run_timer_handler(btstack_timer_source_t * ts){
 	sm_run();
 }
 static void sm_trigger_run(void){
+    if (!sm_initialized) return;
 	(void)btstack_run_loop_remove_timer(&sm_run_timer);
 	btstack_run_loop_set_timer(&sm_run_timer, 0);
 	btstack_run_loop_add_timer(&sm_run_timer);
@@ -4358,6 +4361,9 @@ void sm_test_set_pairing_failure(int reason){
 #endif
 
 void sm_init(void){
+
+    if (sm_initialized) return;
+
     // set default ER and IR values (should be unique - set by app or sm later using TLV)
     sm_er_ir_set_default();
 
@@ -4407,6 +4413,8 @@ void sm_init(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     sm_ec_generate_new_key();
 #endif
+
+    sm_initialized = true;
 }
 
 void sm_use_fixed_passkey_in_display_role(uint32_t passkey){
