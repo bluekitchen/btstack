@@ -107,6 +107,7 @@ ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in 
 ENABLE_CONTROLLER_WARM_BOOT      | Enable stack startup without power cycle (if supported/possible)
 ENABLE_SEGGER_RTT                | Use SEGGER RTT for console output and packet log, see [additional options](#sec:rttConfiguration)
 ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL | Disable calls to control Connectable Mode by L2CAP
+ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY | Let application trigger sending IO Capabilities (Negative) Reply
 ENABLE_CLASSIC_OOB_PAIRING       | Enable support for classic Out-of-Band (OOB) pairing
 
 Notes:
