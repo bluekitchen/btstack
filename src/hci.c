@@ -2575,7 +2575,12 @@ static void event_handler(uint8_t *packet, uint16_t size){
             
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
+            log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
+            if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
+            } else {
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            }
             break;
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -4214,29 +4219,30 @@ static bool hci_run_general_pending_commands(void){
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
-            log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
-            if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
-                // tweak authentication requirements
-                uint8_t authreq = hci_stack->ssp_authentication_requirement;
-                if (connection->bonding_flags & BONDING_DEDICATED){
-                    authreq = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
-                }
-                if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
-                    authreq |= 1;
-                }
-                uint8_t have_oob_data = 0;
-#ifdef ENABLE_CLASSIC_PAIRING_OOB
-                if (connection->classic_oob_c_192 != NULL){
-                    have_oob_data |= 1;
-                }
-                if (connection->classic_oob_c_256 != NULL){
-                    have_oob_data |= 2;
-                }
-#endif
-                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, have_oob_data, authreq);
-            } else {
-                hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
+            // tweak authentication requirements
+            uint8_t authreq = hci_stack->ssp_authentication_requirement;
+            if (connection->bonding_flags & BONDING_DEDICATED){
+                authreq = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
             }
+            if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
+                authreq |= 1;
+            }
+            uint8_t have_oob_data = 0;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+            if (connection->classic_oob_c_192 != NULL){
+                    have_oob_data |= 1;
+            }
+            if (connection->classic_oob_c_256 != NULL){
+                have_oob_data |= 2;
+            }
+#endif
+            hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, have_oob_data, authreq);
+            return true;
+        }
+
+        if (connection->authentication_flags & SEND_IO_CAPABILITIES_NEGATIVE_REPLY) {
+            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
             return true;
         }
 

@@ -196,23 +196,24 @@ typedef enum {
     DENY_PIN_CODE_REQUEST          = 0x0040,
     RECV_IO_CAPABILITIES_REQUEST   = 0x0080,
     SEND_IO_CAPABILITIES_REPLY     = 0x0100,
-    SEND_USER_CONFIRM_REPLY        = 0x0200,
-    SEND_USER_PASSKEY_REPLY        = 0x0400,
+    SEND_IO_CAPABILITIES_NEGATIVE_REPLY = 0x0200,
+    SEND_USER_CONFIRM_REPLY        = 0x0400,
+    SEND_USER_PASSKEY_REPLY        = 0x0800,
 
     // Classic OOB
-    SEND_REMOTE_OOB_DATA_REPLY     = 0x0800,
+    SEND_REMOTE_OOB_DATA_REPLY     = 0x1800,
 
     // pairing status
-    LEGACY_PAIRING_ACTIVE          = 0x1000,
-    SSP_PAIRING_ACTIVE             = 0x2000,
+    LEGACY_PAIRING_ACTIVE          = 0x2000,
+    SSP_PAIRING_ACTIVE             = 0x4000,
 
     // connection status
-    CONNECTION_AUTHENTICATED       = 0x4000,
-    CONNECTION_ENCRYPTED           = 0x8000,
+    CONNECTION_AUTHENTICATED       = 0x8000,
+    CONNECTION_ENCRYPTED           = 0x10000,
 
     // errands
-    READ_RSSI                      = 0x10000,
-    WRITE_SUPERVISION_TIMEOUT      = 0x20000,
+    READ_RSSI                      = 0x20000,
+    WRITE_SUPERVISION_TIMEOUT      = 0x40000,
 
 } hci_authentication_flags_t;
 
