@@ -1386,6 +1386,16 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_EVENT_RSSI_MEASUREMENT                            0xE5
 
+/**
+ * @format 1KKKK
+ * @param oob_data_present 0 = none, 1 = p_192, 2 = p_256, 3 = both
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+#define GAP_EVENT_LOCAL_OOB_DATA                              0xE6
+
 // Meta Events, see below for sub events
 #define HCI_EVENT_HSP_META                                 0xE8
 #define HCI_EVENT_HFP_META                                 0xE9

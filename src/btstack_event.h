@@ -3326,6 +3326,52 @@ static inline uint8_t gap_event_rssi_measurement_get_rssi(const uint8_t * event)
 }
 
 /**
+ * @brief Get field oob_data_present from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @return oob_data_present
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_local_oob_data_get_oob_data_present(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field c_192 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for c_192
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_c_192(const uint8_t * event, uint8_t * c_192){
+    reverse_bytes(&event[3], c_192, 16);
+}
+/**
+ * @brief Get field r_192 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for r_192
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_r_192(const uint8_t * event, uint8_t * r_192){
+    reverse_bytes(&event[19], r_192, 16);
+}
+/**
+ * @brief Get field c_256 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for c_256
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_c_256(const uint8_t * event, uint8_t * c_256){
+    reverse_bytes(&event[35], c_256, 16);
+}
+/**
+ * @brief Get field r_256 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for r_256
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_r_256(const uint8_t * event, uint8_t * r_256){
+    reverse_bytes(&event[51], r_256, 16);
+}
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_CONNECTION_COMPLETE
  * @param event packet
  * @return status

@@ -2154,8 +2154,27 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 hci_handle_read_encryption_key_size_complete(conn, key_size);
             }
             break;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        case HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA:
+        case HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA:{
+            uint8_t event[67];
+            event[0] = GAP_EVENT_LOCAL_OOB_DATA;
+            event[1] = 65;
+            (void)memset(&event[2], 0, 65);
+            if (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE] == ERROR_CODE_SUCCESS){
+                (void)memcpy(&event[3], &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 32);
+                if (opcode == HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA){
+                    event[2] = 3;
+                    (void)memcpy(&event[35], &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+33], 32);
+                } else {
+                    event[2] = 1;
+                }
+            }
+            hci_emit_event(event, sizeof(event), 0);
+            break;
+        }
 #endif
-
+#endif
         default:
             break;
     }
