@@ -590,6 +590,7 @@ static const uint16_t known_bt_devices[] = {
     0x0a5c, 0x22be,
     // Zephyr e.g nRF52840-PCA10056
     0x2fe3, 0x0100,
+    0x2fe3, 0x000b,
 };
 
 static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
@@ -689,7 +690,6 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
         // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
         // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
         // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
-        // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
         if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01) {
             return i;
         }
@@ -766,12 +766,21 @@ static int prepare_device(libusb_device_handle * aHandle){
     }
 
 #ifdef ENABLE_SCO_OVER_HCI
-    log_info("claiming interface 1...");
-    r = libusb_claim_interface(aHandle, 1);
-    if (r < 0) {
-        log_error("Error %d claiming interface 1: - disabling SCO over HCI", r);
-    } else {
-        sco_enabled = 1;
+    // get endpoints from interface descriptor
+    struct libusb_config_descriptor *config_descriptor;
+    r = libusb_get_active_config_descriptor(device, &config_descriptor);
+    if (r >= 0){
+        int num_interfaces = config_descriptor->bNumInterfaces;
+        if (num_interfaces > 1) {
+            r = libusb_claim_interface(aHandle, 1);
+            if (r < 0) {
+                log_error("Error %d claiming interface 1: - disabling SCO over HCI", r);
+            } else {
+                sco_enabled = 1;
+            }
+        } else {
+            log_info("Device has only on interface, disabling SCO over HCI");
+        }
     }
 #endif
 
