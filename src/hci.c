@@ -2576,11 +2576,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
             log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
+#ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
             if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
             } else {
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             }
+#endif
             break;
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -5944,6 +5946,25 @@ int gap_ssp_confirmation_negative(const bd_addr_t addr){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
+
+#ifdef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+
+static uint8_t gap_set_auth_flag_and_run(const bd_addr_t addr, hci_authentication_flags_t flag){
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    connectionSetAuthenticationFlags(conn, flag);
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr){
+    return gap_set_auth_flag_and_run(addr, SEND_IO_CAPABILITIES_REPLY);
+}
+
+uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr){
+    return gap_set_auth_flag_and_run(addr, SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+}
+#endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
 /**

@@ -755,6 +755,22 @@ void gap_ssp_generate_oob_data(void);
 uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, const uint8_t * r_192, const uint8_t * c_256, const uint8_t * r_256);
 
 /**
+ * Send SSP IO Capabilities Reply
+ * @note IO Capabilities (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+ * @param addr
+ * @return 0 if ok
+ */
+uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr);
+
+/**
+ * Send SSP IO Capabilities Negative Reply
+ * @note IO Capabilities (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+ * @param addr
+ * @return 0 if ok
+ */
+uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
+
+/**
  * @brief Enter Sniff mode
  * @param con_handle
  * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
