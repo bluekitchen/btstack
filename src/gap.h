@@ -739,6 +739,12 @@ int gap_ssp_confirmation_response(const bd_addr_t addr);
 int gap_ssp_confirmation_negative(const bd_addr_t addr);
 
 /**
+ * @brief Generate new OOB data
+ * @note OOB data will be provided in GAP_EVENT_LOCAL_OOB_DATA and be used in future pairing procedures
+ */
+void gap_ssp_generate_oob_data(void);
+
+/**
  * @brief Report Remote OOB Data
  * @param bd_addr
  * @param c_192 Simple Pairing Hash C derived from P-192 public key

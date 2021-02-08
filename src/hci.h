@@ -993,6 +993,9 @@ typedef struct {
 	uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
 #endif
 
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+	bool                      classic_read_local_oob_data;
+#endif
 } hci_stack_t;
 
 

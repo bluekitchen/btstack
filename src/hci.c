@@ -3031,6 +3031,10 @@ static void hci_state_reset(void){
 
     hci_stack->secure_connections_active = false;
 
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    hci_stack->classic_read_local_oob_data = true;
+#endif
+
     // LE
 #ifdef ENABLE_BLE
     memset(hci_stack->le_random_address, 0, 6);
@@ -3706,6 +3710,17 @@ static bool hci_run_general_gap_classic(void){
                      hci_stack->remote_name_page_scan_repetition_mode, 0, hci_stack->remote_name_clock_offset);
         return true;
     }
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    // Local OOB data
+    if ((hci_stack->state == HCI_STATE_WORKING) && hci_stack->classic_read_local_oob_data){
+        hci_stack->classic_read_local_oob_data = false;
+        if (hci_stack->local_supported_commands[1] & 0x10u){
+            hci_send_cmd(&hci_read_local_extended_oob_data);
+        } else {
+            hci_send_cmd(&hci_read_local_oob_data);
+        }
+    }
+#endif
     // pairing
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE){
         uint8_t state = hci_stack->gap_pairing_state;
@@ -5944,6 +5959,15 @@ uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, con
     connection->classic_oob_r_256 = r_256;
     return ERROR_CODE_SUCCESS;
 }
+/**
+ * @brief Generate new OOB data
+ * @note OOB data will be provided in GAP_EVENT_LOCAL_OOB_DATA and be used in future pairing procedures
+ */
+void gap_ssp_generate_oob_data(void){
+    hci_stack->classic_read_local_oob_data = true;
+    hci_run();
+}
+
 #endif
 
 /**
