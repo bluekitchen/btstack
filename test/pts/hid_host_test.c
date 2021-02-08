@@ -450,6 +450,10 @@ static void stdin_process(char cmd){
             printf("Send \'Unplug\'\n");
             hid_host_send_virtual_cable_unplug(hid_host_cid);
             break;
+        case 'u':
+            printf("Reset unplug (for the next PTS test)\n");
+            unplugged = false;
+            break;
         
 
         case '1':

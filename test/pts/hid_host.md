@@ -6,7 +6,7 @@ HID11/HOS/HRE/BV-09-I: c, s, S
 
 HID11/HOS/HCR/BV-01-I: c, C, c, (Confirmation), C, (Confirmation)
 HID11/HOS/HCR/BV-02-I: c, c, (Confirmation), (Confirmation)
-HID11/HOS/HCR/BV-03-I: c, U, c, "OK"
+HID11/HOS/HCR/BV-03-I: c, U, c, "OK", u
 HID11/HOS/HCR/BV-04-I: c, c, (ok)
 
 HID11/HOS/HCT/BV-01-C: c, 1, 2, 3
