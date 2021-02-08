@@ -35,11 +35,12 @@
  *
  */
 
-// *****************************************************************************
-/* EXAMPLE_START(ble_peripheral): LE Data Channel Test
- *
- */
-// *****************************************************************************
+#define BTSTACK_FILE__ "le_data_channel.c"
+
+/*
+ * le_data_channel.c 
+ */ 
+
 
 #include <stdint.h>
 #include <stdio.h>
@@ -418,5 +419,3 @@ int btstack_main(int argc, const char * argv[]){
     
     return 0;
 }
-
-/* EXAMPLE_END */

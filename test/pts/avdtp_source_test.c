@@ -35,6 +35,12 @@
  *
  */
 
+#define BTSTACK_FILE__ "avdtp_source_test.c"
+
+/*
+ * avdtp_source_test.c : Tool for testig AVDTP source with PTS, see avdtp_source_test.md and a2dp_source.md for PTS tests command sequences
+ */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

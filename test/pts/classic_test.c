@@ -34,12 +34,13 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
-// *****************************************************************************
-//
-// minimal setup for SDP client over USB or UART
-//
-// *****************************************************************************
+
+#define BTSTACK_FILE__ "classic_test.c"
+
+/*
+ * classic_test.c : minimal setup for SDP client over USB or UART
+ */
+
 
 #include "btstack_config.h"
 

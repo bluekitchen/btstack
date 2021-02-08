@@ -35,12 +35,11 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_host_test.c"
+#define BTSTACK_FILE__ "hid_host_test.c"
 
 /*
- * hid_host_test.c
+ * hid_host_test.c : Tool for testig HID host with PTS, see hid_host_test.md for PTS tests command sequences
  */
-
 
 
 #include <inttypes.h>

@@ -35,11 +35,11 @@
  *
  */
  
-// *****************************************************************************
-//
-// HFP Audio Gateway PTS Test
-//
-// *****************************************************************************
+#define BTSTACK_FILE__ "hsp_ag_test.c"
+
+/*
+ * hsp_ag_test.c : Tool for testig HSP Audio Gateway with PTS
+ */ 
 
 #include <errno.h>
 #include <fcntl.h>

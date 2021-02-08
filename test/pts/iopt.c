@@ -34,12 +34,13 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
-// *****************************************************************************
-//
-// IOP Test providing all implemented profiles at once
-//
-// *****************************************************************************
+
+#define BTSTACK_FILE__ "iopt.c"
+
+/*
+ * iopt.c : IOP Test providing all implemented profiles at once
+ */ 
+
 
 #include <stdint.h>
 #include <stdio.h>

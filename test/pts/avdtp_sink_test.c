@@ -35,6 +35,11 @@
  *
  */
 
+#define BTSTACK_FILE__ "avdtp_sink_test.c"
+
+/*
+ * avdtp_sink_test.c : Tool for testig AVDTP sink with PTS, see avdtp_sink_test.md and a2dp_sink.md for PTS tests command sequences
+ */
 
 #include <stdint.h>
 #include <stdio.h>

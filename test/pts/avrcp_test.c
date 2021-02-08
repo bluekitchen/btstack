@@ -35,6 +35,11 @@
  *
  */
 
+#define BTSTACK_FILE__ "avrcp_test.c"
+
+/*
+ * avrcp_test.c : Tool for testig AVRCP with PTS, see avrcp_test.md for PTS tests command sequences
+ */
 
 #include <stdint.h>
 #include <inttypes.h>

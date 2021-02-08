@@ -35,11 +35,11 @@
  *
  */
 
-// *****************************************************************************
-/* EXAMPLE_START(ble_peripheral): BLE Peripheral Demo
- *
+#define BTSTACK_FILE__ "ble_peripheral_test.c"
+
+/*
+ * ble_peripheral_test.c : Tool for testig BLE peripheral
  */
-// *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>
@@ -991,4 +991,3 @@ int btstack_main(int argc, const char * argv[]){
     return 0;
 }
 
-/* EXAMPLE_END */

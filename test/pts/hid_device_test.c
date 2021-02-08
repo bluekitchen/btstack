@@ -35,19 +35,11 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_keyboard_demo.c"
- 
-// *****************************************************************************
-/* EXAMPLE_START(hid_keyboard_demo): HID Keyboard (Server) Demo
- *
- * @text This HID Device example demonstrates how to implement
- * an HID keyboard. Without a HAVE_BTSTACK_STDIN, a fixed demo text is sent
- * If HAVE_BTSTACK_STDIN is defined, you can type from the terminal
- *
- * @text Status: Basic implementation. HID Request from Host are not answered yet. Works with iOS.
- */
-// *****************************************************************************
+#define BTSTACK_FILE__ "hid_device_test.c"
 
+/*
+ * hid_device_test.c : Tool for testig HID device with PTS, see hid_device_test.md for PTS tests command sequences
+ */ 
 
 #include <stdint.h>
 #include <stdio.h>
@@ -505,14 +497,6 @@ static int hid_device_connection_filter(bd_addr_t addr){
     return 1;
 }
 
-/* @section Main Application Setup
- *
- * @text Listing MainConfiguration shows main application code. 
- * To run a HID Device service you need to initialize the SDP, and to create and register HID Device record with it. 
- * At the end the Bluetooth stack is started.
- */
-
-/* LISTING_START(MainConfiguration): Setup HID Device */
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -573,5 +557,4 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     return 0;
 }
-/* LISTING_END */
-/* EXAMPLE_END */
+

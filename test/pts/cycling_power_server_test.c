@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "cycling_power_server_test.c"
+#define BTSTACK_FILE__ "cycling_power_server_test.c"
 
 #include <stdint.h>
 #include <stdio.h>
