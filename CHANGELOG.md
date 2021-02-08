@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+GAP: support for Classic Out-of-Band (OOB) via `gap_ssp_remote_oob_data` with `ENABLE_CLASSIC_OOB_PAIRING`
+GAP: read local OOB data on start and on call to `gap_ssp_generate_oob_data` 
+GAP: emit `GAP_EVENT_LOCAL_OOB_DATA`
 
 ### Fixed
 AVDTP: emit stream release for active stream if signaling is closed first, e.g. caused by hci disconnect
