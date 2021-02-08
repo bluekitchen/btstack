@@ -705,7 +705,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                             connection->incoming = true;
                             
                             // emit connection request
-                            // user calls some accept from us
+                            // user calls either hid_host_accept_connection or hid_host_decline_connection
                             hid_emit_incoming_connection_event(connection);
                             break;
                             
@@ -994,7 +994,13 @@ static void hid_host_handle_start_sdp_client_query(void * context){
 
 uint8_t hid_host_accept_connection(uint16_t hid_cid, hid_protocol_mode_t protocol_mode){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
-    if (!connection) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    } 
+    if (connection->state != HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     connection->requested_protocol_mode = protocol_mode;
     l2cap_accept_connection(connection->control_cid);
     return ERROR_CODE_SUCCESS;
@@ -1002,7 +1008,13 @@ uint8_t hid_host_accept_connection(uint16_t hid_cid, hid_protocol_mode_t protoco
 
 uint8_t hid_host_decline_connection(uint16_t hid_cid){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
-    if (!connection) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (!connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    } 
+    if (connection->state != HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     l2cap_decline_connection(connection->control_cid);
     hid_host_finalize_connection(connection);
     return ERROR_CODE_SUCCESS;
