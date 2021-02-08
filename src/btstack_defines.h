@@ -488,7 +488,19 @@ typedef uint8_t sm_key_t[16];
   */
 #define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE          0x30
 
+ /**
+  * @format B
+  * @param bd_addr
+  */
 #define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
+
+/**
+ * @format B111
+ * @param bd_addr
+ * @param io_capability
+ * @param oob_data_present
+ * @param authentication_requirements
+ */
 #define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
 
 /**

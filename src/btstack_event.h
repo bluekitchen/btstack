@@ -991,6 +991,53 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
 }
 
 /**
+ * @brief Get field bd_addr from event HCI_EVENT_IO_CAPABILITY_REQUEST
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_io_capability_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[2], bd_addr, 6);
+}
+
+/**
+ * @brief Get field bd_addr from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_io_capability_response_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[2], bd_addr, 6);
+}
+/**
+ * @brief Get field io_capability from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @return io_capability
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_io_capability_response_get_io_capability(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field oob_data_present from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @return oob_data_present
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_io_capability_response_get_oob_data_present(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field authentication_requirements from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @return authentication_requirements
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_io_capability_response_get_authentication_requirements(const uint8_t * event){
+    return event[10];
+}
+
+/**
  * @brief Get field bd_addr from event HCI_EVENT_USER_CONFIRMATION_REQUEST
  * @param event packet
  * @param Pointer to storage for bd_addr
