@@ -220,6 +220,20 @@ static void hid_emit_event_with_status(hid_host_connection_t * connection, uint8
     hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
+static void hid_emit_set_protocol_response_event(hid_host_connection_t * connection, hid_handshake_param_type_t status){
+    uint8_t event[7];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_HID_META;
+    pos++;  // skip len
+    event[pos++] = HID_SUBEVENT_SET_PROTOCOL_RESPONSE;
+    little_endian_store_16(event,pos,connection->hid_cid);
+    pos += 2;
+    event[pos++] = status;
+    event[pos++] = connection->protocol_mode;
+    event[1] = pos - 2;
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+}
+
 static void hid_emit_incoming_connection_event(hid_host_connection_t * connection){
     uint8_t event[13];
     uint16_t pos = 0;
@@ -479,7 +493,9 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             if (try_fallback_to_boot){
                 if (connection->incoming){
                     connection->set_protocol = true;
+                    connection->state = HID_HOST_CONNECTION_ESTABLISHED;
                     connection->requested_protocol_mode = HID_PROTOCOL_MODE_BOOT;
+                    hid_emit_descriptor_available_event(connection);
                     l2cap_request_can_send_now_event(connection->control_cid);
                 } else {
                     connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
@@ -496,7 +512,9 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             // report mode possible
             if (connection->incoming) {
                 connection->set_protocol = true;
+                connection->state = HID_HOST_CONNECTION_ESTABLISHED;
                 connection->requested_protocol_mode = HID_PROTOCOL_MODE_REPORT;
+                hid_emit_descriptor_available_event(connection);
                 l2cap_request_can_send_now_event(connection->control_cid);
             } else {
                 connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
@@ -544,6 +562,7 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
         case HID_HOST_CONNECTION_ESTABLISHED:
             if (!connection->w4_set_protocol_response) break;
             connection->w4_set_protocol_response = false;
+            
             switch (message_status){
                 case HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL:
                     connection->protocol_mode = connection->requested_protocol_mode;
@@ -551,33 +570,26 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
                 default:
                     break;
             }
-            hid_emit_event_with_status(connection, HID_SUBEVENT_SET_PROTOCOL_RESPONSE, message_status);
+            hid_emit_set_protocol_response_event(connection, message_status);
             break;
         
-        case HID_HOST_CONTROL_CONNECTION_ESTABLISHED:           // only outgoing
-        case HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED:      // incoming and outgoing
-
-        case HID_HOST_W4_SDP_QUERY_RESULT:
+        case HID_HOST_CONTROL_CONNECTION_ESTABLISHED:           // outgoing
+        case HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED:      // outgoing
             if (!connection->w4_set_protocol_response) break;
             connection->w4_set_protocol_response = false;
             
             switch (message_status){
                 case HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL:
                     // we are already connected, here it is only confirmed that we are in required protocol 
-                    if (connection->incoming){
-                        connection->incoming = false;
-                        connection->state = HID_HOST_CONNECTION_ESTABLISHED;
-                        
-                        hid_emit_connected_event(connection, ERROR_CODE_SUCCESS);
-                        hid_emit_descriptor_available_event(connection);
-                    } else {
-                        status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, connection->interrupt_psm, 0xffff, &connection->interrupt_cid);
-                        if (status){
-                            log_info("HID Interrupt Connection failed: 0x%02x\n", status);
-                            break;
-                        }
-                        connection->state = HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED;
+                    btstack_assert(connection->incoming == false);
+                    status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, connection->interrupt_psm, 0xffff, &connection->interrupt_cid);
+                    if (status != ERROR_CODE_SUCCESS){
+                        log_info("HID Interrupt Connection failed: 0x%02x\n", status);
+                        hid_emit_connected_event(connection, status);
+                        hid_host_finalize_connection(connection);
+                        break;
                     }
+                    connection->state = HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED;
                     break;
                 default:
                     hid_emit_connected_event(connection, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
@@ -747,8 +759,9 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                                 break;
 
                             case HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED:
-                                // hid_emit_connected_event(connection, ERROR_CODE_SUCCESS);
-                                        
+                                hid_emit_connected_event(connection, ERROR_CODE_SUCCESS);
+                                connection->state = HID_HOST_CONNECTION_ESTABLISHED;
+
                                 switch (connection->requested_protocol_mode){
                                     case HID_PROTOCOL_MODE_BOOT:
                                         connection->set_protocol = true;
@@ -847,7 +860,6 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                         switch(connection->state){
                             case HID_HOST_CONTROL_CONNECTION_ESTABLISHED:
                             case HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED:
-                            case HID_HOST_W4_SDP_QUERY_RESULT:
                                 if (connection->set_protocol){
                                     connection->set_protocol = false;
                                     uint8_t header = (HID_MESSAGE_TYPE_SET_PROTOCOL << 4) | connection->requested_protocol_mode;
