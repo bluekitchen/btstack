@@ -3537,7 +3537,7 @@ static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
-    int err;
+    int err = 0;
     switch (hci_stack->state){
         case HCI_STATE_OFF:
             err = hci_power_control_state_off(power_mode);
@@ -3561,7 +3561,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
             btstack_assert(false);
             break;
     }
-    if (err){
+    if (err != 0){
         return err;
     }
 
