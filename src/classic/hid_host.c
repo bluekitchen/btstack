@@ -398,7 +398,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                                         if (!des_iterator_has_more(&prot_it)) continue;
                                         des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->control_psm);
-                                        log_info("HID Control PSM: 0x%04x", (int) &connection->control_psm);
+                                        log_info("HID Control PSM: 0x%04x", connection->control_psm);
                                         break;
                                     default:
                                         break;
@@ -421,7 +421,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->interrupt_psm);
-                                            log_info("HID Interrupt PSM: 0x%04x", (int) &connection->interrupt_psm);
+                                            log_info("HID Interrupt PSM: 0x%04x", connection->interrupt_psm);
                                             break;
                                         default:
                                             break;
