@@ -43,8 +43,9 @@
 
 /* EXAMPLE_START(hid_host_demo): HID Host Classic
  *
- * @text This example implements an HID Host. For now, it connnects to a fixed device, queries the HID SDP
- * record and opens the HID Control + Interrupt channels
+ * @text This example implements a HID Host. For now, it connnects to a fixed device.
+ * It will connect in Report protocol mode if this mode is suported by the HID Device, 
+ * otherwise it will fall back to BOOT protocol mode. 
  */
 
 #include <inttypes.h>
@@ -114,7 +115,7 @@ static const uint8_t keytable_us_shift[] = {
 }; 
 
 // SDP
-static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
+static uint8_t hid_descriptor_storage[MAX_ATTRIBUTE_VALUE_SIZE];
 
 // App
 static enum {
@@ -128,7 +129,8 @@ static hid_protocol_mode_t hid_host_report_mode = HID_PROTOCOL_MODE_REPORT_WITH_
 
 /* @section Main application configuration
  *
- * @text In the application configuration, L2CAP is initialized 
+ * @text In the application configuration, L2CAP and HID host are initialized, and the link policies 
+ * are set to allow sniff mode and role change. 
  */
 
 /* LISTING_START(PanuSetup): Panu setup */
@@ -140,7 +142,7 @@ static void hid_host_setup(void){
     l2cap_init();
 
     // Initialize HID Host    
-    hid_host_init(hid_descriptor, sizeof(hid_descriptor));
+    hid_host_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
     hid_host_register_packet_handler(packet_handler);
 
     // Allow sniff mode requests by HID device and support role switch
@@ -161,11 +163,12 @@ static void hid_host_setup(void){
 /*
  * @section HID Report Handler
  * 
- * @text Use BTstack's compact HID Parser to process incoming HID Report
+ * @text Use BTstack's compact HID Parser to process incoming HID Report in Report protocol mode. 
  * Iterate over all fields and process fields with usage page = 0x07 / Keyboard
  * Check if SHIFT is down and process first character (don't handle multiple key presses)
  * 
  */
+
 #define NUM_KEYS 6
 static uint8_t last_keys[NUM_KEYS];
 static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t report_len){
@@ -237,7 +240,7 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
 /*
  * @section Packet Handler
  * 
- * @text The packet handler responds to various HCI Events.
+ * @text The packet handler responds to various HID events.
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
@@ -265,7 +268,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         status = hid_host_connect(remote_addr, hid_host_report_mode, &hid_host_cid);
                         if (status != ERROR_CODE_SUCCESS){
-                            printf("HID host connect failed, status 0x%02x\n", status);
+                            printf("HID host connect failed, status 0x%02x.\n", status);
                         }
                     }
                     break;
@@ -287,14 +290,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 /* LISTING_RESUME */
                 case HCI_EVENT_HID_META:
                     switch (hci_event_hid_meta_get_subevent_code(packet)){
+
                         case HID_SUBEVENT_INCOMING_CONNECTION:
+                            // There is an incoming connection: we can accept it or decline it.
+                            // The hid_host_report_mode in the hid_host_accept_connection function 
+                            // allows the application to request a protocol mode. 
+                            // For available protocol modes, see hid_protocol_mode_t in hid.h file. 
                             hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_report_mode);
                             break;
                         
                         case HID_SUBEVENT_CONNECTION_OPENED:
+                            // The status field of this event indicates if the control and interrupt
+                            // connections were opened successfully.
                             status = hid_subevent_connection_opened_get_status(packet);
-                            if (status) {
-                                // outgoing connection failed
+                            if (status != ERROR_CODE_SUCCESS) {
                                 printf("Connection failed, status 0x%x\n", status);
                                 app_state = APP_IDLE;
                                 hid_host_cid = 0;
@@ -303,63 +312,39 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             app_state = APP_CONNECTED;
                             hid_host_descriptor_available = false;
                             hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
-                            printf("HID Host connected...\n");
+                            printf("HID Host connected.\n");
                             break;
 
                         case HID_SUBEVENT_DESCRIPTOR_AVAILABLE:
+                            // This event will follows HID_SUBEVENT_CONNECTION_OPENED event. 
+                            // For incoming connections, i.e. HID Device initiating the connection,
+                            // the HID_SUBEVENT_DESCRIPTOR_AVAILABLE is delayed, and some HID  
+                            // reports may be received via HID_SUBEVENT_REPORT event. It is up to 
+                            // the application if these reports should be buffered or ignored until 
+                            // the HID descriptor is available.
                             status = hid_subevent_descriptor_available_get_status(packet);
                             if (status == ERROR_CODE_SUCCESS){
                                 hid_host_descriptor_available = true;
-                                printf("HID Descriptor available\n");
+                                printf("HID Descriptor available, please start typing.\n");
                             } else {
                                 printf("Cannot handle input report, HID Descriptor is not available.\n");
                             }
                             break;
-                        case HID_SUBEVENT_CONNECTION_CLOSED:
-                            hid_host_cid = 0;
-                            hid_host_descriptor_available = false;
-                            printf("HID Host disconnected..\n");
-                            break;
-                        
-                        case HID_SUBEVENT_GET_REPORT_RESPONSE:
-                            status = hid_subevent_get_report_response_get_handshake_status(packet);
-                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
-                                printf("Error get report, status 0x%02x\n", status);
-                                break;
-                            }
-                            printf("Received report[%d]: ", hid_subevent_get_report_response_get_report_len(packet));
-                            printf_hexdump(hid_subevent_get_report_response_get_report(packet), hid_subevent_get_report_response_get_report_len(packet));
-                            printf("\n");
-                            break;
 
-                        case HID_SUBEVENT_SET_REPORT_RESPONSE:
-                            status = hid_subevent_set_report_response_get_handshake_status(packet);
-                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
-                                printf("Error set report, status 0x%02x\n", status);
-                                break;
-                            }
-                            printf("Report set.\n");
-                            break;
-
-                        case HID_SUBEVENT_GET_PROTOCOL_RESPONSE:
-                            status = hid_subevent_get_protocol_response_get_handshake_status(packet);
-                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
-                                printf("Error get report, status 0x%02x\n", status);
-                                break;
-                            }
-                            switch ((hid_protocol_mode_t)hid_subevent_get_protocol_response_get_protocol_mode(packet)){
-                                case HID_PROTOCOL_MODE_BOOT:
-                                    printf("HID device is in BOOT mode.\n");
-                                    break;
-                                case HID_PROTOCOL_MODE_REPORT:
-                                    printf("HID device is in REPORT mode.\n");
-                                    break;
-                                default:
-                                    break;
+                        case HID_SUBEVENT_REPORT:
+                            // Handle input report.
+                            if (hid_host_descriptor_available){
+                                hid_host_handle_interrupt_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            } else {
+                                printf_hexdump(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
                             }
                             break;
 
                         case HID_SUBEVENT_SET_PROTOCOL_RESPONSE:
+                            // For incoming connections, the library will set the protocol mode of the
+                            // HID Device as requested in the call to hid_host_accept_connection. The event 
+                            // reports the result. For connections initiated by calling hid_host_connect, 
+                            // this event will occur only if the established report mode is boot mode.
                             status = hid_subevent_set_protocol_response_get_handshake_status(packet);
                             if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
                                 printf("Error set protocol, status 0x%02x\n", status);
@@ -376,17 +361,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                     printf("Unknown protocol mode.\n");
                                     break; 
                             }
-                            
                             break;
 
-                        case HID_SUBEVENT_REPORT:
-                            if (hid_host_descriptor_available){
-                                hid_host_handle_interrupt_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
-                            } else {
-                                printf_hexdump(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
-                            }
+                        case HID_SUBEVENT_CONNECTION_CLOSED:
+                            // The connection was closed.
+                            hid_host_cid = 0;
+                            hid_host_descriptor_available = false;
+                            printf("HID Host disconnected.\n");
                             break;
-
+                        
                         default:
                             break;
                     }
@@ -405,9 +388,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - Connect to %s in report mode, with fallback to BOOT mode.\n", remote_addr_string);
-    printf("C      - Disconnect from %s\n", remote_addr_string);
+    printf("\n--- Bluetooth HID Host Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c      - Connect to %s in report mode, with fallback to boot mode.\n", remote_addr_string);
+    printf("C      - Disconnect\n");
     
     printf("\n");
     printf("Ctrl-c - exit\n");
@@ -418,12 +401,11 @@ static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'c':
-            printf("Connect to %s in report mode, with fallback to BOOT mode.\n", remote_addr_string);
+            printf("Connect to %s in report mode, with fallback to boot mode.\n", remote_addr_string);
             status = hid_host_connect(remote_addr, hid_host_report_mode, &hid_host_cid);
             break;
-
         case 'C':
-            printf("Disconnect from  %s...\n", remote_addr_string);
+            printf("Disconnect...\n");
             hid_host_disconnect(hid_host_cid);
             break;
         case '\n':
