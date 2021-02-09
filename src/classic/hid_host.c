@@ -335,6 +335,18 @@ static hid_host_connection_t * hid_host_get_connection_for_bd_addr(bd_addr_t add
 
 
 static void hid_host_finalize_connection(hid_host_connection_t * connection){
+    uint16_t interrupt_cid = connection->interrupt_cid;
+    uint16_t control_cid = connection->control_cid;
+
+    connection->interrupt_cid = 0;
+    connection->control_cid = 0;
+
+    if (interrupt_cid != 0){
+        l2cap_disconnect(interrupt_cid, 0);
+    }
+    if (control_cid != 0){
+        l2cap_disconnect(control_cid, 0);
+    }
     btstack_linked_list_remove(&connections, (btstack_linked_item_t*) connection); 
     btstack_memory_hid_host_connection_free(connection);
 }

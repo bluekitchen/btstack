@@ -141,7 +141,7 @@ void hid_host_register_packet_handler(btstack_packet_handler_t callback);
  * followed by HID_SUBEVENT_DESCRIPTOR_AVAILABLE that informs if the HID Descriptor was found. In the case of incoming
  * connection, i.e. HID Device initiating the connection, the HID_SUBEVENT_DESCRIPTOR_AVAILABLE is delayed, and the reports 
  * may already come via HID_SUBEVENT_REPORT event. It is up to the application code if 
- * these events should be buffered or ignored until the descriptor is available.
+ * these reports should be buffered or ignored until the descriptor is available.
  * @note  HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT will try ti set up REPORT mode, but fallback to BOOT mode if necessary. 
  * @note  HID_SUBEVENT_DESCRIPTOR_AVAILABLE possible status values are:
  * - ERROR_CODE_SUCCESS if descriptor available, 
