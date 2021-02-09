@@ -144,7 +144,7 @@ int main(int argc, const char * argv[]){
     printf("Packet Log: %s\n", pklg_path);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbmodem14514421"; // PCA10040 nRF52832 
+    config.device_name = "/dev/tty.usbmodem0006830491191"; // PCA10056 nRF52840 
 
     // accept path from command line
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){
@@ -169,6 +169,9 @@ int main(int argc, const char * argv[]){
 
     // setup app
     btstack_main(argc, argv);
+
+    // sm required to setup static random Bluetooth address
+    sm_init();
 
     // go
     btstack_run_loop_execute();    

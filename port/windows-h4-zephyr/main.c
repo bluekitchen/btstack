@@ -173,6 +173,9 @@ int main(int argc, const char * argv[]){
     // setup app
     btstack_main(argc, argv);
 
+    // sm required to setup static random Bluetooth address
+    sm_init();
+
     // go
     btstack_run_loop_execute();
 
