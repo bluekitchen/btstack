@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 GAP: support for Classic Out-of-Band (OOB) via `gap_ssp_remote_oob_data` with `ENABLE_CLASSIC_OOB_PAIRING`
 GAP: read local OOB data on start and on call to `gap_ssp_generate_oob_data` 
 GAP: emit `GAP_EVENT_LOCAL_OOB_DATA`
+HID Host: add profile, update `hid_host_demo.c` example
 
 ### Fixed
 L2CAP: make handling of hci disconnect more robust
