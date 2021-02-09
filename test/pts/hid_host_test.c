@@ -110,7 +110,7 @@ static enum {
 
 static bool     unplugged    = false;
 static uint16_t hid_host_cid = 0;
-static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT;
+static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
 
 // SDP
 static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
@@ -233,8 +233,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
             event = hci_event_packet_get_type(packet);
+
             switch (event) {            
-                
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("BTstack up and running. \n");

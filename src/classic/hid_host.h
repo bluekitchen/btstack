@@ -60,7 +60,6 @@ typedef enum {
     HID_HOST_W4_SET_BOOT_MODE,
     HID_HOST_W4_INCOMING_INTERRUPT_CONNECTION,
     HID_HOST_W4_INTERRUPT_CONNECTION_ESTABLISHED,
-    HID_HOST_W4_PROTOCOL_MODE_VERIFIED,
     HID_HOST_CONNECTION_ESTABLISHED,
 
     HID_HOST_W2_SEND_GET_REPORT,
@@ -101,6 +100,9 @@ typedef struct {
     uint16_t hid_descriptor_offset;
     uint16_t hid_descriptor_len;
     uint16_t hid_descriptor_max_len;
+    uint8_t  hid_descriptor_status;     // ERROR_CODE_SUCCESS if descriptor available, 
+                                        // ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if not, and 
+                                        // ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if descriptor is larger then the available space
 
     uint8_t   user_request_can_send_now; 
 
@@ -135,9 +137,16 @@ void hid_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_sto
 void hid_host_register_packet_handler(btstack_packet_handler_t callback);
 
 /*
- * @brief Create HID connection to HID Device and emit HID_SUBEVENT_CONNECTION_OPENED event with status code.
+ * @brief Create HID connection to HID Device and emit HID_SUBEVENT_CONNECTION_OPENED event with status code, 
+ * followed by HID_SUBEVENT_DESCRIPTOR_AVAILABLE that informs if the HID Descriptor was found. In the case of incoming
+ * connection, i.e. HID Device initiating the connection, the HID_SUBEVENT_DESCRIPTOR_AVAILABLE is delayed, and the reports 
+ * may already come via HID_SUBEVENT_REPORT event. It is up to the application code if 
+ * these events should be buffered or ignored until the descriptor is available.
  * @note  HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT will try ti set up REPORT mode, but fallback to BOOT mode if necessary. 
- * @note  Reports from HID Device are received via HID_SUBEVENT_REPORT.
+ * @note  HID_SUBEVENT_DESCRIPTOR_AVAILABLE possible status values are:
+ * - ERROR_CODE_SUCCESS if descriptor available, 
+ * - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if not, and 
+ * - ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if descriptor is larger then the available space
  * @param remote_addr
  * @param protocol_mode see hid_protocol_mode_t in hid.h
  * @param hid_cid to use for other commands
