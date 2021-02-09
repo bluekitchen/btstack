@@ -110,6 +110,8 @@ static enum {
 
 static bool     unplugged    = false;
 static uint16_t hid_host_cid = 0;
+static bool hid_host_descriptor_available = false;
+
 static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
 
 // SDP
@@ -147,7 +149,7 @@ static void hid_host_setup(void){
     setbuf(stdout, NULL);
 }
 
-static void handle_input_report(const uint8_t * report, uint16_t report_len){
+static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t report_len){
     // check if HID Input Report
     if (report_len < 1){
         printf("ignore report: len 0");
@@ -283,6 +285,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
                             printf("HID Host connected...\n");
                             break;
+                        
+                        case HID_SUBEVENT_DESCRIPTOR_AVAILABLE:
+                            status = hid_subevent_descriptor_available_get_status(packet);
+                            if (status == ERROR_CODE_SUCCESS){
+                                hid_host_descriptor_available = true;
+                                printf("HID Descriptor available\n");
+                            } else {
+                                printf("Cannot handle input report, HID Descriptor is not available.\n");
+                            }
+                            break;
 
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             hid_host_cid = 0;
@@ -337,9 +349,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             break;
 
                         case HID_SUBEVENT_REPORT:
-                            printf("Received input report[%d]: ", hid_subevent_report_get_report_len(packet));
-                            handle_input_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
-                            printf("\n");
+                            if (hid_host_descriptor_available){
+                                hid_host_handle_interrupt_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            } else {
+                                printf_hexdump(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            }
                             break;
 
                         default:

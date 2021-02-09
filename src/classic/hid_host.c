@@ -702,6 +702,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
                             }
 
                             connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
+                            connection->hid_descriptor_status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                             connection->con_handle = l2cap_event_incoming_connection_get_handle(packet);
                             connection->control_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                             connection->incoming = true;
@@ -764,6 +765,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
 
                                 switch (connection->requested_protocol_mode){
                                     case HID_PROTOCOL_MODE_BOOT:
+                                        hid_emit_descriptor_available_event(connection);
                                         connection->set_protocol = true;
                                         l2cap_request_can_send_now_event(connection->control_cid);
                                         log_info("Incoming interrupt connection opened: set boot mode");

@@ -124,6 +124,8 @@ static enum {
 
 static uint16_t hid_host_cid = 0;
 static bool     hid_host_descriptor_available = false;
+static hid_protocol_mode_t hid_host_report_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
+
 /* @section Main application configuration
  *
  * @text In the application configuration, L2CAP is initialized 
@@ -261,7 +263,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT, &hid_host_cid);
+                        status = hid_host_connect(remote_addr, hid_host_report_mode, &hid_host_cid);
                         if (status != ERROR_CODE_SUCCESS){
                             printf("HID host connect failed, status 0x%02x\n", status);
                         }
@@ -286,7 +288,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_HID_META:
                     switch (hci_event_hid_meta_get_subevent_code(packet)){
                         case HID_SUBEVENT_INCOMING_CONNECTION:
-                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT);
+                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_report_mode);
                             break;
                         
                         case HID_SUBEVENT_CONNECTION_OPENED:
@@ -309,6 +311,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             if (status == ERROR_CODE_SUCCESS){
                                 hid_host_descriptor_available = true;
                                 printf("HID Descriptor available\n");
+                            } else {
+                                printf("Cannot handle input report, HID Descriptor is not available.\n");
                             }
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
@@ -363,10 +367,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             }
                             switch ((hid_protocol_mode_t)hid_subevent_set_protocol_response_get_protocol_mode(packet)){
                                 case HID_PROTOCOL_MODE_BOOT:
-                                    printf("Boot protocol mode set.\n");
+                                    printf("Protocol mode set: BOOT.\n");
                                     break;  
                                 case HID_PROTOCOL_MODE_REPORT:
-                                    printf("Report protocol mode set.\n");
+                                    printf("Protocol mode set: REPORT.\n");
                                     break;
                                 default:
                                     printf("Unknown protocol mode.\n");
@@ -377,10 +381,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                         case HID_SUBEVENT_REPORT:
                             if (hid_host_descriptor_available){
-                                // printf("Received input report[%d]: ", hid_subevent_report_get_report_len(packet));
                                 hid_host_handle_interrupt_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
                             } else {
-                                printf("Cannot handle input report, HID Descriptor is not available: \n");
                                 printf_hexdump(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
                             }
                             break;
@@ -406,7 +408,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("c      - Connect to %s in report mode, with fallback to BOOT mode.\n", remote_addr_string);
     printf("C      - Disconnect from %s\n", remote_addr_string);
- 
+    
     printf("\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -417,7 +419,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf("Connect to %s in report mode, with fallback to BOOT mode.\n", remote_addr_string);
-            status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT, &hid_host_cid);
+            status = hid_host_connect(remote_addr, hid_host_report_mode, &hid_host_cid);
             break;
 
         case 'C':
