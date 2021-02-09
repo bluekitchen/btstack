@@ -14,8 +14,9 @@ GAP: read local OOB data on start and on call to `gap_ssp_generate_oob_data`
 GAP: emit `GAP_EVENT_LOCAL_OOB_DATA`
 
 ### Fixed
-AVDTP: emit stream release for active stream if signaling is closed first, e.g. caused by hci disconnect
 L2CAP: make handling of hci disconnect more robust
+AVDTP: emit stream release for active stream if signaling is closed first, e.g. caused by hci disconnect
+AVRCP: fix issue when Controller and Target send at the same time
 
 ### Changed
 A2DP, AVDTP: use `a2dp_source_set_config_{TYPE}` and `avdtp_config{TYPE}_store` to avoid large number of parameters
