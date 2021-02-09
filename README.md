@@ -27,13 +27,13 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Protocols:** L2CAP (incl. LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections).
 
-**Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP incl. Browsing, GATT.
+**Profiles:** A2DP, AVRCP incl. Browsing, GAP, GATT, HFP, HID, HSP, IOP, SPP, PAN, PBAP Client.
 
 **GATT Services:** Battery, Cycling Power, Cycling Speed and Cadence, Device Information, Heart Rate, HID over GATT (HOG), Mesh Provisioning, Mesh Proxy, Nordic SPP, u-Blox SPP. 
 
 GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](https://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 
-**Beta Stage:** HID, HOGP, PBAP.
+**Beta Stage:** HOGP.
 
 **In Development:** BLE Mesh and more.
 
