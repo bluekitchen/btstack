@@ -615,10 +615,12 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
                 default:
                     break;
             }
+            connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
             break;
         
         case HID_HOST_W4_SET_REPORT_RESPONSE:
             hid_emit_event_with_status(connection, HID_SUBEVENT_SET_REPORT_RESPONSE, message_status);
+            connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
             break;
         
         case HID_HOST_W4_GET_PROTOCOL_RESPONSE:
@@ -641,13 +643,15 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
                     break;
             }
             hid_emit_get_protocol_event(connection, message_status, protocol_mode); 
+            connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
             break;
 
         default:
             log_info("ignore invalid HID Control message");
+            connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
             break;
     }
-    connection->state =  HID_HOST_CONNECTION_ESTABLISHED;
+    
 }
 
 static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1049,7 +1053,8 @@ uint8_t hid_host_connect(bd_addr_t remote_addr, hid_protocol_mode_t protocol_mod
     connection->state = HID_HOST_W2_SEND_SDP_QUERY;
     connection->incoming = false;
     connection->requested_protocol_mode = protocol_mode;
-    
+    connection->hid_descriptor_status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+
     uint8_t status = ERROR_CODE_SUCCESS;
     
     switch (connection->requested_protocol_mode){
