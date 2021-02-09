@@ -8847,6 +8847,25 @@ static inline const uint8_t * hid_subevent_report_get_report(const uint8_t * eve
 }
 
 /**
+ * @brief Get field hid_cid from event HID_SUBEVENT_DESCRIPTOR_AVAILABLE
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_descriptor_available_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event HID_SUBEVENT_DESCRIPTOR_AVAILABLE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_descriptor_available_get_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field con_handle from event HIDS_SUBEVENT_CAN_SEND_NOW
  * @param event packet
  * @return con_handle
