@@ -164,72 +164,73 @@ const uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid){
 
 
 // HID Util
-static void hid_emit_connected_event(hid_host_connection_t * context, uint8_t status){
+static void hid_emit_connected_event(hid_host_connection_t * connection, uint8_t status){
     uint8_t event[15];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = HID_SUBEVENT_CONNECTION_OPENED;
-    little_endian_store_16(event, pos, context->hid_cid);
+    little_endian_store_16(event, pos, connection->hid_cid);
     pos+=2;
     event[pos++] = status;
-    reverse_bd_addr(context->remote_addr, &event[pos]);
+    reverse_bd_addr(connection->remote_addr, &event[pos]);
     pos += 6;
-    little_endian_store_16(event,pos,context->con_handle);
+    little_endian_store_16(event,pos,connection->con_handle);
     pos += 2;
-    event[pos++] = context->incoming;
+    event[pos++] = connection->incoming;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }   
 
-static void hid_emit_event(hid_host_connection_t * context, uint8_t subevent_type){
+
+static void hid_emit_event(hid_host_connection_t * connection, uint8_t subevent_type){
     uint8_t event[5];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = subevent_type;
-    little_endian_store_16(event,pos,context->hid_cid);
+    little_endian_store_16(event,pos,connection->hid_cid);
     pos += 2;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
-static void hid_emit_event_with_status(hid_host_connection_t * context, uint8_t subevent_type, hid_handshake_param_type_t status){
+static void hid_emit_event_with_status(hid_host_connection_t * connection, uint8_t subevent_type, hid_handshake_param_type_t status){
     uint8_t event[6];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = subevent_type;
-    little_endian_store_16(event,pos,context->hid_cid);
+    little_endian_store_16(event,pos,connection->hid_cid);
     pos += 2;
     event[pos++] = status;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
-static void hid_emit_incoming_connection_event(hid_host_connection_t * context){
+static void hid_emit_incoming_connection_event(hid_host_connection_t * connection){
     uint8_t event[13];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = HID_SUBEVENT_INCOMING_CONNECTION;
-    little_endian_store_16(event, pos, context->hid_cid);
+    little_endian_store_16(event, pos, connection->hid_cid);
     pos += 2;
-    reverse_bd_addr(context->remote_addr, &event[pos]);
+    reverse_bd_addr(connection->remote_addr, &event[pos]);
     pos += 6;
-    little_endian_store_16(event,pos,context->con_handle);
+    little_endian_store_16(event,pos,connection->con_handle);
     pos += 2;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }   
 
 // setup get report response event - potentially in-place of original l2cap packet
-static void hid_setup_get_report_event(hid_host_connection_t * context, hid_handshake_param_type_t status, uint8_t *buffer, uint16_t report_len){
+static void hid_setup_get_report_event(hid_host_connection_t * connection, hid_handshake_param_type_t status, uint8_t *buffer, uint16_t report_len){
     uint16_t pos = 0;
     buffer[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     buffer[pos++] = HID_SUBEVENT_GET_REPORT_RESPONSE;
-    little_endian_store_16(buffer, pos, context->hid_cid);
+    little_endian_store_16(buffer, pos, connection->hid_cid);
     pos += 2;
     buffer[pos++] = (uint8_t) status;
     little_endian_store_16(buffer, pos, report_len);
@@ -238,12 +239,12 @@ static void hid_setup_get_report_event(hid_host_connection_t * context, hid_hand
 }
 
 // setup report event - potentially in-place of original l2cap packet
-static void hid_setup_report_event(hid_host_connection_t * context, uint8_t *buffer, uint16_t report_len){
+static void hid_setup_report_event(hid_host_connection_t * connection, uint8_t *buffer, uint16_t report_len){
     uint16_t pos = 0;
     buffer[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     buffer[pos++] = HID_SUBEVENT_REPORT;
-    little_endian_store_16(buffer, pos, context->hid_cid);
+    little_endian_store_16(buffer, pos, connection->hid_cid);
     pos += 2;
     little_endian_store_16(buffer, pos, report_len);
     pos += 2;
@@ -251,18 +252,18 @@ static void hid_setup_report_event(hid_host_connection_t * context, uint8_t *buf
 }
 
 
-static void hid_emit_get_protocol_event(hid_host_connection_t * context, hid_handshake_param_type_t status, hid_protocol_mode_t protocol_mode){
+static void hid_emit_get_protocol_event(hid_host_connection_t * connection, hid_handshake_param_type_t status, hid_protocol_mode_t protocol_mode){
     uint8_t event[7];
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_HID_META;
     pos++;  // skip len
     event[pos++] = HID_SUBEVENT_GET_PROTOCOL_RESPONSE;
-    little_endian_store_16(event,pos,context->hid_cid);
+    little_endian_store_16(event,pos,connection->hid_cid);
     pos += 2;
     event[pos++] = status;
     event[pos++] = protocol_mode;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, context->hid_cid, &event[0], pos);
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 // HID Host
