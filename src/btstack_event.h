@@ -8817,6 +8817,15 @@ static inline uint16_t hid_subevent_set_protocol_response_get_hid_cid(const uint
 static inline uint8_t hid_subevent_set_protocol_response_get_handshake_status(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field protocol_mode from event HID_SUBEVENT_SET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return protocol_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_set_protocol_response_get_protocol_mode(const uint8_t * event){
+    return event[6];
+}
 
 /**
  * @brief Get field hid_cid from event HID_SUBEVENT_REPORT
