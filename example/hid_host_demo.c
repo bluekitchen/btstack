@@ -43,8 +43,8 @@
 
 /* EXAMPLE_START(hid_host_demo): HID Host Classic
  *
- * @text This example implements a HID Host. For now, it connnects to a fixed device.
- * It will connect in Report protocol mode if this mode is suported by the HID Device, 
+ * @text This example implements a HID Host. For now, it connects to a fixed device.
+ * It will connect in Report protocol mode if this mode is supported by the HID Device,
  * otherwise it will fall back to BOOT protocol mode. 
  */
 
