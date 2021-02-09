@@ -254,13 +254,18 @@ in 64 kbit/s CVSD and a subset of AT commands from GSM 07.07 for
 minimal controls including the ability to ring, answer a call, hang up and adjust the volume.
 
 The HSP defines two roles:
+
  - Audio Gateway (AG) - a device that acts as the gateway of the audio, typically a mobile phone or PC.
+
  - Headset (HS) - a device that acts as the AG's remote audio input and output control.
 
 There are following restrictions:
 - The CVSD is used for audio transmission.
+
 - Between headset and audio gateway, only one audio connection at a time is supported.
+
 - The profile offers only basic interoperability – for example, handling of multiple calls at the audio gateway is not included.
+
 - The only assumption on the headset’s user interface is the possibility to detect a user initiated action (e.g. pressing a button).
 
 %TODO: audio paths
@@ -273,14 +278,25 @@ It relies on SCO for audio encoded in 64 kbit/s CVSD and a bigger subset of AT c
 controls including the ability to ring, to place and receive calls, join a conference call, to answer, hold or reject a call, and adjust the volume.
 
 The HFP defines two roles:
+
 - Audio Gateway (AG) – a device that acts as the gateway of the audio,, typically a mobile phone.
+
 - Hands-Free Unit (HF) – a device that acts as the AG's remote audio input and output control.
 
 %TODO: audio paths
 
-## HID Host
+## HID - Human-Interface Device Profile
 
-HID Host profile allows to connect to HID Devices and communicate with them. Examples of Bluetooth HID devices are keyboards, mice, joysticks, gamepads, remote controls, and also voltmeters and temperature sensors. Typical HID hosts would be a personal computer, tablets, gaming console, industrial machine, or data-recording device. Please refer to [HID Host API](appendix/apis/#sec:hidHostAPIAppendix) and [hid_host_demo](examples/examples/#sec:hidhostdemoExample) for usage. 
+The HID profile allows an HID Host to connect to one or more HID Devices and communicate with them. 
+Examples of Bluetooth HID devices are keyboards, mice, joysticks, gamepads, remote controls, and also voltmeters and temperature sensors.
+Typical HID hosts would be a personal computer, tablets, gaming console, industrial machine, or data-recording device. 
+
+Please refer to:
+
+- [HID Host API](appendix/apis/#sec:hidHostAPIAppendix) and [hid_host_demo](examples/examples/#sec:hidhostdemoExample) for the HID Host role
+
+- [HID Device API](appendix/apis/#sec:hidDeviceAPIAppendix), [hid_keyboard_demo](examples/examples/#sec:hidkeyboarddemoExample) and [hid_mouse_demo](examples/examples/#sec:hidmousedemoExample)  for the HID Device role.
+
 
 ## GAP LE - Generic Access Profile for Low Energy
 
