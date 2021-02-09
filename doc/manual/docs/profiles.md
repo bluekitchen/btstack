@@ -278,6 +278,9 @@ The HFP defines two roles:
 
 %TODO: audio paths
 
+## HID Host
+
+HID Host profile allows to connect to HID Devices and communicate with them. Examples of Bluetooth HID devices are keyboards, mice, joysticks, gamepads, remote controls, and also voltmeters and temperature sensors. Typical HID hosts would be a personal computer, tablets, gaming console, industrial machine, or data-recording device. Please refer to [HID Host API](appendix/apis/#sec:hidHostAPIAppendix) and [hid_host_demo](examples/examples/#sec:hidhostdemoExample) for usage. 
 
 ## GAP LE - Generic Access Profile for Low Energy
 
