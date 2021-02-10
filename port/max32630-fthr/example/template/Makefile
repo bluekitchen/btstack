@@ -167,6 +167,8 @@ COMMON = \
     
 CLASSIC = \
     btstack_link_key_db_tlv.o \
+    hid_device.o              \
+    hid_host.o                \
     rfcomm.o                  \
     sdp_util.o              \
     spp_server.o            \

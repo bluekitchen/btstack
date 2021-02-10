@@ -683,11 +683,11 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         // get current data
         const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4u;
         int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
-        int more_fragments = 0;
+        bool more_fragments = false;
 
         // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
         if (current_acl_data_packet_length > max_acl_data_packet_length){
-            more_fragments = 1;
+            more_fragments = true;
             current_acl_data_packet_length = max_acl_data_packet_length;
         }
 
@@ -703,7 +703,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
         // count packet
         connection->num_packets_sent++;
-        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", more_fragments);
+        log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", (int) more_fragments);
 
         // update state for next fragment (if any) as "transport done" might be sent during send_packet already
         if (more_fragments){
@@ -722,7 +722,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         hci_stack->acl_fragmentation_tx_active = 1;
         err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
-        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", more_fragments);
+        log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", (int) more_fragments);
 
         // done yet?
         if (!more_fragments) break;
@@ -1279,14 +1279,14 @@ static void hci_initializing_run(void){
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
                 hci_stack->chipset_result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
-                int send_cmd = 0;
+                bool send_cmd = false;
                 switch (hci_stack->chipset_result){
                     case BTSTACK_CHIPSET_VALID_COMMAND:
-                        send_cmd = 1;
+                        send_cmd = true;
                         hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
                         break;
                     case BTSTACK_CHIPSET_WARMSTART_REQUIRED:
-                        send_cmd = 1;
+                        send_cmd = true;
                         // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                         log_info("CSR Warm Boot");
                         btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
@@ -2129,7 +2129,9 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_stack->local_supported_commands[1] =
                 ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+ 2u] & 0x40u) >> 6u) |  // bit  8 = Octet  2, bit 6 / Read Remote Extended Features
                 ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x08u) >> 2u) |  // bit  9 = Octet 32, bit 3 / Write Secure Connections Host
-                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x02u) << 1u);   // bit 10 = Octet 35, bit 1 / LE Set Address Resolution Enable
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+35u] & 0x02u) << 1u) |  // bit 10 = Octet 35, bit 1 / LE Set Address Resolution Enable
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x02u) << 2u) |  // bit 11 = Octet 32, bit 1 / Remote OOB Extended Data Request Reply
+                ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1u+32u] & 0x40u) >> 2u);   // bit 12 = Octet 32, bit 6 / Read Local OOB Extended Data command
             log_info("Local supported commands summary %02x - %02x", hci_stack->local_supported_commands[0],  hci_stack->local_supported_commands[1]);
             break;
 #ifdef ENABLE_CLASSIC
@@ -2152,6 +2154,26 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 hci_handle_read_encryption_key_size_complete(conn, key_size);
             }
             break;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        case HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA:
+        case HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA:{
+            uint8_t event[67];
+            event[0] = GAP_EVENT_LOCAL_OOB_DATA;
+            event[1] = 65;
+            (void)memset(&event[2], 0, 65);
+            if (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE] == ERROR_CODE_SUCCESS){
+                (void)memcpy(&event[3], &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 32);
+                if (opcode == HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA){
+                    event[2] = 3;
+                    (void)memcpy(&event[35], &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+33], 32);
+                } else {
+                    event[2] = 1;
+                }
+            }
+            hci_emit_event(event, sizeof(event), 0);
+            break;
+        }
+#endif
 #endif
         default:
             break;
@@ -2553,9 +2575,23 @@ static void event_handler(uint8_t *packet, uint16_t size){
             
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
+            log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
+#ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+            if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
+            } else {
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            }
+#endif
             break;
-        
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        case HCI_EVENT_REMOTE_OOB_DATA_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_REMOTE_OOB_DATA_REPLY);
+            break;
+#endif
+
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
             if (!hci_stack->ssp_auto_accept) break;
@@ -2567,6 +2603,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (!hci_stack->ssp_auto_accept) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
             break;
+
         case HCI_EVENT_MODE_CHANGE:
             handle = hci_event_mode_change_get_handle(packet);
             conn = hci_connection_for_handle(handle);
@@ -3001,6 +3038,10 @@ static void hci_state_reset(void){
 
     hci_stack->secure_connections_active = false;
 
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    hci_stack->classic_read_local_oob_data = true;
+#endif
+
     // LE
 #ifdef ENABLE_BLE
     memset(hci_stack->le_random_address, 0, 6);
@@ -3347,128 +3388,128 @@ static void hci_power_transition_to_initializing(void){
     hci_stack->substate = HCI_INIT_SEND_RESET;
 }
 
-int hci_power_control(HCI_POWER_MODE power_mode){
-    
-    log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
-    
-    int err = 0;
-    switch (hci_stack->state){
-            
-        case HCI_STATE_OFF:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    err = hci_power_control_on();
-                    if (err) {
-                        log_error("hci_power_control_on() error %d", err);
-                        return err;
-                    }
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    // do nothing
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // do nothing (with SLEEP == OFF)
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
+// returns error
+static int hci_power_control_state_off(HCI_POWER_MODE power_mode){
+    int err;
+    switch (power_mode){
+        case HCI_POWER_ON:
+            err = hci_power_control_on();
+            if (err != 0) {
+                log_error("hci_power_control_on() error %d", err);
+                return err;
             }
+            hci_power_transition_to_initializing();
             break;
-            
-        case HCI_STATE_INITIALIZING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    // do nothing
-                    break;
-                case HCI_POWER_OFF:
-                    // no connections yet, just turn it off
-                    hci_power_control_off();
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // no connections yet, just turn it off
-                    hci_power_control_sleep();
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+        case HCI_POWER_OFF:
+            // do nothing
             break;
-            
-        case HCI_STATE_WORKING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    // do nothing
-                    break;
-                case HCI_POWER_OFF:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+        case HCI_POWER_SLEEP:
+            // do nothing (with SLEEP == OFF)
             break;
-            
-        case HCI_STATE_HALTING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    // do nothing
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+        default:
+            btstack_assert(false);
             break;
-            
-        case HCI_STATE_FALLING_ASLEEP:
-            switch (power_mode){
-                case HCI_POWER_ON:
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_initializing(HCI_POWER_MODE power_mode){
+    switch (power_mode){
+        case HCI_POWER_ON:
+            // do nothing
+            break;
+        case HCI_POWER_OFF:
+            // no connections yet, just turn it off
+            hci_power_control_off();
+            break;
+        case HCI_POWER_SLEEP:
+            // no connections yet, just turn it off
+            hci_power_control_sleep();
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_working(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_ON:
+            // do nothing
+            break;
+        case HCI_POWER_OFF:
+            // see hci_run
+            hci_stack->state = HCI_STATE_HALTING;
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            break;
+        case HCI_POWER_SLEEP:
+            // see hci_run
+            hci_stack->state = HCI_STATE_FALLING_ASLEEP;
+            hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_halting(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_ON:
+            hci_power_transition_to_initializing();
+            break;
+        case HCI_POWER_OFF:
+            // do nothing
+            break;
+        case HCI_POWER_SLEEP:
+            // see hci_run
+            hci_stack->state = HCI_STATE_FALLING_ASLEEP;
+            hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_falling_asleep(HCI_POWER_MODE power_mode) {
+    switch (power_mode){
+        case HCI_POWER_ON:
 
 #ifdef HAVE_PLATFORM_IPHONE_OS
-                    // nothing to do, if H4 supports power management
+            // nothing to do, if H4 supports power management
                     if (btstack_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
                         hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;   // init after sleep
                         break;
                     }
 #endif
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    // see hci_run
-                    hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // do nothing
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+            hci_power_transition_to_initializing();
             break;
-            
-        case HCI_STATE_SLEEPING:
-            switch (power_mode){
-                case HCI_POWER_ON:
-                    
+        case HCI_POWER_OFF:
+            // see hci_run
+            hci_stack->state = HCI_STATE_HALTING;
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            break;
+        case HCI_POWER_SLEEP:
+            // do nothing
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+static int hci_power_control_state_sleeping(HCI_POWER_MODE power_mode) {
+    int err;
+    switch (power_mode){
+        case HCI_POWER_ON:
 #ifdef HAVE_PLATFORM_IPHONE_OS
-                    // nothing to do, if H4 supports power management
+            // nothing to do, if H4 supports power management
                     if (btstack_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
                         hci_stack->substate = HCI_INIT_AFTER_SLEEP;
@@ -3476,26 +3517,52 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                         break;
                     }
 #endif
-                    err = hci_power_control_wake();
-                    if (err) return err;
-                    hci_power_transition_to_initializing();
-                    break;
-                case HCI_POWER_OFF:
-                    hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
-                    break;  
-                case HCI_POWER_SLEEP:
-                    // do nothing
-                    break;
-                default:
-                    btstack_assert(false);
-                    break;
-            }
+            err = hci_power_control_wake();
+            if (err) return err;
+            hci_power_transition_to_initializing();
             break;
-
+        case HCI_POWER_OFF:
+            hci_stack->state = HCI_STATE_HALTING;
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
+            break;
+        case HCI_POWER_SLEEP:
+            // do nothing
+            break;
         default:
             btstack_assert(false);
             break;
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+int hci_power_control(HCI_POWER_MODE power_mode){
+    log_info("hci_power_control: %d, current mode %u", power_mode, hci_stack->state);
+    int err = 0;
+    switch (hci_stack->state){
+        case HCI_STATE_OFF:
+            err = hci_power_control_state_off(power_mode);
+            break;
+        case HCI_STATE_INITIALIZING:
+            err = hci_power_control_state_initializing(power_mode);
+            break;
+        case HCI_STATE_WORKING:
+            err = hci_power_control_state_working(power_mode);
+            break;
+        case HCI_STATE_HALTING:
+            err = hci_power_control_state_halting(power_mode);
+            break;
+        case HCI_STATE_FALLING_ASLEEP:
+            err = hci_power_control_state_falling_asleep(power_mode);
+            break;
+        case HCI_STATE_SLEEPING:
+            err = hci_power_control_state_sleeping(power_mode);
+            break;
+        default:
+            btstack_assert(false);
+            break;
+    }
+    if (err != 0){
+        return err;
     }
 
     // create internal event
@@ -3650,6 +3717,17 @@ static bool hci_run_general_gap_classic(void){
                      hci_stack->remote_name_page_scan_repetition_mode, 0, hci_stack->remote_name_clock_offset);
         return true;
     }
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    // Local OOB data
+    if ((hci_stack->state == HCI_STATE_WORKING) && hci_stack->classic_read_local_oob_data){
+        hci_stack->classic_read_local_oob_data = false;
+        if (hci_stack->local_supported_commands[1] & 0x10u){
+            hci_send_cmd(&hci_read_local_extended_oob_data);
+        } else {
+            hci_send_cmd(&hci_read_local_oob_data);
+        }
+    }
+#endif
     // pairing
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE){
         uint8_t state = hci_stack->gap_pairing_state;
@@ -4143,22 +4221,66 @@ static bool hci_run_general_pending_commands(void){
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
-            log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
-            if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
-                // tweak authentication requirements
-                uint8_t authreq = hci_stack->ssp_authentication_requirement;
-                if (connection->bonding_flags & BONDING_DEDICATED){
-                    authreq = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+            // tweak authentication requirements
+            uint8_t authreq = hci_stack->ssp_authentication_requirement;
+            if (connection->bonding_flags & BONDING_DEDICATED){
+                authreq = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+            }
+            if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
+                authreq |= 1;
+            }
+            uint8_t have_oob_data = 0;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+            if (connection->classic_oob_c_192 != NULL){
+                    have_oob_data |= 1;
+            }
+            if (connection->classic_oob_c_256 != NULL){
+                have_oob_data |= 2;
+            }
+#endif
+            hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, have_oob_data, authreq);
+            return true;
+        }
+
+        if (connection->authentication_flags & SEND_IO_CAPABILITIES_NEGATIVE_REPLY) {
+            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
+            return true;
+        }
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        if (connection->authentication_flags & SEND_REMOTE_OOB_DATA_REPLY){
+            connectionClearAuthenticationFlags(connection, SEND_REMOTE_OOB_DATA_REPLY);
+            const uint8_t zero[16] = { 0 };
+            const uint8_t * r_192 = zero;
+            const uint8_t * c_192 = zero;
+            const uint8_t * r_256 = zero;
+            const uint8_t * c_256 = zero;
+            // verify P-256 OOB
+            if ((connection->classic_oob_c_256 != NULL) && ((hci_stack->local_supported_commands[1] & 0x08u) != 0)) {
+                c_256 = connection->classic_oob_c_256;
+                if (connection->classic_oob_r_256 != NULL) {
+                    r_256 = connection->classic_oob_r_256;
                 }
-                if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
-                    authreq |= 1;
+            }
+            // verify P-192 OOB
+            if ((connection->classic_oob_c_192 != NULL)) {
+                c_192 = connection->classic_oob_c_192;
+                if (connection->classic_oob_r_192 != NULL) {
+                    r_192 = connection->classic_oob_r_192;
                 }
-                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack->ssp_io_capability, NULL, authreq);
+            }
+            // Reply
+            if (c_256 != zero) {
+                hci_send_cmd(&hci_remote_oob_extended_data_request_reply, &connection->address, c_192, r_192, c_256, r_256);
+            } else if (c_192 != zero){
+                hci_send_cmd(&hci_remote_oob_data_request_reply, &connection->address, c_192, r_192);
             } else {
-                hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
+                hci_send_cmd(&hci_remote_oob_data_request_negative_reply, &connection->address);
             }
             return true;
         }
+#endif
 
         if (connection->authentication_flags & SEND_USER_CONFIRM_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_USER_CONFIRM_REPLY);
@@ -5824,6 +5946,56 @@ int gap_ssp_confirmation_negative(const bd_addr_t addr){
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
+
+#ifdef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+
+static uint8_t gap_set_auth_flag_and_run(const bd_addr_t addr, hci_authentication_flags_t flag){
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    connectionSetAuthenticationFlags(conn, flag);
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr){
+    return gap_set_auth_flag_and_run(addr, SEND_IO_CAPABILITIES_REPLY);
+}
+
+uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr){
+    return gap_set_auth_flag_and_run(addr, SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+}
+#endif
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+/**
+ * @brief Report Remote OOB Data
+ * @param bd_addr
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, const uint8_t * r_192, const uint8_t * c_256, const uint8_t * r_256){
+    hci_connection_t * connection = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+    if (connection == NULL) {
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    connection->classic_oob_c_192 = c_192;
+    connection->classic_oob_r_192 = r_192;
+    connection->classic_oob_c_256 = c_256;
+    connection->classic_oob_r_256 = r_256;
+    return ERROR_CODE_SUCCESS;
+}
+/**
+ * @brief Generate new OOB data
+ * @note OOB data will be provided in GAP_EVENT_LOCAL_OOB_DATA and be used in future pairing procedures
+ */
+void gap_ssp_generate_oob_data(void){
+    hci_stack->classic_read_local_oob_data = true;
+    hci_run();
+}
+
+#endif
 
 /**
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.

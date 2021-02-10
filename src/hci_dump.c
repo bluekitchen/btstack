@@ -211,14 +211,14 @@ static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uin
             printf("EVT <= ");
             break;
         case HCI_ACL_DATA_PACKET:
-            if (in) {
+            if (in != 0) {
                 printf("ACL <= ");
             } else {
                 printf("ACL => ");
             }
             break;
         case HCI_SCO_DATA_PACKET:
-            if (in) {
+            if (in != 0) {
                 printf("SCO <= ");
             } else {
                 printf("SCO => ");

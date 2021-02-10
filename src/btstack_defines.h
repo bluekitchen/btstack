@@ -488,7 +488,19 @@ typedef uint8_t sm_key_t[16];
   */
 #define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE          0x30
 
+ /**
+  * @format B
+  * @param bd_addr
+  */
 #define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
+
+/**
+ * @format B111
+ * @param bd_addr
+ * @param io_capability
+ * @param oob_data_present
+ * @param authentication_requirements
+ */
 #define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
 
 /**
@@ -1385,6 +1397,16 @@ typedef uint8_t sm_key_t[16];
  * @note LE: rssi is absolute dBm
  */
 #define GAP_EVENT_RSSI_MEASUREMENT                            0xE5
+
+/**
+ * @format 1KKKK
+ * @param oob_data_present 0 = none, 1 = p_192, 2 = p_256, 3 = both
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+#define GAP_EVENT_LOCAL_OOB_DATA                              0xE6
 
 // Meta Events, see below for sub events
 #define HCI_EVENT_HSP_META                                 0xE8
@@ -2843,6 +2865,15 @@ typedef uint8_t sm_key_t[16];
 // HID Meta Event Group
 
 /**
+ * @format 12BH
+ * @param subevent_code
+ * @param hid_cid
+ * @param address
+ * @param handle
+ */
+#define HID_SUBEVENT_INCOMING_CONNECTION                                   0x01
+
+/**
  * @format 121BH1
  * @param subevent_code
  * @param hid_cid
@@ -2851,35 +2882,95 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
  * @param incoming
  */
-#define HID_SUBEVENT_CONNECTION_OPENED                                     0x01
+#define HID_SUBEVENT_CONNECTION_OPENED                                     0x02
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x02
+#define HID_SUBEVENT_CONNECTION_CLOSED                                     0x03
 
 /**
  * @format 12
  * @param subevent_code
  * @param hid_cid
 */
-#define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
+#define HID_SUBEVENT_CAN_SEND_NOW                                          0x04
 
 /**
  * @format 12
  * @param subevent_code
- * @param con_handle
+ * @param hid_cid
 */
-#define HID_SUBEVENT_SUSPEND                                               0x04
+#define HID_SUBEVENT_SUSPEND                                               0x05
 
 /**
  * @format 12
  * @param subevent_code
- * @param con_handle
+ * @param hid_cid
 */
-#define HID_SUBEVENT_EXIT_SUSPEND                                          0x05
+#define HID_SUBEVENT_EXIT_SUSPEND                                          0x06
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param hid_cid
+*/
+#define HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG                                  0x07
+
+/** 
+ * @format 121LV
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+ * @param report_len
+ * @param report
+*/
+#define HID_SUBEVENT_GET_REPORT_RESPONSE                                   0x08
+
+/** 
+ * @format 121
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+*/
+#define HID_SUBEVENT_SET_REPORT_RESPONSE                                   0x09
+
+/** 
+ * @format 1211
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+ * @param protocol_mode
+*/
+#define HID_SUBEVENT_GET_PROTOCOL_RESPONSE                                 0x0A
+
+/** 
+ * @format 1211
+ * @param subevent_code
+ * @param hid_cid
+ * @param handshake_status
+ * @param protocol_mode
+*/
+#define HID_SUBEVENT_SET_PROTOCOL_RESPONSE                                 0x0B
+
+/** 
+ * @format 12LV
+ * @param subevent_code
+ * @param hid_cid
+ * @param report_len
+ * @param report
+*/
+#define HID_SUBEVENT_REPORT                                                0x0C
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param hid_cid
+ * @param status
+ */
+#define HID_SUBEVENT_DESCRIPTOR_AVAILABLE                                  0x0D
 
 
 // HIDS Meta Event Group

@@ -1,4 +1,5 @@
 ## AVRCP Controller tests:
+Tool: avrcp_test
 
 AVRCP/CT/CEC/BV-01-I : a, c
 AVRCP/CT/CEC/BV-02-I : (wait)

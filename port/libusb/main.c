@@ -97,8 +97,11 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- Manufacturer 0x%04x\n", manufacturer);
     switch (manufacturer){
         case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
-            printf("Linux Foundation - assume Zephyr hci_usb example running on nRF52xx\n");
+            printf("- Linux Foundation - assume Zephyr hci_usb firmware running on nRF52xx\n");
+            // setup Zephyr chipset support
             hci_set_chipset(btstack_chipset_zephyr_instance());
+            // sm required to setup static random Bluetooth address
+            sm_init();
             break;
         default:
             break;

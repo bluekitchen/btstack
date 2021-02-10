@@ -201,7 +201,7 @@ void btstack_slip_decoder_process(uint8_t input){
         case SLIP_DECODER_ACTIVE:
             switch(input){
                 case BTSTACK_SLIP_SOF:
-                    if (decoder_pos){
+                    if (decoder_pos != 0){
                     	decoder_state = SLIP_DECODER_COMPLETE;
                     } else {
 	                    btstack_slip_decoder_reset();

@@ -191,6 +191,7 @@ param_read = {
     'N' : 'return (const char *) &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
     'D' : 'return (const uint8_t *) &event[{offset}];',
+    'K' : 'reverse_bytes(&event[{offset}], {result_name}, 16);',
     'Q' : 'reverse_bytes(&event[{offset}], {result_name}, 32);',
     'V' : 'return &event[{offset}];',
     'X' : 'gatt_client_deserialize_service(event, {offset}, {result_name});',
@@ -204,13 +205,13 @@ def c_type_for_btstack_type(type):
                     'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'const char *' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
                     'J' : 'uint8_t', 'L' : 'uint16_t', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
-                    'Q' : 'uint8_t *',
+                    'Q' : 'uint8_t *', 'K' : 'uint8_t *',
                     'X' : 'gatt_client_service_t *', 'Y' : 'gatt_client_characteristic_t *', 'Z' : 'gatt_client_characteristic_descriptor_t *',
                     'T' : 'const char *'}
     return param_types[type]
 
 def size_for_type(type):
-    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32,
+    param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16, 'Q':32, 'K':16,
                     'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
     return param_sizes[type]
 
@@ -223,7 +224,7 @@ def format_function_name(event_name):
 def template_for_type(field_type):
     global c_prototoype_simple_return
     global c_prototoype_struct_return
-    types_with_struct_return = "BQXYZ"
+    types_with_struct_return = "BKQXYZ"
     if field_type in types_with_struct_return:
         return c_prototoype_struct_return
     else:

@@ -35,11 +35,11 @@
  *
  */
  
-// *****************************************************************************
-//
-// HSP Headset PTS Test
-//
-// *****************************************************************************
+#define BTSTACK_FILE__ "hsp_hs_test.c"
+
+/*
+ * hsp_hs_test.c : Tool for testig HSP Headset with PTS
+ */ 
 
 #include "btstack_config.h"
 

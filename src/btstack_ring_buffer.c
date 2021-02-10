@@ -104,7 +104,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     }
 
     // copy second chunk
-    if (data_length) {
+    if (data_length != 0) {
         (void)memcpy(&ring_buffer->storage[0], data, data_length);
         ring_buffer->last_written_index += data_length;
     }
@@ -140,7 +140,7 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     }
 
     // copy second chunk
-    if (data_length) {
+    if (data_length != 0) {
         (void)memcpy(data, &ring_buffer->storage[0], data_length);
         ring_buffer->last_read_index += data_length;
     }

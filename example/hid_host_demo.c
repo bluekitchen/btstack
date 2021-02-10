@@ -43,8 +43,9 @@
 
 /* EXAMPLE_START(hid_host_demo): HID Host Classic
  *
- * @text This example implements an HID Host. For now, it connnects to a fixed device, queries the HID SDP
- * record and opens the HID Control + Interrupt channels
+ * @text This example implements a HID Host. For now, it connects to a fixed device.
+ * It will connect in Report protocol mode if this mode is supported by the HID Device,
+ * otherwise it will fall back to BOOT protocol mode. 
  */
 
 #include <inttypes.h>
@@ -55,23 +56,10 @@
 
 #define MAX_ATTRIBUTE_VALUE_SIZE 300
 
-// SDP
-static uint8_t            hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
-static uint16_t           hid_descriptor_len;
-
-static uint16_t           hid_control_psm;
-static uint16_t           hid_interrupt_psm;
-
-static uint8_t            attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
-static const unsigned int attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
-
-// L2CAP
-static uint16_t           l2cap_hid_control_cid;
-static uint16_t           l2cap_hid_interrupt_cid;
-
-// MBP 2016
-static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+// MBP 2016 static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
 // iMpulse static const char * remote_addr_string = "64:6E:6C:C1:AA:B5";
+// Logitec 
+static const char * remote_addr_string = "00:1F:20:86:DF:52";
 
 static bd_addr_t remote_addr;
 
@@ -126,24 +114,36 @@ static const uint8_t keytable_us_shift[] = {
     '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
 }; 
 
+// SDP
+static uint8_t hid_descriptor_storage[MAX_ATTRIBUTE_VALUE_SIZE];
+
+// App
+static enum {
+    APP_IDLE,
+    APP_CONNECTED
+} app_state = APP_IDLE;
+
+static uint16_t hid_host_cid = 0;
+static bool     hid_host_descriptor_available = false;
+static hid_protocol_mode_t hid_host_report_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
 
 /* @section Main application configuration
  *
- * @text In the application configuration, L2CAP is initialized 
+ * @text In the application configuration, L2CAP and HID host are initialized, and the link policies 
+ * are set to allow sniff mode and role change. 
  */
 
 /* LISTING_START(PanuSetup): Panu setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void hid_host_setup(void){
 
     // Initialize L2CAP 
     l2cap_init();
 
-    // register L2CAP Services for reconnections
-    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 0xffff, gap_get_security_level());
-    l2cap_register_service(packet_handler, PSM_HID_CONTROL, 0xffff, gap_get_security_level());
+    // Initialize HID Host    
+    hid_host_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
+    hid_host_register_packet_handler(packet_handler);
 
     // Allow sniff mode requests by HID device and support role switch
     gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
@@ -160,150 +160,31 @@ static void hid_host_setup(void){
 }
 /* LISTING_END */
 
-/* @section SDP parser callback 
- * 
- * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
- * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
- */
-
-static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
-
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
-
-    des_iterator_t attribute_list_it;
-    des_iterator_t additional_des_it;
-    des_iterator_t prot_it;
-    uint8_t       *des_element;
-    uint8_t       *element;
-    uint32_t       uuid;
-    uint8_t        status;
-
-    switch (hci_event_packet_get_type(packet)){
-        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
-                attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
-                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
-                        case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {                                    
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                des_iterator_init(&prot_it, des_element);
-                                element = des_iterator_get_element(&prot_it);
-                                if (!element) continue;
-                                if (de_get_element_type(element) != DE_UUID) continue;
-                                uuid = de_get_uuid32(element);
-                                des_iterator_next(&prot_it);
-                                switch (uuid){
-                                    case BLUETOOTH_PROTOCOL_L2CAP:
-                                        if (!des_iterator_has_more(&prot_it)) continue;
-                                        de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_control_psm);
-                                        printf("HID Control PSM: 0x%04x\n", (int) hid_control_psm);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                            break;
-                        case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {                                    
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
-                                    if (des_iterator_get_type(&additional_des_it) != DE_DES) continue;
-                                    des_element = des_iterator_get_element(&additional_des_it);
-                                    des_iterator_init(&prot_it, des_element);
-                                    element = des_iterator_get_element(&prot_it);
-                                    if (!element) continue;
-                                    if (de_get_element_type(element) != DE_UUID) continue;
-                                    uuid = de_get_uuid32(element);
-                                    des_iterator_next(&prot_it);
-                                    switch (uuid){
-                                        case BLUETOOTH_PROTOCOL_L2CAP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_interrupt_psm);
-                                            printf("HID Interrupt PSM: 0x%04x\n", (int) hid_interrupt_psm);
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
-                                    if (des_iterator_get_type(&additional_des_it) != DE_STRING) continue;
-                                    element = des_iterator_get_element(&additional_des_it);
-                                    const uint8_t * descriptor = de_get_string(element);
-                                    hid_descriptor_len = de_get_data_size(element);
-                                    memcpy(hid_descriptor, descriptor, hid_descriptor_len);
-                                    printf("HID Descriptor:\n");
-                                    printf_hexdump(hid_descriptor, hid_descriptor_len);
-                                }
-                            }                        
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            } else {
-                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
-            }
-            break;
-            
-        case SDP_EVENT_QUERY_COMPLETE:
-            if (sdp_event_query_complete_get_status(packet) != ERROR_CODE_SUCCESS){
-                printf("SDP Query failed\n");
-                break;
-            }
-            if ((l2cap_hid_interrupt_cid != 0) && (l2cap_hid_control_cid != 0)){
-                printf("HID device re-connected\n");
-                break;
-            }
-            if (!hid_control_psm) {
-                hid_control_psm = BLUETOOTH_PSM_HID_CONTROL;
-                printf("HID Control PSM missing, using default 0x%04x\n", hid_control_psm);
-            }
-            if (!hid_interrupt_psm) {
-                hid_interrupt_psm = BLUETOOTH_PSM_HID_INTERRUPT;
-                printf("HID Interrupt PSM missing, using default 0x%04x\n", hid_interrupt_psm);
-                break;
-            }
-            printf("Setup HID\n");
-            status = l2cap_create_channel(packet_handler, remote_addr, hid_control_psm, 48, &l2cap_hid_control_cid);
-            if (status){
-                printf("Connecting to HID Control failed: 0x%02x\n", status);
-            }
-            break;
-            
-        default:
-            break;
-    }
-}
-
 /*
  * @section HID Report Handler
  * 
- * @text Use BTstack's compact HID Parser to process incoming HID Report
+ * @text Use BTstack's compact HID Parser to process incoming HID Report in Report protocol mode. 
  * Iterate over all fields and process fields with usage page = 0x07 / Keyboard
  * Check if SHIFT is down and process first character (don't handle multiple key presses)
  * 
  */
+
 #define NUM_KEYS 6
 static uint8_t last_keys[NUM_KEYS];
 static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t report_len){
     // check if HID Input Report
     if (report_len < 1) return;
     if (*report != 0xa1) return; 
+    
     report++;
     report_len--;
+    
     btstack_hid_parser_t parser;
-    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT, report, report_len);
+    btstack_hid_parser_init(&parser, 
+        hid_descriptor_storage_get_descriptor_data(hid_host_cid), 
+        hid_descriptor_storage_get_descriptor_len(hid_host_cid), 
+        HID_REPORT_TYPE_INPUT, report, report_len);
+
     int shift = 0;
     uint8_t new_keys[NUM_KEYS];
     memset(new_keys, 0, sizeof(new_keys));
@@ -359,33 +240,39 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
 /*
  * @section Packet Handler
  * 
- * @text The packet handler responds to various HCI Events.
+ * @text The packet handler responds to various HID events.
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
     /* LISTING_PAUSE */
+    UNUSED(channel);
+    UNUSED(size);
+
     uint8_t   event;
     bd_addr_t event_addr;
     uint8_t   status;
-    uint16_t  l2cap_cid;
 
     /* LISTING_RESUME */
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
             event = hci_event_packet_get_type(packet);
+            
             switch (event) {            
+#ifndef HAVE_BTSTACK_STDIN
                 /* @text When BTSTACK_EVENT_STATE with state HCI_STATE_WORKING
                  * is received and the example is started in client mode, the remote SDP HID query is started.
                  */
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("Start SDP HID query for remote HID Device %s.\n", bd_addr_to_str(remote_addr));
-                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
+                        status = hid_host_connect(remote_addr, hid_host_report_mode, &hid_host_cid);
+                        if (status != ERROR_CODE_SUCCESS){
+                            printf("HID host connect failed, status 0x%02x.\n", status);
+                        }
                     }
                     break;
-
+#endif
                 /* LISTING_PAUSE */
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
@@ -401,83 +288,138 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 /* LISTING_RESUME */
-                case L2CAP_EVENT_INCOMING_CONNECTION:
-                    l2cap_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                    switch (l2cap_event_incoming_connection_get_psm(packet)){
-                        case PSM_HID_CONTROL:
-                        case PSM_HID_INTERRUPT:
-                            l2cap_accept_connection(l2cap_cid);
-                            break;
-                        default:
-                            l2cap_decline_connection(l2cap_cid);
-                            break;
-                    }
-                    break;
-                case L2CAP_EVENT_CHANNEL_OPENED: 
-                    status = packet[2];
-                    if (status){
-                        printf("L2CAP Connection failed: 0x%02x\n", status);
-                        break;
-                    }
-                    l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                    switch (l2cap_event_channel_opened_get_psm(packet)){
-                        case PSM_HID_CONTROL:
-                            if (l2cap_event_channel_opened_get_incoming(packet) == 0) {
-                                status = l2cap_create_channel(packet_handler, remote_addr, hid_interrupt_psm, 48, &l2cap_hid_interrupt_cid);
-                                if (status){
-                                    printf("Connecting to HID Interrupt failed: 0x%02x\n", status);
-                                    break;
-                                }
-                            }
-                            l2cap_hid_control_cid = l2cap_cid;
-                            break;
-                        case PSM_HID_INTERRUPT:
-                            l2cap_hid_interrupt_cid = l2cap_cid;
-                            break;
-                        default:
-                            break;
-                    }
+                case HCI_EVENT_HID_META:
+                    switch (hci_event_hid_meta_get_subevent_code(packet)){
 
-                    if ((l2cap_hid_control_cid != 0) && (l2cap_hid_interrupt_cid != 0)){
-                        if (hid_descriptor_len == 0){
-                            printf("Start SDP HID query to get HID Descriptor\n");
-                            sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
-                        } else {
-                            printf("HID Connection established\n");
-                        }
+                        case HID_SUBEVENT_INCOMING_CONNECTION:
+                            // There is an incoming connection: we can accept it or decline it.
+                            // The hid_host_report_mode in the hid_host_accept_connection function 
+                            // allows the application to request a protocol mode. 
+                            // For available protocol modes, see hid_protocol_mode_t in hid.h file. 
+                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_report_mode);
+                            break;
+                        
+                        case HID_SUBEVENT_CONNECTION_OPENED:
+                            // The status field of this event indicates if the control and interrupt
+                            // connections were opened successfully.
+                            status = hid_subevent_connection_opened_get_status(packet);
+                            if (status != ERROR_CODE_SUCCESS) {
+                                printf("Connection failed, status 0x%x\n", status);
+                                app_state = APP_IDLE;
+                                hid_host_cid = 0;
+                                return;
+                            }
+                            app_state = APP_CONNECTED;
+                            hid_host_descriptor_available = false;
+                            hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
+                            printf("HID Host connected.\n");
+                            break;
+
+                        case HID_SUBEVENT_DESCRIPTOR_AVAILABLE:
+                            // This event will follows HID_SUBEVENT_CONNECTION_OPENED event. 
+                            // For incoming connections, i.e. HID Device initiating the connection,
+                            // the HID_SUBEVENT_DESCRIPTOR_AVAILABLE is delayed, and some HID  
+                            // reports may be received via HID_SUBEVENT_REPORT event. It is up to 
+                            // the application if these reports should be buffered or ignored until 
+                            // the HID descriptor is available.
+                            status = hid_subevent_descriptor_available_get_status(packet);
+                            if (status == ERROR_CODE_SUCCESS){
+                                hid_host_descriptor_available = true;
+                                printf("HID Descriptor available, please start typing.\n");
+                            } else {
+                                printf("Cannot handle input report, HID Descriptor is not available.\n");
+                            }
+                            break;
+
+                        case HID_SUBEVENT_REPORT:
+                            // Handle input report.
+                            if (hid_host_descriptor_available){
+                                hid_host_handle_interrupt_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            } else {
+                                printf_hexdump(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            }
+                            break;
+
+                        case HID_SUBEVENT_SET_PROTOCOL_RESPONSE:
+                            // For incoming connections, the library will set the protocol mode of the
+                            // HID Device as requested in the call to hid_host_accept_connection. The event 
+                            // reports the result. For connections initiated by calling hid_host_connect, 
+                            // this event will occur only if the established report mode is boot mode.
+                            status = hid_subevent_set_protocol_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error set protocol, status 0x%02x\n", status);
+                                break;
+                            }
+                            switch ((hid_protocol_mode_t)hid_subevent_set_protocol_response_get_protocol_mode(packet)){
+                                case HID_PROTOCOL_MODE_BOOT:
+                                    printf("Protocol mode set: BOOT.\n");
+                                    break;  
+                                case HID_PROTOCOL_MODE_REPORT:
+                                    printf("Protocol mode set: REPORT.\n");
+                                    break;
+                                default:
+                                    printf("Unknown protocol mode.\n");
+                                    break; 
+                            }
+                            break;
+
+                        case HID_SUBEVENT_CONNECTION_CLOSED:
+                            // The connection was closed.
+                            hid_host_cid = 0;
+                            hid_host_descriptor_available = false;
+                            printf("HID Host disconnected.\n");
+                            break;
+                        
+                        default:
+                            break;
                     }
                     break;
-                case L2CAP_EVENT_CHANNEL_CLOSED:
-                    if ((l2cap_hid_control_cid != 0) && (l2cap_hid_interrupt_cid != 0)){
-                        printf("HID Connection closed\n");
-                        hid_descriptor_len = 0;
-                    }
-                    l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    if (l2cap_cid == l2cap_hid_control_cid){
-                        l2cap_hid_control_cid = 0;
-                    }
-                    if (l2cap_cid == l2cap_hid_interrupt_cid){
-                        l2cap_hid_interrupt_cid = 0;
-                    }
                 default:
                     break;
             }
             break;
-        case L2CAP_DATA_PACKET:
-            // for now, just dump incoming data
-            if (channel == l2cap_hid_interrupt_cid){
-                hid_host_handle_interrupt_report(packet,  size);
-            } else if (channel == l2cap_hid_control_cid){
-                printf("HID Control: ");
-                printf_hexdump(packet, size);
-            } else {
-                break;
-            }
         default:
             break;
     }
 }
 /* LISTING_END */
+
+#ifdef HAVE_BTSTACK_STDIN
+static void show_usage(void){
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n--- Bluetooth HID Host Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c      - Connect to %s in report mode, with fallback to boot mode.\n", remote_addr_string);
+    printf("C      - Disconnect\n");
+    
+    printf("\n");
+    printf("Ctrl-c - exit\n");
+    printf("---\n");
+}
+
+static void stdin_process(char cmd){
+    uint8_t status = ERROR_CODE_SUCCESS;
+    switch (cmd){
+        case 'c':
+            printf("Connect to %s in report mode, with fallback to boot mode.\n", remote_addr_string);
+            status = hid_host_connect(remote_addr, hid_host_report_mode, &hid_host_cid);
+            break;
+        case 'C':
+            printf("Disconnect...\n");
+            hid_host_disconnect(hid_host_cid);
+            break;
+        case '\n':
+        case '\r':
+            break;
+        default:
+            show_usage();
+            break;
+    }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("HID host cmd \'%c\' failed, status 0x%02x\n", cmd, status);
+    }
+}
+#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -489,6 +431,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // parse human readable Bluetooth address
     sscanf_bd_addr(remote_addr_string, remote_addr);
+
+#ifdef HAVE_BTSTACK_STDIN
+    btstack_stdin_setup(stdin_process);
+#endif
 
     // Turn on the device 
     hci_power_control(HCI_POWER_ON);

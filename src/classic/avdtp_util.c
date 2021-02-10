@@ -851,27 +851,31 @@ static void avdtp_signaling_emit_capability_done(uint16_t avdtp_cid, uint8_t rem
     avdtp_emit_sink_and_source(event, pos);
 }
 
+static void avdtp_signaling_emit_media_codec_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec){
+    switch (media_codec.media_codec_type){
+        case AVDTP_CODEC_SBC:
+            avdtp_signaling_emit_media_codec_sbc_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_MPEG_1_2_AUDIO:
+            avdtp_signaling_emit_media_codec_mpeg_audio_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_MPEG_2_4_AAC:
+            avdtp_signaling_emit_media_codec_mpeg_aac_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        case AVDTP_CODEC_ATRAC_FAMILY:
+            avdtp_signaling_emit_media_codec_atrac_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+        default:
+            avdtp_signaling_emit_media_codec_other_capability(avdtp_cid, remote_seid, media_codec);
+            break;
+    }
+}
+
 // emit events for all capabilities incl. final done event
 void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_capabilities_t *capabilities,
 									   uint16_t registered_service_categories) {
     if (get_bit16(registered_service_categories, AVDTP_MEDIA_CODEC)){
-        switch (capabilities->media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC:
-				avdtp_signaling_emit_media_codec_sbc_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            case AVDTP_CODEC_MPEG_1_2_AUDIO:
-                avdtp_signaling_emit_media_codec_mpeg_audio_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            case AVDTP_CODEC_MPEG_2_4_AAC:
-                avdtp_signaling_emit_media_codec_mpeg_aac_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            case AVDTP_CODEC_ATRAC_FAMILY:
-                avdtp_signaling_emit_media_codec_atrac_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-            default:
-				avdtp_signaling_emit_media_codec_other_capability(avdtp_cid, remote_seid, capabilities->media_codec);
-                break;
-        }
+        avdtp_signaling_emit_media_codec_capability(avdtp_cid, remote_seid, capabilities->media_codec);
     }
 
     if (get_bit16(registered_service_categories, AVDTP_MEDIA_TRANSPORT)){
@@ -1419,10 +1423,9 @@ void avdtp_config_sbc_set_sampling_frequency(uint8_t * config, uint16_t sampling
     config[0] = (((uint8_t) sampling_frequency) << 4) | (config[0] & 0x0f);
 }
 
-void avdtp_config_sbc_store(uint8_t * config, uint16_t sampling_frequency_hz, avdtp_channel_mode_t channel_mode, uint8_t block_length, uint8_t subbands,
-                                   avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value) {
+void avdtp_config_sbc_store(uint8_t * config, const avdtp_configuration_sbc_t * configuration){
     avdtp_sbc_channel_mode_t sbc_channel_mode;
-    switch (channel_mode){
+    switch (configuration->channel_mode){
         case AVDTP_CHANNEL_MODE_MONO:
             sbc_channel_mode = AVDTP_SBC_MONO;
             break;
@@ -1437,10 +1440,10 @@ void avdtp_config_sbc_store(uint8_t * config, uint16_t sampling_frequency_hz, av
             break;
     }
     config[0] = (uint8_t) sbc_channel_mode;
-    config[1] = (block_length << 4) | (subbands << 2) | allocation_method;
-    config[2] = min_bitpool_value;
-    config[3] = max_bitpool_value;
-    avdtp_config_sbc_set_sampling_frequency(config, sampling_frequency_hz);
+    config[1] = (configuration->block_length << 4) | (configuration->subbands << 2) | configuration->allocation_method;
+    config[2] = configuration-> min_bitpool_value;
+    config[3] = configuration->max_bitpool_value;
+    avdtp_config_sbc_set_sampling_frequency(config, configuration->sampling_frequency);
 }
 
 void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
@@ -1464,19 +1467,21 @@ void avdtp_config_mpeg_audio_set_sampling_frequency(uint8_t * config, uint16_t s
         case 48000:
             sampling_frequency_index = 0;
             break;
+        default:
+            btstack_assert(false);
+            break;
     }
     config[1] = (config[1] & 0xC0) | (1 << sampling_frequency_index);
 }
 
-void avdtp_config_mpeg_audio_store(uint8_t * config, avdtp_mpeg_layer_t layer, uint8_t crc, avdtp_channel_mode_t channel_mode, uint8_t media_payload_format,
-                                          uint16_t sampling_frequency, uint8_t vbr, uint8_t bit_rate_index){
+void avdtp_config_mpeg_audio_store(uint8_t * config, const avdtp_configuration_mpeg_audio_t * configuration){
 
-    config[0] = (1 << (7 - (layer - AVDTP_MPEG_LAYER_1))) | ((crc & 0x01) << 4) | (1 << (channel_mode - AVDTP_CHANNEL_MODE_MONO));
-    config[1] = ((media_payload_format & 0x01) << 6) ;
-    uint16_t bit_rate_mask = 1 << bit_rate_index;
-    config[2] = ((vbr & 0x01) << 7) | ((bit_rate_mask >> 8) & 0x3f);
+    config[0] = (1 << (7 - (configuration->layer - AVDTP_MPEG_LAYER_1))) | ((configuration->crc & 0x01) << 4) | (1 << (configuration->channel_mode - AVDTP_CHANNEL_MODE_MONO));
+    config[1] = ((configuration->media_payload_format & 0x01) << 6) ;
+    uint16_t bit_rate_mask = 1 << configuration->bit_rate_index;
+    config[2] = ((configuration->vbr & 0x01) << 7) | ((bit_rate_mask >> 8) & 0x3f);
     config[3] = bit_rate_mask & 0xff;
-    avdtp_config_mpeg_audio_set_sampling_frequency(config, sampling_frequency);
+    avdtp_config_mpeg_audio_set_sampling_frequency(config, configuration->sampling_frequency);
 }
 
 
@@ -1496,10 +1501,10 @@ void avdtp_config_mpeg_aac_set_sampling_frequency(uint8_t * config, uint16_t sam
     config[2] = ((sampling_frequency_bitmap & 0x0f) << 4) | (config[2] & 0x0f);
 }
 
-void avdtp_config_mpeg_aac_store(uint8_t * config,  avdtp_aac_object_type_t object_type, uint32_t sampling_frequency, uint8_t channels, uint32_t bit_rate, uint8_t vbr) {
-    config[0] = 1 << (7 -(object_type - AVDTP_AAC_MPEG2_LC));
+void avdtp_config_mpeg_aac_store(uint8_t * config, const avdtp_configuration_mpeg_aac_t * configuration) {
+    config[0] = 1 << (7 -(configuration->object_type - AVDTP_AAC_MPEG2_LC));
     uint8_t channels_bitmap = 0;
-    switch (channels){
+    switch (configuration->channels){
         case 1:
             channels_bitmap = 0x02;
             break;
@@ -1510,10 +1515,10 @@ void avdtp_config_mpeg_aac_store(uint8_t * config,  avdtp_aac_object_type_t obje
             break;
     }
     config[2] = channels_bitmap << 2;
-    config[3] = ((vbr & 0x01) << 7) | ((bit_rate >> 16) & 0x7f);
-    config[4] = (bit_rate >> 8) & 0xff;
-    config[5] =  bit_rate & 0xff;
-    avdtp_config_mpeg_aac_set_sampling_frequency(config, sampling_frequency);
+    config[3] = ((configuration->vbr & 0x01) << 7) | ((configuration->bit_rate >> 16) & 0x7f);
+    config[4] = (configuration->bit_rate >> 8) & 0xff;
+    config[5] =  configuration->bit_rate & 0xff;
+    avdtp_config_mpeg_aac_set_sampling_frequency(config, configuration->sampling_frequency);
 }
 
 void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampling_frequency_hz) {
@@ -1531,10 +1536,9 @@ void avdtp_config_atrac_set_sampling_frequency(uint8_t * config, uint16_t sampli
     config[1] = (fs_bitmap << 4) | (config[1] & 0x0F);
 }
 
-void avdtp_config_atrac_store(uint8_t * config, avdtp_atrac_version_t version, avdtp_channel_mode_t channel_mode, uint16_t sampling_frequency, uint8_t vbr,
-                                     uint8_t bit_rate_index, uint16_t maximum_sul) {
+void avdtp_config_atrac_store(uint8_t * config, const avdtp_configuration_atrac_t * configuration){
     uint8_t channel_mode_bitmap = 0;
-    switch (channel_mode){
+    switch (configuration->channel_mode){
         case AVDTP_CHANNEL_MODE_MONO:
             channel_mode_bitmap = 4;
             break;
@@ -1547,13 +1551,13 @@ void avdtp_config_atrac_store(uint8_t * config, avdtp_atrac_version_t version, a
         default:
             break;
     }
-    config[0] = ((version - AVDTP_ATRAC_VERSION_1 + 1) << 5) | (channel_mode_bitmap << 2);
-    uint32_t bit_rate_bitmap = 1 << (0x18 - bit_rate_index);
-    config[1] = ((vbr & 0x01) << 3) | ((bit_rate_bitmap >> 16) & 0x07);
+    config[0] = ((configuration->version - AVDTP_ATRAC_VERSION_1 + 1) << 5) | (channel_mode_bitmap << 2);
+    uint32_t bit_rate_bitmap = 1 << (0x18 - configuration->bit_rate_index);
+    config[1] = ((configuration->vbr & 0x01) << 3) | ((bit_rate_bitmap >> 16) & 0x07);
     config[2] = (bit_rate_bitmap >> 8) & 0xff;
     config[3] = bit_rate_bitmap & 0xff;
-    config[4] = maximum_sul >> 8;
-    config[5] = maximum_sul & 0xff;
+    config[4] = configuration->maximum_sul >> 8;
+    config[5] = configuration->maximum_sul & 0xff;
     config[6] = 0;
-    avdtp_config_atrac_set_sampling_frequency(config, sampling_frequency);
+    avdtp_config_atrac_set_sampling_frequency(config, configuration->sampling_frequency);
 }

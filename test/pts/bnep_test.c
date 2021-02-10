@@ -35,8 +35,10 @@
  *
  */
 
+#define BTSTACK_FILE__ "bnep_test.c"
+
 /*
- * bnep_test.c
+ * bnep_test.c : Tool for testig BNEP with PTS
  * based on panu_demo implemented by Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
  */
 

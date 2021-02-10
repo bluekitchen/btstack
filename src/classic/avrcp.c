@@ -726,7 +726,8 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
     avrcp_connection_t * connection_controller;
     avrcp_connection_t * connection_target;
-    
+    bool can_send;
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -843,19 +844,23 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    
+                    can_send = true;
+
                     connection_target = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_TARGET, local_cid);
                     if ((connection_target != NULL) && connection_target->wait_to_send){
                         connection_target->wait_to_send = false;
                         (*avrcp_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
-                        break;    
+                        can_send = false;
                     }
 
                     connection_controller = avrcp_get_connection_for_l2cap_signaling_cid_for_role(AVRCP_CONTROLLER, local_cid);
                     if ((connection_controller != NULL) && connection_controller->wait_to_send){
-                        connection_controller->wait_to_send = false;
-                        (*avrcp_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
-                        break;    
+                        if (can_send){
+                            connection_controller->wait_to_send = false;
+                            (*avrcp_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
+                        } else {
+                            l2cap_request_can_send_now_event(local_cid);
+                        }
                     }
                     break;
 

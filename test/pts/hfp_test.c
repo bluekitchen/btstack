@@ -34,12 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
-// *****************************************************************************
-//
-// Minimal setup for HFP Audio Gateway
-//
-// *****************************************************************************
+
+#define BTSTACK_FILE__ "hfp_test.c"
+
+/*
+ * hfp_test.c : Tool for testig HFP with PTS
+ */ 
 
 #include "btstack_config.h"
 

@@ -1282,7 +1282,7 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key){
     mbedtls_ecp_point_free( & Q);
 #endif
 
-    if (err){
+    if (err != 0){
         log_error("public key invalid %x", err);
     }
     return  err;

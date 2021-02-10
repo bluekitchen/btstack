@@ -35,11 +35,11 @@
  *
  */
 
-// *****************************************************************************
-//
-// BLE Central PTS Test
-//
-// *****************************************************************************
+#define BTSTACK_FILE__ "ble_central_test.c"
+
+/*
+ * ble_central_test.c : Tool for testig BLE central
+ */
 
 #include <stdint.h>
 #include <stdio.h>

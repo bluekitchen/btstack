@@ -35,17 +35,12 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_host_demo.c"
+#define BTSTACK_FILE__ "hid_host_test.c"
 
 /*
- * hid_host_demo.c
+ * hid_host_test.c : Tool for testig HID host with PTS, see hid_host_test.md for PTS tests command sequences
  */
 
-/* EXAMPLE_START(hid_host_demo): HID Host Demo
- *
- * @text This example implements an HID Host. For now, it connnects to a fixed device, queries the HID SDP
- * record and opens the HID Control + Interrupt channels
- */
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -54,37 +49,7 @@
 #include "btstack.h"
 
 #define MAX_ATTRIBUTE_VALUE_SIZE 300
-
-// SDP
-static uint8_t            hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
-static uint16_t           hid_descriptor_len;
-
-static uint16_t           hid_control_psm;
-static uint16_t           hid_interrupt_psm;
-
-static uint8_t            attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
-static const unsigned int attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
-
-// L2CAP
-static uint16_t           l2cap_hid_control_cid;
-static uint16_t           l2cap_hid_interrupt_cid;
-
-// MBP 2016
-static const char * remote_addr_string = "00-1F-20-86-DF-52";
-// iMpulse static const char * remote_addr_string = "64:6E:6C:C1:AA:B5";
-
-static bd_addr_t remote_addr;
-
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-// Needed for queries
-    typedef enum {
-    HID_HOST_IDLE,
-    HID_HOST_CONTROL_CONNECTION_ESTABLISHED,
-    HID_HOST_W2_REQUEST_OUTPUT_REPORT
-} hid_host_state_t;
-
-static hid_host_state_t hid_host_state = HID_HOST_IDLE;
+#define NUM_KEYS 6
 
 // Simplified US Keyboard with Shift modifier
 
@@ -94,203 +59,118 @@ static hid_host_state_t hid_host_state = HID_HOST_IDLE;
 #define CHAR_TAB         '\t'
 #define CHAR_BACKSPACE   0x7f
 
-/**
- * English (US)
- */
+
+// English (US)
+//
 static const uint8_t keytable_us_none [] = {
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*   0-3 */
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',                   /*  4-13 */
-    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',                   /* 14-23 */
-    'u', 'v', 'w', 'x', 'y', 'z',                                       /* 24-29 */
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',                   /* 30-39 */
-    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
-    '-', '=', '[', ']', '\\', CHAR_ILLEGAL, ';', '\'', 0x60, ',',       /* 45-54 */
-    '.', '/', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
-    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
-    '6', '7', '8', '9', '0', '.', 0xa7,                                 /* 97-100 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             //   0-3  
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',                   //  4-13  
+    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',                   // 14-23  
+    'u', 'v', 'w', 'x', 'y', 'z',                                       // 24-29  
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',                   // 30-39  
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            // 40-44  
+    '-', '=', '[', ']', '\\', CHAR_ILLEGAL, ';', '\'', 0x60, ',',       // 45-54  
+    '.', '/', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   // 55-60  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 61-64  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 65-68  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 69-72  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 73-76  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 77-80  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 81-84  
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       // 85-97  
+    '6', '7', '8', '9', '0', '.', 0xa7,                                 // 97-100 
 }; 
 
 static const uint8_t keytable_us_shift[] = {
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*  0-3  */
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',                   /*  4-13 */
-    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',                   /* 14-23 */
-    'U', 'V', 'W', 'X', 'Y', 'Z',                                       /* 24-29 */
-    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',                   /* 30-39 */
-    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
-    '_', '+', '{', '}', '|', CHAR_ILLEGAL, ':', '"', 0x7E, '<',         /* 45-54 */
-    '>', '?', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
-    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
-    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
-    '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             //  0-3   
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',                   //  4-13  
+    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',                   // 14-23  
+    'U', 'V', 'W', 'X', 'Y', 'Z',                                       // 24-29  
+    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',                   // 30-39  
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            // 40-44  
+    '_', '+', '{', '}', '|', CHAR_ILLEGAL, ':', '"', 0x7E, '<',         // 45-54  
+    '>', '?', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   // 55-60  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 61-64  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 65-68  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 69-72  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 73-76  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 77-80  
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             // 81-84  
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       // 85-97  
+    '6', '7', '8', '9', '0', '.', 0xb1,                                 // 97-100 
 }; 
 
 
-/* @section Main application configuration
- *
- * @text In the application configuration, L2CAP is initialized 
- */
+static uint8_t last_keys[NUM_KEYS];
 
-/* LISTING_START(PanuSetup): Panu setup */
+static enum {
+    APP_IDLE,
+    APP_CONNECTED
+} app_state = APP_IDLE;
+
+static bool     unplugged    = false;
+static uint16_t hid_host_cid = 0;
+static bool hid_host_descriptor_available = false;
+
+static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
+
+// SDP
+static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
+
+// Logitec static const char * remote_addr_string = "00:1F:20:86:DF:52";
+// PTS 
+static const char * remote_addr_string = "00:1B:DC:08:E2:5C";
+
+static bd_addr_t remote_addr;
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void hid_host_setup(void){
 
     // Initialize L2CAP 
     l2cap_init();
+    
+    // Initialize HID Host    
+    hid_host_init(hid_descriptor, sizeof(hid_descriptor));
+    hid_host_register_packet_handler(packet_handler);
 
+    // Allow sniff mode requests by HID device and support role switch
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
+
+    // try to become master on incoming connections
+    hci_set_master_slave_policy(HCI_ROLE_MASTER);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+
     // Disable stdout buffering
     setbuf(stdout, NULL);
 }
-/* LISTING_END */
 
-/* @section SDP parser callback 
- * 
- * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
- * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
- */
-
-
-static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
-
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
-
-    des_iterator_t attribute_list_it;
-    des_iterator_t additional_des_it;
-    des_iterator_t prot_it;
-    uint8_t       *des_element;
-    uint8_t       *element;
-    uint32_t       uuid;
-    uint8_t        status;
-
-    switch (hci_event_packet_get_type(packet)){
-        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
-                attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
-                if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-                    switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
-                        case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {                                    
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                des_iterator_init(&prot_it, des_element);
-                                element = des_iterator_get_element(&prot_it);
-                                if (de_get_element_type(element) != DE_UUID) continue;
-                                uuid = de_get_uuid32(element);
-                                switch (uuid){
-                                    case BLUETOOTH_PROTOCOL_L2CAP:
-                                        if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
-                                        de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_control_psm);
-                                        printf("HID Control PSM: 0x%04x\n", (int) hid_control_psm);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                            break;
-                        case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {                                    
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
-                                    if (des_iterator_get_type(&additional_des_it) != DE_DES) continue;
-                                    des_element = des_iterator_get_element(&additional_des_it);
-                                    des_iterator_init(&prot_it, des_element);
-                                    element = des_iterator_get_element(&prot_it);
-                                    if (de_get_element_type(element) != DE_UUID) continue;
-                                    uuid = de_get_uuid32(element);
-                                    switch (uuid){
-                                        case BLUETOOTH_PROTOCOL_L2CAP:
-                                            if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_interrupt_psm);
-                                            printf("HID Interrupt PSM: 0x%04x\n", (int) hid_interrupt_psm);
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
-                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
-                                des_element = des_iterator_get_element(&attribute_list_it);
-                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
-                                    if (des_iterator_get_type(&additional_des_it) != DE_STRING) continue;
-                                    element = des_iterator_get_element(&additional_des_it);
-                                    const uint8_t * descriptor = de_get_string(element);
-                                    hid_descriptor_len = de_get_data_size(element);
-                                    memcpy(hid_descriptor, descriptor, hid_descriptor_len);
-                                    printf("HID Descriptor:\n");
-                                    printf_hexdump(hid_descriptor, hid_descriptor_len);
-                                }
-                            }                        
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            } else {
-                fprintf(stderr, "SDP attribute value buffer size exceeded: available %d, required %d\n", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
-            }
-            break;
-            
-        case SDP_EVENT_QUERY_COMPLETE:
-            if (!hid_control_psm) {
-                printf("HID Control PSM missing\n");
-                break;
-            }
-            if (!hid_interrupt_psm) {
-                printf("HID Interrupt PSM missing\n");
-                break;
-            }
-            printf("Setup HID\n");
-            status = l2cap_create_channel(packet_handler, remote_addr, hid_control_psm, 48, &l2cap_hid_control_cid);
-            if (status){
-                printf("Connecting to HID Control failed: 0x%02x\n", status);
-            }
-            break;
-    }
-}
-
-
-/*
- * @section HID Report Handler
- * 
- * @text Use BTstack's compact HID Parser to process incoming HID Report
- * Iterate over all fields and process fields with usage page = 0x07 / Keyboard
- * Check if SHIFT is down and process first character (don't handle multiple key presses)
- * 
- */
-#define NUM_KEYS 6
-static uint8_t last_keys[NUM_KEYS];
 static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t report_len){
     // check if HID Input Report
-    if (report_len < 1) return;
-    if (*report != 0xa1) return; 
+    if (report_len < 1){
+        printf("ignore report: len 0");
+        return;
+    } 
+
+    if (*report != 0xa1) {
+        printf("ignore report: header 0x%02x", report[0]);
+        return;
+    } 
+    printf_hexdump(report, report_len);
+    
     report++;
     report_len--;
+    
     btstack_hid_parser_t parser;
-    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT, report, report_len);
+    btstack_hid_parser_init(&parser, 
+        hid_descriptor_storage_get_descriptor_data(hid_host_cid), 
+        hid_descriptor_storage_get_descriptor_len(hid_host_cid), 
+        HID_REPORT_TYPE_INPUT, report, report_len);
+    
     int shift = 0;
     uint8_t new_keys[NUM_KEYS];
     memset(new_keys, 0, sizeof(new_keys));
@@ -343,42 +223,31 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
     memcpy(last_keys, new_keys, NUM_KEYS);
 }
 
-/*
- * @section Packet Handler
- * 
- * @text The packet handler responds to various HCI Events.
- */
 
-/* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
-{
-    /* LISTING_PAUSE */
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
     uint8_t   event;
-    bd_addr_t event_addr;
+    bd_addr_t address;
     uint8_t   status;
-    uint16_t  l2cap_cid;
 
-    /* LISTING_RESUME */
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
             event = hci_event_packet_get_type(packet);
+
             switch (event) {            
-                /* @text When BTSTACK_EVENT_STATE with state HCI_STATE_WORKING
-                 * is received and the example is started in client mode, the remote SDP HID query is started.
-                 */
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("Start SDP HID query for remote HID Device.\n");
-                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
+                        printf("BTstack up and running. \n");
                     }
                     break;
 
-                /* LISTING_PAUSE */
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");
-                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
+                    hci_event_pin_code_request_get_bd_addr(packet, address);
+                    gap_pin_code_response(address, "0000");
 					break;
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
@@ -387,74 +256,156 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
-                /* LISTING_RESUME */
+                case HCI_EVENT_HID_META:
+                    switch (hci_event_hid_meta_get_subevent_code(packet)){
+                        case HID_SUBEVENT_INCOMING_CONNECTION:
+                            if (unplugged){
+                                hid_host_decline_connection(hid_subevent_incoming_connection_get_hid_cid(packet));
+                                break;
+                            }
+                            hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_protocol_mode);
+                            break;
+                        
+                        case HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG:
+                            if (hid_host_cid != hid_subevent_virtual_cable_unplug_get_hid_cid(packet)) return;
+                            printf("Received UNPLUG event, disconnecting...\n");
+                            unplugged = true;
+                            break;
 
-                case L2CAP_EVENT_CHANNEL_OPENED: 
-                    status = packet[2];
-                    if (status){
-                        printf("L2CAP Connection failed: 0x%02x\n", status);
-                        break;
-                    }
-                    l2cap_cid  = little_endian_read_16(packet, 13);
-                    if (!l2cap_cid) break;
-                    if (l2cap_cid == l2cap_hid_control_cid){
-                        status = l2cap_create_channel(packet_handler, remote_addr, hid_interrupt_psm, 48, &l2cap_hid_interrupt_cid);
-                        if (status){
-                            printf("Connecting to HID Control failed: 0x%02x\n", status);
+                        case HID_SUBEVENT_CONNECTION_OPENED:
+                            status = hid_subevent_connection_opened_get_status(packet);
+                            if (status) {
+                                // outgoing connection failed
+                                printf("Connection failed, status 0x%x\n", status);
+                                app_state = APP_IDLE;
+                                hid_host_cid = 0;
+                                return;
+                            }
+                            app_state = APP_CONNECTED;
+                            hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
+                            printf("HID Host connected...\n");
                             break;
-                        }
-                        hid_host_state = HID_HOST_CONTROL_CONNECTION_ESTABLISHED;
-                    }                        
-                    if (l2cap_cid == l2cap_hid_interrupt_cid){
-                        printf("HID Connection established\n");
-                    }
-                    break;
-                case L2CAP_EVENT_CAN_SEND_NOW:
-                    switch(hid_host_state){
-                        case HID_HOST_W2_REQUEST_OUTPUT_REPORT:{
-                            uint8_t header = (HID_MESSAGE_TYPE_GET_REPORT << 4) | HID_REPORT_TYPE_OUTPUT;
-                            uint8_t report_id = 0x01;
-                            uint8_t report[] = { header, report_id };
-                            l2cap_send(l2cap_hid_control_cid, (uint8_t*) report, sizeof(report));
+                        
+                        case HID_SUBEVENT_DESCRIPTOR_AVAILABLE:
+                            status = hid_subevent_descriptor_available_get_status(packet);
+                            if (status == ERROR_CODE_SUCCESS){
+                                hid_host_descriptor_available = true;
+                                printf("HID Descriptor available\n");
+                            } else {
+                                printf("Cannot handle input report, HID Descriptor is not available.\n");
+                            }
                             break;
-                        }
+
+                        case HID_SUBEVENT_CONNECTION_CLOSED:
+                            hid_host_cid = 0;
+                            printf("HID Host disconnected..\n");
+                            break;
+                        
+                        case HID_SUBEVENT_GET_REPORT_RESPONSE:
+                            status = hid_subevent_get_report_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error get report, status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("Received report[%d]: ", hid_subevent_get_report_response_get_report_len(packet));
+                            printf_hexdump(hid_subevent_get_report_response_get_report(packet), hid_subevent_get_report_response_get_report_len(packet));
+                            printf("\n");
+                            break;
+
+                        case HID_SUBEVENT_SET_REPORT_RESPONSE:
+                            status = hid_subevent_set_report_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error set report, status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("Report set.\n");
+                            break;
+
+                        case HID_SUBEVENT_GET_PROTOCOL_RESPONSE:
+                            status = hid_subevent_get_protocol_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error get report, status 0x%02x\n", status);
+                                break;
+                            }
+                            switch ((hid_protocol_mode_t)hid_subevent_get_protocol_response_get_protocol_mode(packet)){
+                                case HID_PROTOCOL_MODE_BOOT:
+                                    printf("HID device is in BOOT mode.\n");
+                                    break;
+                                case HID_PROTOCOL_MODE_REPORT:
+                                    printf("HID device is in REPORT mode.\n");
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+
+                        case HID_SUBEVENT_SET_PROTOCOL_RESPONSE:
+                            status = hid_subevent_set_report_response_get_handshake_status(packet);
+                            if (status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                printf("Error set protocol, status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("Protocol set.\n");
+                            break;
+
+                        case HID_SUBEVENT_REPORT:
+                            if (hid_host_descriptor_available){
+                                hid_host_handle_interrupt_report(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            } else {
+                                printf_hexdump(hid_subevent_report_get_report(packet), hid_subevent_report_get_report_len(packet));
+                            }
+                            break;
+
                         default:
                             break;
                     }
+                    break;
                 default:
                     break;
             }
             break;
-        case L2CAP_DATA_PACKET:
-            // for now, just dump incoming data
-            if (channel == l2cap_hid_interrupt_cid){
-                hid_host_handle_interrupt_report(packet,  size);
-            } else if (channel == l2cap_hid_control_cid){
-                printf("\nHID Control: ");
-                printf_hexdump(packet, size);
-            } else {
-                break;
-            }
+
         default:
             break;
     }
+
 }
 /* LISTING_END */
 
-
-static uint8_t hid_host_get_output_report(uint16_t control_cid){
-    if (hid_host_state != HID_HOST_CONTROL_CONNECTION_ESTABLISHED) return 0;
-
-    hid_host_state = HID_HOST_W2_REQUEST_OUTPUT_REPORT;
-    l2cap_request_can_send_now_event(control_cid);
-    return ERROR_CODE_SUCCESS;
-}
 
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("o      - get output report\n");
+    printf("a      - start SDP scan and connect to %s in BOOT mode\n", remote_addr_string);
+    printf("c      - start SDP scan and connect to %s in REPORT mode\n", remote_addr_string);
+    printf("C      - disconnect from %s\n", remote_addr_string);
+    printf("\n");
+    printf("s      - suspend\n");
+    printf("S      - exit suspend\n");
+    printf("U      - unplug\n");
+    printf("u      - reset unplug (for the next PTS test)\n");
+    
+    printf("\n");
+    printf("1      - Get report with id 0x05\n");
+    printf("2      - Get report with id 0x03\n");
+    printf("3      - Get report with id 0x02\n");
+
+    printf("\n");
+    printf("4      - Set report with id 0x03\n");
+    printf("5      - Set report with id 0x05\n");
+    printf("6      - Set report with id 0x02\n");
+    printf("7      - Set report with id 0x01\n");
+
+    printf("\n");
+    printf("t      - Send report with id 0x03\n");
+    printf("o      - Send report with id 0x01\n");
+    
+    printf("\n");
+    printf("p      - Get protocol\n");
+    printf("r      - Set protocol in REPORT mode\n");
+    printf("b      - Set protocol in BOOT mode\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -462,10 +413,118 @@ static void show_usage(void){
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
-        case 'o':
-            printf("Get output report from %s\n", remote_addr_string);
-            status = hid_host_get_output_report(l2cap_hid_control_cid);
+        case 'a':
+            if (unplugged){
+                printf("Cannot connect, host is unplugged.\n");
+                break;  
+            } 
+            printf("Start SDP scan and connect to %s in boot mode.\n", remote_addr_string);
+            status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_BOOT, &hid_host_cid);
             break;
+
+        case 'c':
+            if (unplugged){
+                printf("Cannot connect, host is unplugged.\n");
+                break;  
+            } 
+            printf("Start SDP scan and connect to %s in report mode.\n", remote_addr_string);
+            status = hid_host_connect(remote_addr, HID_PROTOCOL_MODE_REPORT, &hid_host_cid);
+            break;
+
+        case 'C':
+            printf("Disconnect from  %s...\n", remote_addr_string);
+            hid_host_disconnect(hid_host_cid);
+            break;
+
+
+        case 'p':
+            printf("Get protocol\n");
+            status = hid_host_send_get_protocol(hid_host_cid);
+            break;
+        case 'r':
+            printf("Set protocol in REPORT mode\n");
+            status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_REPORT);
+            break;
+        case 'b':
+            printf("Set protocol in BOOT mode\n");
+            status = hid_host_send_set_protocol_mode(hid_host_cid, HID_PROTOCOL_MODE_BOOT);
+            break;
+
+        
+        case 's':
+            printf("Send \'Suspend\'\n");
+            hid_host_send_suspend(hid_host_cid);
+            break;
+        case 'S':
+            printf("Send \'Exit suspend\'\n");
+            hid_host_send_exit_suspend(hid_host_cid);
+            break;
+        case 'U':
+            printf("Send \'Unplug\'\n");
+            hid_host_send_virtual_cable_unplug(hid_host_cid);
+            break;
+        case 'u':
+            printf("Reset unplug (for the next PTS test)\n");
+            unplugged = false;
+            break;
+        
+
+        case '1':
+            printf("Get report with id 0x05\n");
+            status = hid_host_send_get_report(hid_host_cid, HID_REPORT_TYPE_FEATURE, 0x05);
+            break;
+        case '2':
+            printf("Get report with id 0x03\n");
+            status = hid_host_send_get_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03);
+            break;
+        case '3':
+            printf("Get report from with id 0x02\n");
+            status = hid_host_send_get_report(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x02);
+            break;
+
+
+        case '4':{
+            printf("Set output report with id 0x03\n");
+            uint8_t report[] = {0, 0};
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x03, report, sizeof(report));
+            break;
+        }
+
+        case '5':{
+            printf("Set feature report with id 0x05\n");
+            uint8_t report[] = {0, 0, 0};
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_FEATURE, 0x05, report, sizeof(report));
+            break;
+        }
+
+        case '6':{
+            printf("Set input report with id 0x02\n");
+            uint8_t report[] = {0, 0, 0, 0};
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x02, report, sizeof(report));
+            break;
+        }
+
+        case '7':{
+            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            printf("Set output report with id 0x01\n");
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x01, report, sizeof(report));
+            break;
+        }
+
+        case 't':{
+            printf("Send report with id 0x03\n");
+            uint8_t report[] = {0, 0};
+            status = hid_host_send_report(hid_host_cid, 0x03, report, sizeof(report));
+            break;
+        }
+
+        case 'o':{
+            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            printf("Set output report with id 0x01\n");
+            status = hid_host_send_report(hid_host_cid, 0x01, report, sizeof(report));
+            break;
+        }
+
         case '\n':
         case '\r':
             break;
@@ -494,4 +553,3 @@ int btstack_main(int argc, const char * argv[]){
     return 0;
 }
 
-/* EXAMPLE_END */

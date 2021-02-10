@@ -6,8 +6,6 @@
 #define BTSTACK_CONFIG_H
 
 // Port related features
-#define HAVE_ASSERT
-#define HAVE_ASSERT
 #define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
@@ -27,6 +25,7 @@
 #define ENABLE_LOG_INFO
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #define ENABLE_PRINTF_HEXDUMP
+#define ENABLE_SOFTWARE_AES128
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1024

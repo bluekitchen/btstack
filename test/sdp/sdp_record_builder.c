@@ -203,7 +203,7 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
 // hid_device.h
 //
 
-#define HID_DEVICE_RECORD_SIZE_MIN 164
+#define HID_DEVICE_RECORD_SIZE_MIN 169
 
 static uint16_t hid_device_record_size(uint16_t descriptor_size, const char * name){
     return HID_DEVICE_RECORD_SIZE_MIN + descriptor_size + strlen(name);
@@ -217,7 +217,7 @@ TEST(SDPRecordBuilder, HID_DEVICE){
     name = "";
     descriptor_size = 0;
     expected_len = hid_device_record_size(descriptor_size, name);
-    hid_create_sdp_record(service_buffer, 0, 0, 0, 0, 0, 0, NULL, descriptor_size, name);
+    hid_create_sdp_record(service_buffer, 0x0001, 0, 0, 0, 0, 0, 0, 0, NULL, descriptor_size, name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }
 

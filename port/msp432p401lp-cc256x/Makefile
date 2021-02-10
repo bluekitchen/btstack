@@ -138,6 +138,7 @@ ${BTSTACK_ROOT}/src/classic/hfp_gsm_model.c \
 ${BTSTACK_ROOT}/src/classic/hfp_hf.c \
 ${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 ${BTSTACK_ROOT}/src/classic/hid_device.c \
+${BTSTACK_ROOT}/src/classic/hid_host.c \
 ${BTSTACK_ROOT}/src/classic/hsp_ag.c \
 ${BTSTACK_ROOT}/src/classic/hsp_hs.c \
 ${BTSTACK_ROOT}/src/classic/obex_iterator.c \

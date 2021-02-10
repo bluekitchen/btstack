@@ -200,68 +200,40 @@ uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_se
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @param remote_seid  		ID of a remote stream endpoint.
- * @param sampling_frequency
- * @param channel_mode
- * @param block_length
- * @param subbands
- * @param allocation_method
- * @param min_bitpool_value
- * @param max_bitpool_value
+ * @param configuration     SBC Configuration
  * @return status
  */
-uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t sampling_frequency, avdtp_channel_mode_t channel_mode,
-                                   uint8_t block_length, uint8_t subbands, avdtp_sbc_allocation_method_t  allocation_method, uint8_t min_bitpool_value, uint8_t max_bitpool_value);
+uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_sbc_t * configuration);
 
 /**
  * @brief Select and configure MPEG AUDIO endpoint
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @param remote_seid  		ID of a remote stream endpoint.
- * @param layer
- * @param crc
- * @param channel_mode
- * @param media_payload_format
- * @param sampling_frequency
- * @param vbr
- * @param bit_rate_index
+ * @param configuration     MPEG AUDIO Configuration
  * @return status
  */
-uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_mpeg_layer_t layer, uint8_t crc,
-                                          avdtp_channel_mode_t channel_mode, uint8_t media_payload_format,
-                                          uint16_t sampling_frequency, uint8_t vbr, uint8_t bit_rate_index);
+uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_mpeg_audio_t * configuration);
 
 /**
  * @brief Select and configure MPEG AAC endpoint
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @param remote_seid  		ID of a remote stream endpoint.
- * @param object_type
- * @param sampling_frequency
- * @param channels
- * @param bit_rate
- * @param vbr
+ * @param configuration     MPEG AAC Configuration
  * @return status
  */
-uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, avdtp_aac_object_type_t object_type,
-                                        uint32_t sampling_frequency, uint8_t channels, uint32_t bit_rate, uint8_t vbr);
+uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration);
 
 /**
  * @brief Select and configure ATRAC endpoint
  * @param a2dp_cid 			A2DP channel identifier.
  * @param local_seid  		ID of a local stream endpoint.
  * @param remote_seid  		ID of a remote stream endpoint.
- * @param media_type
- * @param version
- * @param channel_mode
- * @param sampling_frequency
- * @param vbr
- * @param bit_rate_index
- * @param maximum_sul
+ * @param configuration     ATRAC Configuration
  * @return status
  */
-uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, avdtp_atrac_version_t version,
-                                     avdtp_channel_mode_t channel_mode, uint16_t sampling_frequency,
-                                     uint8_t vbr, uint8_t bit_rate_index, uint16_t maximum_sul);
+uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration);
 
 /**
  * @brief Select and configure Non-A2DP endpoint. Bytes 0-3 of codec information contain Vendor ID, bytes 4-5 contain Vendor Specific Codec ID (little endian)

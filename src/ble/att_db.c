@@ -675,7 +675,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
 
     // check security requirements
     uint8_t error_code = att_validate_security(att_connection, ATT_READ, &it);
-    if (error_code) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
@@ -723,7 +723,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
     // check security requirements
     uint8_t error_code = att_validate_security(att_connection, ATT_READ, &it);
-    if (error_code) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
@@ -798,7 +798,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 
         // check security requirements
         error_code = att_validate_security(att_connection, ATT_READ, &it);
-        if (error_code) break;
+        if (error_code != 0) break;
 
         att_update_value_len(&it, att_connection->con_handle);
         
@@ -814,7 +814,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         offset += bytes_copied;
     }
 
-    if (error_code){
+    if (error_code != 0){
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     
@@ -989,7 +989,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     }
     // check security requirements
     int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
-    if (error_code) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     att_persistent_ccc_cache(&it);
@@ -999,7 +999,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (error_code == ATT_ERROR_WRITE_RESPONSE_PENDING) return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
 #endif
 
-    if (error_code) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     response_buffer[0] = ATT_WRITE_RESPONSE;
@@ -1032,7 +1032,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     }
     // check security requirements
     int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
-    if (error_code) {
+    if (error_code != 0) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
@@ -1091,7 +1091,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         if (att_prepare_write_error_code == ATT_ERROR_WRITE_RESPONSE_PENDING) return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
 #endif
         // deliver queued errors
-        if (att_prepare_write_error_code){
+        if (att_prepare_write_error_code != 0){
             att_clear_transaction_queue(att_connection);
             uint8_t  error_code = att_prepare_write_error_code;
             uint16_t handle     = att_prepare_write_error_handle;
@@ -1271,14 +1271,14 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
 uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16, uint16_t descriptor_uuid16){
     att_iterator_t it;
     att_iterator_init(&it);
-    int characteristic_found = 0;
+    bool characteristic_found = false;
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle && (it.handle < start_handle)) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0u) break;
         if (att_iterator_match_uuid16(&it, characteristic_uuid16)){
-            characteristic_found = 1;
+            characteristic_found = true;
             continue;
         }
         if (att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) 
@@ -1408,7 +1408,7 @@ bool att_is_persistent_ccc(uint16_t handle){
 uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     btstack_assert(blob != NULL);
     
-    if (buffer){
+    if (buffer != NULL){
         uint16_t bytes_to_copy = 0;
         if (blob_size >= offset){
             bytes_to_copy = btstack_min(blob_size - offset, buffer_size);

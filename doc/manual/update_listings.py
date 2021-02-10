@@ -36,7 +36,7 @@ list_of_examples = {
     "GAP"         : [["gap_inquiry"], ["gap_link_keys"]],
     
     "Hello World" : [["led_counter"]],
-    "HID"         : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"], ["hog_boot_host_demo"]],
+    "HID"         : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hid_host_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"], ["hog_boot_host_demo"]],
     
     "Low Energy"  : [["gap_le_advertisements"], ["gatt_browser"], ["gatt_counter"], ["gatt_streamer_server"], 
                     ["gatt_battery_query"], ["gatt_heart_rate_client"], 

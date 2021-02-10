@@ -34,12 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
-// *****************************************************************************
-//
-// Minimal test sending / receiving SCO packets
-//
-// *****************************************************************************
+
+#define BTSTACK_FILE__ "sco_loopback.c"
+
+/*
+ * sco_loopback.c : Minimal test sending / receiving SCO packets
+ */ 
 
 #include <stdint.h>
 #include <stdio.h>

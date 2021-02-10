@@ -264,6 +264,9 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                 case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
                     a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION);
                     break;
+                default:
+                    btstack_assert(false);
+                    break;
             }
             break;
 

@@ -196,20 +196,24 @@ typedef enum {
     DENY_PIN_CODE_REQUEST          = 0x0040,
     RECV_IO_CAPABILITIES_REQUEST   = 0x0080,
     SEND_IO_CAPABILITIES_REPLY     = 0x0100,
-    SEND_USER_CONFIRM_REPLY        = 0x0200,
-    SEND_USER_PASSKEY_REPLY        = 0x0400,
+    SEND_IO_CAPABILITIES_NEGATIVE_REPLY = 0x0200,
+    SEND_USER_CONFIRM_REPLY        = 0x0400,
+    SEND_USER_PASSKEY_REPLY        = 0x0800,
+
+    // Classic OOB
+    SEND_REMOTE_OOB_DATA_REPLY     = 0x1800,
 
     // pairing status
-    LEGACY_PAIRING_ACTIVE          = 0x1000,
-    SSP_PAIRING_ACTIVE             = 0x2000,
+    LEGACY_PAIRING_ACTIVE          = 0x2000,
+    SSP_PAIRING_ACTIVE             = 0x4000,
 
     // connection status
-    CONNECTION_AUTHENTICATED       = 0x4000,
-    CONNECTION_ENCRYPTED           = 0x8000,
+    CONNECTION_AUTHENTICATED       = 0x8000,
+    CONNECTION_ENCRYPTED           = 0x10000,
 
     // errands
-    READ_RSSI                      = 0x10000,
-    WRITE_SUPERVISION_TIMEOUT      = 0x20000,
+    READ_RSSI                      = 0x20000,
+    WRITE_SUPERVISION_TIMEOUT      = 0x40000,
 
 } hci_authentication_flags_t;
 
@@ -595,6 +599,13 @@ typedef struct {
     l2cap_state_t l2cap_state;
 #endif
 
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    const uint8_t * classic_oob_c_192;
+    const uint8_t * classic_oob_r_192;
+    const uint8_t * classic_oob_c_256;
+    const uint8_t * classic_oob_r_256;
+#endif
+
 } hci_connection_t;
 
 
@@ -838,6 +849,8 @@ typedef struct {
     /*  8 - Read Remote Extended Features           (Octet  2/bit 5) */
     /*  9 - Write Secure Connections Host           (Octet 32/bit 3) */
     /* 10 - LE Set Address Resolution Enable        (Octet 35/bit 1) */
+    /* 11 - Remote OOB Extended Data Request Reply  (Octet 32/bit 1) */
+    /* 12 - Read Local OOB Extended Data command    (Octet 32/bit 6) */
     uint8_t local_supported_commands[2];
 
     /* bluetooth device information from hci read local version information */
@@ -981,6 +994,9 @@ typedef struct {
 	uint8_t                   le_resolving_list_remove_entries[(MAX_NUM_RESOLVING_LIST_ENTRIES + 7) / 8];
 #endif
 
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+	bool                      classic_read_local_oob_data;
+#endif
 } hci_stack_t;
 
 

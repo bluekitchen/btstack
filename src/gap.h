@@ -739,6 +739,38 @@ int gap_ssp_confirmation_response(const bd_addr_t addr);
 int gap_ssp_confirmation_negative(const bd_addr_t addr);
 
 /**
+ * @brief Generate new OOB data
+ * @note OOB data will be provided in GAP_EVENT_LOCAL_OOB_DATA and be used in future pairing procedures
+ */
+void gap_ssp_generate_oob_data(void);
+
+/**
+ * @brief Report Remote OOB Data
+ * @param bd_addr
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, const uint8_t * r_192, const uint8_t * c_256, const uint8_t * r_256);
+
+/**
+ * Send SSP IO Capabilities Reply
+ * @note IO Capabilities (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+ * @param addr
+ * @return 0 if ok
+ */
+uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr);
+
+/**
+ * Send SSP IO Capabilities Negative Reply
+ * @note IO Capabilities (Negative) Reply is sent automatically unless ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+ * @param addr
+ * @return 0 if ok
+ */
+uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr);
+
+/**
  * @brief Enter Sniff mode
  * @param con_handle
  * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms

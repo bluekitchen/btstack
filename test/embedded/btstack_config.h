@@ -6,7 +6,6 @@
 #define BTSTACK_CONFIG_H
 
 // Port related features
-#define HAVE_ASSERT
 #define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
@@ -19,6 +18,7 @@
 #define ENABLE_LE_SIGNED_WRITE
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
+#define ENABLE_LOG_DEBUG
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SOFTWARE_AES128
 

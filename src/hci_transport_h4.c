@@ -425,7 +425,7 @@ static void hci_transport_h4_init(const void * transport_config){
 static int hci_transport_h4_open(void){
     // open uart driver
     int res = btstack_uart->open();
-    if (res){
+    if (res != 0){
         return res;
     }
 

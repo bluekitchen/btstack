@@ -66,15 +66,16 @@ extern "C" {
 #include "l2cap.h"
 
 // Classic
-#include "classic/bnep.h"
-#include "classic/hfp.h"
-#include "classic/btstack_link_key_db.h"
-#include "classic/btstack_link_key_db_memory.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
 #include "classic/avrcp.h"
+#include "classic/bnep.h"
+#include "classic/btstack_link_key_db.h"
+#include "classic/btstack_link_key_db_memory.h"
+#include "classic/hfp.h"
+#include "classic/hid_host.h"
+#include "classic/rfcomm.h"
+#include "classic/sdp_server.h"
 
 // BLE
 #ifdef ENABLE_BLE
@@ -138,14 +139,25 @@ typedef struct btstack_memory_buffer {
     struct btstack_memory_buffer * prev;
 } btstack_memory_buffer_t;
 
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    void * pointer;
+} test_buffer_t;
+
 static btstack_memory_buffer_t * btstack_memory_malloc_buffers;
+static uint32_t btstack_memory_malloc_counter;
 
 static void btstack_memory_tracking_add(btstack_memory_buffer_t * buffer){
     btstack_assert(buffer != NULL);
-    btstack_memory_malloc_buffers = buffer;
+    if (btstack_memory_malloc_buffers != NULL) {
+        // let current first item prev point to new first item
+        btstack_memory_malloc_buffers->prev = buffer;
+    }
     buffer->prev = NULL;
     buffer->next = btstack_memory_malloc_buffers;
     btstack_memory_malloc_buffers = buffer;
+
+    btstack_memory_malloc_counter++;
 }
 
 static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
@@ -159,6 +171,8 @@ static void btstack_memory_tracking_remove(btstack_memory_buffer_t * buffer){
     if (buffer->next != NULL){
         buffer->next->prev = buffer->prev;
     }
+
+    btstack_memory_malloc_counter--;
 }
 #endif
 
@@ -169,6 +183,7 @@ void btstack_memory_deinit(void){
         btstack_memory_malloc_buffers = buffer->next;
         free(buffer);
     }
+    btstack_assert(btstack_memory_malloc_counter == 0);
 #endif
 }
 """
@@ -211,14 +226,14 @@ void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
 #elif defined(HAVE_MALLOC)
 
 typedef struct {
-    STRUCT_NAME_t data;
     btstack_memory_buffer_t tracking;
+    STRUCT_NAME_t data;
 } btstack_memory_STRUCT_NAME_t;
 
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
     btstack_memory_STRUCT_NAME_t * buffer = (btstack_memory_STRUCT_NAME_t *) malloc(sizeof(btstack_memory_STRUCT_NAME_t));
     if (buffer){
-        memset(buffer, 0, sizeof(STRUCT_NAME_t));
+        memset(buffer, 0, sizeof(btstack_memory_STRUCT_NAME_t));
         btstack_memory_tracking_add(&buffer->tracking);
         return &buffer->data;
     } else {
@@ -226,12 +241,22 @@ STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
     }
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
-    btstack_memory_STRUCT_NAME_t * buffer =  (btstack_memory_STRUCT_NAME_t *) STRUCT_NAME;
-    btstack_memory_tracking_remove(&buffer->tracking);
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) STRUCT_NAME)[-1];
+    btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
 #endif
 """
+init_header = '''
+// init
+void btstack_memory_init(void){
+#ifdef HAVE_MALLOC
+    // assert that there is no unexpected padding for combined buffer
+    btstack_assert(sizeof(test_buffer_t) == sizeof(btstack_memory_buffer_t) + sizeof(void *));
+#endif
+  
+'''
 
 init_template = """#if POOL_COUNT > 0
     btstack_memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
@@ -259,6 +284,7 @@ list_of_classic_structs = [
     ["btstack_link_key_db_memory_entry"],
     ["bnep_service", "bnep_channel"],
     ["hfp_connection"],
+    ["hid_host_connection"],
     ["service_record_item"],
     ["avdtp_stream_endpoint"],
     ["avdtp_connection"],
@@ -333,9 +359,7 @@ for struct_names in list_of_mesh_structs:
     writeln(f, "")
 writeln(f, "#endif")
 
-
-writeln(f, "// init")
-writeln(f, "void btstack_memory_init(void){")
+f.write(init_header)
 for struct_names in list_of_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))
@@ -357,3 +381,127 @@ writeln(f, "#endif")
 writeln(f, "}")
 f.close();
     
+# also generate test code
+test_header = """
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// malloc hook
+static int simulate_no_memory;
+extern "C" void * test_malloc(size_t size);
+void * test_malloc(size_t size){
+    if (simulate_no_memory) return NULL;
+    return malloc(size);
+}
+
+#include "btstack_config.h"
+
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/CommandLineTestRunner.h"
+
+#include "bluetooth_data_types.h"
+#include "btstack_util.h"
+#include "btstack_memory.h"
+
+
+TEST_GROUP(btstack_memory){
+    void setup(void){
+        btstack_memory_init();
+        simulate_no_memory = 0;
+    }
+};
+
+#ifdef HAVE_MALLOC
+TEST(btstack_memory, deinit){
+    // alloc buffers 1,2,3
+    hci_connection_t * buffer_1 = btstack_memory_hci_connection_get();
+    hci_connection_t * buffer_2 = btstack_memory_hci_connection_get();
+    hci_connection_t * buffer_3 = btstack_memory_hci_connection_get();
+    // free first one in list
+    btstack_memory_hci_connection_free(buffer_3);
+    // free second one in list
+    btstack_memory_hci_connection_free(buffer_1);
+    // leave buffer in list
+    (void) buffer_2;
+    btstack_memory_deinit();
+}
+#endif
+
+"""
+
+test_template = """
+
+TEST(btstack_memory, STRUCT_NAME_GetAndFree){
+    STRUCT_NAME_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context != NULL);
+    btstack_memory_STRUCT_NAME_free(context);
+#else
+#ifdef POOL_COUNT
+    // single
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context != NULL);
+    btstack_memory_STRUCT_NAME_free(context);
+#else
+    // none
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context == NULL);
+    btstack_memory_STRUCT_NAME_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, STRUCT_NAME_NotEnoughBuffers){
+    STRUCT_NAME_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef POOL_COUNT
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < POOL_COUNT; i++){
+        context = btstack_memory_STRUCT_NAME_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_STRUCT_NAME_get();
+    CHECK(context == NULL);
+}
+"""
+
+test_footer = """
+int main (int argc, const char * argv[]){
+    return CommandLineTestRunner::RunAllTests(argc, argv);
+}
+"""
+
+file_name = btstack_root + "/test/btstack_memory/btstack_memory_test.c"
+print ('Generating %s' % file_name)
+
+f = open(file_name, "w")
+writeln(f, copyright)
+writeln(f, test_header)
+for struct_names in list_of_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#ifdef ENABLE_CLASSIC")
+for struct_names in list_of_classic_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#endif")
+writeln(f, "#ifdef ENABLE_BLE")
+for struct_names in list_of_le_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#endif")
+writeln(f, "#ifdef ENABLE_MESH")
+for struct_names in list_of_mesh_structs:
+    for struct_name in struct_names:
+        writeln(f, replacePlaceholder(test_template, struct_name))
+writeln(f, "#endif")
+writeln(f, test_footer)

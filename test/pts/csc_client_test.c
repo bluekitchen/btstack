@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "csc_client_test.c"
+#define BTSTACK_FILE__ "csc_client_test.c"
 
 #include <inttypes.h>
 #include <stdint.h>

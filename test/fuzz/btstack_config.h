@@ -8,7 +8,6 @@
 #define FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 // Port related features
-#define HAVE_ASSERT
 #define HAVE_BTSTACK_STDIN
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO

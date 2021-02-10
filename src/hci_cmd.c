@@ -139,7 +139,7 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 pos += 248;
                 break;
             }
-            case 'P': // 16 byte PIN code or link key
+            case 'P': // 16 byte PIN code or link key in little endian
                 ptr = va_arg(argptr, uint8_t *);
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
@@ -167,6 +167,11 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 pos += 32;
                 break;
 #endif
+            case 'K':   // 16 byte OOB Data or Link Key in big endian
+                ptr = va_arg(argptr, uint8_t *);
+                reverse_bytes(ptr, &hci_cmd_buffer[pos], 16);
+                pos += 16;
+                break;
             default:
                 break;
         }
@@ -409,7 +414,7 @@ const hci_cmd_t hci_user_passkey_request_negative_reply = {
  * @param r Simple Pairing Randomizer R
  */
 const hci_cmd_t hci_remote_oob_data_request_reply = {
-    HCI_OPCODE_HCI_REMOTE_OOB_DATA_REQUEST_REPLY, "BPP"
+    HCI_OPCODE_HCI_REMOTE_OOB_DATA_REQUEST_REPLY, "BKK"
 };
 
 /**
@@ -501,6 +506,17 @@ const hci_cmd_t hci_enhanced_setup_synchronous_connection = {
  */
 const hci_cmd_t hci_enhanced_accept_synchronous_connection = {
     HCI_OPCODE_HCI_ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION, "B4412212222441221222211111111221"
+};
+
+/**
+ * @param bd_addr
+ * @param c_192 Simple Pairing Hash C derived from P-192 public key
+ * @param r_192 Simple Pairing Randomizer derived from P-192 public key
+ * @param c_256 Simple Pairing Hash C derived from P-256 public key
+ * @param r_256 Simple Pairing Randomizer derived from P-256 public key
+ */
+const hci_cmd_t hci_remote_oob_extended_data_request_reply = {
+        HCI_OPCODE_HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, "BKKKK"
 };
 
 /**
@@ -852,8 +868,8 @@ const hci_cmd_t hci_write_secure_connections_host_support = {
 
 /**
  */
-const hci_cmd_t hci_read_local_extended_ob_data = {
-    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OB_DATA, ""
+const hci_cmd_t hci_read_local_extended_oob_data = {
+    HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA, ""
     // return status, C_192, R_192, R_256, C_256
 };
 

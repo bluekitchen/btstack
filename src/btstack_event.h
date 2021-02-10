@@ -991,6 +991,53 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
 }
 
 /**
+ * @brief Get field bd_addr from event HCI_EVENT_IO_CAPABILITY_REQUEST
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_io_capability_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[2], bd_addr, 6);
+}
+
+/**
+ * @brief Get field bd_addr from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void hci_event_io_capability_response_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bytes(&event[2], bd_addr, 6);
+}
+/**
+ * @brief Get field io_capability from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @return io_capability
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_io_capability_response_get_io_capability(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field oob_data_present from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @return oob_data_present
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_io_capability_response_get_oob_data_present(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field authentication_requirements from event HCI_EVENT_IO_CAPABILITY_RESPONSE
+ * @param event packet
+ * @return authentication_requirements
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_io_capability_response_get_authentication_requirements(const uint8_t * event){
+    return event[10];
+}
+
+/**
  * @brief Get field bd_addr from event HCI_EVENT_USER_CONFIRMATION_REQUEST
  * @param event packet
  * @param Pointer to storage for bd_addr
@@ -3323,6 +3370,52 @@ static inline hci_con_handle_t gap_event_rssi_measurement_get_con_handle(const u
  */
 static inline uint8_t gap_event_rssi_measurement_get_rssi(const uint8_t * event){
     return event[4];
+}
+
+/**
+ * @brief Get field oob_data_present from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @return oob_data_present
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_local_oob_data_get_oob_data_present(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field c_192 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for c_192
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_c_192(const uint8_t * event, uint8_t * c_192){
+    reverse_bytes(&event[3], c_192, 16);
+}
+/**
+ * @brief Get field r_192 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for r_192
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_r_192(const uint8_t * event, uint8_t * r_192){
+    reverse_bytes(&event[19], r_192, 16);
+}
+/**
+ * @brief Get field c_256 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for c_256
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_c_256(const uint8_t * event, uint8_t * c_256){
+    reverse_bytes(&event[35], c_256, 16);
+}
+/**
+ * @brief Get field r_256 from event GAP_EVENT_LOCAL_OOB_DATA
+ * @param event packet
+ * @param Pointer to storage for r_256
+ * @note: btstack_type K
+ */
+static inline void gap_event_local_oob_data_get_r_256(const uint8_t * event, uint8_t * r_256){
+    reverse_bytes(&event[51], r_256, 16);
 }
 
 /**
@@ -8499,6 +8592,34 @@ static inline const uint8_t * pbap_subevent_card_result_get_handle(const uint8_t
 }
 
 /**
+ * @brief Get field hid_cid from event HID_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_incoming_connection_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field address from event HID_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void hid_subevent_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bytes(&event[5], address, 6);
+}
+/**
+ * @brief Get field handle from event HID_SUBEVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hid_subevent_incoming_connection_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+
+/**
  * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return hid_cid
@@ -8565,23 +8686,192 @@ static inline uint16_t hid_subevent_can_send_now_get_hid_cid(const uint8_t * eve
 }
 
 /**
- * @brief Get field con_handle from event HID_SUBEVENT_SUSPEND
+ * @brief Get field hid_cid from event HID_SUBEVENT_SUSPEND
  * @param event packet
- * @return con_handle
+ * @return hid_cid
  * @note: btstack_type 2
  */
-static inline uint16_t hid_subevent_suspend_get_con_handle(const uint8_t * event){
+static inline uint16_t hid_subevent_suspend_get_hid_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HID_SUBEVENT_EXIT_SUSPEND
+ * @brief Get field hid_cid from event HID_SUBEVENT_EXIT_SUSPEND
  * @param event packet
- * @return con_handle
+ * @return hid_cid
  * @note: btstack_type 2
  */
-static inline uint16_t hid_subevent_exit_suspend_get_con_handle(const uint8_t * event){
+static inline uint16_t hid_subevent_exit_suspend_get_hid_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_VIRTUAL_CABLE_UNPLUG
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_virtual_cable_unplug_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_GET_REPORT_RESPONSE
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_get_report_response_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handshake_status from event HID_SUBEVENT_GET_REPORT_RESPONSE
+ * @param event packet
+ * @return handshake_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_get_report_response_get_handshake_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field report_len from event HID_SUBEVENT_GET_REPORT_RESPONSE
+ * @param event packet
+ * @return report_len
+ * @note: btstack_type L
+ */
+static inline uint16_t hid_subevent_get_report_response_get_report_len(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field report from event HID_SUBEVENT_GET_REPORT_RESPONSE
+ * @param event packet
+ * @return report
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hid_subevent_get_report_response_get_report(const uint8_t * event){
+    return &event[8];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_SET_REPORT_RESPONSE
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_set_report_response_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handshake_status from event HID_SUBEVENT_SET_REPORT_RESPONSE
+ * @param event packet
+ * @return handshake_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_set_report_response_get_handshake_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_GET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_get_protocol_response_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handshake_status from event HID_SUBEVENT_GET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return handshake_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_get_protocol_response_get_handshake_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field protocol_mode from event HID_SUBEVENT_GET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return protocol_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_get_protocol_response_get_protocol_mode(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_SET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_set_protocol_response_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handshake_status from event HID_SUBEVENT_SET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return handshake_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_set_protocol_response_get_handshake_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field protocol_mode from event HID_SUBEVENT_SET_PROTOCOL_RESPONSE
+ * @param event packet
+ * @return protocol_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_set_protocol_response_get_protocol_mode(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_REPORT
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_report_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field report_len from event HID_SUBEVENT_REPORT
+ * @param event packet
+ * @return report_len
+ * @note: btstack_type L
+ */
+static inline uint16_t hid_subevent_report_get_report_len(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field report from event HID_SUBEVENT_REPORT
+ * @param event packet
+ * @return report
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hid_subevent_report_get_report(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field hid_cid from event HID_SUBEVENT_DESCRIPTOR_AVAILABLE
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_descriptor_available_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event HID_SUBEVENT_DESCRIPTOR_AVAILABLE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hid_subevent_descriptor_available_get_status(const uint8_t * event){
+    return event[5];
 }
 
 /**
