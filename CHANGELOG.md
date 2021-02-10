@@ -9,18 +9,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
-GAP: support for Classic Out-of-Band (OOB) via `gap_ssp_remote_oob_data` with `ENABLE_CLASSIC_OOB_PAIRING`
-GAP: read local OOB data on start and on call to `gap_ssp_generate_oob_data` 
-GAP: emit `GAP_EVENT_LOCAL_OOB_DATA`
+### Fixed
+### Changed
+
+
+## Release v1.3.1
+
+### Added
+GAP: support for Classic Out-of-Band (OOB) pairing via `gap_ssp_remote_oob_data` with `ENABLE_CLASSIC_OOB_PAIRING`
+GAP: read local OOB data on start and on call to `gap_ssp_generate_oob_data`, provided via `GAP_EVENT_LOCAL_OOB_DATA`
 HID Host: add profile, update `hid_host_demo.c` example
 
 ### Fixed
-L2CAP: make handling of hci disconnect more robust
-AVDTP: emit stream release for active stream if signaling is closed first, e.g. caused by hci disconnect
+L2CAP: make handling of HCI disconnect more robust
+AVDTP: emit stream release for active stream if signaling connection is closed first, e.g. caused by HCI disconnect
 AVRCP: fix issue when Controller and Target send at the same time
 
 ### Changed
 A2DP, AVDTP: use `a2dp_source_set_config_{TYPE}` and `avdtp_config{TYPE}_store` to avoid large number of parameters
+
 
 ## Release v1.3
 
