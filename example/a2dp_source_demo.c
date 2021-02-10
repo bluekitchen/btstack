@@ -72,7 +72,6 @@
 
 // logarithmic volume reduction, samples are divided by 2^x
 // #define VOLUME_REDUCTION 3
-// #undef  HAVE_BTSTACK_STDIN
 
 //#define AVRCP_BROWSING_ENABLED
 
@@ -346,9 +345,10 @@ static int a2dp_source_and_avrcp_services_init(void){
 
     a2dp_demo_hexcmod_configure_sample_rate(current_sample_rate);
     
-#ifdef HAVE_BTSTACK_STDIN
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);
+
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
     return 0;
@@ -534,7 +534,7 @@ static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
     if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE){
         if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
         printf("Create A2DP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
-        uint8_t status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+        uint8_t status = a2dp_source_establish_stream(device_addr, &media_tracker.a2dp_cid);
         if (status != ERROR_CODE_SUCCESS){
             printf("Could not perform command, status 0x%2x\n", status);
         }
