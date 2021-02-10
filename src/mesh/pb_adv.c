@@ -291,6 +291,9 @@ static void pb_adv_handle_transaction_start(uint8_t transaction_nr, const uint8_
     if (transaction_nr != pb_adv_msg_in_transaction_nr){
 
         // check len
+        if (size < 4) return;
+
+        // check len
         uint16_t msg_len = big_endian_read_16(pdu, 1);
         if (msg_len > MESH_PB_ADV_MAX_PDU_SIZE){
             // abort transaction
@@ -433,6 +436,8 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
 
     if (packet_type != HCI_EVENT_PACKET) return;
+    if (size < 3) return;
+
     const uint8_t * data;
     uint8_t  length;
     uint32_t link_id;
@@ -440,6 +445,9 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t  generic_provisioning_control;
     switch(packet[0]){
         case GAP_EVENT_ADVERTISING_REPORT:
+            // check minimal size
+            if (size < (12 + 8)) return;
+
             // data starts at offset 12
             data = &packet[12];
             // PDB ADV PDU
