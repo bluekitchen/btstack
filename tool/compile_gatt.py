@@ -673,7 +673,7 @@ def parseCharacteristicUserDescription(fout, parts):
     defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_USER_DESCRIPTION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
 
-def parseServerCharacteristicConfiguration(fout, parts):
+def parseGenericDynamicDescriptor(fout, parts, uuid, name):
     global handle
     global total_size
     global current_characteristic_uuid_string
@@ -688,7 +688,7 @@ def parseServerCharacteristicConfiguration(fout, parts):
     flags |= property_flags['DYNAMIC']
 
     write_indent(fout)
-    fout.write('// 0x%04x SERVER_CHARACTERISTIC_CONFIGURATION-%s\n' % (handle, '-'.join(parts[1:])))
+    fout.write('// 0x%04x %s-%s\n' % (handle, name, '-'.join(parts[1:])))
 
     dump_flags(fout, flags)
 
@@ -700,10 +700,44 @@ def parseServerCharacteristicConfiguration(fout, parts):
     fout.write("\n")
 
     database_hash_append_uint16(handle)
-    database_hash_append_uint16(0x2903)
+    database_hash_append_uint16(uuid)
 
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_SERVER_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_%s_HANDLE 0x%04x' % (current_characteristic_uuid_string, name, handle))
     handle = handle + 1
+
+def parseGenericDynamicReadOnlyDescriptor(fout, parts, uuid, name):
+    global handle
+    global total_size
+    global current_characteristic_uuid_string
+
+    properties = parseProperties(parts[1])
+    size = 2 + 2 + 2 + 2
+
+    # use write permissions and encryption key size from attribute value and set READ, DYNAMIC, READ_ANYBODY
+    flags  = write_permissions_and_key_size_flags_from_properties(properties)
+    flags |= property_flags['READ']
+    flags |= property_flags['DYNAMIC']
+
+    write_indent(fout)
+    fout.write('// 0x%04x %s-%s\n' % (handle, name, '-'.join(parts[1:])))
+
+    dump_flags(fout, flags)
+
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, flags)
+    write_16(fout, handle)
+    write_16(fout, 0x2903)
+    fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(uuid)
+
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_%s_HANDLE 0x%04x' % (current_characteristic_uuid_string, name, handle))
+    handle = handle + 1
+
+def parseServerCharacteristicConfiguration(fout, parts):
+    parseGenericDynamicDescriptor(fout, parts, 0x2903, 'SERVER_CONFIGURATION')
 
 def parseCharacteristicFormat(fout, parts):
     global handle
@@ -898,7 +932,7 @@ def parseLines(fname_in, fin, fout):
 
             # 2903
             if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
-                parseServerCharacteristicConfiguration(fout, parts)
+                parseGenericDynamicDescriptor(fout, parts, 0x2903, 'SERVER_CONFIGURATION')
                 continue
 
             # 2904
