@@ -216,7 +216,8 @@ def convert_service(fout, specification_type):
                 continue
 
             if (type == 'org.bluetooth.descriptor.valid_range'):
-                print('-- Descriptor %-40s - WARNING: VALID_RANGE not supported yet' % name)
+                print('-- Descriptor %-40s' % name)
+                fout.write('VALID_RANGE, %s,\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.external_report_reference'):
@@ -237,15 +238,18 @@ def convert_service(fout, specification_type):
                 continue
 
             if (type == 'org.bluetooth.descriptor.es_configuration'):
-                print('-- Descriptor %-40s - WARNING: ENVIRONMENTAL_SENSING_CONFIGURATION not supported yet' % name)
+                print('-- Descriptor %-40s' % name)
+                fout.write('ENVIRONMENTAL_SENSING_CONFIGURATION, %s,\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.es_measurement'):
-                print('-- Descriptor %-40s - WARNING: ENVIRONMENTAL_SENSING_MEASUREMENT not supported yet' % name)
+                print('-- Descriptor %-40s' % name)
+                fout.write('ENVIRONMENTAL_SENSING_MEASUREMENT, %s,\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.es_trigger_setting'):
-                print('-- Descriptor %-40s - WARNING: ENVIRONMENTAL_SENSING_TRIGGER_SETTING not supported yet' % name)
+                print('-- Descriptor %-40s' % name)
+                fout.write('ENVIRONMENTAL_SENSING_TRIGGER_SETTING, %s,\n' % properties)
                 continue
 
             if (type == 'org.bluetooth.descriptor.gatt.characteristic_extended_properties'):

@@ -945,9 +945,9 @@ def parseLines(fname_in, fin, fout):
                 parseCharacteristicAggregateFormat(fout, parts)
                 continue
 
-            # 2906 
+            # 2906
             if parts[0] == 'VALID_RANGE':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicReadOnlyDescriptor(fout, parts, 0x2906, 'VALID_RANGE')
                 continue
 
             # 2907 
@@ -967,27 +967,22 @@ def parseLines(fname_in, fin, fout):
 
             # 290A
             if parts[0] == 'VALUE_TRIGGER_SETTING':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicDescriptor(fout, parts, 0x290A, 'VALUE_TRIGGER_SETTING')
                 continue
 
             # 290B
             if parts[0] == 'ENVIRONMENTAL_SENSING_CONFIGURATION':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicDescriptor(fout, parts, 0x290B, 'ENVIRONMENTAL_SENSING_CONFIGURATION')
                 continue
 
             # 290C
             if parts[0] == 'ENVIRONMENTAL_SENSING_MEASUREMENT':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicReadOnlyDescriptor(fout, parts, 0x290C, 'ENVIRONMENTAL_SENSING_MEASUREMENT')
                 continue
 
             # 290D 
             if parts[0] == 'ENVIRONMENTAL_SENSING_TRIGGER_SETTING':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
-                continue
-
-            # 2906 
-            if parts[0] == 'VALID_RANGE':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicDescriptor(fout, parts, 0x290D, 'ENVIRONMENTAL_SENSING_TRIGGER_SETTING')
                 continue
 
             print("WARNING: unknown token: %s\n" % (parts[0]))
