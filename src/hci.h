@@ -61,6 +61,10 @@
 #include "ble/att_db.h"
 #endif
 
+#ifdef HAVE_SCO_TRANSPORT
+#include "btstack_sco_transport.h"
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -1000,6 +1004,10 @@ typedef struct {
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
 	bool                      classic_read_local_oob_data;
 #endif
+
+#ifdef HAVE_SCO_TRANSPORT
+	const btstack_sco_transport_t * sco_transport;
+#endif
 } hci_stack_t;
 
 
@@ -1021,8 +1029,15 @@ void hci_set_chipset(const btstack_chipset_t *chipset_driver);
 
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
+ * @[aram hardware_control implementation
  */
 void hci_set_control(const btstack_control_t *hardware_control);
+
+/**
+ * @brief Set SCO Transport implementation for SCO over PCM mode
+ * @param sco_transport that sends SCO over I2S or PCM interface
+ */
+void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport);
 
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
@@ -1039,7 +1054,7 @@ void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
  */
 void hci_set_bd_addr(bd_addr_t addr);
 
-/** 
+/**
  * @brief Configure Voice Setting for use with SCO data in HSP/HFP
  */
 void hci_set_sco_voice_setting(uint16_t voice_setting);

@@ -954,8 +954,11 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
 #ifdef ENABLE_CLASSIC
-#ifdef ENABLE_SCO_OVER_HCI
-    int addr_type = conn->address_type;
+#if defined(ENABLE_SCO_OVER_HCI) || defined(HAVE_SCO_TRANSPORT)
+    bd_addr_type_t addr_type = conn->address_type;
+#endif
+#ifdef HAVE_SCO_TRANSPORT
+    hci_con_handle_t con_handle = conn->con_handle;
 #endif
 #endif
 
@@ -970,8 +973,13 @@ static void hci_shutdown_connection(hci_connection_t *conn){
 #ifdef ENABLE_CLASSIC
 #ifdef ENABLE_SCO_OVER_HCI
     // update SCO
-    if (addr_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
+    if ((addr_type == BD_ADDR_TYPE_SCO) && (hci_stack->hci_transport != NULL) && (hci_stack->hci_transport->set_sco_config != NULL)){
         hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+    }
+#endif
+#ifdef HAVE_SCO_TRANSPORT
+    if ((addr_type == BD_ADDR_TYPE_SCO) && (hci_stack->sco_transport != NULL)){
+        hci_stack->sco_transport->close(con_handle);
     }
 #endif
 #endif
@@ -2505,6 +2513,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 hci_stack->sco_can_send_now = 1;
             }
 #endif
+#ifdef HAVE_SCO_TRANSPORT
+            // configure sco transport
+            if (hci_stack->sco_transport != NULL){
+                sco_format_t sco_format = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? SCO_FORMAT_8_BIT : SCO_FORMAT_16_BIT;
+                hci_stack->sco_transport->open(conn->con_handle, sco_format);
+            }
+#endif
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -3248,6 +3263,13 @@ void hci_close(void){
 #endif
     hci_stack = NULL;
 }
+
+#ifdef HAVE_SCO_TRANSPORT
+void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport){
+    hci_stack->sco_transport = sco_transport;
+    sco_transport->register_packet_handler(&packet_handler);
+}
+#endif
 
 #ifdef ENABLE_CLASSIC
 void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
