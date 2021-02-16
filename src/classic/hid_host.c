@@ -154,7 +154,7 @@ const uint8_t * hid_descriptor_storage_get_descriptor_data(uint16_t hid_cid){
     return &hid_host_descriptor_storage[connection->hid_descriptor_offset];
 }
 
-const uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid){
+uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid){
     hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_cid);
     if (!connection){
         return 0;

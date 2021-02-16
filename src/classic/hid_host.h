@@ -266,7 +266,7 @@ const uint8_t * hid_descriptor_storage_get_descriptor_data(uint16_t hid_cid);
  * @param hid_cid
  * @result length
  */
-const uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid);
+uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid);
 
 /* API_END */
 
