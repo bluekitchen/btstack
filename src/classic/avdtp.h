@@ -575,7 +575,6 @@ typedef struct avdtp_stream_endpoint {
     // temporary codec config used by A2DP Source
     uint8_t set_config_remote_seid;
     avdtp_media_codec_type_t media_codec_type;
-    avdtp_media_type_t media_type;
     uint8_t media_codec_info[8];
 
     // preferred SBC codec settings
