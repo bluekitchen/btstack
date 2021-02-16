@@ -10,6 +10,16 @@ include_directories(${LIBUSB_INCLUDE_DIRS})
 link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
+# portaudio
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	add_compile_definitions(HAVE_PORTAUDIO)
+endif()
+
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
 	# using Clang
