@@ -384,7 +384,7 @@ void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream
     stream_endpoint->sep.capabilities.header_compression.recovery = recovery;
 }
 
-void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len){
+void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t *media_codec_info, uint16_t media_codec_info_len){
     if (!stream_endpoint){
         log_error("Stream endpoint with given seid is not registered.");
         return;
@@ -393,7 +393,8 @@ void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoi
     stream_endpoint->sep.registered_service_categories = bitmap;
     stream_endpoint->sep.capabilities.media_codec.media_type = media_type;
     stream_endpoint->sep.capabilities.media_codec.media_codec_type = media_codec_type;
-    stream_endpoint->sep.capabilities.media_codec.media_codec_information = media_codec_info;
+    // @todo should be stored in struct as const
+    stream_endpoint->sep.capabilities.media_codec.media_codec_information = (uint8_t*) media_codec_info;
     stream_endpoint->sep.capabilities.media_codec.media_codec_information_len = media_codec_info_len;
 }
 

@@ -107,7 +107,7 @@ void avdtp_source_register_header_compression_category(uint8_t seid, uint8_t bac
  * @param media_codec_info
  * @param media_codec_info_len
  */
-void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
+void avdtp_source_register_media_codec_category(uint8_t seid, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t *media_codec_info, uint16_t media_codec_info_len);
 
 /**
  * @brief Register multiplexing category with local stream endpoint identified by seid

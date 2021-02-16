@@ -690,8 +690,8 @@ void a2dp_source_deinit(void){
 }
 
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
-															 uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
-															 uint8_t * codec_configuration, uint16_t codec_configuration_len){
+                                                             const uint8_t *codec_capabilities, uint16_t codec_capabilities_len,
+                                                             uint8_t * codec_configuration, uint16_t codec_configuration_len){
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_source_create_stream_endpoint(AVDTP_SOURCE, media_type);
     if (!stream_endpoint){
         return NULL;
