@@ -4730,7 +4730,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             }
             break;
 
-#ifdef ENABLE_SCO_OVER_HCI
+#if defined (ENABLE_SCO_OVER_HCI) || defined (HAVE_SCO_TRANSPORT)
         case HCI_OPCODE_HCI_SETUP_SYNCHRONOUS_CONNECTION:
             // setup_synchronous_connection? Voice setting at offset 22
             // TODO: compare to current setting if sco connection already active
@@ -6083,11 +6083,11 @@ static int hci_have_usb_transport(void){
  */
 int hci_get_sco_packet_length(void){
     int sco_packet_length = 0;
-
+    int multiplier;
 #ifdef ENABLE_SCO_OVER_HCI
 
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
-    int multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
+    multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
 
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer. 
@@ -6103,6 +6103,13 @@ int hci_get_sco_packet_length(void){
         }
     }
 #endif
+
+#ifdef HAVE_SCO_TRANSPORT
+    // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
+    multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
+    sco_packet_length = 3 + 60 * multiplier;
+#endif
+
     return sco_packet_length;
 }
 
