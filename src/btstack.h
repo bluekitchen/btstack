@@ -92,6 +92,7 @@
 #include "ble/gatt-service/mesh_proxy_service_server.h"
 #endif
 #include "ble/gatt_client.h"
+#include "ble/hids_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
 #endif
