@@ -738,8 +738,9 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    (void)memcpy(event + pos, media_codec.media_codec_information,
-                 btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH));
+    uint32_t media_codec_info_len = btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH);
+    (void)memcpy(event + pos, media_codec.media_codec_information, media_codec_info_len);
+    pos += media_codec_info_len;
     avdtp_emit_sink_and_source(event, pos);
 }
 
