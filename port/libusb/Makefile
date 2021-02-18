@@ -41,14 +41,9 @@ EXAMPLES += csr_set_bd_addr
 csr_set_bd_addr: ${CORE_OBJ} ${COMMON_OBJ} btstack_chipset_csr.o csr_set_bd_addr.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-
 # use pkg-config for portaudio
-CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
-LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
-
-# hard coded flags for portaudio in /usr/local/lib
-# CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
-# LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
+# CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
+# LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
 
 clean_src:
 	rm -rf * ${BTSTACK_ROOT}/src/*.o
