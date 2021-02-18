@@ -17,7 +17,8 @@ if(PORTAUDIO_FOUND)
 	include_directories(${PORTAUDIO_INCLUDE_DIRS})
 	link_directories(${PORTAUDIO_LIBRARY_DIRS})
 	link_libraries(${PORTAUDIO_LIBRARIES})
-	add_compile_definitions(HAVE_PORTAUDIO)
+	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
 endif()
 
 # extra compiler warnings
