@@ -11,6 +11,8 @@ CORE += \
 	btstack_chipset_tc3566x.c \
 	btstack_link_key_db_tlv.c \
 	btstack_run_loop_posix.c \
+	btstack_audio.c \
+    btstack_audio_portaudio.c \
 	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
@@ -22,7 +24,6 @@ CORE += \
 	0000000_META_hci_patches_v7.c \
 	# bluetooth_init_cc2564_2.14.c \
 	# bluetooth_init_cc2564C_1.4.c \
-
 # TI-WL183x requires TIInit_11.8.32.c
 
 # examples

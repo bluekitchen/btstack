@@ -51,6 +51,7 @@
 
 #include "btstack_config.h"
 
+#include "btstack_audio.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "ble/le_device_db_tlv.h"
@@ -260,6 +261,11 @@ int main(int argc, const char * argv[]){
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
 	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
 	hci_init(transport, (void*) &config);
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_sink_set_instance(btstack_audio_portaudio_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_portaudio_source_get_instance());
+#endif
 
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
