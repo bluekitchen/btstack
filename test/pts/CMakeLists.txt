@@ -27,6 +27,9 @@ if(FDK_AAC_FOUND)
 	add_compile_definitions(HAVE_AAC_FDK)
 endif()
 
+# enable optional features
+add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
+
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)
@@ -137,8 +140,8 @@ list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "*.gatt")
 
 # remove some
-# file(GLOB EXAMPLES_OFF  "../../example/sco_demo_util.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
-# list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
+file(GLOB EXAMPLES_OFF  "btstack_stdin_pts.c")
+list(REMOVE_ITEM EXAMPLES_C   ${EXAMPLES_OFF})
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples

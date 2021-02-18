@@ -490,7 +490,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     }
 }
 
-static int hid_device_connection_filter(bd_addr_t addr){
+static int hid_device_connection_filter(bd_addr_t addr, hci_link_type_t link_type){
+    UNUSED(link_type);
     if (virtual_cable_enabled && !virtual_cable_unplugged && (memcmp(addr, device_addr, 6) != 0)){
         return 0;  
     }
