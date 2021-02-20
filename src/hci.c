@@ -93,6 +93,10 @@
 #endif
 #endif
 
+#if defined(ENABLE_SCO_OVER_HCI) && defined(ENABLE_SCO_OVER_PCM)
+#error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM."
+#endif
+
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
 #ifndef HCI_RESET_RESEND_TIMEOUT_MS
