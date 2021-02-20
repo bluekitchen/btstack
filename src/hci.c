@@ -2906,6 +2906,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC
 
+#ifdef ENABLE_SCO_OVER_HCI
 static void sco_tx_timeout_handler(btstack_timer_source_t * ts);
 static void sco_schedule_tx(hci_connection_t * conn);
 
@@ -2941,6 +2942,7 @@ static void sco_schedule_tx(hci_connection_t * conn){
     btstack_run_loop_set_timer_handler(timer, &sco_tx_timeout_handler);
     btstack_run_loop_add_timer(timer);
 }
+#endif
 
 static void sco_handler(uint8_t * packet, uint16_t size){
     // lookup connection struct
@@ -2948,6 +2950,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
     hci_connection_t * conn     = hci_connection_for_handle(con_handle);
     if (!conn) return;
 
+#ifdef ENABLE_SCO_OVER_HCI
     // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
     if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
         if ((size == 83) && ((hci_stack->sco_voice_setting_active & 0x03) == 0x03)){
@@ -2988,6 +2991,8 @@ static void sco_handler(uint8_t * packet, uint16_t size){
             }
         }
     }
+#endif
+
     // deliver to app
     if (hci_stack->sco_packet_handler) {
         hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
