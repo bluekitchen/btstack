@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Fixed
 ### Changed
-
+HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`
 
 ## Release v1.3.1
 

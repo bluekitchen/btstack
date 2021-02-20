@@ -1510,8 +1510,15 @@ static void hci_initializing_run(void){
             hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 4, 0, 1, 1);
 #endif
             break;
-
+#ifdef ENABLE_SCO_OVER_PCM
+        case HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
+            log_info("BCM: Config PCM interface for I2S");
+            hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 4);
+            break;
 #endif
+#endif
+
 #ifdef ENABLE_BLE
         // LE INIT
         case HCI_INIT_LE_READ_BUFFER_SIZE:
@@ -1873,7 +1880,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
 #endif
             /* fall through */
 
-        case HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT:
+        case HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
 #ifdef ENABLE_BLE
             if (hci_le_supported()){
                 hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE;
