@@ -3013,6 +3013,12 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
     }
 
+#ifdef HAVE_SCO_TRANSPORT
+    // We can send one packet for each received packet
+    conn->sco_tx_ready++;
+    hci_notify_if_sco_can_send_now();
+#endif
+
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     conn->num_packets_completed++;
     hci_stack->host_completed_packets = 1;
