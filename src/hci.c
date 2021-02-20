@@ -1507,14 +1507,26 @@ static void hci_initializing_run(void){
 #endif
 #ifdef ENABLE_SCO_OVER_PCM
             log_info("BCM: Route SCO data via PCM interface");
-            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 4, 0, 1, 1);
+#ifdef ENABLE_BCM_PCM_WBS
+            // 512 kHz bit clock for 2 channels x 16 bit x 8 kHz
+            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 2, 0, 1, 1);
+#else
+            // 256 kHz bit clock for 2 channels x 16 bit x 8 kHz
+            hci_send_cmd(&hci_bcm_write_sco_pcm_int, 0, 1, 0, 1, 1);
+#endif
 #endif
             break;
 #ifdef ENABLE_SCO_OVER_PCM
         case HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM:
             hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
             log_info("BCM: Config PCM interface for I2S");
-            hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 4);
+#ifdef ENABLE_BCM_PCM_WBS
+            // 512 kHz bit clock for 2 channels x 16 bit x 8 kHz
+            hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 2);
+#else
+            // 256 kHz bit clock for 2 channels x 16 bit x 8 kHz
+            hci_send_cmd(&hci_bcm_write_i2spcm_interface_param, 1, 1, 0, 1);
+#endif
             break;
 #endif
 #endif
