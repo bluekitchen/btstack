@@ -33,7 +33,7 @@ All examples are placed in the boards/apollo2_evb_am_ble/examples folder with bt
 
 Go to to the gcc folder of one of the example folders and run make
 
-    $ run make
+    $ make
 
 To upload, please follow the instructions in the Apollo Getting Started documents.
 
