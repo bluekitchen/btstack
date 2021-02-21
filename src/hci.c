@@ -836,14 +836,22 @@ int hci_send_sco_packet_buffer(int size){
     }
 
     hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
-    int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
 
+#ifdef HAVE_SCO_TRANSPORT
+    hci_stack->sco_transport->send_packet(packet, size);
+    hci_release_packet_buffer();
+    hci_emit_transport_packet_sent();
+
+    return 0;
+#else
+    int err = hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
         hci_emit_transport_packet_sent();
     }
 
     return err;
+#endif
 }
 #endif
 
