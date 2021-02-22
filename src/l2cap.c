@@ -1367,7 +1367,7 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 }
 
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len){
-    return l2cap_send_signaling_packet(con_handle, ECHO_REQUEST, 0x77, len, data);
+    return l2cap_send_signaling_packet(con_handle, ECHO_REQUEST,  l2cap_next_sig_id(), len, data);
 }
 
 static inline void channelStateVarSetFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
