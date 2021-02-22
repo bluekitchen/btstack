@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+HCI: `btstack_transport_sco.h` allows to support SCO over physical PCM/I2S interface (`HAVE_SCO_TRANSPORT`)
+POSIX: `btstack_transport_sco_i2s_test_bridge.c` implements sco transport interface for UART-to-I2S test bridge
+
 ### Fixed
+
 ### Changed
 HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
 
