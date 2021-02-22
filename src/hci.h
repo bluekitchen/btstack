@@ -1033,11 +1033,13 @@ void hci_set_chipset(const btstack_chipset_t *chipset_driver);
  */
 void hci_set_control(const btstack_control_t *hardware_control);
 
+#ifdef HAVE_SCO_TRANSPORT
 /**
  * @brief Set SCO Transport implementation for SCO over PCM mode
  * @param sco_transport that sends SCO over I2S or PCM interface
  */
 void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport);
+#endif
 
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
