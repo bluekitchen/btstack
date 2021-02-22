@@ -6104,7 +6104,7 @@ int hci_get_sco_packet_length(void){
 
 #ifdef ENABLE_SCO_OVER_HCI
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
-    int ultiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
+    int multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
 
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer. 
