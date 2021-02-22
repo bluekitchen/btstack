@@ -97,6 +97,10 @@
 #error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or ENABLE_SCO_OVER_PCM."
 #endif
 
+#if defined(ENABLE_SCO_OVER_HCI) && defined(HAVE_SCO_TRANSPORT)
+#error "SCO data can either be routed over HCI or over PCM, but not over both. Please only enable ENABLE_SCO_OVER_HCI or HAVE_SCO_TRANSPORT."
+#endif
+
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
 #ifndef HCI_RESET_RESEND_TIMEOUT_MS
@@ -6097,11 +6101,10 @@ static int hci_have_usb_transport(void){
  */
 int hci_get_sco_packet_length(void){
     int sco_packet_length = 0;
-    int multiplier;
-#ifdef ENABLE_SCO_OVER_HCI
 
+#ifdef ENABLE_SCO_OVER_HCI
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
-    multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
+    int ultiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
 
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer. 
@@ -6120,10 +6123,9 @@ int hci_get_sco_packet_length(void){
 
 #ifdef HAVE_SCO_TRANSPORT
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
-    multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
+    int multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
     sco_packet_length = 3 + 60 * multiplier;
 #endif
-
     return sco_packet_length;
 }
 
