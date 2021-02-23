@@ -38,11 +38,6 @@
 #ifndef HID_H
 #define HID_H
 
-#include <stdint.h>
-#include "btstack_defines.h"
-#include "bluetooth.h"
-#include "btstack_hid_parser.h"
-
 #if defined __cplusplus
 extern "C" {
 #endif
