@@ -50,7 +50,10 @@
 #include <fdk-aac/aacenc_lib.h>
 #endif
 
+#ifdef HAVE_LDAC_ENCODER
 #include <ldac/ldacBT.h>
+#endif
+
 #define A2DP_CODEC_VENDOR_ID_SONY 0x12d
 #define A2DP_SONY_CODEC_LDAC 0xaa
 
@@ -154,7 +157,9 @@ static HANDLE_AACENCODER handleAAC;
 static AACENC_InfoStruct aacinf;
 #endif
 
+#ifdef HAVE_LDAC_ENCODER
 HANDLE_LDAC_BT handleLDAC;
+#endif
 
 static a2dp_media_sending_context_t media_tracker;
 
@@ -313,6 +318,7 @@ static void a2dp_demo_send_media_packet(void) {
         case AVDTP_CODEC_MPEG_2_4_AAC:
             a2dp_demo_send_media_packet_aac();
             break;
+#ifdef ENABLE_LDAC_ENCODER
         case AVDTP_CODEC_NON_A2DP:
             local_cap = sc.local_stream_endpoint->sep.capabilities.media_codec;
             uint32_t local_vendor_id = get_vendor_id(local_cap.media_codec_information);
@@ -320,6 +326,7 @@ static void a2dp_demo_send_media_packet(void) {
             if (local_vendor_id == A2DP_CODEC_VENDOR_ID_SONY && local_codec_id == A2DP_SONY_CODEC_LDAC)
                 a2dp_demo_send_media_packet_ldac();
             break;
+#endif
         default:
             // TODO:
             printf("Send media payload for %s not implemented yet\n", codec_name_for_type(sc.local_stream_endpoint->media_codec_type));
@@ -420,6 +427,7 @@ static int fill_aac_audio_buffer(a2dp_media_sending_context_t *context) {
 }
 #endif
 
+#ifdef ENABLE_LDAC_ENCODER
 static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *context) {
     int          total_samples_read                = 0;
     unsigned int num_audio_samples_per_ldac_buffer = LDACBT_ENC_LSU;
@@ -446,6 +454,7 @@ static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *contex
     }
     return total_samples_read;
 }
+#endif
 
 static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
     adtvp_media_codec_capabilities_t local_cap;
@@ -498,6 +507,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
 #endif
         case AVDTP_CODEC_ATRAC_FAMILY:
             break;
+#ifdef ENABLE_LDAC_ENCODER
         case AVDTP_CODEC_NON_A2DP:
             local_cap = sc.local_stream_endpoint->sep.capabilities.media_codec;
             uint32_t local_vendor_id = get_vendor_id(local_cap.media_codec_information);
@@ -515,6 +525,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
                 }
             }
             break;
+#endif
         default:
             break;
     }
@@ -1090,6 +1101,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             vendor_id = get_vendor_id(codec_info);
             codec_id = get_codec_id(codec_info);
 
+#ifdef HAVE_LDAC_ENCODER
             // LDAC
             if (vendor_id == A2DP_CODEC_VENDOR_ID_SONY && codec_id == A2DP_SONY_CODEC_LDAC) {
                 ldac_configuration.reconfigure = a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet);
@@ -1115,7 +1127,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 }
 
                 current_sample_rate = ldac_configuration.sampling_frequency;
-            } else {
+            } else
+#endif
+            {
                 printf("Config not handled for %s\n", codec_name_for_type(remote_seps[selected_remote_sep_index].sep.capabilities.media_codec.media_codec_type));
             }
             break;
@@ -1407,13 +1421,15 @@ int btstack_main(int argc, const char * argv[]){
     // - MPEG1/2 Layer 3
     // ..
 
+#ifdef HAVE_LDAC_ENCODER
     // - LDAC
     stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, (uint8_t *) media_ldac_codec_capabilities, sizeof(media_ldac_codec_capabilities), (uint8_t*) local_stream_endpoint_ldac_media_codec_configuration, sizeof(local_stream_endpoint_ldac_media_codec_configuration));
     btstack_assert(stream_endpoint != NULL);
     stream_endpoint->media_codec_configuration_info = local_stream_endpoint_ldac_media_codec_configuration;
     stream_endpoint->media_codec_configuration_len  = sizeof(local_stream_endpoint_ldac_media_codec_configuration);
     avdtp_source_register_delay_reporting_category(avdtp_local_seid(stream_endpoint));
-
+#endif
+    
     // Initialize SDP 
     sdp_init();
     memset(sdp_avdtp_source_service_buffer, 0, sizeof(sdp_avdtp_source_service_buffer));
