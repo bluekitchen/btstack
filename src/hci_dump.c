@@ -230,7 +230,7 @@ static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uin
         default:
             return;
     }
-    printf_hexdump(packet, len);  
+    //printf_hexdump(packet, len);
 }
 
 static void printf_timestamp(void){

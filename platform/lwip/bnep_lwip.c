@@ -70,6 +70,8 @@
 #include "btstack_run_loop.h"
 #include "lwip/timeouts.h"
 #else
+#include "FreeRTOS.h"
+#include "queue.h"
 #include "btstack_run_loop_freertos.h"
 #endif
 
