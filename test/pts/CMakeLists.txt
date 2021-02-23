@@ -27,11 +27,15 @@ if(FDK_AAC_FOUND)
 	add_compile_definitions(HAVE_AAC_FDK)
 endif()
 
-# ldac
-pkg_check_modules(LDAC ldacBT-enc)
-include_directories(${LDAC_INCLUDE_DIRS})
-link_directories(${LDAC_LIBRARY_DIRS})
-link_libraries(${LDAC_LIBRARIES})
+# ldac encoder
+pkg_check_modules(LDAC_ENCODER ldacBT-enc)
+if (LDAC_ENCODER_FOUND)
+	message("HAVE_LDAC_ENCODER")
+	include_directories(${LDAC_INCLUDE_DIRS})
+	link_directories(${LDAC_LIBRARY_DIRS})
+	link_libraries(${LDAC_LIBRARIES})
+	add_compile_definitions(HAVE_LDAC_ENCODER)
+endif()
 
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
