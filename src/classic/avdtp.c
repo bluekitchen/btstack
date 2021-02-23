@@ -164,7 +164,7 @@ avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other
         if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != AVDTP_CODEC_NON_A2DP) continue;
         if (stream_endpoint->sep.capabilities.media_codec.media_codec_information_len < 6) continue;
         if (little_endian_read_32(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 0) != vendor_id) continue;
-        if (little_endian_read_32(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 4) != codec_id) continue;
+        if (little_endian_read_16(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 4) != codec_id) continue;
         return stream_endpoint;
     }
     return NULL;
