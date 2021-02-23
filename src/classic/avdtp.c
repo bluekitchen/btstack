@@ -147,7 +147,24 @@ avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
         if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.media_type != AVDTP_AUDIO) continue;
         if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != codec_type) continue;
+        return stream_endpoint;
+    }
+    return NULL;
+}
+
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other(uint32_t vendor_id, uint16_t codec_id){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.media_type != AVDTP_AUDIO) continue;
+        if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != AVDTP_CODEC_NON_A2DP) continue;
+        if (stream_endpoint->sep.capabilities.media_codec.media_codec_information_len < 6) continue;
+        if (little_endian_read_32(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 0) != vendor_id) continue;
+        if (little_endian_read_32(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 4) != codec_id) continue;
         return stream_endpoint;
     }
     return NULL;
