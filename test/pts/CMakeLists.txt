@@ -37,6 +37,16 @@ if (LDAC_ENCODER_FOUND)
 	add_compile_definitions(HAVE_LDAC_ENCODER)
 endif()
 
+# openaptx
+pkg_check_modules(APTX openaptx)
+if (APTX_FOUND)
+    message("HAVE_APTX")
+    include_directories(${APTX_INCLUDE_DIRS})
+    link_directories(${APTX_LIBRARY_DIRS})
+    link_libraries(${APTX_LIBRARIES})
+    add_compile_definitions(HAVE_APTX)
+endif()
+
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
 
