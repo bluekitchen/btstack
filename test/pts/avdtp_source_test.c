@@ -318,7 +318,7 @@ static void a2dp_demo_send_media_packet(void) {
         case AVDTP_CODEC_MPEG_2_4_AAC:
             a2dp_demo_send_media_packet_aac();
             break;
-#ifdef ENABLE_LDAC_ENCODER
+#ifdef HAVE_LDAC_ENCODER
         case AVDTP_CODEC_NON_A2DP:
             local_cap = sc.local_stream_endpoint->sep.capabilities.media_codec;
             uint32_t local_vendor_id = get_vendor_id(local_cap.media_codec_information);
@@ -427,7 +427,7 @@ static int fill_aac_audio_buffer(a2dp_media_sending_context_t *context) {
 }
 #endif
 
-#ifdef ENABLE_LDAC_ENCODER
+#ifdef HAVE_LDAC_ENCODER
 static int a2dp_demo_fill_ldac_audio_buffer(a2dp_media_sending_context_t *context) {
     int          total_samples_read                = 0;
     unsigned int num_audio_samples_per_ldac_buffer = LDACBT_ENC_LSU;
@@ -507,7 +507,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
 #endif
         case AVDTP_CODEC_ATRAC_FAMILY:
             break;
-#ifdef ENABLE_LDAC_ENCODER
+#ifdef HAVE_LDAC_ENCODER
         case AVDTP_CODEC_NON_A2DP:
             local_cap = sc.local_stream_endpoint->sep.capabilities.media_codec;
             uint32_t local_vendor_id = get_vendor_id(local_cap.media_codec_information);
