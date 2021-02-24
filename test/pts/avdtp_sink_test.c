@@ -187,6 +187,8 @@ static uint8_t local_seid_aac;
 static struct aptx_context *aptx_handle;
 static avdtp_media_codec_configuration_aptx_t aptx_configuration;
 static uint8_t local_seid_aptx;
+static avdtp_media_codec_configuration_aptx_t aptxhd_configuration;
+static uint8_t local_seid_aptxhd;
 #endif
 
 static uint32_t vendor_id;
@@ -407,6 +409,23 @@ static void handle_l2cap_media_data_packet_aptx(uint8_t *packet, uint16_t size) 
 #endif
 }
 
+static void handle_l2cap_media_data_packet_aptxhd(uint8_t *packet, uint16_t size) {
+#ifdef HAVE_APTX
+    uint16_t pos = 0;
+    uint32_t written;
+    int16_t decode_buf16[2048 * 2]; // 2 == num_channel
+    unsigned char decode_buf8[2048 * 2 * 2];
+    avdtp_media_packet_header_t media_header;
+    if (!read_media_data_header(packet, size, &pos, &media_header)) return;
+    aptx_decode(aptx_handle, packet+pos, size-12, decode_buf8, sizeof(decode_buf8), &written);
+    // convert to 16-bit
+    for (int i = 0; i < written/3; i++) {
+        decode_buf16[i] = (decode_buf8[i * 3 + 2] << 8) | decode_buf8[i * 3 + 1];
+    }
+    playback_queue_audio(decode_buf16, written/(3 * aptxhd_configuration.num_channels), aptxhd_configuration.num_channels);
+#endif
+}
+
 
 // Codec XXX
 //
@@ -466,6 +485,8 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
         case AVDTP_CODEC_NON_A2DP:
             if (vendor_id == A2DP_CODEC_VENDOR_ID_APT_LTD && codec_id == A2DP_APT_LTD_CODEC_APTX) {
                 handle_l2cap_media_data_packet_aptx(packet, size);
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD) {
+                handle_l2cap_media_data_packet_aptxhd(packet, size);
             }
             break;
         default:
@@ -632,6 +653,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 local_seid = local_seid_aptx;
                 printf("Selecting local APTX endpoint with SEID %u\n", local_seid);
 #endif
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD) {
+#ifdef HAVE_APTX
+                local_seid = local_seid_aptxhd;
+                printf("Selecting local APTX HD endpoint with SEID %u\n", local_seid);
+#endif
             }
             break;}
 
@@ -711,6 +737,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 aptx_handle = aptx_init(0);
                 playback_configuration.num_channels = aptx_configuration.num_channels;
                 playback_configuration.sampling_frequency = aptx_configuration.sampling_frequency;
+#endif
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD) {
+#if HAVE_APTX
+                aptxhd_configuration.reconfigure = a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet);
+                aptxhd_configuration.sampling_frequency = media_info[6] & 0xF0;
+                aptxhd_configuration.channel_mode = media_info[6] & 0x0F;
+                aptxhd_configuration.sampling_frequency = convert_aptx_sampling_frequency(aptxhd_configuration.sampling_frequency);
+                aptxhd_configuration.num_channels = convert_aptx_num_channels(aptxhd_configuration.channel_mode);
+                printf("A2DP Source: Received APTX HD configuration! Sampling frequency: %d, channel mode: %d channels: %d\n",
+                        aptxhd_configuration.sampling_frequency, aptxhd_configuration.channel_mode, aptxhd_configuration.num_channels);
+                aptx_handle = aptx_init(1);
+                playback_configuration.num_channels = aptxhd_configuration.num_channels;
+                playback_configuration.sampling_frequency = aptxhd_configuration.sampling_frequency;
 #endif
             }
             break;}
@@ -809,6 +848,14 @@ static uint8_t media_aptx_codec_capabilities[] = {
 };
 
 static uint8_t media_aptx_codec_configuration[7];
+
+static uint8_t media_aptxhd_codec_capabilities[] = {
+        0xD7, 0x0, 0x0, 0x0,
+        0x24, 0,
+        0xFF,
+        0, 0, 0, 0
+};
+static uint8_t media_aptxhd_codec_configuration[11];
 
 static void show_usage(void){
     bd_addr_t      iut_address;
@@ -969,6 +1016,15 @@ int btstack_main(int argc, const char * argv[]){
     local_seid_aptx = avdtp_local_seid(local_stream_endpoint);
     avdtp_sink_register_media_transport_category(local_seid_aptx);
     avdtp_sink_register_media_codec_category(local_seid_aptx, AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, media_aptx_codec_capabilities, sizeof(media_aptx_codec_capabilities));
+
+    // Setup APTX HD Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
+    local_stream_endpoint->media_codec_configuration_info = media_aptxhd_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_aptxhd_codec_configuration);
+    local_seid_aptxhd = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_aptxhd);
+    avdtp_sink_register_media_codec_category(local_seid_aptxhd, AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, media_aptxhd_codec_capabilities, sizeof(media_aptxhd_codec_capabilities));
 #endif
 
     // Setup SBC Endpoint
