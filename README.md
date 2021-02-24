@@ -103,7 +103,7 @@ Dialog Semiconductor DA14581, DA14585 | LE      | H4, SPI  | n.a.             | 
 Dialog Semiconductor DA1469x | LE        | H4, SPI         | n.a              |                | HCI Firmware part of DA1469x SDK
 Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
-Intel Dual Wireless 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
+Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 Renesas RX23W                | LE        | H4              | n.a.             |                | HCI Firmware part of BTTS
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
