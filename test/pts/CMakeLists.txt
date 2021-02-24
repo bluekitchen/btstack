@@ -38,7 +38,7 @@ if (LDAC_ENCODER_FOUND)
 endif()
 
 # openaptx
-pkg_check_modules(APTX openaptx)
+pkg_check_modules(APTX libopenaptx)
 if (APTX_FOUND)
     message("HAVE_APTX")
     include_directories(${APTX_INCLUDE_DIRS})
