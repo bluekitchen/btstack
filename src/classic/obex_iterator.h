@@ -43,13 +43,17 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "btstack_bool.h"
 
-/* API_START */
+    /* API_START */
 
 typedef struct obex_iterator {
     const uint8_t * data;
     uint16_t  offset;
     uint16_t  length;
+    uint16_t  header_size;
+    uint16_t  data_size;
+    bool valid;
 } obex_iterator_t;
 
 // OBEX packet header iterator
