@@ -1013,13 +1013,14 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback){
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #define FUZZ_CID 0x44
+#define FUZZ_CON_HANDLE 0x0001
 static bd_addr_t remote_addr = { 0x33, 0x33, 0x33, 0x33, 0x33, 0x33 };
 void avrcp_init_fuzz(void){
     // setup avrcp connections for cid
     avrcp_connection_t * connection_controller = avrcp_create_connection(AVRCP_CONTROLLER, remote_addr);
     avrcp_connection_t * connection_target     = avrcp_create_connection(AVRCP_TARGET, remote_addr);
-    avrcp_handle_open_connection(connection_controller, FUZZ_CID, 999);
-    avrcp_handle_open_connection(connection_target, FUZZ_CID, 999);
+    avrcp_handle_open_connection(connection_controller, FUZZ_CON_HANDLE, FUZZ_CID, 999);
+    avrcp_handle_open_connection(connection_target, FUZZ_CON_HANDLE, FUZZ_CID, 999);
 }
 void avrcp_packet_handler_fuzz(uint8_t *packet, uint16_t size){
     avrcp_packet_handler(L2CAP_DATA_PACKET, FUZZ_CID, packet, size);
