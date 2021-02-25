@@ -87,9 +87,12 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
-static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id, avrcp_command_type_t ctype, const uint8_t * payload){
+static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id,
+                                                            avrcp_command_type_t ctype, const uint8_t *payload,
+                                                            uint16_t size) {
     switch (event_id){
         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:{
+            if (size < 4) break;
             uint32_t song_position = big_endian_read_32(payload, 0);
             uint16_t offset = 0;
             uint8_t event[10];
@@ -105,6 +108,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -154,6 +158,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -167,6 +172,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
+            if (size < 2) break;
             uint8_t event[8];
             uint16_t offset = 0;
             uint16_t uuid = big_endian_read_16(payload, 0);
@@ -207,6 +213,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -221,6 +228,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
         }
 
         case AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -644,7 +652,9 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
     return ERROR_CODE_SUCCESS;
 }
 
-static void avrcp_controller_handle_notification(avrcp_connection_t * connection, avrcp_command_type_t ctype, uint8_t * payload){
+static void
+avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_command_type_t ctype, uint8_t *payload, uint16_t size) {
+    if (size < 1) return;
     uint16_t pos = 0;
     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) payload[pos++];
     uint16_t event_mask = (1 << event_id);
@@ -671,14 +681,13 @@ static void avrcp_controller_handle_notification(avrcp_connection_t * connection
             connection->notifications_to_deregister &= reset_event_mask;
             break;
     }
-    
-    avrcp_controller_emit_notification_for_event_id(connection->avrcp_cid, event_id, ctype, payload+pos);
+
+    avrcp_controller_emit_notification_for_event_id(connection->avrcp_cid, event_id, ctype, payload + pos, size - pos);
 }
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 6u) return;
     
-    uint16_t pos = 3;
     uint8_t  pdu_id;
     uint8_t  vendor_dependent_packet_type;
 
@@ -695,7 +704,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             log_info("Fragmentation is not supported");
             return;
     }
-    
+
+    uint16_t pos = 3;
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     
 #ifdef ENABLE_LOG_INFO
@@ -739,6 +749,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+
+            if ((size - pos) < 7) return;
+
             // Company ID (3)
             pos += 3;
             pdu_id = packet[pos++];
@@ -747,14 +760,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pos += 2;
             log_info("operands length %d, remaining size %d", param_length, size - pos);
                 
-            if ((size - pos) < param_length) {
-                log_error("Wrong packet size %d < %d", size - pos, param_length);
-                return;
-            };
+            if ((size - pos) < param_length) return;
 
             // handle asynchronous notifications, without changing state
             if (pdu_id == AVRCP_PDU_ID_REGISTER_NOTIFICATION){
-                avrcp_controller_handle_notification(connection, ctype, packet+pos);
+                avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
                 break;
             }
 
@@ -955,6 +965,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             }
             break;
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
+            if ((size - pos) < 1) return;
             uint8_t operation_id = packet[pos++];
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
