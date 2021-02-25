@@ -582,6 +582,7 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
             int handle_found = 0;
             char name[PBAP_MAX_NAME_LEN];
             char handle[PBAP_MAX_HANDLE_LEN];
+            uint16_t char_len;
             while (data_len--){
                 yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
                 switch (r){
@@ -610,13 +611,15 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
                     case YXML_ATTRVAL:
                         if (name_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                            if ((strlen(name) + 4 + 1) >= sizeof(name)) break;
+                            char_len = strlen(pbap_client->xml_parser.data);
+                            if ((strlen(name) + char_len + 1) >= sizeof(name)) break;
                             strcat(name, pbap_client->xml_parser.data);
                             break;
                         }
                         if (handle_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                            if ((strlen(handle) + 4 + 1) >= sizeof(handle)) break;
+                            char_len = strlen(pbap_client->xml_parser.data);
+                            if ((strlen(handle) + char_len + 1) >= sizeof(handle)) break;
                             strcat(handle, pbap_client->xml_parser.data);
                             break;
                         }
