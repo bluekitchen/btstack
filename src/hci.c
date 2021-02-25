@@ -6395,6 +6395,7 @@ void hci_setup_test_connections_fuzz(void){
     conn->role  = HCI_ROLE_SLAVE;
     conn->state = OPEN;
     conn->sm_connection.sm_role = HCI_ROLE_SLAVE;
+    conn->sm_connection.sm_connection_encrypted = 1;
 }
 
 void hci_free_connections_fuzz(void){
