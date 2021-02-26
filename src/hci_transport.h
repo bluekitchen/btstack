@@ -146,6 +146,12 @@ const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * u
 const hci_transport_t * hci_transport_h5_instance(const btstack_uart_block_t * uart_driver);
 
 /*
+ * @brief Setup H5 instance with btstack_uart implementation that supports SLIP frames
+ * @param uart_driver to use
+ */
+const hci_transport_t * hci_transport_h5_instance(const btstack_uart_t * uart_driver);
+
+/*
  * @brief Setup H4 over SPI instance for EM9304 with em9304_spi_driver
  * @param em9304_spi_driver to use 
  */
