@@ -11,6 +11,7 @@
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
+#include "btstack_uart_slip_wrapper.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
@@ -235,7 +236,11 @@ void BTSTACK_Initialize ( void )
 
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
-    const hci_transport_t * transport = hci_transport_h5_instance(btstack_uart_block_embedded_instance());
+    // setup uart driver
+    const btstack_uart_block_t * uart_block_driver = btstack_uart_block_embedded_instance();
+    const btstack_uart_t * uart_slip_driver = btstack_uart_slip_wrapper_instance(uart_block_driver);
+
+    const hci_transport_t * transport = hci_transport_h5_instance(uart_slip_driver);
     hci_init(transport, &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 

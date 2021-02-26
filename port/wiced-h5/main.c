@@ -43,6 +43,7 @@
 #include "btstack_run_loop_wiced.h"
 #include "btstack_link_key_db_wiced_dct.h"
 #include "le_device_db_wiced_dct.h"
+#include "btstack_uart_slip_wrapper.h"
 
 #include "generated_mac_address.txt"
 
@@ -119,16 +120,17 @@ void application_start(void){
     chipset->init(&transport_config);
 
     // setup uart driver
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_wiced_instance();
+    const btstack_uart_block_t * uart_block_driver = btstack_uart_block_wiced_instance();
+    const btstack_uart_t * uart_slip_driver = btstack_uart_slip_wrapper_instance(uart_block_driver);
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;
     uart_config.flowcontrol = transport_config.flowcontrol;
     uart_config.device_name = transport_config.device_name;
-    uart_driver->init(&uart_config);
+    uart_block_driver->init(&uart_config);
 
     // init HCI
-    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
+    const hci_transport_t * transport = hci_transport_h5_instance(uart_slip_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_link_key_db(btstack_link_key_db_wiced_dct_instance());
     hci_set_chipset(chipset);
@@ -151,7 +153,7 @@ void application_start(void){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
+    btstack_chipset_bcm_download_firmware(uart_block_driver, transport_config.baudrate_main, &phase2);
 
     // go
     btstack_run_loop_execute();

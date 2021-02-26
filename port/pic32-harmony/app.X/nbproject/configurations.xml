@@ -292,6 +292,7 @@
           <itemPath>../../../src/btstack_tlv.c</itemPath>
           <itemPath>../../../src/btstack_crypto.c</itemPath>
           <itemPath>../../../src/btstack_hid_parser.c</itemPath>
+          <itemPath>../../../src/btstack_uart_slip_wrapper.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -357,7 +358,7 @@
         <targetDevice>PIC32MX450F256L</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>noID</platformTool>
+        <platformTool></platformTool>
         <languageToolchain>XC32</languageToolchain>
         <languageToolchainVersion>2.40</languageToolchainVersion>
         <platform>4</platform>

@@ -25,7 +25,11 @@
 #define ENABLE_PRINTF_HEXDUMP
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_ACL_PAYLOAD_SIZE 100
+#define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
+#define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy
+#define HCI_OUTGOING_PRE_BUFFER_SIZE  4
+
+// BTstack configuration. buffers, sizes, ...
 #define MAX_NR_BNEP_CHANNELS 0
 #define MAX_NR_BNEP_SERVICES 0
 #define MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES 2

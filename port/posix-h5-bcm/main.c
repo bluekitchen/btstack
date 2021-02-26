@@ -51,21 +51,24 @@
 
 #include "btstack_config.h"
 
+#include "bluetooth_company_id.h"
+#include "ble/le_device_db_tlv.h"
+#include "btstack_chipset_bcm.h"
+#include "btstack_chipset_bcm_download_firmware.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "ble/le_device_db_tlv.h"
-#include "classic/btstack_link_key_db_tlv.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
-#include "bluetooth_company_id.h"
+#include "btstack_stdin.h"
+#include "btstack_uart.h"
+#include "btstack_uart_block.h"
+#include "btstack_uart_slip_wrapper.h"
+#include "btstack_tlv_posix.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "btstack_stdin.h"
-#include "btstack_tlv_posix.h"
 
-#include "btstack_chipset_bcm.h"
-#include "btstack_chipset_bcm_download_firmware.h"
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -162,17 +165,19 @@ int main(int argc, const char * argv[]){
     btstack_chipset_bcm_set_device_name("BCM43430A1");
 
     // setup UART driver
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
+    const btstack_uart_t * uart_block_driver = (const btstack_uart_t *) btstack_uart_block_posix_instance();
+    const btstack_uart_t * uart_slip_driver = btstack_uart_slip_wrapper_instance(uart_block_driver);
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;
     uart_config.flowcontrol = transport_config.flowcontrol;
     uart_config.device_name = transport_config.device_name;
-    uart_driver->init(&uart_config);
+    uart_block_driver->init(&uart_config);
+
 
     // setup HCI (to be able to use bcm chipset driver)
     // init HCI
-    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
+    const hci_transport_t * transport = hci_transport_h5_instance(uart_slip_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_bcm_instance());
 
@@ -190,7 +195,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
+    btstack_chipset_bcm_download_firmware(uart_block_driver, transport_config.baudrate_main, &phase2);
 
     // go
     btstack_run_loop_execute();    

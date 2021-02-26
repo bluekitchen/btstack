@@ -7,8 +7,11 @@
             <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/port/pic32-harmony/src/btstack_config.h</file>
             <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/port/pic32-harmony/src/btstack_port.c</file>
             <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/src/ble/sm.c</file>
-            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/platform/embedded/btstack_uart_block_embedded.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/system/ports/src/sys_ports.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/port/pic32-harmony/src/main.c</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/port/pic32-harmony/src/app.c</file>
             <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/src/ble/sm.h</file>
+            <file>file:/Users/mringwal/microchip/harmony/v1_07/framework/btstack/src/btstack_uart_slip_wrapper.c</file>
         </group>
     </open-files>
 </project-private>
