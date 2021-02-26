@@ -1893,7 +1893,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING:
             // skip bcm set sco pcm config on non-Broadcom chipsets
             if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) break;
-            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT;
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
 
             /* fall through */
 
