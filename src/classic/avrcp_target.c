@@ -732,16 +732,6 @@ static uint8_t avrcp_target_get_transaction_label_for_notification(avrcp_connect
     return connection->notifications_transaction_label[notification];
 }
 
-static uint8_t * avrcp_get_company_id(uint8_t *packet, uint16_t size){
-    UNUSED(size);
-    return packet + 6;
-}
-
-static uint8_t * avrcp_get_pdu(uint8_t *packet, uint16_t size){
-    UNUSED(size);
-    return packet + 9;
-}
-
 static uint8_t avrcp_is_receive_pass_through_cmd(uint8_t operation_id){
     return operation_id & 0x80;
 }
