@@ -176,29 +176,15 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
 
     log_info("h4_set_baudrate %u", baudrate);
 
-#ifdef __APPLE__
-
-    // From https://developer.apple.com/library/content/samplecode/SerialPortSample/Listings/SerialPortSample_SerialPortSample_c.html
-
-    // The IOSSIOSPEED ioctl can be used to set arbitrary baud rates
-    // other than those specified by POSIX. The driver for the underlying serial hardware
-    // ultimately determines which baud rates can be used. This ioctl sets both the input
-    // and output speed.
-
-    speed_t speed = baudrate;
-    if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
-        log_error("btstack_uart_posix_set_baudrate: error calling ioctl(..., IOSSIOSPEED, %u) - %s(%d).\n", baudrate, strerror(errno), errno);
-        return -1;
-    }
-
-#else
     struct termios toptions;
 
     if (tcgetattr(fd, &toptions) < 0) {
         log_error("btstack_uart_posix_set_baudrate: Couldn't get term attributes");
         return -1;
     }
-    
+
+#ifndef __APPLE__
+
     speed_t brate = baudrate; // let you override switch below if needed
     switch(baudrate) {
         case    9600: brate=B9600;    break;
@@ -251,9 +237,27 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
     }
     cfsetospeed(&toptions, brate);
     cfsetispeed(&toptions, brate);
+#endif
 
-    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
+    // also set options for __APPLE__ to enforce write drain
+    // Mac OS Mojave: tcsdrain did not work as expected
+
+    if( tcsetattr(fd, TCSADRAIN, &toptions) < 0) {
         log_error("Couldn't set term attributes");
+        return -1;
+    }
+
+#ifdef __APPLE__
+    // From https://developer.apple.com/library/content/samplecode/SerialPortSample/Listings/SerialPortSample_SerialPortSample_c.html
+
+    // The IOSSIOSPEED ioctl can be used to set arbitrary baud rates
+    // other than those specified by POSIX. The driver for the underlying serial hardware
+    // ultimately determines which baud rates can be used. This ioctl sets both the input
+    // and output speed.
+
+    speed_t speed = baudrate;
+    if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
+        log_error("btstack_uart_posix_set_baudrate: error calling ioctl(..., IOSSIOSPEED, %u) - %s(%d).\n", baudrate, strerror(errno), errno);
         return -1;
     }
 #endif
