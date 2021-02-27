@@ -111,8 +111,8 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 static void use_fast_uart(void){
-    // printf("Using 921600 baud.\n");
-    // config.baudrate_main = 921600;
+     printf("Using 921600 baud.\n");
+     config.baudrate_main = 921600;
 }
 
 static void local_version_information_handler(uint8_t * packet){
