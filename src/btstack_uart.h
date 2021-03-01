@@ -177,5 +177,7 @@ typedef struct {
 
 } btstack_uart_t;
 
+// common implementations
+const btstack_uart_t * btstack_uart_posix_instance(void);
 
 #endif
