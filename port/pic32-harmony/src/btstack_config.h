@@ -22,6 +22,9 @@
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
+#define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy
+#define HCI_OUTGOING_PRE_BUFFER_SIZE  4
+
 #define MAX_NR_AVDTP_CONNECTIONS 1
 #define MAX_NR_AVDTP_STREAM_ENDPOINTS 1
 #define MAX_NR_AVRCP_CONNECTIONS 1
@@ -41,7 +44,9 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_WHITELIST_ENTRIES 1
 
-#define NVM_NUM_DEVICE_DB_ENTRIES      16
+// commented to use le_device_db_memory
+// #define NVM_NUM_DEVICE_DB_ENTRIES      16
+
 #define NVM_NUM_LINK_KEYS              16
 
 #endif
