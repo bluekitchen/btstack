@@ -59,6 +59,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "btstack_uart.h"
 #include "bluetooth_company_id.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -72,13 +73,14 @@
 #include "btstack_chipset_stlc2500d.h"
 #include "btstack_chipset_tc3566x.h"
 
-int is_bcm;
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
 static char tlv_db_path[100];
 static const btstack_tlv_t * tlv_impl;
 static btstack_tlv_posix_t   tlv_context;
+
+static int is_bcm;
 
 int btstack_main(int argc, const char * argv[]);
 static void local_version_information_handler(uint8_t * packet);
@@ -258,8 +260,8 @@ int main(int argc, const char * argv[]){
     printf("H4 device: %s\n", config.device_name);
 
     // init HCI
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
+	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
 
 #ifdef HAVE_PORTAUDIO

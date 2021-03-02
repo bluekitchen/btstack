@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "main.c"
 
 // *****************************************************************************
 //
@@ -56,6 +56,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "btstack_uart.h"
 #include "bluetooth_company_id.h"
 #include "ble/le_device_db_tlv.h"
 #include "hci.h"
@@ -155,8 +156,8 @@ int main(int argc, const char * argv[]){
     printf("H4 device: %s\n", config.device_name);
 
     // init HCI
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
+	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
     hci_set_chipset(btstack_chipset_zephyr_instance());
     

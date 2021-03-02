@@ -241,7 +241,7 @@ int main(int argc, char * argv[]){
     config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
 
     // init HCI
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
+    const btstack_uart_t * uart_driver = btstack_uart_block_instance();
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &config);
 #endif

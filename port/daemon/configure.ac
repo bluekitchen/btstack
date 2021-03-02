@@ -42,7 +42,7 @@ case "$host_os" in
         BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_corefoundation_instance"
         UNIX_SOCKETS=yes
         HCI_USB_LIB=libusb
-        UART_BLOCK=posix
+        UART_DRIVER=posix
         ;;
     mingw*)
         echo "Building on mingw32"
@@ -54,7 +54,7 @@ case "$host_os" in
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         UNIX_SOCKETS=no
         HCI_USB_LIB=winusb
-        UART_BLOCK=windows
+        UART_DRIVER=block_windows
         ;;
     *)
         btstack_run_loop_SOURCES="btstack_run_loop_posix.o"
@@ -64,7 +64,7 @@ case "$host_os" in
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
         UNIX_SOCKETS=yes
         HCI_USB_LIB=libusb
-        UART_BLOCK=posix
+        UART_DRIVER=posix
     ;;
 esac
 
@@ -183,7 +183,7 @@ if test "x$HCI_TRANSPORT" = xUSB; then
         USB_SOURCES+=" btstack_chipset_intel_firmware.c"
     fi
 else
-    UART_SOURCES=btstack_uart_block_$UART_BLOCK.o
+    UART_SOURCES=btstack_uart_$UART_DRIVER.o
     echo "#define HAVE_TRANSPORT_H4" >> btstack_config.h
     echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack_config.h
     echo "#define UART_SPEED $UART_SPEED" >> btstack_config.h

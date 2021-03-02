@@ -128,7 +128,7 @@ ELSE()
     set(SOURCES_STDIN   ${BTSTACK_ROOT}/platform/posix/btstack_stdin_posix.c)
 
     list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_network_posix.c)
-    list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_uart_block_posix.c)
+    list(APPEND SOURCES_POSIX ${BTSTACK_ROOT}/platform/posix/btstack_block_posix.c)
 ENDIF()
 
 set(SOURCES

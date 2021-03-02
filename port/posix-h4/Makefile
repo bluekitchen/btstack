@@ -14,7 +14,7 @@ CORE += \
 	btstack_audio.c \
     btstack_audio_portaudio.c \
 	btstack_tlv_posix.c \
-	btstack_uart_block_posix.c \
+	btstack_uart_posix.c \
 	hci_transport_h4.c \
 	le_device_db_tlv.c \
 	rijndael.c \

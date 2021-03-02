@@ -2022,9 +2022,9 @@ int btstack_server_run(int tcp_flag){
     socket_connection_init();
 
     btstack_control_t * control = NULL;
-    const btstack_uart_block_t * uart_block_implementation = NULL;
-    (void) uart_block_implementation;
-    
+    const btstack_uart_t *       uart_implementation = NULL;
+    (void) uart_implementation;
+
 #ifdef HAVE_TRANSPORT_H4
     hci_transport_config_uart.type = HCI_TRANSPORT_CONFIG_UART;
     hci_transport_config_uart.baudrate_init = UART_SPEED;
@@ -2034,9 +2034,9 @@ int btstack_server_run(int tcp_flag){
 
 #ifndef HAVE_PLATFORM_IPHONE_OS
 #ifdef _WIN32
-    uart_block_implementation = btstack_uart_block_windows_instance();
+    uart_implementation = (const btstack_uart_t *) btstack_uart_block_windows_instance();
 #else
-    uart_block_implementation = btstack_uart_block_posix_instance();
+    uart_implementation = btstack_uart_posix_instance();
 #endif
 #endif
     
@@ -2046,7 +2046,7 @@ int btstack_server_run(int tcp_flag){
 #endif
 
     config = &hci_transport_config_uart;
-    transport = hci_transport_h4_instance(uart_block_implementation);
+    transport = hci_transport_h4_instance_for_uart(uart_implementation);
 #endif
 
 #ifdef HAVE_TRANSPORT_USB

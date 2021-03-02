@@ -53,7 +53,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS) \
 	gatt_client.o                  \
 	hci.o                          \
 	hci_transport_h4_mtk.o         \
-	btstack_uart_block_posix.o     \
+	btstack_uart_posix.o           \
 	l2cap.o                        \
 	l2cap_signaling.o              \
 	le_device_db_tlv.o             \
