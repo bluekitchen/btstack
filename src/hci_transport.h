@@ -128,6 +128,7 @@ typedef struct {
     uint32_t   baudrate_main; // = 0: same as initial baudrate
     int        flowcontrol;   // 
     const char *device_name;
+    int        parity;        // see btstack_uart.h BTSTACK_UART_PARITY
 } hci_transport_config_uart_t;
 
 

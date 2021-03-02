@@ -755,6 +755,7 @@ static void hci_transport_h5_init(const void * transport_config){
     hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
     uart_config.baudrate    = hci_transport_config_uart->baudrate_init;
     uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
+    uart_config.parity      = hci_transport_config_uart->parity;
     uart_config.device_name = hci_transport_config_uart->device_name;
 
     // setup UART driver
