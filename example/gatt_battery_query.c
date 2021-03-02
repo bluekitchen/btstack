@@ -154,15 +154,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     }
     
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
-        case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_NUM_INSTANCES:
-            status = gattservice_subevent_battery_service_num_instances_get_status(packet);
+        case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED:
+            status = gattservice_subevent_battery_service_connected_get_status(packet);
             switch (status){
                 case ERROR_CODE_SUCCESS:
-                case ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE:
-                    state = TC_W4_CHARACTERISTIC_RESULT;
+                    printf("Battery service client connected - found %d services", 
+                        gattservice_subevent_battery_service_connected_get_num_instances(packet));
                     break;
                 default:
-                    printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    printf("Battery service client connection failed - Error status 0x%02x.\n", status);
                     add_to_blacklist(report.address);
                     gap_disconnect(connection_handle);
                     break;
@@ -172,9 +172,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
     }
     
-    
     switch(state){
-            
         case TC_W4_CHARACTERISTIC_RESULT:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:

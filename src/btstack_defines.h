@@ -3075,7 +3075,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param num_instances
 */
-#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_NUM_INSTANCES                 0x04
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED                     0x04
 
 // MAP Meta Event Group
 

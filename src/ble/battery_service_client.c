@@ -107,12 +107,12 @@ static battery_service_client_t * battery_service_get_client_for_cid(uint16_t ba
     return NULL;
 }
 
-static void battery_service_emit_instances(battery_service_client_t * client, uint8_t status, uint8_t num_instances){
+static void battery_service_emit_connection_established(battery_service_client_t * client, uint8_t status, uint8_t num_instances){
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = GATTSERVICE_SUBEVENT_BATTERY_SERVICE_NUM_INSTANCES;
+    event[pos++] = GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED;
     little_endian_store_16(event, pos, client->cid);
     pos += 2;
     event[pos++] = status;
@@ -141,7 +141,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             }
 
             if (client->state != BATTERY_SERVICE_W4_SERVICE_RESULT) {
-                battery_service_emit_instances(client, GATT_CLIENT_IN_WRONG_STATE, 0);         
+                battery_service_emit_connection_established(client, GATT_CLIENT_IN_WRONG_STATE, 0);         
                 break;
             }
 
@@ -160,15 +160,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             status = gatt_event_query_complete_get_att_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                battery_service_emit_instances(client, status, 0);  
+                battery_service_emit_connection_established(client, status, 0);  
                 break;  
             }
 
             if (client->num_battery_services > MAX_NUM_BATTERY_SERVICES) {
-                battery_service_emit_instances(client, ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE, client->num_battery_services);
+                log_info("%d battery services found, only first %d can be stored, increase MAX_NUM_BATTERY_SERVICES", client->num_battery_services, MAX_NUM_BATTERY_SERVICES);
                 client->num_battery_services = MAX_NUM_BATTERY_SERVICES;
-            } else {
-                battery_service_emit_instances(client, status, client->num_battery_services);
             }
             
             client->state = BATTERY_SERVICE_W4_CHARACTERISTIC_RESULT;
@@ -176,7 +174,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             gatt_client_discover_characteristics_for_service_by_uuid16(handle_gatt_client_event, client->con_handle, &client->services[client->battery_services_index], ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
             break;
 
-        
+
         default:
             break;
     }
