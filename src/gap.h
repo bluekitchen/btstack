@@ -662,6 +662,7 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units);
  * @events: GAP_EVENT_INQUIRY_COMPLETE
  */
 int gap_inquiry_stop(void);
+int gap_inquiry_force_stop(void);
 
 /**
  * @brief Remote Name Request

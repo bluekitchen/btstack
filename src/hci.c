@@ -5840,9 +5840,13 @@ int gap_inquiry_stop(void){
     hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_CANCEL;
     hci_run();
     return 0;
-}    
-
-
+}
+int gap_inquiry_force_stop(void)
+{
+    hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
+    hci_run();
+    return 0;
+}
 /**
  * @brief Remote Name Request
  * @param addr
