@@ -10,13 +10,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 HCI: `btstack_transport_sco.h` allows to support SCO over physical PCM/I2S interface (`HAVE_SCO_TRANSPORT`)
-POSIX: `btstack_transport_sco_i2s_test_bridge.c` implements sco transport interface for UART-to-I2S test bridge
-
+POSIX: `btstack_transport_sco_i2s_test_bridge.c` implements SCO transport interface for UART-to-I2S test bridge
+btstack_uart: `btstack_uart_t` interface extends `btstack_uart_block_t`:
+  - supports sending and receiving SLIP frames for HCI H5
+  - suppports odd parity as well
+  - `hci_transport_h4` and chipset drivers have new functions to pass provide `btstack_uart_t`
+btstack_uart_slip_wrapper: wrapper that implements SLIP functionality for existing `btstack_uart_block` drivers.
+hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
+    
 ### Fixed
 
 ### Changed
 HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
-
+btstack_uart_posix: supports SLIP frames and replaces `btstack_uart_block_posix`
+hci_transport_h5: new more performant H5 implementation that requires `btstack_uart_t` driver with SLIP support.
+POSIX Ports: use new `btstack_uart_posix` implementation
+posix-h5/posix-h5-bcm: use even parity for UART
 
 ## Release v1.3.1
 
