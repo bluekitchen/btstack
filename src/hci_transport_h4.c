@@ -126,7 +126,7 @@ typedef enum {
 } TX_STATE;
 
 // UART Driver + Config
-static const btstack_uart_block_t * btstack_uart;
+static const btstack_uart_t * btstack_uart;
 static btstack_uart_config_t uart_config;
 
 // write state
@@ -728,21 +728,26 @@ static void hci_transport_h4_ehcill_handle_ehcill_command_sent(void){
 
 
 // configure and return h4 singleton
-const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
+static const hci_transport_t hci_transport_h4 = {
+        /* const char * name; */                                        "H4",
+        /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
+        /* int    (*open)(void); */                                     &hci_transport_h4_open,
+        /* int    (*close)(void); */                                    &hci_transport_h4_close,
+        /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
+        /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
+        /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
+        /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
+        /* void   (*reset_link)(void); */                               NULL,
+        /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
+};
 
-    static const hci_transport_t hci_transport_h4 = {
-            /* const char * name; */                                        "H4",
-            /* void   (*init) (const void *transport_config); */            &hci_transport_h4_init,
-            /* int    (*open)(void); */                                     &hci_transport_h4_open,
-            /* int    (*close)(void); */                                    &hci_transport_h4_close,
-            /* void   (*register_packet_handler)(void (*handler)(...); */   &hci_transport_h4_register_packet_handler,
-            /* int    (*can_send_packet_now)(uint8_t packet_type); */       &hci_transport_h4_can_send_now,
-            /* int    (*send_packet)(...); */                               &hci_transport_h4_send_packet,
-            /* int    (*set_baudrate)(uint32_t baudrate); */                &hci_transport_h4_set_baudrate,
-            /* void   (*reset_link)(void); */                               NULL,
-            /* void   (*set_sco_config)(uint16_t voice_setting, int num_connections); */ NULL,
-    };
-
+const hci_transport_t * hci_transport_h4_instance_for_uart(const btstack_uart_t * uart_driver){
     btstack_uart = uart_driver;
+    return &hci_transport_h4;
+}
+
+// @deprecated
+const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver) {
+    btstack_uart = (const btstack_uart_t *) uart_driver;
     return &hci_transport_h4;
 }
