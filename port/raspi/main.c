@@ -371,21 +371,20 @@ int main(int argc, const char * argv[]){
     btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware/brcm");
 
     // setup UART driver
-    const btstack_uart_block_t * uart_block_driver = btstack_uart_block_posix_instance();
+    const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;
     uart_config.flowcontrol = transport_config.flowcontrol;
     uart_config.device_name = transport_config.device_name;
-    uart_block_driver->init(&uart_config);
+    uart_driver->init(&uart_config);
 
     // HW with FlowControl -> we can use regular h4 mode
     const hci_transport_t * transport;
     if (transport_config.flowcontrol){
-        transport = hci_transport_h4_instance(uart_block_driver);
+        transport = hci_transport_h4_instance(uart_driver);
     } else {
-        const btstack_uart_t * uart_slip_driver = btstack_uart_slip_wrapper_instance(uart_block_driver);
-        transport = hci_transport_h5_instance(uart_slip_driver);
+        transport = hci_transport_h5_instance(uart_driver);
     }
 
     // setup HCI (to be able to use bcm chipset driver)
@@ -432,7 +431,7 @@ int main(int argc, const char * argv[]){
         printf("Phase 1: Download firmware\n");
 
         // phase #2 start main app
-        btstack_chipset_bcm_download_firmware(uart_block_driver, transport_config.baudrate_main, &phase2);
+        btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
     }
 
     // go

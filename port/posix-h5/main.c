@@ -64,8 +64,6 @@
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
 #include "btstack_uart.h"
-#include "btstack_uart_block.h"
-#include "btstack_uart_slip_wrapper.h"
 
 #include "btstack_chipset_csr.h"
 #include "btstack_chipset_cc256x.h"
@@ -223,9 +221,8 @@ int main(int argc, const char * argv[]){
     printf("H5 device: %s\n", config.device_name);
 
     // init HCI
-    const btstack_uart_t * uart_block_driver = (const btstack_uart_t *) btstack_uart_block_posix_instance();
-    const btstack_uart_t * uart_slip_driver = btstack_uart_slip_wrapper_instance(uart_block_driver);
-    const hci_transport_t * transport = hci_transport_h5_instance(uart_slip_driver);
+    const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
+    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
 	hci_init(transport, (void*) &config);
 
     // enable BCSP mode for CSR chipsets - auto detect might not work
