@@ -174,7 +174,7 @@ static void da14581_w4_final_ack_sent(void){
     download_complete(0);
 }
 
-void btstack_chipset_da14581_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * da_fw_data, uint16_t da_fw_size, void (*done)(int result)){
+void btstack_chipset_da14581_download_firmware_with_uart(const btstack_uart_t * uart_driver, const uint8_t * da_fw_data, uint16_t da_fw_size, void (*done)(int result)){
 
 	the_uart_driver   = uart_driver;
     download_complete = done;
@@ -190,6 +190,10 @@ void btstack_chipset_da14581_download_firmware(const btstack_uart_block_t * uart
 
     download_count = 0;
     da14581_start();
+}
+
+void btstack_chipset_da14581_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * fw, uint16_t fw_size, void (*done)(int result)){
+    btstack_chipset_da14581_download_firmware_with_uart(uart_driver, fw, fw_size, done);
 }
 
 // not used currently

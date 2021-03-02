@@ -58,9 +58,17 @@ extern "C" {
 const btstack_chipset_t * btstack_chipset_da14581_instance(void);
 
 /**
- * @brief Download firmware via uart_driver
+ * @brief Download firmware via btstack_uart_t implementation
  * @param uart_driver -- already initialized
  * @param done callback. 0 = Success
+ */
+void btstack_chipset_da14581_download_firmware_with_uart(const btstack_uart_t * uart_driver, const uint8_t * fw, uint16_t fw_size, void (*done)(int result));
+
+/**
+ * @brief Download firmware via btstack_uart_block_t implementation
+ * @param uart_driver -- already initialized
+ * @param done callback. 0 = Success
+ * @deprecated please use btstack_chipset_da14581_download_firmware_with_uart instead
  */
 void btstack_chipset_da14581_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * fw, uint16_t fw_size, void (*done)(int result));
 
