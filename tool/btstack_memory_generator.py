@@ -80,6 +80,7 @@ extern "C" {
 // BLE
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
+#include "ble/battery_service_client.h"
 #include "ble/sm.h"
 #endif
 
@@ -292,7 +293,7 @@ list_of_classic_structs = [
     ["avrcp_browsing_connection"],   
 ]
 list_of_le_structs = [
-    ["gatt_client", "whitelist_entry", "sm_lookup_entry"],
+    ["battery_service_client", "gatt_client", "sm_lookup_entry", "whitelist_entry"],
 ]
 list_of_mesh_structs = [
     ['mesh_network_pdu', 'mesh_segmented_pdu', 'mesh_upper_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address', 'mesh_subnet']

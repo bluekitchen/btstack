@@ -1102,6 +1102,7 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
 
+
 /** 
  * @format 1BH
  * @param address_type
@@ -3067,6 +3068,14 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param cid
+ * @param status
+ * @param num_instances
+*/
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_NUM_INSTANCES                 0x04
 
 // MAP Meta Event Group
 

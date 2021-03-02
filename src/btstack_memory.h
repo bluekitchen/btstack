@@ -52,10 +52,11 @@ extern "C" {
 #endif
 
 #include "btstack_config.h"
-    
+
 // Core
 #include "hci.h"
 #include "l2cap.h"
+
 
 // Classic
 #include "classic/avdtp_sink.h"
@@ -69,9 +70,11 @@ extern "C" {
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
 
+
 // BLE
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
+#include "ble/battery_service_client.h"
 #include "ble/sm.h"
 #endif
 
@@ -155,13 +158,15 @@ void   btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t
 
 #endif
 #ifdef ENABLE_BLE
-// gatt_client, whitelist_entry, sm_lookup_entry
+// battery_service_client, gatt_client, sm_lookup_entry, whitelist_entry
+battery_service_client_t * btstack_memory_battery_service_client_get(void);
+void   btstack_memory_battery_service_client_free(battery_service_client_t *battery_service_client);
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
-whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
-void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
+whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
+void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 #endif
 #ifdef ENABLE_MESH
 // mesh_network_pdu, mesh_segmented_pdu, mesh_upper_transport_pdu, mesh_network_key, mesh_transport_key, mesh_virtual_address, mesh_subnet

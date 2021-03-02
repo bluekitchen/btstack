@@ -84,6 +84,7 @@ GATT_SERVER += \
 
 GATT_CLIENT += \
 	gatt_client.c        	    \
+	battery_service_client.c 	\
 
 PAN += \
 	pan.c \

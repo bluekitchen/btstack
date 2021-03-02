@@ -85,9 +85,7 @@ static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 static hci_con_handle_t connection_handle;
-static uint16_t battery_service_uuid = 0x180F;
-static uint16_t battery_level_characteristic_uuid = 0x2a19;
-static gatt_client_service_t battery_service;
+static uint16_t battery_service_cid;
 static gatt_client_characteristic_t battery_level_characteristic;
     
 static gc_state_t state = TC_IDLE;
@@ -142,12 +140,6 @@ static void dump_characteristic(gatt_client_characteristic_t * characteristic){
     printf("\n");
 }
 
-static void dump_service(gatt_client_service_t * service){
-    printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
-    printUUID(service->uuid128, service->uuid16);
-    printf("\n");
-}
-
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -157,28 +149,31 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     int status;
     uint8_t battery_level;
 
-    switch(state){
-        case TC_W4_SERVICE_RESULT:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_SERVICE_QUERY_RESULT:
-                    gatt_event_service_query_result_get_service(packet, &battery_service);
-                    dump_service(&battery_service);
-                    break;
-                case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
-                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
-                        add_to_blacklist(report.address);
-                        gap_disconnect(connection_handle);
-                        break;  
-                    } 
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
+        return;
+    }
+    
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_NUM_INSTANCES:
+            status = gattservice_subevent_battery_service_num_instances_get_status(packet);
+            switch (status){
+                case ERROR_CODE_SUCCESS:
+                case ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE:
                     state = TC_W4_CHARACTERISTIC_RESULT;
-                    printf("\nSearch for battery level characteristic.\n");
-                    gatt_client_discover_characteristics_for_service_by_uuid16(handle_gatt_client_event, connection_handle, &battery_service, battery_level_characteristic_uuid);
                     break;
                 default:
+                    printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    add_to_blacklist(report.address);
+                    gap_disconnect(connection_handle);
                     break;
             }
             break;
+        default:
+            break;
+    }
+    
+    
+    switch(state){
             
         case TC_W4_CHARACTERISTIC_RESULT:
             switch(hci_event_packet_get_type(packet)){
@@ -257,7 +252,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     UNUSED(size);
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    
+    uint8_t status;
+
     uint8_t event = hci_event_packet_get_type(packet);
     switch (event) {
         case BTSTACK_EVENT_STATE:
@@ -297,8 +293,10 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // initialize gatt client context with handle, and add it to the list of active clients
             // query primary services
             printf("\nSearch for battery service.\n");
-            state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, battery_service_uuid);
+            status = battery_service_client_connect(connection_handle, handle_gatt_client_event, &battery_service_cid);
+            if (status == ERROR_CODE_SUCCESS){
+                state = TC_W4_SERVICE_RESULT;
+            } 
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // unregister listener
@@ -359,6 +357,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // GATT Client setup
     gatt_client_init();
+    battery_service_client_init();
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);

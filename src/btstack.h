@@ -81,6 +81,7 @@
 #include "ble/att_db_util.h"
 #include "ble/att_dispatch.h"
 #include "ble/att_server.h"
+#include "ble/battery_service_client.h"
 #include "ble/gatt-service/battery_service_server.h"
 #include "ble/gatt-service/cycling_power_service_server.h"
 #include "ble/gatt-service/cycling_speed_and_cadence_service_server.h"
