@@ -56,7 +56,6 @@ No build server | [renesas-tb-s1ja-cc256x](https://github.com/bluekitchen/btstac
 No build server | [stm32-wb55xx-nucleo-freertos](https://github.com/bluekitchen/btstack/tree/develop/port/stm32-wb55xx-nucleo-freertos) | [P-NUCLEO-WB55 kit](https://www.st.com/en/evaluation-tools/p-nucleo-wb55.html)
 [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-pic32-harmony-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-pic32-harmony-develop)                |  [pic32-harmony](https://github.com/bluekitchen/btstack/tree/develop/port/pic32-harmony)  | [Microchip's PIC32 Bluetooth Audio Development Kit](https://www.microchip.com/Developmenttools/ProductDetails/DV320032)
 [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-wiced-h4-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-wiced-h4-develop)                           | [wiced-h4](https://github.com/bluekitchen/btstack/tree/develop/port/wiced-h4) | Broadcom/Cypress platforms that support the WICED SDK via H4 UART, e.g. [RedBear Duo](https://www.seeedstudio.com/RedBear-DUO-Wi-Fi-BLE-IoT-Board-p-2635.html) (BCM43438 A1), [Inventek Systems ISM4334x](https://www.inventeksys.com/wifi/wifi-modules/ism4343-wmb-l151/) (BCM43438 A1), [Inventek Systems ISM4343](https://www.inventeksys.com/products-page/wifi-modules/serial-wifi/ism43341-m4g-l44-cu-embedded-serial-to-wifi-ble-nfc-module/) (BCM43340)
-No build server | [wiced-h5](https://github.com/bluekitchen/btstack/tree/develop/port/wiced-h5) | Broadcom platforms that support the WICED SDK via H5 UART, see wiced-h4
 
 
 
@@ -69,7 +68,6 @@ No build server | [libusb-intel](https://github.com/bluekitchen/btstack/tree/dev
 No build server | [posix-h4-da14581](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4-da14581) | Unix-based system connected to Dialog Semiconductor DA14581 via H4 over serial port
 No build server | [posix-h4-da14585](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4-da14585) | Unix-based system connected to Dialog Semiconductor DA14585 via H4 over serial port   
 No build server | [posix-h5](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Bluetooth module via H5 over serial port   
-No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port
 No build server | [qt-h4](https://github.com/bluekitchen/btstack/tree/develop/port/qt-h4) | Unix- or Win32-based [Qt application](https://qt.io) connected to Bluetooth module via H4 over serial port 
 No build server | [qt-usb](https://github.com/bluekitchen/btstack/tree/develop/port/qt-usb) | Unix- or Win32-based [Qt application](https://qt.io) with dedicated USB Bluetooth dongle
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/develop/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
