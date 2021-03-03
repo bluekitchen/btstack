@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_uart_block_posix.c"
+#define __BTSTACK_FILE__ "btstack_uart_posix.c"
 
 /*
  *  btstack_uart_block_posix.c
@@ -410,6 +410,6 @@ static const btstack_uart_block_t btstack_uart_posix = {
     /* void (*set_wakeup_handler)(void (*handler)(void)); */          NULL,
 };
 
-const btstack_uart_block_t * btstack_uart_block_posix_instance(void){
+const btstack_uart_block_t * btstack_uart_posix_instance(void){
 	return &btstack_uart_posix;
 }

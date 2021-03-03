@@ -14,7 +14,7 @@ CORE += \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
 	btstack_stdin_posix.c \
-	btstack_uart_block_posix_pty.c \
+	btstack_uart_posix_pty.c \
 	hci_transport_h2_libusb.c \
 	hci_transport_h4.c \
 	btstack_tlv_posix.c \

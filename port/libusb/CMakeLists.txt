@@ -110,6 +110,9 @@ set (LWIP_PORT
 
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
+file(GLOB SOURCES_SRC_OFF "../../src/hci_transport_*.c")
+list(REMOVE_ITEM SOURCES_SRC   ${SOURCES_SRC_OFF})
+
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
 

@@ -212,8 +212,8 @@ int main(int argc, const char * argv[]){
     const hci_transport_t * transport;
     if (config.device_name){
         // PTY
-        const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-        transport = hci_transport_h4_instance(uart_driver);
+        const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
+        transport = hci_transport_h4_instance_for_uart(uart_driver);
     } else {
         // libusb
         if (usb_path_len){
