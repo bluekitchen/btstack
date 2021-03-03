@@ -54,13 +54,25 @@ extern "C" {
 #endif
 
 /* API_START */
+typedef struct {
+    // service
+    uint16_t start_handle;
+    uint16_t end_handle;
+    
+    // characteristic
+    uint16_t value_handle;
+    uint16_t properties;
+
+    gatt_client_notification_t notification_listener;
+    bool notification_supported;
+} battery_service_t;
 
 typedef enum {
     BATTERY_SERVICE_IDLE,
     BATTERY_SERVICE_W2_QUERY_SERVICE,
     BATTERY_SERVICE_W4_SERVICE_RESULT,
     BATTERY_SERVICE_W4_CHARACTERISTIC_RESULT,
-    BATTERY_SERVICE_W4_BATTERY_DATA
+    BATTERY_SERVICE_W4_BATTERY_DATA,
 } battery_service_state_t;
 
 typedef struct {
@@ -71,9 +83,12 @@ typedef struct {
     battery_service_state_t  state;
     btstack_packet_handler_t client_handler;
 
-    uint8_t battery_services_index;
     uint8_t num_battery_services;
-    gatt_client_service_t services[MAX_NUM_BATTERY_SERVICES];
+    battery_service_t services[MAX_NUM_BATTERY_SERVICES];
+
+    // used for discovering characteristics and polling
+    uint8_t battery_service_index;
+    btstack_timer_source_t poll_timer;
 } battery_service_client_t;
 
 void battery_service_client_init(void);

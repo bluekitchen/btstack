@@ -9095,6 +9095,34 @@ static inline uint8_t gattservice_subevent_battery_service_connected_get_num_ins
 }
 
 /**
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @param event packet
+ * @return cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_battery_service_level_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field sevice_index from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @param event packet
+ * @return sevice_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_battery_service_level_get_sevice_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field level from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @param event packet
+ * @return level
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_battery_service_level_get_level(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

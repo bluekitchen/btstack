@@ -3077,6 +3077,15 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED                     0x04
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param cid
+ * @param sevice_index
+ * @param level
+*/
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL                         0x05
+
 // MAP Meta Event Group
 
 /**
