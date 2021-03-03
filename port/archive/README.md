@@ -1,0 +1,11 @@
+# Archive of earlier ports
+
+The ports in this folder are not recommended for new designs. This does not mean that the target hardware is not
+suitable for new designs, just that the ports would need to rewored/refreshed.
+
+List of ports with reason for move to this archive:
+- MSP430 ports: The ports used the not-maintained version of the community MSP430 gcc port, which does not support more than 64 kB of FLASH RAM.
+  A current port should use the official GCC version sponsored by TI. Individual ports:
+    - [EZ430-RF256x Bluetooth Evaluation Tool for MSP430](https://www.element14.com/community/docs/DOC-72027/l/ez430-rf256x-bluetooth-evaluation-too)
+    - [MSP430F5438 Experimenter Board for MSP430](https://www.element14.com/community/docs/DOC-40373/l/msp430f5438-based-experimenter-board) with [Bluetooth CC2564 Module Evaluation Board](https://www.ti.com/tool/cc2564modnem)
+    - [MSP-EXP430F5529LP LaunchPad](https://www.ti.com/ww/en/launchpad/launchpads-msp430-msp-exp430f5529lp.html#tabs) with [Bluetooth CC2564 Module Evaluation Board](https://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](https://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
