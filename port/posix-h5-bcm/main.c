@@ -82,6 +82,7 @@ static hci_transport_config_uart_t transport_config = {
     921600,  // main baudrate
     0,       // flow control
     NULL,
+    BTSTACK_UART_PARITY_EVEN, // parity
 };
 static btstack_uart_config_t uart_config;
 

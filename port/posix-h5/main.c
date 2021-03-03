@@ -85,6 +85,7 @@ static hci_transport_config_uart_t config = {
     0,  // main baudrate
     1,  // flow control
     NULL,
+    BTSTACK_UART_PARITY_EVEN, // parity
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -224,9 +225,6 @@ int main(int argc, const char * argv[]){
     const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
     const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
 	hci_init(transport, (void*) &config);
-
-    // enable BCSP mode for CSR chipsets - auto detect might not work
-    // hci_transport_h5_enable_bcsp_mode();
 
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
