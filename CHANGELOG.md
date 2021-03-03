@@ -26,6 +26,10 @@ btstack_uart_posix: supports SLIP frames and replaces `btstack_uart_block_posix`
 hci_transport_h5: new more performant H5 implementation that requires `btstack_uart_t` driver with SLIP support.
 POSIX Ports: use new `btstack_uart_posix` implementation
 posix-h5/posix-h5-bcm: use even parity for UART
+Port Archive: moved ports that are not recommended for new designs to port/archive folder:
+  - MSP430: the ports used the older community GCC version without 20-bit support needed for code size > 64kB
+  - Broadcom/Cypress H5: uploading PatchRAM is only possible in H4 mode. It's better to also use H4 in general
+  - PIC32-Harmony: the port used Harmony v1 while Harmony v3 has been out since a while.
 
 ## Release v1.3.1
 
