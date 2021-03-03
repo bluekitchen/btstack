@@ -13,3 +13,5 @@ List of ports with reason for move to this archive:
   using H4 mode and then to start the stack using H5 transport. In addition, several bugs have been observed in H5 mode, e.g. LE Encrypt not wokring. Unless absolutely neccessary, it's better to use H4 mode.
     - Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port
     - Broadcom platforms that support the WICED SDK via H5 UART, see wiced-h4
+- Port for MicroChip PIC32 with Harmony Framework: the original port was for Harmony v1, while there's a Harmony V3 out since 2019
+    - [Microchip's PIC32 Bluetooth Audio Development Kit](https://www.microchip.com/Developmenttools/ProductDetails/DV320032)
