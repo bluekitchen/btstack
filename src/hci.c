@@ -1828,6 +1828,7 @@ static void hci_initializing_run(void){
         default:
             return;
     }
+
 }
 
 static bool hci_initializing_event_handler_command_completed(const uint8_t * packet){
