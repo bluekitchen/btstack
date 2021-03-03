@@ -5843,7 +5843,8 @@ int gap_inquiry_stop(void){
 }
 int gap_inquiry_force_stop(void)
 {
-    hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_CANCELLED;
+    gap_inquiry_stop();
+    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
     hci_run();
     return 0;
 }
