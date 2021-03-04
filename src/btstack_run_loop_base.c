@@ -126,3 +126,15 @@ int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now){
     }
     return delta;
 }
+
+void btstack_run_loop_base_poll_data_sources(void){
+    // poll data sources
+    btstack_data_source_t *ds;
+    btstack_data_source_t *next;
+    for (ds = (btstack_data_source_t *) btstack_run_loop_base_data_sources; ds != NULL ; ds = next){
+        next = (btstack_data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
+        if (ds->flags & DATA_SOURCE_CALLBACK_POLL){
+            ds->process(ds, DATA_SOURCE_CALLBACK_POLL);
+        }
+    }
+}

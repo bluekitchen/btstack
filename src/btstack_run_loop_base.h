@@ -120,6 +120,11 @@ void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * 
  */
 void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
 
+/**
+ * @brief Poll data sources. It calls the procss function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
+ */
+void btstack_run_loop_base_poll_data_sources(void);
+
 #if defined __cplusplus
 }
 #endif
