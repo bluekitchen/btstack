@@ -4,6 +4,7 @@ BTSTACK_ROOT ?= ../..
 CORE += main.c btstack_stdin_windows.c btstack_tlv_posix.c
 
 COMMON  += \
+			btstack_run_loop_base.c      \
 			btstack_run_loop_windows.c   \
 			hci_transport_h4.c           \
 			btstack_uart_block_windows.c \

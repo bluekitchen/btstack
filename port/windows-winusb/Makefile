@@ -3,7 +3,7 @@ BTSTACK_ROOT ?= ../..
 
 CORE += main.c btstack_stdin_windows.c btstack_tlv_posix.c
 
-COMMON  += hci_transport_h2_winusb.c btstack_run_loop_windows.c le_device_db_tlv.c btstack_link_key_db_tlv.c wav_util.c
+COMMON  += hci_transport_h2_winusb.c btstack_run_loop_base.c btstack_run_loop_windows.c le_device_db_tlv.c btstack_link_key_db_tlv.c wav_util.c
 COMMON  += rijndael.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
