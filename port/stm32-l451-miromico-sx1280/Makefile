@@ -70,6 +70,7 @@ ${BTSTACK_ROOT}/src/btstack_memory_pool.c \
 ${BTSTACK_ROOT}/src/btstack_resample.c \
 ${BTSTACK_ROOT}/src/btstack_ring_buffer.c \
 ${BTSTACK_ROOT}/src/btstack_run_loop.c \
+${BTSTACK_ROOT}/src/btstack_run_loop_base.c \
 ${BTSTACK_ROOT}/src/btstack_tlv.c \
 ${BTSTACK_ROOT}/src/btstack_tlv_none.c \
 ${BTSTACK_ROOT}/src/btstack_util.c \
