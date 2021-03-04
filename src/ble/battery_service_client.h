@@ -68,19 +68,19 @@ typedef struct {
 } battery_service_t;
 
 typedef enum {
-    BATTERY_SERVICE_IDLE,
-    BATTERY_SERVICE_W2_QUERY_SERVICE,
-    BATTERY_SERVICE_W4_SERVICE_RESULT,
-    BATTERY_SERVICE_W4_CHARACTERISTIC_RESULT,
-    BATTERY_SERVICE_W4_BATTERY_DATA,
-} battery_service_state_t;
+    BATTERY_SERVICE_CLIENT_STATE_IDLE,
+    BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
+    BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
+    BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    BATTERY_SERVICE_CLIENT_STATE_W4_BATTERY_DATA
+} battery_service_client_state_t;
 
 typedef struct {
     btstack_linked_item_t item;
     
     hci_con_handle_t  con_handle;
     uint16_t          cid;
-    battery_service_state_t  state;
+    battery_service_client_state_t  state;
     btstack_packet_handler_t client_handler;
 
     uint8_t num_battery_services;

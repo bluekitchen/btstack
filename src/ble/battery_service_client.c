@@ -79,7 +79,7 @@ static battery_service_client_t * battery_service_create_client(hci_con_handle_t
         log_error("Not enough memory to create client");
         return NULL;
     }
-    client->state = BATTERY_SERVICE_IDLE;
+    client->state = BATTERY_SERVICE_CLIENT_STATE_IDLE;
     client->cid = cid;
     client->con_handle = con_handle;
     btstack_linked_list_add(&clients, (btstack_linked_item_t *) client);
@@ -147,7 +147,9 @@ static void battery_service_poll_timer_timeout_handler(btstack_timer_source_t * 
     uint16_t battery_service_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
 
     battery_service_client_t * client =  battery_service_get_client_for_cid(battery_service_cid);
-    if (client == NULL) return;
+    if (client == NULL || client->state != BATTERY_SERVICE_CLIENT_STATE_W4_BATTERY_DATA){
+        return;
+    }
 
     uint8_t i;
     for (i = 0; i < client->num_battery_services; i++){
@@ -190,7 +192,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = battery_service_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
-            if (client->state != BATTERY_SERVICE_W4_SERVICE_RESULT) {
+            if (client->state != BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT) {
                 battery_service_emit_connection_established(client, GATT_CLIENT_IN_WRONG_STATE, 0);         
                 break;
             }
@@ -252,16 +254,16 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             status = gatt_event_query_complete_get_att_status(packet);
             
             switch (client->state){
-                case BATTERY_SERVICE_W4_SERVICE_RESULT:
+                case BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
                     if (status != ERROR_CODE_SUCCESS){
                         battery_service_emit_connection_established(client, status, 0);  
-                        client->state = BATTERY_SERVICE_IDLE;
+                        client->state = BATTERY_SERVICE_CLIENT_STATE_IDLE;
                         break;  
                     }
 
                     if (client->num_battery_services == 0){
                         battery_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, 0);  
-                        client->state = BATTERY_SERVICE_IDLE;
+                        client->state = BATTERY_SERVICE_CLIENT_STATE_IDLE;
                         break;   
                     }
 
@@ -270,7 +272,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         client->num_battery_services = MAX_NUM_BATTERY_SERVICES;
                     }
                     
-                    client->state = BATTERY_SERVICE_W4_CHARACTERISTIC_RESULT;
+                    client->state = BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
                     client->battery_service_index = 0;
 
                     gatt_client_discover_characteristics_for_handle_range_by_uuid16(
@@ -281,10 +283,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
                     break;
 
-                case BATTERY_SERVICE_W4_CHARACTERISTIC_RESULT:
+                case BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                     if (status != ERROR_CODE_SUCCESS){
                         battery_service_emit_connection_established(client, status, 0);  
-                        client->state = BATTERY_SERVICE_IDLE;
+                        client->state = BATTERY_SERVICE_CLIENT_STATE_IDLE;
                         break;  
                     }
 
@@ -302,7 +304,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                     // we are done with quering all services
                     battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS, client->num_battery_services);
-                    client->state = BATTERY_SERVICE_W4_BATTERY_DATA;
+                    client->state = BATTERY_SERVICE_CLIENT_STATE_W4_BATTERY_DATA;
 
                     // if there are services without notification, register pool timer, 
                     // othervise register for notifications
@@ -351,8 +353,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 static void battery_service_run_for_client(battery_service_client_t * client){
     uint8_t status;
     switch (client->state){
-        case BATTERY_SERVICE_W2_QUERY_SERVICE:   
-            client->state = BATTERY_SERVICE_W4_SERVICE_RESULT;
+        case BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:   
+            client->state = BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             status = gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, client->con_handle, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
             // TODO handle status
             break;
@@ -380,7 +382,7 @@ uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_pack
     }
 
     client->client_handler = callback; 
-    client->state = BATTERY_SERVICE_W2_QUERY_SERVICE;
+    client->state = BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     battery_service_run_for_client(client);
     return ERROR_CODE_SUCCESS;
 }
