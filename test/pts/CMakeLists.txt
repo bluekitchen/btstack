@@ -37,6 +37,16 @@ if (LDAC_ENCODER_FOUND)
 	add_compile_definitions(HAVE_LDAC_ENCODER)
 endif()
 
+# ldac decoder
+pkg_check_modules(LDAC_DECODER libldacdec)
+if (LDAC_DECODER_FOUND)
+    message("HAVE_LDAC_DECODER")
+    include_directories(${LDAC_DECODER_INCLUDE_DIRS})
+    link_directories(${LDAC_DECODER_LIBRARY_DIRS})
+    link_libraries(${LDAC_DECODER_LIBRARIES})
+    add_compile_definitions(HAVE_LDAC_DECODER)
+endif()
+
 # openaptx
 pkg_check_modules(APTX libopenaptx)
 if (APTX_FOUND)
