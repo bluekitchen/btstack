@@ -11,11 +11,13 @@ link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
 # portaudio
-pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-include_directories(${PORTAUDIO_INCLUDE_DIRS})
-link_directories(${PORTAUDIO_LIBRARY_DIRS})
-link_libraries(${PORTAUDIO_LIBRARIES})
-add_compile_definitions(HAVE_PORTAUDIO)
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+if(PORTAUDIO_FOUND)
+    include_directories(${PORTAUDIO_INCLUDE_DIRS})
+    link_directories(${PORTAUDIO_LIBRARY_DIRS})
+    link_libraries(${PORTAUDIO_LIBRARIES})
+    add_compile_definitions(HAVE_PORTAUDIO)
+endif()
 
 # fdk-aac
 pkg_check_modules(FDK_AAC fdk-aac)
