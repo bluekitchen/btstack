@@ -203,7 +203,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             if (app_state != APP_STATE_W4_CONNECT) return;
             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
             
-            status = battery_service_client_connect(connection_handle, handle_gatt_client_event, &battery_service_cid);
+            status = battery_service_client_connect(connection_handle, handle_gatt_client_event, 2000, &battery_service_cid);
             btstack_assert(status == ERROR_CODE_SUCCESS);
 
             app_state = APP_STATE_CONNECTED;

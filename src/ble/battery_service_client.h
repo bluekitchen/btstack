@@ -88,13 +88,14 @@ typedef struct {
 
     // used for discovering characteristics and polling
     uint8_t battery_service_index;
+    uint32_t poll_interval_ms;
     btstack_timer_source_t poll_timer;
 } battery_service_client_t;
 
 void battery_service_client_init(void);
 void battery_service_client_deinit(void);
 
-uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t callback, uint16_t * battery_service_cid);
+uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t callback, uint32_t poll_interval_ms, uint16_t * battery_service_cid);
 uint8_t battery_service_client_disconnect(uint16_t battery_service_cid);
 
 /* API_END */

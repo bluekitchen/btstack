@@ -57,8 +57,6 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
-#define BATTERY_LEVEL_POLL_TIMEOUT 2000
-
 static btstack_linked_list_t clients;
 static uint16_t battery_service_cid_counter = 0;
 
@@ -170,7 +168,7 @@ static void battery_service_poll_timer_start(battery_service_client_t * client){
     btstack_run_loop_set_timer_handler(&client->poll_timer,  battery_service_poll_timer_timeout_handler);
     btstack_run_loop_set_timer_context(&client->poll_timer, (void *)(uintptr_t)client->cid);
 
-    btstack_run_loop_set_timer(&client->poll_timer, BATTERY_LEVEL_POLL_TIMEOUT); 
+    btstack_run_loop_set_timer(&client->poll_timer, client->poll_interval_ms); 
     btstack_run_loop_add_timer(&client->poll_timer);
 }
 
@@ -330,7 +328,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         }
                     }
 
-                    if (register_poll_timer){
+                    if (register_poll_timer && client->poll_interval_ms > 0){
                         battery_service_poll_timer_start(client);
                     }
 
@@ -360,7 +358,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
     }
 }
 
-uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t callback, uint16_t * battery_service_cid){
+uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t callback, uint32_t poll_interval_ms, uint16_t * battery_service_cid){
     btstack_assert(callback != NULL);
 
     battery_service_client_t * client = battery_service_get_client_for_con_handle(con_handle);
@@ -379,6 +377,7 @@ uint8_t battery_service_client_connect(hci_con_handle_t con_handle, btstack_pack
     }
 
     client->client_handler = callback; 
+    client->poll_interval_ms = poll_interval_ms;
     client->state = BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
     battery_service_run_for_client(client);
     return ERROR_CODE_SUCCESS;
