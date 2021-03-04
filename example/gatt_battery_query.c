@@ -97,7 +97,7 @@ static int blacklist_contains(bd_addr_t addr){
 }
 
 static void add_to_blacklist(bd_addr_t addr){
-    printf("%s added to blacklist (no battery service found\n", bd_addr_to_str(addr));
+    printf("%s added to blacklist (no battery service found).\n", bd_addr_to_str(addr));
     bd_addr_copy(blacklist[blacklist_index], addr);
     blacklist_index = (blacklist_index + 1) % blacklist_size();
 }
@@ -132,11 +132,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             status = gattservice_subevent_battery_service_connected_get_status(packet);
             switch (status){
                 case ERROR_CODE_SUCCESS:
-                    printf("Battery service client connected - found %d services", 
+                    printf("Battery service client connected, found %d services.\n", 
                         gattservice_subevent_battery_service_connected_get_num_instances(packet));
                     break;
                 default:
-                    printf("Battery service client connection failed - Error status 0x%02x.\n", status);
+                    printf("Battery service client connection failed, err 0x%02x.\n", status);
                     add_to_blacklist(report.address);
                     gap_disconnect(connection_handle);
                     break;
@@ -144,7 +144,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
 
         case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL:
-            printf("Service index: %d, Battery level %d \n", 
+            printf("Service index: %d, Battery level: %d\n", 
                 gattservice_subevent_battery_service_level_get_sevice_index(packet), 
                 gattservice_subevent_battery_service_level_get_level(packet));
             break;

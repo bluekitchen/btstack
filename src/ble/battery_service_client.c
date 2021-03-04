@@ -63,6 +63,7 @@ static btstack_linked_list_t clients;
 static uint16_t battery_service_cid_counter = 0;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void battery_service_poll_timer_start(battery_service_client_t * client);
 
 static uint16_t battery_service_get_next_cid(void){
     if (battery_service_cid_counter == 0xffff) {
@@ -162,6 +163,7 @@ static void battery_service_poll_timer_timeout_handler(btstack_timer_source_t * 
             gatt_client_read_value_of_characteristic(handle_gatt_client_event, client->con_handle, &characteristic);
         }
     } 
+    battery_service_poll_timer_start(client);
 }
 
 static void battery_service_poll_timer_start(battery_service_client_t * client){
@@ -186,9 +188,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
-            // ignore if wrong (event type 1, length 1, handle 2, service 6)
-            if (size != 10) break;
-
             client = battery_service_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
@@ -206,9 +205,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
         
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-            // ignore if wrong (event type 1, length 1, handle 2, chr 10)
-            if (size != 14) break;
-
             client = battery_service_get_client_for_con_handle(gatt_event_characteristic_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
@@ -337,6 +333,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (register_poll_timer){
                         battery_service_poll_timer_start(client);
                     }
+
                     break;
                 default:
                     break;
