@@ -3069,19 +3069,21 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param cid
  * @param status
  * @param num_instances
+ * @param poll_bitmap
 */
 #define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED                     0x04
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param cid
  * @param sevice_index
+ * @param att_status  see ATT errors in bluetooth.h  
  * @param level
 */
 #define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL                         0x05

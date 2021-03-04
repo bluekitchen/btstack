@@ -121,8 +121,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);
     UNUSED(size);
 
-    int status;
-    
+    uint8_t status;
+    uint8_t att_status;
+
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
         return;
     }
@@ -132,8 +133,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             status = gattservice_subevent_battery_service_connected_get_status(packet);
             switch (status){
                 case ERROR_CODE_SUCCESS:
-                    printf("Battery service client connected, found %d services.\n", 
-                        gattservice_subevent_battery_service_connected_get_num_instances(packet));
+                    printf("Battery service client connected, found %d services, poll bitmap 0x%02x\n", 
+                        gattservice_subevent_battery_service_connected_get_num_instances(packet),
+                        gattservice_subevent_battery_service_connected_get_poll_bitmap(packet));
                     break;
                 default:
                     printf("Battery service client connection failed, err 0x%02x.\n", status);
@@ -144,9 +146,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
 
         case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL:
-            printf("Service index: %d, Battery level: %d\n", 
-                gattservice_subevent_battery_service_level_get_sevice_index(packet), 
-                gattservice_subevent_battery_service_level_get_level(packet));
+            att_status = gattservice_subevent_battery_service_level_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Battery level read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Service index: %d, Battery level: %d\n", 
+                    gattservice_subevent_battery_service_level_get_sevice_index(packet), 
+                    gattservice_subevent_battery_service_level_get_level(packet));
+                    
+            }
             break;
 
         default:

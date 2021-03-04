@@ -9093,6 +9093,15 @@ static inline uint8_t gattservice_subevent_battery_service_connected_get_status(
 static inline uint8_t gattservice_subevent_battery_service_connected_get_num_instances(const uint8_t * event){
     return event[6];
 }
+/**
+ * @brief Get field poll_bitmap from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED
+ * @param event packet
+ * @return poll_bitmap
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_battery_service_connected_get_poll_bitmap(const uint8_t * event){
+    return event[7];
+}
 
 /**
  * @brief Get field cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
@@ -9113,13 +9122,22 @@ static inline uint8_t gattservice_subevent_battery_service_level_get_sevice_inde
     return event[5];
 }
 /**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_battery_service_level_get_att_status(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field level from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
  * @param event packet
  * @return level
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_battery_service_level_get_level(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 
 /**
