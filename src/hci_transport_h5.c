@@ -43,6 +43,10 @@
  *  HCI Transport API implementation for basic H5 protocol based on UART driver with SLIP support
  */
 
+#include "btstack_config.h"
+
+#ifdef ENABLE_H5
+
 // #define ENABLE_LOG_DEBUG
 
 #include <inttypes.h>
@@ -900,3 +904,5 @@ void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms){
 void hci_transport_h5_enable_bcsp_mode(void){
     hci_transport_bcsp_mode = 1;
 }
+
+#endif
