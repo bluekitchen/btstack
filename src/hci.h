@@ -135,13 +135,19 @@ extern "C" {
     #endif
 #endif
 
-// additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
+// additional pre-buffer space for packets to Bluetooth module
+// - H4 requires 1 byte for the packet type
+// - h5 requires 4 bytes for H5 header
 #ifndef HCI_OUTGOING_PRE_BUFFER_SIZE
-#ifdef HAVE_HOST_CONTROLLER_API
-#define HCI_OUTGOING_PRE_BUFFER_SIZE 0
-#else
-#define HCI_OUTGOING_PRE_BUFFER_SIZE 1
-#endif
+    #ifdef HAVE_HOST_CONTROLLER_API
+        #define HCI_OUTGOING_PRE_BUFFER_SIZE 0
+    #else
+        #ifdef ENABLE_H5
+            #define HCI_OUTGOING_PRE_BUFFER_SIZE 4
+        #else
+            #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
+        #endif
+    #endif
 #endif
 
 // BNEP may uncompress the IP Header by 16 bytes, GATT Client requires two additional bytes for long characteristic reads
