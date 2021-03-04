@@ -151,7 +151,7 @@ static void battery_service_poll_timer_timeout_handler(btstack_timer_source_t * 
 
     uint8_t i;
     for (i = 0; i < client->num_battery_services; i++){
-        if (!client->services[i].notification_supported){
+        if (!client->services[i].notification_enabled){
             gatt_client_characteristic_t characteristic;
             characteristic.value_handle = client->services[i].value_handle;
             characteristic.properties   = client->services[i].properties;
@@ -321,7 +321,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         
                         // notification supported, register for value updates
                         if (status == ERROR_CODE_SUCCESS){
-                            client->services[i].notification_supported = true;
+                            client->services[i].notification_enabled = true;
                             gatt_client_listen_for_characteristic_value_updates(
                                 &client->services[i].notification_listener, 
                                 handle_gatt_client_event, 

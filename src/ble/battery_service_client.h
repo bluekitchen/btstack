@@ -64,7 +64,7 @@ typedef struct {
     uint16_t properties;
 
     gatt_client_notification_t notification_listener;
-    bool notification_supported;
+    bool notification_enabled;
 } battery_service_t;
 
 typedef enum {
