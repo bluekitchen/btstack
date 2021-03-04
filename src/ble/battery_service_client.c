@@ -391,9 +391,21 @@ uint8_t battery_service_client_disconnect(uint16_t battery_service_cid){
         return ERROR_CODE_SUCCESS;
     }
 
-    // TODO
     // remove timer
+    btstack_run_loop_remove_timer(&client->poll_timer);
+
     // stop listening
+    int i;
+    for (i = 0; i < client->num_battery_services; i++){
+        if (client->services[i].notification_enabled){
+            client->services[i].notification_enabled = false;
+            gatt_client_stop_listening_for_characteristic_value_updates(&client->services[i].notification_listener);
+        }
+    }
+
+    // finalize connections
+    btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
+    btstack_memory_battery_service_client_free(client);
     return ERROR_CODE_SUCCESS;
 }
 
