@@ -965,6 +965,12 @@ static void show_usage(void){
 #ifdef HAVE_AAC_FDK
     printf(", MPEG AAC");
 #endif
+#ifdef HAVE_APTX
+    printf(", aptX, aptX HD");
+#endif
+#ifdef HAVE_LDAC_DECODER
+    printf(", LDAC");
+#endif
     printf("\n");
     printf("c      - create connection to addr %s\n", device_addr_string);
     printf("d      - discover stream endpoints\n");
