@@ -15,6 +15,7 @@ btstack_uart: `btstack_uart_t` interface extends `btstack_uart_block_t`:
   - supports sending and receiving SLIP frames for HCI H5
   - suppports odd parity as well
   - `hci_transport_h4` and chipset drivers have new functions to pass provide `btstack_uart_t`
+
 btstack_uart_slip_wrapper: wrapper that implements SLIP functionality for existing `btstack_uart_block` drivers.
 hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
     
@@ -31,6 +32,8 @@ Port Archive: moved ports that are not recommended for new designs to port/archi
   - Broadcom/Cypress H5: uploading PatchRAM is only possible in H4 mode. It's better to also use H4 in general
   - PIC32-Harmony: the port used Harmony v1 while Harmony v3 has been out since a while.
 
+btstack_run_loop_base: used for posix, embedded, freertos, nrf5-zephyr, wiced, windows run loop implementations.
+    
 ## Release v1.3.1
 
 ### Added
