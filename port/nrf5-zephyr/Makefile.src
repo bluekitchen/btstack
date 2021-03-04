@@ -6,6 +6,7 @@ obj-y +=  \
 	btstack_memory_pool.o \
 	btstack_ring_buffer.o \
 	btstack_run_loop.o \
+	btstack_run_loop_base.o \
     btstack_tlv.o  \
 	btstack_util.o \
 	hci.o \
