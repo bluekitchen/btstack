@@ -1903,6 +1903,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
                 hci_init_done();
                 return;
             }
+            hci_stack->substate = HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM;
             break;
 
 #else /* !ENABLE_SCO_OVER_HCI */
