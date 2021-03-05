@@ -83,8 +83,9 @@ GATT_SERVER += \
 	att_server.c        	    \
 
 GATT_CLIENT += \
-	gatt_client.c        	    \
-	battery_service_client.c 	\
+	gatt_client.c        	    			\
+	battery_service_client.c 				\
+	device_information_service_client.c 	\
 
 PAN += \
 	pan.c \
@@ -213,28 +214,29 @@ EXAMPLES_CLASSIC_ONLY =     \
 
 # List of Examples that only use Bluetooth LE
 
-EXAMPLES_LE_ONLY=           \
-	ancs_client_demo        \
-	att_delayed_response    \
-	gap_le_advertisements   \
-	gatt_battery_query      \
-	gatt_browser            \
-	gatt_counter            \
-	gatt_heart_rate_client  \
-	gatt_streamer_server    \
-	hog_keyboard_demo       \
-	hog_mouse_demo          \
-	hog_boot_host_demo      \
-	le_data_channel_client  \
-	le_data_channel_server  \
-	le_mitm                 \
-	le_streamer_client      \
-	mesh_node_demo          \
-	nordic_spp_le_counter   \
-	nordic_spp_le_streamer  \
-	sm_pairing_central      \
-	sm_pairing_peripheral   \
-	ublox_spp_le_counter    \
+EXAMPLES_LE_ONLY=           		\
+	ancs_client_demo        		\
+	att_delayed_response    		\
+	gap_le_advertisements   		\
+	gatt_battery_query      		\
+	gatt_browser            		\
+	gatt_counter            		\
+	gatt_device_information_query	\
+	gatt_heart_rate_client  		\
+	gatt_streamer_server    		\
+	hog_boot_host_demo      		\
+	hog_keyboard_demo       		\
+	hog_mouse_demo          		\
+	le_data_channel_client  		\
+	le_data_channel_server  		\
+	le_mitm                 		\
+	le_streamer_client      		\
+	mesh_node_demo          		\
+	nordic_spp_le_counter   		\
+	nordic_spp_le_streamer  		\
+	sm_pairing_central      		\
+	sm_pairing_peripheral   		\
+	ublox_spp_le_counter    		\
 
 # List of Examples that use Bluetooth BR/EDR/LE = Dual Mode
 
@@ -246,23 +248,24 @@ EXAMPLES_DUAL_MODE=         \
 
 # List of GATT files used by either LE_ONLY or DUAL_MODE examples
 
-EXAMPLES_GATT_FILES =           \
-	att_delayed_response.gatt   \
-	ancs_client_demo.gatt       \
-	gatt_battery_query.gatt     \
-	gatt_browser.gatt           \
-	gatt_counter.gatt           \
-	gatt_streamer_server.gatt   \
-	hog_keyboard_demo.gatt      \
-	hog_mouse_demo.gatt         \
-	le_data_channel_server.gatt \
-	nordic_spp_le_counter.gatt  \
-	nordic_spp_le_streamer.gatt \
-	sm_pairing_central.gatt     \
-	sm_pairing_peripheral.gatt  \
-	spp_and_gatt_counter.gatt   \
-	spp_and_gatt_streamer.gatt  \
-	ublox_spp_le_counter.gatt   \
+EXAMPLES_GATT_FILES =           		\
+	ancs_client_demo.gatt       		\
+	att_delayed_response.gatt   		\
+	gatt_battery_query.gatt     		\
+	gatt_browser.gatt           		\
+	gatt_counter.gatt           		\
+	gatt_device_information_query.gatt 	\
+	gatt_streamer_server.gatt   		\
+	hog_keyboard_demo.gatt      		\
+	hog_mouse_demo.gatt         		\
+	le_data_channel_server.gatt 		\
+	nordic_spp_le_counter.gatt  		\
+	nordic_spp_le_streamer.gatt 		\
+	sm_pairing_central.gatt     		\
+	sm_pairing_peripheral.gatt  		\
+	spp_and_gatt_counter.gatt   		\
+	spp_and_gatt_streamer.gatt  		\
+	ublox_spp_le_counter.gatt  			\
 
 # .h for .gatt
 EXAMPLES_GATT_H_FILES = $(EXAMPLES_GATT_FILES:.gatt=.h)
@@ -378,6 +381,9 @@ gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_
 
 gatt_battery_query: gatt_battery_query.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_battery_query.c
 	${CC} $(filter-out gatt_battery_query.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gatt_device_information_query: gatt_device_information_query.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_device_information_query.c
+	${CC} $(filter-out gatt_device_information_query.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ancs_client.c ancs_client_demo.c
 	${CC} $(filter-out ancs_client_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@

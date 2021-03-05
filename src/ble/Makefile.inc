@@ -6,6 +6,8 @@ SRC_BLE_FILES = \
     att_db_util.c \
     att_dispatch.c \
     att_server.c \
+    battery_service_client.c \
+    device_information_service_client.c \
     gatt_client.c \
     hids_client.c \
     le_device_db_memory.c \
