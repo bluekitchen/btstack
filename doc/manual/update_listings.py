@@ -39,7 +39,7 @@ list_of_examples = {
     "HID"         : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hid_host_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"], ["hog_boot_host_demo"]],
     
     "Low Energy"  : [["gap_le_advertisements"], ["gatt_browser"], ["gatt_counter"], ["gatt_streamer_server"], 
-                    ["gatt_battery_query"], ["gatt_heart_rate_client"], 
+                    ["gatt_battery_query"], ["gatt_device_information_query"], ["gatt_heart_rate_client"], 
                     ["nordic_spp_le_counter"], ["nordic_spp_le_streamer"], ["ublox_spp_le_counter"], 
                     ["sm_pairing_central"], ["sm_pairing_peripheral"], 
                     ["le_data_channel_client"], ["le_data_channel_server"], 

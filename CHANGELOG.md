@@ -18,7 +18,9 @@ btstack_uart: `btstack_uart_t` interface extends `btstack_uart_block_t`:
 
 btstack_uart_slip_wrapper: wrapper that implements SLIP functionality for existing `btstack_uart_block` drivers.
 hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
-    
+GATT Client: Battery Service Client 
+GATT Client: Device Information Service Client 
+
 ### Fixed
 
 ### Changed

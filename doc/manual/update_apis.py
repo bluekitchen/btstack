@@ -26,6 +26,8 @@ apis = [
     ["src/ble/ancs_client.h", "ANCS Client", "ancsClient"],
     ["src/ble/att_db_util.h", "ATT Database", "attDb"],
     ["src/ble/att_server.h", "ATT Server", "attServer"],
+    ["src/ble/battery_service_client.h", "Battery Service Client", "gattclient_battery"],
+    ["src/ble/device_information_service_client.h", "Device Information Service Client", "gattclient_device_information"],
     ["src/ble/gatt_client.h", "GATT Client", "gattClient"],
     ["src/ble/le_device_db.h", "Device Database", "leDeviceDb"],
     ["src/ble/le_device_db_tlv.h", "Device Database TLV", "leDeviceDbTLV"],
