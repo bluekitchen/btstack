@@ -120,12 +120,109 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);
     UNUSED(size);
 
+    uint8_t att_status = 0;
 
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
         return;
     }
     
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME:
+            att_status = gattservice_subevent_device_information_manufacturer_name_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Manufacturer Name read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Manufacturer Name: %s\n", gattservice_subevent_device_information_manufacturer_name_get_value(packet));
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER:
+            att_status = gattservice_subevent_device_information_model_number_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Model Number read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Model Number:     %s\n", gattservice_subevent_device_information_model_number_get_value(packet));
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER:
+            att_status = gattservice_subevent_device_information_serial_number_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Serial Number read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Serial Number:    %s\n", gattservice_subevent_device_information_serial_number_get_value(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION:
+            att_status = gattservice_subevent_device_information_hardware_revision_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Hardware Revision read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Hardware Revision: %s\n", gattservice_subevent_device_information_hardware_revision_get_value(packet));
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION:
+            att_status = gattservice_subevent_device_information_firmware_revision_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Firmware Revision read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Firmware Revision: %s\n", gattservice_subevent_device_information_firmware_revision_get_value(packet));
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION:
+            att_status = gattservice_subevent_device_information_software_revision_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Software Revision read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Software Revision: %s\n", gattservice_subevent_device_information_software_revision_get_value(packet));
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID:
+            att_status = gattservice_subevent_device_information_system_id_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("System ID read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                uint32_t manufacturer_identifier_low  = gattservice_subevent_device_information_system_id_get_manufacturer_id_low(packet);
+                uint8_t  manufacturer_identifier_high = gattservice_subevent_device_information_system_id_get_manufacturer_id_high(packet);
+
+                printf("Manufacturer ID:  0x%02x%08x\n",  manufacturer_identifier_high, manufacturer_identifier_low);   
+                printf("Organizationally Unique ID:  0x%06x\n", gattservice_subevent_device_information_system_id_get_organizationally_unique_id(packet));           
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION:
+            att_status = gattservice_subevent_device_information_ieee_regulatory_certification_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("IEEE Regulatory Certification read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("value_a:          0x%04x\n", gattservice_subevent_device_information_ieee_regulatory_certification_get_value_a(packet)); 
+                printf("value_b:          0x%04x\n", gattservice_subevent_device_information_ieee_regulatory_certification_get_value_b(packet)); 
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID:
+            att_status = gattservice_subevent_device_information_pnp_id_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("PNP ID read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Vendor Source ID: 0x%02x\n", gattservice_subevent_device_information_pnp_id_get_vendor_source_id(packet)); 
+                printf("Vendor  ID:       0x%04x\n", gattservice_subevent_device_information_pnp_id_get_vendor_id(packet)); 
+                printf("Product ID:       0x%04x\n", gattservice_subevent_device_information_pnp_id_get_product_id(packet)); 
+                printf("Product Version:  0x%04x\n", gattservice_subevent_device_information_pnp_id_get_product_version(packet)); 
+            }
+            break;
+        
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE:
+            att_status = gattservice_subevent_device_information_serial_number_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Query failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Query done\n");
+            }
         
         default:
             break;
@@ -185,7 +282,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             btstack_assert(status == ERROR_CODE_SUCCESS);
 
             app_state = APP_STATE_CONNECTED;
-            printf("Device Information service queried.\n");
+            printf("Device Information connected.\n");
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:

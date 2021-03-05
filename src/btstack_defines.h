@@ -3155,9 +3155,9 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  * @param att_status
- * @param manufacturer_identifier_low
- * @param manufacturer_identifier_high
- * @param organizationally_unique_identifier
+ * @param manufacturer_id_low
+ * @param manufacturer_id_high
+ * @param organizationally_unique_id
  */
 #define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID                  0x0D
 
@@ -3166,10 +3166,10 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  * @param att_status
- * @param device_information_ieee_regulatory_certification_value_a
- * @param device_information_ieee_regulatory_certification_value_b
+ * @param value_a
+ * @param value_b
  */
-#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST                  0x0E
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION     0x0E
 
 /**
  * @format 1H11222

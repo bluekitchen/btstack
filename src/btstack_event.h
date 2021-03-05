@@ -9346,67 +9346,67 @@ static inline uint8_t gattservice_subevent_device_information_system_id_get_att_
     return event[5];
 }
 /**
- * @brief Get field manufacturer_identifier_low from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
+ * @brief Get field manufacturer_id_low from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
  * @param event packet
- * @return manufacturer_identifier_low
+ * @return manufacturer_id_low
  * @note: btstack_type 4
  */
-static inline uint32_t gattservice_subevent_device_information_system_id_get_manufacturer_identifier_low(const uint8_t * event){
+static inline uint32_t gattservice_subevent_device_information_system_id_get_manufacturer_id_low(const uint8_t * event){
     return little_endian_read_32(event, 6);
 }
 /**
- * @brief Get field manufacturer_identifier_high from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
+ * @brief Get field manufacturer_id_high from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
  * @param event packet
- * @return manufacturer_identifier_high
+ * @return manufacturer_id_high
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_device_information_system_id_get_manufacturer_identifier_high(const uint8_t * event){
+static inline uint8_t gattservice_subevent_device_information_system_id_get_manufacturer_id_high(const uint8_t * event){
     return event[10];
 }
 /**
- * @brief Get field organizationally_unique_identifier from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
+ * @brief Get field organizationally_unique_id from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID
  * @param event packet
- * @return organizationally_unique_identifier
+ * @return organizationally_unique_id
  * @note: btstack_type 3
  */
-static inline uint32_t gattservice_subevent_device_information_system_id_get_organizationally_unique_identifier(const uint8_t * event){
+static inline uint32_t gattservice_subevent_device_information_system_id_get_organizationally_unique_id(const uint8_t * event){
     return little_endian_read_24(event, 11);
 }
 
 /**
- * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION
  * @param event packet
  * @return con_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t gattservice_subevent_device_information_ieee_11073_20601_regulatory_certification_data_list_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t gattservice_subevent_device_information_ieee_regulatory_certification_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION
  * @param event packet
  * @return att_status
  * @note: btstack_type 1
  */
-static inline uint8_t gattservice_subevent_device_information_ieee_11073_20601_regulatory_certification_data_list_get_att_status(const uint8_t * event){
+static inline uint8_t gattservice_subevent_device_information_ieee_regulatory_certification_get_att_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field device_information_ieee_regulatory_certification_value_a from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST
+ * @brief Get field value_a from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION
  * @param event packet
- * @return device_information_ieee_regulatory_certification_value_a
+ * @return value_a
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_device_information_ieee_11073_20601_regulatory_certification_data_list_get_device_information_ieee_regulatory_certification_value_a(const uint8_t * event){
+static inline uint16_t gattservice_subevent_device_information_ieee_regulatory_certification_get_value_a(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
- * @brief Get field device_information_ieee_regulatory_certification_value_b from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST
+ * @brief Get field value_b from event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION
  * @param event packet
- * @return device_information_ieee_regulatory_certification_value_b
+ * @return value_b
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_device_information_ieee_11073_20601_regulatory_certification_data_list_get_device_information_ieee_regulatory_certification_value_b(const uint8_t * event){
+static inline uint16_t gattservice_subevent_device_information_ieee_regulatory_certification_get_value_b(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
 
