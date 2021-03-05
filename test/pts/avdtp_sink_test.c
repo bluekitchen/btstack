@@ -419,7 +419,7 @@ static void handle_l2cap_media_data_packet_aac(uint8_t *packet, uint16_t size){
 
 static void handle_l2cap_media_data_packet_aptx(uint8_t *packet, uint16_t size) {
 #ifdef HAVE_APTX
-    uint32_t written;
+    size_t written;
     int16_t decode_buf16[2048 * 2]; // 2 == num_channel
     unsigned char decode_buf8[2048 * 2 * 2];
     aptx_decode(aptx_handle, packet, size, decode_buf8, sizeof(decode_buf8), &written);
@@ -434,7 +434,7 @@ static void handle_l2cap_media_data_packet_aptx(uint8_t *packet, uint16_t size) 
 static void handle_l2cap_media_data_packet_aptxhd(uint8_t *packet, uint16_t size) {
 #ifdef HAVE_APTX
     uint16_t pos = 0;
-    uint32_t written;
+    size_t written;
     int16_t decode_buf16[2048 * 2]; // 2 == num_channel
     unsigned char decode_buf8[2048 * 2 * 2];
     avdtp_media_packet_header_t media_header;
