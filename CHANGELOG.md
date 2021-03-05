@@ -31,10 +31,11 @@ Port Archive: moved ports that are not recommended for new designs to port/archi
   - MSP430: the ports used the older community GCC version without 20-bit support needed for code size > 64kB
   - Broadcom/Cypress H5: uploading PatchRAM is only possible in H4 mode. It's better to also use H4 in general
   - PIC32-Harmony: the port used Harmony v1 while Harmony v3 has been out since a while.
+Run Loop: `btstack_run_loop_base.c` used in most platform run loop implementations
+  - required for posix, embedded, freertos, nrf5-zephyr, wiced, windows builds
 
-btstack_run_loop_base: used for posix, embedded, freertos, nrf5-zephyr, wiced, windows run loop implementations.
-    
-## Release v1.3.1
+
+## Release v1.3.2
 
 ### Added
 GAP: support for Classic Out-of-Band (OOB) pairing via `gap_ssp_remote_oob_data` with `ENABLE_CLASSIC_OOB_PAIRING`
