@@ -41,36 +41,12 @@
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "bluetooth.h"
-#include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
 
 
 #if defined __cplusplus
 extern "C" {
 #endif
-
-typedef enum {
-    DEVICE_INFORMATION_SERVICE_CLIENT_STATE_IDLE,
-    DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE,
-    DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
-    DEVICE_INFORMATION_SERVICE_CLIENT_STATE_CONNECTED
-} device_information_service_client_state_t;
-
-
-typedef struct {
-    // service
-    uint16_t start_handle;
-    uint16_t end_handle;
-} device_information_service_t;
-
-
-typedef struct {
-    btstack_linked_item_t item;
-    
-    hci_con_handle_t  con_handle;
-    device_information_service_client_state_t  state;
-    btstack_packet_handler_t client_handler;
-} device_information_service_client_t;
 
 /* API_START */
 
@@ -80,9 +56,24 @@ typedef struct {
 void device_information_service_client_init(void);
 
 /**
- * @brief Query Device Information Service. 
+ * @brief Query Device Information Service. The client will query the remote service and emit events: 
+ *
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER     
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER    
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID        
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST
+ * - GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID  
+ *
+ * Event GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE is received when all queries are done, of if service was not found.
+ * The status field of this event indicated ATT errors (see bluetooth.h). 
+ *
  * @param con_handle
  * @param packet_handler
+ * @return status ERROR_CODE_SUCCESS on success, otherwise GATT_CLIENT_IN_WRONG_STATE if query is already in progress
  */
 uint8_t device_information_service_client_query(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler);
 
