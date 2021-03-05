@@ -83,16 +83,16 @@ typedef struct {
 static device_information_service_client_t device_information_service_client;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void device_information_service_emit_string_value(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len);
-static void device_information_service_emit_system_id(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len);
-static void device_information_service_emit_certification_data_list(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len);
-static void device_information_service_emit_pnp_id(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len);
+static void device_information_service_emit_string_value(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
+static void device_information_service_emit_system_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
+static void device_information_service_emit_certification_data_list(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
+static void device_information_service_emit_pnp_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 
 // list of uuids and how they are reported as events
 static struct device_information_characteristic {
     uint16_t uuid;
     uint8_t  subevent;
-    void (*handle_value)(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len);
+    void (*handle_value)(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 } device_information_characteristics[] = {
     {ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER, device_information_service_emit_string_value},
@@ -136,8 +136,8 @@ static void device_information_service_emit_query_done(device_information_servic
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void device_information_service_emit_string_value(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len){
-    uint8_t event[5 + DEVICE_INFORMATION_MAX_STRING_LEN + 1];
+static void device_information_service_emit_string_value(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len){
+    uint8_t event[6 + DEVICE_INFORMATION_MAX_STRING_LEN + 1];
     int pos = 0;
     
     event[pos++] = HCI_EVENT_GATTSERVICE_META;
@@ -145,6 +145,7 @@ static void device_information_service_emit_string_value(device_information_serv
     event[pos++] = subevent;
     little_endian_store_16(event, pos, client->con_handle);
     pos += 2;
+    event[pos++] = att_status;
 
     uint16_t bytes_to_copy = btstack_min(value_len, DEVICE_INFORMATION_MAX_STRING_LEN);
     memcpy((char*)&event[pos], value, bytes_to_copy);
@@ -155,8 +156,42 @@ static void device_information_service_emit_string_value(device_information_serv
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
-static void device_information_service_emit_system_id(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len){
-    if (value_len != 13) return;
+static void device_information_service_emit_system_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len){
+    if (value_len != 8) return;
+
+    uint8_t event[14];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subevent;
+    little_endian_store_16(event, pos, client->con_handle);
+    pos += 2;
+    event[pos++] = att_status;
+    memcpy(event+pos, value, 8);
+    pos += 8;
+    
+    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void device_information_service_emit_certification_data_list(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len){
+    if (value_len != 4) return;
+
+    uint8_t event[10];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subevent;
+    little_endian_store_16(event, pos, client->con_handle);
+    pos += 2;
+    event[pos++] = att_status;
+    memcpy(event + pos, value, 4);
+    pos += 4;
+    
+    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void device_information_service_emit_pnp_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len){
+    if (value_len != 7) return;
 
     uint8_t event[13];
     uint16_t pos = 0;
@@ -165,43 +200,9 @@ static void device_information_service_emit_system_id(device_information_service
     event[pos++] = subevent;
     little_endian_store_16(event, pos, client->con_handle);
     pos += 2;
-    
-    memcpy(event+pos, value, 8);
-    pos += 8;
-    
-    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void device_information_service_emit_certification_data_list(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len){
-    if (value_len != 9) return;
-
-    uint8_t event[9];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = subevent;
-    little_endian_store_16(event, pos, client->con_handle);
-    pos += 2;
-    
-    memcpy(event + pos, value, 4);
-    pos += 4;
-    
-    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
-}
-
-static void device_information_service_emit_pnp_id(device_information_service_client_t * client, uint8_t subevent, const uint8_t * value, uint16_t value_len){
-    if (value_len != 12) return;
-
-    uint8_t event[12];
-    uint16_t pos = 0;
-    event[pos++] = HCI_EVENT_GATTSERVICE_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = subevent;
-    little_endian_store_16(event, pos, client->con_handle);
-    pos += 2;
-    
-    memcpy(event + pos, value, 9);
-    pos += 9;
+    event[pos++] = att_status;
+    memcpy(event + pos, value, 7);
+    pos += 7;
 
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -266,6 +267,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             (device_information_characteristics[client->characteristic_index].handle_value(
                 client, device_information_characteristics[client->characteristic_index].subevent, 
+                ATT_ERROR_SUCCESS,
                 gatt_event_characteristic_value_query_result_get_value(packet), 
                 gatt_event_characteristic_value_query_result_get_value_length(packet)));
             break;
@@ -295,9 +297,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 
                 case DEVICE_INFORMATION_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                     if (att_status != ATT_ERROR_SUCCESS){
-                        device_information_service_emit_query_done(client, att_status);  
-                        device_information_service_finalize_client(client);
-                        break;  
+                        (device_information_characteristics[client->characteristic_index].handle_value(
+                            client, device_information_characteristics[client->characteristic_index].subevent, 
+                            att_status,
+                            gatt_event_characteristic_value_query_result_get_value(packet), 
+                            gatt_event_characteristic_value_query_result_get_value_length(packet)));
                     }
                     
                     // check if there is another characteristic to query
