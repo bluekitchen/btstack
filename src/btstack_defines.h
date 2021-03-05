@@ -3088,6 +3088,93 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL                         0x05
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE                       0x06
+
+/**
+ * @format 1HT
+ * @param subevent_code
+ * @param con_handle
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME          0x07
+
+/**
+ * @format 1HT
+ * @param subevent_code
+ * @param con_handle
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER               0x08
+
+/**
+ * @format 1HT
+ * @param subevent_code
+ * @param con_handle
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER              0x09
+
+/**
+ * @format 1HT
+ * @param subevent_code
+ * @param con_handle
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION          0x0A
+
+/**
+ * @format 1HT
+ * @param subevent_code
+ * @param con_handle
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION          0x0B
+
+/**
+ * @format 1HT
+ * @param subevent_code
+ * @param con_handle
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION          0x0C
+
+/**
+ * @format 1H413
+ * @param subevent_code
+ * @param con_handle
+ * @param manufacturer_identifier_low
+ * @param manufacturer_identifier_high
+ * @param organizationally_unique_identifier
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID                  0x0D
+
+/**
+ * @format 1H22
+ * @param subevent_code
+ * @param con_handle
+ * @param device_information_ieee_regulatory_certification_value_a
+ * @param device_information_ieee_regulatory_certification_value_b
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST                  0x0E
+
+/**
+ * @format 1H1222
+ * @param subevent_code
+ * @param con_handle
+ * @param vendor_source_id
+ * @param vendor_id
+ * @param product_id
+ * @param product_version
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID                    0x0F
+
+
 // MAP Meta Event Group
 
 /**
