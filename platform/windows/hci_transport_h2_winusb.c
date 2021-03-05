@@ -303,12 +303,15 @@ static uint16_t iso_packet_size;
 
 // list of known devices, using VendorID/ProductID tuples
 static const uint16_t known_bluetooth_devices[] = {
-    // DeLOCK Bluetooth 4.0
+    // BCM20702A0 - DeLOCK Bluetooth 4.0
     0x0a5c, 0x21e8,
-    // Asus BT400
+    // BCM20702A0 - Asus BT400
     0x0b05, 0x17cb,
-    // BCM20702B0 (Generic USB Detuned Class 1 @ 20 MHz)
+    // BCM20702B0 - Generic USB Detuned Class 1 @ 20 MHz
     0x0a5c, 0x22be,
+    // nRF5x Zephyr USB HCI, e.g nRF52840-PCA10056
+    0x2fe3, 0x0100,
+    0x2fe3, 0x000b,
 };
 
 static int num_known_devices = sizeof(known_bluetooth_devices) / sizeof(uint16_t) / 2;

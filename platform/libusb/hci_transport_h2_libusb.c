@@ -581,24 +581,24 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 
 // list of known devices, using VendorID/ProductID tuples
-static const uint16_t known_bt_devices[] = {
-    // DeLOCK Bluetooth 4.0
+static const uint16_t known_bluetooth_devices[] = {
+    // BCM20702A0 - DeLOCK Bluetooth 4.0
     0x0a5c, 0x21e8,
-    // Asus BT400
+    // BCM20702A0 - Asus BT400
     0x0b05, 0x17cb,
-    // BCM20702B0 (Generic USB Detuned Class 1 @ 20 MHz)
+    // BCM20702B0 - Generic USB Detuned Class 1 @ 20 MHz
     0x0a5c, 0x22be,
-    // Zephyr e.g nRF52840-PCA10056
+    // nRF5x Zephyr USB HCI, e.g nRF52840-PCA10056
     0x2fe3, 0x0100,
     0x2fe3, 0x000b,
 };
 
-static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
+static int num_known_devices = sizeof(known_bluetooth_devices) / sizeof(uint16_t) / 2;
 
 static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
     int i;
     for (i=0; i<num_known_devices; i++){
-        if (known_bt_devices[i*2] == vendor_id && known_bt_devices[i*2+1] == product_id){
+        if (known_bluetooth_devices[i*2] == vendor_id && known_bluetooth_devices[i*2+1] == product_id){
             return 1;
         }
     }
