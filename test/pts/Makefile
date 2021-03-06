@@ -25,6 +25,7 @@ COMMON += \
 	l2cap_signaling.c	        \
 	rfcomm.c                    \
 	hci_transport_h2_libusb.c 	\
+	btstack_run_loop_base.c	    \
 	btstack_run_loop_posix.c 	\
 	btstack_link_key_db_tlv.c 	\
 	le_device_db_tlv.c 			\
