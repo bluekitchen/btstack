@@ -216,6 +216,7 @@ static void device_information_service_run_for_client(device_information_service
             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             att_status = gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, client->con_handle, ORG_BLUETOOTH_SERVICE_DEVICE_INFORMATION);
             // TODO handle status
+            UNUSED(att_status);
             break;
         
         case DEVICE_INFORMATION_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
@@ -225,6 +226,7 @@ static void device_information_service_run_for_client(device_information_service
                     client->con_handle, client->start_handle, client->end_handle, 
                     device_information_characteristics[client->characteristic_index].uuid);
                 // TODO handle status
+                UNUSED(att_status);
             }
             break;
 
