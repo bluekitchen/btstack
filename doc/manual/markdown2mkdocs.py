@@ -75,7 +75,7 @@ def main(argv):
     
     with open(yml_file, 'r') as yin:
         doc = yaml.load(yin, Loader=yaml.SafeLoader)
-        for page in doc["pages"]:
+        for page in doc["nav"]:
             mk_file = list(page.values())[0]
             source_file = md_template +"/"+ mk_file
             dest_file   = md_final +"/"+ mk_file

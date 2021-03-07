@@ -12,11 +12,11 @@ def writeCodeBlock(aout, code, references):
 
 
 def main(argv):
-    html_path = "btstack/examples/examples/"
+    html_path = "btstack/examples/"
     html_tmppath = html_path + "tmp/"
 
-    html_in  = html_path + "index.html"
-    html_tmp = html_tmppath + "index.html"
+    html_in  = html_path + "examples.html"
+    html_tmp = html_tmppath + "examples.html"
     references = pickle.load(open( "tmp/references.p", "rb" ))
     
     os.mkdir(html_tmppath)

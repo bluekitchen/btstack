@@ -61,7 +61,7 @@ def main(argv):
     with open(mk_file, 'w') as aout:
         with open(yml_file, 'r') as yin:
             doc = yaml.load(yin, Loader=yaml.SafeLoader)
-            for page in doc["pages"]:
+            for page in doc["nav"]:
                 title   = list(page.keys())[0]
                 md_file = list(page.values())[0]
                 with open(docs_folder +"/"+ md_file, 'r') as mdin:
