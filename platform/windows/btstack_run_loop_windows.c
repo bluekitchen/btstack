@@ -53,10 +53,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void btstack_run_loop_windows_dump_timer(void);
-
-// the run loop
-static int data_sources_modified;
 // start time.
 static ULARGE_INTEGER start_time;
 
@@ -83,7 +79,6 @@ static uint32_t btstack_run_loop_windows_get_time_ms(void){
  */
 static void btstack_run_loop_windows_execute(void) {
 
-    btstack_timer_source_t *ts;
     btstack_linked_list_iterator_t it;
 
     while (true) {
@@ -169,8 +164,8 @@ static void btstack_run_loop_windows_init(void){
 
 static const btstack_run_loop_t btstack_run_loop_windows = {
     &btstack_run_loop_windows_init,
-    &btstack_run_loop_windows_add_data_source,
-    &btstack_run_loop_windows_remove_data_source,
+    &btstack_run_loop_base_add_data_source,
+    &btstack_run_loop_base_remove_data_source,
     &btstack_run_loop_base_enable_data_source_callbacks,
     &btstack_run_loop_base_disable_data_source_callbacks,
     &btstack_run_loop_windows_set_timer,
