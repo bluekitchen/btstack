@@ -859,7 +859,8 @@ static int convert_aac_object_type(int bitmap) {
         case AVDTP_AAC_MPEG4_LC:
             return AOT_AAC_LC;
         case AVDTP_AAC_MPEG2_LC:
-            return AOT_MP2_AAC_LC;
+            // https://lists.freedesktop.org/archives/gstreamer-commits/2016-September/096332.html
+            return AOT_AAC_LC;
         default:
             printf("invalid aac aot config %d\n", bitmap);
             return 0;
