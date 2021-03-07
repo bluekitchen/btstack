@@ -30,12 +30,14 @@ TEST_GROUP(BSTACK_TLV){
     	// close file 
     	fclose(btstack_tlv_context.file);
     	// reopen
+        btstack_tlv_posix_deinit(&btstack_tlv_context);
 		btstack_tlv_impl = btstack_tlv_posix_init_instance(&btstack_tlv_context, TEST_DB);
     }
     void teardown(void){
     	log_info("teardown");
     	// close file
     	fclose(btstack_tlv_context.file);
+        btstack_tlv_posix_deinit(&btstack_tlv_context);
     }
 };
 
