@@ -62,7 +62,11 @@
 #include "l2cap.h"
 #include "btstack_stdin.h"
  
- static void show_usage(void);
+static void show_usage(void);
+
+#define TSPX_PSM    0x01
+#define TSPX_LE_PSM 0x25
+#define TSPX_PSM_UNSUPPORTED 0xf1
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -80,9 +84,7 @@ static int  ui_digits_for_passkey;
 // general discoverable flags
 static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
 
-const uint16_t TSPX_psm    = 0x01;
-const uint16_t TSPX_le_psm = 0x25;
-const uint16_t TSPX_psm_unsupported = 0xf1;
+
 static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
 
 const char * data_short = "a";
@@ -149,7 +151,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_INCOMING_CONNECTION: 
                     psm = l2cap_event_incoming_connection_get_psm(packet);
                     cid = l2cap_event_incoming_connection_get_local_cid(packet);
-                    if (psm != TSPX_psm) break;
+                    if (psm != TSPX_PSM) break;
                     printf("L2CAP: Accepting incoming Classic connection request for 0x%02x, PSM %02x\n", cid, psm); 
                     l2cap_accept_connection(cid);
                     break;
@@ -163,10 +165,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         printf("L2CAP: Classic Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  l2cap_event_channel_opened_get_remote_cid(packet));
                         switch (psm){
-                            case TSPX_le_psm:
+                            case TSPX_LE_PSM:
                                 cid_le = cid;
                                 break;
-                            case TSPX_psm:
+                            case TSPX_PSM:
                                 cid_classic = cid;
                                 break;
                             default:
@@ -185,7 +187,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case L2CAP_EVENT_LE_INCOMING_CONNECTION: 
                     psm = l2cap_event_le_incoming_connection_get_psm(packet);
                     cid = l2cap_event_le_incoming_connection_get_local_cid(packet);
-                    if (psm != TSPX_le_psm) break;
+                    if (psm != TSPX_LE_PSM) break;
                     printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
                     l2cap_le_accept_connection(cid, receive_buffer_X, sizeof(receive_buffer_X), initial_credits);
                     break;
@@ -201,10 +203,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         switch (psm){
-                            case TSPX_le_psm:
+                            case TSPX_LE_PSM:
                                 cid_le = cid;
                                 break;
-                            case TSPX_psm:
+                            case TSPX_PSM:
                                 cid_classic = cid;
                                 break;
                             default:
@@ -281,13 +283,13 @@ void show_usage(void){
     
     printf("\n--- CLI for LE Data Channel %s ---\n", bd_addr_to_str(iut_address));
     printf("a - create HCI connection to type %u address %s\n", pts_address_type, bd_addr_to_str(pts_address));
-    printf("b - connect to PSM 0x%02x (TSPX_le_psm - LE)\n", TSPX_le_psm);
-    printf("B - connect to PSM 0x%02x (TSPX_psm_unsupported - LE)\n", TSPX_psm_unsupported);
+    printf("b - connect to PSM 0x%02x (TSPX_LE_PSM - LE)\n", TSPX_LE_PSM);
+    printf("B - connect to PSM 0x%02x (TSPX_PSM_UNSUPPORTED - LE)\n", TSPX_PSM_UNSUPPORTED);
     printf("c - send 10 credits\n");
     printf("m - enable manual credit managment (incoming connections only)\n");
     printf("s - send short data %s\n", data_short);
     printf("S - send long data %s\n", data_long);
-    printf("y - connect to address %s PSM 0x%02x (TSPX_psm - Classic)\n", bd_addr_to_str(pts_address), TSPX_psm);
+    printf("y - connect to address %s PSM 0x%02x (TSPX_PSM - Classic)\n", bd_addr_to_str(pts_address), TSPX_PSM);
     printf("z - send classic data Classic %s\n", data_classic);
     printf("t - disconnect channel\n");
     printf("---\n");
@@ -318,14 +320,14 @@ static void stdin_process(char buffer){
             break;
 
         case 'b':
-            printf("Connect to PSM 0x%02x - LE\n", TSPX_le_psm);
-            l2cap_le_create_channel(&app_packet_handler, handle_le, TSPX_le_psm, buffer_x, 
+            printf("Connect to PSM 0x%02x - LE\n", TSPX_LE_PSM);
+            l2cap_le_create_channel(&app_packet_handler, handle_le, TSPX_LE_PSM, buffer_x, 
                                     sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_le);
             break;
 
         case 'B':
-            printf("Creating connection to %s 0x%02x - LE\n", bd_addr_to_str(pts_address), TSPX_psm_unsupported);
-            l2cap_le_create_channel(&app_packet_handler, handle_le, TSPX_psm_unsupported, buffer_x, 
+            printf("Creating connection to %s 0x%02x - LE\n", bd_addr_to_str(pts_address), TSPX_PSM_UNSUPPORTED);
+            l2cap_le_create_channel(&app_packet_handler, handle_le, TSPX_PSM_UNSUPPORTED, buffer_x, 
                                     sizeof(buffer_x), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &cid_le);
             break;
 
@@ -352,8 +354,8 @@ static void stdin_process(char buffer){
             break;
 
         case 'y':
-            printf("Creating connection to %s 0x%02x - Classic\n", bd_addr_to_str(pts_address), TSPX_psm);
-            l2cap_create_channel(&app_packet_handler, pts_address, TSPX_psm, 100, &cid_classic);
+            printf("Creating connection to %s 0x%02x - Classic\n", bd_addr_to_str(pts_address), TSPX_PSM);
+            l2cap_create_channel(&app_packet_handler, pts_address, TSPX_PSM, 100, &cid_classic);
             break;
 
         case 'z':
@@ -409,10 +411,10 @@ int btstack_main(int argc, const char * argv[]){
     sm_set_authentication_requirements(0);
 
     // le data channel setup
-    l2cap_le_register_service(&app_packet_handler, TSPX_le_psm, LEVEL_0);
+    l2cap_le_register_service(&app_packet_handler, TSPX_LE_PSM, LEVEL_0);
 
     // classic data channel setup
-    l2cap_register_service(&app_packet_handler, TSPX_psm, 100, LEVEL_0);
+    l2cap_register_service(&app_packet_handler, TSPX_PSM, 100, LEVEL_0);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
