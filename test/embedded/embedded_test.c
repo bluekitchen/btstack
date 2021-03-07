@@ -181,8 +181,6 @@ TEST(RunLoopBase,Timer){
     btstack_run_loop_base_add_timer(&timer_2);
     // add timer 1
     btstack_run_loop_base_add_timer(&timer_1);
-    // add timer again - to trigger log_error
-    btstack_run_loop_base_add_timer(&timer_1);
     // dump timers
     btstack_run_loop_base_dump_timer();
     // process timers for now_1
