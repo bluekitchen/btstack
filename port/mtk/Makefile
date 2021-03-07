@@ -30,6 +30,7 @@ libBTstack_OBJS  = 		           \
 	btstack.o                      \
 	btstack_linked_list.o          \
 	btstack_run_loop.o             \
+	btstack_run_loop_base.o        \
 	btstack_run_loop_posix.o       \
     btstack_tlv.o                  \
 	btstack_util.o 	               \
