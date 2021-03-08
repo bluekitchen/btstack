@@ -386,6 +386,9 @@ static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_co
         segment++;
     }
     rfcomm_send_prepared(cid, offset);
+#ifdef ENABLE_HFP_AT_MESSAGES
+    hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_SENT, (char *) data);
+#endif
     return segment;
 }
 
