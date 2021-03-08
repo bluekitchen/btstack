@@ -33,9 +33,9 @@ Port Archive: moved ports that are not recommended for new designs to port/archi
   - MSP430: the ports used the older community GCC version without 20-bit support needed for code size > 64kB
   - Broadcom/Cypress H5: uploading PatchRAM is only possible in H4 mode. It's better to also use H4 in general
   - PIC32-Harmony: the port used Harmony v1 while Harmony v3 has been out since a while.
-Run Loop: `btstack_run_loop_base.c` used in most platform run loop implementations
-  - required for posix, embedded, freertos, nrf5-zephyr, wiced, windows builds
-
+Run Loop Base: functionality used in most platform run loop implementations
+  - code from `btstack_run_loop_base.c` moved into `btstack_run_loop.c` to minimize changes to build systems
+  - `btstack_run_loop_base.c` is a placeholder and can be removed from build
 
 ## Release v1.3.2
 
