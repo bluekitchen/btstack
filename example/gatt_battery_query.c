@@ -171,7 +171,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     UNUSED(size);
 
     /* LISTING_RESUME */
-    uint8_t status;
     bd_addr_t address;
 
     if (packet_type != HCI_EVENT_PACKET){
@@ -230,8 +229,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // If poll_interval_ms is 0, polling is disabled, and only notifications will be received (for manual polling, 
             // see battery_service_client.h).
             // All GATT Battery Service events are handled by the gatt_client_event_handler.
-            status = battery_service_client_connect(connection_handle, gatt_client_event_handler, 2000, &battery_service_cid);
-            btstack_assert(status == ERROR_CODE_SUCCESS);
+            (void) battery_service_client_connect(connection_handle, gatt_client_event_handler, 2000, &battery_service_cid);
 
             app_state = APP_STATE_CONNECTED;
             printf("Battery service connected.\n");
