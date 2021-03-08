@@ -80,7 +80,7 @@ extern "C" {
 // BLE
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
-#include "ble/battery_service_client.h"
+#include "ble/gatt-service/battery_service_client.h"
 #include "ble/sm.h"
 #endif
 

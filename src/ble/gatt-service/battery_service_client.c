@@ -43,7 +43,7 @@
 #include <string.h>
 
 
-#include "battery_service_client.h"
+#include "ble/gatt-service/battery_service_client.h"
 
 
 #include "btstack_memory.h"

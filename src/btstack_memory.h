@@ -52,11 +52,10 @@ extern "C" {
 #endif
 
 #include "btstack_config.h"
-
+    
 // Core
 #include "hci.h"
 #include "l2cap.h"
-
 
 // Classic
 #include "classic/avdtp_sink.h"
@@ -70,11 +69,10 @@ extern "C" {
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
 
-
 // BLE
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
-#include "ble/battery_service_client.h"
+#include "ble/gatt-service/battery_service_client.h"
 #include "ble/sm.h"
 #endif
 

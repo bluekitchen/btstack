@@ -42,7 +42,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ancs_client.h"
+#include "ble/gatt-service/ancs_client.h"
 
 #include "ble/att_db.h"
 #include "ble/core.h"
@@ -51,7 +51,6 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
 #include "gap.h"
 
 // ancs_client.h Start

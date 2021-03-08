@@ -58,10 +58,10 @@ ${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
 ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
-${BTSTACK_ROOT}/src/ble/battery_service_client.c \
-${BTSTACK_ROOT}/src/ble/device_information_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
 ${BTSTACK_ROOT}/src/ble/gatt_client.c \
 ${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \

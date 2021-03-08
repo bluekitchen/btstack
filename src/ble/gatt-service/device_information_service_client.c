@@ -43,7 +43,7 @@
 #include <string.h>
 
 
-#include "device_information_service_client.h"
+#include "ble/gatt-service/device_information_service_client.h"
 
 #include "btstack_memory.h"
 #include "ble/att_db.h"

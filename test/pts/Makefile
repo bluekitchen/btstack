@@ -155,13 +155,13 @@ all: ${EXAMPLES}
 cycling_power_server_test.h: cycling_power_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-cycling_power_server_test: cycling_power_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} cycling_power_server_test.c
+cycling_power_server_test: cycling_power_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o cycling_power_server_test.c
 	${CC} $(filter-out cycling_power_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 csc_server_test.h: csc_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-csc_server_test: csc_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} csc_server_test.c
+csc_server_test: csc_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o csc_server_test.c
 	${CC} $(filter-out csc_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 csc_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} csc_client_test.c
@@ -173,7 +173,7 @@ hid_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hi
 hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o btstack_ring_buffer.o hid_device.o hid_device_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} btstack_ring_buffer.o hog_demo_test.c
+hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o btstack_ring_buffer.o hog_demo_test.c
 	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hrp_server_test.h: hrp_server_test.gatt
@@ -233,7 +233,7 @@ iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gs
 gatt_profiles.h: gatt_profiles.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_profiles.o
+gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.c gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
