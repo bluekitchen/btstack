@@ -377,7 +377,11 @@ void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_c
 }
 
 void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+#ifdef ENABLE_HFP_AT_MESSAGES
+    uint8_t event[256];
+#else
     uint8_t event[40];
+#endif
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
