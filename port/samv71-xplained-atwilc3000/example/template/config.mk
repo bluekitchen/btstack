@@ -148,7 +148,6 @@ CSRCS += \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_memory_pool.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_ring_buffer.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_run_loop.c \
-	${BTSTACK_ROOT_CONFIG}/src/btstack_run_loop_base.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_util.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_tlv.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci.c \

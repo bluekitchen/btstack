@@ -34,7 +34,7 @@ fi
 
 case "$host_os" in
     darwin*)
-        btstack_run_loop_SOURCES="btstack_run_loop_base.o btstack_run_loop_posix.o btstack_run_loop_corefoundation.m"
+        btstack_run_loop_SOURCES="btstack_run_loop_posix.o btstack_run_loop_corefoundation.m"
         LDFLAGS+="-framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
@@ -57,7 +57,7 @@ case "$host_os" in
         UART_DRIVER=block_windows
         ;;
     *)
-        btstack_run_loop_SOURCES="btstack_run_loop_base.o btstack_run_loop_posix.o"
+        btstack_run_loop_SOURCES="btstack_run_loop_posix.o"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
         REMOTE_DEVICE_DB_SOURCES="rfcomm_service_db_memory.o"

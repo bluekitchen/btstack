@@ -27,7 +27,6 @@ COMMON = \
     btstack_linked_list.c  \
 	btstack_memory.c \
 	btstack_run_loop.c \
-    btstack_run_loop_base.c \
 	btstack_run_loop_embedded.c \
     btstack_util.c		  \
     hci_dump.c    \

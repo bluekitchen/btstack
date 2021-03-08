@@ -148,7 +148,6 @@ CORE = \
     btstack_util.o \
     l2cap.o \
     l2cap_signaling.o \
-    btstack_run_loop_base.o \
     btstack_run_loop_embedded.o \
 	$(CC2564B) \
     hci_transport_h4.o

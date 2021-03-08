@@ -11,7 +11,6 @@ SRC_FILES = \
     btstack_memory_pool.c \
     btstack_ring_buffer.c \
     btstack_run_loop.c \
-    btstack_run_loop_base.c \
     btstack_slip.c \
     btstack_tlv.c \
     btstack_util.c \

@@ -6,7 +6,6 @@ CORE += \
 	btstack_linked_list.c	    \
 	btstack_memory_pool.c       \
 	btstack_run_loop.c		    \
-	btstack_run_loop_base.c     \
 	btstack_util.c 	            \
 	main.c 						\
 	btstack_stdin_posix.c       \

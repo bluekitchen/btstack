@@ -10,7 +10,6 @@ CORE += \
 	btstack_chipset_stlc2500d.c \
 	btstack_chipset_tc3566x.c \
 	btstack_link_key_db_tlv.c \
-	btstack_run_loop_base.c \
 	btstack_run_loop_posix.c \
 	btstack_audio.c \
     btstack_audio_portaudio.c \
