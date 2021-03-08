@@ -315,8 +315,9 @@ static int btstack_uart_posix_set_flowcontrol(int flowcontrol){
 static int btstack_uart_posix_open(void){
 
     const char * device_name = uart_config->device_name;
-    const int flowcontrol    = uart_config->flowcontrol;
     const uint32_t baudrate  = uart_config->baudrate;
+    const int flowcontrol    = uart_config->flowcontrol;
+    const int parity         = uart_config->parity;
 
     struct termios toptions;
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
@@ -345,7 +346,7 @@ static int btstack_uart_posix_open(void){
     toptions.c_cc[VTIME] = 0;
     
     // no parity
-    btstack_uart_posix_set_parity_option(&toptions, 0);
+    btstack_uart_posix_set_parity_option(&toptions, parity);
 
     // flowcontrol
     btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
