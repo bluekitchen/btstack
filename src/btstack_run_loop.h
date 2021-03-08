@@ -108,7 +108,83 @@ typedef struct btstack_run_loop {
 	uint32_t (*get_time_ms)(void);
 } btstack_run_loop_t;
 
-void btstack_run_loop_timer_dump(void);
+
+/*
+ *  BTstack Run Loop Base Implementation
+ *  Portable implementation of timer and data source management as base for platform specific implementations
+ */
+
+// private data (access only by run loop implementations)
+extern btstack_linked_list_t btstack_run_loop_base_timers;
+extern btstack_linked_list_t btstack_run_loop_base_data_sources;
+
+/**
+ * @brief Init
+ */
+void btstack_run_loop_base_init(void);
+
+/**
+ * @brief Add timer source.
+ * @param timer to add
+ */
+void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer);
+
+/**
+ * @brief Remove timer source.
+ * @param timer to remove
+ * @returns true if timer was removed
+ */
+bool  btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer);
+
+/**
+ * @brief Process timers: remove expired timers from list and call their process function
+ * @param now
+ */
+void  btstack_run_loop_base_process_timers(uint32_t now);
+
+/**
+ * @brief Dump list of timers via log_info
+ */
+void btstack_run_loop_base_dump_timer(void);
+
+/**
+ * @brief Get time until first timer fires
+ * @returns -1 if no timers, time until next timeout otherwise
+ */
+int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now);
+
+/**
+ * @brief Add data source to run loop
+ * @param data_source to add
+ */
+void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source);
+
+/**
+ * @brief Remove data source from run loop
+ * @param data_source to remove
+ * @returns true if data srouce was removed
+ */
+bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source);
+
+/**
+ * @brief Enable callbacks for a data source
+ * @param data_source to remove
+ * @param callback types to enable
+ */
+void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
+
+/**
+ * @brief Enable callbacks for a data source
+ * @param data_source to remove
+ * @param callback types to disable
+ */
+void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
+
+/**
+ * @brief Poll data sources. It calls the procss function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
+ */
+void btstack_run_loop_base_poll_data_sources(void);
+
 
 /* API_START */
 
@@ -156,6 +232,12 @@ int  btstack_run_loop_remove_timer(btstack_timer_source_t * timer);
 uint32_t btstack_run_loop_get_time_ms(void);
 
 /**
+ * @brief Dump timers using log_info
+ */
+void btstack_run_loop_timer_dump(void);
+
+
+/**
  * @brief Set data source callback.
  */
 void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
@@ -173,7 +255,6 @@ void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, in
  * @param data_source
  */
 int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
-
 
 /**
  * @brief Set data source file descriptor. 
@@ -226,6 +307,8 @@ void btstack_run_loop_execute(void);
 void btstack_run_loop_deinit(void);
 
 /* API_END */
+
+
 
 #if defined __cplusplus
 }
