@@ -24,7 +24,6 @@
 #include "hal_uart_dma.h"
 
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_base.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"

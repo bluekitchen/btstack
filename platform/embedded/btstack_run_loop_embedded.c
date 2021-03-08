@@ -58,7 +58,6 @@
 #include "btstack_run_loop_embedded.h"
 
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_base.h"
 #include "btstack_linked_list.h"
 #include "btstack_util.h"
 #include "hal_tick.h"
