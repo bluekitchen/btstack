@@ -134,6 +134,11 @@ cfile_header_begin = """
 
 #include <stdlib.h>
 
+#ifdef ENABLE_MALLOC_TEST
+extern "C" void * test_malloc(size_t size);
+#define malloc test_malloc
+#endif
+
 #ifdef HAVE_MALLOC
 typedef struct btstack_memory_buffer {
     struct btstack_memory_buffer * next;
