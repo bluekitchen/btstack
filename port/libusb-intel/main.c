@@ -197,7 +197,7 @@ int main(int argc, const char * argv[]){
     }
     strcat(pklg_path, ".pklg");
     printf("Packet Log: %s\n", pklg_path);
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // setup USB Transport
     transport = hci_transport_usb_instance();

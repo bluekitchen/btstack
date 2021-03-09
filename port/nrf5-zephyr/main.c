@@ -274,7 +274,7 @@ void main(void)
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
 
     // enable full log output while porting
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // init HCI
     hci_init(transport_get_instance(), NULL);

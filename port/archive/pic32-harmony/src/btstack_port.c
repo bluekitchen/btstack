@@ -234,7 +234,7 @@ void BTSTACK_Initialize ( void )
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // setup uart driver
     const btstack_uart_block_t * uart_block_driver = btstack_uart_block_embedded_instance();

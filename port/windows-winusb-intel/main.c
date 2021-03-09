@@ -152,27 +152,6 @@ int main(int argc, const char * argv[]){
 
     printf("BTstack/windows-winusb booting up\n");
 
-#if 0
-    int usb_path_len = 0;
-    uint8_t usb_path[USB_MAX_PATH_LEN];
-    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
-        // parse command line options for "-u 11:22:33"
-        const char * port_str = argv[2];
-        printf("Specified USB Path: ");
-        while (1){
-            char * delimiter;
-            int port = strtol(port_str, &delimiter, 16);
-            usb_path[usb_path_len] = port;
-            usb_path_len++;
-            printf("%02x ", port);
-            if (!delimiter) break;
-            if (*delimiter != ':' && *delimiter != '-') break;
-            port_str = delimiter+1;
-        }
-        printf("\n");
-    }
-#endif
-
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
@@ -183,21 +162,11 @@ int main(int argc, const char * argv[]){
 
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
 
-#if 1
     char pklg_path[100];
     strcpy(pklg_path, "hci_dump");
-#if 0
-    if (usb_path_len){
-        strcat(pklg_path, "_");
-        strcat(pklg_path, argv[2]);
-    }
-#endif
     strcat(pklg_path, ".pklg");
     printf("Packet Log: %s\n", pklg_path);
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
-#else
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
-#endif
+    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // handle CTRL-c
     signal(SIGINT, sigint_handler);

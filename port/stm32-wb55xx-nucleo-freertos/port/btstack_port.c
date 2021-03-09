@@ -582,7 +582,7 @@ void port_thread(void* args){
 
     // enable packet logger
 #ifdef ENABLE_HCI_DUMP
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 #endif
     /// GET STARTED with BTstack ///
     btstack_memory_init();
