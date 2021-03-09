@@ -585,7 +585,7 @@ int main(void)
     hci_init(&hci_transport, NULL);
     
     // enable full log output while porting
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     // hand over to btstack embedded code 
     btstack_main();

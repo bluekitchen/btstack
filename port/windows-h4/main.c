@@ -226,7 +226,7 @@ int main(int argc, const char * argv[]){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
 
-    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
     config.device_name = "\\\\.\\COM7";
