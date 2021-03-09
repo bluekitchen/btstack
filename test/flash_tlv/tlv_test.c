@@ -327,6 +327,6 @@ TEST(LINK_KEY_DB, KeyReplacement){
 }
 
 int main (int argc, const char * argv[]){
-	hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
+	// hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

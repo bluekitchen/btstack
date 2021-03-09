@@ -223,7 +223,7 @@ int main(int argc, char * argv[]){
 #endif
     strcat(pklg_path, ".pklg");
     printf("Packet Log: %s\n", pklg_path);
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
 #if 1

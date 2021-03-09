@@ -134,6 +134,6 @@ TEST(GAP_LE, ScanStartParam){
 int main (int argc, const char * argv[]){
     const char * log_path = "/tmp/test_scan.pklg";
     printf("Log: %s\n", log_path);
-    hci_dump_open(log_path, HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open(log_path, HCI_DUMP_PACKETLOGGER);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

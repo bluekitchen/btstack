@@ -206,7 +206,7 @@ int main(int argc, const char * argv[]){
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     strcat(log_path, ".pklg");
     printf("Packet Log: %s\n", log_path);
-    hci_dump_open(log_path, HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open(log_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
     const hci_transport_t * transport;

@@ -1405,11 +1405,11 @@ static void daemon_set_logging_enabled(int enabled){
             default:
                 break;
         }
-        hci_dump_open(string_buffer, BTSTACK_LOG_TYPE);
+        // hci_dump_open(string_buffer, BTSTACK_LOG_TYPE);
         printf("Logging to %s\n", string_buffer);
     }
     if (!enabled && loggingEnabled){
-        hci_dump_close();
+        // hci_dump_close();
     }
     loggingEnabled = enabled;
 }
