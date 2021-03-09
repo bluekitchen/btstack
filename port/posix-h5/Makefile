@@ -13,6 +13,7 @@ CORE += \
 	btstack_tlv_posix.c \
 	btstack_uart_posix.c \
 	btstack_slip.c \
+	hci_dump_posix_fs.c \
 	hci_transport_h5.c \
 	le_device_db_tlv.c \
 	main.c \

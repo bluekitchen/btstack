@@ -89,6 +89,8 @@
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_dump_posix_stdout.h"
 #include "hci_transport.h"
 #include "l2cap.h"
 #include "rfcomm_service_db.h"
@@ -1392,24 +1394,27 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 static void daemon_set_logging_enabled(int enabled){
     if (enabled && !loggingEnabled){
         // construct path to log file
+        const hci_dump_t * hci_dump_impl;
         switch (BTSTACK_LOG_TYPE){
-            case HCI_DUMP_STDOUT:
-                snprintf(string_buffer, sizeof(string_buffer), "stdout");
-                break;
             case HCI_DUMP_PACKETLOGGER:
+                hci_dump_impl = hci_dump_posix_fs_get_instance();
                 snprintf(string_buffer, sizeof(string_buffer), "%s/hci_dump.pklg", btstack_server_storage_path);
+                hci_dump_posix_fs_open(string_buffer, HCI_DUMP_PACKETLOGGER);
                 break;
             case HCI_DUMP_BLUEZ:
+                hci_dump_impl = hci_dump_posix_fs_get_instance();
                 snprintf(string_buffer, sizeof(string_buffer), "%s/hci_dump.snoop", btstack_server_storage_path);
+                hci_dump_posix_fs_open(string_buffer, HCI_DUMP_BLUEZ);
                 break;
             default:
                 break;
         }
-        // hci_dump_open(string_buffer, BTSTACK_LOG_TYPE);
+        hci_dump_init(hci_dump_impl);
         printf("Logging to %s\n", string_buffer);
     }
     if (!enabled && loggingEnabled){
-        // hci_dump_close();
+        hci_dump_posix_fs_close();
+        hci_dump_init(NULL);
     }
     loggingEnabled = enabled;
 }

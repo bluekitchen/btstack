@@ -1,7 +1,7 @@
 # Makefile for windows-h4 examples
 BTSTACK_ROOT ?= ../..
 
-CORE += main.c btstack_stdin_windows.c btstack_tlv_posix.c
+CORE += main.c btstack_stdin_windows.c btstack_tlv_posix.c hci_dump_posix_fs.c
 
 COMMON  += \
 			btstack_run_loop_windows.c   \
