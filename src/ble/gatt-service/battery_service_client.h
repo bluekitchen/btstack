@@ -95,7 +95,7 @@ typedef struct {
     battery_service_t services[MAX_NUM_BATTERY_SERVICES];
 
     // used for discovering characteristics and polling
-    uint8_t battery_service_index;
+    uint8_t service_index;
     uint8_t poll_bitmap;
     uint8_t need_poll_bitmap;
     uint8_t polled_service_index;

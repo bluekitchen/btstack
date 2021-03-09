@@ -84,7 +84,7 @@ static battery_service_client_t * battery_service_create_client(hci_con_handle_t
     client->con_handle = con_handle;
     client->poll_interval_ms = 0;
     client->num_instances = 0;
-    client->battery_service_index = 0;
+    client->service_index = 0;
     client->poll_bitmap = 0;
     client->need_poll_bitmap = 0;
     client->polled_service_index = BATTERY_SERVICE_INVALID_INDEX;
@@ -198,9 +198,9 @@ static void battery_service_run_for_client(battery_service_client_t * client){
         case BATTERY_SERVICE_CLIENT_STATE_W4_REGISTER_NOTIFICATION:
             // if there are services without notification, register pool timer, 
             // othervise register for notifications
-            characteristic.value_handle = client->services[client->battery_service_index].value_handle;
-            characteristic.properties   = client->services[client->battery_service_index].properties;
-            characteristic.end_handle   = client->services[client->battery_service_index].end_handle;
+            characteristic.value_handle = client->services[client->service_index].value_handle;
+            characteristic.properties   = client->services[client->service_index].properties;
+            characteristic.end_handle   = client->services[client->service_index].end_handle;
 
             status = gatt_client_write_client_characteristic_configuration(
                 handle_gatt_client_event, 
@@ -211,16 +211,16 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             // notification supported, register for value updates
             if (status == ERROR_CODE_SUCCESS){
                 gatt_client_listen_for_characteristic_value_updates(
-                    &client->services[client->battery_service_index].notification_listener, 
+                    &client->services[client->service_index].notification_listener, 
                     handle_gatt_client_event, 
                     client->con_handle, 
                     &characteristic);
             } else {
-                client->poll_bitmap |= 1u << client->battery_service_index;
+                client->poll_bitmap |= 1u << client->service_index;
             }
             
-            if (client->battery_service_index + 1 < client->num_instances){
-                client->battery_service_index++;
+            if (client->service_index + 1 < client->num_instances){
+                client->service_index++;
             } else {
                 client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
                 battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS);
@@ -288,9 +288,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             btstack_assert(client != NULL);
 
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
-            if (client->battery_service_index < client->num_instances){
-                client->services[client->battery_service_index].value_handle = characteristic.value_handle;
-                client->services[client->battery_service_index].properties = characteristic.properties;
+            if (client->service_index < client->num_instances){
+                client->services[client->service_index].value_handle = characteristic.value_handle;
+                client->services[client->service_index].properties = characteristic.properties;
             }
             break;
 
@@ -342,6 +342,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         client->polled_service_index = BATTERY_SERVICE_INVALID_INDEX;
                     }
                     break;
+                
                 case BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
                     if (status != ATT_ERROR_SUCCESS){
                         battery_service_emit_connection_established(client, status);  
@@ -361,12 +362,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     }
                     
                     client->state = BATTERY_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
-                    client->battery_service_index = 0;
+                    client->service_index = 0;
                     gatt_client_discover_characteristics_for_handle_range_by_uuid16(
                         handle_gatt_client_event, 
                         client->con_handle, 
-                        client->services[client->battery_service_index].start_handle, 
-                        client->services[client->battery_service_index].end_handle, 
+                        client->services[client->service_index].start_handle, 
+                        client->services[client->service_index].end_handle, 
                         ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
                     break;
 
@@ -378,13 +379,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     }
 
                     // check if there is another service to query
-                    if ((client->battery_service_index + 1) < client->num_instances){
-                        client->battery_service_index++;
+                    if ((client->service_index + 1) < client->num_instances){
+                        client->service_index++;
                         gatt_client_discover_characteristics_for_handle_range_by_uuid16(
                             handle_gatt_client_event, 
                             client->con_handle, 
-                            client->services[client->battery_service_index].start_handle, 
-                            client->services[client->battery_service_index].end_handle, 
+                            client->services[client->service_index].start_handle, 
+                            client->services[client->service_index].end_handle, 
                             ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
                         break;
                     }
@@ -392,7 +393,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     // we are done with quering all services, wait for notification registration
                     // to send connection established event
                     client->state = BATTERY_SERVICE_CLIENT_STATE_W4_REGISTER_NOTIFICATION;
-                    client->battery_service_index = 0;
+                    client->service_index = 0;
 
                     battery_service_run_for_client(client);
                     break;
