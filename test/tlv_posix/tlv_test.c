@@ -185,6 +185,6 @@ TEST(BSTACK_TLV, TestWriteDeleteResetReadDeleteRead){
 
 
 int main (int argc, const char * argv[]){
-	hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
+	// hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

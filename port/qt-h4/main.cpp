@@ -246,7 +246,7 @@ int main(int argc, char * argv[]){
     strcpy(pklg_path, "/tmp/hci_dump.pklg");
 #endif
     printf("Packet Log: %s\n", pklg_path);
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
 #ifdef Q_OS_WIN

@@ -223,7 +223,7 @@ TEST_GROUP(SecurityManager){
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
         sm_event_callback_registration.callback = &app_packet_handler;
         sm_add_event_handler(&sm_event_callback_registration);
-        hci_dump_open("security_manager.pklg", HCI_DUMP_PACKETLOGGER);
+        // hci_dump_open("security_manager.pklg", HCI_DUMP_PACKETLOGGER);
     }
 };
 
