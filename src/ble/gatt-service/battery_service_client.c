@@ -256,9 +256,8 @@ static void battery_service_poll_timer_start(battery_service_client_t * client){
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type); // ok: only hci events
-    UNUSED(channel);     // ok: there is no channel
-    UNUSED(size);        // ok: fixed format events read from HCI buffer
+    UNUSED(packet_type); 
+    UNUSED(channel);     
 
     battery_service_client_t * client;
     gatt_client_service_t service;
