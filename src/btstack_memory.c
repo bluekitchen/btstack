@@ -55,6 +55,11 @@
 
 #include <stdlib.h>
 
+#ifdef ENABLE_MALLOC_TEST
+extern "C" void * test_malloc(size_t size);
+#define malloc test_malloc
+#endif
+
 #ifdef HAVE_MALLOC
 typedef struct btstack_memory_buffer {
     struct btstack_memory_buffer * next;
@@ -1094,63 +1099,6 @@ void btstack_memory_battery_service_client_free(battery_service_client_t *batter
 #endif
 
 
-// MARK: scan_parameters_service_client_t
-#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS)
-    #if defined(MAX_NO_SCAN_PARAMETERS_SERVICE_CLIENTS)
-        #error "Deprecated MAX_NO_SCAN_PARAMETERS_SERVICE_CLIENTS defined instead of MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS. Please update your btstack_config.h to use MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS."
-    #else
-        #define MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS 0
-    #endif
-#endif
-
-#ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
-#if MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS > 0
-static scan_parameters_service_client_t scan_parameters_service_client_storage[MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS];
-static btstack_memory_pool_t scan_parameters_service_client_pool;
-scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
-    void * buffer = btstack_memory_pool_get(&scan_parameters_service_client_pool);
-    if (buffer){
-        memset(buffer, 0, sizeof(scan_parameters_service_client_t));
-    }
-    return (scan_parameters_service_client_t *) buffer;
-}
-void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
-    btstack_memory_pool_free(&scan_parameters_service_client_pool, scan_parameters_service_client);
-}
-#else
-scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
-    return NULL;
-}
-void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
-    UNUSED(scan_parameters_service_client);
-};
-#endif
-#elif defined(HAVE_MALLOC)
-
-typedef struct {
-    btstack_memory_buffer_t tracking;
-    scan_parameters_service_client_t data;
-} btstack_memory_scan_parameters_service_client_t;
-
-scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
-    btstack_memory_scan_parameters_service_client_t * buffer = (btstack_memory_scan_parameters_service_client_t *) malloc(sizeof(btstack_memory_scan_parameters_service_client_t));
-    if (buffer){
-        memset(buffer, 0, sizeof(btstack_memory_scan_parameters_service_client_t));
-        btstack_memory_tracking_add(&buffer->tracking);
-        return &buffer->data;
-    } else {
-        return NULL;
-    }
-}
-void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
-    // reconstruct buffer start
-    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) scan_parameters_service_client)[-1];
-    btstack_memory_tracking_remove(buffer);
-    free(buffer);
-}
-#endif
-
-
 // MARK: gatt_client_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_GATT_CLIENTS)
     #if defined(MAX_NO_GATT_CLIENTS)
@@ -1202,6 +1150,120 @@ gatt_client_t * btstack_memory_gatt_client_get(void){
 void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
     // reconstruct buffer start
     btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) gatt_client)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+// MARK: hids_client_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_HIDS_CLIENTS)
+    #if defined(MAX_NO_HIDS_CLIENTS)
+        #error "Deprecated MAX_NO_HIDS_CLIENTS defined instead of MAX_NR_HIDS_CLIENTS. Please update your btstack_config.h to use MAX_NR_HIDS_CLIENTS."
+    #else
+        #define MAX_NR_HIDS_CLIENTS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_HIDS_CLIENTS
+#if MAX_NR_HIDS_CLIENTS > 0
+static hids_client_t hids_client_storage[MAX_NR_HIDS_CLIENTS];
+static btstack_memory_pool_t hids_client_pool;
+hids_client_t * btstack_memory_hids_client_get(void){
+    void * buffer = btstack_memory_pool_get(&hids_client_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(hids_client_t));
+    }
+    return (hids_client_t *) buffer;
+}
+void btstack_memory_hids_client_free(hids_client_t *hids_client){
+    btstack_memory_pool_free(&hids_client_pool, hids_client);
+}
+#else
+hids_client_t * btstack_memory_hids_client_get(void){
+    return NULL;
+}
+void btstack_memory_hids_client_free(hids_client_t *hids_client){
+    UNUSED(hids_client);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    hids_client_t data;
+} btstack_memory_hids_client_t;
+
+hids_client_t * btstack_memory_hids_client_get(void){
+    btstack_memory_hids_client_t * buffer = (btstack_memory_hids_client_t *) malloc(sizeof(btstack_memory_hids_client_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_hids_client_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_hids_client_free(hids_client_t *hids_client){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) hids_client)[-1];
+    btstack_memory_tracking_remove(buffer);
+    free(buffer);
+}
+#endif
+
+
+// MARK: scan_parameters_service_client_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS)
+    #if defined(MAX_NO_SCAN_PARAMETERS_SERVICE_CLIENTS)
+        #error "Deprecated MAX_NO_SCAN_PARAMETERS_SERVICE_CLIENTS defined instead of MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS. Please update your btstack_config.h to use MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS."
+    #else
+        #define MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
+#if MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS > 0
+static scan_parameters_service_client_t scan_parameters_service_client_storage[MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS];
+static btstack_memory_pool_t scan_parameters_service_client_pool;
+scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
+    void * buffer = btstack_memory_pool_get(&scan_parameters_service_client_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(scan_parameters_service_client_t));
+    }
+    return (scan_parameters_service_client_t *) buffer;
+}
+void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
+    btstack_memory_pool_free(&scan_parameters_service_client_pool, scan_parameters_service_client);
+}
+#else
+scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
+    return NULL;
+}
+void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
+    UNUSED(scan_parameters_service_client);
+};
+#endif
+#elif defined(HAVE_MALLOC)
+
+typedef struct {
+    btstack_memory_buffer_t tracking;
+    scan_parameters_service_client_t data;
+} btstack_memory_scan_parameters_service_client_t;
+
+scan_parameters_service_client_t * btstack_memory_scan_parameters_service_client_get(void){
+    btstack_memory_scan_parameters_service_client_t * buffer = (btstack_memory_scan_parameters_service_client_t *) malloc(sizeof(btstack_memory_scan_parameters_service_client_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(btstack_memory_scan_parameters_service_client_t));
+        btstack_memory_tracking_add(&buffer->tracking);
+        return &buffer->data;
+    } else {
+        return NULL;
+    }
+}
+void btstack_memory_scan_parameters_service_client_free(scan_parameters_service_client_t *scan_parameters_service_client){
+    // reconstruct buffer start
+    btstack_memory_buffer_t * buffer = &((btstack_memory_buffer_t *) scan_parameters_service_client)[-1];
     btstack_memory_tracking_remove(buffer);
     free(buffer);
 }
@@ -1787,11 +1849,14 @@ void btstack_memory_init(void){
 #if MAX_NR_BATTERY_SERVICE_CLIENTS > 0
     btstack_memory_pool_create(&battery_service_client_pool, battery_service_client_storage, MAX_NR_BATTERY_SERVICE_CLIENTS, sizeof(battery_service_client_t));
 #endif
-#if MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS > 0
-    btstack_memory_pool_create(&scan_parameters_service_client_pool, scan_parameters_service_client_storage, MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS, sizeof(scan_parameters_service_client_t));
-#endif
 #if MAX_NR_GATT_CLIENTS > 0
     btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
+#endif
+#if MAX_NR_HIDS_CLIENTS > 0
+    btstack_memory_pool_create(&hids_client_pool, hids_client_storage, MAX_NR_HIDS_CLIENTS, sizeof(hids_client_t));
+#endif
+#if MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS > 0
+    btstack_memory_pool_create(&scan_parameters_service_client_pool, scan_parameters_service_client_storage, MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS, sizeof(scan_parameters_service_client_t));
 #endif
 #if MAX_NR_SM_LOOKUP_ENTRIES > 0
     btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));

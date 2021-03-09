@@ -3949,6 +3949,7 @@ static inline const uint8_t * hsp_subevent_ag_indication_get_value(const uint8_t
     return &event[4];
 }
 
+
 /**
  * @brief Get field status from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED
  * @param event packet
@@ -9511,6 +9512,34 @@ static inline hci_con_handle_t gattservice_subevent_spp_service_connected_get_co
  */
 static inline hci_con_handle_t gattservice_subevent_spp_service_disconnected_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field cid from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
+ * @param event packet
+ * @return cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_hid_service_connected_get_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_service_connected_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field num_instances from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
+ * @param event packet
+ * @return num_instances
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_service_connected_get_num_instances(const uint8_t * event){
+    return event[6];
 }
 
 /**

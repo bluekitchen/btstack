@@ -45,12 +45,71 @@ extern "C" {
 #include <stdint.h>
 #include "hid.h"
 #include "btstack_defines.h"
+#include "bluetooth.h"
+#include "btstack_linked_list.h"
+#include "ble/gatt_client.h"
+
+#ifndef MAX_NUM_HID_SERVICES
+#define MAX_NUM_HID_SERVICES 3
+#endif
+
+typedef enum {
+    HIDS_CLIENT_STATE_IDLE,
+    HIDS_CLIENT_STATE_W2_QUERY_SERVICE,
+    HIDS_CLIENT_STATE_W4_SERVICE_RESULT,
+    HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
+    HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    HIDS_CLIENT_STATE_CONNECTED
+} hid_service_client_state_t;
+
+
+typedef struct {
+    // service
+    uint16_t start_handle;
+    uint16_t end_handle;
+    
+} hid_service_t;
+
+
+typedef struct {
+    btstack_linked_item_t item;
+    
+    hci_con_handle_t  con_handle;
+    uint16_t          cid;
+    hid_service_client_state_t state;
+    btstack_packet_handler_t   client_handler;
+
+    uint8_t num_instances;
+    hid_service_t services[MAX_NUM_HID_SERVICES];
+} hids_client_t;
 
 /* API_START */
 
+/**
+ * @brief Initialize Battery Service. 
+ */
 void hids_client_init(void);
-void hids_client_register_callback(btstack_packet_handler_t callback);
-const char * hids_client_attribute_name_for_id(int id);
+
+/* @brief Connect to HID Services of remote device.
+ *
+ * @param con_handle
+ * @param packet_handler
+ * @param hids_cid
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
+ */
+uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * hids_cid);
+
+/**
+ * @brief Disconnect from Battery Service.
+ * @param hids_cid
+ * @return status
+ */
+uint8_t hids_client_disconnect(uint16_t hids_cid);
+
+/**
+ * @brief De-initialize Battery Service. 
+ */
+void hids_client_deinit(void);
 
 /* API_END */
 

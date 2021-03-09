@@ -86,7 +86,8 @@ GATT_CLIENT += \
 	gatt_client.c        	    			\
 	battery_service_client.c 				\
 	device_information_service_client.c 	\
-	scan_parameters_service_client.c 	\
+	scan_parameters_service_client.c 	    \
+	hids_client.c 	    					\
 
 PAN += \
 	pan.c \
@@ -226,6 +227,7 @@ EXAMPLES_LE_ONLY=           		\
 	gatt_heart_rate_client  		\
 	gatt_streamer_server    		\
 	hog_boot_host_demo      		\
+	hog_host_demo      		        \
 	hog_keyboard_demo       		\
 	hog_mouse_demo          		\
 	le_data_channel_client  		\
@@ -324,6 +326,9 @@ hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SER
 	${CC} $(filter-out hog_mouse_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hog_boot_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_boot_host_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_host_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_peripheral.c
