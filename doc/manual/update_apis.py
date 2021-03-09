@@ -42,6 +42,7 @@ apis = [
     ["src/ble/gatt-service/mesh_provisioning_service_server.h", "Mesh Provisioning Service Server", "meshProvisioningServiceServer"],
     ["src/ble/gatt-service/mesh_proxy_service_server.h", "Mesh Proxy Service Server", "meshProxyServiceServer"],
     ["src/ble/gatt-service/nordic_spp_service_server.h", "Nordic SPP Service Server", "nordicSppServiceServer"],
+    ["src/ble/gatt-service/scan_parameters_service_client.h", "Scan Parameters Service Client", "scanParametersServiceClient"],
     ["src/ble/gatt-service/ublox_spp_service_server.h", "u-blox SPP Service Server", "ubloxSppServiceServer"],
 
     ["src/classic/a2dp_sink.h", "A2DP Sink", "a2dpSink"],

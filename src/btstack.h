@@ -89,6 +89,7 @@
 #include "ble/gatt-service/device_information_service_server.h"
 #include "ble/gatt-service/heart_rate_service_server.h"
 #include "ble/gatt-service/hids_device.h"
+#include "ble/gatt-service/scan_parameters_service_client.h"
 #ifdef ENABLE_MESH
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "ble/gatt-service/mesh_proxy_service_server.h"

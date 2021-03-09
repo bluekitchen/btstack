@@ -9466,6 +9466,25 @@ static inline uint16_t gattservice_subevent_device_information_pnp_id_get_produc
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_scan_parameters_service_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field att_status from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED
+ * @param event packet
+ * @return att_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_scan_parameters_service_connected_get_att_status(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

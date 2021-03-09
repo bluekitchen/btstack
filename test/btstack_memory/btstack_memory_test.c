@@ -802,6 +802,48 @@ TEST(btstack_memory, battery_service_client_NotEnoughBuffers){
 
 
 
+TEST(btstack_memory, scan_parameters_service_client_GetAndFree){
+    scan_parameters_service_client_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context != NULL);
+    btstack_memory_scan_parameters_service_client_free(context);
+#else
+#ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
+    // single
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context != NULL);
+    btstack_memory_scan_parameters_service_client_free(context);
+#else
+    // none
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context == NULL);
+    btstack_memory_scan_parameters_service_client_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, scan_parameters_service_client_NotEnoughBuffers){
+    scan_parameters_service_client_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS; i++){
+        context = btstack_memory_scan_parameters_service_client_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context == NULL);
+}
+
+
+
 TEST(btstack_memory, gatt_client_GetAndFree){
     gatt_client_t * context;
 #ifdef HAVE_MALLOC

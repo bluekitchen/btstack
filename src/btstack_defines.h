@@ -3183,6 +3183,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID                    0x0F
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED            0x10
+
 
 // MAP Meta Event Group
 
