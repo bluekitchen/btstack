@@ -37,6 +37,7 @@ libBTstack_OBJS  = 		           \
 	hci_cmd.o                      \
 	daemon_cmds.o                  \
 	hci_dump.o                     \
+	hci_dump_posix_fs.o            \
 	sdp_util.o                     \
 	spp_server.o                   \
 	socket_connection.o            \

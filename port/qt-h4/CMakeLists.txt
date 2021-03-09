@@ -59,6 +59,7 @@ file(GLOB SOURCES_RIJNDAEL  "${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c")
 set(SOURCES_POSIX
     ${BTSTACK_ROOT}/platform/posix/btstack_audio_portaudio.c
     ${BTSTACK_ROOT}/platform/posix/btstack_tlv_posix.c
+    ${BTSTACK_ROOT}/platform/posix/hci_dump_posix_fs.c
     ${BTSTACK_ROOT}/platform/posix/wav_util.c
 )
 

@@ -65,6 +65,7 @@
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "btstack_stdin.h"
 #include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
@@ -238,15 +239,17 @@ int main(int argc, char * argv[]){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_qt_get_instance());
 
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    // log into file using HCI_DUMP_PACKETLOGGER format
     char pklg_path[100];
 #ifdef Q_OS_WIN
     strcpy(pklg_path, "hci_dump.pklg");
 #else
     strcpy(pklg_path, "/tmp/hci_dump.pklg");
 #endif
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
-    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
 #ifdef Q_OS_WIN

@@ -62,6 +62,7 @@
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "btstack_stdin.h"
 
 int btstack_main(int argc, const char * argv[]);
@@ -128,11 +129,12 @@ int main(int argc, const char * argv[]){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
 
-    char pklg_path[100];
-    strcpy(pklg_path, "hci_dump");
-    strcat(pklg_path, ".pklg");
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * pklg_path = "/tmp/hci_dump.pklg";
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
-    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
     hci_init(hci_transport_usb_instance(), NULL);

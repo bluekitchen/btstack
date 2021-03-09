@@ -67,6 +67,8 @@ BTdaemon_SOURCES =      \
     gatt_client.o               \
     hci.o                       \
     hci_dump.o                  \
+    hci_dump_posix_fs.o         \
+    hci_dump_posix_stdout.o     \
     hci_transport_h4.o          \
     l2cap.o                     \
     l2cap_signaling.o           \
