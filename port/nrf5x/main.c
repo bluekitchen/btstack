@@ -34,6 +34,7 @@
 #include "btstack_run_loop_embedded.h"
 #include "hci_transport.h"
 #include "hci_dump.h"
+#include "hci_dump_embedded_stdout.h"
 #include "hal_cpu.h"
 #include "hal_time_ms.h"
 
@@ -583,11 +584,11 @@ int main(void)
 
     // init HCI
     hci_init(&hci_transport, NULL);
-    
-    // enable full log output while porting
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
-    // hand over to btstack embedded code 
+    // uncomment for packet log
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+
+    // hand over to btstack embedded code
     btstack_main();
 
     // go
