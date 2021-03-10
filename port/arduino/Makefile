@@ -15,7 +15,7 @@ BLE_FILES  = att_db.c att_server.c att_dispatch.c att_db_util.c le_device_db_mem
 BLE_FILES += sm.c
 BEL_GATT_FILES = ancs_client.c
 PORT_FILES = btstack_config.h bsp_arduino_em9301.cpp BTstack.cpp BTstack.h
-EMBEDDED_FILES = btstack_run_loop_embedded.c btstack_uart_block_embedded.c
+EMBEDDED_FILES = btstack_run_loop_embedded.c btstack_uart_block_embedded.c hci_dump_embedded_stdout.c
 
 PATHS  = $(addprefix ${BTSTACK_ROOT}/src/, ${SRC_FILES})
 PATHS += $(filter-out ${BTSTACK_ROOT}/src/btstack.h, $(wildcard ${BTSTACK_ROOT}/src/*.h))

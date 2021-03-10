@@ -30,6 +30,7 @@
 #include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_embedded_stdout.h"
 #include "l2cap.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
@@ -801,8 +802,9 @@ void BTstackManager::setup(void){
 }
 
 void BTstackManager::enablePacketLogger(void){
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    hci_dump_init(hci_dump_embedded_stdout_get_instance());
 }
+
 void BTstackManager::enableDebugLogger(){
     // enable LOG_INFO messages
     hci_dump_enable_log_level(LOG_LEVEL_INFO, 1);
