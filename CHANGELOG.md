@@ -39,6 +39,13 @@ Port Archive: moved ports that are not recommended for new designs to port/archi
 Run Loop Base: functionality used in most platform run loop implementations
   - code from `btstack_run_loop_base.c` moved into `btstack_run_loop.c` to minimize changes to build systems
   - `btstack_run_loop_base.c` is a placeholder and can be removed from build
+HCI Dump: replace monolithic `hci_dump.c` (with many #ifdefs) into dispatcher with platform-specific implementations:
+  - `posix/hci_dump_posix_fs` - writes binary log file
+  - `posix/hci_dump_stdout` - log to console using printf with local system time
+  - `embedded/hci_dump_embedded_stdout` - log to console using printf
+  - `embedded/hci_dump_segger_stdout` - log to RTT console using `SEGGER_printf`
+  - `embedded/hci_dump_segger_binary` - writes binary log over RTT to host
+
 
 ## Release v1.3.2
 

@@ -193,7 +193,7 @@ In this example, the size of ACL packets is limited to the minimum of 52 bytes, 
 
 ### Non-volatile memory (NVM) directives {#sec:nvmConfiguration}
 
-If implemented, bonding information is stored in Non-volatile memory. For Classic, a single link keys and its type is stored. For LE, the bonding information contains various values (long term key, random number, EDIV, signing counter, identity, ...)Often, this implemented using Flash memory. Then, the number of stored entries are limited by:
+If implemented, bonding information is stored in Non-volatile memory. For Classic, a single link keys and its type is stored. For LE, the bonding information contains various values (long term key, random number, EDIV, signing counter, identity, ...) Often, this is implemented using Flash memory. Then, the number of stored entries are limited by:
 
 <!-- a name "lst:nvmDefines"></a-->
 <!-- -->
@@ -207,9 +207,9 @@ NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' 
 
 ### SEGGER Real Time Transfer (RTT) directives {#sec:rttConfiguration}
 
-[SEGGER RTT](https://www.segger.com/products/debug-probes/j-link/technology/about-real-time-transfer/) replaces use of an UART for debugging with higher throughput and less overhead. In addition, it allows for direct logging in PacketLogger/BlueZ format via the provided JLinkRTTLogger tool.
+[SEGGER RTT](https://www.segger.com/products/debug-probes/j-link/technology/about-real-time-transfer/) improves on the use of an UART for debugging with higher throughput and less overhead. In addition, it allows for direct logging in PacketLogger/BlueZ format via the provided JLinkRTTLogger tool.
 
-When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_open` was called with either `HCI_DUMP_BLUEZ` or `HCI_DUMP_PACKETLOGGER`, the following directives are used to configure the up channel:
+When enabled with `ENABLE_SEGGER_RTT` and `hci_dump_init()` can be called with an `hci_dunp_segger_stdout_get_instance()` for textual output and `hci_dump_segger_binary_get_instance()` for binary output. With the latter, you can select `HCI_DUMP_BLUEZ` or `HCI_DUMP_PACKETLOGGER`, format. For RTT, the following directives are used to configure the up channel:
 
 \#define                         | Default                        | Description
 ---------------------------------|--------------------------------|------------------------
@@ -240,8 +240,9 @@ embedded system with a Bluetooth chipset connected via UART.
       // select embedded run loop
       btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
           
-      // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-      hci_dump_open(NULL, HCI_DUMP_STDOUT);
+      // enable logging
+      hci_dump_init(hci_dump_embedded_stdout_get_instance());
+
 
       // init HCI
       hci_transport_t     * transport = hci_transport_h4_instance();
@@ -259,8 +260,10 @@ embedded system with a Bluetooth chipset connected via UART.
 First, BTstack’s memory pools are setup up. Then, the standard run loop
 implementation for embedded systems is selected.
 
-The call to *hci_dump_open* configures BTstack to output all Bluetooth
-packets and it’s own debug and error message via printf. The Python
+The call to *hci_dump_init* configures BTstack to output all Bluetooth
+packets and its own debug and error message using printf with BTstack's
+millisecond tiomestamps.s as tim.
+The Python
 script *tools/create_packet_log.py* can be used to convert the console
 output into a Bluetooth PacketLogger format that can be opened by the OS
 X PacketLogger tool as well as by Wireshark for further inspection. When
@@ -618,19 +621,27 @@ between BTstack and the Bluetooth chipset often helps.
 
 For this, BTstack provides a configurable packet logging mechanism via hci_dump.h:
 
-    // formats: HCI_DUMP_BLUEZ, HCI_DUMP_PACKETLOGGER, HCI_DUMP_STDOUT
-    void hci_dump_open(const char *filename, hci_dump_format_t format);
+    void hci_dump_init(const hci_dump_t * hci_dump_implementation);
 
-On POSIX systems, you can call *hci_dump_open* with a path and *HCI_DUMP_BLUEZ*
-or *HCI_DUMP_PACKETLOGGER* in the setup, i.e., before entering the run loop.
-The resulting file can be analyzed with Wireshark
-or the Apple's PacketLogger tool.
+On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and 
+configure the path and output format with *hci_dump_posix_fs_open(const char * path, hci_dump_format_t format)*
+where format can be *HCI_DUMP_BLUEZ* or *HCI_DUMP_PACKETLOGGER*.
+The resulting file can be analyzed with Wireshark or the Apple's PacketLogger tool.
 
-On embedded systems without a file system, you still can call *hci_dump_open(NULL, HCI_DUMP_STDOUT)*.
-It will log all HCI packets to the console via printf.
+On embedded systems without a file system, you either log to an UART console via printf or use SEGGER RTT.
+For printf output you pass *hci_dump_embedded_stdout_get_instance()* to *hci_dump_init()*.
+With RTT, you can choose between textual output similar to printf, and binary output.
+For textual output, you can provide the *hci_dump_segger_stdout_get_instance()*.
+
+It will log all HCI packets to the UART console via printf or RTT Terminal.
 If you capture the console output, incl. your own debug messages, you can use
 the create_packet_log.py tool in the tools folder to convert a text output into a
 PacketLogger file.
+
+For less overhead and higher logging speed, you can directly log in binary format by
+passing *hci_dump_segger_rtt_binary_get_instance()* and selecting the output format by
+calling *hci_dump_segger_rtt_binary_open(hci_dump_format_t format)* with the same format as above.
+
 
 In addition to the HCI packets, you can also enable BTstack's debug information by adding
 
