@@ -91,10 +91,10 @@ ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
 ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c \
 ${BTSTACK_ROOT}/example/sco_demo_util.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
 ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
