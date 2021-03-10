@@ -47,6 +47,7 @@
 #include "btstack_config.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_chipset_cc256x.h"
+#include "hci_dump_embedded_stdout.h"
 
 // BTstack HALs
 #include "hal_tick.h"
@@ -408,7 +409,7 @@ int bluetooth_main(void)
 	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	// enable packet logger
-	//hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
 	/* Init HCI */
 	const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
