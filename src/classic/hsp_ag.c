@@ -524,16 +524,22 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, strlen(HSP_HS_BUTTON_PRESS)) == 0){
             log_info("Received button press %s", HSP_HS_BUTTON_PRESS);
             ag_send_ok = 1;
-            switch (hsp_state){
-                case HSP_AUDIO_CONNECTION_ESTABLISHED:
-                    hsp_release_audio_connection = 1;
-                    break;
-                case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-                    hsp_state = HSP_W2_CONNECT_SCO;
-                    break;
-                default:
-                    break;
-            } 
+            switch (hsp_state) {
+                ///> we can not release audio connection based on button pressed, we have to wait
+                /// until processing in PurePhone will be made
+                /*switch (hsp_state){
+                    case HSP_AUDIO_CONNECTION_ESTABLISHED:
+                        hsp_release_audio_connection = 1;
+                        break;
+                    case HSP_RFCOMM_CONNECTION_ESTABLISHED:
+                        hsp_state = HSP_W2_CONNECT_SCO;
+                        break;
+                    default:
+                        break;
+                }
+                }*/
+                emit_event(HSP_SUBEVENT_BUTTON_PRESSED, 0);
+            }
         } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, strlen(HSP_HS_MICROPHONE_GAIN)) == 0){
             uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_HS_MICROPHONE_GAIN)]);
             ag_send_ok = 1;
