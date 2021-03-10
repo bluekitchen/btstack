@@ -60,6 +60,9 @@
 
 #ifdef ENABLE_SEGGER_RTT
 #include "SEGGER_RTT.h"
+#include "hci_dump_segger_rtt_stdout.h"
+#else
+#include "hci_dump_embedded_stdout.h"
 #endif
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -130,8 +133,12 @@ void port_main(void){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
-    // uncomment for packet log
-    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
+    // uncomment to enable packet logger
+#ifdef ENABLE_SEGGER_RTT
+    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+#else
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
 
     // init HCI
     hci_init(hci_transport_h2_stm32_instance(), NULL);

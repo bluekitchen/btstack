@@ -58,6 +58,12 @@
 #include "btstack_tlv_none.h"
 #include "ble/le_device_db_tlv.h"
 
+#ifdef ENABLE_SEGGER_RTT
+#include "SEGGER_RTT.h"
+#include "hci_dump_segger_rtt_stdout.h"
+#else
+#include "hci_dump_embedded_stdout.h"
+#endif
 
 void btstack_assert_failed(const char * file, uint16_t line_nr){
     printf("Assert: file %s, line %u\n", file, line_nr);
@@ -115,9 +121,13 @@ void btstack_port(void){
 
     // init HCI
     hci_init(hci_transport, NULL);
-    
-    // enable full log output while porting
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
+    // uncomment to enable packet logger
+#ifdef ENABLE_SEGGER_RTT
+    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+#else
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
 
     // hand over to btstack embedded code 
     btstack_main();

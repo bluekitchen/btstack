@@ -48,6 +48,8 @@ ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
 ${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
