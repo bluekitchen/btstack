@@ -22,6 +22,7 @@
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "l2cap.h"
 #include "ble/sm.h"
 
@@ -223,7 +224,13 @@ TEST_GROUP(SecurityManager){
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
         sm_event_callback_registration.callback = &app_packet_handler;
         sm_add_event_handler(&sm_event_callback_registration);
-        // hci_dump_open("security_manager.pklg", HCI_DUMP_PACKETLOGGER);
+
+
+        // log into file using HCI_DUMP_PACKETLOGGER format
+        const char * log_path = "hci_dump.pklg";
+        hci_dump_posix_fs_open(log_path, HCI_DUMP_PACKETLOGGER);
+        hci_dump_init(hci_dump_posix_fs_get_instance());
+        printf("Packet Log: %s\n", log_path);
     }
 };
 
@@ -404,6 +411,11 @@ TEST(SecurityManager, MainTest){
 }
 
 int main (int argc, const char * argv[]){
-    // hci_dump_open("hci_dump.pklg", HCI_DUMP_STDOUT); // HCI_DUMP_PACKETLOGGER
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * log_path = "hci_dump.pklg";
+    hci_dump_posix_fs_open(log_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
+    printf("Packet Log: %s\n", log_path);
+
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

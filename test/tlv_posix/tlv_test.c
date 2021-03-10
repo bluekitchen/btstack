@@ -185,6 +185,11 @@ TEST(BSTACK_TLV, TestWriteDeleteResetReadDeleteRead){
 
 
 int main (int argc, const char * argv[]){
-	// hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * log_path = "hci_dump.pklg";
+    hci_dump_posix_fs_open(log_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
+    printf("Packet Log: %s\n", log_path);
+
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

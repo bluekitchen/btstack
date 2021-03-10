@@ -4,7 +4,7 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I${BTSTACK_ROOT}/src
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I${BTSTACK_ROOT}/src  -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -21,6 +21,7 @@ COMMON = \
 	hci.c                       \
 	hci_cmd.c                   \
 	hci_dump.c                  \
+	hci_dump_posix_fs.c         \
 	le_device_db_memory.c       \
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage

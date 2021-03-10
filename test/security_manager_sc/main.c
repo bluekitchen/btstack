@@ -217,8 +217,11 @@ int main(int argc, const char * argv[]){
         strcat(pklg_path, usb_path_string);
     }
     strcat(pklg_path, ".pklg");
+
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
     printf("Packet Log: %s\n", pklg_path);
-    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
 	hci_init(hci_transport_usb_instance(), NULL);

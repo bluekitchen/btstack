@@ -208,8 +208,6 @@ int main(int argc, const char * argv[]){
         hci_transport_usb_set_path(usb_path_len, usb_path);
     }
 
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-
     char pklg_path[100];
     strcpy(pklg_path, "/tmp/hci_dump");
     if (usb_path_len){
@@ -218,7 +216,7 @@ int main(int argc, const char * argv[]){
     }
     strcat(pklg_path, ".pklg");
     printf("Packet Log: %s\n", pklg_path);
-    // hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(pklg_path, hci_dump_posix);
 
     // init HCI
 	hci_init(hci_transport_usb_instance(), NULL);
