@@ -67,7 +67,7 @@ All debug output is send via SEGGER RTT.
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in src/hal_entry.c by uncommenting the hci_dump_open(NULL, HCI_DUMP_STDOUT) call.
+Also, the full packet log can be enabled in src/hal_entry.c by uncommenting the hci_dump_init(...) call.
 The console output can then be converted into .pklg files by running tool/create_packet_log.py. The .pklg file can be 
 analyzed with the macOS X PacketLogger or WireShark.
 
