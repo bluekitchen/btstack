@@ -15,6 +15,7 @@ obj-y +=  \
 	l2cap.o \
 	l2cap_signaling.o \
 	btstack_run_loop_embedded.o \
+	hci_dump_embedded_stdout.o \
 
 obj-y += ble/
 # obj-y += classic/

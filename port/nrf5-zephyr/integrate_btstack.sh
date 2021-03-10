@@ -27,6 +27,8 @@ rsync -a ../../platform/embedded/hal_time_ms.h ${ZEPHYR_BASE}/subsys/btstack
 rsync -a ../../platform/embedded/hal_tick.h ${ZEPHYR_BASE}/subsys/btstack
 rsync -a ../../platform/embedded/btstack_run_loop_embedded.h ${ZEPHYR_BASE}/subsys/btstack
 rsync -a ../../platform/embedded/btstack_run_loop_embedded.c ${ZEPHYR_BASE}/subsys/btstack
+rsync -a ../../platform/embedded/hci_dump_embedded_stdout.h  ${ZEPHYR_BASE}/subsys/btstack
+rsync -a ../../platform/embedded/hci_dump_embedded_stdout.c  ${ZEPHYR_BASE}/subsys/btstack
 
 # copy bludroid
 rsync -a ../../3rd-party/bluedroid ${ZEPHYR_BASE}/subsys/btstack

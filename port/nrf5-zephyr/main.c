@@ -41,6 +41,7 @@
 #include "btstack_run_loop.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
 
 // static struct device *hci_uart_dev;
@@ -274,7 +275,7 @@ void main(void)
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
 
     // enable full log output while porting
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
