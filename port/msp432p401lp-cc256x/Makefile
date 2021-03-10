@@ -161,6 +161,8 @@ ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
 ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
 ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
 

@@ -57,7 +57,7 @@ All debug output is send via SEGGER RTT or via USART2. To get the console from U
 
 In btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be disabled/enabled via ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in main.c  by uncommenting the hci_dump_open(..) line. The output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
+Also, the full packet log can be enabled in main.c  by uncommenting the hci_dump_init(..) line. The output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
 
 
 ## GATT Database

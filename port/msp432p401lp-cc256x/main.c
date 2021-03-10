@@ -27,6 +27,12 @@
 #include "classic/btstack_link_key_db_tlv.h"
 #include "ble/le_device_db_tlv.h"
 
+#ifdef ENABLE_SEGGER_RTT
+#include "hci_dump_segger_rtt_stdout.h"
+#else
+#include "hci_dump_embedded_stdout.h"
+#endif
+
 static void delay_ms(uint32_t ms);
 
 static hci_transport_config_uart_t config = {
@@ -631,7 +637,11 @@ int main(void)
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
     // uncomment to enable packet logger
-    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
+#ifdef ENABLE_SEGGER_RTT
+    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+#else
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
 
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
