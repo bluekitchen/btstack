@@ -109,6 +109,7 @@ SRC += btstack_em9304_spi_embedded.c
 SRC += btstack_port.c
 SRC += btstack_run_loop_embedded.c
 SRC += btstack_uart_block_embedded.c
+SRC += hci_dump_embedded_stdout.c
 SRC += uECC.c
 
 -include ${AM_SoftwareRoot}/third_party/btstack/src/Makefile.inc
