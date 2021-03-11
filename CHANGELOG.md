@@ -24,6 +24,7 @@ GATT Client: Scan Parameters Service Client
 GAP: add gap_set_page_scan_activity and gap_set_page_scan_type
 
 ### Fixed
+HCI: handle start inquiry failure
 
 ### Changed
 HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz

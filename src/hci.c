@@ -113,12 +113,13 @@
 #endif
 
 // GAP inquiry state: 0 = off, 0x01 - 0x30 = requested duration, 0xfe = active, 0xff = stop requested
-#define GAP_INQUIRY_DURATION_MIN 0x01
-#define GAP_INQUIRY_DURATION_MAX 0x30
-#define GAP_INQUIRY_STATE_ACTIVE 0x80
-#define GAP_INQUIRY_STATE_IDLE 0
-#define GAP_INQUIRY_STATE_W2_CANCEL 0x81
-#define GAP_INQUIRY_STATE_W4_CANCELLED 0x82
+#define GAP_INQUIRY_DURATION_MIN       0x01
+#define GAP_INQUIRY_DURATION_MAX       0x30
+#define GAP_INQUIRY_STATE_IDLE         0x00
+#define GAP_INQUIRY_STATE_W4_ACTIVE    0x80
+#define GAP_INQUIRY_STATE_ACTIVE       0x81
+#define GAP_INQUIRY_STATE_W2_CANCEL    0x82
+#define GAP_INQUIRY_STATE_W4_CANCELLED 0x83
 
 // GAP Remote Name Request
 #define GAP_REMOTE_NAME_STATE_IDLE 0
@@ -2385,6 +2386,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
                 }
             }
+
+#ifdef ENABLE_CLASSIC
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_inquiry)) {
+                uint8_t status = hci_event_command_status_get_status(packet);
+                log_info("command status (inquiry), status %x", status);
+                if (status == ERROR_CODE_SUCCESS) {
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+                } else {
+                    hci_stack->inquiry_state = GAP_INQUIRY_STATE_IDLE;
+                }
+            }
+#endif
             break;
 
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
@@ -3789,7 +3802,7 @@ static bool hci_run_general_gap_classic(void){
     // start/stop inquiry
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)){
         uint8_t duration = hci_stack->inquiry_state;
-        hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
+        hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_ACTIVE;
         hci_send_cmd(&hci_inquiry, GAP_IAC_GENERAL_INQUIRY, duration, 0);
         return true;
     }
