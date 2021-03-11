@@ -121,6 +121,21 @@ typedef enum {
   INQUIRY_MODE_RSSI_AND_EIR,
 } inquiry_mode_t;
 
+/**
+ * @brief Page Scan Types
+ */
+typedef enum {
+    PAGE_SCAN_MODE_STANDARD = 0,
+    PAGE_SCAN_MODE_INTERLACED,
+} page_scan_type_t;
+
+/**
+ * @brief Inquiry Scan Types
+ */
+typedef enum {
+    INQUIRY_SCAN_MODE_STANDARD = 0,
+    INQUIRY_SCAN_MODE_INTERLACED,
+} inquiry_scan_type_t;
 
 /**
  * HCI Transport 
