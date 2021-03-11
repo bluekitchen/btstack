@@ -59,6 +59,9 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_SERVICE_RESULT,
     HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED,
+    HIDS_CLIENT_STATE_W4_MOUSE_ENABLED,
+    HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE,
     HIDS_CLIENT_STATE_CONNECTED
 } hid_service_client_state_t;
 
@@ -76,11 +79,27 @@ typedef struct {
     
     hci_con_handle_t  con_handle;
     uint16_t          cid;
+    hid_protocol_mode_t protocol_mode;
     hid_service_client_state_t state;
     btstack_packet_handler_t   client_handler;
 
     uint8_t num_instances;
     hid_service_t services[MAX_NUM_HID_SERVICES];
+
+    // used for discovering characteristics
+    uint8_t service_index;
+    hid_protocol_mode_t required_protocol_mode;
+
+    uint16_t protocol_mode_value_handle;
+
+    uint16_t boot_keyboard_input_value_handle;
+    uint16_t boot_keyboard_input_end_handle;
+    gatt_client_notification_t boot_keyboard_notifications;
+    
+    uint16_t boot_mouse_input_value_handle;
+    uint16_t boot_mouse_input_end_handle;
+    gatt_client_notification_t boot_mouse_notifications;
+
 } hids_client_t;
 
 /* API_START */
@@ -94,10 +113,11 @@ void hids_client_init(void);
  *
  * @param con_handle
  * @param packet_handler
+ * @param protocol_mode see hid_protocol_mode_t in hid.h
  * @param hids_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
  */
-uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * hids_cid);
+uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid);
 
 /**
  * @brief Disconnect from Battery Service.
