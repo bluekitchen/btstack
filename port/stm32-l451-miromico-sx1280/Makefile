@@ -83,10 +83,10 @@ ${BTSTACK_ROOT}/src/hci_dump.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
-${BTSTACK_ROOT}/chipset/sx128x/controller.c \
-${BTSTACK_ROOT}/chipset/sx128x/hci_event.c \
-${BTSTACK_ROOT}/chipset/sx128x//hopping.c \
-${BTSTACK_ROOT}/chipset/sx128x//ll_sx1280.c \
+${BTSTACK_ROOT}/chipset/controller/controller.c \
+${BTSTACK_ROOT}/chipset/controller/hci_event.c \
+${BTSTACK_ROOT}/chipset/controller/hopping.c \
+${BTSTACK_ROOT}/chipset/sx128x/ll_sx1280.c \
 ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280-hal.c \
 ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c \
@@ -186,7 +186,7 @@ C_INCLUDES =  \
 -I ${BTSTACK_ROOT}/chipset/sx128x \
 -I ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/ \
 -I ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/ \
--I controller \
+-I ${BTSTACK_ROOT}/chipset/controller \
 -I Drivers/CMSIS/Device/ST/STM32L4xx/Include \
 -I Drivers/CMSIS/Include \
 -I Drivers/STM32L4xx_HAL_Driver/Inc \
