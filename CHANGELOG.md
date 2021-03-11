@@ -21,6 +21,7 @@ hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
 GATT Client: Battery Service Client 
 GATT Client: Device Information Service Client
 GATT Client: Scan Parameters Service Client 
+GAP: add gap_set_page_scan_activity and gap_set_page_scan_type
 
 ### Fixed
 

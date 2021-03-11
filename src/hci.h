@@ -820,7 +820,15 @@ typedef struct {
     bool               secure_connections_enable;
     bool               secure_connections_active;
     inquiry_mode_t     inquiry_mode;
+
 #ifdef ENABLE_CLASSIC
+    /* write page scan activity, 0xffff is no change */
+    uint16_t           new_page_scan_interval;
+    uint16_t           new_page_scan_window;
+
+    /* write page scan type, 0xff is no change */
+    uint8_t            new_page_scan_type;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
     uint16_t           link_supervision_timeout;

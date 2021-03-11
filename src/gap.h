@@ -282,6 +282,19 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
 int  gap_mitm_protection_required_for_security_level(gap_security_level_t level);
 
+/**
+ * @brief Set Page Scan Type
+ * @param page_scan_interval * 0.625 ms, range: 0x0012..0x1000, default: 0x0800
+ * @param page_scan_windows  * 0.625 ms, range: 0x0011..page_scan_interval, default: 0x0012
+ */
+void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window);
+
+/**
+ * @brief Set Page Scan Type
+ * @param page_scan_mode
+ */
+void gap_set_page_scan_type(page_scan_type_t page_scan_type);
+
 // LE
 
 /**

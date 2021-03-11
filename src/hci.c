@@ -3100,6 +3100,12 @@ static void hci_state_reset(void){
 
     hci_stack->secure_connections_active = false;
 
+    #ifdef ENABLE_CLASSIC
+    hci_stack->new_page_scan_interval = 0xffff;
+    hci_stack->new_page_scan_window = 0xffff;
+    hci_stack->new_page_scan_type = 0xff;
+#endif
+
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
     hci_stack->classic_read_local_oob_data = true;
 #endif
@@ -3759,6 +3765,19 @@ static bool hci_run_general_gap_classic(void){
         uint8_t reason = hci_stack->decline_reason;
         hci_stack->decline_reason = 0;
         hci_send_cmd(&hci_reject_connection_request, hci_stack->decline_addr, reason);
+        return true;
+    }
+    // write page scan activity
+    if ((hci_stack->state == HCI_STATE_WORKING) && (hci_stack->new_page_scan_interval != 0xffff) && hci_classic_supported()){
+        hci_send_cmd(&hci_write_page_scan_activity, hci_stack->new_page_scan_interval, hci_stack->new_page_scan_window);
+        hci_stack->new_page_scan_interval = 0xffff;
+        hci_stack->new_page_scan_window = 0xffff;
+        return true;
+    }
+    // write page scan type
+    if ((hci_stack->state == HCI_STATE_WORKING) && (hci_stack->new_page_scan_type != 0xff) && hci_classic_supported()){
+        hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
+        hci_stack->new_page_scan_type = 0xff;
         return true;
     }
     // send scan enable
@@ -6296,6 +6315,18 @@ uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
     hci_run();
     return 0;
 }
+
+void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window){
+    hci_stack->new_page_scan_interval = page_scan_interval;
+    hci_stack->new_page_scan_window = page_scan_window;
+    hci_run();
+}
+
+void gap_set_page_scan_type(page_scan_type_t page_scan_type){
+    hci_stack->new_page_scan_type = (uint8_t) page_scan_type;
+    hci_run();
+}
+
 #endif
 
 void hci_halting_defer(void){
