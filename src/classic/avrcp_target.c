@@ -780,7 +780,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     
     avrcp_command_opcode_t opcode = (avrcp_command_opcode_t) avrcp_cmd_opcode(packet,size);
 
-    int pos = 4;
+    int pos = 6;
     uint16_t length;
     avrcp_pdu_id_t   pdu_id;
     connection->cmd_operands_length = 0;
