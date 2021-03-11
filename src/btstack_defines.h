@@ -3077,7 +3077,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 12111
  * @param subevent_code
- * @param cid
+ * @param hids_cid
  * @param status
  * @param num_instances
  * @param poll_bitmap
@@ -3087,7 +3087,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 12111
  * @param subevent_code
- * @param cid
+ * @param hids_cid
  * @param sevice_index
  * @param att_status  see ATT errors in bluetooth.h  
  * @param level
@@ -3212,13 +3212,24 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED                     0x12
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
- * @param cid
+ * @param hids_cid
  * @param status
+ * @param protocol_mode
  * @param num_instances
 */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x13
+
+/** 
+ * @format 12LV
+ * @param subevent_code
+ * @param hids_cid
+ * @param report_len
+ * @param report
+*/
+#define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x14
+
 
 // MAP Meta Event Group
 

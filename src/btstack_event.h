@@ -9077,12 +9077,12 @@ static inline uint16_t gattservice_subevent_cycling_power_broadcast_stop_get_con
 }
 
 /**
- * @brief Get field cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED
  * @param event packet
- * @return cid
+ * @return hids_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_battery_service_connected_get_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_battery_service_connected_get_hids_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -9114,12 +9114,12 @@ static inline uint8_t gattservice_subevent_battery_service_connected_get_poll_bi
 }
 
 /**
- * @brief Get field cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL
  * @param event packet
- * @return cid
+ * @return hids_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_battery_service_level_get_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_battery_service_level_get_hids_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -9515,12 +9515,12 @@ static inline hci_con_handle_t gattservice_subevent_spp_service_disconnected_get
 }
 
 /**
- * @brief Get field cid from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
  * @param event packet
- * @return cid
+ * @return hids_cid
  * @note: btstack_type 2
  */
-static inline uint16_t gattservice_subevent_hid_service_connected_get_cid(const uint8_t * event){
+static inline uint16_t gattservice_subevent_hid_service_connected_get_hids_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -9533,13 +9533,50 @@ static inline uint8_t gattservice_subevent_hid_service_connected_get_status(cons
     return event[5];
 }
 /**
+ * @brief Get field protocol_mode from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
+ * @param event packet
+ * @return protocol_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_service_connected_get_protocol_mode(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field num_instances from event GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED
  * @param event packet
  * @return num_instances
  * @note: btstack_type 1
  */
 static inline uint8_t gattservice_subevent_hid_service_connected_get_num_instances(const uint8_t * event){
-    return event[6];
+    return event[7];
+}
+
+/**
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_HID_REPORT
+ * @param event packet
+ * @return hids_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_hid_report_get_hids_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field report_len from event GATTSERVICE_SUBEVENT_HID_REPORT
+ * @param event packet
+ * @return report_len
+ * @note: btstack_type L
+ */
+static inline uint16_t gattservice_subevent_hid_report_get_report_len(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field report from event GATTSERVICE_SUBEVENT_HID_REPORT
+ * @param event packet
+ * @return report
+ * @note: btstack_type V
+ */
+static inline const uint8_t * gattservice_subevent_hid_report_get_report(const uint8_t * event){
+    return &event[7];
 }
 
 /**
