@@ -141,23 +141,6 @@ void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg)
     btstack_run_loop_freertos_trigger();
 }
 
-#if defined(HAVE_FREERTOS_TASK_NOTIFICATIONS) || (INCLUDE_xEventGroupSetBitFromISR == 1)
-void btstack_run_loop_freertos_trigger_from_isr(void){
-    BaseType_t xHigherPriorityTaskWoken;
-#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
-    xTaskNotifyFromISR(btstack_run_loop_task, EVENT_GROUP_FLAG_RUN_LOOP, eSetBits, &xHigherPriorityTaskWoken);
-    if (xHigherPriorityTaskWoken) {
-#ifdef ESP_PLATFORM
-        portYIELD_FROM_ISR();
-#else
-        portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
-#endif
-    }
-#else
-    xEventGroupSetBitsFromISR(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, &xHigherPriorityTaskWoken);
-#endif
-}
-
 void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
