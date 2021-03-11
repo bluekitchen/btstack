@@ -206,11 +206,47 @@ static hid_service_client_state_t boot_protocol_mode_setup_next_state(hids_clien
     return state;
 }
 
-static void handle_hid_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+static void hids_client_setup_report_event(hids_client_t * client, uint8_t report_id, uint8_t *buffer, uint16_t report_len){
+    uint16_t pos = 0;
+    buffer[pos++] = HCI_EVENT_GATTSERVICE_META;
+    pos++;  // skip len
+    buffer[pos++] = GATTSERVICE_SUBEVENT_HID_REPORT;
+    little_endian_store_16(buffer, pos, client->cid);
+    pos += 2;
+    buffer[pos++] = report_id;
+    little_endian_store_16(buffer, pos, report_len);
+    pos += 2;
+    buffer[1] = pos + report_len - 2;
+}
+
+static void handle_boot_keyboard_hid_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
-    // sent HID_SUBEVENT_REPORT similar event
+
+    if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) return;
+
+    hids_client_t * client = hids_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
+    btstack_assert(client != NULL);
+
+    uint8_t * in_place_event = packet;
+    hids_client_setup_report_event(client, HID_BOOT_MODE_KEYBOARD_ID, in_place_event, gatt_event_notification_get_value_length(packet));
+    (*client->client_handler)(HCI_EVENT_PACKET, client->cid, in_place_event, size);
+}
+
+static void handle_boot_mouse_hid_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) return;
+
+    hids_client_t * client = hids_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
+    btstack_assert(client != NULL);
+
+    uint8_t * in_place_event = packet;
+    hids_client_setup_report_event(client, HID_BOOT_MODE_MOUSE_ID, in_place_event, gatt_event_notification_get_value_length(packet));
+    (*client->client_handler)(HCI_EVENT_PACKET, client->cid, in_place_event, size);
 }
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -319,7 +355,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED:
                     // setup listener
                     characteristic.value_handle = client->boot_keyboard_input_value_handle;
-                    gatt_client_listen_for_characteristic_value_updates(&client->boot_keyboard_notifications, &handle_hid_event, client->con_handle, &characteristic);
+                    gatt_client_listen_for_characteristic_value_updates(&client->boot_keyboard_notifications, &handle_boot_keyboard_hid_event, client->con_handle, &characteristic);
                     
                     if (client->boot_mouse_input_value_handle != 0){
                         client->state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
@@ -337,7 +373,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case HIDS_CLIENT_STATE_W4_MOUSE_ENABLED:
                     // setup listener
                     characteristic.value_handle = client->boot_mouse_input_value_handle;
-                    gatt_client_listen_for_characteristic_value_updates(&client->boot_mouse_notifications, &handle_hid_event, client->con_handle, &characteristic);
+                    gatt_client_listen_for_characteristic_value_updates(&client->boot_mouse_notifications, &handle_boot_mouse_hid_event, client->con_handle, &characteristic);
 
                     if (client->protocol_mode_value_handle != 0){
                         client->state = HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE;
@@ -346,8 +382,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
                     }
                     break;
-
-                
                 default:
                     break;
             }
