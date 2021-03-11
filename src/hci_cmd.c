@@ -807,10 +807,24 @@ const hci_cmd_t hci_write_current_iac_lap_two_iacs = {
 };
 
 /**
+ * @param inquiry_scan_type (0x00 = standard, 0x01 = interlaced)
+ */
+const hci_cmd_t hci_write_inquiry_scan_type = {
+    HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_TYPE,  "1"
+};
+
+/**
  * @param inquiry_mode (0x00 = standard, 0x01 = with RSSI, 0x02 = extended)
  */
 const hci_cmd_t hci_write_inquiry_mode = {
     HCI_OPCODE_HCI_WRITE_INQUIRY_MODE, "1"
+};
+
+/**
+ * @param page_scan_type (0x00 = standard, 0x01 = interlaced)
+ */
+const hci_cmd_t hci_write_page_scan_type = {
+    HCI_OPCODE_HCI_WRITE_PAGE_SCAN_TYPE, "1"
 };
 
 /**

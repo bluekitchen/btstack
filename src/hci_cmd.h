@@ -155,7 +155,12 @@ typedef enum {
     HCI_OPCODE_HCI_READ_LINK_SUPERVISION_TIMEOUT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x36),
     HCI_OPCODE_HCI_WRITE_LINK_SUPERVISION_TIMEOUT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x37),
     HCI_OPCODE_HCI_WRITE_CURRENT_IAC_LAP_TWO_IACS = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x3A),
+    HCI_OPCODE_HCI_READ_INQUIRY_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x42),
+    HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x43),
+    HCI_OPCODE_HCI_READ_INQUIRY_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x44),
     HCI_OPCODE_HCI_WRITE_INQUIRY_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x45),
+    HCI_OPCODE_HCI_READ_PAGE_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x46),
+    HCI_OPCODE_HCI_WRITE_PAGE_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x47),
     HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_RESPONSE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x52),
     HCI_OPCODE_HCI_WRITE_SIMPLE_PAIRING_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x56),
     HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x57),
@@ -307,6 +312,7 @@ extern const hci_cmd_t hci_write_default_link_policy_setting;
 extern const hci_cmd_t hci_write_extended_inquiry_response;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_inquiry_scan_activity;
+extern const hci_cmd_t hci_write_inquiry_scan_type;
 extern const hci_cmd_t hci_write_le_host_supported;
 extern const hci_cmd_t hci_write_link_policy_settings;
 extern const hci_cmd_t hci_write_link_supervision_timeout;
@@ -316,6 +322,7 @@ extern const hci_cmd_t hci_write_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_write_page_timeout;
 extern const hci_cmd_t hci_write_pin_type;
 extern const hci_cmd_t hci_write_page_scan_activity;
+extern const hci_cmd_t hci_write_page_scan_type;
 extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_secure_connections_host_support;
 extern const hci_cmd_t hci_write_secure_connections_test_mode;
