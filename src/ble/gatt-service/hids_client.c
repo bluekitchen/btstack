@@ -57,6 +57,7 @@
 
 static btstack_linked_list_t clients;
 static uint16_t hids_cid_counter = 0;
+static uint16_t hids_report_counter = 0;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -67,6 +68,15 @@ static uint16_t hids_get_next_cid(void){
         hids_cid_counter++;
     }
     return hids_cid_counter;
+}
+
+static uint8_t hids_get_next_report_index(void){
+    if (hids_report_counter < HIDS_CLIENT_NUM_REPORTS) {
+        hids_report_counter++;
+    } else {
+        hids_report_counter = HIDS_CLIENT_INVALID_REPORT_INDEX;
+    }
+    return hids_report_counter;
 }
 
 static hids_client_t * hids_create_client(hci_con_handle_t con_handle, uint16_t cid){
@@ -182,6 +192,15 @@ static void hids_run_for_client(hids_client_t * client){
             hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
             break;
         
+        case HIDS_CLIENT_W2_SEND_REPORT:{
+            client->state = HIDS_CLIENT_STATE_CONNECTED;
+            
+            att_status = gatt_client_write_value_of_characteristic_without_response(client->con_handle, 
+                client->reports[client->active_report_index].value_handle, 
+                client->report_len, (uint8_t *)client->report);
+            UNUSED(att_status);
+            break;
+        }
         default:
             break;
     }
@@ -230,6 +249,26 @@ static void handle_boot_mouse_hid_event(uint8_t packet_type, uint16_t channel, u
     (*client->client_handler)(HCI_EVENT_PACKET, client->cid, in_place_event, size);
 }
 
+static uint8_t find_report_index_for_value_handle(hids_client_t * client, uint16_t value_handle){
+    uint8_t i;
+    for (i = 0; i < client->num_reports; client++){
+        if (client->reports[i].value_handle == value_handle){
+            return i;
+        }
+    }
+    return HIDS_CLIENT_INVALID_REPORT_INDEX;
+}
+
+static uint8_t find_report_index_for_report_id(hids_client_t * client, uint8_t report_id){
+    uint8_t i;
+    for (i = 0; i < client->num_reports; client++){
+        if (client->reports[i].report_id == report_id){
+            return i;
+        }
+    }
+    return HIDS_CLIENT_INVALID_REPORT_INDEX;
+}
+
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
     UNUSED(channel);     
@@ -239,7 +278,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     uint8_t att_status;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
-    
+    uint8_t report_index;
+
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
@@ -267,17 +307,38 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             switch (characteristic.uuid16){
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT:
                     client->boot_keyboard_input_value_handle = characteristic.value_handle;
-                    client->boot_keyboard_input_end_handle = characteristic.end_handle;
-                    client->boot_keyboard_input_properties = characteristic.properties;
+                    client->boot_keyboard_input_end_handle   = characteristic.end_handle;
+                    client->boot_keyboard_input_properties   = characteristic.properties;
                     break;
+                
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_MOUSE_INPUT_REPORT:
                     client->boot_mouse_input_value_handle = characteristic.value_handle;
-                    client->boot_mouse_input_end_handle = characteristic.end_handle;
-                    client->boot_mouse_input_properties = characteristic.properties;
+                    client->boot_mouse_input_end_handle   = characteristic.end_handle;
+                    client->boot_mouse_input_properties   = characteristic.properties;
                     break;
+                
                 case ORG_BLUETOOTH_CHARACTERISTIC_PROTOCOL_MODE:
                     client->protocol_mode_value_handle = characteristic.value_handle;
                     break;
+
+                case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_OUTPUT_REPORT:
+                    report_index = find_report_index_for_value_handle(client, characteristic.value_handle);
+                    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+                        break; 
+                    }
+
+                    report_index = hids_get_next_report_index();
+
+                    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+                        client->reports[report_index].value_handle = characteristic.value_handle;
+                        client->reports[report_index].report_id = HID_BOOT_MODE_KEYBOARD_ID;
+                        client->reports[report_index].report_type = HID_REPORT_TYPE_OUTPUT;
+                        client->num_reports++;
+                    } else {
+                        log_info("not enough storage, increase HIDS_CLIENT_NUM_REPORTS");
+                    }
+                    break;
+
                 default:
                     break;
             }
@@ -434,6 +495,41 @@ uint8_t hids_client_disconnect(uint16_t hids_cid){
     }
     // finalize connection
     hids_finalize_client(client);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len){
+    hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
+    uint8_t report_index = find_report_index_for_report_id(client, report_id);
+    if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    uint16_t mtu;
+    uint8_t status = gatt_client_get_mtu(client->con_handle, &mtu);
+
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+
+    if (mtu - 2 < report_len){
+        return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
+    }
+
+    client->state = HIDS_CLIENT_W2_SEND_REPORT;
+    client->active_report_index = report_index;
+    client->report = report;
+    client->report_len = report_len;
+
+    hids_run_for_client(client);
     return ERROR_CODE_SUCCESS;
 }
 

@@ -52,6 +52,9 @@ extern "C" {
 #ifndef MAX_NUM_HID_SERVICES
 #define MAX_NUM_HID_SERVICES 3
 #endif
+#define HIDS_CLIENT_INVALID_REPORT_INDEX 0xFF
+
+#define HIDS_CLIENT_NUM_REPORTS 10
 
 typedef enum {
     HIDS_CLIENT_STATE_IDLE,
@@ -65,17 +68,21 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_MOUSE_ENABLED,
     HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE,
     HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE,
-    HIDS_CLIENT_STATE_CONNECTED
+    HIDS_CLIENT_STATE_CONNECTED,
+    HIDS_CLIENT_W2_SEND_REPORT
 } hid_service_client_state_t;
 
 
 typedef struct {
-    // service
+    uint16_t value_handle;
+    uint8_t  report_id;
+    hid_report_type_t report_type;
+} hids_client_report_t;
+
+typedef struct {
     uint16_t start_handle;
     uint16_t end_handle;
-    
 } hid_service_t;
-
 
 typedef struct {
     btstack_linked_item_t item;
@@ -105,6 +112,13 @@ typedef struct {
     uint16_t boot_mouse_input_properties;
     gatt_client_notification_t boot_mouse_notifications;
 
+    // send report
+    hids_client_report_t reports[HIDS_CLIENT_NUM_REPORTS];
+    uint8_t num_reports;
+
+    uint8_t   active_report_index;
+    uint16_t  report_len;
+    const uint8_t * report;
 } hids_client_t;
 
 /* API_START */
@@ -123,6 +137,16 @@ void hids_client_init(void);
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
  */
 uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, hid_protocol_mode_t protocol_mode, uint16_t * hids_cid);
+
+/**
+ * @brief Send HID output report.
+ * @param hids_cid
+ * @param report_id
+ * @param report
+ * @param report_len
+ * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
+ */
+uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
 
 /**
  * @brief Disconnect from Battery Service.
