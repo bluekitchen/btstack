@@ -343,7 +343,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state == A2DP_DISCOVER_SEPS) {
                 avdtp_sep_t sep;
                 memset(&sep, 0, sizeof(avdtp_sep_t));
@@ -365,7 +364,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_DISCOVER_SEPS) break;
 
             if (num_remote_seps > 0){
@@ -391,7 +389,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // forward codec capability
@@ -426,7 +423,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY);
             break;
@@ -435,7 +431,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY);
             break;
@@ -444,7 +439,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY);
             break;
@@ -453,7 +447,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY);
             break;
@@ -473,7 +466,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
             log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, connection->a2dp_source_state);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // store delay reporting capability
@@ -487,7 +479,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // forward capabilities done for endpoint
@@ -530,7 +521,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORT);
             break;
 
@@ -570,7 +560,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (connection->a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
 
             outgoing_active = false;
@@ -601,8 +590,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 				a2dp_source_set_config_timer_start(avdtp_cid);
 				break;
 			}
-
-            if (a2dp_source_cid != cid) break;
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             
@@ -661,7 +648,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
 
             connection->a2dp_source_state = A2DP_CONNECTED;
@@ -673,7 +659,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-            if (a2dp_source_cid != cid) break;
             if (avdtp_subevent_signaling_general_reject_get_is_initiator(packet) == 0) break;
 
             connection->a2dp_source_state = A2DP_CONNECTED;
@@ -684,8 +669,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
-
-            if (a2dp_source_cid != cid) break;
 
             connection->a2dp_source_state = A2DP_CONFIGURED;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
@@ -871,11 +854,6 @@ static uint8_t a2dp_source_config_init(uint8_t local_seid, uint8_t remote_seid, 
 }
 
 uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_sbc_t * configuration){
-
-    if (a2dp_source_cid != a2dp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -894,11 +872,6 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_
 }
 
 uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_mpeg_audio_t * configuration){
-
-    if (a2dp_source_cid != a2dp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -918,11 +891,6 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid,
 }
 
 uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid,  uint8_t remote_seid, const avdtp_configuration_mpeg_aac_t * configuration){
-
-    if (a2dp_source_cid != a2dp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -940,11 +908,6 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
 }
 
 uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint8_t remote_seid, const avdtp_configuration_atrac_t * configuration){
-
-    if (a2dp_source_cid != a2dp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -964,10 +927,6 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint
 
 uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uint8_t remote_seid,
                                      const uint8_t * media_codec_information, uint8_t media_codec_information_len){
-    if (a2dp_source_cid != a2dp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -985,10 +944,6 @@ uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uin
 }
 
 uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, uint32_t sampling_frequency){
-    if (a2dp_source_cid != avdtp_cid){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (connection == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
