@@ -92,6 +92,19 @@ typedef enum {
     HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT
 } hid_protocol_mode_t;
 
+typedef enum {
+    HID_REPORT_TYPE_RESERVED = 0,
+    HID_REPORT_TYPE_INPUT,
+    HID_REPORT_TYPE_OUTPUT,
+    HID_REPORT_TYPE_FEATURE
+} hid_report_type_t;
+
+typedef enum {
+    HID_REPORT_ID_UNDECLARED,
+    HID_REPORT_ID_VALID,
+    HID_REPORT_ID_INVALID
+} hid_report_id_status_t;
+
 /* API_END */
 
 #if defined __cplusplus
