@@ -352,7 +352,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 log_info("A2DP Found sep: remote seid 0x%02x, in_use %d, media type %d, sep type %s, index %d",
                          sep.seid, sep.in_use, sep.media_type, sep.type == AVDTP_SOURCE ? "source" : "sink",
                          num_remote_seps);
-                if (sep.type == AVDTP_SINK) {
+                if ((sep.type == AVDTP_SINK) && (sep.in_use == false)) {
                     remote_seps[num_remote_seps++] = sep;
                 }
             }
