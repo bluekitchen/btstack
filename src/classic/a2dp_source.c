@@ -362,6 +362,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             cid = avdtp_subevent_signaling_sep_dicovery_done_get_avdtp_cid(packet);
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_DISCOVER_SEPS) break;
+            a2dp_source_state = A2DP_CONNECTED;
 
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
@@ -720,29 +721,44 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid)
 
     uint16_t outgoing_cid;
 
-    outgoing_active = true;
-    uint8_t status = avdtp_source_connect(remote_addr, &outgoing_cid);
-    if (status != ERROR_CODE_SUCCESS) {
-        // if there's already a connection for for remote addr, avdtp_source_connect fails,
-        // but the stream will get set-up nevertheless
-        outgoing_active = false;
-        return status;
-    }
+    avdtp_connection_t * connection = avdtp_get_connection_for_bd_addr(remote_addr);
+    if (connection == NULL){
+        uint8_t status = avdtp_source_connect(remote_addr, &outgoing_cid);
+        if (status != ERROR_CODE_SUCCESS) {
+            // if there's already a connection for for remote addr, avdtp_source_connect fails,
+            // but the stream will get set-up nevertheless
+            return status;
+        }
+        outgoing_active = true;
 
-    // stop sep discovery for other
-    if (a2dp_source_state != A2DP_IDLE){
-        avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(a2dp_source_cid);
-        if (connection != NULL){
-            // sdp discovery has started: post-pone action, reserve sep discovery mechanism
-            connection->a2dp_source_discover_seps = true;
+        // stop sep discovery for other
+        if (a2dp_source_state != A2DP_IDLE){
+            connection = avdtp_get_connection_for_avdtp_cid(a2dp_source_cid);
+            if (connection != NULL){
+                // sdp discovery has started: post-pone action, reserve sep discovery mechanism
+                connection->a2dp_source_discover_seps = true;
+            }
+        }
+        // setup state
+        a2dp_source_state = A2DP_W4_CONNECTED;
+        a2dp_source_cid   = outgoing_cid;
+        *avdtp_cid = outgoing_cid;
+
+    } else {
+        // check state
+        switch (a2dp_source_state){
+            case A2DP_IDLE:
+            case A2DP_CONNECTED:
+                // restart process e.g. if there no suitable stream endpoints or they had been in use
+                outgoing_active = true;
+                a2dp_source_state = A2DP_DISCOVER_SEPS;
+                *avdtp_cid = connection->avdtp_cid;
+                a2dp_start_discovering_seps(connection);
+                break;
+            default:
+                return ERROR_CODE_COMMAND_DISALLOWED;
         }
     }
-
-    // setup state
-    a2dp_source_state = A2DP_W4_CONNECTED;
-    a2dp_source_cid   = outgoing_cid;
-    *avdtp_cid = outgoing_cid;
-
     return ERROR_CODE_SUCCESS;
 }
 
