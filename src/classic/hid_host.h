@@ -42,7 +42,7 @@
 #include "btstack_defines.h"
 #include "bluetooth.h"
 #include "btstack_hid_parser.h"
-#include "classic/hid.h"
+#include "hid.h"
 
 #if defined __cplusplus
 extern "C" {

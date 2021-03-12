@@ -72,6 +72,7 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
+#include "hid.h"
 #include "l2cap.h"
 #include "l2cap_signaling.h"
 
@@ -124,7 +125,6 @@
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"
-#include "classic/hid.h"
 #include "classic/hid_device.h"
 #include "classic/hid_host.h"
 #include "classic/hsp_ag.h"

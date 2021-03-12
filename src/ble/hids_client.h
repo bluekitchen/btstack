@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "classic/hid.h"
+#include "hid.h"
 #include "btstack_defines.h"
 
 /* API_START */
