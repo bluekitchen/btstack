@@ -259,10 +259,10 @@ static uint8_t find_report_index_for_value_handle(hids_client_t * client, uint16
     return HIDS_CLIENT_INVALID_REPORT_INDEX;
 }
 
-static uint8_t find_report_index_for_report_id(hids_client_t * client, uint8_t report_id){
+static uint8_t find_report_index_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
     uint8_t i;
     for (i = 0; i < client->num_reports; client++){
-        if (client->reports[i].report_id == report_id){
+        if ( (client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
             return i;
         }
     }
@@ -508,7 +508,7 @@ uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
-    uint8_t report_index = find_report_index_for_report_id(client, report_id);
+    uint8_t report_index = find_report_index_for_report_id_and_type(client, report_id, HID_REPORT_TYPE_OUTPUT);
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
