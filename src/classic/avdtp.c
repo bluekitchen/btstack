@@ -106,7 +106,7 @@ btstack_linked_list_t * avdtp_get_connections(void){
     return &connections;
 }
 
-static avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
+avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &connections);
     while (btstack_linked_list_iterator_has_next(&it)){

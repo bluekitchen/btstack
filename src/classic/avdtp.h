@@ -595,6 +595,7 @@ typedef struct avdtp_stream_endpoint {
 void avdtp_init(void);
 void avdtp_deinit(void);
 
+avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr);
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
 btstack_linked_list_t * avdtp_get_connections(void);
