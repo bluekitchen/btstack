@@ -538,7 +538,8 @@ typedef struct {
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
 
-    bool    a2dp_source_discover_seps;
+    bool         a2dp_source_discover_seps;
+    a2dp_state_t a2dp_source_state;
 
 } avdtp_connection_t;
 
