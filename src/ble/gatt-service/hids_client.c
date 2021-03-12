@@ -79,6 +79,77 @@ static uint8_t hids_get_next_report_index(void){
     return hids_report_counter;
 }
 
+static uint8_t find_report_index_for_value_handle(hids_client_t * client, uint16_t value_handle){
+    uint8_t i;
+    for (i = 0; i < client->num_reports; client++){
+        if (client->reports[i].value_handle == value_handle){
+            return i;
+        }
+    }
+    return HIDS_CLIENT_INVALID_REPORT_INDEX;
+}
+
+static uint8_t find_report_index_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
+    uint8_t i;
+    for (i = 0; i < client->num_reports; client++){
+        if ( (client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
+            return i;
+        }
+    }
+    return HIDS_CLIENT_INVALID_REPORT_INDEX;
+}
+
+static hids_client_report_t * find_report_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
+    uint8_t i;
+    for (i = 0; i < client->num_reports; client++){
+        if ( (client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
+            return &client->reports[i];
+        }
+    }
+    return NULL;
+}
+
+static hids_client_report_t * get_boot_mouse_input_report(hids_client_t * client){
+    return find_report_for_report_id_and_type(client, HID_BOOT_MODE_MOUSE_ID, HID_REPORT_TYPE_INPUT);
+}
+static hids_client_report_t * get_boot_keyboard_input_report(hids_client_t * client){
+    return find_report_for_report_id_and_type(client, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_INPUT);
+}
+
+static void hids_client_add_characteristic(hids_client_t * client, gatt_client_characteristic_t * characteristic, uint8_t report_id, hid_report_type_t report_type){
+    uint8_t report_index = find_report_index_for_value_handle(client, characteristic->value_handle);
+    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+        return; 
+    }
+
+    report_index = hids_get_next_report_index();
+
+    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+        client->reports[report_index].value_handle = characteristic->value_handle;
+        client->reports[report_index].end_handle = characteristic->end_handle;
+        client->reports[report_index].properties = characteristic->properties;
+
+        client->reports[report_index].report_id = report_id; 
+        client->reports[report_index].report_type = report_type; 
+        client->num_reports++;
+    } else {
+        log_info("not enough storage, increase HIDS_CLIENT_NUM_REPORTS");
+    }
+}
+
+static uint8_t hids_client_get_characteristic(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type, gatt_client_characteristic_t * characteristic){
+    uint8_t report_index = find_report_index_for_report_id_and_type(client, report_id, report_type);
+    if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
+        return report_index; 
+    }
+
+    characteristic->value_handle = client->reports[report_index].value_handle;
+    characteristic->end_handle = client->reports[report_index].end_handle;
+    characteristic->properties = client->reports[report_index].properties;
+    return report_index;
+}
+
+
 static hids_client_t * hids_create_client(hci_con_handle_t con_handle, uint16_t cid){
     hids_client_t * client = btstack_memory_hids_client_get();
     if (!client){
@@ -139,6 +210,7 @@ static void hids_run_for_client(hids_client_t * client){
     uint8_t att_status;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
+    uint8_t report_index;
 
     switch (client->state){
         case HIDS_CLIENT_STATE_W2_QUERY_SERVICE:
@@ -160,26 +232,32 @@ static void hids_run_for_client(hids_client_t * client){
 
         case HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD:
             client->state = HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED;
-            characteristic.value_handle = client->boot_keyboard_input_value_handle;
-            characteristic.end_handle = client->boot_keyboard_input_end_handle;
-            characteristic.properties = client->boot_keyboard_input_properties;
-            att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-
-            if (att_status != ERROR_CODE_SUCCESS){
-                client->boot_keyboard_input_value_handle = 0;
+            
+            report_index = hids_client_get_characteristic(client, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_INPUT, &characteristic);
+            if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+                att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+            }
+            
+            if ((report_index == HIDS_CLIENT_INVALID_REPORT_INDEX) || (att_status != ERROR_CODE_SUCCESS)){
+                client->reports[report_index].value_handle = 0;
+                client->state = HIDS_CLIENT_STATE_CONNECTED;
             }
             break;
 
         case HIDS_CLIENT_STATE_W2_ENABLE_MOUSE:
             client->state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
-            characteristic.value_handle = client->boot_mouse_input_value_handle;
-            characteristic.end_handle = client->boot_mouse_input_end_handle;
-            characteristic.properties = client->boot_mouse_input_properties;
-            att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
 
-            if (att_status != ERROR_CODE_SUCCESS){
-                client->boot_mouse_input_value_handle = 0;
+            report_index = hids_client_get_characteristic(client, HID_BOOT_MODE_MOUSE_ID, HID_REPORT_TYPE_INPUT, &characteristic);
+            
+            if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+                att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
             }
+            
+            if ((report_index == HIDS_CLIENT_INVALID_REPORT_INDEX) || (att_status != ERROR_CODE_SUCCESS)){
+                client->reports[report_index].value_handle = 0;
+                client->state = HIDS_CLIENT_STATE_CONNECTED;
+            }    
+            
             break;
         
         case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE:
@@ -249,25 +327,6 @@ static void handle_boot_mouse_hid_event(uint8_t packet_type, uint16_t channel, u
     (*client->client_handler)(HCI_EVENT_PACKET, client->cid, in_place_event, size);
 }
 
-static uint8_t find_report_index_for_value_handle(hids_client_t * client, uint16_t value_handle){
-    uint8_t i;
-    for (i = 0; i < client->num_reports; client++){
-        if (client->reports[i].value_handle == value_handle){
-            return i;
-        }
-    }
-    return HIDS_CLIENT_INVALID_REPORT_INDEX;
-}
-
-static uint8_t find_report_index_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
-    uint8_t i;
-    for (i = 0; i < client->num_reports; client++){
-        if ( (client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
-            return i;
-        }
-    }
-    return HIDS_CLIENT_INVALID_REPORT_INDEX;
-}
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -278,7 +337,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     uint8_t att_status;
     gatt_client_service_t service;
     gatt_client_characteristic_t characteristic;
-    uint8_t report_index;
+
+    hids_client_report_t * boot_keyboard_report;
+    hids_client_report_t * boot_mouse_report;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
@@ -306,15 +367,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
             switch (characteristic.uuid16){
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT:
-                    client->boot_keyboard_input_value_handle = characteristic.value_handle;
-                    client->boot_keyboard_input_end_handle   = characteristic.end_handle;
-                    client->boot_keyboard_input_properties   = characteristic.properties;
+                    hids_client_add_characteristic(client, &characteristic, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_INPUT);
                     break;
                 
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_MOUSE_INPUT_REPORT:
-                    client->boot_mouse_input_value_handle = characteristic.value_handle;
-                    client->boot_mouse_input_end_handle   = characteristic.end_handle;
-                    client->boot_mouse_input_properties   = characteristic.properties;
+                    hids_client_add_characteristic(client, &characteristic, HID_BOOT_MODE_MOUSE_ID, HID_REPORT_TYPE_INPUT);
                     break;
                 
                 case ORG_BLUETOOTH_CHARACTERISTIC_PROTOCOL_MODE:
@@ -322,21 +379,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_OUTPUT_REPORT:
-                    report_index = find_report_index_for_value_handle(client, characteristic.value_handle);
-                    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
-                        break; 
-                    }
-
-                    report_index = hids_get_next_report_index();
-
-                    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
-                        client->reports[report_index].value_handle = characteristic.value_handle;
-                        client->reports[report_index].report_id = HID_BOOT_MODE_KEYBOARD_ID;
-                        client->reports[report_index].report_type = HID_REPORT_TYPE_OUTPUT;
-                        client->num_reports++;
-                    } else {
-                        log_info("not enough storage, increase HIDS_CLIENT_NUM_REPORTS");
-                    }
+                    hids_client_add_characteristic(client, &characteristic, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_OUTPUT);
                     break;
 
                 default:
@@ -382,11 +425,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     
                     switch (client->required_protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT:
-                            if (client->boot_keyboard_input_value_handle != 0){
+                            if (get_boot_keyboard_input_report(client) != NULL){
                                 client->state = HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD;
                                 break;
                             } 
-                            if (client->boot_mouse_input_value_handle != 0){
+                            if (get_boot_mouse_input_report(client) != NULL){
                                 client->state = HIDS_CLIENT_STATE_W2_ENABLE_MOUSE;
                                 break;
                             }
@@ -399,23 +442,27 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED:
-                    if (client->boot_keyboard_input_value_handle != 0){
+                    boot_keyboard_report = get_boot_keyboard_input_report(client);
+                    if (boot_keyboard_report != NULL){
                         // setup listener
-                        characteristic.value_handle = client->boot_keyboard_input_value_handle;
-                        gatt_client_listen_for_characteristic_value_updates(&client->boot_keyboard_notifications, &handle_boot_keyboard_hid_event, client->con_handle, &characteristic);
-                    } else {
-                        if (client->boot_mouse_input_value_handle == 0){
-                            hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
-                            hids_finalize_client(client);
-                            break;
-                        }
+                        characteristic.value_handle = boot_keyboard_report->value_handle;
+                        gatt_client_listen_for_characteristic_value_updates(&boot_keyboard_report->notifications, &handle_boot_keyboard_hid_event, client->con_handle, &characteristic);
                     }
                     
-                    if (client->boot_mouse_input_value_handle != 0){
+                    // check if there is mouse input report
+                    boot_mouse_report = get_boot_mouse_input_report(client);
+                    if (boot_mouse_report != NULL){
                         client->state = HIDS_CLIENT_STATE_W2_ENABLE_MOUSE;
                         break;
                     } 
-                    
+
+                    // if none of the reports is found bail out
+                    if (!boot_mouse_report && !boot_keyboard_report){
+                        hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
+                        hids_finalize_client(client);
+                        break;
+                    }
+
                     // set protocol
                     if (client->protocol_mode_value_handle != 0){
                         client->state = HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE;
@@ -428,16 +475,18 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
                 
                 case HIDS_CLIENT_STATE_W4_MOUSE_ENABLED:
-                    if (client->boot_mouse_input_value_handle != 0){
+                    boot_mouse_report = get_boot_mouse_input_report(client);
+                    if (boot_mouse_report != NULL){
                         // setup listener
-                        characteristic.value_handle = client->boot_mouse_input_value_handle;
-                        gatt_client_listen_for_characteristic_value_updates(&client->boot_mouse_notifications, &handle_boot_mouse_hid_event, client->con_handle, &characteristic);
-                    } else {
-                        if (client->boot_keyboard_input_value_handle == 0){
-                            hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
-                            hids_finalize_client(client);
-                            break;
-                        }
+                        characteristic.value_handle = boot_mouse_report->value_handle;
+                        gatt_client_listen_for_characteristic_value_updates(&boot_mouse_report->notifications, &handle_boot_mouse_hid_event, client->con_handle, &characteristic);
+                    } 
+                    
+                    boot_keyboard_report = get_boot_keyboard_input_report(client);
+                    if (!boot_mouse_report && !boot_keyboard_report){
+                        hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
+                        hids_finalize_client(client);
+                        break;
                     }
 
                     if (client->protocol_mode_value_handle != 0){

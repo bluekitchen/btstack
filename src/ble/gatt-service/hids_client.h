@@ -74,9 +74,15 @@ typedef enum {
 
 
 typedef struct {
+    // GATT cache
     uint16_t value_handle;
+    uint16_t end_handle;
+    uint16_t properties;
+
+    // service mapping
     uint8_t  report_id;
     hid_report_type_t report_type;
+    gatt_client_notification_t notifications;
 } hids_client_report_t;
 
 typedef struct {
@@ -101,16 +107,6 @@ typedef struct {
     hid_protocol_mode_t required_protocol_mode;
 
     uint16_t protocol_mode_value_handle;
-
-    uint16_t boot_keyboard_input_value_handle;
-    uint16_t boot_keyboard_input_end_handle;
-    uint16_t boot_keyboard_input_properties;
-    gatt_client_notification_t boot_keyboard_notifications;
-    
-    uint16_t boot_mouse_input_value_handle;
-    uint16_t boot_mouse_input_end_handle;
-    uint16_t boot_mouse_input_properties;
-    gatt_client_notification_t boot_mouse_notifications;
 
     // send report
     hids_client_report_t reports[HIDS_CLIENT_NUM_REPORTS];
