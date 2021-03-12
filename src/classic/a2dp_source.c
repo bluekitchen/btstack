@@ -347,6 +347,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
             cid = avdtp_subevent_signaling_sep_found_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state == A2DP_DISCOVER_SEPS) {
                 avdtp_sep_t sep;
@@ -366,10 +369,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:
             cid = avdtp_subevent_signaling_sep_dicovery_done_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_DISCOVER_SEPS) break;
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
+
+            if (a2dp_source_cid != cid) break;
+            if (a2dp_source_state != A2DP_DISCOVER_SEPS) break;
 
             if (num_remote_seps > 0){
                 a2dp_source_state = A2DP_GET_CAPABILITIES;
@@ -393,6 +397,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_sbc_capability_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
@@ -425,24 +432,36 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         // forward codec capability
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_mpeg_audio_capability_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_mpeg_aac_capability_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_atrac_capability_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
             cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY);
@@ -459,8 +478,10 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
             cid = avdtp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
             log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, a2dp_source_state);
-            
+
             if (a2dp_source_cid != cid) break;
             if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
@@ -472,11 +493,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
             cid = avdtp_subevent_signaling_capabilities_done_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
+
+            if (a2dp_source_cid != cid) break;
+            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // forward capabilities done for endpoint
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
@@ -516,6 +537,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
             cid = avdtp_subevent_signaling_delay_report_get_avdtp_cid(packet);
+            connection = avdtp_get_connection_for_avdtp_cid(cid);
+            btstack_assert(connection != NULL);
+
             if (a2dp_source_cid != cid) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORT);
             break;
@@ -553,11 +577,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
         
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
+
+            if (a2dp_source_cid != cid) break;
+            if (a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
 
             outgoing_active = false;
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
@@ -577,7 +601,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
@@ -649,11 +672,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
             cid = avdtp_subevent_signaling_reject_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
-            if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
+
+            if (a2dp_source_cid != cid) break;
+            if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
 
             connection->a2dp_source_state = A2DP_CONNECTED;
             a2dp_source_state = A2DP_CONNECTED;
@@ -662,11 +685,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
             cid = avdtp_subevent_signaling_general_reject_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
-            if (avdtp_subevent_signaling_general_reject_get_is_initiator(packet) == 0) break;
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
+
+            if (a2dp_source_cid != cid) break;
+            if (avdtp_subevent_signaling_general_reject_get_is_initiator(packet) == 0) break;
 
             connection->a2dp_source_state = A2DP_CONNECTED;
             a2dp_source_state = A2DP_CONNECTED;
@@ -675,10 +698,10 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);
-            if (a2dp_source_cid != cid) break;
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
+
+            if (a2dp_source_cid != cid) break;
 
             connection->a2dp_source_state = A2DP_CONFIGURED;
             a2dp_source_state = A2DP_CONFIGURED;
@@ -687,7 +710,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
-
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
