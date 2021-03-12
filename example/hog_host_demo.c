@@ -68,10 +68,7 @@ static enum {
     W4_HID_DEVICE_FOUND,
     W4_CONNECTED,
     W4_ENCRYPTED,
-    W4_HID_SERVICE_FOUND,
-    W4_HID_CHARACTERISTICS_FOUND,
-    W4_BOOT_KEYBOARD_ENABLED,
-    W4_BOOT_MOUSE_ENABLED,
+    W4_HID_CLIENT_CONNECTED,
     READY,
     W4_TIMEOUT_THEN_SCAN,
     W4_TIMEOUT_THEN_RECONNECT,
@@ -390,6 +387,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
                     btstack_assert(app_state == W4_WORKING);
+                    
                     hog_start_connect();
                     break;
                 case GAP_EVENT_ADVERTISING_REPORT:
@@ -405,6 +403,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     hog_connect();
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    if (app_state != READY) break;
                     connection_handle = HCI_CON_HANDLE_INVALID;
                     switch (app_state){
                         case READY:
@@ -441,7 +440,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     // continue - query primary services
                     printf("Search for HID service.\n");
-                    app_state = W4_HID_SERVICE_FOUND;
+                    app_state = W4_HID_CLIENT_CONNECTED;
                     
                     status = hids_client_connect(connection_handle, handle_gatt_client_event, HID_PROTOCOL_MODE_BOOT, &hids_cid);
                     if (status != ERROR_CODE_SUCCESS){

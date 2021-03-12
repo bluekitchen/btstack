@@ -59,8 +59,11 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_SERVICE_RESULT,
     HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+    HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD,
     HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED,
+    HIDS_CLIENT_STATE_W2_ENABLE_MOUSE,
     HIDS_CLIENT_STATE_W4_MOUSE_ENABLED,
+    HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE,
     HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE,
     HIDS_CLIENT_STATE_CONNECTED
 } hid_service_client_state_t;
@@ -94,10 +97,12 @@ typedef struct {
 
     uint16_t boot_keyboard_input_value_handle;
     uint16_t boot_keyboard_input_end_handle;
+    uint16_t boot_keyboard_input_properties;
     gatt_client_notification_t boot_keyboard_notifications;
     
     uint16_t boot_mouse_input_value_handle;
     uint16_t boot_mouse_input_end_handle;
+    uint16_t boot_mouse_input_properties;
     gatt_client_notification_t boot_mouse_notifications;
 
 } hids_client_t;

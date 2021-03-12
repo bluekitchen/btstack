@@ -148,62 +148,43 @@ static void hids_run_for_client(hids_client_t * client){
             UNUSED(att_status);
             break;
 
-        case HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED:
+        case HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD:
+            client->state = HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED;
             characteristic.value_handle = client->boot_keyboard_input_value_handle;
             characteristic.end_handle = client->boot_keyboard_input_end_handle;
+            characteristic.properties = client->boot_keyboard_input_properties;
             att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-            UNUSED(att_status);   
+
+            if (att_status != ERROR_CODE_SUCCESS){
+                client->boot_keyboard_input_value_handle = 0;
+            }
             break;
 
-        case HIDS_CLIENT_STATE_W4_MOUSE_ENABLED:
+        case HIDS_CLIENT_STATE_W2_ENABLE_MOUSE:
+            client->state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
             characteristic.value_handle = client->boot_mouse_input_value_handle;
             characteristic.end_handle = client->boot_mouse_input_end_handle;
+            characteristic.properties = client->boot_mouse_input_properties;
             att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-            UNUSED(att_status);
+
+            if (att_status != ERROR_CODE_SUCCESS){
+                client->boot_mouse_input_value_handle = 0;
+            }
             break;
         
-        case HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE:
-            client->protocol_mode = client->required_protocol_mode;
-            att_status = gatt_client_write_value_of_characteristic_without_response(client->con_handle, client->protocol_mode_value_handle, 1, (uint8_t *)&client->protocol_mode);
+        case HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE:
+            client->state = HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE;
+            att_status = gatt_client_write_value_of_characteristic_without_response(client->con_handle, client->protocol_mode_value_handle, 1, (uint8_t *)&client->required_protocol_mode);
             UNUSED(att_status);
+            
+            client->protocol_mode = client->required_protocol_mode;
             client->state = HIDS_CLIENT_STATE_CONNECTED;
             hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
             break;
         
-        case HIDS_CLIENT_STATE_CONNECTED:
-            
-            break;
-
         default:
             break;
     }
-}
-
-static hid_service_client_state_t boot_protocol_mode_setup_next_state(hids_client_t * client){
-    hid_service_client_state_t state = HIDS_CLIENT_STATE_IDLE;
-
-    switch (client->state){
-        case HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
-            // set protocol mode
-            if (client->boot_keyboard_input_value_handle != 0){
-                state = HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED;
-                break;
-            } 
-            if (client->boot_mouse_input_value_handle != 0){
-                state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
-                break;
-            }
-            break;
-        case HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED:
-            if (client->boot_mouse_input_value_handle != 0){
-                state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
-                break;
-            }
-            break;
-        default:
-            break;
-    }
-    return state;
 }
 
 static void hids_client_setup_report_event(hids_client_t * client, uint8_t report_id, uint8_t *buffer, uint16_t report_len){
@@ -286,9 +267,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             switch (characteristic.uuid16){
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_KEYBOARD_INPUT_REPORT:
                     client->boot_keyboard_input_value_handle = characteristic.value_handle;
+                    client->boot_keyboard_input_end_handle = characteristic.end_handle;
+                    client->boot_keyboard_input_properties = characteristic.properties;
                     break;
                 case ORG_BLUETOOTH_CHARACTERISTIC_BOOT_MOUSE_INPUT_REPORT:
                     client->boot_mouse_input_value_handle = characteristic.value_handle;
+                    client->boot_mouse_input_end_handle = characteristic.end_handle;
+                    client->boot_mouse_input_properties = characteristic.properties;
                     break;
                 case ORG_BLUETOOTH_CHARACTERISTIC_PROTOCOL_MODE:
                     client->protocol_mode_value_handle = characteristic.value_handle;
@@ -333,15 +318,15 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         hids_finalize_client(client);
                         break;  
                     }
-
+                    
                     switch (client->required_protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT:
                             if (client->boot_keyboard_input_value_handle != 0){
-                                client->state = HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED;
+                                client->state = HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD;
                                 break;
                             } 
                             if (client->boot_mouse_input_value_handle != 0){
-                                client->state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
+                                client->state = HIDS_CLIENT_STATE_W2_ENABLE_MOUSE;
                                 break;
                             }
                             hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
@@ -353,31 +338,51 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED:
-                    // setup listener
-                    characteristic.value_handle = client->boot_keyboard_input_value_handle;
-                    gatt_client_listen_for_characteristic_value_updates(&client->boot_keyboard_notifications, &handle_boot_keyboard_hid_event, client->con_handle, &characteristic);
+                    if (client->boot_keyboard_input_value_handle != 0){
+                        // setup listener
+                        characteristic.value_handle = client->boot_keyboard_input_value_handle;
+                        gatt_client_listen_for_characteristic_value_updates(&client->boot_keyboard_notifications, &handle_boot_keyboard_hid_event, client->con_handle, &characteristic);
+                    } else {
+                        if (client->boot_mouse_input_value_handle == 0){
+                            hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
+                            hids_finalize_client(client);
+                            break;
+                        }
+                    }
                     
                     if (client->boot_mouse_input_value_handle != 0){
-                        client->state = HIDS_CLIENT_STATE_W4_MOUSE_ENABLED;
+                        client->state = HIDS_CLIENT_STATE_W2_ENABLE_MOUSE;
                         break;
-                    }
+                    } 
+                    
                     // set protocol
                     if (client->protocol_mode_value_handle != 0){
-                        client->state = HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE;
+                        client->state = HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE;
                     } else {
+                        client->protocol_mode = HID_PROTOCOL_MODE_BOOT;
                         client->state = HIDS_CLIENT_STATE_CONNECTED;
                         hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
                     }
+                    hids_run_for_client(client);
                     break;
                 
                 case HIDS_CLIENT_STATE_W4_MOUSE_ENABLED:
-                    // setup listener
-                    characteristic.value_handle = client->boot_mouse_input_value_handle;
-                    gatt_client_listen_for_characteristic_value_updates(&client->boot_mouse_notifications, &handle_boot_mouse_hid_event, client->con_handle, &characteristic);
+                    if (client->boot_mouse_input_value_handle != 0){
+                        // setup listener
+                        characteristic.value_handle = client->boot_mouse_input_value_handle;
+                        gatt_client_listen_for_characteristic_value_updates(&client->boot_mouse_notifications, &handle_boot_mouse_hid_event, client->con_handle, &characteristic);
+                    } else {
+                        if (client->boot_keyboard_input_value_handle == 0){
+                            hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
+                            hids_finalize_client(client);
+                            break;
+                        }
+                    }
 
                     if (client->protocol_mode_value_handle != 0){
-                        client->state = HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE;
+                        client->state = HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE;
                     } else {
+                        client->protocol_mode = HID_PROTOCOL_MODE_BOOT;
                         client->state = HIDS_CLIENT_STATE_CONNECTED;
                         hids_emit_connection_established(client, ERROR_CODE_SUCCESS); 
                     }

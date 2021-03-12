@@ -485,6 +485,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     hog_connect();
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    if (app_state != READY) break;
+                    
                     connection_handle = HCI_CON_HANDLE_INVALID;
                     switch (app_state){
                         case READY:
