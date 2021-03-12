@@ -275,7 +275,7 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
     uint16_t cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
     avdtp_connection_t * avdtp_connection = avdtp_get_connection_for_avdtp_cid(cid);
     btstack_assert(avdtp_connection != NULL);
-    if ((a2dp_source_cid == cid) && (a2dp_source_state == A2DP_W4_SET_CONFIGURATION)){
+    if ((a2dp_source_cid == cid) && (avdtp_connection->a2dp_source_state == A2DP_W4_SET_CONFIGURATION)){
         // outgoing: discovery and config of remote sink sep successful, trigger stream open
         avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
         a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
@@ -336,8 +336,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // - outgoing active: signaling for outgoing connection
             // - outgoing not active: incoming connection and no sep discover ongoing
 
-            log_info("outgoing_active %d, current avdtp cid 0x%02x, a2dp_source_state %d", outgoing_active, cid, a2dp_source_state);
-            if ((outgoing_active && (a2dp_source_cid == cid)) || (!outgoing_active && (a2dp_source_state == A2DP_IDLE))){
+            log_info("outgoing_active %d, current avdtp cid 0x%02x, a2dp_source_state %d", outgoing_active, cid, connection->a2dp_source_state);
+            if ((outgoing_active && (a2dp_source_cid == cid)) || (!outgoing_active && (connection->a2dp_source_state == A2DP_IDLE))){
                 a2dp_start_discovering_seps(connection);
             } else {
                 // post-pone sep discovery
@@ -351,7 +351,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state == A2DP_DISCOVER_SEPS) {
+            if (connection->a2dp_source_state == A2DP_DISCOVER_SEPS) {
                 avdtp_sep_t sep;
                 memset(&sep, 0, sizeof(avdtp_sep_t));
                 sep.seid       = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
@@ -373,7 +373,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_DISCOVER_SEPS) break;
+            if (connection->a2dp_source_state != A2DP_DISCOVER_SEPS) break;
 
             if (num_remote_seps > 0){
                 a2dp_source_state = A2DP_GET_CAPABILITIES;
@@ -401,7 +401,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // forward codec capability
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
@@ -436,7 +436,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CAPABILITY);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY:
@@ -445,7 +445,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CAPABILITY);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY:
@@ -454,7 +454,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
@@ -463,7 +463,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY);
             break;
 
@@ -480,10 +480,10 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             cid = avdtp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(packet);
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
-            log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, a2dp_source_state);
+            log_info("received AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, cid 0x%02x, state %d", cid, connection->a2dp_source_state);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // store delay reporting capability
             remote_seps[sc.active_remote_sep_index].registered_service_categories |= 1 << AVDTP_DELAY_REPORTING;
@@ -497,7 +497,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_GET_CAPABILITIES) break;
+            if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // forward capabilities done for endpoint
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
@@ -581,7 +581,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             btstack_assert(connection != NULL);
 
             if (a2dp_source_cid != cid) break;
-            if (a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
+            if (connection->a2dp_source_state != A2DP_W4_OPEN_STREAM_WITH_SEID) break;
 
             outgoing_active = false;
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
@@ -617,9 +617,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             
-            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), a2dp_source_state, cid);
+            log_info("A2DP cmd %s accepted, global state %d, cid 0x%02x", avdtp_si2str(signal_identifier), connection->a2dp_source_state, cid);
 
-            switch (a2dp_source_state){
+            switch (connection->a2dp_source_state){
                 case A2DP_GET_CAPABILITIES:
                     remote_seid = remote_seps[sc.active_remote_sep_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
@@ -796,14 +796,6 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid)
         connection = avdtp_get_connection_for_avdtp_cid(outgoing_cid);
         btstack_assert(connection != NULL);
 
-        // stop sep discovery for other
-        if (a2dp_source_state != A2DP_IDLE){
-            avdtp_connection_t  * active_connection = avdtp_get_connection_for_avdtp_cid(a2dp_source_cid);
-            if (active_connection != NULL){
-                // sdp discovery has started: post-pone action, reserve sep discovery mechanism
-                active_connection->a2dp_source_discover_seps = true;
-            }
-        }
         // setup state
         connection->a2dp_source_state = A2DP_W4_CONNECTED;
         a2dp_source_state = A2DP_W4_CONNECTED;
@@ -812,7 +804,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid)
 
     } else {
         // check state
-        switch (a2dp_source_state){
+        switch (connection->a2dp_source_state){
             case A2DP_IDLE:
             case A2DP_CONNECTED:
                 // restart process e.g. if there no suitable stream endpoints or they had been in use
@@ -1024,7 +1016,7 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    if (a2dp_source_state != A2DP_STREAMING_OPENED) {
+    if (connection->a2dp_source_state != A2DP_STREAMING_OPENED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -1066,7 +1058,7 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
     new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_info;
 
     // start reconfigure
-    a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
+    connection->a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
 
     return avdtp_source_reconfigure(
             avdtp_cid,
