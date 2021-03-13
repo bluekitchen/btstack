@@ -49,6 +49,8 @@
 #include "btstack_config.h"
 #include "btstack_util.h"
 
+#include <inttypes.h>
+
 static const btstack_run_loop_t * the_run_loop = NULL;
 
 extern const btstack_run_loop_t btstack_run_loop_embedded;
@@ -115,7 +117,7 @@ void btstack_run_loop_base_dump_timer(void){
     uint16_t i = 0;
     for (it = (btstack_linked_item_t *) btstack_run_loop_base_timers; it ; it = it->next){
         btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %u\n", i, ts, ts->timeout);
+        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, ts, ts->timeout);
     }
 #endif
 
