@@ -75,24 +75,37 @@ typedef struct {
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 
-static btstack_timer_source_t a2dp_source_set_config_timer;
+static btstack_timer_source_t   a2dp_source_set_config_timer;
+static btstack_packet_handler_t a2dp_source_packet_handler_user;
 
-static bool     outgoing_active;
+static uint16_t     a2dp_source_cid;
 
 // discover remote seps
-static uint16_t     a2dp_source_cid;
 static uint16_t     num_remote_seps;
 static avdtp_sep_t  remote_seps[AVDTP_MAX_SEP_NUM];
 
-static bool a2dp_source_have_config;
-
-static bool stream_endpoint_configured;
-
 static avdtp_stream_endpoint_context_t sc;
-static btstack_packet_handler_t a2dp_source_packet_handler_user;
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_discover_seps_with_next_waiting_connection(void);
+
+static bool have_config;
+static bool a2dp_source_have_config(const avdtp_connection_t * connection){
+    UNUSED(connection);
+    return have_config;
+}
+
+static bool stream_endpoint_configured;
+static bool a2dp_source_stream_endpoint_configured(const avdtp_connection_t * connection){
+    UNUSED(connection);
+    return stream_endpoint_configured;
+}
+
+static bool outgoing_active;
+static bool a2dp_source_outgoing_active(const avdtp_connection_t * connection){
+    UNUSED(connection);
+    return outgoing_active;
+}
 
 static void a2dp_source_streaming_emit_connection_failed(avdtp_connection_t *connection, uint8_t status) {
     uint8_t event[14];
@@ -209,11 +222,11 @@ static void a2dp_source_discover_stream_endpoints(uint16_t avdtp_cid){
 }
 
 static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer){
-    if (stream_endpoint_configured) return;
-
     uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(timer);
 	avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
 	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
+
+    if (a2dp_source_stream_endpoint_configured(connection)) return;
 
     if (connection == NULL) {
         log_info("a2dp_discover_seps_with_next_waiting_connection");
@@ -247,7 +260,7 @@ static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
     connection->a2dp_source_discover_seps = false;
 
     // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
-    if (outgoing_active && (a2dp_source_cid == connection->avdtp_cid)){
+    if (a2dp_source_outgoing_active(connection) && (a2dp_source_cid == connection->avdtp_cid)){
         log_info("discover seps");
         a2dp_source_discover_stream_endpoints(connection->avdtp_cid);
     } else {
@@ -310,7 +323,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // notify about connection error only if we're initiator
-                if (outgoing_active && (a2dp_source_cid == cid)){
+                if (a2dp_source_outgoing_active(connection) && (a2dp_source_cid == cid)){
                     log_info("A2DP source signaling connection failed status 0x%02x", status);
                     outgoing_active = false;
                     a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
@@ -323,14 +336,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
 
             // we already have a valid setup
-            if (stream_endpoint_configured) return;
+            if (a2dp_source_stream_endpoint_configured(connection)) return;
 
             // start discover seps now if:
             // - outgoing active: signaling for outgoing connection
             // - outgoing not active: incoming connection and no sep discover ongoing
 
-            log_info("outgoing_active %d, current avdtp cid 0x%02x, a2dp_source_state %d", outgoing_active, cid, connection->a2dp_source_state);
-            if ((outgoing_active && (a2dp_source_cid == cid)) || (!outgoing_active && (connection->a2dp_source_state == A2DP_IDLE))){
+            log_info("outgoing_active %d, current avdtp cid 0x%02x, a2dp_source_state %d", a2dp_source_outgoing_active(connection), cid, connection->a2dp_source_state);
+            if ((a2dp_source_outgoing_active(connection) && (a2dp_source_cid == cid)) || (!a2dp_source_outgoing_active(connection) && (connection->a2dp_source_state == A2DP_IDLE))){
                 a2dp_start_discovering_seps(connection);
             } else {
                 // post-pone sep discovery
@@ -369,9 +382,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (num_remote_seps > 0){
                 connection->a2dp_source_state = A2DP_GET_CAPABILITIES;
                 sc.active_remote_sep_index = 0;
-                a2dp_source_have_config = false;
+                have_config = false;
             } else {
-                if (outgoing_active){
+                if (a2dp_source_outgoing_active(connection)){
                     outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
@@ -395,7 +408,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
 
             // select SEP if none configured yet
-            if (a2dp_source_have_config == false){
+            if (a2dp_source_have_config(connection) == false){
                 // find SBC stream endpoint
                 avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_source_stream_endpoint_for_media_codec(AVDTP_CODEC_SBC);
                 if (stream_endpoint != NULL){
@@ -498,14 +511,14 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 
                 // do we have a valid config?
-                if (a2dp_source_have_config){
+                if (a2dp_source_have_config(connection)){
                     connection->a2dp_source_state = A2DP_SET_CONFIGURATION;
-                    a2dp_source_have_config = false;
+                    have_config = false;
                     break;
                 }
 
                 // we didn't find a suitable SBC stream endpoint, sorry.
-                if (outgoing_active){
+                if (a2dp_source_outgoing_active(connection)){
                     outgoing_active = false;
                     connection = avdtp_get_connection_for_avdtp_cid(cid);
                     btstack_assert(connection != NULL);
@@ -741,9 +754,6 @@ void a2dp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpo
 }
 
 uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid) {
-    if (outgoing_active || stream_endpoint_configured) {
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
 
     uint16_t outgoing_cid;
 
@@ -765,6 +775,10 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid)
         *avdtp_cid = outgoing_cid;
 
     } else {
+        if (a2dp_source_outgoing_active(connection) || a2dp_source_stream_endpoint_configured(connection)) {
+            return ERROR_CODE_COMMAND_DISALLOWED;
+        }
+
         // check state
         switch (connection->a2dp_source_state){
             case A2DP_IDLE:
@@ -848,7 +862,7 @@ static uint8_t a2dp_source_config_init(uint8_t local_seid, uint8_t remote_seid, 
 
     // suitable Sink stream endpoint found, configure it
     sc.local_stream_endpoint = local_stream_endpoint;
-    a2dp_source_have_config = true;
+    have_config = true;
 
     return ERROR_CODE_SUCCESS;
 }
