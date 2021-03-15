@@ -89,12 +89,6 @@ static avdtp_stream_endpoint_context_t sc;
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_discover_seps_with_next_waiting_connection(void);
 
-static bool stream_endpoint_configured;
-static bool a2dp_source_stream_endpoint_configured(const avdtp_connection_t * connection){
-    UNUSED(connection);
-    return stream_endpoint_configured;
-}
-
 static bool outgoing_active;
 static bool a2dp_source_outgoing_active(const avdtp_connection_t * connection){
     UNUSED(connection);
@@ -220,7 +214,6 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
 	avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
 	btstack_run_loop_set_timer_context(&a2dp_source_set_config_timer, NULL);
 
-    if (a2dp_source_stream_endpoint_configured(connection)) return;
 
     if (connection == NULL) {
         log_info("a2dp_discover_seps_with_next_waiting_connection");
@@ -228,6 +221,7 @@ static void a2dp_source_set_config_timer_handler(btstack_timer_source_t * timer)
         return;
     }
 
+    if (connection->a2dp_source_stream_endpoint_configured) return;
     a2dp_source_discover_stream_endpoints(avdtp_cid);
 }
 
@@ -290,7 +284,7 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
 
     // config set: stop timer
     a2dp_source_set_config_timer_stop();
-    stream_endpoint_configured = true;
+    avdtp_connection->a2dp_source_stream_endpoint_configured = true;
 }
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -330,7 +324,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
 
             // we already have a valid setup
-            if (a2dp_source_stream_endpoint_configured(connection)) return;
+            if (connection->a2dp_source_stream_endpoint_configured) return;
 
             // start discover seps now if:
             // - outgoing active: signaling for outgoing connection
@@ -688,7 +682,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             // connect/release are passed on to app
             if (a2dp_source_cid == cid){
-                stream_endpoint_configured = false;
+                connection->a2dp_source_stream_endpoint_configured = false;
                 sc.local_stream_endpoint = NULL;
 
                 connection->a2dp_source_state = A2DP_IDLE;
@@ -718,7 +712,6 @@ void a2dp_source_deinit(void){
     avdtp_source_deinit();
 
     outgoing_active = false;
-    stream_endpoint_configured = false;
     a2dp_source_cid = 0;
     num_remote_seps = 0;
 }
@@ -769,7 +762,7 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint16_t *avdtp_cid)
         *avdtp_cid = outgoing_cid;
 
     } else {
-        if (a2dp_source_outgoing_active(connection) || a2dp_source_stream_endpoint_configured(connection)) {
+        if (a2dp_source_outgoing_active(connection) || connection->a2dp_source_stream_endpoint_configured) {
             return ERROR_CODE_COMMAND_DISALLOWED;
         }
 
