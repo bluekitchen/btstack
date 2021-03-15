@@ -57,7 +57,6 @@
 
 static btstack_linked_list_t clients;
 static uint16_t hids_cid_counter = 0;
-static uint16_t hids_report_counter = 0;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -70,18 +69,9 @@ static uint16_t hids_get_next_cid(void){
     return hids_cid_counter;
 }
 
-static uint8_t hids_get_next_report_index(void){
-    if (hids_report_counter < HIDS_CLIENT_NUM_REPORTS) {
-        hids_report_counter++;
-    } else {
-        hids_report_counter = HIDS_CLIENT_INVALID_REPORT_INDEX;
-    }
-    return hids_report_counter;
-}
-
 static uint8_t find_report_index_for_value_handle(hids_client_t * client, uint16_t value_handle){
     uint8_t i;
-    for (i = 0; i < client->num_reports; client++){
+    for (i = 0; i < client->num_reports; i++){
         if (client->reports[i].value_handle == value_handle){
             return i;
         }
@@ -91,7 +81,7 @@ static uint8_t find_report_index_for_value_handle(hids_client_t * client, uint16
 
 static uint8_t find_report_index_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
     uint8_t i;
-    for (i = 0; i < client->num_reports; client++){
+    for (i = 0; i < client->num_reports; i++){
         if ( (client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
             return i;
         }
@@ -101,7 +91,7 @@ static uint8_t find_report_index_for_report_id_and_type(hids_client_t * client, 
 
 static hids_client_report_t * find_report_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
     uint8_t i;
-    for (i = 0; i < client->num_reports; client++){
+    for (i = 0; i < client->num_reports; i++){
         if ( (client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
             return &client->reports[i];
         }
@@ -122,15 +112,14 @@ static void hids_client_add_characteristic(hids_client_t * client, gatt_client_c
         return; 
     }
 
-    report_index = hids_get_next_report_index();
+    if (client->active_report_index < HIDS_CLIENT_NUM_REPORTS) {
+        client->active_report_index++;
+        client->reports[client->active_report_index].value_handle = characteristic->value_handle;
+        client->reports[client->active_report_index].end_handle = characteristic->end_handle;
+        client->reports[client->active_report_index].properties = characteristic->properties;
 
-    if (report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
-        client->reports[report_index].value_handle = characteristic->value_handle;
-        client->reports[report_index].end_handle = characteristic->end_handle;
-        client->reports[report_index].properties = characteristic->properties;
-
-        client->reports[report_index].report_id = report_id; 
-        client->reports[report_index].report_type = report_type; 
+        client->reports[client->active_report_index].report_id = report_id; 
+        client->reports[client->active_report_index].report_type = report_type; 
         client->num_reports++;
     } else {
         log_info("not enough storage, increase HIDS_CLIENT_NUM_REPORTS");
