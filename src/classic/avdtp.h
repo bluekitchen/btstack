@@ -539,6 +539,7 @@ typedef struct {
     btstack_timer_source_t retry_timer;
 
     bool         a2dp_source_discover_seps;
+    bool         a2dp_source_outgoing_active;
     bool         a2dp_source_have_config;
     bool         a2dp_source_stream_endpoint_configured;
     a2dp_state_t a2dp_source_state;
