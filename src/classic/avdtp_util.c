@@ -675,7 +675,7 @@ static void avdtp_signaling_emit_media_codec_mpeg_aac_capability(uint16_t avdtp_
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = remote_seid;
-    event[pos++] =  media_codec.media_type;
+    event[pos++] = media_codec.media_type;
 
     uint8_t  object_type_bitmap        =   media_codec_information[0];
     uint16_t sampling_frequency_bitmap =  (media_codec_information[1] << 4) | (media_codec_information[2] >> 4);
@@ -690,7 +690,6 @@ static void avdtp_signaling_emit_media_codec_mpeg_aac_capability(uint16_t avdtp_
     little_endian_store_24(event, pos, bit_rate_bitmap);
     pos += 3;
     event[pos++] = vbr;
-
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -699,6 +698,7 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
     uint8_t event[16];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
+    pos++; // set later
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -720,7 +720,8 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
     little_endian_store_24(event, pos, bit_rate_index_bitmap);
     pos += 3;
     little_endian_store_16(event, pos, maximum_sul);
-
+    pos += 2;
+    event[1] = pos - 2;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -728,6 +729,7 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 11];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
+    pos++; // set later
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -741,6 +743,7 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     uint32_t media_codec_info_len = btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH);
     (void)memcpy(event + pos, media_codec.media_codec_information, media_codec_info_len);
     pos += media_codec_info_len;
+    event[1] = pos - 2;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -775,27 +778,33 @@ static void avdtp_signaling_emit_recovery_capability(uint16_t avdtp_cid, uint8_t
     avdtp_emit_sink_and_source(event, pos);
 }
 
+#define MAX_CONTENT_PROTECTION_VALUE_LEN 32
 static void
 avdtp_signaling_emit_content_protection_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_content_protection_t *content_protection) {
-    uint8_t event[21];
+    uint8_t event[10 + MAX_CONTENT_PROTECTION_VALUE_LEN];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
+    pos++; // set later
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = remote_seid;
-    
+
     little_endian_store_16(event, pos, content_protection->cp_type);
     pos += 2;
-    little_endian_store_16(event, pos, content_protection->cp_type_value_len);
-    pos += 2;
-    
-    //TODO: reserve place for value
-    if (content_protection->cp_type_value_len < 10){
-        (void)memcpy(event + pos, content_protection->cp_type_value,
-                     content_protection->cp_type_value_len);
+
+    // drop cp protection value if longer than expected
+    if (content_protection->cp_type_value_len <= MAX_CONTENT_PROTECTION_VALUE_LEN){
+        little_endian_store_16(event, pos, content_protection->cp_type_value_len);
+        pos += 2;
+        (void)memcpy(event + pos, content_protection->cp_type_value, content_protection->cp_type_value_len);
+        pos += content_protection->cp_type_value_len;
+    } else {
+        little_endian_store_16(event, pos, 0);
+        pos += 2;
     }
+    event[1] = pos - 2;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -1233,6 +1242,7 @@ static void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_en
     uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 13];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
+    pos++;  // set later
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -1245,11 +1255,11 @@ static void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_en
     pos += 2;
     little_endian_store_16(event, pos, media_codec->media_codec_information_len);
     pos += 2;
-
-    int media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec->media_codec_information_len);
+    uint16_t media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec->media_codec_information_len);
     (void)memcpy(event + pos, media_codec->media_codec_information, media_codec_len);
-
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    pos += media_codec_len;
+    event[1] = pos - 2;
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay) {
