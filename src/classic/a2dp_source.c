@@ -68,7 +68,6 @@
 
 typedef struct {
     avdtp_stream_endpoint_t * local_stream_endpoint;
-    uint8_t active_remote_sep_index;
 } avdtp_stream_endpoint_context_t;
 
 
@@ -78,10 +77,11 @@ static const char * default_a2dp_source_service_provider_name = "BTstack A2DP So
 static btstack_timer_source_t   a2dp_source_set_config_timer;
 static btstack_packet_handler_t a2dp_source_packet_handler_user;
 
-// discover remote seps
+// remote sep discovery - singleton, sep_discovery_cid is used as mutex
 static uint16_t     sep_discovery_cid;
-static uint16_t     num_remote_seps;
-static avdtp_sep_t  remote_seps[AVDTP_MAX_SEP_NUM];
+static uint16_t     sep_discovery_count;
+static uint16_t     sep_discovery_index;
+static avdtp_sep_t  sep_discovery_seps[AVDTP_MAX_SEP_NUM];
 
 static avdtp_stream_endpoint_context_t sc;
 
@@ -232,9 +232,9 @@ static void a2dp_start_discovering_seps(avdtp_connection_t * connection){
     connection->a2dp_source_state = A2DP_DISCOVER_SEPS;
     connection->a2dp_source_discover_seps = false;
 
-    sc.active_remote_sep_index = 0;
-    num_remote_seps = 0;
-    memset(remote_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
+    sep_discovery_index = 0;
+    sep_discovery_count = 0;
+    memset(sep_discovery_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
     sep_discovery_cid = connection->avdtp_cid;
 
     // if we initiated the connection, start config right away, else wait a bit to give remote a chance to do it first
@@ -351,9 +351,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 sep.type       = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
                 log_info("A2DP Found sep: remote seid 0x%02x, in_use %d, media type %d, sep type %s, index %d",
                          sep.seid, sep.in_use, sep.media_type, sep.type == AVDTP_SOURCE ? "source" : "sink",
-                         num_remote_seps);
+                         sep_discovery_count);
                 if ((sep.type == AVDTP_SINK) && (sep.in_use == false)) {
-                    remote_seps[num_remote_seps++] = sep;
+                    sep_discovery_seps[sep_discovery_count++] = sep;
                 }
             }
             break;
@@ -365,9 +365,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             if (connection->a2dp_source_state != A2DP_DISCOVER_SEPS) break;
 
-            if (num_remote_seps > 0){
+            if (sep_discovery_count > 0){
                 connection->a2dp_source_state = A2DP_GET_CAPABILITIES;
-                sc.active_remote_sep_index = 0;
+                sep_discovery_index = 0;
                 connection->a2dp_source_have_config = false;
             } else {
                 if (connection->a2dp_source_outgoing_active){
@@ -468,7 +468,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (connection->a2dp_source_state != A2DP_GET_CAPABILITIES) break;
 
             // store delay reporting capability
-            remote_seps[sc.active_remote_sep_index].registered_service_categories |= 1 << AVDTP_DELAY_REPORTING;
+            sep_discovery_seps[sep_discovery_index].registered_service_categories |= 1 << AVDTP_DELAY_REPORTING;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY);
             break;
@@ -484,8 +484,8 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE);
 
             // endpoint was not suitable, check next one
-            sc.active_remote_sep_index++;
-            if (sc.active_remote_sep_index >= num_remote_seps){
+            sep_discovery_index++;
+            if (sep_discovery_index >= sep_discovery_count){
 
                 // emit 'all capabilities for all seps reported'
                 uint8_t event[6];
@@ -596,7 +596,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             switch (connection->a2dp_source_state){
                 case A2DP_GET_CAPABILITIES:
-                    remote_seid = remote_seps[sc.active_remote_sep_index].seid;
+                    remote_seid = sep_discovery_seps[sep_discovery_index].seid;
                     log_info("A2DP get capabilities for remote seid 0x%02x", remote_seid);
                     avdtp_source_get_all_capabilities(cid, remote_seid);
                     return;
@@ -709,7 +709,7 @@ void a2dp_source_init(void){
 
 void a2dp_source_deinit(void){
     avdtp_source_deinit();
-    num_remote_seps = 0;
+    sep_discovery_count = 0;
 }
 
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
@@ -822,9 +822,9 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
     // lookup remote stream endpoint
     avdtp_sep_t * remote_sep = NULL;
     uint8_t i;
-    for (i=0;i<num_remote_seps;i++){
-        if (remote_seps[i].seid == remote_seid){
-            remote_sep = &remote_seps[i];
+    for (i=0; i < sep_discovery_count; i++){
+        if (sep_discovery_seps[i].seid == remote_seid){
+            remote_sep = &sep_discovery_seps[i];
         }
     }
     if (remote_sep == NULL){
