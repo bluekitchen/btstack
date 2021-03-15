@@ -89,12 +89,6 @@ static avdtp_stream_endpoint_context_t sc;
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_discover_seps_with_next_waiting_connection(void);
 
-static bool have_config;
-static bool a2dp_source_have_config(const avdtp_connection_t * connection){
-    UNUSED(connection);
-    return have_config;
-}
-
 static bool stream_endpoint_configured;
 static bool a2dp_source_stream_endpoint_configured(const avdtp_connection_t * connection){
     UNUSED(connection);
@@ -382,7 +376,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (num_remote_seps > 0){
                 connection->a2dp_source_state = A2DP_GET_CAPABILITIES;
                 sc.active_remote_sep_index = 0;
-                have_config = false;
+                connection->a2dp_source_have_config = false;
             } else {
                 if (a2dp_source_outgoing_active(connection)){
                     outgoing_active = false;
@@ -408,7 +402,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
 
             // select SEP if none configured yet
-            if (a2dp_source_have_config(connection) == false){
+            if (connection->a2dp_source_have_config == false){
                 // find SBC stream endpoint
                 avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_source_stream_endpoint_for_media_codec(AVDTP_CODEC_SBC);
                 if (stream_endpoint != NULL){
@@ -511,9 +505,9 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 (*a2dp_source_packet_handler_user)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 
                 // do we have a valid config?
-                if (a2dp_source_have_config(connection)){
+                if (connection->a2dp_source_have_config){
                     connection->a2dp_source_state = A2DP_SET_CONFIGURATION;
-                    have_config = false;
+                    connection->a2dp_source_have_config = false;
                     break;
                 }
 
@@ -829,7 +823,8 @@ uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_se
     return avdtp_source_stream_send_media_packet(a2dp_cid, local_seid, packet, size);
 }
 
-static uint8_t a2dp_source_config_init(uint8_t local_seid, uint8_t remote_seid, avdtp_media_codec_type_t codec_type) {
+static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
+                                       avdtp_media_codec_type_t codec_type) {
 
     // lookup local stream endpoint
     avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
@@ -862,7 +857,7 @@ static uint8_t a2dp_source_config_init(uint8_t local_seid, uint8_t remote_seid, 
 
     // suitable Sink stream endpoint found, configure it
     sc.local_stream_endpoint = local_stream_endpoint;
-    have_config = true;
+    connection->a2dp_source_have_config = true;
 
     return ERROR_CODE_SUCCESS;
 }
@@ -873,7 +868,7 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t status = a2dp_source_config_init(local_seid, remote_seid, AVDTP_CODEC_SBC);
+    uint8_t status = a2dp_source_config_init(connection, local_seid, remote_seid, AVDTP_CODEC_SBC);
     if (status != 0) {
         return status;
     }
@@ -891,7 +886,7 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid,
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t status = a2dp_source_config_init(local_seid, remote_seid, AVDTP_CODEC_MPEG_1_2_AUDIO);
+    uint8_t status = a2dp_source_config_init(connection, local_seid, remote_seid, AVDTP_CODEC_MPEG_1_2_AUDIO);
     if (status != 0) {
         return status;
     }
@@ -910,7 +905,7 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t status = a2dp_source_config_init(local_seid, remote_seid, AVDTP_CODEC_MPEG_2_4_AAC);
+    uint8_t status = a2dp_source_config_init(connection, local_seid, remote_seid, AVDTP_CODEC_MPEG_2_4_AAC);
     if (status != 0) {
         return status;
     }
@@ -927,7 +922,7 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t status = a2dp_source_config_init(local_seid, remote_seid, AVDTP_CODEC_ATRAC_FAMILY);
+    uint8_t status = a2dp_source_config_init(connection, local_seid, remote_seid, AVDTP_CODEC_ATRAC_FAMILY);
     if (status != 0) {
         return status;
     }
@@ -946,7 +941,7 @@ uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uin
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t status = a2dp_source_config_init(local_seid, remote_seid, AVDTP_CODEC_NON_A2DP);
+    uint8_t status = a2dp_source_config_init(connection, local_seid, remote_seid, AVDTP_CODEC_NON_A2DP);
     if (status != 0) {
         return status;
     }
