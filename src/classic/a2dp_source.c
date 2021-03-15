@@ -66,11 +66,6 @@
 #define AVDTP_MAX_SEP_NUM 10
 #define A2DP_SET_CONFIG_DELAY_MS 150
 
-typedef struct {
-    avdtp_stream_endpoint_t * local_stream_endpoint;
-} avdtp_stream_endpoint_context_t;
-
-
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 
@@ -83,7 +78,7 @@ static uint16_t     sep_discovery_count;
 static uint16_t     sep_discovery_index;
 static avdtp_sep_t  sep_discovery_seps[AVDTP_MAX_SEP_NUM];
 
-static avdtp_stream_endpoint_context_t sc;
+static avdtp_stream_endpoint_t * local_stream_endpoint;
 
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void a2dp_discover_seps_with_next_waiting_connection(void);
@@ -290,8 +285,8 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
         avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
     } else {
         // incoming: accept cid, lookup local stream endpoint and wait for stream open
-        sc.local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
-        btstack_assert(sc.local_stream_endpoint != NULL);
+        local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+        btstack_assert(local_stream_endpoint != NULL);
         avdtp_connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
     }
 }
@@ -602,35 +597,35 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     return;
 
                 case A2DP_SET_CONFIGURATION:
-                    remote_seid = sc.local_stream_endpoint->set_config_remote_seid;
-                    log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid);
+                    remote_seid = local_stream_endpoint->set_config_remote_seid;
+                    log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x", avdtp_stream_endpoint_seid(local_stream_endpoint), remote_seid);
                     connection->a2dp_source_state = A2DP_W4_SET_CONFIGURATION;
-                    avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), remote_seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
+                    avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(local_stream_endpoint), remote_seid, local_stream_endpoint->remote_configuration_bitmap, local_stream_endpoint->remote_configuration);
                     return;
 
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:
-                    log_info("A2DP open stream ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
+                    log_info("A2DP open stream ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(local_stream_endpoint), local_stream_endpoint->remote_sep.seid);
                     connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
-                    avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
+                    avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(local_stream_endpoint), local_stream_endpoint->remote_sep.seid);
                     break;
 
                 case A2DP_W2_RECONFIGURE_WITH_SEID:
-                    log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.local_stream_endpoint->remote_sep.seid);
-                    a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), ERROR_CODE_SUCCESS);
+                    log_info("A2DP reconfigured ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(local_stream_endpoint), local_stream_endpoint->remote_sep.seid);
+                    a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(local_stream_endpoint), ERROR_CODE_SUCCESS);
                     connection->a2dp_source_state = A2DP_STREAMING_OPENED;
                     break;
 
                 case A2DP_STREAMING_OPENED:
                     switch (signal_identifier){
                         case  AVDTP_SI_START:
-                            a2dp_emit_stream_event(a2dp_source_packet_handler_user, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_STARTED);
+                            a2dp_emit_stream_event(a2dp_source_packet_handler_user, cid, avdtp_stream_endpoint_seid(local_stream_endpoint), A2DP_SUBEVENT_STREAM_STARTED);
                             break;
                         case AVDTP_SI_SUSPEND:
-                            a2dp_emit_stream_event(a2dp_source_packet_handler_user, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_SUSPENDED);
+                            a2dp_emit_stream_event(a2dp_source_packet_handler_user, cid, avdtp_stream_endpoint_seid(local_stream_endpoint), A2DP_SUBEVENT_STREAM_SUSPENDED);
                             break;
                         case AVDTP_SI_ABORT:
                         case AVDTP_SI_CLOSE:
-                            a2dp_emit_stream_event(a2dp_source_packet_handler_user, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_STOPPED);
+                            a2dp_emit_stream_event(a2dp_source_packet_handler_user, cid, avdtp_stream_endpoint_seid(local_stream_endpoint), A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
                         default:
                             break;
@@ -682,7 +677,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (sep_discovery_cid == cid){
                 a2dp_source_set_config_timer_stop();
                 connection->a2dp_source_stream_endpoint_configured = false;
-                sc.local_stream_endpoint = NULL;
+                local_stream_endpoint = NULL;
 
                 connection->a2dp_source_state = A2DP_IDLE;
                 sep_discovery_cid = 0;
@@ -702,8 +697,7 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
 }
 
 void a2dp_source_init(void){
-    (void) memset(&sc, 0, sizeof(avdtp_stream_endpoint_context_t));
-
+    local_stream_endpoint = NULL;
     avdtp_source_init();
 }
 
@@ -814,8 +808,8 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
                                        avdtp_media_codec_type_t codec_type) {
 
     // lookup local stream endpoint
-    avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
-    if (local_stream_endpoint == NULL){
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    if (stream_endpoint == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -832,18 +826,18 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
     }
 
     // set media configuration
-    local_stream_endpoint->remote_configuration_bitmap = store_bit16(local_stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
-    local_stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
-    local_stream_endpoint->remote_configuration.media_codec.media_codec_type = codec_type;
+    stream_endpoint->remote_configuration_bitmap = store_bit16(stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
+    stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
+    stream_endpoint->remote_configuration.media_codec.media_codec_type = codec_type;
     // remote seid to use
-    local_stream_endpoint->set_config_remote_seid = remote_seid;
+    stream_endpoint->set_config_remote_seid = remote_seid;
     // enable delay reporting if supported
     if (remote_sep->registered_service_categories & (1<<AVDTP_DELAY_REPORTING)){
-        local_stream_endpoint->remote_configuration_bitmap = store_bit16(local_stream_endpoint->remote_configuration_bitmap, AVDTP_DELAY_REPORTING, 1);
+        stream_endpoint->remote_configuration_bitmap = store_bit16(stream_endpoint->remote_configuration_bitmap, AVDTP_DELAY_REPORTING, 1);
     }
 
     // suitable Sink stream endpoint found, configure it
-    sc.local_stream_endpoint = local_stream_endpoint;
+    local_stream_endpoint = stream_endpoint;
     connection->a2dp_source_have_config = true;
 
     return ERROR_CODE_SUCCESS;
@@ -860,9 +854,9 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_
         return status;
     }
     // set config in reserved buffer
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_sbc_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) local_stream_endpoint->media_codec_info;
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
+    avdtp_config_sbc_store(local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
@@ -879,9 +873,9 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid,
     }
 
     // set config in reserved buffer
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
-    avdtp_config_mpeg_audio_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *)local_stream_endpoint->media_codec_info;
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
+    avdtp_config_mpeg_audio_store( local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
@@ -896,9 +890,9 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
     if (status != 0) {
         return status;
     }
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
-    avdtp_config_mpeg_aac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) local_stream_endpoint->media_codec_info;
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
+    avdtp_config_mpeg_aac_store( local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
@@ -914,9 +908,9 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint
         return status;
     }
 
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) sc.local_stream_endpoint->media_codec_info;
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
-    avdtp_config_atrac_store( sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) local_stream_endpoint->media_codec_info;
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
+    avdtp_config_atrac_store( local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
     return ERROR_CODE_SUCCESS;
 }
@@ -933,8 +927,8 @@ uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uin
         return status;
     }
 
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
-    sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
+    local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
 
     return status;
 }
@@ -949,32 +943,32 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    btstack_assert(sc.local_stream_endpoint != NULL);
+    btstack_assert(local_stream_endpoint != NULL);
 
     log_info("Reconfigure avdtp_cid 0x%02x", avdtp_cid);
 
-    avdtp_media_codec_type_t codec_type = sc.local_stream_endpoint->sep.capabilities.media_codec.media_codec_type;
+    avdtp_media_codec_type_t codec_type = local_stream_endpoint->sep.capabilities.media_codec.media_codec_type;
     uint8_t codec_info_len;
     switch (codec_type){
         case AVDTP_CODEC_SBC:
             codec_info_len = 4;
-            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_sbc_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(local_stream_endpoint->media_codec_info, local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_sbc_set_sampling_frequency(local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_MPEG_1_2_AUDIO:
             codec_info_len = 4;
-            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_mpeg_audio_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(local_stream_endpoint->media_codec_info, local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_mpeg_audio_set_sampling_frequency(local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_MPEG_2_4_AAC:
             codec_info_len = 6;
-            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_mpeg_aac_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(local_stream_endpoint->media_codec_info, local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_mpeg_aac_set_sampling_frequency(local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         case AVDTP_CODEC_ATRAC_FAMILY:
             codec_info_len = 7;
-            (void)memcpy(sc.local_stream_endpoint->media_codec_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
-            avdtp_config_atrac_set_sampling_frequency(sc.local_stream_endpoint->media_codec_info, sampling_frequency);
+            (void)memcpy(local_stream_endpoint->media_codec_info, local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, codec_info_len);
+            avdtp_config_atrac_set_sampling_frequency(local_stream_endpoint->media_codec_info, sampling_frequency);
             break;
         default:
             return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
@@ -984,15 +978,15 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
     new_configuration.media_codec.media_type = AVDTP_AUDIO;
     new_configuration.media_codec.media_codec_type = codec_type;
     new_configuration.media_codec.media_codec_information_len = codec_info_len;
-    new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->media_codec_info;
+    new_configuration.media_codec.media_codec_information = local_stream_endpoint->media_codec_info;
 
     // start reconfigure
     connection->a2dp_source_state = A2DP_W2_RECONFIGURE_WITH_SEID;
 
     return avdtp_source_reconfigure(
             avdtp_cid,
-            avdtp_stream_endpoint_seid(sc.local_stream_endpoint),
-            sc.local_stream_endpoint->remote_sep.seid,
+            avdtp_stream_endpoint_seid(local_stream_endpoint),
+            local_stream_endpoint->remote_sep.seid,
             1 << AVDTP_MEDIA_CODEC,
             new_configuration
     );
