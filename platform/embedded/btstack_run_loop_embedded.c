@@ -87,6 +87,8 @@ static volatile uint32_t system_ticks;
 
 static int trigger_event_received = 0;
 
+static bool run_loop_exit_requested;
+
 // set timer
 static void btstack_run_loop_embedded_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
 #ifdef HAVE_EMBEDDED_TICK
@@ -135,9 +137,13 @@ void btstack_run_loop_embedded_execute_once(void) {
  * Execute run_loop
  */
 static void btstack_run_loop_embedded_execute(void) {
-    while (true) {
+    while (run_loop_exit_requested == false) {
         btstack_run_loop_embedded_execute_once();
     }
+}
+
+static void btstack_run_loop_embedded_trigger_exit(void){
+    run_loop_exit_requested = true;
 }
 
 #ifdef HAVE_EMBEDDED_TICK
@@ -201,6 +207,8 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
     &btstack_run_loop_embedded_poll_data_sources_from_irq,
+    NULL,
+    &btstack_run_loop_embedded_trigger_exit,
 };
 
 const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
