@@ -165,12 +165,13 @@ static uint32_t btstack_run_loop_embedded_get_time_ms(void){
 #endif
 }
 
-
-/**
- * trigger run loop iteration
- */
-void btstack_run_loop_embedded_trigger(void){
+static void btstack_run_loop_embedded_poll_data_sources_from_irq(void){
     trigger_event_received = 1;
+}
+
+// @deprecated Use btstack_run_loop_poll_data_sources_from_irq() instead
+void btstack_run_loop_embedded_trigger(void){
+    btstack_run_loop_embedded_poll_data_sources_from_irq();
 }
 
 static void btstack_run_loop_embedded_init(void){
@@ -199,6 +200,7 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_execute,
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
+    &btstack_run_loop_embedded_poll_data_sources_from_irq,
 };
 
 const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){

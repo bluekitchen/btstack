@@ -75,10 +75,16 @@ uint32_t btstack_run_loop_embedded_get_ticks(void);
 
 /**
  * @brief Sets an internal flag that is checked in the critical section just before entering sleep mode. Has to be called by the interrupt handler of a data source to signal the run loop that a new data is available.
+ * @deprecated Please use btstack_run_loop_poll_data_sources_from_irq() instead
  */
 void btstack_run_loop_embedded_trigger(void);    
+
 /**
- * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop (it is not recommended).
+ * @brief Execute run_loop once. It can be used to integrate BTstack's timer and data source processing into a foreign run loop
+ *
+ * @note Not recommended. Instead, you can implement the btstack_run_loop_t interface with your own run loop and request
+ * - processing of timers by calling btstack_run_loop_base_process_timers and
+ * - poll data sources with by calling btstack_run_loop_base_poll_data_sources
  */
 void btstack_run_loop_embedded_execute_once(void);
 
