@@ -45,7 +45,7 @@ HCI Dump: replace monolithic `hci_dump.c` (with many #ifdefs) into dispatcher wi
   - `embedded/hci_dump_embedded_stdout` - log to console using printf
   - `embedded/hci_dump_segger_stdout` - log to RTT console using `SEGGER_printf`
   - `embedded/hci_dump_segger_binary` - writes binary log over RTT to host
-FreeRTOS/Run Loop: remove `btstack_run_loop_freertos_execute_code_on_main_thread_from_isr`. A polled data source can be used instead.
+
 
 ## Release v1.3.2
 
