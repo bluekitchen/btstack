@@ -2023,11 +2023,13 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_connection->ok_pending = 1;
                 log_info("HF speaker gain = %u", hfp_connection->speaker_gain);
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SPEAKER_VOLUME, hfp_connection->speaker_gain);
                 break;
             case HFP_CMD_SET_MICROPHONE_GAIN:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_connection->ok_pending = 1;
                 log_info("HF microphone gain = %u", hfp_connection->microphone_gain);
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_connection->speaker_gain);
                 break;
             default:
                 break;
