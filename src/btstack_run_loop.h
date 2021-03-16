@@ -36,17 +36,23 @@
  */
 
 /**
- * @title Run Loop
+ *  BTstack Run Loop Abstraction
  *
+ *  Provides generic functionality required by the Bluetooth stack and example applications:
+ *  - asynchronous IO for various devices Serial, USB, network sockets, console
+ *  - system time in milliseconds
+ *  - single shot timers
+ *  - integration for threaded environments
  */
 
-#ifndef btstack_run_loop_H
-#define btstack_run_loop_H
+#ifndef BTSTACK_RUN_LOOP_H
+#define BTSTACK_RUN_LOOP_H
 
 #include "btstack_config.h"
 
 #include "btstack_bool.h"
 #include "btstack_linked_list.h"
+#include "btstack_defines.h"
 
 #include <stdint.h>
 
@@ -104,6 +110,9 @@ typedef struct btstack_run_loop {
 	void (*execute)(void);
 	void (*dump_timer)(void);
 	uint32_t (*get_time_ms)(void);
+	void (*poll_data_sources_from_irq)(void);
+	void (*execute_on_main_thread)(btstack_context_callback_registration_t * callback_registration);
+	void (*trigger_exit)(void);
 } btstack_run_loop_t;
 
 
@@ -295,9 +304,34 @@ void btstack_run_loop_add_data_source(btstack_data_source_t * data_source);
 int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source);
 
 /**
+ * @brief Poll data sources - called only from IRQ context
+ * @note Can be used to trigger processing of received peripheral data on the main thread
+ *       by registering a data source with DATA_SOURCE_CALLBACK_POLL and calling this
+ *       function from the IRQ handler.
+ */
+void btstack_run_loop_poll_data_sources_from_irq(void);
+
+
+/**
  * @brief Execute configured run loop. This function does not return.
  */
 void btstack_run_loop_execute(void);
+
+/**
+ * @brief Registers callback with run loop and mark main thread as ready
+ * @note Callback can only be registered once
+ * @param callback_registration
+ */
+void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration);
+
+/**
+ * @brief Trigger exit of active run loop (started via btstack_run_loop_execute) if possible
+ * @note This is only supported if there's a loop in the btstack_run_loop_execute function.
+ * It is not supported if timers and data sources are only mapped to RTOS equivalents, e.g.
+ * in the Qt or Core Foundation implementations.
+ */
+void btstack_run_loop_trigger_exit(void);
+
 
 /**
  * @brief De-Init Run Loop
@@ -307,9 +341,8 @@ void btstack_run_loop_deinit(void);
 /* API_END */
 
 
-
 #if defined __cplusplus
 }
 #endif
 
-#endif // btstack_run_loop_H
+#endif // BTSTACK_RUN_LOOP_H

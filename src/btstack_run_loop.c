@@ -211,7 +211,13 @@ int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source){
     return the_run_loop->remove_data_source(data_source);
 }
 
-void btstack_run_loop_set_timer(btstack_timer_source_t * timer, uint32_t timeout_in_ms){
+void btstack_run_loop_poll_data_sources_from_irq(void){
+    btstack_assert(the_run_loop != NULL);
+    btstack_assert(the_run_loop->poll_data_sources_from_irq != NULL);
+    the_run_loop->poll_data_sources_from_irq();
+}
+
+void btstack_run_loop_set_timer(btstack_timer_source_t *timer, uint32_t timeout_in_ms){
     btstack_assert(the_run_loop != NULL);
     the_run_loop->set_timer(timer, timeout_in_ms);
 }
@@ -267,6 +273,18 @@ void btstack_run_loop_timer_dump(void){
 void btstack_run_loop_execute(void){
     btstack_assert(the_run_loop != NULL);
     the_run_loop->execute();
+}
+
+void btstack_run_loop_trigger_exit(void){
+    btstack_assert(the_run_loop != NULL);
+    btstack_assert(the_run_loop->trigger_exit != NULL);
+    the_run_loop->trigger_exit();
+}
+
+void btstack_run_loop_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+    btstack_assert(the_run_loop != NULL);
+    btstack_assert(the_run_loop->execute_on_main_thread != NULL);
+    the_run_loop->execute_on_main_thread(callback_registration);
 }
 
 // init must be called before any other run_loop call
