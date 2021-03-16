@@ -142,7 +142,7 @@ void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg)
 }
 
 #if defined(HAVE_FREERTOS_TASK_NOTIFICATIONS) || (INCLUDE_xEventGroupSetBitFromISR == 1)
-void btstack_run_loop_freertos_trigger_from_isr(void){
+static void btstack_run_loop_freertos_poll_data_sources_from_irq(void){
     BaseType_t xHigherPriorityTaskWoken;
 #ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
     xTaskNotifyFromISR(btstack_run_loop_task, EVENT_GROUP_FLAG_RUN_LOOP, eSetBits, &xHigherPriorityTaskWoken);
@@ -156,6 +156,9 @@ void btstack_run_loop_freertos_trigger_from_isr(void){
 #else
     xEventGroupSetBitsFromISR(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, &xHigherPriorityTaskWoken);
 #endif
+}
+void btstack_run_loop_freertos_trigger_from_isr(void){
+    btstack_run_loop_freertos_trigger_from_isr();
 }
 #endif
 
@@ -246,6 +249,11 @@ static const btstack_run_loop_t btstack_run_loop_freertos = {
     &btstack_run_loop_freertos_execute,
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_freertos_get_time_ms,
+#if defined(HAVE_FREERTOS_TASK_NOTIFICATIONS) || (INCLUDE_xEventGroupSetBitFromISR == 1)
+    &btstack_run_loop_freertos_poll_data_sources_from_irq,
+#else
+    NULL,
+#endif
 };
 
 const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){

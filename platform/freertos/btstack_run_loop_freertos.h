@@ -70,6 +70,7 @@ void btstack_run_loop_freertos_trigger(void);
 /**
  * @brief Triggers processing of data sources from an ISR.
  * Has to be called after enabling a poll data source to wake-pup run loop.
+ * @deprecated Please use btstack_run_loop_poll_data_sources_from_irq() instead
  */
 void btstack_run_loop_freertos_trigger_from_isr(void);
 
