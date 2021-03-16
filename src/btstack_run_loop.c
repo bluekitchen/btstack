@@ -60,12 +60,14 @@ extern const btstack_run_loop_t btstack_run_loop_embedded;
  */
 
 // private data (access only by run loop implementations)
-btstack_linked_list_t btstack_run_loop_base_timers;
-btstack_linked_list_t btstack_run_loop_base_data_sources;
+btstack_linked_list_t  btstack_run_loop_base_timers;
+btstack_linked_list_t  btstack_run_loop_base_data_sources;
+btstack_linked_list_t  btstack_run_loop_base_callbacks;
 
 void btstack_run_loop_base_init(void){
     btstack_run_loop_base_timers = NULL;
     btstack_run_loop_base_data_sources = NULL;
+    btstack_run_loop_base_callbacks = NULL;
 }
 
 void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source){
@@ -148,6 +150,22 @@ void btstack_run_loop_base_poll_data_sources(void){
         }
     }
 }
+
+void btstack_run_loop_base_add_callback(btstack_context_callback_registration_t * callback_registration){
+    btstack_linked_list_add_tail(&btstack_run_loop_base_callbacks, (btstack_linked_item_t *) callback_registration);
+}
+
+
+void btstack_run_loop_base_execute_callbacks(void){
+    while (1){
+        btstack_context_callback_registration_t * callback_registration = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&btstack_run_loop_base_callbacks);
+        if (callback_registration == NULL){
+            break;
+        }
+        (*callback_registration->callback)(callback_registration->context);
+    }
+}
+
 
 /**
  * BTstack Run Loop Implementation, mainly dispatches to port-specific implementation

@@ -124,6 +124,7 @@ typedef struct btstack_run_loop {
 // private data (access only by run loop implementations)
 extern btstack_linked_list_t btstack_run_loop_base_timers;
 extern btstack_linked_list_t btstack_run_loop_base_data_sources;
+extern btstack_linked_list_t btstack_run_loop_base_callbacks;
 
 /**
  * @brief Init
@@ -191,6 +192,16 @@ void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t *
  * @brief Poll data sources. It calls the procss function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
  */
 void btstack_run_loop_base_poll_data_sources(void);
+
+/**
+ * @bried Add Callbacks to list of callbacks to execute with btstack_run_loop_base_execute_callbacks
+ */
+void btstack_run_loop_base_add_callback(btstack_context_callback_registration_t * callback_registration);
+
+/**
+ * @bried Procss Callbacks: remove all callback-registrations and call the registered function with its context
+ */
+void btstack_run_loop_base_execute_callbacks(void);
 
 
 /* API_START */
