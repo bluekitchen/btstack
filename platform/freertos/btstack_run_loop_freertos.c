@@ -162,8 +162,12 @@ void btstack_run_loop_freertos_trigger_from_isr(void){
 }
 #endif
 
-void btstack_run_loop_freertos_trigger_exit(void){
+static void btstack_run_loop_freertos_trigger_exit_internal(void){
     run_loop_exit_requested = true;
+}
+
+void btstack_run_loop_freertos_trigger_exit(void){
+    btstack_run_loop_freertos_trigger_exit_internal();
 }
 
 /**
@@ -254,6 +258,8 @@ static const btstack_run_loop_t btstack_run_loop_freertos = {
 #else
     NULL,
 #endif
+    NULL,
+    &btstack_run_loop_freertos_trigger_exit_internal,
 };
 
 const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){
