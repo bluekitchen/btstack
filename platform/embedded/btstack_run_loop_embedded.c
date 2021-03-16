@@ -110,6 +110,9 @@ void btstack_run_loop_embedded_execute_once(void) {
     // poll data sources
     btstack_run_loop_base_poll_data_sources();
 
+    // execute callbacks
+    btstack_run_loop_base_execute_callbacks();
+
 #ifdef TIMER_SUPPORT
 
 #ifdef HAVE_EMBEDDED_TICK
@@ -171,6 +174,11 @@ static uint32_t btstack_run_loop_embedded_get_time_ms(void){
 #endif
 }
 
+static void btstack_run_loop_embedded_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+    btstack_run_loop_base_add_callback(callback_registration);
+    trigger_event_received = 1;
+}
+
 static void btstack_run_loop_embedded_poll_data_sources_from_irq(void){
     trigger_event_received = 1;
 }
@@ -207,7 +215,7 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
     &btstack_run_loop_embedded_poll_data_sources_from_irq,
-    NULL,
+    &btstack_run_loop_embedded_execute_on_main_thread,
     &btstack_run_loop_embedded_trigger_exit,
 };
 
