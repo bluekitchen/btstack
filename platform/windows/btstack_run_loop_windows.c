@@ -55,6 +55,7 @@
 // start time.
 static ULARGE_INTEGER start_time;
 
+static bool run_loop_exit_requested;
 
 /**
  * @brief Queries the current time in ms since start
@@ -139,6 +140,10 @@ static void btstack_run_loop_windows_execute(void) {
     }
 }
 
+static void btstack_run_loop_windows_trigger_exit(void){
+    run_loop_exit_requested = true;
+}
+
 // set timer
 static void btstack_run_loop_windows_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
     uint32_t time_ms = btstack_run_loop_windows_get_time_ms();
@@ -173,6 +178,9 @@ static const btstack_run_loop_t btstack_run_loop_windows = {
     &btstack_run_loop_windows_execute,
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_windows_get_time_ms,
+    NULL, /* poll data sources from irq */
+    NULL,
+    btstack_run_loop_windows_trigger_exit
 };
 
 /**
