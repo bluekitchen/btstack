@@ -157,15 +157,6 @@ void btstack_run_loop_freertos_trigger_from_isr(void){
     xEventGroupSetBitsFromISR(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, &xHigherPriorityTaskWoken);
 #endif
 }
-
-void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
-    function_call_t message;
-    message.fn  = fn;
-    message.arg = arg;
-    BaseType_t xHigherPriorityTaskWoken;
-    xQueueSendToBackFromISR(btstack_run_loop_queue, &message, &xHigherPriorityTaskWoken);
-    btstack_run_loop_freertos_trigger_from_isr();
-}
 #endif
 
 void btstack_run_loop_freertos_trigger_exit(void){
