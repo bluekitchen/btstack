@@ -58,16 +58,44 @@ extern "C" {
 
 typedef enum {
     HIDS_CLIENT_STATE_IDLE,
+    
+    // get all HID services
     HIDS_CLIENT_STATE_W2_QUERY_SERVICE,
     HIDS_CLIENT_STATE_W4_SERVICE_RESULT,
+    
+    // for each service, discover all characteristics
     HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+
+    // for each REPORT_MAP characteristic, read HID Descriptor (Report Map Characteristic Value)
+    HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_CHARACTERISTIC_VALUE,
+    HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_VALUE_RESULT,
+    
+    // for REPORT_MAP characteristic, read External Report Reference Characteristic Descriptor
+    HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_CHARACTERISTIC_DESCRIPTOR_VALUE,
+    HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT,
+
+    // for every external report reference uuid, discover external Report characteristic
+    HIDS_CLIENT_STATE_W2_REPORT_MAP_QUERY_EXTERNAL_REPORT_CHARACTERISTIC,
+    HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_CHARACTERISTIC_RESULT,
+
+    // for each Report characteristics, discover characteristic descriptor
+    HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS,
+    HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTORS_RESULT,
+    // then read value of characteristic descriptor to get report ID and type  
+    HIDS_CLIENT_STATE_W2_REPORT_READ_CHARACTERISTIC_DESCRIPTOR_VALUE,
+    HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT,
+    
+    // Boot Mode
     HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD,
     HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED,
     HIDS_CLIENT_STATE_W2_ENABLE_MOUSE,
     HIDS_CLIENT_STATE_W4_MOUSE_ENABLED,
+    
+
     HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE,
     HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE,
+    
     HIDS_CLIENT_STATE_CONNECTED,
     HIDS_CLIENT_W2_SEND_REPORT
 } hid_service_client_state_t;
@@ -78,9 +106,11 @@ typedef struct {
     uint16_t value_handle;
     uint16_t end_handle;
     uint16_t properties;
+    uint16_t external_report_reference_uuid;
 
     // service mapping
-    uint8_t  report_id;
+    uint8_t service_index;
+    uint8_t report_id;
     hid_report_type_t report_type;
     gatt_client_notification_t notifications;
 } hids_client_report_t;
@@ -113,6 +143,7 @@ typedef struct {
     uint8_t num_reports;
 
     uint8_t   active_report_index;
+    uint16_t  descriptor_handle;
     uint16_t  report_len;
     const uint8_t * report;
 } hids_client_t;

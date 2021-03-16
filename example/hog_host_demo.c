@@ -442,7 +442,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Search for HID service.\n");
                     app_state = W4_HID_CLIENT_CONNECTED;
                     
-                    status = hids_client_connect(connection_handle, handle_gatt_client_event, HID_PROTOCOL_MODE_BOOT, &hids_cid);
+                    status = hids_client_connect(connection_handle, handle_gatt_client_event, HID_PROTOCOL_MODE_REPORT, &hids_cid);
                     if (status != ERROR_CODE_SUCCESS){
                         printf("HID client connection failed, status 0x%02x\n", status);
                     }
