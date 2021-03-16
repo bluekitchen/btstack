@@ -148,7 +148,7 @@ typedef struct {
     uint8_t num_reports;
 
     // index used for report and report map search
-    uint8_t   active_report_index;
+    uint8_t   active_index;
     uint16_t  descriptor_handle;
     uint16_t  report_len;
     const uint8_t * report;
