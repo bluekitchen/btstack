@@ -40,13 +40,13 @@
 /*
  *  btstack_uart_block_embedded.c
  *
- *  Common code to access UART via asynchronous block read/write commands on top of hal_uart_dma.h
- *
+ *  Adapter to IRQ-driven hal_uart_dma.h with Embedded BTstack Run Loop
+ *  Callbacks are executed on main thread via data source and btstack_run_loop_poll_data_sources_from_irq
  */
 
 #include "btstack_debug.h"
 #include "btstack_uart_block.h"
-#include "btstack_run_loop_embedded.h"
+#include "btstack_run_loop.h"
 #include "hal_uart_dma.h"
 
 // NULL
@@ -70,17 +70,17 @@ static void (*wakeup_handler)(void);
 
 static void btstack_uart_block_received(void){
     receive_complete = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_uart_block_sent(void){
     send_complete = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_uart_cts_pulse(void){
     wakeup_event = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static int btstack_uart_embedded_init(const btstack_uart_config_t * config){

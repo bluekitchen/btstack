@@ -61,13 +61,15 @@ static btstack_data_source_t stdin_data_source;
 
 #ifndef ENABLE_SEGGER_RTT
 
+// callback from hal_stdin is from irq context
+
 volatile int stdin_character_received;
 volatile char stdin_character;
 
 static void btstack_stdin_handler(char c){
 	stdin_character = c;
 	stdin_character_received = 1;
-	btstack_run_loop_embedded_trigger();
+	btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){

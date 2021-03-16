@@ -43,7 +43,7 @@
  */
 
 #include "btstack_debug.h"
-#include "btstack_run_loop_embedded.h"
+#include "btstack_run_loop.h"
 #include "btstack_em9304_spi.h"
 #include "hal_em9304_spi.h"
 
@@ -58,12 +58,12 @@ static int btstack_em9304_spi_embedded_notify_transfer_done;
 
 static void btstack_em9304_spi_embedded_ready(void){
     btstack_em9304_spi_embedded_notify_ready = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_em9304_spi_transfer_done(void){
     btstack_em9304_spi_embedded_notify_transfer_done = 1;
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void btstack_em9304_spi_embedded_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {

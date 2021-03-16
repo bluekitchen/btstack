@@ -204,7 +204,7 @@ static void (*rx_done_handler)(void) = &dummy_handler;
 static void (*tx_done_handler)(void) = &dummy_handler;
 
 static inline void hal_spi_em9304_trigger_run_loop(void){
-    btstack_run_loop_embedded_trigger();
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static inline int hal_spi_em9304_rdy(void){
