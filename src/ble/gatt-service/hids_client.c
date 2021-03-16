@@ -148,7 +148,21 @@ static uint8_t hids_client_get_characteristic(hids_client_t * client, uint8_t re
     return report_index;
 }
 
-static void hids_client_get_next_active_report_index(hids_client_t * client){
+static bool hids_client_get_next_active_report_map_index(hids_client_t * client){
+    uint8_t i;
+    
+    for (i = client->active_report_index; i < client->num_reports; i++){
+        hids_client_report_t report = client->reports[i];
+        if (report.report_type == HID_REPORT_TYPE_RESERVED && report.report_id == HID_REPORT_MODE_REPORT_MAP_ID){
+            client->active_report_index = i;
+        }
+        return true;
+    }
+    client->active_report_index = HIDS_CLIENT_INVALID_REPORT_INDEX;
+    return false;
+}
+
+static bool hids_client_get_next_active_report_index(hids_client_t * client){
     uint8_t i;
     
     for (i = client->active_report_index; i < client->num_reports; i++){
@@ -156,9 +170,10 @@ static void hids_client_get_next_active_report_index(hids_client_t * client){
         if (report.report_type == HID_REPORT_TYPE_RESERVED && report.report_id == HID_REPORT_MODE_REPORT_ID){
             client->active_report_index = i;
         }
-        return;
+        return true;
     }
     client->active_report_index = HIDS_CLIENT_INVALID_REPORT_INDEX;
+    return false;
 }
 
 static hids_client_t * hids_create_client(hci_con_handle_t con_handle, uint16_t cid){
@@ -291,9 +306,42 @@ static void hids_run_for_client(hids_client_t * client){
             break;
         }
 
+        case HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_CHARACTERISTIC_VALUE:
+            client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_VALUE_RESULT;
+            
+            att_status = gatt_client_read_value_of_characteristic_using_value_handle(&handle_gatt_client_event, client->con_handle, client->reports[client->active_report_index].value_handle);
+            UNUSED(att_status);
+            break;
+
+        case HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
+            client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT;
+            client->descriptor_handle = 0;
+            
+            hids_client_get_characteristic_for_report_index(client, client->active_report_index, &characteristic);
+            att_status = gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, client->con_handle, &characteristic);
+            UNUSED(att_status);
+            break;
+
+        case HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_CHARACTERISTIC_DESCRIPTOR_VALUE:
+            client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT;
+
+            att_status = gatt_client_read_characteristic_descriptor_using_descriptor_handle(&handle_gatt_client_event, client->con_handle, client->descriptor_handle);  
+            client->descriptor_handle = 0;  
+            UNUSED(att_status);
+            break;
+
+        case HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC:
+            client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_CHARACTERISTIC_RESULT;
+
+            att_status = gatt_client_discover_characteristics_for_handle_range_by_uuid16(&handle_gatt_client_event, client->con_handle, 0, 0xffff, 
+                client->reports[client->active_report_index].external_report_reference_uuid);
+            UNUSED(att_status);
+            break;
+
         case HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS:
             client->state = HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTORS_RESULT;
             client->descriptor_handle = 0;
+            
             hids_client_get_characteristic_for_report_index(client, client->active_report_index, &characteristic);
             att_status = gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, client->con_handle, &characteristic);
             UNUSED(att_status);
@@ -369,6 +417,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     hids_client_report_t * boot_keyboard_report;
     hids_client_report_t * boot_mouse_report;
+    const uint8_t * characteristic_descriptor_value;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
@@ -417,7 +466,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                 case ORG_BLUETOOTH_CHARACTERISTIC_REPORT_MAP:
                     // printf("ORG_BLUETOOTH_CHARACTERISTIC_REPORT_MAP\n");
-                    hids_client_add_characteristic(client, &characteristic, HID_REPORT_MODE_REPORT_MAP_ID, HID_REPORT_TYPE_INPUT);
+                    hids_client_add_characteristic(client, &characteristic, HID_REPORT_MODE_REPORT_MAP_ID, HID_REPORT_TYPE_RESERVED);
                     break;
 
                 case ORG_BLUETOOTH_CHARACTERISTIC_HID_INFORMATION:
@@ -434,25 +483,58 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             }
             break;
 
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+            // Map Report characteristic value == HID Descriptor
+            client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
+            btstack_assert(client != NULL);
+            // TODO get value and store it
+            break;
+
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
             client = hids_get_client_for_con_handle(gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
             btstack_assert(client != NULL);
             gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
 
-            // setup for descriptor value query
-            if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_REPORT_REFERENCE){
-                client->descriptor_handle = characteristic_descriptor.handle;
+            switch (client->state) {
+                case HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                    // setup for descriptor value query
+                    if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_EXTERNAL_REPORT_REFERENCE){
+                        client->descriptor_handle = characteristic_descriptor.handle;
+                    }
+                    break;
+                case HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                    // setup for descriptor value query
+                    if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_REPORT_REFERENCE){
+                        client->descriptor_handle = characteristic_descriptor.handle;
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
 
         case GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-            // get report ID
             client = hids_get_client_for_con_handle(gatt_event_characteristic_descriptor_query_result_get_handle(packet));
             btstack_assert(client != NULL);
-            if (gatt_event_characteristic_descriptor_query_result_get_descriptor_length(packet) == 2){
-                const uint8_t * value = gatt_event_characteristic_descriptor_query_result_get_descriptor(packet);
-                client->reports[client->active_report_index].report_id = value[0];
-                client->reports[client->active_report_index].report_type = (hid_report_type_t)value[1];
+
+            if (gatt_event_characteristic_descriptor_query_result_get_descriptor_length(packet) != 2){
+                break;
+            }
+            characteristic_descriptor_value = gatt_event_characteristic_descriptor_query_result_get_descriptor(packet);
+            
+            switch (client->state) {
+                case HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                    // get external report characteristic uuid 
+                    client->reports[client->active_report_index].external_report_reference_uuid = little_endian_read_16(characteristic_descriptor_value, 0);
+                    break;
+
+                case HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                    client->reports[client->active_report_index].report_id = characteristic_descriptor_value[0];
+                    client->reports[client->active_report_index].report_type = (hid_report_type_t)characteristic_descriptor_value[1];
+                    break;
+                
+                default:
+                    break;
             }
             break;
 
@@ -517,9 +599,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                                 client->active_report_index = 0;
                                 client->service_index = 0;
                                 
-                                hids_client_get_next_active_report_index(client);
+                                hids_client_get_next_active_report_map_index(client);
                                 if (client->active_report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
-                                    client->state = HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS;
+                                    client->state = HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_CHARACTERISTIC_VALUE;
                                     break;
                                 }
                                 hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
@@ -531,6 +613,92 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     }
                     break;
 
+
+                case HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_VALUE_RESULT:
+                    if (att_status != ATT_ERROR_SUCCESS){
+                        hids_emit_connection_established(client, att_status);  
+                        hids_finalize_client(client);
+                        break;  
+                    }
+                    // HID Descriptor found, check for external Report IDs (read report map descriptor)
+                    client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
+                    break;
+
+                case HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT:
+                    if (client->descriptor_handle != 0){
+                        // descriptor found
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_CHARACTERISTIC_DESCRIPTOR_VALUE;
+                        break;
+                    }
+
+                    // go for next report map
+                    client->active_report_index++;
+                    if (hids_client_get_next_active_report_map_index(client)){
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
+                        break;
+                    }
+
+                    // discover characteristic descriptor for all Report characteristics,
+                    // then read value of characteristic descriptor to get Report ID
+                    client->active_report_index = 0;
+                    client->service_index = 0;
+                    if (hids_client_get_next_active_report_index(client)){
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS;
+                        break;
+                    }
+
+                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                    hids_finalize_client(client);
+                    break;
+
+                case HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT:
+                    if (client->descriptor_handle != 0){
+                        // descriptor found
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC;
+                        break;
+                    }
+
+                    // go for next map report
+                    client->active_report_index++;
+                    if (hids_client_get_next_active_report_map_index(client)){
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
+                        break;
+                    }
+
+                    // discover characteristic descriptor for all Report characteristics,
+                    // then read value of characteristic descriptor to get Report ID
+                    client->active_report_index = 0;
+                    client->service_index = 0;
+                    if (hids_client_get_next_active_report_index(client)){
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS;
+                        break;
+                    }
+
+                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                    hids_finalize_client(client);
+                    break;
+
+                case HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_CHARACTERISTIC_RESULT:
+                    // go for next map report
+                    client->active_report_index++;
+                    if (hids_client_get_next_active_report_map_index(client)){
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
+                        break;
+                    }
+
+                    // discover characteristic descriptor for all Report characteristics,
+                    // then read value of characteristic descriptor to get Report ID
+                    client->active_report_index = 0;
+                    client->service_index = 0;
+                    if (hids_client_get_next_active_report_index(client)){
+                        client->state = HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS;
+                        break;
+                    }
+
+                    hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                    hids_finalize_client(client);
+                    break;
+
                 case HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTORS_RESULT:
                     if (client->descriptor_handle != 0){
                         // descriptor found
@@ -540,9 +708,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                     // go for next report
                     client->active_report_index++;
-                    hids_client_get_next_active_report_index(client);
-                    
-                    if (client->active_report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+                    if (hids_client_get_next_active_report_index(client)){
                         client->state = HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS;
                         break;
                     }
@@ -554,8 +720,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT:
                     // go for next report
                     client->active_report_index++;
-                    hids_client_get_next_active_report_index(client);
-                    if (client->active_report_index != HIDS_CLIENT_INVALID_REPORT_INDEX){
+                    if (hids_client_get_next_active_report_index(client)){
                         client->state = HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS;
                         break;
                     }
