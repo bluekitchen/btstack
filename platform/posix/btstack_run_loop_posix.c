@@ -59,11 +59,17 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 // the run loop
 static int data_sources_modified;
 
 static bool run_loop_exit_requested;
+
+// to trigger run loop from other thread
+static int run_loop_pipe_fd;
+static btstack_data_source_t run_loop_pipe_ds;
+static pthread_mutex_t run_loop_callback_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // start time. tv_usec/tv_nsec = 0
 #ifdef _POSIX_MONOTONIC_CLOCK
@@ -199,7 +205,6 @@ static void btstack_run_loop_posix_execute(void) {
                 
         // wait for ready FDs
         select( highest_fd+1 , &descriptors_read, &descriptors_write, NULL, timeout);
-                
 
         data_sources_modified = 0;
         btstack_linked_list_iterator_init(&it, &btstack_run_loop_base_data_sources);
@@ -235,6 +240,35 @@ static void btstack_run_loop_posix_set_timer(btstack_timer_source_t *a, uint32_t
     log_debug("btstack_run_loop_posix_set_timer to %u ms (now %u, timeout %u)", a->timeout, time_ms, timeout_in_ms);
 }
 
+static void btstack_run_loop_posix_pipe_process(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(callback_type);
+    log_info("btstack_run_loop_posix_pipe_process");
+    uint8_t buffer[1];
+    (void) read(ds->source.fd, buffer, 1);
+    // execute callbacks - protect list with mutex
+    while (1){
+        pthread_mutex_lock(&run_loop_callback_mutex);
+        btstack_context_callback_registration_t * callback_registration = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&btstack_run_loop_base_callbacks);
+        pthread_mutex_unlock(&run_loop_callback_mutex);
+        if (callback_registration == NULL){
+            break;
+        }
+        (*callback_registration->callback)(callback_registration->context);
+    }
+}
+
+static void btstack_run_loop_posix_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+    // protect list with mutex
+    pthread_mutex_lock(&run_loop_callback_mutex);
+    btstack_run_loop_base_add_callback(callback_registration);
+    pthread_mutex_unlock(&run_loop_callback_mutex);
+    // trigger run loop
+    if (run_loop_pipe_fd >= 0){
+        const uint8_t x = (uint8_t) 'x';
+        (void) write(run_loop_pipe_fd, &x, 1);
+    }
+}
+
 static void btstack_run_loop_posix_init(void){
     btstack_run_loop_base_init();
     
@@ -246,8 +280,22 @@ static void btstack_run_loop_posix_init(void){
     gettimeofday(&init_tv, NULL);
     init_tv.tv_usec = 0;
 #endif
-}
 
+    // create pipe and register as data source
+    int fildes[2];
+    int status = pipe(fildes);
+    if (status == 0 ) {
+        run_loop_pipe_fd  = fildes[1];
+        run_loop_pipe_ds.source.fd = fildes[0];
+        run_loop_pipe_ds.flags = DATA_SOURCE_CALLBACK_READ;
+        run_loop_pipe_ds.process = &btstack_run_loop_posix_pipe_process;
+        btstack_run_loop_base_add_data_source(&run_loop_pipe_ds);
+        log_info("Pipe in %u, out %u", run_loop_pipe_fd, fildes[0]);
+    } else {
+        run_loop_pipe_fd  = -1;
+        log_error("pipe() failed");
+    }
+}
 
 static const btstack_run_loop_t btstack_run_loop_posix = {
     &btstack_run_loop_posix_init,
@@ -262,7 +310,7 @@ static const btstack_run_loop_t btstack_run_loop_posix = {
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_posix_get_time_ms,
     NULL, /* poll data sources from irq */
-    NULL,
+    btstack_run_loop_posix_execute_on_main_thread,
     &btstack_run_loop_posix_trigger_exit,
 };
 
