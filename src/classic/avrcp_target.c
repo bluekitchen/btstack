@@ -796,13 +796,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
-            if (size < 9) return;
-            log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d, operand %d", packet[6], packet[7], packet[8]);
+            if (size < 8) return;
+            log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d", packet[6], packet[7]);
             avrcp_operation_id_t operation_id = (avrcp_operation_id_t) packet[6];
-            
+            uint8_t operand = 0;
+            if ((packet[7] >= 1) && (size >= 9)){
+                operand = packet[8];
+            }
             if (avrcp_is_receive_pass_through_cmd(operation_id)){
                 operation_id = (avrcp_operation_id_t) (packet[6] & 0x7F);
-                avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], packet[8]);
+                avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
                 break;
             }
             
@@ -826,14 +829,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_OPERATION_ID_LEFT:
                 case AVRCP_OPERATION_ID_RIGHT:
                 case AVRCP_OPERATION_ID_ROOT_MENU:
-                    avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], packet[8]);
-                    avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid, operation_id, packet[7], packet[8]);
+                    avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
+                    avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid, operation_id, packet[7], operand);
                     break;
                 case AVRCP_OPERATION_ID_UNDEFINED:
-                    avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], packet[8]);
+                    avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
                     return;
                 default:
-                    avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], packet[8]);
+                    avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
                     return;
             }
             break;
