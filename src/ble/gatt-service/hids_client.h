@@ -68,27 +68,28 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
 
     // for each REPORT_MAP characteristic, read HID Descriptor (Report Map Characteristic Value)
-    HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_CHARACTERISTIC_VALUE,
-    HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_VALUE_RESULT,
+    HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR,
+    HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR,
     
     // for REPORT_MAP characteristic, discover descriptor 
     HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
     HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTORS_RESULT,
 
     // for REPORT_MAP characteristic, read External Report Reference Characteristic Descriptor
-    HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_CHARACTERISTIC_DESCRIPTOR_VALUE,
-    HIDS_CLIENT_STATE_W4_REPORT_MAP_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT,
+    HIDS_CLIENT_STATE_W2_REPORT_MAP_READ_EXTERNAL_REPORT_REFERENCE_UUID,
+    HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID,
 
     // for every external report reference uuid, discover external Report characteristic
     HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_CHARACTERISTIC_RESULT,
 
-    // for each Report characteristics, discover characteristic descriptor
-    HIDS_CLIENT_STATE_W2_REPORT_QUERY_CHARACTERISTIC_DESCRIPTORS,
-    HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTORS_RESULT,
-    // then read value of characteristic descriptor to get report ID and type  
-    HIDS_CLIENT_STATE_W2_REPORT_READ_CHARACTERISTIC_DESCRIPTOR_VALUE,
-    HIDS_CLIENT_STATE_W4_REPORT_CHARACTERISTIC_DESCRIPTOR_VALUE_RESULT,
+    // for each Report characteristics, discover Report characteristic descriptor
+    HIDS_CLIENT_STATE_W2_FIND_REPORT,
+    HIDS_CLIENT_STATE_W4_REPORT_FOUND,
+
+    // then read value of Report characteristic descriptor to get report ID and type  
+    HIDS_CLIENT_STATE_W2_READ_REPORT_ID_AND_TYPE,
+    HIDS_CLIENT_STATE_W4_REPORT_ID_AND_TYPE,
     
     // Boot Mode
     HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD,
@@ -110,8 +111,6 @@ typedef struct {
     uint16_t value_handle;
     uint16_t end_handle;
     uint16_t properties;
-    // this chould be moved to hids_client_t
-    uint16_t external_report_reference_uuid;
 
     // service mapping
     uint8_t service_index;
@@ -150,6 +149,7 @@ typedef struct {
     // index used for report and report map search
     uint8_t   active_index;
     uint16_t  descriptor_handle;
+    uint16_t  external_report_reference_uuid;
     uint16_t  report_len;
     const uint8_t * report;
 } hids_client_t;
