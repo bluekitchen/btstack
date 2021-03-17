@@ -804,6 +804,26 @@ def parseCharacteristicAggregateFormat(fout, parts):
 
     handle = handle + 1
 
+def parseExternalReportReference(fout, parts):
+    global handle
+    global total_size
+
+    read_only_anybody_flags = property_flags['READ'];
+    size = 2 + 2 + 2 + 2 + 2
+    
+    report_uuid = int(parts[2], 16)
+    
+    write_indent(fout)
+    fout.write('// 0x%04x EXTERNAL_REPORT_REFERENCE-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, read_only_anybody_flags)
+    write_16(fout, handle)
+    write_16(fout, 0x2907)
+    write_16(fout, report_uuid)
+    fout.write("\n")
+    handle = handle + 1
+
 def parseReportReference(fout, parts):
     global handle
     global total_size
@@ -825,7 +845,6 @@ def parseReportReference(fout, parts):
     write_sequence(fout, report_type)
     fout.write("\n")
     handle = handle + 1
-
 
 def parseNumberOfDigitals(fout, parts):
     global handle
@@ -952,7 +971,7 @@ def parseLines(fname_in, fin, fout):
 
             # 2907 
             if parts[0] == 'EXTERNAL_REPORT_REFERENCE':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseExternalReportReference(fout, parts)
                 continue
 
             # 2908
