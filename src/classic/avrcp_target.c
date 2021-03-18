@@ -1053,7 +1053,7 @@ static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * con
     packet[pos++] = AVRCP_PDU_ID_REGISTER_NOTIFICATION; 
     packet[pos++] = 0;
 
-    big_endian_store_16(packet, pos, value_len);
+    big_endian_store_16(packet, pos, 1 + value_len);
     pos += 2;
     packet[pos++] = notification_id;
     if (value_len > 0){
