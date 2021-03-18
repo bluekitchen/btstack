@@ -54,7 +54,7 @@ extern "C" {
 #endif
 #define HIDS_CLIENT_INVALID_REPORT_INDEX 0xFF
 
-#define HIDS_CLIENT_NUM_REPORTS 10
+#define HIDS_CLIENT_NUM_REPORTS 15
 
 typedef enum {
     HIDS_CLIENT_STATE_IDLE,
@@ -80,8 +80,8 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID,
 
     // for every external report reference uuid, discover external Report characteristic
-    HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC,
-    HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_CHARACTERISTIC_RESULT,
+    HIDS_CLIENT_STATE_W2_DISCOVER_EXTERNAL_REPORT_CHARACTERISTIC,
+    HIDS_CLIENT_STATE_W4_EXTERNAL_REPORT_CHARACTERISTIC_RESULT,
 
     // for each Report characteristics, discover Report characteristic descriptor
     HIDS_CLIENT_STATE_W2_FIND_REPORT,
@@ -108,10 +108,15 @@ typedef enum {
 
 typedef struct {
     // GATT cache
+
+    //reuse as descriptor_handle
     uint16_t value_handle;
     uint16_t end_handle;
     uint16_t properties;
-
+    
+    // UUID of external Report characteristic, stored in Report Map descriptor EXTERNAL_REPORT_REFERENCE 
+    uint16_t  external_report_reference_uuid;
+    
     // service mapping
     uint8_t service_index;
     uint8_t report_id;
@@ -122,6 +127,9 @@ typedef struct {
 typedef struct {
     uint16_t start_handle;
     uint16_t end_handle;
+
+    uint16_t report_map_value_handle;
+    uint16_t report_map_end_handle;
 } hid_service_t;
 
 typedef struct {
@@ -149,7 +157,6 @@ typedef struct {
     // index used for report and report map search
     uint8_t   active_index;
     uint16_t  descriptor_handle;
-    uint16_t  external_report_reference_uuid;
     uint16_t  report_len;
     const uint8_t * report;
 } hids_client_t;
