@@ -130,6 +130,14 @@ typedef struct {
 
     uint16_t report_map_value_handle;
     uint16_t report_map_end_handle;
+
+    // descriptor storage
+    uint16_t hid_descriptor_offset;
+    uint16_t hid_descriptor_len;
+    uint16_t hid_descriptor_max_len;
+    uint8_t  hid_descriptor_status;     // ERROR_CODE_SUCCESS if descriptor available, 
+                                        // ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if not, and 
+                                        // ERROR_CODE_MEMORY_CAPACITY_EXCEEDED if descriptor is larger then the available space
 } hid_service_t;
 
 typedef struct {
@@ -159,6 +167,7 @@ typedef struct {
     uint16_t  descriptor_handle;
     uint16_t  report_len;
     const uint8_t * report;
+
 } hids_client_t;
 
 /* API_START */
@@ -194,6 +203,10 @@ uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint
  * @return status
  */
 uint8_t hids_client_disconnect(uint16_t hids_cid);
+
+const uint8_t * hids_client_descriptor_storage_get_descriptor_data(uint16_t hids_cid, uint8_t service_index);
+
+uint16_t hids_client_descriptor_storage_get_descriptor_len(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief De-initialize Battery Service. 

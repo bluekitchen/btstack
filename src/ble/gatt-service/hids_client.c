@@ -55,15 +55,119 @@
 #include "btstack_run_loop.h"
 #include "gap.h"
 
-static btstack_linked_list_t clients;
-static uint16_t hids_cid_counter = 0;
-
 #define HID_REPORT_MODE_REPORT_ID               3
 #define HID_REPORT_MODE_REPORT_MAP_ID           4
 #define HID_REPORT_MODE_HID_INFORMATION_ID      5
 #define HID_REPORT_MODE_HID_CONTROL_POINT_ID    6
 
+static btstack_linked_list_t clients;
+static uint16_t hids_cid_counter = 0;
+
+static uint8_t * hids_client_descriptor_storage;
+static uint16_t  hids_client_descriptor_storage_len;
+
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+static hids_client_t * hids_get_client_for_con_handle(hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
+        if (client->con_handle != con_handle) continue;
+        return client;
+    }
+    return NULL;
+}
+
+static hids_client_t * hids_get_client_for_cid(uint16_t hids_cid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
+        if (client->cid != hids_cid) continue;
+        return client;
+    }
+    return NULL;
+}
+
+
+// START Descriptor Storage Util
+
+static uint16_t hids_client_descriptor_storage_get_available_space(void){
+    // assumes all descriptors are back to back
+    uint16_t free_space = hids_client_descriptor_storage_len;
+    uint8_t i;
+    
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
+        for (i = 0; i < client->num_instances; i++){
+            free_space -= client->services[i].hid_descriptor_len;
+        }
+    }
+    return free_space;
+}
+
+static void hids_client_descriptor_storage_init(hids_client_t * client, uint8_t service_index){
+    client->services[service_index].hid_descriptor_len = 0;
+    client->services[service_index].hid_descriptor_max_len = hids_client_descriptor_storage_get_available_space();
+    client->services[service_index].hid_descriptor_offset = hids_client_descriptor_storage_len - client->services[service_index].hid_descriptor_max_len;
+}
+
+static bool hids_client_descriptor_storage_store(hids_client_t * client, uint8_t service_index, uint8_t byte){
+    if (client->services[service_index].hid_descriptor_len >= client->services[service_index].hid_descriptor_max_len) return false;
+
+    hids_client_descriptor_storage[client->services[service_index].hid_descriptor_offset + client->services[service_index].hid_descriptor_len] = byte;
+    client->services[service_index].hid_descriptor_len++;
+    return true;
+}
+
+static void hids_client_descriptor_storage_delete(hids_client_t * client){
+    uint8_t service_index = 0;
+    uint16_t next_offset = 0;
+
+    for (service_index = 0; service_index < client->num_instances; service_index++){
+        next_offset += client->services[service_index].hid_descriptor_offset + client->services[service_index].hid_descriptor_len;
+        client->services[service_index].hid_descriptor_len = 0;
+        client->services[service_index].hid_descriptor_offset = 0;
+    }
+
+    memmove(&hids_client_descriptor_storage[client->services[0].hid_descriptor_offset], 
+            &hids_client_descriptor_storage[next_offset],
+            hids_client_descriptor_storage_len - next_offset);
+    
+    uint8_t i;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &clients);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hids_client_t * conn = (hids_client_t *)btstack_linked_list_iterator_next(&it);
+        for (i = 0; i < client->num_instances; i++){
+            if (conn->services[i].hid_descriptor_offset >= next_offset){
+                conn->services[i].hid_descriptor_offset = next_offset;
+                next_offset += conn->services[service_index].hid_descriptor_len;
+            }
+        }
+    }
+}
+
+const uint8_t * hids_client_descriptor_storage_get_descriptor_data(uint16_t hids_cid, uint8_t service_index){
+    hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (!client){
+        return NULL;
+    }
+    return &hids_client_descriptor_storage[client->services[service_index].hid_descriptor_offset];
+}
+
+uint16_t hids_client_descriptor_storage_get_descriptor_len(uint16_t hids_cid, uint8_t service_index){
+    hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (!client){
+        return 0;
+    }
+    return client->services[service_index].hid_descriptor_len;
+}
+
+// END Descriptor Storage Util
 
 static uint16_t hids_get_next_cid(void){
     if (hids_cid_counter == 0xffff) {
@@ -271,31 +375,11 @@ static hids_client_t * hids_create_client(hci_con_handle_t con_handle, uint16_t 
 }
 
 static void hids_finalize_client(hids_client_t * client){
+    hids_client_descriptor_storage_delete(client);
     btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
     btstack_memory_hids_client_free(client); 
 }
 
-static hids_client_t * hids_get_client_for_con_handle(hci_con_handle_t con_handle){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &clients);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
-        if (client->con_handle != con_handle) continue;
-        return client;
-    }
-    return NULL;
-}
-
-static hids_client_t * hids_get_client_for_cid(uint16_t hids_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &clients);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hids_client_t * client = (hids_client_t *)btstack_linked_list_iterator_next(&it);
-        if (client->cid != hids_cid) continue;
-        return client;
-    }
-    return NULL;
-}
 
 static void hids_emit_connection_established(hids_client_t * client, uint8_t status){
     uint8_t event[8];
@@ -388,7 +472,7 @@ static void hids_run_for_client(hids_client_t * client){
 
         case HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR:
             client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR;
-            att_status = gatt_client_read_value_of_characteristic_using_value_handle(&handle_gatt_client_event, client->con_handle, client->services[client->service_index].report_map_value_handle);
+            att_status = gatt_client_read_long_value_of_characteristic_using_value_handle(&handle_gatt_client_event, client->con_handle, client->services[client->service_index].report_map_value_handle);
             UNUSED(att_status);
             break;
 
@@ -499,6 +583,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     const uint8_t * characteristic_descriptor_value;
     uint8_t i;
     uint8_t report_index;
+    uint8_t next_service_index;
+
+    const uint8_t * descriptor;
+    uint16_t descriptor_len;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
@@ -510,13 +598,16 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 hids_finalize_client(client);       
                 break;
             }
-
-            if (client->num_instances < MAX_NUM_HID_SERVICES){
+            
+            next_service_index = client->num_instances;
+            if (next_service_index < MAX_NUM_HID_SERVICES){
                 gatt_event_service_query_result_get_service(packet, &service);
-                client->services[client->num_instances].start_handle = service.start_group_handle;
-                client->services[client->num_instances].end_handle = service.end_group_handle;
+                client->services[next_service_index].start_handle = service.start_group_handle;
+                client->services[next_service_index].end_handle = service.end_group_handle;
+                
+                hids_client_descriptor_storage_init(client, next_service_index);
+                client->num_instances++;
             } 
-            client->num_instances++;
             break;
 
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
@@ -585,8 +676,18 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             // Map Report characteristic value == HID Descriptor
             client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
             btstack_assert(client != NULL);
-            // TODO get value and store it
+            
             // printf("HID descriptor found\n");
+            descriptor_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
+            descriptor = gatt_event_characteristic_value_query_result_get_value(packet);
+
+            for (i = 0; i < descriptor_len; i++){
+                bool stored = hids_client_descriptor_storage_store(client, client->service_index, descriptor[i]);
+                if (!stored){
+                    client->services[client->service_index].hid_descriptor_status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+                    break;
+                }
+            }
             break;
 
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
