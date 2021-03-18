@@ -146,13 +146,13 @@ static void btstack_run_loop_corefoundation_add_data_source(btstack_data_source_
     
 }
 
-static void btstack_run_loop_embedded_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+static void btstack_run_loop_corefoundation_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
     btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
     uint16_t option_flags = btstack_run_loop_corefoundation_option_flags_for_callback_types(callback_types);
     CFSocketEnableCallBacks(references->socket, option_flags);   
 }
 
-static void btstack_run_loop_embedded_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
+static void btstack_run_loop_corefoundation_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
     btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
     uint16_t option_flags = btstack_run_loop_corefoundation_option_flags_for_callback_types(callback_types);
     CFSocketDisableCallBacks(references->socket, option_flags);   
@@ -231,7 +231,7 @@ static void btstack_run_loop_corefoundation_dump_timer(void){
 }
 
 /**
- * Provide btstack_run_loop_embedded instance
+ * Provide btstack_run_loop_corefoundation instance
  */
 const btstack_run_loop_t * btstack_run_loop_corefoundation_get_instance(void){
     return &btstack_run_loop_corefoundation;
@@ -241,8 +241,8 @@ static const btstack_run_loop_t btstack_run_loop_corefoundation = {
     &btstack_run_loop_corefoundation_init,
     &btstack_run_loop_corefoundation_add_data_source,
     &btstack_run_loop_corefoundation_remove_data_source,
-    &btstack_run_loop_embedded_enable_data_source_callbacks,
-    &btstack_run_loop_embedded_disable_data_source_callbacks,
+    &btstack_run_loop_corefoundation_enable_data_source_callbacks,
+    &btstack_run_loop_corefoundation_disable_data_source_callbacks,
     &btstack_run_loop_corefoundation_set_timer,
     &btstack_run_loop_corefoundation_add_timer,
     &btstack_run_loop_corefoundation_remove_timer,
