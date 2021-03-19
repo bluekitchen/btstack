@@ -3222,9 +3222,10 @@ typedef uint8_t sm_key_t[16];
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x13
 
 /** 
- * @format 121LV
+ * @format 1211LV
  * @param subevent_code
  * @param hids_cid
+ * @param service_index
  * @param report_id
  * @param report_len
  * @param report
