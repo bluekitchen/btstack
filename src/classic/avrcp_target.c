@@ -59,17 +59,20 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
     avrcp_create_sdp_record(0, service, service_record_handle, avrcp_target_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
 }
 
-static void avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_cid, avrcp_operation_id_t operation_id, uint8_t operands_length, uint8_t operand){
+static void
+avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_cid, avrcp_operation_id_t operation_id,
+                            bool button_pressed, uint8_t operands_length, uint8_t operand) {
     btstack_assert(callback != NULL);
 
-    uint8_t event[8];
+    uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_OPERATION; 
     little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
-    event[pos++] = operation_id; 
+    event[pos++] = operation_id;
+    event[pos++] = button_pressed ? 1 : 0;
     event[pos++] = operands_length; 
     event[pos++] = operand; 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -830,7 +833,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_OPERATION_ID_RIGHT:
                 case AVRCP_OPERATION_ID_ROOT_MENU:
                     avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
-                    avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid, operation_id, packet[7], operand);
+                    avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid,
+                                                operation_id, true, packet[7], operand);
                     break;
                 case AVRCP_OPERATION_ID_UNDEFINED:
                     avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);

@@ -2596,10 +2596,11 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x1B
 
 /**
- * @format 12111
+ * @format 121111
  * @param subevent_code
  * @param avrcp_cid
  * @param operation_id
+ * @param button_pressed
  * @param operands_length
  * @param operand
  */
