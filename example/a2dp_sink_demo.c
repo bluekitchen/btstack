@@ -751,6 +751,8 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
     uint8_t volume;
+    char const * button_state;
+    avrcp_operation_id_t operation_id;
 
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
@@ -770,65 +772,20 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
             avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
-        case AVRCP_SUBEVENT_OPERATION:{
-            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
+        case AVRCP_SUBEVENT_OPERATION:
+            operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
             switch (operation_id){
-                case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target    : PLAY\n");
+                case AVRCP_OPERATION_ID_VOLUME_UP:
+                    printf("AVRCP Target    : VOLUME UP (%s)\n", button_state);
                     break;
-                case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target    : PAUSE\n");
-                    break;
-                case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target    : STOP\n");
-                    break;
-                case AVRCP_OPERATION_ID_REWIND:
-                    printf("AVRCP Target    : REWIND\n");
-                    break;
-                case AVRCP_OPERATION_ID_FAST_FORWARD:
-                    printf("AVRCP Target    : FAST_FORWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_FORWARD:
-                    printf("AVRCP Target    : FORWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_BACKWARD:
-                    printf("AVRCP Target    : BACKWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_SKIP:
-                    printf("AVRCP Target    : SKIP\n");
-                    break;
-                case AVRCP_OPERATION_ID_MUTE:
-                    printf("AVRCP Target    : MUTE\n");
-                    break;
-                case AVRCP_OPERATION_ID_CHANNEL_UP:
-                    printf("AVRCP Target    : CHANNEL_UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_CHANNEL_DOWN:
-                    printf("AVRCP Target    : CHANNEL_DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_SELECT:
-                    printf("AVRCP Target    : SELECT\n");
-                    break;
-                case AVRCP_OPERATION_ID_UP:
-                    printf("AVRCP Target    : UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_DOWN:
-                    printf("AVRCP Target    : DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_LEFT:
-                    printf("AVRCP Target    : LEFT\n");
-                    break;
-                case AVRCP_OPERATION_ID_RIGHT:
-                    printf("AVRCP Target    : RIGTH\n");
-                    break;
-                case AVRCP_OPERATION_ID_ROOT_MENU:
-                    printf("AVRCP Target    : ROOT_MENU\n");
+                case AVRCP_OPERATION_ID_VOLUME_DOWN:
+                    printf("AVRCP Target    : VOLUME UP (%s)\n", button_state);
                     break;
                 default:
                     return;
             }
             break;
-        }
         default:
             printf("AVRCP Target    : Event 0x%02x is not parsed\n", packet[2]);
             break;

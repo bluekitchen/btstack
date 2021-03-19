@@ -793,7 +793,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    
+
+    char const * button_state;
+    avrcp_operation_id_t operation_id;
+
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
             media_tracker.volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
@@ -811,28 +814,27 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         // case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
         //     status = avrcp_target_now_playing_info(avrcp_cid);
         //     break;
-        case AVRCP_SUBEVENT_OPERATION:{
-            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
-            switch (operation_id){
+        case AVRCP_SUBEVENT_OPERATION:
+            operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
+            switch (operation_id) {
                 case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target: PLAY\n");
+                    printf("AVRCP Target: PLAY (%s)\n", button_state);
                     status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target: PAUSE\n");
+                    printf("AVRCP Target: PAUSE (%s)\n", button_state);
                     status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target: STOP\n");
+                    printf("AVRCP Target: STOP (%s)\n", button_state);
                     status = a2dp_source_disconnect(media_tracker.a2dp_cid);
                     break;
                 default:
-                    printf("AVRCP Target: operation 0x%2x is not handled\n", operation_id);
-                    return;
+                    printf("AVRCP Target: operation 0x%2x (%s) not handled\n", operation_id, button_state);
+                    break;
             }
             break;
-        }
-
         default:
             break;
     }
