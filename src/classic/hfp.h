@@ -357,7 +357,9 @@ typedef enum {
     HFP_AUDIO_CONNECTION_ESTABLISHED, 
     
     HFP_W2_DISCONNECT_SCO,
-    HFP_W4_SCO_DISCONNECTED, 
+    HFP_W4_SCO_DISCONNECTED,
+    HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN,
+    HFP_W4_WBS_SHUTDOWN,
 
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
@@ -663,6 +665,7 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
+void hfp_finalize_connection_context(hfp_connection_t * hfp_connection);
 void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec);
 
 void hfp_set_ag_callback(btstack_packet_handler_t callback);

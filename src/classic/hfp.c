@@ -487,7 +487,7 @@ static hfp_connection_t * create_hfp_connection_context(void){
     return hfp_connection;
 }
 
-static void remove_hfp_connection_context(hfp_connection_t * hfp_connection){
+void hfp_finalize_connection_context(hfp_connection_t * hfp_connection){
     btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*) hfp_connection);
     btstack_memory_hfp_connection_free(hfp_connection);
 }
@@ -813,6 +813,17 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #endif
             hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
             hfp_connection->release_audio_connection = 0;
+
+            if (hfp_connection->state == HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN){
+                // RFCOMM already closed -> remote power off
+#if defined(ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
+                hfp_connection->state = HFP_W4_WBS_SHUTDOWN;
+#else
+                hfp_finalize_connection_context(hfp_connection);
+#endif
+                break;
+            }
+
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
 
@@ -874,7 +885,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
             if (status) {
                 hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
-                remove_hfp_connection_context(hfp_connection);
+                hfp_finalize_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
@@ -903,9 +914,18 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
                 break;
             }
-            
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
-            remove_hfp_connection_context(hfp_connection);
+            if ( hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+                // service connection was released, this implicitly releases audio connection as well
+                hfp_connection->release_audio_connection = 0;
+                gap_disconnect(hfp_connection->sco_handle);
+                hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+            } else {
+                // regular case
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                hfp_finalize_connection_context(hfp_connection);
+            }
             break;
 
         default:

@@ -28,6 +28,7 @@ AVRCP: `AVRCP_SUBEVENT_OPERATION` emitted for button release
 ### Fixed
 HCI: handle start inquiry failure
 AVRCP Target: fix notification changed event
+HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off 
 
 ### Changed
 HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz

@@ -590,6 +590,12 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 #endif
+#if defined (ENABLE_CC256X_ASSISTED_HFP) || defined (ENABLE_BCM_PCM_WBS)
+    if (hfp_connection->state == HFP_W4_WBS_SHUTDOWN){
+        hfp_finalize_connection_context(hfp_connection);
+        return;
+    }
+#endif
 
     if (hfp_connection->hf_accept_sco){
 
