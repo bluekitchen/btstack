@@ -23,6 +23,7 @@ GATT Client: Device Information Service Client
 GATT Client: Scan Parameters Service Client 
 GAP: add `gap_set_page_scan_activity` and `gap_set_page_scan_type`
 AVRCP: new field `button_pressed` in `AVRCP_SUBEVENT_OPERATION`
+AVRCP: `AVRCP_SUBEVENT_OPERATION` emitted for button release
 
 ### Fixed
 HCI: handle start inquiry failure

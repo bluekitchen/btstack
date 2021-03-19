@@ -735,10 +735,6 @@ static uint8_t avrcp_target_get_transaction_label_for_notification(avrcp_connect
     return connection->notifications_transaction_label[notification];
 }
 
-static uint8_t avrcp_is_receive_pass_through_cmd(uint8_t operation_id){
-    return operation_id & 0x80;
-}
-
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
 
     if (size < 6u) return;
@@ -801,17 +797,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
             if (size < 8) return;
             log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d", packet[6], packet[7]);
-            avrcp_operation_id_t operation_id = (avrcp_operation_id_t) packet[6];
+            avrcp_operation_id_t operation_id = (avrcp_operation_id_t) (packet[6] & 0x7f);
+            bool button_pressed = (packet[6] & 0x80) == 0;
             uint8_t operand = 0;
             if ((packet[7] >= 1) && (size >= 9)){
                 operand = packet[8];
             }
-            if (avrcp_is_receive_pass_through_cmd(operation_id)){
-                operation_id = (avrcp_operation_id_t) (packet[6] & 0x7F);
-                avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
-                break;
-            }
-            
+
             switch (operation_id){
                 case AVRCP_OPERATION_ID_PLAY:
                 case AVRCP_OPERATION_ID_PAUSE:
@@ -834,7 +826,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_OPERATION_ID_ROOT_MENU:
                     avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
                     avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid,
-                                                operation_id, true, packet[7], operand);
+                                                operation_id, button_pressed, packet[7], operand);
                     break;
                 case AVRCP_OPERATION_ID_UNDEFINED:
                     avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
