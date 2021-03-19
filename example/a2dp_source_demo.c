@@ -794,6 +794,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
 
+    bool button_pressed;
     char const * button_state;
     avrcp_operation_id_t operation_id;
 
@@ -816,22 +817,36 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         //     break;
         case AVRCP_SUBEVENT_OPERATION:
             operation_id = avrcp_subevent_operation_get_operation_id(packet);
-            button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
+            button_pressed = avrcp_subevent_operation_get_button_pressed(packet) > 0;
+            button_state =button_pressed ? "PRESS" : "RELEASE";
             switch (operation_id) {
                 case AVRCP_OPERATION_ID_PLAY:
                     printf("AVRCP Target: PLAY (%s)\n", button_state);
-                    status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_PAUSE:
                     printf("AVRCP Target: PAUSE (%s)\n", button_state);
-                    status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_STOP:
                     printf("AVRCP Target: STOP (%s)\n", button_state);
-                    status = a2dp_source_disconnect(media_tracker.a2dp_cid);
                     break;
                 default:
                     printf("AVRCP Target: operation 0x%2x (%s) not handled\n", operation_id, button_state);
+                    break;
+            }
+            if (!button_pressed){
+                break;
+            }
+            switch (operation_id) {
+                case AVRCP_OPERATION_ID_PLAY:
+                    status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                case AVRCP_OPERATION_ID_PAUSE:
+                    status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                case AVRCP_OPERATION_ID_STOP:
+                    status = a2dp_source_disconnect(media_tracker.a2dp_cid);
+                    break;
+                default:
                     break;
             }
             break;
