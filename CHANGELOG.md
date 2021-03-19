@@ -24,6 +24,7 @@ GATT Client: Scan Parameters Service Client
 GAP: add `gap_set_page_scan_activity` and `gap_set_page_scan_type`
 AVRCP: new field `button_pressed` in `AVRCP_SUBEVENT_OPERATION`
 AVRCP: `AVRCP_SUBEVENT_OPERATION` emitted for button release
+AVRCP Controller: avrcp_controller_start_press_and_hold_cmd helps to support device buttons
 
 ### Fixed
 HCI: handle start inquiry failure

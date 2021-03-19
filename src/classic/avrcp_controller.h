@@ -125,6 +125,12 @@ uint8_t avrcp_controller_get_supported_company_ids(uint16_t avrcp_cid);
 uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid);
 
 
+/**
+ * @brief Start continuous cmd (play, pause, volume up, ...). Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_start_press_and_hold_cmd(uint16_t avrcp_cid, avrcp_operation_id_t operation_id);
 
 /**
  * @brief Stops continuous cmd (play, pause, volume up, ...). Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
