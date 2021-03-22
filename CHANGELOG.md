@@ -51,6 +51,8 @@ HCI Dump: replace monolithic `hci_dump.c` (with many #ifdefs) into dispatcher wi
   - `embedded/hci_dump_segger_stdout` - log to RTT console using `SEGGER_printf`
   - `embedded/hci_dump_segger_binary` - writes binary log over RTT to host
 
+u-blox SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED`
+    events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 
 ## Release v1.3.2
 
