@@ -492,7 +492,7 @@ accessed, you can add one or more of the following properties:
 
 Property                | Meaning
 ------------------------|-----------------------------------------------
-AUTHENTICATION_REQUIRED | Read and Write operatsions require Authentication
+AUTHENTICATION_REQUIRED | Read and Write operations require Authentication
 READ_ENCRYPTED          | Read operations require Encryption
 READ_AUTHENTICATED      | Read operations require Authentication
 WRITE_ENCRYPTED         | Write operations require Encryption
@@ -595,7 +595,7 @@ Please compare the .gatt file against the [Adopted Specifications](https://www.b
 Step 4:
 
 As described [above](#sec:GATTServerProfiles) all read/write requests are handled by the application.
-To implement the new services as a reusable module, it's neccessary to get access to all read/write requests related to this service.
+To implement the new services as a reusable module, it's necessary to get access to all read/write requests related to this service.
 
 For this, the ATT DB allows to register read/write callbacks for a specific handle range with *att_server_register_can_send_now_callback()*.
 
