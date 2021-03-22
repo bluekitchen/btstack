@@ -328,7 +328,7 @@ hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SER
 hog_boot_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_boot_host_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_host_demo.c
+hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} btstack_hid_parser.o hid.o hog_host_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_peripheral.c

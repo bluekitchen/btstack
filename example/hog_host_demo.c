@@ -35,15 +35,15 @@
  *
  */
 
-#define BTSTACK_FILE__ "hog_boot_host_demo.c"
+#define BTSTACK_FILE__ "hog_host_demo.c"
 
 /*
- * hog_boot_host_demo.c
+ * hog_host_demo.c
  */
 
-/* EXAMPLE_START(hog_boot_host_demo): HID Boot Host LE
+/* EXAMPLE_START(hog_host_demo): HID Host LE
  *
- * @text This example implements a minimal HID-over-GATT Boot Host. It scans for LE HID devices, connects to it,
+ * @text This example implements a minimal HID-over-GATT Host. It scans for LE HID devices, connects to it,
  * discovers the Characteristics relevant for the HID Service and enables Notifications on them.
  * It then dumps all Boot Keyboard and Mouse Input Reports
  */
@@ -77,6 +77,10 @@ static enum {
 static le_device_addr_t remote_device;
 static hci_con_handle_t connection_handle;
 static uint16_t hids_cid;
+static hid_protocol_mode_t protocol_mode = HID_PROTOCOL_MODE_REPORT;
+
+// SDP
+static uint8_t hid_descriptor_storage[500];
 
 // used to implement connection timeout and reconnect timer
 static btstack_timer_source_t connection_timer;
@@ -138,31 +142,56 @@ static const uint8_t keytable_us_shift[] = {
         '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
 };
 
-/**
- * @section HOG Boot Keyboard Handler
- * @text Boot Keyboard Input Report contains a report of format
- * [ modifier, reserved, 6 x usage for key 1..6 from keyboard usage]
- * Track new usages, map key usage to actual character and simulate terminal
- */
 
-/* last_keys stores keyboard report to detect new key down events */
+
 #define NUM_KEYS 6
 static uint8_t last_keys[NUM_KEYS];
+static void hid_handle_input_report(uint8_t service_index, const uint8_t * report, uint16_t report_len){
+    // check if HID Input Report
+    
+    if (report_len < 1) return;
+    
+    btstack_hid_parser_t parser;
+    
+    switch (protocol_mode){
+        case HID_PROTOCOL_MODE_BOOT:
+            btstack_hid_parser_init(&parser, 
+                hid_get_boot_descriptor_data(), 
+                hid_get_boot_descriptor_len(), 
+                HID_REPORT_TYPE_INPUT, report, report_len);
+            break;
 
-static void handle_boot_keyboard_event(const uint8_t * report, uint16_t report_len){
-    UNUSED(report_len);
+        default:
+            btstack_hid_parser_init(&parser, 
+                hids_client_descriptor_storage_get_descriptor_data(hids_cid, service_index), 
+                hids_client_descriptor_storage_get_descriptor_len(hids_cid, service_index), 
+                HID_REPORT_TYPE_INPUT, report, report_len);
+            break;
 
+    }
+    
+    int shift = 0;
     uint8_t new_keys[NUM_KEYS];
     memset(new_keys, 0, sizeof(new_keys));
-    int new_keys_count = 0;
-
-    bool shift = (report[0] & 0x22) != 0;
-
-    uint8_t key_index;
-    for (key_index = 0; key_index < NUM_KEYS; key_index++){
-
-        uint16_t usage = report[2 + key_index];
-        if (usage == 0) continue;
+    int     new_keys_count = 0;
+    while (btstack_hid_parser_has_more(&parser)){
+        uint16_t usage_page;
+        uint16_t usage;
+        int32_t  value;
+        btstack_hid_parser_get_field(&parser, &usage_page, &usage, &value);
+        if (usage_page != 0x07) continue;   
+        switch (usage){
+            case 0xe1:
+            case 0xe6:
+                if (value){
+                    shift = 1;
+                }
+                continue;
+            case 0x00:
+                continue;
+            default:
+                break;
+        }
         if (usage >= sizeof(keytable_us_none)) continue;
 
         // store new keys
@@ -177,7 +206,6 @@ static void handle_boot_keyboard_event(const uint8_t * report, uint16_t report_l
         }
         if (usage == 0) continue;
 
-        // lookup character based on usage + shift modifier
         uint8_t key;
         if (shift){
             key = keytable_us_shift[usage];
@@ -185,34 +213,13 @@ static void handle_boot_keyboard_event(const uint8_t * report, uint16_t report_l
             key = keytable_us_none[usage];
         }
         if (key == CHAR_ILLEGAL) continue;
-        if (key == CHAR_BACKSPACE){
+        if (key == CHAR_BACKSPACE){ 
             printf("\b \b");    // go back one char, print space, go back one char again
             continue;
         }
         printf("%c", key);
     }
-
-    // store current as last report
     memcpy(last_keys, new_keys, NUM_KEYS);
-}
-
-/**
- * @section HOG Boot Mouse Handler
- * @text Boot Mouse Input Report contains a report of format
- * [ buttons, dx, dy, dz = scroll wheel]
- * Decode packet and print on stdout
- *
- * @param report
- * @param report_len
- */
-static void handle_boot_mouse_event(const uint8_t * report, uint16_t report_len){
-    UNUSED(report_len);
-
-    uint8_t buttons =          report[0];
-    int8_t dx       = (int8_t) report[1];
-    int8_t dy       = (int8_t) report[2];
-    int8_t dwheel   = (int8_t) report[3];
-    printf("Mouse: %i, %i - wheel %i - buttons 0x%02x\n", dx, dy, dwheel, buttons);
 }
 
 /**
@@ -321,7 +328,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(size);
 
     uint8_t status;
-    uint8_t report_id;
 
     if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
         return;
@@ -349,22 +355,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
             }
             break;
+
         case GATTSERVICE_SUBEVENT_HID_REPORT:
-            report_id = gattservice_subevent_hid_report_get_report_id(packet);
-            switch (report_id){
-                case HID_BOOT_MODE_MOUSE_ID:
-                    handle_boot_mouse_event(
-                        gattservice_subevent_hid_report_get_report(packet), 
-                        gattservice_subevent_hid_report_get_report_len(packet));
-                    break;
-                case HID_BOOT_MODE_KEYBOARD_ID:
-                    handle_boot_keyboard_event(
-                        gattservice_subevent_hid_report_get_report(packet), 
-                        gattservice_subevent_hid_report_get_report_len(packet));
-                    break;
-                default:
-                    break;
-            }
+            hid_handle_input_report(
+                gattservice_subevent_hid_report_get_service_index(packet),
+                gattservice_subevent_hid_report_get_report(packet), 
+                gattservice_subevent_hid_report_get_report_len(packet));
             break;
 
         default:
@@ -442,7 +438,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Search for HID service.\n");
                     app_state = W4_HID_CLIENT_CONNECTED;
                     
-                    status = hids_client_connect(connection_handle, handle_gatt_client_event, HID_PROTOCOL_MODE_REPORT, &hids_cid);
+                    status = hids_client_connect(connection_handle, handle_gatt_client_event, protocol_mode, &hids_cid);
                     if (status != ERROR_CODE_SUCCESS){
                         printf("HID client connection failed, status 0x%02x\n", status);
                     }
@@ -514,7 +510,7 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    /* LISTING_START(HogBootHostSetup): HID-over-GATT Boot Host Setup */
+    /* LISTING_START(HogBootHostSetup): HID-over-GATT Host Setup */
 
     // register for events from HCI
     hci_event_callback_registration.callback = &packet_handler;
@@ -531,7 +527,8 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     sm_init();
     gatt_client_init();
-    hids_client_init();
+
+    hids_client_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
 
     /* LISTING_END */
 

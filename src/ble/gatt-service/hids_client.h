@@ -67,6 +67,8 @@ typedef enum {
     HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
 
+    HIDS_CLIENT_STATE_W2_SET_BOOT_PROTOCOL_MODE,
+    
     // for each REPORT_MAP characteristic, read HID Descriptor (Report Map Characteristic Value)
     HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR,
     HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR,
@@ -91,16 +93,9 @@ typedef enum {
     HIDS_CLIENT_STATE_W2_READ_REPORT_ID_AND_TYPE,
     HIDS_CLIENT_STATE_W4_REPORT_ID_AND_TYPE,
     
-    // Boot Mode
-    HIDS_CLIENT_STATE_W2_ENABLE_KEYBOARD,
-    HIDS_CLIENT_STATE_W4_KEYBOARD_ENABLED,
-    HIDS_CLIENT_STATE_W2_ENABLE_MOUSE,
-    HIDS_CLIENT_STATE_W4_MOUSE_ENABLED,
-    
+    HIDS_CLIENT_STATE_W2_ENABLE_INPUT_REPORTS,
+    HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED,
 
-    HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE,
-    HIDS_CLIENT_STATE_W4_SET_PROTOCOL_MODE,
-    
     HIDS_CLIENT_STATE_CONNECTED,
     HIDS_CLIENT_W2_SEND_REPORT
 } hid_service_client_state_t;
@@ -121,7 +116,8 @@ typedef struct {
     uint8_t service_index;
     uint8_t report_id;
     hid_report_type_t report_type;
-    gatt_client_notification_t notifications;
+    uint8_t boot_report;
+    gatt_client_notification_t notification_listener;
 } hids_client_report_t;
 
 typedef struct {
@@ -163,7 +159,7 @@ typedef struct {
     uint8_t num_reports;
 
     // index used for report and report map search
-    uint8_t   active_index;
+    uint8_t   report_index;
     uint16_t  descriptor_handle;
     uint16_t  report_len;
     const uint8_t * report;
@@ -174,8 +170,10 @@ typedef struct {
 
 /**
  * @brief Initialize Battery Service. 
+ * @param hid_descriptor_storage
+ * @param hid_descriptor_storage_len
  */
-void hids_client_init(void);
+void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len);
 
 /* @brief Connect to HID Services of remote device.
  *
@@ -204,8 +202,18 @@ uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint
  */
 uint8_t hids_client_disconnect(uint16_t hids_cid);
 
+/*
+ * @brief Get descriptor data
+ * @param hid_cid
+ * @result data
+ */
 const uint8_t * hids_client_descriptor_storage_get_descriptor_data(uint16_t hids_cid, uint8_t service_index);
 
+/*
+ * @brief Get descriptor length
+ * @param hid_cid
+ * @result length
+ */
 uint16_t hids_client_descriptor_storage_get_descriptor_len(uint16_t hids_cid, uint8_t service_index);
 
 /**

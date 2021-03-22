@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BlueKitchen GmbH
+ * Copyright (C) 2021 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,7 +42,8 @@
 extern "C" {
 #endif
 
-/* API_START */
+
+#include <stdint.h>
 
 #define HID_BOOT_MODE_KEYBOARD_ID 1
 #define HID_BOOT_MODE_MOUSE_ID    2
@@ -104,6 +105,20 @@ typedef enum {
     HID_REPORT_ID_VALID,
     HID_REPORT_ID_INVALID
 } hid_report_id_status_t;
+
+/* API_START */
+
+/*
+ * @brief Get boot descriptor data
+ * @result data
+ */
+const uint8_t * hid_get_boot_descriptor_data(void);
+
+/*
+ * @brief Get boot descriptor length
+ * @result length
+ */
+uint16_t hid_get_boot_descriptor_len(void);
 
 /* API_END */
 
