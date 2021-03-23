@@ -3819,8 +3819,10 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         return;
     }
 
+#ifdef ENABLE_LE_CENTRAL
     int have_ltk;
     uint8_t ltk[16];
+#endif
 
     switch (sm_conn->sm_engine_state){
 
