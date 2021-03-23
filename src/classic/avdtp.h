@@ -74,31 +74,32 @@ extern "C" {
 #define AVDTP_SINK_FEATURE_MASK_AMPLIFIER       0x0008u
 
 // ACP to INT, Signal Response Header Error Codes
-#define BAD_HEADER_FORMAT 0x01
+#define AVDTP_ERROR_CODE_BAD_HEADER_FORMAT     0x01
 
 // ACP to INT, Signal Response Payload Format Error Codes
-#define BAD_LENGTH 0x11
-#define BAD_ACP_SEID 0x12
-#define SEP_IN_USE 0x13
-#define SEP_NOT_IN_USE 0x14
-#define BAD_SERV_CATEGORY 0x17
-#define BAD_PAYLOAD_FORMAT 0x18
-#define NOT_SUPPORTED_COMMAND 0x19
-#define INVALID_CAPABILITIES 0x1A
+#define AVDTP_ERROR_CODE_BAD_LENGTH                 0x11
+#define AVDTP_ERROR_CODE_BAD_ACP_SEID               0x12
+#define AVDTP_ERROR_CODE_SEP_IN_USE                 0x13
+#define AVDTP_ERROR_CODE_SEP_NOT_IN_USE             0x14
+#define AVDTP_ERROR_CODE_BAD_SERV_CATEGORY          0x17
+#define AVDTP_ERROR_CODE_BAD_PAYLOAD_FORMAT         0x18
+#define AVDTP_ERROR_CODE_NOT_SUPPORTED_COMMAND      0x19
+#define AVDTP_ERROR_CODE_INVALID_CAPABILITIES       0x1A
 
 // ACP to INT, Signal Response Transport Service Capabilities Error Codes
-#define BAD_RECOVERY_TYPE 0x22
-#define BAD_MEDIA_TRANSPORT_FORMAT 0x23
-#define BAD_RECOVERY_FORMAT 0x25
-#define BAD_ROHC_FORMAT 0x26
-#define BAD_CP_FORMAT 0x27
-#define BAD_MULTIPLEXING_FORMAT 0x28
-#define UNSUPPORTED_CONFIGURATION 0x29
+#define AVDTP_ERROR_CODE_BAD_RECOVERY_TYPE          0x22
+#define AVDTP_ERROR_CODE_BAD_MEDIA_TRANSPORT_FORMAT 0x23
+#define AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT        0x25
+#define AVDTP_ERROR_CODE_BAD_ROHC_FORMAT            0x26
+#define AVDTP_ERROR_CODE_BAD_CP_FORMAT              0x27
+#define AVDTP_ERROR_CODE_BAD_MULTIPLEXING_FORMAT    0x28
+#define AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION  0x29
 
 // ACP to INT, Procedure Error Codes
-#define BAD_STATE 0x31
+#define AVDTP_ERROR_CODE_BAD_STATE                  0x31
 
-#define AVDTP_INVALID_SEP_SEID 0xFF
+// Internal Error Codes
+#define AVDTP_INVALID_SEP_SEID                      0xFF
 
 
 // Signal Identifier fields
@@ -623,7 +624,7 @@ void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *
 
 /**
  * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
- * @note validator has to return AVDTP error codes like: SEP_IN_USE or UNSUPPORTED_CONFIGURATION
+ * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
  * @param callback
  */
 void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len));

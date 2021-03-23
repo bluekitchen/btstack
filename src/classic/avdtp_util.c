@@ -251,7 +251,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
         ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (signal_identifier == AVDTP_SI_RECONFIGURE))){
         log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
-        connection->error_code = BAD_SERV_CATEGORY;
+        connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;
         return 1;
     }
 
@@ -259,7 +259,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
         if ( (category != AVDTP_CONTENT_PROTECTION) && (category != AVDTP_MEDIA_CODEC)){
             log_info("    ERROR: REJECT CATEGORY, INVALID_CAPABILITIES\n");
             connection->reject_service_category = category;
-            connection->error_code = INVALID_CAPABILITIES;
+            connection->error_code = AVDTP_ERROR_CODE_INVALID_CAPABILITIES;
             return 1;
         }
     }
@@ -269,7 +269,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 0){
                 log_info("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_MEDIA_TRANSPORT_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_MEDIA_TRANSPORT_FORMAT;
                 return 1;
             }
             break;
@@ -278,7 +278,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 0){
                 log_info("    ERROR: REJECT CATEGORY, BAD_LENGTH\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_LENGTH;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
                 return 1;
             }
             break;
@@ -286,7 +286,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 3){
                 log_info("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_RECOVERY_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT;
                 return 1;
             }           
             break;
@@ -294,7 +294,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len < 2){
                 log_info("    ERROR: REJECT CATEGORY, BAD_CP_FORMAT\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_CP_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_CP_FORMAT;
                 return 1;
             }
             break;
@@ -303,7 +303,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 1){
                 log_info("    ERROR: REJECT CATEGORY, BAD_HEADER_COMPRESSION\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_RECOVERY_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT;
                 return 1;
             }           
             break;
@@ -333,7 +333,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
 
         if (cap_len > to_process){
             connection->reject_service_category = category;
-            connection->error_code = BAD_LENGTH;
+            connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
             return 0;
         }
 
