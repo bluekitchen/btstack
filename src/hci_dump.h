@@ -48,6 +48,7 @@
 
 #include <stdint.h>
 #include <stdarg.h>       // for va_list
+#include "btstack_bool.h"
 
 #ifdef __AVR__
 #include <avr/pgmspace.h>
@@ -85,18 +86,29 @@ typedef struct {
 #endif
 } hci_dump_t;
 
-/*
+/**
  * @brief Init HCI Dump
  * @param hci_dump_impl - platform-specific implementation
  */
 void hci_dump_init(const hci_dump_t * hci_dump_impl);
+
+/**
+ * @brief Enable packet logging
+ * @param enabled default: true
+ */
+void hci_dump_enable_packet_log(bool enabled);
+
+/**
+ * @brief
+ */
+void hci_dump_enable_log_level(int log_level, int enable);
 
 /*
  * @brief Set max number of packets - output file might be truncated
  */
 void hci_dump_set_max_packets(int packets); // -1 for unlimited
 
-/*
+/**
  * @brief Dump Packet
  * @param packet_type
  * @param in is 1 for incoming, 0 for outoing
@@ -105,7 +117,7 @@ void hci_dump_set_max_packets(int packets); // -1 for unlimited
  */
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len);
 
-/*
+/**
  * @brief Dump Message
  * @param log_level
  * @param format
@@ -148,11 +160,6 @@ void hci_dump_setup_header_packetlogger(uint8_t * buffer, uint32_t tv_sec, uint3
  * @param len
  */
 void hci_dump_setup_header_bluez(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len);
-
-/*
- * @brief
- */
-void hci_dump_enable_log_level(int log_level, int enable);
 
 /* API_END */
 

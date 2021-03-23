@@ -51,6 +51,7 @@
 static const hci_dump_t * hci_dump_impl;
 static int  max_nr_packets;
 static int  nr_packets;
+static bool packet_log_enabled;
 
 // levels: debug, info, error
 static bool log_level_enabled[3] = { 1, 1, 1};
@@ -66,14 +67,25 @@ void hci_dump_init(const hci_dump_t * impl){
     max_nr_packets = -1;
     nr_packets = 0;
     hci_dump_impl = impl;
+    packet_log_enabled = true;
 }
 
 void hci_dump_set_max_packets(int packets){
     max_nr_packets = packets;
 }
 
+void hci_dump_enable_packet_log(bool enabled){
+    packet_log_enabled = enabled;
+}
+
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
-    if (hci_dump_impl == NULL) return;
+    if (hci_dump_impl == NULL) {
+        return;
+    }
+    if (packet_log_enabled == false) {
+        return;
+    }
+
     if (max_nr_packets > 0){
         if ((nr_packets >= max_nr_packets) && (hci_dump_impl->reset != NULL)) {
             nr_packets = 0;
