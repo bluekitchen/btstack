@@ -23,6 +23,7 @@ hid_device_test
 hid_host_test
 hog_demo_test
 hog_demo_test.h
+hog_host_test
 hrp_col_test
 hrp_server_test
 hrp_server_test.h

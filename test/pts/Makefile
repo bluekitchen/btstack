@@ -147,7 +147,7 @@ SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
-EXAMPLES += hog_demo_test hid_device_test hid_host_test 
+EXAMPLES += hog_demo_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
 all: ${EXAMPLES}
@@ -175,6 +175,9 @@ hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_
 
 hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o btstack_ring_buffer.o hog_demo_test.c
 	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+hog_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} btstack_hid_parser.o hid.o hog_host_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hrp_server_test.h: hrp_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
