@@ -60,6 +60,7 @@ static bool l2cap_registered;
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
 static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
+static uint8_t (*avdtp_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
 
 static uint16_t sdp_query_context_avdtp_cid = 0;
 
@@ -427,6 +428,17 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
 
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
     avdtp_sink_handle_media_data = callback;
+}
+
+void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len)){
+    avdtp_media_config_validator = callback;
+}
+
+uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len){
+    if (avdtp_media_config_validator == NULL) {
+        return 0;
+    }
+    return (*avdtp_media_config_validator)(stream_endpoint, media_codec_type, media_codec_info, media_codec_info_len);
 }
 
 /* START: tracking can send now requests per l2cap cid */
@@ -1517,6 +1529,7 @@ void avdtp_deinit(void){
     stream_endpoints = NULL;
     connections = NULL;
     avdtp_sink_handle_media_data = NULL;
+    avdtp_media_config_validator = NULL;
 
     sdp_query_context_avdtp_cid = 0;
     stream_endpoints_id_counter = 0;

@@ -89,20 +89,35 @@ static void
 avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int offset, uint16_t packet_size, avdtp_stream_endpoint_t *stream_endpoint) {
     log_info("W2_ANSWER_SET_CONFIGURATION cid 0x%02x", connection->avdtp_cid);
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
-    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
-    connection->reject_service_category = 0;
     stream_endpoint->connection = connection;
+
+    // process capabilities, first rejected service category is stored in connection
+    connection->reject_service_category = 0;
     avdtp_sep_t sep;
     sep.seid = connection->acceptor_signaling_packet.command[offset++] >> 2;
     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, connection->acceptor_signaling_packet.signal_identifier, &sep.configuration, connection->acceptor_signaling_packet.command+offset, packet_size-offset);
     sep.in_use = 1;
 
+    // let application validate media configuration as well
+    if (connection->error_code == 0){
+        if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
+            adtvp_media_codec_capabilities_t * media = & sep.configuration.media_codec;
+            uint8_t error_code = avdtp_validate_media_configuration(stream_endpoint, media->media_codec_type, media->media_codec_information, media->media_codec_information_len);
+            if (error_code != 0){
+                log_info("media codec rejected by validator, error 0x%02x", error_code);
+                connection->reject_service_category = AVDTP_MEDIA_CODEC;
+                connection->error_code              = error_code;
+            }
+        }
+    }
+
     if (connection->error_code){
-        log_info("fire configuration parsing errors ");
         connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
         stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
         return;
     }
+
+    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
     // find or add sep
 
     log_info("local seid %d, remote seid %d", connection->acceptor_local_seid, sep.seid);
