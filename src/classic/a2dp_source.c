@@ -395,6 +395,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             // forward codec capability
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY);
 
+#ifndef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
             // select SEP if none configured yet
             if (connection->a2dp_source_have_config == false){
                 // find SBC stream endpoint
@@ -416,6 +417,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     a2dp_source_set_config_sbc(cid, local_seid, remote_seid, &configuration);
                 }
             }
+#endif
             break;
 
         // forward codec capability
@@ -505,6 +507,11 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     break;
                 }
 
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+                connection->a2dp_source_state = A2DP_DISCOVERY_DONE;
+                // TODO call a2dp_discover_seps_with_next_waiting_connection?
+                break;
+#else
                 // we didn't find a suitable SBC stream endpoint, sorry.
                 if (connection->a2dp_source_outgoing_active){
                     connection->a2dp_source_outgoing_active = false;
@@ -514,6 +521,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                 }
                 connection->a2dp_source_state = A2DP_CONNECTED;
                 a2dp_discover_seps_with_next_waiting_connection();
+#endif
             }
             break;
 
@@ -811,6 +819,15 @@ uint8_t	a2dp_source_stream_send_media_packet(uint16_t a2dp_cid, uint8_t local_se
 static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t local_seid, uint8_t remote_seid,
                                        avdtp_media_codec_type_t codec_type) {
 
+    // check state
+    switch (connection->a2dp_source_state){
+        case A2DP_DISCOVERY_DONE:
+        case A2DP_GET_CAPABILITIES:
+            break;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     // lookup local stream endpoint
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     if (stream_endpoint == NULL){
@@ -844,6 +861,13 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
     local_stream_endpoint = stream_endpoint;
     connection->a2dp_source_have_config = true;
 
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+    // continue outgoing configuration
+    if (connection->a2dp_source_state == A2DP_DISCOVERY_DONE){
+        connection->a2dp_source_state = A2DP_SET_CONFIGURATION;
+    }
+#endif
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -861,6 +885,10 @@ uint8_t a2dp_source_set_config_sbc(uint16_t a2dp_cid, uint8_t local_seid, uint8_
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) local_stream_endpoint->media_codec_info;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
     avdtp_config_sbc_store(local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+    a2dp_source_set_config(connection);
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -881,6 +909,10 @@ uint8_t a2dp_source_set_config_mpeg_audio(uint16_t a2dp_cid, uint8_t local_seid,
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 4;
     avdtp_config_mpeg_audio_store( local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+    a2dp_source_set_config(connection);
+#endif
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -897,6 +929,10 @@ uint8_t a2dp_source_set_config_mpeg_aac(uint16_t a2dp_cid,  uint8_t local_seid, 
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) local_stream_endpoint->media_codec_info;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 6;
     avdtp_config_mpeg_aac_store( local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
+
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+    a2dp_source_set_config(connection);
+#endif
 
     return ERROR_CODE_SUCCESS;
 }
@@ -916,6 +952,10 @@ uint8_t a2dp_source_set_config_atrac(uint16_t a2dp_cid, uint8_t local_seid, uint
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = 7;
     avdtp_config_atrac_store( local_stream_endpoint->remote_configuration.media_codec.media_codec_information, configuration);
 
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+    a2dp_source_set_config(connection);
+#endif
+
     return ERROR_CODE_SUCCESS;
 }
 
@@ -933,6 +973,10 @@ uint8_t a2dp_source_set_config_other(uint16_t a2dp_cid,  uint8_t local_seid, uin
 
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information = (uint8_t *) media_codec_information;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_information_len;
+
+#ifdef ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG
+    a2dp_source_set_config(connection);
+#endif
 
     return status;
 }
