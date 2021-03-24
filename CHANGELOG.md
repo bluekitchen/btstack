@@ -56,6 +56,7 @@ Nordic SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and 
     events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 u-blox SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED`
     events instead of callback, and `RFCOMM_DATA_PACKET` for received data
+HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 
 ## Release v1.3.2
 

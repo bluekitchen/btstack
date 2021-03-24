@@ -248,6 +248,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Received custom command: \"%s\". \nExit code or call hsp_ag_send_result.\n", hs_cmd_buffer);
                             break;
                         }
+                        case HSP_SUBEVENT_BUTTON_PRESSED:
+                            if (sco_handle == HCI_CON_HANDLE_INVALID){
+                                printf("Button event -> establish audio\n");
+                                hsp_ag_establish_audio_connection();
+                            } else {
+                                printf("Button event -> release audio\n");
+                                hsp_ag_release_audio_connection();
+                            }
+                            break;
                         default:
                             printf("event not handled %u\n", event[2]);
                             break;

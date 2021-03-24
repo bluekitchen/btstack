@@ -1502,6 +1502,11 @@ typedef uint8_t sm_key_t[16];
  */
 #define HSP_SUBEVENT_AG_INDICATION                         0x09
 
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define HSP_SUBEVENT_BUTTON_PRESSED                        0x0a
 
 /** HFP Subevent */
 
