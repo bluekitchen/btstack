@@ -332,6 +332,8 @@ static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uin
         case RFCOMM_DATA_PACKET:
             printf("RECV: ");
             printf_hexdump(packet, size);
+            context = connection_for_conn_handle((hci_con_handle_t) channel);
+            if (!context) break;
             test_track_sent(context, size);
             break;
         default:
