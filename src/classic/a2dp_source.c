@@ -291,6 +291,13 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
     }
 }
 
+static void a2dp_source_set_config(avdtp_connection_t * connection){
+    uint8_t remote_seid = local_stream_endpoint->set_config_remote_seid;
+    log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x", avdtp_stream_endpoint_seid(local_stream_endpoint), remote_seid);
+    connection->a2dp_source_state = A2DP_W4_SET_CONFIGURATION;
+    avdtp_source_set_configuration(connection->avdtp_cid, avdtp_stream_endpoint_seid(local_stream_endpoint), remote_seid, local_stream_endpoint->remote_configuration_bitmap, local_stream_endpoint->remote_configuration);
+}
+
 static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -597,10 +604,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     return;
 
                 case A2DP_SET_CONFIGURATION:
-                    remote_seid = local_stream_endpoint->set_config_remote_seid;
-                    log_info("A2DP initiate set configuration locally and wait for response ... local seid 0x%02x, remote seid 0x%02x", avdtp_stream_endpoint_seid(local_stream_endpoint), remote_seid);
-                    connection->a2dp_source_state = A2DP_W4_SET_CONFIGURATION;
-                    avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(local_stream_endpoint), remote_seid, local_stream_endpoint->remote_configuration_bitmap, local_stream_endpoint->remote_configuration);
+                    a2dp_source_set_config(connection);
                     return;
 
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:
