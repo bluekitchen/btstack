@@ -529,6 +529,9 @@ typedef struct {
     uint8_t remote_supported_features[1];
 
 #ifdef ENABLE_CLASSIC
+    // IO Capabilities Response
+    uint8_t io_cap_response_auth_req;
+
     // connection mode, default ACL_CONNECTION_MODE_ACTIVE
     uint8_t connection_mode;
 

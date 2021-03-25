@@ -2636,7 +2636,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_event_pin_code_request_get_bd_addr(packet, addr);
             hci_stack->link_key_db->delete_link_key(addr);
             break;
-            
+
+        case HCI_EVENT_IO_CAPABILITY_RESPONSE:
+            hci_event_io_capability_response_get_bd_addr(packet, addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+            conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
+            break;
+
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
             log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
