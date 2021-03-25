@@ -97,7 +97,15 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED,
 
     HIDS_CLIENT_STATE_CONNECTED,
-    HIDS_CLIENT_W2_SEND_REPORT
+    HIDS_CLIENT_W2_SEND_REPORT,
+    HIDS_CLIENT_W2_SEND_GET_REPORT,
+    HIDS_CLIENT_W4_GET_REPORT_RESULT,
+
+#ifdef ENABLE_TESTING_SUPPORT
+    HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
+    HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
+#endif
+
 } hid_service_client_state_t;
 
 
@@ -110,7 +118,8 @@ typedef struct {
     uint16_t properties;
     
     // UUID of external Report characteristic, stored in Report Map descriptor EXTERNAL_REPORT_REFERENCE 
-    uint16_t  external_report_reference_uuid;
+    uint16_t external_report_reference_uuid;
+    uint16_t ccc_handle;
     
     // service mapping
     uint8_t service_index;
@@ -197,6 +206,8 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
 uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
+
+uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id);
 
 /**
  * @brief Disconnect from Battery Service.

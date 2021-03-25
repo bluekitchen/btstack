@@ -389,6 +389,14 @@ static void hid_service_gatt_client_event_handler(uint8_t packet_type, uint16_t 
             break;
 
         case GATTSERVICE_SUBEVENT_HID_REPORT:
+            printf("    Received report [ID %d, Service %d]: ", 
+                gattservice_subevent_hid_report_get_report_id(packet),
+                gattservice_subevent_hid_report_get_service_index(packet));
+
+            // first byte id report ID
+            printf_hexdump(gattservice_subevent_hid_report_get_report(packet) + 1, 
+                gattservice_subevent_hid_report_get_report_len(packet) - 1);
+
             hid_handle_input_report(
                 gattservice_subevent_hid_report_get_service_index(packet),
                 gattservice_subevent_hid_report_get_report(packet), 
@@ -491,6 +499,8 @@ static void show_usage(void){
     printf("h      - connect to HID Service client\n");
     printf("b      - connect to Battery Service Client\n");
     printf("d      - connect to Device Information Service Client\n");
+
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -544,6 +554,25 @@ static void stdin_process(char character){
             printf("Connect to Device Information Service\n");
             hog_host_connect_device_information_client();
             break;
+
+        
+        case '1':
+            printf("Get report with ID 1\n");
+            hids_client_send_get_report(hids_cid, 1);
+            break;
+
+        case '2':
+            printf("Get report with ID 4\n");
+            hids_client_send_get_report(hids_cid, 4);
+            break;
+
+        case 'r':{
+            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            printf("Send output report with id 0x01\n");
+            hids_client_send_report(hids_cid, 0x01, report, sizeof(report));
+            break;
+        }
+
         case '\n':
         case '\r':
             break;
