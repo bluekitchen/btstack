@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 - Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
 - HCI Transport: extract convenience function declaration for h4, h5, em9304_spi, and usb into separate hci_transport_{type}.h
+- GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic
 
 ## Release v1.3.2
 

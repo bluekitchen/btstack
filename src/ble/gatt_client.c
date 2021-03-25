@@ -435,7 +435,11 @@ static void send_gatt_read_by_type_request(gatt_client_t * gatt_client){
 }
 
 static void send_gatt_read_blob_request(gatt_client_t *gatt_client){
-    att_read_blob_request(ATT_READ_BLOB_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_offset);
+    if (gatt_client->attribute_offset == 0){
+        att_read_request(ATT_READ_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle);
+    } else {
+        att_read_blob_request(ATT_READ_BLOB_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_offset);
+    }
 }
 
 static void send_gatt_read_multiple_request(gatt_client_t * gatt_client){
@@ -1460,6 +1464,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
                     break;
                 }
+                // Use ATT_READ_REQUEST for first blob of Read Long Characteristic
+                case P_W4_READ_BLOB_RESULT:
+                    report_gatt_long_characteristic_value_blob(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u, gatt_client->attribute_offset);
+                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_QUERY, size - 1u);
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    break;
                 default:
                     break;
             }
