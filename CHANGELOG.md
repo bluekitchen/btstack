@@ -58,6 +58,7 @@ u-blox SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and 
     events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
+GAP: calculate IO Cap AuthReq Bondable Mode based on `gap_ssp_set_authentication_requirement` and `gap_set_bondable_mode`
     
 ## Release v1.3.2
 

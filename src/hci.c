@@ -4322,13 +4322,17 @@ static bool hci_run_general_pending_commands(void){
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
-            // tweak authentication requirements
-            uint8_t authreq = hci_stack->ssp_authentication_requirement;
-            if (connection->bonding_flags & BONDING_DEDICATED){
-                authreq = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
-            }
+            // set authentication requirements:
+            // - MITM = ssp_authentication_requirement (USER) | requested_security_level (dynamic)
+            // - BONDING MODE: Dedicated if requested, otherwise bondable flag
+            uint8_t authreq = hci_stack->ssp_authentication_requirement & 1;
             if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
                 authreq |= 1;
+            }
+            if (connection->bonding_flags & BONDING_DEDICATED){
+                authreq |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+            } else if (hci_stack->bondable){
+                authreq |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
             }
             uint8_t have_oob_data = 0;
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
