@@ -610,7 +610,7 @@ static void hids_run_for_client(hids_client_t * client){
             printf("\n\nRead REPORT_MAP (Handle 0x%04X) HID Descriptor of service %d:\n", client->services[client->service_index].report_map_value_handle, client->service_index);
 #endif
             client->state = HIDS_CLIENT_STATE_W4_REPORT_MAP_HID_DESCRIPTOR;
-            att_status = gatt_client_read_value_of_characteristic_using_value_handle(&handle_gatt_client_event, client->con_handle, client->services[client->service_index].report_map_value_handle);
+            att_status = gatt_client_read_long_value_of_characteristic_using_value_handle(&handle_gatt_client_event, client->con_handle, client->services[client->service_index].report_map_value_handle);
             
             UNUSED(att_status);
             break;
@@ -784,8 +784,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     uint8_t i;
     uint8_t report_index;
 
-    const uint8_t * descriptor;
-    uint16_t descriptor_len;
+    const uint8_t * descriptor_value;
+    uint16_t descriptor_value_len;
 
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
@@ -821,18 +821,20 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             hids_client_parse_characteristic(client, characteristic);
             break;
 
-        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
             // Map Report characteristic value == HID Descriptor
-            client = hids_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
+            client = hids_get_client_for_con_handle(gatt_event_long_characteristic_value_query_result_get_handle(packet));
             btstack_assert(client != NULL);
             
-            descriptor_len = gatt_event_characteristic_value_query_result_get_value_length(packet);
-            descriptor = gatt_event_characteristic_value_query_result_get_value(packet);
+            descriptor_value = gatt_event_long_characteristic_value_query_result_get_value(packet);
+            descriptor_value_len = gatt_event_long_characteristic_value_query_result_get_value_length(packet);
+
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("Found HID Descriptor[%d] for service %d\n", descriptor_len, client->service_index);
+            // printf("Report Map HID Desc [%d] for service %d\n", descriptor_len, client->service_index);
+            printf_hexdump(descriptor_value, descriptor_value_len);
 #endif
-            for (i = 0; i < descriptor_len; i++){
-                bool stored = hids_client_descriptor_storage_store(client, client->service_index, descriptor[i]);
+            for (i = 0; i < descriptor_value_len; i++){
+                bool stored = hids_client_descriptor_storage_store(client, client->service_index, descriptor_value[i]);
                 if (!stored){
                     client->services[client->service_index].hid_descriptor_status = ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
                     break;
@@ -1030,7 +1032,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         hids_finalize_client(client);
                         break;  
                     }
-                    printf("HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS for service %d\n", client->service_index);
                     client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
                     break;
 

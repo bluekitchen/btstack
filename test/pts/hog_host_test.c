@@ -416,6 +416,7 @@ static void device_information_service_gatt_client_event_handler(uint8_t packet_
             switch (status){
                 case ERROR_CODE_SUCCESS:
                     app_state = READY;
+                    printf("Device Information service found\n");
                     break;
                 default:
                     printf("Device Information service client connection failed, err 0x%02x.\n", status);
