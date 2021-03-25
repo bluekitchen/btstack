@@ -2641,7 +2641,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
             log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
-            if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
+            if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
             } else {
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
