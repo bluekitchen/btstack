@@ -2618,6 +2618,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (link_key_type != CHANGED_COMBINATION_KEY){
                 conn->link_key_type = link_key_type;
             }
+            // only store link key:
+            // - if bondable enabled
+            if (hci_stack->bondable == false) break;
+            // - for SSP, also check if remote side requested bonding as well
+            if (conn->link_key_type != COMBINATION_KEY){
+                uint8_t auth_req_ignoring_mitm = conn->io_cap_response_auth_req & 0xfe;
+                if (auth_req_ignoring_mitm == SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_NO_BONDING){
+                    break;
+                }
+            }
             gap_store_link_key_for_bd_addr(addr, &packet[8], conn->link_key_type);
             // still forward event to allow dismiss of pairing dialog
             break;

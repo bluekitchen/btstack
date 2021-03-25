@@ -31,7 +31,9 @@ A2DP Source: `ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG` disables auto config. Requires
 ### Fixed
 HCI: handle start inquiry failure
 AVRCP Target: fix notification changed event
-HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off 
+HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off
+GAP: calculate IO Cap AuthReq Bondable Mode based on `gap_ssp_set_authentication_requirement` and `gap_set_bondable_mode`
+GAP: only store link key for ssp if remote side has set bondable in io cap auth requirements as well
 
 ### Changed
 HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
@@ -58,8 +60,7 @@ u-blox SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and 
     events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
-GAP: calculate IO Cap AuthReq Bondable Mode based on `gap_ssp_set_authentication_requirement` and `gap_set_bondable_mode`
-    
+
 ## Release v1.3.2
 
 ### Added
