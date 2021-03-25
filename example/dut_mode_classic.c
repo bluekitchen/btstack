@@ -79,7 +79,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case HCI_EVENT_COMMAND_COMPLETE:
             if (hci_event_command_complete_get_command_opcode(packet) == hci_enable_device_under_test_mode.opcode){
                 uint8_t status = hci_event_command_complete_get_return_parameters(packet)[0];
-                printf("Enable Device Under Test Mode: %s\n", status ? "Failed" : "OK");
+                printf("Enable Device Under Test Mode: %s\n", (status != ERROR_CODE_SUCCESS) ? "Failed" : "OK");
             }
             break;
         default:

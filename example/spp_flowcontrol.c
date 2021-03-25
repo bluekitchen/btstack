@@ -142,14 +142,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                                    
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
-                        reverse_bd_addr(&packet[6], event_addr);
-                        printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
-                        break;
-                    }
-                    break;
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
@@ -159,8 +151,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
-                    // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
                     rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
                     rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
                     printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
@@ -168,7 +159,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
                
                 case RFCOMM_EVENT_CHANNEL_OPENED:
-                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (rfcomm_event_channel_opened_get_status(packet)) {
                         printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {

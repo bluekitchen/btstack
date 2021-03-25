@@ -488,7 +488,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     sbc_frame_size = (size-pos)/ sbc_header.num_frames;
         
     int status = btstack_ring_buffer_write(&sbc_frame_ring_buffer, packet+pos, size-pos);
-    if (status){
+    if (status != ERROR_CODE_SUCCESS){
         printf("Error storing samples in SBC ring buffer!!!\n");
     }
 
@@ -866,7 +866,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
-            if (status){
+            if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP  Sink      : Streaming connection failed, status 0x%02x\n", status);
                 break;
             }

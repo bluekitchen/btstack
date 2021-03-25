@@ -423,6 +423,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
             break;
         default:
             printf("Write to 0x%04x, len %u\n", att_handle, buffer_size);
+            break;
     }
     return 0;
 }

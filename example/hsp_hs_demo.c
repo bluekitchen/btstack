@@ -177,13 +177,14 @@ static void stdin_process(char c){
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
+    uint8_t status;
 
     switch (packet_type){
         case HCI_SCO_DATA_PACKET:
             sco_demo_receive(event, event_size);
             break;
         case HCI_EVENT_PACKET:
-            switch (event[0]) {
+            switch (hci_event_packet_get_type(event)) {
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
                     show_usage();
@@ -193,24 +194,27 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     sco_demo_send(sco_handle);
                     break;
                 case HCI_EVENT_HSP_META:
-                    switch (event[2]) { 
+                    switch (hci_event_hsp_meta_get_subevent_code(event)) {
                         case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
-                            if (hsp_subevent_rfcomm_connection_complete_get_status(event)){
-                                printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_rfcomm_connection_complete_get_status(event));
+                            status = hsp_subevent_rfcomm_connection_complete_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("RFCOMM connection establishement failed with status %u\n", status);
                             } else {
                                 printf("RFCOMM connection established.\n");
                             } 
                             break;
                         case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
-                            if (hsp_subevent_rfcomm_disconnection_complete_get_status(event)){
-                                printf("RFCOMM disconnection failed with status %u.\n", hsp_subevent_rfcomm_disconnection_complete_get_status(event));
+                            status = hsp_subevent_rfcomm_disconnection_complete_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("RFCOMM disconnection failed with status %u.\n", status);
                             } else {
                                 printf("RFCOMM disconnected.\n");
                             }
                             break;
                         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
-                            if (hsp_subevent_audio_connection_complete_get_status(event)){
-                                printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
+                            status = hsp_subevent_audio_connection_complete_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("Audio connection establishment failed with status %u\n", status);
                             } else {
                                 sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -238,11 +242,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             memcpy(hs_cmd_buffer, hsp_subevent_ag_indication_get_value(event), size);
                             printf("Received custom indication: \"%s\". \nExit code or call hsp_hs_send_result.\n", hs_cmd_buffer);
-
-                        }
                             break;
+                        }
                         default:
-                            printf("event not handled %u\n", event[2]);
+                            printf("event not handled %u\n", hci_event_hsp_meta_get_subevent_code(event));
                             break;
                     }
                     break;

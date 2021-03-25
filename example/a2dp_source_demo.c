@@ -650,7 +650,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
-            if (status){
+            if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP Source: Stream failed, status 0x%02x.\n", status);
                 break;
             }

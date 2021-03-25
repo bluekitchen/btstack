@@ -230,7 +230,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     UNUSED(packet_size);
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            switch (packet[0]){
+            switch (hci_event_packet_get_type(packet)){
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
                     log_info("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
@@ -240,7 +240,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 case HCI_EVENT_HID_META:
                     switch (hci_event_hid_meta_get_subevent_code(packet)){
                         case HID_SUBEVENT_CONNECTION_OPENED:
-                            if (hid_subevent_connection_opened_get_status(packet)) return;
+                            if (hid_subevent_connection_opened_get_status(packet) != ERROR_CODE_SUCCESS) return;
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
 #ifdef HAVE_BTSTACK_STDIN
                             printf("HID Connected, control mouse using 'a','s',''d', 'w' keys for movement and 'l' and 'r' for buttons...\n");

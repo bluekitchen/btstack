@@ -463,7 +463,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             switch (hci_event_hfp_meta_get_subevent_code(event)) {   
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     status = hfp_subevent_service_level_connection_established_get_status(event);
-                    if (status){
+                    if (status != ERROR_CODE_SUCCESS){
                         printf("Connection failed, staus 0x%02x\n", status);
                         break;
                     }
@@ -482,7 +482,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     acl_handle = HCI_CON_HANDLE_INVALID;
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
-                    if (hfp_subevent_audio_connection_established_get_status(event)){
+                    if (hfp_subevent_audio_connection_established_get_status(event) != ERROR_CODE_SUCCESS){
                         printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
                     } else {
                         sco_handle = hfp_subevent_audio_connection_established_get_handle(event);

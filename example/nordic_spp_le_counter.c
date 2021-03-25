@@ -125,6 +125,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
 /* LISTING_END */
 
 static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
     switch (packet_type){
         case HCI_EVENT_PACKET:
             if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) break;

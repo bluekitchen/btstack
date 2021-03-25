@@ -341,6 +341,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);
     UNUSED(size);
     gatt_client_characteristic_t characteristic;
+    uint8_t att_status;
     static uint8_t boot_protocol_mode = 0;
 
     switch (app_state) {
@@ -351,8 +352,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_service_query_result_get_service(packet, &hid_service);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", gatt_event_query_complete_get_att_status(packet));
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS) {
+                        printf("ATT Error status %x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
@@ -387,8 +389,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     }
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", gatt_event_query_complete_get_att_status(packet));
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS) {
+                        printf("ATT Error status %x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
@@ -403,8 +406,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case W4_BOOT_KEYBOARD_ENABLED:
             switch (hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", gatt_event_query_complete_get_att_status(packet));
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS) {
+                        printf("ATT Error status %x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
@@ -422,8 +426,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case W4_BOOT_MOUSE_ENABLED:
             switch (hci_event_packet_get_type(packet)) {
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS) {
-                        printf("ATT Error status %x.\n", gatt_event_query_complete_get_att_status(packet));
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS) {
+                        printf("ATT Error status %x.\n", att_status);
                         handle_outgoing_connection_error();
                         break;
                     }
