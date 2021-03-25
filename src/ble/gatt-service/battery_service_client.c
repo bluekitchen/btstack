@@ -301,9 +301,11 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 #ifdef ENABLE_TESTING_SUPPORT
                 printf("Battery Service: start handle 0x%04X, end handle 0x%04X\n", client->services[client->num_instances].start_handle, client->services[client->num_instances].end_handle);
-#endif
-            } 
-            client->num_instances++;
+#endif          
+                client->num_instances++;
+            } else {
+                log_info("Found more then %d, Battery Service instances. Increase MAX_NUM_BATTERY_SERVICES to store all.", MAX_NUM_BATTERY_SERVICES);
+            }
             break;
         
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
