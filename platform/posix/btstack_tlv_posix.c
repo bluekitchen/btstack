@@ -232,6 +232,10 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
     if (!self->file){
     	// create truncate file
 	    self->file = fopen(self->db_path,"w+");
+        if (!self->file) {
+            log_error("failed to create file");
+            return -1;
+        }
 	    memset(header, 0, sizeof(header));
 	    strcpy((char *)header, btstack_tlv_header_magic);
 	    fwrite(header, 1, sizeof(header), self->file);

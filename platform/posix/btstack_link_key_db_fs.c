@@ -148,6 +148,10 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
     char * link_key_type_str = link_key_type_to_str(link_key_type); 
 
     FILE * wFile = fopen(keypath,"w+");
+    if (wFile == NULL){
+        log_error("failed to create file");
+        return;
+    }
     fwrite(link_key_str, strlen(link_key_str), 1, wFile);
     fwrite(link_key_type_str, strlen(link_key_type_str), 1, wFile);
     fclose(wFile);
@@ -160,6 +164,7 @@ static int read_link_key(const char * path, link_key_t link_key, link_key_type_t
     char link_key_type_str[2];
 
     FILE * rFile = fopen(path,"r+");
+    if (rFile == NULL) return 0;
     size_t objects_read = fread(link_key_str, LINK_KEY_STR_LEN, 1, rFile );
     if (objects_read == 1){
         link_key_str[LINK_KEY_STR_LEN] = 0;
