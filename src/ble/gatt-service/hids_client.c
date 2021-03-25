@@ -250,15 +250,16 @@ static bool external_report_index_for_uuid_exists(hids_client_t * client, uint16
     return false;
 }
 
-static uint8_t find_input_report_index_for_report_id(hids_client_t * client, uint8_t report_id){
+static uint8_t find_report_index_for_report_id(hids_client_t * client, uint8_t report_id){
     uint8_t i;
+
     switch (client->protocol_mode){
         case HID_PROTOCOL_MODE_BOOT:
             for (i = 0; i < client->num_reports; i++){
                 if (!client->reports[i].boot_report){
                     continue;
                 } 
-                if ((client->reports[i].report_id == report_id) && (client->reports[i].report_type != HID_REPORT_TYPE_OUTPUT)){
+                if (client->reports[i].report_id == report_id){
                     return i;
                 }
             }
@@ -269,7 +270,7 @@ static uint8_t find_input_report_index_for_report_id(hids_client_t * client, uin
                 if (client->reports[i].boot_report){
                     continue;
                 } 
-                if ((client->reports[i].report_id == report_id) && (client->reports[i].report_type != HID_REPORT_TYPE_OUTPUT)){
+                if (client->reports[i].report_id == report_id){
                     return i;
                 }
             }
@@ -1014,7 +1015,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             printf("    Received CCC value: ");
             printf_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),  gatt_event_characteristic_value_query_result_get_value_length(packet));
-            client->state = HIDS_CLIENT_W2_SEND_GET_REPORT;
             break;
 #endif  
 
@@ -1213,7 +1213,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (hids_client_report_query_next_report(client)){
                         break;
                     }
-
+                    client->state = HIDS_CLIENT_STATE_CONNECTED;
                     hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
                     break;
 
@@ -1222,10 +1222,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (hids_client_report_query_next_report(client)){
                         break;
                     }
-
                     if (hids_client_report_notifications_init(client)){
                         break;
                     }
+                    client->state = HIDS_CLIENT_STATE_CONNECTED;
                     hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
                     break;
 
@@ -1233,9 +1233,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (hids_client_report_next_notification_report_index(client)){
                         break;
                     }
+                    client->state = HIDS_CLIENT_STATE_CONNECTED;
                     hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
                     break;
-                    
+#ifdef ENABLE_TESTING_SUPPORT       
+                case HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
+                    client->state = HIDS_CLIENT_W2_SEND_GET_REPORT;
+                    break;
+#endif
                 default:
                     break;
             }
@@ -1327,12 +1332,12 @@ uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id){
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-
+    
     if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    uint8_t report_index = find_input_report_index_for_report_id(client, report_id);
+    uint8_t report_index = find_report_index_for_report_id(client, report_id);
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
