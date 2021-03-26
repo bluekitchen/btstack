@@ -520,7 +520,7 @@ static void stdin_process(char cmd){
 
         case 'o':{
             uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Set output report with id 0x01\n");
+            printf("Send output report with id 0x01\n");
             status = hid_host_send_report(hid_host_cid, 0x01, report, sizeof(report));
             break;
         }
