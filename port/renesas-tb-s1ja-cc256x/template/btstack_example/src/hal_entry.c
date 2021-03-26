@@ -200,6 +200,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 #include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "btstack_memory.h"
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_tlv.h"

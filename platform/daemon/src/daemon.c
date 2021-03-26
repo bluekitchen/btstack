@@ -92,6 +92,8 @@
 #include "hci_dump_posix_fs.h"
 #include "hci_dump_posix_stdout.h"
 #include "hci_transport.h"
+#include "hci_transport_h4.h"
+#include "hci_transport_usb.h"
 #include "l2cap.h"
 #include "rfcomm_service_db.h"
 #include "socket_connection.h"

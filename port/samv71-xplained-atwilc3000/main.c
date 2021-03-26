@@ -17,6 +17,8 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "wilc3000_ble_firmware.h"
 
 // #define USE_XDMAC_FOR_USART

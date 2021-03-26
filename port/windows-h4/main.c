@@ -54,6 +54,8 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "hal_led.h"
 #include "btstack_tlv_posix.h"
 #include "ble/le_device_db_tlv.h"

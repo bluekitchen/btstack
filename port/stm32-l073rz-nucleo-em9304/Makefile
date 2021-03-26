@@ -175,6 +175,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
 C_INCLUDES += -I${BTSTACK_ROOT}/src
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
+C_INCLUDES += -I${BTSTACK_ROOT}/chipset/em9301
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I bsp
 C_INCLUDES += -I pdm

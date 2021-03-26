@@ -60,6 +60,7 @@ u-blox SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and 
     events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
+HCI Transport: extract convenience function declaration for h4, h5, em9304_spi, and usb into separate hci_transport_{type}.h
 
 ## Release v1.3.2
 

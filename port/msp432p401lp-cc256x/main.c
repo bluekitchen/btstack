@@ -22,6 +22,8 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci_dump.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "btstack_tlv_flash_bank.h"
 #include "hal_flash_bank_msp432.h"
 #include "classic/btstack_link_key_db_tlv.h"

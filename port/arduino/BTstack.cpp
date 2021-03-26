@@ -23,6 +23,8 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "classic/sdp_util.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 
 #include "ad_parser.h"
 #include "btstack_chipset_em9301.h"

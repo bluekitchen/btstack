@@ -63,6 +63,7 @@
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
+#include "hci_transport_usb.h"
 
 #include <Windows.h>
 #include <SetupAPI.h>

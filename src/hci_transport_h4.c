@@ -45,15 +45,17 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-#include <inttypes.h>
 
 #include "btstack_config.h"
+#include "hci_transport_h4.h"
 
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
 #include "bluetooth_company_id.h"
 #include "btstack_uart_block.h"
+
+#include <inttypes.h>
 
 #define ENABLE_LOG_EHCILL
 

@@ -48,6 +48,8 @@
 #include "btstack_run_loop_embedded.h"
 #include "btstack_chipset_cc256x.h"
 #include "hci_dump_embedded_stdout.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 
 // BTstack HALs
 #include "hal_tick.h"

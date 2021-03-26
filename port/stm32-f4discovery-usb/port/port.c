@@ -56,6 +56,7 @@
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_flash_bank_stm32.h"
+#include "hci_transport.h"
 #include "hci_transport_h2_stm32.h"
 
 #ifdef ENABLE_SEGGER_RTT

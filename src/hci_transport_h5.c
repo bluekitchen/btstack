@@ -47,13 +47,13 @@
 
 #ifdef ENABLE_H5
 
-// #define ENABLE_LOG_DEBUG
-
-#include <inttypes.h>
+#include "hci_transport_h5.h"
 
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
+
+#include <inttypes.h>
 
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < 4)

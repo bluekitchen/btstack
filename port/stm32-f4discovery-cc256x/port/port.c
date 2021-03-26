@@ -12,6 +12,8 @@
 #include "btstack_run_loop_embedded.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"

@@ -444,6 +444,8 @@ const uint8_t hci_reset_2[] = { 0x01, 0x03, 0x0c, 0x00 };
 #include "btstack_run_loop_embedded.h"
 #include "hci_dump.h"
 #include "hci_dump_embedded_stdout.h"
+#include "hci_transport.h"
+#include "hci_transport_em9304_spi.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 int btstack_main(int argc, char ** argv);

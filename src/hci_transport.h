@@ -46,10 +46,10 @@
 #ifndef HCI_TRANSPORT_H
 #define HCI_TRANSPORT_H
 
-#include <stdint.h>
-#include "btstack_uart_block.h"
-#include "btstack_em9304_spi.h"
+#include "btstack_config.h"
 #include "btstack_defines.h"
+
+#include <stdint.h>
 
 #if defined __cplusplus
 extern "C" {
@@ -130,55 +130,6 @@ typedef struct {
     const char *device_name;
     int        parity;        // see btstack_uart.h BTSTACK_UART_PARITY
 } hci_transport_config_uart_t;
-
-
-// inline various hci_transport_X.h files
-
-/*
- * @brief Setup H4 instance with btstack_uart implementation
- * @param btstack_uart_block_driver to use
- */
-const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver);
-
-/*
- * @brief Setup H4 instance with btstack_uart_block implementation
- * @param btstack_uart_block_driver to use
- * @deprecated use hci_transport_h4_instance_for_uart instead
- */
-const hci_transport_t * hci_transport_h4_instance_for_uart(const btstack_uart_t * uart_driver);
-
-/*
- * @brief Setup H5 instance with btstack_uart implementation that supports SLIP frames
- * @param uart_driver to use
- */
-const hci_transport_t * hci_transport_h5_instance(const btstack_uart_t * uart_driver);
-
-/*
- * @brief Setup H4 over SPI instance for EM9304 with em9304_spi_driver
- * @param em9304_spi_driver to use 
- */
-const hci_transport_t * hci_transport_em9304_spi_instance(const btstack_em9304_spi_t * em9304_spi_driver);
-
-/*
- * @brief Enable H5 Low Power Mode: enter sleep mode after x ms of inactivity
- * @param inactivity_timeout_ms or 0 for off
- */
-void hci_transport_h5_set_auto_sleep(uint16_t inactivity_timeout_ms);
-
-/*
- * @brief Enable BSCP mode H5, by enabling event parity
- */
-void hci_transport_h5_enable_bcsp_mode(void);
-
-/*
- * @brief
- */
-const hci_transport_t * hci_transport_usb_instance(void);
-
-/**
- * @brief Specify USB Bluetooth device via port numbers from root to device
- */
-void hci_transport_usb_set_path(int len, uint8_t * port_numbers);
 
 /* API_END */
     

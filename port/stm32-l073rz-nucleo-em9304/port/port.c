@@ -57,7 +57,11 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "hci_dump.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
+#include "hci_transport_em9304_spi.h"
 #include "btstack_debug.h"
+#include "btstack_chipset_em9301.h"
 
 #ifdef ENABLE_SEGGER_RTT
 #include "SEGGER_RTT.h"
