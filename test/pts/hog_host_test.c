@@ -413,6 +413,14 @@ static void hid_service_gatt_client_event_handler(uint8_t packet_type, uint16_t 
                 gattservice_subevent_hid_information_get_remote_wake(packet),
                 gattservice_subevent_hid_information_get_normally_connectable(packet));
             break;
+
+         case GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE:
+            printf("Protocol Mode: service index %d, mode 0x%02X (Boot mode: 0x%02X, Report mode 0x%02X)\n",
+                gattservice_subevent_hid_protocol_mode_get_service_index(packet),
+                gattservice_subevent_hid_protocol_mode_get_protocol_mode(packet),
+                HID_PROTOCOL_MODE_BOOT,HID_PROTOCOL_MODE_REPORT);
+            break;
+
         default:
             break;
     }
@@ -429,6 +437,16 @@ static void device_information_service_gatt_client_event_handler(uint8_t packet_
     }
     uint8_t status;
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+
+        case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID:
+            printf("PnP ID: vendor source ID 0x%02X, vendor ID 0x%02X, product ID 0x%02X, product version 0x%02X\n",
+                gattservice_subevent_device_information_pnp_id_get_vendor_source_id(packet),
+                gattservice_subevent_device_information_pnp_id_get_vendor_id(packet),
+                gattservice_subevent_device_information_pnp_id_get_product_id(packet),
+                gattservice_subevent_device_information_pnp_id_get_product_version(packet)
+            );
+            break;
+
         case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE:
             status = gattservice_subevent_device_information_done_get_att_status(packet);
             switch (status){
@@ -503,14 +521,24 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HOG Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - connect to remote device\n");
-    printf("C      - disconnect from remote device\n");
-    
-    printf("h      - connect to HID Service client\n");
-    printf("b      - connect to Battery Service Client\n");
-    printf("d      - connect to Device Information Service Client\n");
-
-
+    printf("c      - Connect to remote device\n");
+    printf("C      - Disconnect from remote device\n");
+    printf("h      - Connect to HID Service Client\n");
+    printf("b      - Connect to Battery Service\n");
+    printf("d      - Connect to Device Information Service\n");
+    printf("\n");
+    printf("p      - Get protocol mode for service 0\n");
+    printf("q      - Get protocol mode for service 1\n");
+    printf("i      - Get HID information for service index 0\n");
+    printf("j      - Get HID information for service index 1\n");
+    printf("k      - Get Battery Level for service index 0\n");
+    printf("1      - Get report with ID 1\n");
+    printf("2      - Get report with ID 2\n");
+    printf("3      - Get report with ID 3\n");
+    printf("4      - Get report with ID 4\n");
+    printf("5      - Get report with ID 5\n");
+    printf("6      - Get report with ID 6\n");
+    printf("\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -565,6 +593,15 @@ static void stdin_process(char character){
             hog_host_connect_device_information_client();
             break;
 
+        case 'p':
+            printf("Get protocol mode for service 0\n");
+            hids_client_get_protocol_mode(hids_cid, 0);
+            break;
+        case 'q':
+            printf("Get protocol mode for service 1\n");
+            hids_client_get_protocol_mode(hids_cid, 1);
+            break;
+
         case 'i': 
             query_service_index = 0;
             printf("Get HID information for service index %d\n", query_service_index);
@@ -581,7 +618,7 @@ static void stdin_process(char character){
             printf("Read Battery Level for service index 0\n");
             battery_service_client_read_battery_level(battery_service_cid, 0);
             break;
-            
+
         case '1':
             printf("Get report with ID 1\n");
             hids_client_send_get_report(hids_cid, 1);

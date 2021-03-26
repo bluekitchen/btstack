@@ -19,3 +19,16 @@ HOGP/RH/HGDC/BV-15-I: b, saerch for 'Battery Level Client Characteristic Configu
 HOGP/RH/HGDC/BV-16-I: d
 
 HOGP/RH/HGRF/BV-01-I: h
+HOGP/RH/HGRF/BV-02-I: h
+HOGP/RH/HGRF/BV-03-I: h, 1, 4, (confirmation)
+HOGP/RH/HGRF/BV-04-I: h, 1, 4, (confirmation)
+HOGP/RH/HGRF/BV-05-I: h, (confirmation)
+HOGP/RH/HGRF/BV-19-I: h, 2, 5, (confirmation)
+HOGP/RH/HGRF/BV-06-I: h, (confirmation)
+HOGP/RH/HGRF/BV-07-I: h, 3, 6
+HOGP/RH/HGRF/BV-08-I: h, (confirmation)
+HOGP/RH/HGRF/BV-09-I: h, i, j, (confirmation)
+HOGP/RH/HGRF/BV-10-I: b, k
+HOGP/RH/HGRF/BV-11-I: b
+HOGP/RH/HGRF/BV-12-I: d
+HOGP/RH/HGRF/BV-18-I: h

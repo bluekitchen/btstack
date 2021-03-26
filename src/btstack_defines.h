@@ -3244,6 +3244,14 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x15
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param hids_cid
+ * @param service_index
+ * @param protocol_mode    see hid_protocol_mode_t in hid.h
+*/
+#define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16
 
 // MAP Meta Event Group
 

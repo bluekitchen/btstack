@@ -9653,6 +9653,34 @@ static inline uint8_t gattservice_subevent_hid_information_get_normally_connecta
 }
 
 /**
+ * @brief Get field hids_cid from event GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE
+ * @param event packet
+ * @return hids_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_hid_protocol_mode_get_hids_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field service_index from event GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE
+ * @param event packet
+ * @return service_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_protocol_mode_get_service_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field protocol_mode from event GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE
+ * @param event packet
+ * @return protocol_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_hid_protocol_mode_get_protocol_mode(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

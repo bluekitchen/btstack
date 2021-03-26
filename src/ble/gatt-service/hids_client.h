@@ -102,8 +102,8 @@ typedef enum {
     HIDS_CLIENT_W2_SEND_GET_REPORT,
     HIDS_CLIENT_W4_GET_REPORT_RESULT,
 
-    HIDS_CLIENT_W2_SEND_GET_HID_INFORMATION,
-    HIDS_CLIENT_W4_GET_HID_INFORMATION_RESULT,
+    HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC,
+    HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT,
     
 #ifdef ENABLE_TESTING_SUPPORT
     HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
@@ -144,10 +144,8 @@ typedef struct {
     uint16_t report_map_end_handle;
 
     uint16_t hid_information_value_handle;
-    uint16_t hid_information_end_handle;
-
     uint16_t control_point_value_handle;
-    uint16_t control_point_end_handle;
+    uint16_t protocol_mode_value_handle;
 
     // descriptor storage
     uint16_t hid_descriptor_offset;
@@ -185,7 +183,7 @@ typedef struct {
 
     // index used for report and report map search
     uint8_t   report_index;
-    uint16_t  descriptor_handle;
+    uint16_t  handle;
     uint16_t  report_len;
     const uint8_t * report;
 
@@ -224,6 +222,7 @@ uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id);
 
 uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index);
 
+uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief Disconnect from Battery Service.
