@@ -1232,7 +1232,7 @@ void hfp_hf_deinit(void){
     (void) memset(phone_number, 0, sizeof(phone_number));
 }
 
-void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs){
+void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_hf_init_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
@@ -1249,7 +1249,7 @@ void hfp_hf_init_supported_features(uint32_t supported_features){
     hfp_supported_features = supported_features;
 }
 
-void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators){
+void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     hfp_indicators_nr = indicators_nr;
     int i;
     for (i = 0; i < hfp_indicators_nr ; i++){

@@ -76,7 +76,7 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr);
  * @param codecs_nr
  * @param codecs
  */
-void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs);
+void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set supported features.
@@ -89,7 +89,7 @@ void hfp_hf_init_supported_features(uint32_t supported_features);
  * @param indicators_nr
  * @param indicators
  */
-void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators);
+void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators);
 
 
 /**

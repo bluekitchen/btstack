@@ -82,7 +82,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr);
  * @param codecs_nr
  * @param codecs
  */
-void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs);
+void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set supported features.
@@ -95,14 +95,14 @@ void hfp_ag_init_supported_features(uint32_t supported_features);
  * @param indicators_nr
  * @param indicators
  */
-void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_indicators);
+void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators);
 
 /**
  * @brief Set HF indicators. 
  * @param indicators_nr
  * @param indicators
  */
-void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators);
+void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators);
 
 /**
  * @brief Set Call Hold services. 

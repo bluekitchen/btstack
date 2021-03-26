@@ -2078,7 +2078,7 @@ static void hfp_ag_hci_event_packet_handler(uint8_t packet_type, uint16_t channe
     hfp_ag_run();
 }
 
-void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs){
+void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
@@ -2094,13 +2094,13 @@ void hfp_ag_init_supported_features(uint32_t supported_features){
     hfp_supported_features = supported_features;
 }
 
-void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_indicators){
+void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators){
     hfp_ag_indicators_nr = ag_indicators_nr;
     (void)memcpy(hfp_ag_indicators, ag_indicators,
                  ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 }
 
-void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators){
+void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators){
     if (hf_indicators_nr > HFP_MAX_NUM_INDICATORS) return;
     hfp_generic_status_indicators_nr = hf_indicators_nr;
     (void)memcpy(hfp_generic_status_indicators, hf_indicators,
