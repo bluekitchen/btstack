@@ -74,6 +74,8 @@ static hci_con_handle_t connection_handle;
 static uint16_t hids_cid;
 static uint16_t battery_service_cid;
 
+static uint8_t query_service_index;
+
 static bool connect_hids_client = false;
 static bool connect_battery_client = false;
 static bool connect_device_information_client = false;
@@ -403,6 +405,14 @@ static void hid_service_gatt_client_event_handler(uint8_t packet_type, uint16_t 
                 gattservice_subevent_hid_report_get_report_len(packet));
             break;
 
+        case GATTSERVICE_SUBEVENT_HID_INFORMATION:
+            printf("Hid Information: service index %d, USB HID 0x%02X, country code %d, remote wake %d, normally connectable %d\n",
+                gattservice_subevent_hid_information_get_service_index(packet),
+                gattservice_subevent_hid_information_get_base_usb_hid_version(packet),
+                gattservice_subevent_hid_information_get_country_code(packet),
+                gattservice_subevent_hid_information_get_remote_wake(packet),
+                gattservice_subevent_hid_information_get_normally_connectable(packet));
+            break;
         default:
             break;
     }
@@ -555,15 +565,50 @@ static void stdin_process(char character){
             hog_host_connect_device_information_client();
             break;
 
-        
+        case 'i': 
+            query_service_index = 0;
+            printf("Get HID information for service index %d\n", query_service_index);
+            hids_client_get_hid_information(hids_cid, query_service_index);
+            break;
+
+        case 'j': 
+            query_service_index = 1;
+            printf("Get HID information for service index %d\n", query_service_index);
+            hids_client_get_hid_information(hids_cid, query_service_index);
+            break;
+
+        case 'k':
+            printf("Read Battery Level for service index 0\n");
+            battery_service_client_read_battery_level(battery_service_cid, 0);
+            break;
+            
         case '1':
             printf("Get report with ID 1\n");
             hids_client_send_get_report(hids_cid, 1);
             break;
-
         case '2':
+            printf("Get report with ID 2\n");
+            hids_client_send_get_report(hids_cid, 2);
+            break;
+
+        case '3':
+            printf("Get report with ID 3\n");
+            hids_client_send_get_report(hids_cid, 3);
+            break;
+
+        case '4':
             printf("Get report with ID 4\n");
             hids_client_send_get_report(hids_cid, 4);
+            break;
+
+        case '5':
+            printf("Get report with ID 5\n");
+            hids_client_send_get_report(hids_cid, 5);
+            break;
+
+        case '6':
+            printf("Get report with ID 6\n");
+            hids_client_send_get_report(hids_cid, 6);
             break;
 
         case 'r':{

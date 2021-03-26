@@ -3232,6 +3232,18 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x14
 
+/**
+ * @format 1212111
+ * @param subevent_code
+ * @param hids_cid
+ * @param service_index
+ * @param base_usb_hid_version      Version number of base USB HID Specification implemented by HID Device
+ * @param country_code              Country HID Device hardware is localized for (not localized: 0x00)
+ * @param remote_wake               Indicates whether HID Device is capable of sending a wake-signal to a HID Host
+ * @param normally_connectable      Indicates whether HID Device will be advertising when bonded but not connected.
+*/
+#define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x15
+
 
 // MAP Meta Event Group
 

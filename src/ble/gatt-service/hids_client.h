@@ -98,9 +98,13 @@ typedef enum {
 
     HIDS_CLIENT_STATE_CONNECTED,
     HIDS_CLIENT_W2_SEND_REPORT,
+    
     HIDS_CLIENT_W2_SEND_GET_REPORT,
     HIDS_CLIENT_W4_GET_REPORT_RESULT,
 
+    HIDS_CLIENT_W2_SEND_GET_HID_INFORMATION,
+    HIDS_CLIENT_W4_GET_HID_INFORMATION_RESULT,
+    
 #ifdef ENABLE_TESTING_SUPPORT
     HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
     HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
@@ -119,7 +123,10 @@ typedef struct {
     
     // UUID of external Report characteristic, stored in Report Map descriptor EXTERNAL_REPORT_REFERENCE 
     uint16_t external_report_reference_uuid;
+
+#ifdef ENABLE_TESTING_SUPPORT
     uint16_t ccc_handle;
+#endif
     
     // service mapping
     uint8_t service_index;
@@ -135,6 +142,12 @@ typedef struct {
 
     uint16_t report_map_value_handle;
     uint16_t report_map_end_handle;
+
+    uint16_t hid_information_value_handle;
+    uint16_t hid_information_end_handle;
+
+    uint16_t control_point_value_handle;
+    uint16_t control_point_end_handle;
 
     // descriptor storage
     uint16_t hid_descriptor_offset;
@@ -208,6 +221,9 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
 uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
 
 uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id);
+
+uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index);
+
 
 /**
  * @brief Disconnect from Battery Service.
