@@ -194,7 +194,7 @@ static void device_information_service_emit_string_value(device_information_serv
     pos += bytes_to_copy;
     event[pos++] = 0;
 
-    event[2] = pos - 2;
+    event[1] = pos - 2;
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
