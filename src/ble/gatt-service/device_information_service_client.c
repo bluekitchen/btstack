@@ -97,10 +97,10 @@ static void device_information_service_emit_certification_data_list(device_infor
 static void device_information_service_emit_pnp_id(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
 
 // list of uuids and how they are reported as events
-static struct device_information_characteristic {
+static const struct device_information_characteristic {
     uint16_t uuid;
     uint8_t  subevent;
-    void (*handle_value)(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);
+    void (*handle_value)(device_information_service_client_t * client, uint8_t subevent, uint8_t att_status, const uint8_t * value, uint16_t value_len);    
 } device_information_characteristics[] = {
     {ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER, device_information_service_emit_string_value},
@@ -113,6 +113,34 @@ static struct device_information_characteristic {
     {ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION, device_information_service_emit_certification_data_list},
     {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID, device_information_service_emit_pnp_id}
 };
+
+#ifdef ENABLE_TESTING_SUPPORT
+static struct device_information_characteristic_handles{
+    uint16_t uuid;
+    uint16_t value_handle;
+} device_information_characteristic_handles[] = {
+    {ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_FIRMWARE_REVISION_STRING, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_SOFTWARE_REVISION_STRING, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST, 0},
+    {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, 0}
+};
+
+static void device_information_service_update_handle_for_uuid(uint16_t uuid, uint16_t value_handle){
+    uint8_t i;
+    for (i = 0; i < 9; i++){
+        if (device_information_characteristic_handles[i].uuid == uuid){
+            device_information_characteristic_handles[i].value_handle = value_handle;
+            return;
+        }
+    }
+}
+#endif
+
 
 static const uint8_t num_information_fields = sizeof(device_information_characteristics)/sizeof(struct device_information_characteristic);
 
@@ -272,14 +300,20 @@ static void device_information_service_run_for_client(device_information_service
 
         case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC:
             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE;
-            if (client->characteristic_index < num_information_fields){
-                att_status = gatt_client_read_value_of_characteristics_by_uuid16(
-                    handle_gatt_client_event, 
-                    client->con_handle, client->start_handle, client->end_handle, 
-                    device_information_characteristics[client->characteristic_index].uuid);
-                // TODO handle status
-                UNUSED(att_status);
-            }
+ 
+ #ifdef ENABLE_TESTING_SUPPORT  
+            att_status = gatt_client_read_value_of_characteristic_using_value_handle(
+                handle_gatt_client_event, 
+                client->con_handle, 
+                device_information_characteristic_handles[client->characteristic_index].value_handle);
+ #else            
+            att_status = gatt_client_read_value_of_characteristics_by_uuid16(
+                handle_gatt_client_event, 
+                client->con_handle, client->start_handle, client->end_handle, 
+                device_information_characteristics[client->characteristic_index].uuid);
+#endif 
+            // TODO handle status
+            UNUSED(att_status);
             break;
 
         default:
@@ -328,6 +362,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             btstack_assert(client != NULL);
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
 
+            device_information_service_update_handle_for_uuid(characteristic.uuid16, characteristic.value_handle);
             printf("Device Information Characteristic %s:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X\n", 
                 device_information_characteristic_name(characteristic.uuid16),
                 characteristic.start_handle, 
@@ -345,7 +380,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 ATT_ERROR_SUCCESS,
                 gatt_event_characteristic_value_query_result_get_value(packet), 
                 gatt_event_characteristic_value_query_result_get_value_length(packet)));
-        break;
+            break;
 
         case GATT_EVENT_QUERY_COMPLETE:
             client = device_information_service_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
