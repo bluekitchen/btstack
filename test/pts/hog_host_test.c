@@ -63,7 +63,9 @@ static enum {
     W4_CONNECTED,
     W4_ENCRYPTED,
     W4_CLIENT_CONNECTED,
-    READY
+    READY,
+    READ_MODE,
+    WRITE_MODE
 } app_state;
 
 // PTS:      
@@ -73,8 +75,6 @@ static le_device_addr_t remote_device;
 static hci_con_handle_t connection_handle;
 static uint16_t hids_cid;
 static uint16_t battery_service_cid;
-
-static uint8_t query_service_index;
 
 static bool connect_hids_client = false;
 static bool connect_battery_client = false;
@@ -341,7 +341,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     printf("Pairing failed, timeout\n");
                     break;
                 case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
-                    printf("Pairing faileed, disconnected\n");
+                    printf("Pairing failed, disconnected\n");
                     break;
                 case ERROR_CODE_AUTHENTICATION_FAILURE:
                     printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
@@ -521,23 +521,56 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HOG Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - Connect to remote device\n");
-    printf("C      - Disconnect from remote device\n");
     printf("h      - Connect to HID Service Client\n");
     printf("b      - Connect to Battery Service\n");
     printf("d      - Connect to Device Information Service\n");
     printf("\n");
-    printf("p      - Get protocol mode for service 0\n");
-    printf("q      - Get protocol mode for service 1\n");
-    printf("i      - Get HID information for service index 0\n");
-    printf("j      - Get HID information for service index 1\n");
-    printf("k      - Get Battery Level for service index 0\n");
-    printf("1      - Get report with ID 1\n");
-    printf("2      - Get report with ID 2\n");
-    printf("3      - Get report with ID 3\n");
-    printf("4      - Get report with ID 4\n");
-    printf("5      - Get report with ID 5\n");
-    printf("6      - Get report with ID 6\n");
+
+    printf("r      - switch to READ mode\n");
+    printf("w      - switch to WRITE mode\n");
+    printf("\n");
+
+    // printf("C      - Disconnect from remote device\n");
+
+    switch (app_state){
+        case READ_MODE:
+            printf("READ mode\n\n");
+            printf("1      - Get report with ID 1\n");
+            printf("2      - Get report with ID 2\n");
+            printf("3      - Get report with ID 3\n");
+            printf("4      - Get report with ID 4\n");
+            printf("5      - Get report with ID 5\n");
+            printf("6      - Get report with ID 6\n");
+            printf("\n");
+            printf("p      - Get protocol mode for service 0\n");
+            printf("P      - Get protocol mode for service 1\n");
+            printf("i      - Get HID information for service index 0\n");
+            printf("I      - Get HID information for service index 1\n");
+            printf("k      - Get Battery Level for service index 0\n");
+            break;
+        case WRITE_MODE:
+            printf("Write mode\n\n");
+            printf("1      - Write report with ID 1\n");
+            printf("2      - Write report with ID 2\n");
+            printf("3      - Write report with ID 3\n");
+            printf("4      - Write report with ID 4\n");
+            printf("5      - Write report with ID 5\n");
+            printf("6      - Write report with ID 6\n");
+            printf("\n");
+            printf("p      - Set Report protocol mode for service 0\n");
+            printf("P      - Set Report protocol mode for service 1\n");
+            printf("s      - Suspend service 0\n");
+            printf("S      - Suspend service 1\n");
+            printf("e      - Exit suspend service 0\n");
+            printf("E      - Exit suspend service 1\n");
+            break;
+
+        default:
+            printf("c      - Connect to remote device\n");
+            printf("\n");
+            break;
+    }
+
     printf("\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -565,23 +598,22 @@ static void hog_host_connect_device_information_client(void){
 }
 
 static void stdin_process(char character){
-
     switch (character){
         case 'c':
             app_state = W4_CONNECTED;
             printf("Connect to remote device\n");
             gap_connect(remote_device.addr, remote_device.addr_type);
-            break;
+            return;
         
         case 'C':
             printf("Disconnect from remote device\n");
             gap_disconnect(connection_handle);
-            break;
+            return;
 
         case 'h':
             printf("Connect to HID Service Client\n");
             hog_host_connect_hids_client();
-            break;
+            return;
         
         case 'b':
             printf("Connect to Battery Service\n");
@@ -591,77 +623,171 @@ static void stdin_process(char character){
         case 'd':
             printf("Connect to Device Information Service\n");
             hog_host_connect_device_information_client();
-            break;
+            return;
 
-        case 'p':
-            printf("Get protocol mode for service 0\n");
-            hids_client_get_protocol_mode(hids_cid, 0);
-            break;
-        case 'q':
-            printf("Get protocol mode for service 1\n");
-            hids_client_get_protocol_mode(hids_cid, 1);
-            break;
+        case 'r':
+            printf("Switch to READ mode\n");
+            app_state = READ_MODE;
+            return;
 
-        case 'i': 
-            query_service_index = 0;
-            printf("Get HID information for service index %d\n", query_service_index);
-            hids_client_get_hid_information(hids_cid, query_service_index);
-            break;
-
-        case 'j': 
-            query_service_index = 1;
-            printf("Get HID information for service index %d\n", query_service_index);
-            hids_client_get_hid_information(hids_cid, query_service_index);
-            break;
-
-        case 'k':
-            printf("Read Battery Level for service index 0\n");
-            battery_service_client_read_battery_level(battery_service_cid, 0);
-            break;
-
-        case '1':
-            printf("Get report with ID 1\n");
-            hids_client_send_get_report(hids_cid, 1);
-            break;
-        case '2':
-            printf("Get report with ID 2\n");
-            hids_client_send_get_report(hids_cid, 2);
-            break;
-
-        case '3':
-            printf("Get report with ID 3\n");
-            hids_client_send_get_report(hids_cid, 3);
-            break;
-
-        case '4':
-            printf("Get report with ID 4\n");
-            hids_client_send_get_report(hids_cid, 4);
-            break;
-
-        case '5':
-            printf("Get report with ID 5\n");
-            hids_client_send_get_report(hids_cid, 5);
-            break;
-
-        case '6':
-            printf("Get report with ID 6\n");
-            hids_client_send_get_report(hids_cid, 6);
-            break;
-
-        case 'r':{
-            uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Send output report with id 0x01\n");
-            hids_client_send_report(hids_cid, 0x01, report, sizeof(report));
-            break;
-        }
+        case 'w':
+            printf("Switch to WRITE mode\n");
+            app_state = WRITE_MODE;
+            return;
 
         case '\n':
         case '\r':
+            return;
+        default:
+            break;
+    }
+
+    switch (app_state){
+        case READ_MODE:
+            switch (character){
+                case 'p':
+                    printf("Get protocol mode for service 0\n");
+                    hids_client_get_protocol_mode(hids_cid, 0);
+                    break;
+                case 'P':
+                    printf("Get protocol mode for service 1\n");
+                    hids_client_get_protocol_mode(hids_cid, 1);
+                    break;
+
+                case 'i': 
+                    printf("Get HID information for service index 0\n");
+                    hids_client_get_hid_information(hids_cid, 0);
+                    break;
+
+                case 'I': 
+                    printf("Get HID information for service index 1\n");
+                    hids_client_get_hid_information(hids_cid, 1);
+                    break;
+
+                case 'k':
+                    printf("Read Battery Level for service index 0\n");
+                    battery_service_client_read_battery_level(battery_service_cid, 0);
+                    break;
+
+                case '1':
+                    printf("Get report with ID 1\n");
+                    hids_client_send_get_report(hids_cid, 1);
+                    break;
+                case '2':
+                    printf("Get report with ID 2\n");
+                    hids_client_send_get_report(hids_cid, 2);
+                    break;
+
+                case '3':
+                    printf("Get report with ID 3\n");
+                    hids_client_send_get_report(hids_cid, 3);
+                    break;
+
+                case '4':
+                    printf("Get report with ID 4\n");
+                    hids_client_send_get_report(hids_cid, 4);
+                    break;
+
+                case '5':
+                    printf("Get report with ID 5\n");
+                    hids_client_send_get_report(hids_cid, 5);
+                    break;
+
+                case '6':
+                    printf("Get report with ID 6\n");
+                    hids_client_send_get_report(hids_cid, 6);
+                    break;
+                case '\n':
+                case '\r':
+                    break;
+                default:
+                    show_usage();
+                    break;
+            }
+            break;
+        case WRITE_MODE:
+            switch (character){
+                case '1':{
+                    uint8_t report[] = {0xAA, 0xB3, 0xF8, 0xA6, 0xCD};
+                    printf("Write report with id 0x01\n");
+                    hids_client_send_write_report(hids_cid, 0x01, report, sizeof(report));
+                    break;
+                }
+                case '2':{
+                    uint8_t report[] = {0xEF, 0x90, 0x78, 0x56, 0x34, 0x12, 0x00};
+                    printf("Write report with id 0x02\n");
+                    hids_client_send_write_report(hids_cid, 0x02, report, sizeof(report));
+                    break;
+                }
+                case '3':{
+                    uint8_t report[] = {0xEA, 0x45, 0x3F, 0x2D, 0x87};
+                    printf("Write report with id 0x03\n");
+                    hids_client_send_write_report(hids_cid, 0x03, report, sizeof(report));
+                    break;
+                }
+                case '4':{
+                    uint8_t report[] = {0xAA, 0xB3, 0xF8, 0xA6, 0xCD};
+                    printf("Write report with id 0x04\n");
+                    hids_client_send_write_report(hids_cid, 0x04, report, sizeof(report));
+                    break;
+                }
+                case '5':{
+                    uint8_t report[] = {0xEF, 0x90, 0x78, 0x56, 0x34, 0x12, 0x00};
+                    printf("Write report with id 0x05\n");
+                    hids_client_send_write_report(hids_cid, 0x05, report, sizeof(report));
+                    break;
+                }
+                case '6':{
+                    uint8_t report[] = {0xEA, 0x45, 0x3F, 0x2D, 0x87};
+                    printf("Write report with id 0x06\n");
+                    hids_client_send_write_report(hids_cid, 0x06, report, sizeof(report));
+                    break;
+                }
+
+                case 's':{
+                    printf("Suspend service 0\n");
+                    hids_client_send_suspend(hids_cid, 0);
+                    break;
+                }
+                case 'S':{
+                    printf("Suspend service 1\n");
+                    hids_client_send_suspend(hids_cid, 1);
+                    break;
+                }
+                case 'e':{
+                    printf("Exit Suspend service 0\n");
+                    hids_client_send_exit_suspend(hids_cid, 0);
+                    break;
+                }
+                case 'E':{
+                    printf("Exit Suspend service 1\n");
+                    hids_client_send_exit_suspend(hids_cid, 1);
+                    break;
+                }
+                case 'p':{
+                    printf("Set Report protocol mode for service 0\n");
+                    hids_client_send_set_protocol_mode(hids_cid, HID_PROTOCOL_MODE_REPORT, 0);
+                    break;
+                }
+                case 'P':{
+                    printf("Set Report protocol mode for service 0\n");
+                    hids_client_send_set_protocol_mode(hids_cid, HID_PROTOCOL_MODE_REPORT, 1);
+                    break;
+                }
+
+                case '\n':
+                case '\r':
+                    break;
+                default:
+                    show_usage();
+                    break;
+            }
             break;
         default:
             show_usage();
             break;
     }
+    
 }
 #endif
 

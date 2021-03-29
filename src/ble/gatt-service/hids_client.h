@@ -97,14 +97,18 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED,
 
     HIDS_CLIENT_STATE_CONNECTED,
-    HIDS_CLIENT_W2_SEND_REPORT,
     
+    HIDS_CLIENT_W2_SEND_WRITE_REPORT,
+    HIDS_CLIENT_W4_WRITE_REPORT_DONE,
+
     HIDS_CLIENT_W2_SEND_GET_REPORT,
     HIDS_CLIENT_W4_GET_REPORT_RESULT,
 
     HIDS_CLIENT_W2_READ_VALUE_OF_CHARACTERISTIC,
     HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT,
     
+    HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE,
+
 #ifdef ENABLE_TESTING_SUPPORT
     HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
     HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT,
@@ -183,10 +187,11 @@ typedef struct {
 
     // index used for report and report map search
     uint8_t   report_index;
-    uint16_t  handle;
     uint16_t  report_len;
     const uint8_t * report;
-
+    // used to write control_point and  protocol_mode
+    uint16_t handle;
+    uint8_t  value;
 } hids_client_t;
 
 /* API_START */
@@ -216,13 +221,19 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
  * @param report_len
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
-uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
+uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
 
 uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id);
 
 uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index);
 
 uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index);
+
+uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, hid_protocol_mode_t protocol_mode, uint8_t service_index);
+
+uint8_t hids_client_send_suspend(uint16_t hids_cid, uint8_t service_index);
+
+uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index);
 
 /**
  * @brief Disconnect from Battery Service.

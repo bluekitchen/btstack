@@ -279,35 +279,6 @@ static uint8_t find_report_index_for_report_id(hids_client_t * client, uint8_t r
     return HIDS_CLIENT_INVALID_REPORT_INDEX;
 }
 
-
-static uint8_t find_report_index_for_report_id_and_type(hids_client_t * client, uint8_t report_id, hid_report_type_t report_type){
-    uint8_t i;
-    switch (client->protocol_mode){
-        case HID_PROTOCOL_MODE_BOOT:
-            for (i = 0; i < client->num_reports; i++){
-                if (!client->reports[i].boot_report){
-                    continue;
-                } 
-                if ((client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
-                    return i;
-                }
-            }
-            break;
-
-        default:
-            for (i = 0; i < client->num_reports; i++){
-                if (client->reports[i].boot_report){
-                    continue;
-                } 
-                if ((client->reports[i].report_id == report_id) && (client->reports[i].report_type == report_type)){
-                    return i;
-                }
-            }
-            break;
-    }
-    return HIDS_CLIENT_INVALID_REPORT_INDEX;
-}
-
 static uint8_t hids_client_add_characteristic(hids_client_t * client, gatt_client_characteristic_t * characteristic, uint8_t report_id, hid_report_type_t report_type, bool boot_report){
     
     uint8_t report_index = find_external_report_index_for_value_handle(client, characteristic->value_handle);
@@ -812,17 +783,19 @@ static void hids_run_for_client(hids_client_t * client){
             break;
 
 
-        case HIDS_CLIENT_W2_SEND_REPORT:
+        case HIDS_CLIENT_W2_SEND_WRITE_REPORT:
 
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("    Send report [%d, %d, 0x%04X]:\n", 
+            printf("    Write report [%d, %d, 0x%04X]:\n", 
                 client->report_index,
                 client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
 #endif
 
-            client->state = HIDS_CLIENT_STATE_CONNECTED;
-            
-            att_status = gatt_client_write_value_of_characteristic_without_response(client->con_handle, 
+            client->state = HIDS_CLIENT_W4_WRITE_REPORT_DONE;
+
+            // see GATT_EVENT_QUERY_COMPLETE for end of write
+            att_status = gatt_client_write_value_of_characteristic(
+                &handle_report_event, client->con_handle, 
                 client->reports[client->report_index].value_handle, 
                 client->report_len, (uint8_t *)client->report);
             UNUSED(att_status);
@@ -866,6 +839,17 @@ static void hids_run_for_client(hids_client_t * client){
                 client->con_handle, 
                 client->handle);
             break;
+
+        case HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("    Write characteristic [service %d, handle 0x%04X]:\n", client->service_index, client->handle);
+#endif
+            client->state = HIDS_CLIENT_STATE_CONNECTED;
+
+            att_status = gatt_client_write_value_of_characteristic_without_response(client->con_handle, client->handle, 1, (uint8_t *) &client->value);
+            UNUSED(att_status);
+            break;
+
         default:
             break;
     }
@@ -1314,8 +1298,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 #endif
                 
                 case HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT:
+                case HIDS_CLIENT_W4_WRITE_REPORT_DONE:
                     client->state = HIDS_CLIENT_STATE_CONNECTED;
                     break;
+
 
                 default:
                     break;
@@ -1367,7 +1353,7 @@ uint8_t hids_client_disconnect(uint16_t hids_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len){
+uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len){
     hids_client_t * client = hids_get_client_for_cid(hids_cid);
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1377,7 +1363,7 @@ uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
-    uint8_t report_index = find_report_index_for_report_id_and_type(client, report_id, HID_REPORT_TYPE_OUTPUT);
+    uint8_t report_index = find_report_index_for_report_id(client, report_id);
 
     if (report_index == HIDS_CLIENT_INVALID_REPORT_INDEX){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
@@ -1394,7 +1380,7 @@ uint8_t hids_client_send_report(uint16_t hids_cid, uint8_t report_id, const uint
         return ERROR_CODE_PARAMETER_OUT_OF_MANDATORY_RANGE;
     }
 
-    client->state = HIDS_CLIENT_W2_SEND_REPORT;
+    client->state = HIDS_CLIENT_W2_SEND_WRITE_REPORT;
     client->report_index = report_index;
     client->report = report;
     client->report_len = report_len;
@@ -1473,6 +1459,62 @@ uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index){
     hids_run_for_client(client);
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, hid_protocol_mode_t protocol_mode, uint8_t service_index){
+    hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (service_index >= client->num_instances){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    client->service_index = service_index;
+    client->handle = client->services[client->service_index].protocol_mode_value_handle;
+    client->value = (uint8_t)protocol_mode;
+    
+    client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
+    hids_run_for_client(client);
+    return ERROR_CODE_SUCCESS;
+}
+
+
+static uint8_t hids_client_send_control_point_cmd(uint16_t hids_cid, uint8_t service_index, uint8_t value){
+    hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (service_index >= client->num_instances){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
+    client->service_index = service_index;
+    client->handle = client->services[client->service_index].control_point_value_handle;
+    client->value = value;
+    
+    client->state = HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
+    hids_run_for_client(client);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hids_client_send_suspend(uint16_t hids_cid, uint8_t service_index){
+    return hids_client_send_control_point_cmd(hids_cid, service_index, 0);
+}
+
+uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index){
+    return hids_client_send_control_point_cmd(hids_cid, service_index, 1);
+}
+
 
 void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len){
     hids_client_descriptor_storage = hid_descriptor_storage;
