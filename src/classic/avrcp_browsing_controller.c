@@ -40,9 +40,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
-#include "btstack.h"
 #include "classic/avrcp_browsing.h"
 #include "classic/avrcp_browsing_controller.h"
+#include "classic/avrcp_controller.h"
+
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 
 
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

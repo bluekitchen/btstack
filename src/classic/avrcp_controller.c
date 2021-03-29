@@ -41,9 +41,14 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "btstack.h"
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
+
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_util.h"
+#include "l2cap.h"
 
 #define AVRCP_CMD_BUFFER_SIZE 30
 

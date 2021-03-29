@@ -42,9 +42,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
 #include "btstack_memory.h"
+#include "btstack_event.h"
 
+#include "mesh/provisioning_device.h"
 #include "mesh/mesh_crypto.h"
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/pb_adv.h"

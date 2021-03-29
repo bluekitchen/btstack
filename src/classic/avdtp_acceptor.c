@@ -39,10 +39,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "btstack.h"
 #include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_acceptor.h"
+
+#include "btstack_debug.h"
+#include "btstack_util.h"
+#include "l2cap.h"
 
 
 static int avdtp_acceptor_send_accept_response(uint16_t cid,  uint8_t transaction_label, avdtp_signal_identifier_t identifier){

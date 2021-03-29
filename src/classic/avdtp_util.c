@@ -40,9 +40,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+
+#include "btstack_debug.h"
+#include "btstack_util.h"
+#include "l2cap.h"
 
 #define MAX_MEDIA_CODEC_INFORMATION_LENGTH 100
 
