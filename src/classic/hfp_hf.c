@@ -1092,16 +1092,15 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_hf_emit_type_and_number(hfp_hf_callback, HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
             break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
-            hfp_connection->ok_pending = 0;
             hfp_connection->command = HFP_CMD_NONE;
+            hfp_connection->ok_pending = 0;
             hfp_connection->extended_audio_gateway_error = 0;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
         case HFP_CMD_ERROR:
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_connection->ok_pending = 0;
             hfp_reset_context_flags(hfp_connection);
-            hfp_connection->command = HFP_CMD_NONE;
-            
             switch (hfp_connection->state){
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     switch (hfp_connection->codecs_state){
@@ -1120,20 +1119,22 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_hf_switch_on_ok(hfp_connection);
             break;
         case HFP_CMD_RING:
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
             break;
         case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_hf_handle_transfer_ag_indicator_status(hfp_connection);
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+            hfp_connection->command = HFP_CMD_NONE;
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
                 hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
             }
-            hfp_connection->command = HFP_CMD_NONE;
             break;
     	case HFP_CMD_AG_SUGGESTED_CODEC:
+            hfp_connection->command = HFP_CMD_NONE;
     		hfp_hf_handle_suggested_codec(hfp_connection);
-			hfp_connection->command = HFP_CMD_NONE;
 			break;
         default:
             break;
