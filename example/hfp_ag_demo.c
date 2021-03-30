@@ -531,7 +531,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Call answered by HF\n");
                     break;
                 default:
-                    printf("Event not handled %u\n", hci_event_hfp_meta_get_subevent_code(event));
                     break;
             }
             break;

@@ -556,7 +556,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         default:
-                            printf("event not handled 0x%02x\n", hci_event_hfp_meta_get_subevent_code(event));
                             break;
                     }
                     break;
