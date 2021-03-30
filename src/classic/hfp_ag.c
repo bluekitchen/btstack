@@ -323,7 +323,7 @@ static int hfp_hf_indicators_join(char * buffer, int buffer_size){
         offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_generic_status_indicators[i].uuid);
     }
     if (i < hfp_generic_status_indicators_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_generic_status_indicators[i].uuid);
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d", hfp_generic_status_indicators[i].uuid);
     }
     return offset;
 }
