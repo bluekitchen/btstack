@@ -195,19 +195,24 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
 
 static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "\r\n%s:%d\r\n", HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone());
+    snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n",
+             HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone());
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
     char buffer[40];
-    sprintf(buffer, "\r\n%s:%d\r\n\r\nOK\r\n", HFP_SUPPORTED_FEATURES, hfp_supported_features);
+    snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n\r\nOK\r\n",
+             HFP_SUPPORTED_FEATURES, hfp_supported_features);
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_ok(uint16_t cid){
     char buffer[10];
-    sprintf(buffer, "\r\nOK\r\n");
+    snprintf(buffer, sizeof(buffer), "\r\nOK\r\n");
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -217,37 +222,49 @@ static int hfp_ag_send_ring(uint16_t cid){
 
 static int hfp_ag_send_clip(uint16_t cid){
     char buffer[50];
-    sprintf(buffer, "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP, hfp_gsm_clip_number(), hfp_gsm_clip_type());
+    snprintf(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP,
+             hfp_gsm_clip_number(), hfp_gsm_clip_type());
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_send_subscriber_number_cmd(uint16_t cid, uint8_t type, const char * number){
     char buffer[50];
-    sprintf(buffer, "\r\n%s: ,\"%s\",%u, , \r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
+    snprintf(buffer, sizeof(buffer), "\r\n%s: ,\"%s\",%u, , \r\n",
+             HFP_SUBSCRIBER_NUMBER_INFORMATION, number, type);
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
         
 static int hfp_ag_send_phone_number_for_voice_tag_cmd(uint16_t cid){
     char buffer[50];
-    sprintf(buffer, "\r\n%s: %s\r\n", HFP_PHONE_NUMBER_FOR_VOICE_TAG, hfp_gsm_clip_number());
+    snprintf(buffer, sizeof(buffer), "\r\n%s: %s\r\n",
+             HFP_PHONE_NUMBER_FOR_VOICE_TAG, hfp_gsm_clip_number());
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_call_waiting_notification(uint16_t cid){
     char buffer[50];
-    sprintf(buffer, "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CALL_WAITING_NOTIFICATION, hfp_gsm_clip_number(), hfp_gsm_clip_type());
+    snprintf(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n",
+             HFP_ENABLE_CALL_WAITING_NOTIFICATION, hfp_gsm_clip_number(),
+             hfp_gsm_clip_type());
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_error(uint16_t cid){
     char buffer[10];
-    sprintf(buffer, "\r\nERROR\r\n");
+    snprintf(buffer, sizeof(buffer), "\r\nERROR\r\n");
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_report_extended_audio_gateway_error(uint16_t cid, uint8_t error){
     char buffer[20];
-    sprintf(buffer, "\r\n%s=%d\r\n", HFP_EXTENDED_AUDIO_GATEWAY_ERROR, error);
+    snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
+             HFP_EXTENDED_AUDIO_GATEWAY_ERROR, error);
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -261,10 +278,11 @@ static int hfp_ag_indicators_string_size(hfp_connection_t * hfp_connection, int 
 
 // store indicator
 static void hfp_ag_indicators_string_store(hfp_connection_t * hfp_connection, int i, uint8_t * buffer){
-    sprintf((char *) buffer, "(\"%s\",(%d,%d)),", 
-            hfp_ag_get_ag_indicators(hfp_connection)[i].name, 
-            hfp_ag_get_ag_indicators(hfp_connection)[i].min_range, 
-            hfp_ag_get_ag_indicators(hfp_connection)[i].max_range);
+    snprintf((char *)buffer, sizeof((char *)buffer), "(\"%s\",(%d,%d)),",
+             hfp_ag_get_ag_indicators(hfp_connection)[i].name,
+             hfp_ag_get_ag_indicators(hfp_connection)[i].min_range,
+             hfp_ag_get_ag_indicators(hfp_connection)[i].max_range);
+    ((char *)buffer)[sizeof((char *)buffer) - 1] = 0;
 }
 
 // structure: header [indicator [comma indicator]] footer
@@ -440,7 +458,10 @@ static int hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd
 
 static int hfp_ag_send_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t * indicator){
     char buffer[20];
-    sprintf(buffer, "\r\n%s:%d,%d\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, indicator->index, indicator->status);
+    snprintf(buffer, sizeof(buffer), "\r\n%s:%d,%d\r\n",
+             HFP_TRANSFER_AG_INDICATOR_STATUS, indicator->index,
+             indicator->status);
+    buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 

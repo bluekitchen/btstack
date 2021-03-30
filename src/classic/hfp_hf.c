@@ -833,13 +833,18 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         char buffer[20];
         switch (hfp_connection->hf_send_rrh_command){
             case '?':
-                sprintf(buffer, "AT%s?\r\n", HFP_RESPONSE_AND_HOLD);
+                snprintf(buffer, sizeof(buffer), "AT%s?\r\n",
+                         HFP_RESPONSE_AND_HOLD);
+                buffer[sizeof(buffer) - 1] = 0;
                 send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 return;
             case '0':
             case '1':
             case '2':
-                sprintf(buffer, "AT%s=%c\r\n", HFP_RESPONSE_AND_HOLD, hfp_connection->hf_send_rrh_command);
+                snprintf(buffer, sizeof(buffer), "AT%s=%c\r\n",
+                         HFP_RESPONSE_AND_HOLD,
+                         hfp_connection->hf_send_rrh_command);
+                buffer[sizeof(buffer) - 1] = 0;
                 send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 return;
             default:
@@ -851,7 +856,9 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     if (hfp_connection->hf_send_cnum){
         hfp_connection->hf_send_cnum = 0;
         char buffer[20];
-        sprintf(buffer, "AT%s\r\n", HFP_SUBSCRIBER_NUMBER_INFORMATION);
+        snprintf(buffer, sizeof(buffer), "AT%s\r\n",
+                 HFP_SUBSCRIBER_NUMBER_INFORMATION);
+        buffer[sizeof(buffer) - 1] = 0;
         send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
         return;
     }
@@ -865,7 +872,11 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
                     hfp_connection->ok_pending = 1;
                     hfp_connection->generic_status_update_bitmap = store_bit(hfp_connection->generic_status_update_bitmap, i, 0);
                     char buffer[30];
-                    sprintf(buffer, "AT%s=%u,%u\r\n", HFP_TRANSFER_HF_INDICATOR_STATUS, hfp_indicators[i], (unsigned int) hfp_indicators_value[i]);
+                    snprintf(buffer, sizeof(buffer), "AT%s=%u,%u\r\n",
+                             HFP_TRANSFER_HF_INDICATOR_STATUS,
+                             hfp_indicators[i],
+                             (unsigned int)hfp_indicators_value[i]);
+                    buffer[sizeof(buffer) - 1] = 0;
                     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
                 } else {
                     log_info("Not sending HF indicator %u as it is disabled", hfp_indicators[i]);
