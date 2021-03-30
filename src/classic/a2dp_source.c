@@ -381,6 +381,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
                 // continue
                 connection->a2dp_source_state = A2DP_CONNECTED;
+                sep_discovery_cid = 0;
                 a2dp_discover_seps_with_next_waiting_connection();
             }
             break;
@@ -520,6 +521,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     a2dp_source_streaming_emit_connection_failed(connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_NO_SUITABLE_CHANNEL_FOUND);
                 }
                 connection->a2dp_source_state = A2DP_CONNECTED;
+                sep_discovery_cid = 0;
                 a2dp_discover_seps_with_next_waiting_connection();
 #endif
             }
