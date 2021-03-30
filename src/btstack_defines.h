@@ -3253,6 +3253,14 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16
 
+/**
+ * @format 121
+ * @param subevent_code
+ * @param hids_cid
+ * @param configuration    
+*/
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17
+
 // MAP Meta Event Group
 
 /**
