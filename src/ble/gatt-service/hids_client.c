@@ -706,6 +706,7 @@ static void hids_run_for_client(hids_client_t * client){
             
             client->protocol_mode = client->required_protocol_mode;
             if (hids_client_report_query_init(client)){
+                hids_run_for_client(client);
                 break;
             }
 

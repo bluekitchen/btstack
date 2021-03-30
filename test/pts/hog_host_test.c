@@ -775,12 +775,12 @@ static void stdin_process(char character){
                 }
                 case 'p':{
                     printf("Set Report protocol mode for service 0\n");
-                    hids_client_send_set_protocol_mode(hids_cid, HID_PROTOCOL_MODE_REPORT, 0);
+                    hids_client_send_set_protocol_mode(hids_cid, protocol_mode, 0);
                     break;
                 }
                 case 'P':{
                     printf("Set Report protocol mode for service 0\n");
-                    hids_client_send_set_protocol_mode(hids_cid, HID_PROTOCOL_MODE_REPORT, 1);
+                    hids_client_send_set_protocol_mode(hids_cid, protocol_mode, 1);
                     break;
                 }
                 case 'n':{
