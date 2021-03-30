@@ -487,10 +487,35 @@ static bool hids_client_report_next_notification_report_index(hids_client_t * cl
 }
 
 static bool hids_client_report_notifications_init(hids_client_t * client){
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("\nRegister for Notifications: \n");
+#endif
     client->report_index = 0;
 
     if (hids_client_get_next_notification_report_index(client) != HIDS_CLIENT_INVALID_REPORT_INDEX){
         client->state = HIDS_CLIENT_STATE_W2_ENABLE_INPUT_REPORTS;
+        return true;
+    }
+    return false;
+}
+
+static bool hids_client_report_next_notifications_configuration_report_index(hids_client_t * client){
+    client->report_index++;
+    if (hids_client_get_next_notification_report_index(client) != HIDS_CLIENT_INVALID_REPORT_INDEX){
+        client->state = HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS;
+        return true;
+    }
+    return false;
+}
+
+static bool hids_client_notifications_configuration_init(hids_client_t * client){
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("\nConfigure for Notifications: \n");
+#endif
+    client->report_index = 0;
+
+    if (hids_client_get_next_notification_report_index(client) != HIDS_CLIENT_INVALID_REPORT_INDEX){
+        client->state = HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS;
         return true;
     }
     return false;
@@ -534,6 +559,18 @@ static void hids_emit_connection_established(hids_client_t * client, uint8_t sta
     event[pos++] = status;
     event[pos++] = client->protocol_mode;
     event[pos++] = client->num_instances;
+    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void hids_emit_notifications_configuration(hids_client_t * client){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION;
+    little_endian_store_16(event, pos, client->cid);
+    pos += 2;
+    event[pos++] = client->value;
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -754,7 +791,54 @@ static void hids_run_for_client(hids_client_t * client){
             UNUSED(att_status);
             break;
         
+        case HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS:
+#ifdef ENABLE_TESTING_SUPPORT
+            if (client->value > 0){
+                printf("    Notification configuration enable ");
+            } else {
+                printf("    Notification configuration disable ");
+            }
+            printf("[%d, %d, 0x%04X]:\n", 
+                client->report_index,
+                client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
+#endif
+
+            client->state = HIDS_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED;
+
+            characteristic.value_handle = client->reports[client->report_index].value_handle;
+            characteristic.end_handle = client->reports[client->report_index].end_handle;
+            characteristic.properties = client->reports[client->report_index].properties;
+            
+            // end of write marked in GATT_EVENT_QUERY_COMPLETE
+
+            att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, client->value);
+            
+            if (att_status == ERROR_CODE_SUCCESS){
+                switch(client->value){
+                    case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION:
+                        gatt_client_listen_for_characteristic_value_updates(
+                            &client->reports[client->report_index].notification_listener, 
+                            &handle_notification_event, client->con_handle, &characteristic);
+                        break;
+                    default:
+                        gatt_client_stop_listening_for_characteristic_value_updates(&client->reports[client->report_index].notification_listener);
+                        break;
+                }
+            } else {
+                if (hids_client_report_next_notifications_configuration_report_index(client)){
+                    hids_run_for_client(client);
+                    break;
+                }
+                client->state = HIDS_CLIENT_STATE_CONNECTED;
+            }
+            break;
+
         case HIDS_CLIENT_STATE_W2_ENABLE_INPUT_REPORTS:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("    Notification enable [%d, %d, 0x%04X]:\n", 
+                client->report_index,
+                client->reports[client->report_index].service_index, client->reports[client->report_index].value_handle);
+#endif
             client->state = HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED;
 
             characteristic.value_handle = client->reports[client->report_index].value_handle;
@@ -764,27 +848,22 @@ static void hids_run_for_client(hids_client_t * client){
             // end of write marked in GATT_EVENT_QUERY_COMPLETE
             att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
             
-            if (att_status != ERROR_CODE_SUCCESS){
+            if (att_status == ERROR_CODE_SUCCESS){
+                gatt_client_listen_for_characteristic_value_updates(
+                    &client->reports[client->report_index].notification_listener, 
+                    &handle_notification_event, client->con_handle, &characteristic);
+            } else {
                 if (hids_client_report_next_notification_report_index(client)){
                     hids_run_for_client(client);
                     break;
                 }
                 client->state = HIDS_CLIENT_STATE_CONNECTED;
                 hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
-            } else {
-                gatt_client_listen_for_characteristic_value_updates(
-                    &client->reports[client->report_index].notification_listener, 
-                    &handle_notification_event, client->con_handle, &characteristic);
-                
-                client->state = HIDS_CLIENT_STATE_CONNECTED;
-                hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
             }
-            UNUSED(att_status);
             break;
 
 
         case HIDS_CLIENT_W2_SEND_WRITE_REPORT:
-
 #ifdef ENABLE_TESTING_SUPPORT
             printf("    Write report [%d, %d, 0x%04X]:\n", 
                 client->report_index,
@@ -1291,6 +1370,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     hids_emit_connection_established(client, ERROR_CODE_SUCCESS);
                     break;
 
+                case HIDS_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED:
+                    if (hids_client_report_next_notifications_configuration_report_index(client)){
+                        break;
+                    }
+                    hids_emit_notifications_configuration(client);
+                    client->state = HIDS_CLIENT_STATE_CONNECTED;
+                    break;
+
 #ifdef ENABLE_TESTING_SUPPORT       
                 case HIDS_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
                     client->state = HIDS_CLIENT_W2_SEND_GET_REPORT;
@@ -1515,6 +1602,42 @@ uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index){
     return hids_client_send_control_point_cmd(hids_cid, service_index, 1);
 }
 
+uint8_t hids_client_send_enable_notifications(uint16_t hids_cid){
+     hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    client->value = GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+    if (hids_client_notifications_configuration_init(client)){
+        hids_run_for_client(client);
+        return ERROR_CODE_SUCCESS;
+    }
+    hids_emit_notifications_configuration(client);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t hids_client_send_disable_notifications(uint16_t hids_cid){
+         hids_client_t * client = hids_get_client_for_cid(hids_cid);
+    if (client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (client->state != HIDS_CLIENT_STATE_CONNECTED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    client->value = GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE;
+    if (hids_client_notifications_configuration_init(client)){
+        hids_run_for_client(client);
+        return ERROR_CODE_SUCCESS;
+    }
+    hids_emit_notifications_configuration(client);
+    return ERROR_CODE_SUCCESS;
+}
 
 void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_storage_len){
     hids_client_descriptor_storage = hid_descriptor_storage;

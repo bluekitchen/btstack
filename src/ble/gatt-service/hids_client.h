@@ -97,7 +97,7 @@ typedef enum {
     HIDS_CLIENT_STATE_W4_INPUT_REPORTS_ENABLED,
 
     HIDS_CLIENT_STATE_CONNECTED,
-    
+
     HIDS_CLIENT_W2_SEND_WRITE_REPORT,
     HIDS_CLIENT_W4_WRITE_REPORT_DONE,
 
@@ -108,6 +108,9 @@ typedef enum {
     HIDS_CLIENT_W4_VALUE_OF_CHARACTERISTIC_RESULT,
     
     HIDS_CLIENT_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE,
+
+    HIDS_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS,
+    HIDS_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED,
 
 #ifdef ENABLE_TESTING_SUPPORT
     HIDS_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION,
@@ -234,6 +237,10 @@ uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, hid_protocol_mode_
 uint8_t hids_client_send_suspend(uint16_t hids_cid, uint8_t service_index);
 
 uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index);
+
+uint8_t hids_client_send_enable_notifications(uint16_t hids_cid);
+
+uint8_t hids_client_send_disable_notifications(uint16_t hids_cid);
 
 /**
  * @brief Disconnect from Battery Service.

@@ -421,6 +421,13 @@ static void hid_service_gatt_client_event_handler(uint8_t packet_type, uint16_t 
                 HID_PROTOCOL_MODE_BOOT,HID_PROTOCOL_MODE_REPORT);
             break;
 
+        case GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION:
+            if (gattservice_subevent_hid_service_reports_notification_get_configuration(packet) == 0){
+                printf("Reports disabled\n");
+            } else {
+                printf("Reports enabled\n");
+            }
+            break;
         default:
             break;
     }
@@ -563,6 +570,8 @@ static void show_usage(void){
             printf("S      - Suspend service 1\n");
             printf("e      - Exit suspend service 0\n");
             printf("E      - Exit suspend service 1\n");
+            printf("n      - Enable all notifications\n");
+            printf("N      - Disable all notifications\n");
             break;
 
         default:
@@ -774,7 +783,16 @@ static void stdin_process(char character){
                     hids_client_send_set_protocol_mode(hids_cid, HID_PROTOCOL_MODE_REPORT, 1);
                     break;
                 }
-
+                case 'n':{
+                    printf("Enable all notifications\n");
+                    hids_client_send_enable_notifications(hids_cid);
+                    break;
+                }
+                case 'N':{
+                    printf("Disable all notifications\n");
+                    hids_client_send_disable_notifications(hids_cid);
+                    break;
+                }
                 case '\n':
                 case '\r':
                     break;
