@@ -1777,25 +1777,6 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 
     int cmd_sent = hfp_ag_send_commands(hfp_connection);
 
-    // trigger codec exchange if requested by app
-    if (hfp_connection->trigger_codec_exchange){
-        log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
-    }
-
-    if (hfp_connection->trigger_codec_exchange && (hfp_connection->command == HFP_CMD_NONE)){
-        switch (hfp_connection->codecs_state){
-            case HFP_CODECS_IDLE:
-            case HFP_CODECS_RECEIVED_LIST:
-            case HFP_CODECS_AG_RESEND_COMMON_CODEC:
-            case HFP_CODECS_ERROR:
-                hfp_connection->trigger_codec_exchange = 0;
-                hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
-                break;
-            default:
-                break;
-        }
-    }
-
     if (!cmd_sent){
         cmd_sent = hfp_ag_run_for_context_service_level_connection(hfp_connection);
     }
@@ -1812,16 +1793,26 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
     }
 
-    if ((hfp_connection->command == HFP_CMD_NONE) && !cmd_sent){
-        // log_info("hfp_connection->command == HFP_CMD_NONE");
-        switch(hfp_connection->state){
-            case HFP_W2_DISCONNECT_RFCOMM:
-                hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED;
-                rfcomm_disconnect(hfp_connection->rfcomm_cid);
+    // trigger codec exchange
+    if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && hfp_connection->trigger_codec_exchange){
+        log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
+        switch (hfp_connection->codecs_state){
+            case HFP_CODECS_IDLE:
+            case HFP_CODECS_RECEIVED_LIST:
+            case HFP_CODECS_AG_RESEND_COMMON_CODEC:
+            case HFP_CODECS_ERROR:
+                hfp_connection->trigger_codec_exchange = 0;
+                hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
                 break;
             default:
                 break;
         }
+    }
+
+    // disconnect
+    if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && (hfp_connection->state == HFP_W2_DISCONNECT_RFCOMM)){
+        hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED;
+        rfcomm_disconnect(hfp_connection->rfcomm_cid);
     }
     
     if (cmd_sent){

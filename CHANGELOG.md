@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: calculate IO Cap AuthReq Bondable Mode based on `gap_ssp_set_authentication_requirement` and `gap_set_bondable_mode`
 - GAP: only store link key for ssp if remote side has set bondable in io cap auth requirements as well 
 - HFP HF: only emit single event for RING and AG Status updates
-  
+- HFP AG: fix audio connection setup for in-band ringtone on incoming connection
+
 ### Changed
 - HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
 - btstack_uart_posix: supports SLIP frames and replaces `btstack_uart_block_posix`
