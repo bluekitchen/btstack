@@ -451,16 +451,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
             if (hci_event_packet_get_type(event) != HCI_EVENT_HFP_META) return;
 
-            if ((event_size > 3)
-                && (event[3] != 0)
-                && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER)
-                && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG)
-                && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_TRANSMIT_DTMF_CODES)){
-                printf("ERROR, status: %u\n", event[3]);
-                return;
-            }
-
-            switch (hci_event_hfp_meta_get_subevent_code(event)) {   
+            switch (hci_event_hfp_meta_get_subevent_code(event)) {
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     status = hfp_subevent_service_level_connection_established_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
