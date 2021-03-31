@@ -67,7 +67,8 @@ typedef enum {
     HIDS_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     HIDS_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
 
-    HIDS_CLIENT_STATE_W2_SET_BOOT_PROTOCOL_MODE,
+    // called if BOOT mode
+    HIDS_CLIENT_STATE_W2_SET_PROTOCOL_MODE_WITHOUT_RESPONSE,
     
     // for each REPORT_MAP characteristic, read HID Descriptor (Report Map Characteristic Value)
     HIDS_CLIENT_STATE_W2_READ_REPORT_MAP_HID_DESCRIPTOR,
@@ -144,6 +145,8 @@ typedef struct {
 } hids_client_report_t;
 
 typedef struct {
+    hid_protocol_mode_t protocol_mode;
+
     uint16_t start_handle;
     uint16_t end_handle;
 
@@ -168,7 +171,7 @@ typedef struct {
     
     hci_con_handle_t  con_handle;
     uint16_t          cid;
-    hid_protocol_mode_t protocol_mode;
+    
     hid_service_client_state_t state;
     btstack_packet_handler_t   client_handler;
 
@@ -178,8 +181,6 @@ typedef struct {
     // used for discovering characteristics
     uint8_t service_index;
     hid_protocol_mode_t required_protocol_mode;
-
-    uint16_t protocol_mode_value_handle;
 
     // send report
     hids_client_report_t reports[HIDS_CLIENT_NUM_REPORTS];
@@ -224,9 +225,9 @@ uint8_t hids_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_
  * @param report_len
  * @result status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, ERROR_CODE_COMMAND_DISALLOWED
  */
-uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, const uint8_t * report, uint8_t report_len);
+uint8_t hids_client_send_write_report(uint16_t hids_cid, uint8_t report_id, hid_report_type_t report_type, const uint8_t * report, uint8_t report_len);
 
-uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id);
+uint8_t hids_client_send_get_report(uint16_t hids_cid, uint8_t report_id, hid_report_type_t report_type);
 
 uint8_t hids_client_get_hid_information(uint16_t hids_cid, uint8_t service_index);
 

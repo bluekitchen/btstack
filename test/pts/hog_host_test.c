@@ -263,9 +263,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     if (app_state != READY) break;
+                    hids_client_disconnect(hids_cid);
+                    battery_service_client_disconnect(battery_service_cid);
+
                     connection_handle = HCI_CON_HANDLE_INVALID;
-                    printf("\nDisconnected\n");
+                    hids_cid = 0;
+                    battery_service_cid = 0;
+
+                    connect_hids_client = false;
+                    connect_battery_client = false;
+                    connect_device_information_client = false;
                     app_state = IDLE;
+                    printf("\nDisconnected\n");
                     break;
                 
                 case HCI_EVENT_LE_META:
@@ -586,24 +595,60 @@ static void show_usage(void){
 }
 
 static void hog_host_connect_hids_client(void){
-    app_state = W4_CONNECTED;
-    printf("Connect to remote device\n");
-    connect_hids_client = true;
-    gap_connect(remote_device.addr, remote_device.addr_type);
+    switch (app_state){
+        case READY:
+            if (hids_cid){
+                hids_client_disconnect(hids_cid);
+                hids_cid = 0;
+            }
+            app_state = W4_CLIENT_CONNECTED;
+            (void) hids_client_connect(connection_handle, hid_service_gatt_client_event_handler, protocol_mode, &hids_cid);
+            break;
+
+        default:
+            printf("Connect to remote device\n");
+            connect_hids_client = true;
+            app_state = W4_CONNECTED;
+            gap_connect(remote_device.addr, remote_device.addr_type);
+            break;
+    }
 }
 
 static void hog_host_connect_battery_client(void){
-    app_state = W4_CONNECTED;
-    printf("Connect to remote device\n");
-    connect_battery_client = true;
-    gap_connect(remote_device.addr, remote_device.addr_type);
+    printf("state %d\n", app_state);
+    switch (app_state){
+        case READY:
+            if (battery_service_cid){
+                hids_client_disconnect(battery_service_cid);
+                battery_service_cid = 0;
+            }
+            app_state = W4_CLIENT_CONNECTED;
+            (void) battery_service_client_connect(connection_handle, battery_service_gatt_client_event_handler, 2000, &battery_service_cid);
+            break;
+
+        default:
+            printf("Connect to remote device\n");
+            connect_battery_client = true;
+            app_state = W4_CONNECTED;
+            gap_connect(remote_device.addr, remote_device.addr_type);
+            break;
+    }
 }
 
 static void hog_host_connect_device_information_client(void){
-    app_state = W4_CONNECTED;
-    printf("Connect to remote device\n");
-    connect_device_information_client = true;
-    gap_connect(remote_device.addr, remote_device.addr_type);
+    switch (app_state){
+        case READY:
+            app_state = W4_CLIENT_CONNECTED;
+            (void) device_information_service_client_query(connection_handle, device_information_service_gatt_client_event_handler);
+            break;
+
+        default:
+            printf("Connect to remote device\n");
+            connect_device_information_client = true;
+            app_state = W4_CONNECTED;
+            gap_connect(remote_device.addr, remote_device.addr_type);
+            break;
+    }
 }
 
 static void stdin_process(char character){
@@ -680,32 +725,50 @@ static void stdin_process(char character){
 
                 case '1':
                     printf("Get report with ID 1\n");
-                    hids_client_send_get_report(hids_cid, 1);
+                    hids_client_send_get_report(hids_cid, 1, HID_REPORT_TYPE_INPUT);
                     break;
                 case '2':
                     printf("Get report with ID 2\n");
-                    hids_client_send_get_report(hids_cid, 2);
+                    hids_client_send_get_report(hids_cid, 2, HID_REPORT_TYPE_OUTPUT);
                     break;
 
                 case '3':
                     printf("Get report with ID 3\n");
-                    hids_client_send_get_report(hids_cid, 3);
+                    hids_client_send_get_report(hids_cid, 3, HID_REPORT_TYPE_FEATURE);
                     break;
 
                 case '4':
                     printf("Get report with ID 4\n");
-                    hids_client_send_get_report(hids_cid, 4);
+                    hids_client_send_get_report(hids_cid, 4, HID_REPORT_TYPE_INPUT);
                     break;
 
                 case '5':
                     printf("Get report with ID 5\n");
-                    hids_client_send_get_report(hids_cid, 5);
+                    hids_client_send_get_report(hids_cid, 5, HID_REPORT_TYPE_OUTPUT);
                     break;
 
                 case '6':
                     printf("Get report with ID 6\n");
-                    hids_client_send_get_report(hids_cid, 6);
+                    hids_client_send_get_report(hids_cid, 6, HID_REPORT_TYPE_FEATURE);
                     break;
+                    
+
+                case '7':
+                    printf("Get Input report from Boot Keyboard\n");
+                    hids_client_send_get_report(hids_cid, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_INPUT);
+                    break;
+
+                case '8': 
+                    printf("Get Output report from Boot Keyboard\n");
+                    hids_client_send_get_report(hids_cid, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_OUTPUT);
+                    break;
+                
+                case '9':
+                    printf("Get Input report from Boot Mouse\n");
+                    hids_client_send_get_report(hids_cid, HID_BOOT_MODE_MOUSE_ID, HID_REPORT_TYPE_INPUT);
+                    break;
+
+
                 case '\n':
                 case '\r':
                     break;
@@ -719,37 +782,55 @@ static void stdin_process(char character){
                 case '1':{
                     uint8_t report[] = {0xAA, 0xB3, 0xF8, 0xA6, 0xCD};
                     printf("Write report with id 0x01\n");
-                    hids_client_send_write_report(hids_cid, 0x01, report, sizeof(report));
+                    hids_client_send_write_report(hids_cid, 0x01, HID_REPORT_TYPE_INPUT, report, sizeof(report));
                     break;
                 }
                 case '2':{
                     uint8_t report[] = {0xEF, 0x90, 0x78, 0x56, 0x34, 0x12, 0x00};
                     printf("Write report with id 0x02\n");
-                    hids_client_send_write_report(hids_cid, 0x02, report, sizeof(report));
+                    hids_client_send_write_report(hids_cid, 0x02, HID_REPORT_TYPE_OUTPUT, report, sizeof(report));
                     break;
                 }
                 case '3':{
                     uint8_t report[] = {0xEA, 0x45, 0x3F, 0x2D, 0x87};
                     printf("Write report with id 0x03\n");
-                    hids_client_send_write_report(hids_cid, 0x03, report, sizeof(report));
+                    hids_client_send_write_report(hids_cid, 0x03, HID_REPORT_TYPE_FEATURE, report, sizeof(report));
                     break;
                 }
                 case '4':{
                     uint8_t report[] = {0xAA, 0xB3, 0xF8, 0xA6, 0xCD};
                     printf("Write report with id 0x04\n");
-                    hids_client_send_write_report(hids_cid, 0x04, report, sizeof(report));
+                    hids_client_send_write_report(hids_cid, 0x04, HID_REPORT_TYPE_INPUT, report, sizeof(report));
                     break;
                 }
                 case '5':{
                     uint8_t report[] = {0xEF, 0x90, 0x78, 0x56, 0x34, 0x12, 0x00};
                     printf("Write report with id 0x05\n");
-                    hids_client_send_write_report(hids_cid, 0x05, report, sizeof(report));
+                    hids_client_send_write_report(hids_cid, 0x05, HID_REPORT_TYPE_OUTPUT, report, sizeof(report));
                     break;
                 }
                 case '6':{
                     uint8_t report[] = {0xEA, 0x45, 0x3F, 0x2D, 0x87};
                     printf("Write report with id 0x06\n");
-                    hids_client_send_write_report(hids_cid, 0x06, report, sizeof(report));
+                    hids_client_send_write_report(hids_cid, 0x06, HID_REPORT_TYPE_FEATURE, report, sizeof(report));
+                    break;
+                }
+                case '7':{
+                    uint8_t report[] = {};
+                    printf("Write Input report for Boot Keyboard\n");
+                    hids_client_send_write_report(hids_cid, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_INPUT, report, sizeof(report));
+                    break;
+                }
+                case '8':{
+                    uint8_t report[] = {0xEF, 0x90, 0x78, 0x56, 0x34, 0x12, 0x00};
+                    printf("Write Output report for Boot Keyboard\n");
+                    hids_client_send_write_report(hids_cid, HID_BOOT_MODE_KEYBOARD_ID, HID_REPORT_TYPE_OUTPUT, report, sizeof(report));
+                    break;
+                }
+                case '9':{
+                    uint8_t report[] = {0xEA, 0x45, 0x3F, 0x2D, 0x87};
+                    printf("Write Input report for Boot Mouse\n");
+                    hids_client_send_write_report(hids_cid, HID_BOOT_MODE_MOUSE_ID, HID_REPORT_TYPE_INPUT, report, sizeof(report));
                     break;
                 }
 
