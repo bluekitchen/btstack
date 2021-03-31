@@ -42,6 +42,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
 
 #include "ble/gatt-service/device_information_service_client.h"
 
@@ -259,6 +262,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             gatt_event_service_query_result_get_service(packet, &service);
             client->start_handle = service.start_group_handle;
             client->end_handle = service.end_group_handle;
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("Device Information Service: start handle 0x%04X, end handle 0x%04X\n", client->start_handle, client->end_handle);
+#endif
             client->num_instances++;
             client->characteristic_index = 0;
             break;
