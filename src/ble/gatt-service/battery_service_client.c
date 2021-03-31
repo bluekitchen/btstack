@@ -39,6 +39,9 @@
 
 #include "btstack_config.h"
 
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
 #include <stdint.h>
 #include <string.h>
 
@@ -279,6 +282,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 gatt_event_service_query_result_get_service(packet, &service);
                 client->services[client->num_instances].start_handle = service.start_group_handle;
                 client->services[client->num_instances].end_handle = service.end_group_handle;
+
+#ifdef ENABLE_TESTING_SUPPORT
+                printf("Battery Service: start handle 0x%04X, end handle 0x%04X\n", client->services[client->num_instances].start_handle, client->services[client->num_instances].end_handle);
+#endif
             } 
             client->num_instances++;
             break;
