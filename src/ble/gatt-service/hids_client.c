@@ -39,6 +39,10 @@
 
 #include "btstack_config.h"
 
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
+
 #include <stdint.h>
 #include <string.h>
 
@@ -674,7 +678,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 client->services[index].start_handle = service.start_group_handle;
                 client->services[index].end_handle = service.end_group_handle;
                 client->num_instances++;
-                
+
+#ifdef ENABLE_TESTING_SUPPORT
+                printf("HID Service: start handle 0x%04X, end handle 0x%04X\n", client->services[index].start_handle, client->services[index].end_handle);
+#endif
                 hids_client_descriptor_storage_init(client, index);
             }  else {
                 log_info("%d hid services found, only first %d can be stored, increase MAX_NUM_HID_SERVICES", client->num_instances + 1, MAX_NUM_HID_SERVICES);
