@@ -309,7 +309,7 @@ static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * hf
     return 1; // comma
 }
 
-static void hgp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp_connection, int index, uint8_t * buffer){
+static void hfp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp_connection, int index, uint8_t * buffer){
     if (index == 0){
         *buffer++ = '\r';
         *buffer++ = '\n';
@@ -414,7 +414,8 @@ static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_co
 static int hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection, int start_segment){
     int num_segments = hfp_ag_indicators_cmd_generator_num_segments(hfp_connection);
     return hfp_ag_send_cmd_via_generator(cid, hfp_connection, start_segment, num_segments,
-        hfp_ag_indicators_cmd_generator_get_segment_len, hgp_ag_indicators_cmd_generator_store_segment);
+                                         hfp_ag_indicators_cmd_generator_get_segment_len,
+                                         hfp_ag_indicators_cmd_generator_store_segment);
 }
 
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
