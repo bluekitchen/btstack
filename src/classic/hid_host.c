@@ -44,9 +44,9 @@
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "btstack_hid.h"
 #include "btstack_hid_parser.h"
 #include "btstack_memory.h"
-#include "hid.h"
 #include "l2cap.h"
 
 #include "classic/hid_host.h"

@@ -45,7 +45,7 @@
 #define BTSTACK_HID_PARSER_H
 
 #include <stdint.h>
-#include "hid.h"
+#include "btstack_hid.h"
 
 #if defined __cplusplus
 extern "C" {

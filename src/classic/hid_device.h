@@ -41,8 +41,8 @@
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "bluetooth.h"
+#include "btstack_hid.h"
 #include "btstack_hid_parser.h"
-#include "hid.h"
 
 #if defined __cplusplus
 extern "C" {

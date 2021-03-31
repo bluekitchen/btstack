@@ -295,7 +295,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             // There is an incoming connection: we can accept it or decline it.
                             // The hid_host_report_mode in the hid_host_accept_connection function 
                             // allows the application to request a protocol mode. 
-                            // For available protocol modes, see hid_protocol_mode_t in hid.h file. 
+                            // For available protocol modes, see hid_protocol_mode_t in btstack_hid.h file. 
                             hid_host_accept_connection(hid_subevent_incoming_connection_get_hid_cid(packet), hid_host_report_mode);
                             break;
                         

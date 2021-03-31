@@ -35,7 +35,7 @@
  *
  */
 
-#include "hid.h"
+#include "btstack_hid.h"
 
 
 // from USB HID Specification 1.1, Appendix B.1

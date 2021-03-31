@@ -43,8 +43,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "hid.h"
 #include "btstack_defines.h"
+#include "btstack_hid.h"
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
@@ -211,7 +211,7 @@ void hids_client_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_
  *
  * @param con_handle
  * @param packet_handler
- * @param protocol_mode see hid_protocol_mode_t in hid.h
+ * @param protocol_mode see hid_protocol_mode_t in btstack_hid.h
  * @param hids_cid
  * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_COMMAND_DISALLOWED if there is already a client associated with con_handle, or BTSTACK_MEMORY_ALLOC_FAILED 
  */

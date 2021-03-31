@@ -59,6 +59,7 @@
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 #include "btstack_event.h"
+#include "btstack_hid.h"
 #include "btstack_hid_parser.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
@@ -72,7 +73,6 @@
 #include "hci_cmd.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
-#include "hid.h"
 #include "l2cap.h"
 #include "l2cap_signaling.h"
 

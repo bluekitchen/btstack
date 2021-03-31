@@ -42,7 +42,6 @@
 
 #ifndef BTSTACK_DEFINES_H
 #define BTSTACK_DEFINES_H
-
 #include <stdint.h>
 
 #include "btstack_linked_list.h" 
@@ -3249,7 +3248,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param hids_cid
  * @param service_index
- * @param protocol_mode    see hid_protocol_mode_t in hid.h
+ * @param protocol_mode    see hid_protocol_mode_t in btstack_hid.h
 */
 #define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16
 
