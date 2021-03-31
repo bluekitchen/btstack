@@ -1811,11 +1811,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         cmd_sent = call_setup_state_machine(hfp_connection);
     }
 
-    if (!cmd_sent){  
-        cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
-    }
-
-    // trigger codec exchange
+    // trigger codec exchange (must be before hfp_ag_run_for_audio_connection)
     if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && hfp_connection->trigger_codec_exchange){
         log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
         switch (hfp_connection->codecs_state){
@@ -1830,6 +1826,11 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
                 break;
         }
     }
+
+    if (!cmd_sent){
+        cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
+    }
+
 
     // disconnect
     if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && (hfp_connection->state == HFP_W2_DISCONNECT_RFCOMM)){
