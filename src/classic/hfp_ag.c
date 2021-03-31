@@ -277,12 +277,12 @@ static int hfp_ag_indicators_string_size(hfp_connection_t * hfp_connection, int 
 }
 
 // store indicator
-static void hfp_ag_indicators_string_store(hfp_connection_t * hfp_connection, int i, uint8_t * buffer){
-    snprintf((char *)buffer, sizeof((char *)buffer), "(\"%s\",(%d,%d)),",
+static void hfp_ag_indicators_string_store(hfp_connection_t * hfp_connection, int i, uint8_t * buffer, uint16_t buffer_size){
+    snprintf((char *)buffer, buffer_size, "(\"%s\",(%d,%d)),",
              hfp_ag_get_ag_indicators(hfp_connection)[i].name,
              hfp_ag_get_ag_indicators(hfp_connection)[i].min_range,
              hfp_ag_get_ag_indicators(hfp_connection)[i].max_range);
-    ((char *)buffer)[sizeof((char *)buffer) - 1] = 0;
+    ((char *)buffer)[buffer_size - 1] = 0;
 }
 
 // structure: header [indicator [comma indicator]] footer
@@ -309,7 +309,7 @@ static int hfp_ag_indicators_cmd_generator_get_segment_len(hfp_connection_t * hf
     return 1; // comma
 }
 
-static void hfp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp_connection, int index, uint8_t * buffer){
+static void hfp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp_connection, int index, uint8_t * buffer, uint16_t buffer_size){
     if (index == 0){
         *buffer++ = '\r';
         *buffer++ = '\n';
@@ -323,7 +323,7 @@ static void hfp_ag_indicators_cmd_generator_store_segment(hfp_connection_t * hfp
     int num_indicators = hfp_ag_get_ag_indicators_nr(hfp_connection);
     int indicator_index = index >> 1;
     if ((index & 1) == 0){
-        hfp_ag_indicators_string_store(hfp_connection, indicator_index, buffer);
+        hfp_ag_indicators_string_store(hfp_connection, indicator_index, buffer, buffer_size);
         return;
     }
     if (indicator_index == (num_indicators-1)){
@@ -385,7 +385,7 @@ static int hfp_ag_call_services_join(char * buffer, int buffer_size){
 static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection,
     int start_segment, int num_segments,
     int (*get_segment_len)(hfp_connection_t * hfp_connection, int segment),
-    void (*store_segment) (hfp_connection_t * hfp_connection, int segment, uint8_t * buffer)){
+    void (*store_segment) (hfp_connection_t * hfp_connection, int segment, uint8_t * buffer, uint16_t buffer_size)){
 
     // assumes: can send now == true
     // assumes: num segments > 0
@@ -397,9 +397,9 @@ static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_co
     int segment = start_segment;
     while (segment < num_segments){
         int segment_len = get_segment_len(hfp_connection, segment);
-        if ((offset + segment_len) > mtu) break;
-        // append segement
-        store_segment(hfp_connection, segment, data+offset);
+        if ((offset + segment_len + 1) > mtu) break;
+        // append segment. As it appends a '\0', we provide a buffer one byte larger
+        store_segment(hfp_connection, segment, data+offset, segment_len + 1);
         offset += segment_len;
         segment++;
     }
