@@ -1272,7 +1272,7 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     event[pos++] = local_seid;
     little_endian_store_16(event, pos, delay);
     pos += 2;
-    avdtp_emit_source(event, sizeof(event));
+    avdtp_emit_source(event, pos);
 }
 
 void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
@@ -1326,7 +1326,7 @@ void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream
     event[pos++] = status;
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t local_seid) {
@@ -1340,7 +1340,7 @@ void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_en
     event[pos++] = local_seid;
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *stream_endpoint, uint16_t sequence_number) {
@@ -1354,9 +1354,10 @@ void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *str
     event[pos++] = avdtp_local_seid(stream_endpoint);
     little_endian_store_16(event, pos, sequence_number);
     pos += 2;
+    event[1] = pos - 2;
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t *connection) {
