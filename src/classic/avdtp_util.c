@@ -702,7 +702,6 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     pos++; // set later
-    event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
@@ -733,7 +732,6 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     pos++; // set later
-    event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
@@ -788,7 +786,6 @@ avdtp_signaling_emit_content_protection_capability(uint16_t avdtp_cid, uint8_t r
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     pos++; // set later
-    event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
@@ -1246,7 +1243,6 @@ static void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_en
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     pos++;  // set later
-    event[pos++] = sizeof(event) - 2;
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
