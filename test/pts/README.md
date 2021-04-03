@@ -13,13 +13,16 @@ These audio codecs are provided by the open-source projects below, but cannot be
 - AAC: A2DP Sind + Source
   - [Debian package: libfdk-aac-dev](libfdk-aac-dev)
   - [Mac Homebrew: fdk-aac]
-- aptX: A2DP Sind + Source
+- aptX (HD): A2DP Sink + Source
   - [Github: libopenaptx](https://github.com/mringwal/libopenaptx)
   - CMake project
+  - `mkdir build; cd build; cmake ..; make install`
 - LDAC Encoder: A2DP Source
   - [Github: ldacBT](https://github.com/EHfive/ldacBT)
   - CMake project
+  - `mkdir build; cd build; cmake ..; make install`
 - LDAC Decoder: A2DP Sink
   - [Github: ldacdec](https://github.com/mringwal/libldacdec)
   - Automake project
+  - `./bootstrap.sh; ./configure; make install`
  
