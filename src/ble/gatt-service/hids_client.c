@@ -891,12 +891,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = hids_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
-            if (client->state != HIDS_CLIENT_STATE_W4_SERVICE_RESULT) {
-                hids_emit_connection_established(client, GATT_CLIENT_IN_WRONG_STATE);  
-                hids_finalize_client(client);       
-                break;
-            }
-            
             if (client->num_instances < MAX_NUM_HID_SERVICES){
                 uint8_t index = client->num_instances;
                 gatt_event_service_query_result_get_service(packet, &service);
@@ -1503,7 +1497,7 @@ uint8_t hids_client_get_protocol_mode(uint16_t hids_cid, uint8_t service_index){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, hid_protocol_mode_t protocol_mode, uint8_t service_index){
+uint8_t hids_client_send_set_protocol_mode(uint16_t hids_cid, uint8_t service_index, hid_protocol_mode_t protocol_mode){
     hids_client_t * client = hids_get_client_for_cid(hids_cid);
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1558,7 +1552,7 @@ uint8_t hids_client_send_exit_suspend(uint16_t hids_cid, uint8_t service_index){
     return hids_client_send_control_point_cmd(hids_cid, service_index, 1);
 }
 
-uint8_t hids_client_send_enable_notifications(uint16_t hids_cid){
+uint8_t hids_client_enable_notifications(uint16_t hids_cid){
      hids_client_t * client = hids_get_client_for_cid(hids_cid);
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1576,7 +1570,7 @@ uint8_t hids_client_send_enable_notifications(uint16_t hids_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hids_client_send_disable_notifications(uint16_t hids_cid){
+uint8_t hids_client_disable_notifications(uint16_t hids_cid){
          hids_client_t * client = hids_get_client_for_cid(hids_cid);
     if (client == NULL){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;

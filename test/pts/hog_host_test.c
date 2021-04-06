@@ -856,22 +856,22 @@ static void stdin_process(char character){
                 }
                 case 'p':{
                     printf("Set Report protocol mode for service 0\n");
-                    hids_client_send_set_protocol_mode(hids_cid, protocol_mode, 0);
+                    hids_client_send_set_protocol_mode(hids_cid, 0, protocol_mode);
                     break;
                 }
                 case 'P':{
                     printf("Set Report protocol mode for service 0\n");
-                    hids_client_send_set_protocol_mode(hids_cid, protocol_mode, 1);
+                    hids_client_send_set_protocol_mode(hids_cid, 1, protocol_mode);
                     break;
                 }
                 case 'n':{
                     printf("Enable all notifications\n");
-                    hids_client_send_enable_notifications(hids_cid);
+                    hids_client_enable_notifications(hids_cid);
                     break;
                 }
                 case 'N':{
                     printf("Disable all notifications\n");
-                    hids_client_send_disable_notifications(hids_cid);
+                    hids_client_disable_notifications(hids_cid);
                     break;
                 }
                 case '\n':
