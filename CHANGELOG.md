@@ -15,12 +15,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - supports sending and receiving SLIP frames for HCI H5
   - suppports odd parity as well
   - `hci_transport_h4` and chipset drivers have new functions to pass provide `btstack_uart_t`
-
 - btstack_uart_slip_wrapper: wrapper that implements SLIP functionality for existing `btstack_uart_block` drivers.
 - hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
 - GATT Client: Battery Service Client 
 - GATT Client: Device Information Service Client
 - GATT Client: Scan Parameters Service Client 
+- GATT Client: HID-over-GATT (HOG) Client, Report and Boot Host
 - GAP: add `gap_set_page_scan_activity` and `gap_set_page_scan_type`
 - AVRCP: new field `button_pressed` in `AVRCP_SUBEVENT_OPERATION`
 - AVRCP: `AVRCP_SUBEVENT_OPERATION` emitted for button release
