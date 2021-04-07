@@ -81,7 +81,7 @@ typedef struct hid_device {
 } hid_device_t;
 
 static hid_device_t _hid_device;
-static uint8_t hid_boot_protocol_mode_supported;
+static bool hid_boot_protocol_mode_supported;
 static const uint8_t * hid_descriptor;
 static uint16_t hid_descriptor_len;
 
@@ -163,8 +163,8 @@ void hid_create_sdp_record(
     uint8_t  hid_virtual_cable,
     uint8_t  hid_remote_wake,
     uint8_t  hid_reconnect_initiate,
-    uint8_t  hid_normally_connectable,
-    uint8_t  hid_boot_device,
+    bool     hid_normally_connectable,
+    bool     hid_boot_device,
     const uint8_t * descriptor, uint16_t descriptor_size,
     const char *device_name){
     
@@ -295,10 +295,10 @@ void hid_create_sdp_record(
     de_pop_sequence(service, attribute);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_REMOTE_WAKE); 
-    de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_remote_wake);
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_remote_wake ? 1 : 0);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_BOOT_DEVICE); 
-    de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_boot_device);
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_boot_device ? 1 : 0);
 }
 
 static inline void hid_device_emit_connected_event(hid_device_t * context, uint8_t status){
@@ -817,7 +817,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 /**
  * @brief Set up HID Device 
  */
-void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t descriptor_len, const uint8_t * descriptor){
+void hid_device_init(bool boot_protocol_mode_supported, uint16_t descriptor_len, const uint8_t * descriptor){
     hid_boot_protocol_mode_supported = boot_protocol_mode_supported;
     hid_descriptor =  descriptor;
     hid_descriptor_len = descriptor_len;

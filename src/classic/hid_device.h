@@ -75,8 +75,8 @@ void hid_create_sdp_record(
     uint8_t         hid_virtual_cable,
     uint8_t         hid_remote_wake,
     uint8_t         hid_reconnect_initiate,
-    uint8_t         hid_normally_connectable,
-    uint8_t         hid_boot_device,
+    bool            hid_normally_connectable,
+    bool            hid_boot_device,
     const uint8_t * hid_descriptor,
     uint16_t 		hid_descriptor_size,
     const char *    device_name);
@@ -88,7 +88,7 @@ void hid_create_sdp_record(
  * @param hid_descriptor_len
  * @param hid_descriptor
  */
-void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+void hid_device_init(bool boot_protocol_mode_supported, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 
 /**
  * @brief Register callback for the HID Device client. 

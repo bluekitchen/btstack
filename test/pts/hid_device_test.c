@@ -121,7 +121,7 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
 
 // STATE
 
-static uint8_t hid_service_buffer[250];
+static uint8_t hid_service_buffer[300];
 static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -129,9 +129,9 @@ static uint16_t hid_cid;
 static bd_addr_t device_addr;
 static int     report_data_ready = 1;
 static uint8_t report_data[20];
-static uint8_t hid_boot_device = 1;
-static int send_mouse_on_interrupt_channel = 0;
-static int send_keyboard_on_interrupt_channel = 0;
+static bool    hid_boot_device = true;
+static bool    send_mouse_on_interrupt_channel = false;
+static bool    send_keyboard_on_interrupt_channel = false;
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
@@ -307,11 +307,11 @@ static void stdin_process(char character){
             hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
             return;
         case 'm':
-            send_mouse_on_interrupt_channel = 1;
+            send_mouse_on_interrupt_channel = true;
             hid_device_request_can_send_now_event(hid_cid);
             break;
         case 'M':
-            send_keyboard_on_interrupt_channel = 1;
+            send_keyboard_on_interrupt_channel = true;
             hid_device_request_can_send_now_event(hid_cid);
             break;
         case 'L':
@@ -393,7 +393,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     uint8_t status;
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            switch (packet[0]){
+            switch (hci_event_packet_get_type(packet)){
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
                     app_state = APP_NOT_CONNECTED;
@@ -456,12 +456,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_mouse_on_interrupt_channel){
-                                send_mouse_on_interrupt_channel = 0;
+                                send_mouse_on_interrupt_channel = false;
                                 send_mouse_report_on_interrupt_channel(0,0,0);
                                 break;     
                             }
                             if (send_keyboard_on_interrupt_channel){
-                                send_keyboard_on_interrupt_channel = 0;
+                                send_keyboard_on_interrupt_channel = false;
                                 send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
                                 send_keycode = 0;
                                 send_modifier = 0;
