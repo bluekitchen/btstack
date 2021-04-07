@@ -8,6 +8,7 @@ COMMON = \
 	btstack_util.c \
 	btstack_linked_list.c \
 	hci_dump.c \
+	hci_dump_posix_fs.c \
 
 VPATH = \
 	${BTSTACK_ROOT}/src \

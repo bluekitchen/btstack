@@ -5,6 +5,7 @@
 #include "btstack_tlv.h"
 #include "btstack_tlv_posix.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "btstack_util.h"
 #include "btstack_config.h"
 #include "btstack_debug.h"

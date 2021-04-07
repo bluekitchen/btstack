@@ -59,11 +59,14 @@
 #include "btstack_run_loop_posix.h"
 #include "bluetooth_company_id.h"
 #include "hci.h"
+#include "hci_transport_h4.h"
+#include "hci_transport_usb.h"
 #include "hci_dump.h"
 #include "hci_dump_posix_fs.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_uart.h"
 
 int is_bcm;
 
