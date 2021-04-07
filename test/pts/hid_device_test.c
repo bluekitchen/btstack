@@ -133,6 +133,9 @@ static bool    hid_boot_device = true;
 static bool    send_mouse_on_interrupt_channel = false;
 static bool    send_keyboard_on_interrupt_channel = false;
 
+static uint16_t host_max_latency = 1600;
+static uint16_t host_min_timeout = 3200;
+
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 #endif
@@ -525,10 +528,21 @@ int btstack_main(int argc, const char * argv[]){
         virtual_cable_enabled = true;
         virtual_cable_unplugged = false;
     }
-    // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable on, hid reconnect initiate on, hid boot device off 
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
-        hid_virtual_cable, hid_remote_wake, hid_reconnect_initiate, hid_normally_connectable,
-        hid_boot_device, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+
+    hid_sdp_record_t hid_params = {
+        // hid sevice subclass 2540 Keyboard, hid counntry code 33 US
+        0x2540, 33, 
+        hid_virtual_cable, hid_remote_wake, 
+        hid_reconnect_initiate, hid_normally_connectable,
+        hid_boot_device, 
+        host_max_latency, host_min_timeout, 
+        3200,
+        hid_descriptor_keyboard_boot_mode,
+        sizeof(hid_descriptor_keyboard_boot_mode), 
+        hid_device_name
+    };
+
+    hid_create_sdp_record(hid_service_buffer, 0x10001, &hid_params);
 
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);

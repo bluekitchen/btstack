@@ -405,11 +405,21 @@ int btstack_main(int argc, const char * argv[]){
     uint8_t hid_remote_wake = 1;
     uint8_t hid_reconnect_initiate = 1;
     uint8_t hid_normally_connectable = 1;
+
+    hid_sdp_record_t hid_params = {
+        // hid sevice subclass 2540 Keyboard, hid counntry code 33 US
+        0x2540, 33, 
+        hid_virtual_cable, hid_remote_wake, 
+        hid_reconnect_initiate, hid_normally_connectable,
+        hid_boot_device, 
+        0xFFFF, 0xFFFF, 3200,
+        hid_descriptor_keyboard_boot_mode,
+        sizeof(hid_descriptor_keyboard_boot_mode), 
+        hid_device_name
+    };
     
-    // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off 
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
-        hid_virtual_cable, hid_remote_wake, hid_reconnect_initiate, hid_normally_connectable,
-        hid_boot_device, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+    hid_create_sdp_record(hid_service_buffer, 0x10001, &hid_params);
+
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);
 

@@ -48,7 +48,24 @@
 extern "C" {
 #endif
 
+
 /* API_START */
+
+typedef struct {
+    uint16_t        hid_device_subclass;
+    uint8_t         hid_country_code;
+    uint8_t         hid_virtual_cable;
+    uint8_t         hid_remote_wake;
+    uint8_t         hid_reconnect_initiate;
+    bool            hid_normally_connectable;
+    bool            hid_boot_device;
+    uint16_t        hid_ssr_host_max_latency; 
+    uint16_t        hid_ssr_host_min_timeout;
+    uint16_t        hid_supervision_timeout;
+    const uint8_t * hid_descriptor;
+    uint16_t        hid_descriptor_size;
+    const char *    device_name;
+} hid_sdp_record_t;
 
 /**
  * @brief Create HID Device SDP service record. 
@@ -56,31 +73,9 @@ extern "C" {
  * @param have_remote_audio_control 
  * @param service
  * @param service_record_handle
- * @param hid_device_subclass
- * @param hid_country_code
- * @param hid_virtual_cable
- * @param hid_remote_wake
- * @param hid_reconnect_initiate
- * @param hid_normally_connectable
- * @param hid_boot_device
- * @param hid_descriptor
- * @param hid_descriptor_size size of hid_descriptor
- * @param device_name
+ * @param params
  */
-void hid_create_sdp_record(
-    uint8_t *       service, 
-    uint32_t        service_record_handle,
-    uint16_t        hid_device_subclass,
-    uint8_t         hid_country_code,
-    uint8_t         hid_virtual_cable,
-    uint8_t         hid_remote_wake,
-    uint8_t         hid_reconnect_initiate,
-    bool            hid_normally_connectable,
-    bool            hid_boot_device,
-    const uint8_t * hid_descriptor,
-    uint16_t 		hid_descriptor_size,
-    const char *    device_name);
-
+void hid_create_sdp_record(uint8_t * service, uint32_t service_record_handle, const hid_sdp_record_t * params);
 
 /**
  * @brief Set up HID Device 
