@@ -362,7 +362,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+            acl_handle = hfp_subevent_service_level_connection_established_get_acl_handle(event);
             printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:

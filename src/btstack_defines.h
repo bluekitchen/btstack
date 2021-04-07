@@ -1513,7 +1513,7 @@ typedef uint8_t sm_key_t[16];
  * @format 11HB
  * @param subevent_code
  * @param status 0 == OK
- * @param con_handle
+ * @param acl_handle
  * @param bd_addr
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
@@ -1528,7 +1528,7 @@ typedef uint8_t sm_key_t[16];
  * @format 11HB1
  * @param subevent_code
  * @param status 0 == OK
- * @param handle
+ * @param sco_handle
  * @param bd_addr
  * @param negotiated_codec
  */

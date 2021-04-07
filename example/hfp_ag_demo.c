@@ -458,7 +458,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         printf("Connection failed, staus 0x%02x\n", status);
                         break;
                     }
-                    acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+                    acl_handle = hfp_subevent_service_level_connection_established_get_acl_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                     printf("Service level connection established to %s.\n", bd_addr_to_str(device_addr));
                     dump_supported_codecs();
@@ -476,7 +476,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     if (hfp_subevent_audio_connection_established_get_status(event) != ERROR_CODE_SUCCESS){
                         printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
                     } else {
-                        sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
+                        sco_handle = hfp_subevent_audio_connection_established_get_sco_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
                         negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
                         switch (negotiated_codec){
