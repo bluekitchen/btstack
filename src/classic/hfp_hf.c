@@ -208,19 +208,19 @@ static void hfp_emit_network_operator_event(btstack_packet_handler_t callback, h
 
 static inline int hfp_hf_send_cmd(uint16_t cid, const char * cmd){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s\r\n", cmd);
+    snprintf(buffer, sizeof(buffer), "AT%s\r", cmd);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static inline int hfp_hf_send_cmd_with_mark(uint16_t cid, const char * cmd, const char * mark){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s%s\r\n", cmd, mark);
+    snprintf(buffer, sizeof(buffer), "AT%s%s\r", cmd, mark);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static inline int hfp_hf_send_cmd_with_int(uint16_t cid, const char * cmd, uint16_t value){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "AT%s=%d\r\n", cmd, value);
+    snprintf(buffer, sizeof(buffer), "AT%s=%d\r", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -229,7 +229,7 @@ static int hfp_hf_cmd_notify_on_codecs(uint16_t cid){
     const int size = sizeof(buffer);
     int offset = snprintf(buffer, size, "AT%s=", HFP_AVAILABLE_CODECS);
     offset += join(buffer+offset, size-offset, hfp_codecs, hfp_codecs_nr);
-    offset += snprintf(buffer+offset, size-offset, "\r\n");
+    offset += snprintf(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -238,7 +238,7 @@ static int hfp_hf_cmd_activate_status_update_for_ag_indicator(uint16_t cid, uint
     const int size = sizeof(buffer);
     int offset = snprintf(buffer, size, "AT%s=", HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
     offset += join_bitmap(buffer+offset, size-offset, indicators_status, indicators_nr);
-    offset += snprintf(buffer+offset, size-offset, "\r\n");
+    offset += snprintf(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -247,42 +247,42 @@ static int hfp_hf_cmd_list_supported_generic_status_indicators(uint16_t cid){
     const int size = sizeof(buffer);
     int offset = snprintf(buffer, size, "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
     offset += join(buffer+offset, size-offset, hfp_indicators, hfp_indicators_nr);
-    offset += snprintf(buffer+offset, size-offset, "\r\n");
+    offset += snprintf(buffer+offset, size-offset, "\r");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_cmd_activate_status_update_for_all_ag_indicators(uint16_t cid, uint8_t activate){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s=3,0,0,%d\r\n", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, activate);
+    snprintf(buffer, sizeof(buffer), "AT%s=3,0,0,%d\r", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, activate);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_initiate_outgoing_call_cmd(uint16_t cid){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "%s%s;\r\n", HFP_CALL_PHONE_NUMBER, phone_number);
+    snprintf(buffer, sizeof(buffer), "%s%s;\r", HFP_CALL_PHONE_NUMBER, phone_number);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_send_memory_dial_cmd(uint16_t cid, int memory_id){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "%s>%d;\r\n", HFP_CALL_PHONE_NUMBER, memory_id);
+    snprintf(buffer, sizeof(buffer), "%s>%d;\r", HFP_CALL_PHONE_NUMBER, memory_id);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_send_chld(uint16_t cid, unsigned int number){
     char buffer[40];
-    snprintf(buffer, sizeof(buffer), "AT%s=%u\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
+    snprintf(buffer, sizeof(buffer), "AT%s=%u\r", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, number);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_send_dtmf(uint16_t cid, char code){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "AT%s=%c\r\n", HFP_TRANSMIT_DTMF_CODES, code);
+    snprintf(buffer, sizeof(buffer), "AT%s=%c\r", HFP_TRANSMIT_DTMF_CODES, code);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_hf_cmd_ata(uint16_t cid){
-    return send_str_over_rfcomm(cid, (char *) "ATA\r\n");
+    return send_str_over_rfcomm(cid, (char *) "ATA\r");
 }
 
 static int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
@@ -833,7 +833,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         char buffer[20];
         switch (hfp_connection->hf_send_rrh_command){
             case '?':
-                snprintf(buffer, sizeof(buffer), "AT%s?\r\n",
+                snprintf(buffer, sizeof(buffer), "AT%s?\r",
                          HFP_RESPONSE_AND_HOLD);
                 buffer[sizeof(buffer) - 1] = 0;
                 send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
@@ -841,7 +841,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
             case '0':
             case '1':
             case '2':
-                snprintf(buffer, sizeof(buffer), "AT%s=%c\r\n",
+                snprintf(buffer, sizeof(buffer), "AT%s=%c\r",
                          HFP_RESPONSE_AND_HOLD,
                          hfp_connection->hf_send_rrh_command);
                 buffer[sizeof(buffer) - 1] = 0;
@@ -856,7 +856,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     if (hfp_connection->hf_send_cnum){
         hfp_connection->hf_send_cnum = 0;
         char buffer[20];
-        snprintf(buffer, sizeof(buffer), "AT%s\r\n",
+        snprintf(buffer, sizeof(buffer), "AT%s\r",
                  HFP_SUBSCRIBER_NUMBER_INFORMATION);
         buffer[sizeof(buffer) - 1] = 0;
         send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
@@ -872,7 +872,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
                     hfp_connection->ok_pending = 1;
                     hfp_connection->generic_status_update_bitmap = store_bit(hfp_connection->generic_status_update_bitmap, i, 0);
                     char buffer[30];
-                    snprintf(buffer, sizeof(buffer), "AT%s=%u,%u\r\n",
+                    snprintf(buffer, sizeof(buffer), "AT%s=%u,%u\r",
                              HFP_TRANSFER_HF_INDICATOR_STATUS,
                              hfp_indicators[i],
                              (unsigned int)hfp_indicators_value[i]);
@@ -1174,7 +1174,7 @@ static void hfp_hf_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
     for (pos = 0; pos < size; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
 
-        // parse until end of line "\r\n"
+        // parse until end of line "\r" or "\n"
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
 
         hfp_hf_handle_rfcomm_command(hfp_connection);
