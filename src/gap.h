@@ -801,6 +801,15 @@ uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_int
  */
 uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
 
+/**
+ * @brief Configure Sniff Subrating
+ * @param con_handle
+ * @param max_latency range: 0x0002 to 0xFFFE; Time = N * 0.625 ms
+ * @param min_remote_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
+ * @param min_local_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
+ */
+uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_latency, uint16_t min_remote_timeout, uint16_t min_local_timeout);
+
 // LE
 
 /**

@@ -212,6 +212,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
     conn->requested_security_level = LEVEL_0;
 #ifdef ENABLE_CLASSIC
     conn->request_role = HCI_ROLE_INVALID;
+    conn->sniff_subrating_max_latency = 0xffff;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
@@ -4493,8 +4494,15 @@ static bool hci_run_general_pending_commands(void){
                 return true;
         }
 
+        if (connection->sniff_subrating_max_latency != 0xffff){
+            uint16_t max_latency = connection->sniff_subrating_max_latency;
+            connection->sniff_subrating_max_latency = 0;
+            hci_send_cmd(&hci_sniff_subrating, connection->con_handle, max_latency, connection->sniff_subrating_min_remote_timeout, connection->sniff_subrating_min_local_timeout);
+            return true;
+        }
+
         if (connection->request_role != HCI_ROLE_INVALID){
-            hci_role_t  role = connection->request_role;
+            hci_role_t role = connection->request_role;
             connection->request_role = HCI_ROLE_INVALID;
             hci_send_cmd(&hci_switch_role_command, connection->address, role);
             return true;
@@ -6355,6 +6363,15 @@ uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
     conn->sniff_min_interval = 0xffff;
     hci_run();
     return 0;
+}
+
+uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_latency, uint16_t min_remote_timeout, uint16_t min_local_timeout){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    conn->sniff_subrating_max_latency = max_latency;
+    conn->sniff_subrating_min_remote_timeout = min_remote_timeout;
+    conn->sniff_subrating_min_local_timeout = min_local_timeout;
+    hci_run();
 }
 
 void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window){

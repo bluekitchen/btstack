@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: Scan Parameters Service Client 
 - GATT Client: HID-over-GATT (HOG) Client, Report and Boot Host
 - GAP: add `gap_set_page_scan_activity` and `gap_set_page_scan_type`
+- GAP: support sniff subrating with `gap_sniff_subrating_configure`
 - AVRCP: new field `button_pressed` in `AVRCP_SUBEVENT_OPERATION`
 - AVRCP: `AVRCP_SUBEVENT_OPERATION` emitted for button release
 - AVRCP Controller: avrcp_controller_start_press_and_hold_cmd helps to support device buttons

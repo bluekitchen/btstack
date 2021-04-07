@@ -541,6 +541,11 @@ typedef struct {
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
 
+    // sniff subrating
+    uint16_t sniff_subrating_max_latency;   // 0xffff = not set
+    uint16_t sniff_subrating_min_remote_timeout;
+    uint16_t sniff_subrating_min_local_timeout;
+
 #ifdef ENABLE_SCO_OVER_HCI
     // track SCO rx event
     uint32_t sco_rx_ms;
