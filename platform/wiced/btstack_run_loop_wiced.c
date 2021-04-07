@@ -65,8 +65,6 @@ static const btstack_run_loop_t btstack_run_loop_wiced;
 static wiced_queue_t btstack_run_loop_queue;
 
 // the run loop
-static btstack_linked_list_t timers;
-
 static uint32_t btstack_run_loop_wiced_get_time_ms(void){
     wiced_time_t time;
     wiced_time_get_time(&time);

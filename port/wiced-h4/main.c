@@ -42,7 +42,7 @@
 #include "btstack_run_loop_wiced.h"
 #include "btstack_link_key_db_wiced_dct.h"
 #include "le_device_db_wiced_dct.h"
-#incldue "hci_dump_embedded_stdout.h"
+#include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 

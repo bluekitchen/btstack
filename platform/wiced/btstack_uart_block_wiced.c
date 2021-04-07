@@ -44,9 +44,10 @@
 #define BTSTACK_FILE__ "btstack_uart_block_wiced.c"
 
 #include "btstack_config.h"
-#include "btstack_run_loop_wiced.h"
-
 #include "btstack_debug.h"
+#include "btstack_run_loop_wiced.h"
+#include "btstack_uart_block.h"
+
 #include "hci.h"
 #include "hci_transport.h"
 #include "platform_bluetooth.h"
