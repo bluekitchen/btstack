@@ -147,7 +147,7 @@ SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
-EXAMPLES += hog_demo_test hog_host_test hid_device_test hid_host_test 
+EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
 all: ${EXAMPLES}
@@ -173,8 +173,8 @@ hid_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hi
 hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o btstack_ring_buffer.o hid_device.o hid_device_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o btstack_ring_buffer.o hog_device_test.c
-	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+hog_device_test: hog_device_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o btstack_ring_buffer.o hog_device_test.c
+	${CC} $(filter-out hog_device_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hog_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -241,7 +241,7 @@ gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVE
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
-	rm -rf hog_demo_test.h
+	rm -rf hog_device_test.h
 	rm -rf ble_central_test.h
 	rm -rf ble_peripheral_test.h
 	rm -rf csc_server_test.h

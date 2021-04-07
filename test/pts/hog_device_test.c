@@ -48,7 +48,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "hog_demo_test.h"
+#include "hog_device_test.h"
 
 #include "btstack.h"
 
