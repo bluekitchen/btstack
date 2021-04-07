@@ -2494,7 +2494,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
 
                     // queue set supervision timeout if we're master
-                    if ((hci_stack->link_supervision_timeout != 0) && (conn->role == HCI_ROLE_MASTER)){
+                    if ((hci_stack->link_supervision_timeout != HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT) && (conn->role == HCI_ROLE_MASTER)){
                         connectionSetAuthenticationFlags(conn, WRITE_SUPERVISION_TIMEOUT);
                     }
 
@@ -3215,6 +3215,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3
     hci_stack->gap_required_encyrption_key_size = 7;
+
+    // Link Supervision Timeout
+    hci_stack->link_supervision_timeout = HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT;
+
 #endif
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 

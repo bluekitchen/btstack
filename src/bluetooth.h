@@ -138,6 +138,11 @@ typedef enum {
 } inquiry_scan_type_t;
 
 /**
+ * Link Supervision Timeout Default, 0x7d00 * 0.625ms = 20s
+ */
+#define HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT 0x7D00
+
+/**
  * HCI Transport 
  */
 

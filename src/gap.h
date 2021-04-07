@@ -188,7 +188,7 @@ void gap_set_allow_role_switch(bool allow_role_switch);
 
 /**
  * @brief Set  link supervision timeout for outgoing classic ACL links
- * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds
+ * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds, 0 = no link supervision timeout
  */
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);
 
