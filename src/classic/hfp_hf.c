@@ -123,85 +123,85 @@ static hfp_connection_t * get_hfp_hf_connection_context_for_acl_handle(uint16_t 
 
 /* emit functinos */
 
-static void hfp_hf_emit_subscriber_information(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t status, uint8_t bnip_type, const char * bnip_number){
-    if (!callback) return;
+static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_connection, uint8_t status){
+    if (hfp_hf_callback == NULL) return;
     uint8_t event[31];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = event_subtype;
+    event[2] = HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION;
     event[3] = status;
-    event[4] = bnip_type;
-    uint16_t size = btstack_min(strlen(bnip_number), sizeof(event) - 6);
-    strncpy((char*)&event[5], bnip_number, size);
+    event[4] = hfp_connection->bnip_type;
+    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - 6);
+    strncpy((char*)&event[5], hfp_connection->bnip_number, size);
     event[5 + size] = 0;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t bnip_type, const char * bnip_number){
-    if (!callback) return;
+static void hfp_hf_emit_type_and_number(const hfp_connection_t * hfp_connection, uint8_t event_subtype){
+    if (hfp_hf_callback == NULL) return;
     uint8_t event[30];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    event[3] = bnip_type;
-    uint16_t size = btstack_min(strlen(bnip_number), sizeof(event) - 5);
-    strncpy((char*)&event[4], bnip_number, size);
+    event[3] = hfp_connection->bnip_type;
+    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - 5);
+    strncpy((char*)&event[4], hfp_connection->bnip_number, size);
     event[4 + size] = 0;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, hfp_connection_t * connection){
-    if (!callback) return;
+static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connection){
+    if (hfp_hf_callback == NULL) return;
     uint8_t event[36];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
-    event[pos++] = connection->clcc_idx;
-    event[pos++] = connection->clcc_dir;
-    event[pos++] = connection->clcc_status;
-    event[pos++] = connection->clcc_mode;
-    event[pos++] = connection->clcc_mpty;
-    event[pos++] = connection->bnip_type;
-    uint16_t size = btstack_min(strlen(connection->bnip_number), sizeof(event) - pos);
-    strncpy((char*)&event[pos], connection->bnip_number, size);
+    event[pos++] = hfp_connection->clcc_idx;
+    event[pos++] = hfp_connection->clcc_dir;
+    event[pos++] = hfp_connection->clcc_status;
+    event[pos++] = hfp_connection->clcc_mode;
+    event[pos++] = hfp_connection->clcc_mpty;
+    event[pos++] = hfp_connection->bnip_type;
+    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - pos);
+    strncpy((char*)&event[pos], hfp_connection->bnip_number, size);
     pos += size;
     event[pos++] = 0;
-    (*callback)(HCI_EVENT_PACKET, 0, event, pos);
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 
-static void hfp_emit_ag_indicator_event(btstack_packet_handler_t callback, hfp_ag_indicator_t indicator){
-	if (!callback) return;
+static void hfp_emit_ag_indicator_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
+    if (hfp_hf_callback == NULL) return;
 	uint8_t event[10+HFP_MAX_INDICATOR_DESC_SIZE+1];
 	int pos = 0;
 	event[pos++] = HCI_EVENT_HFP_META;
 	event[pos++] = sizeof(event) - 2;
 	event[pos++] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
-	event[pos++] = indicator.index;
-	event[pos++] = indicator.status;
-	event[pos++] = indicator.min_range;
-	event[pos++] = indicator.max_range;
-	event[pos++] = indicator.mandatory;
-	event[pos++] = indicator.enabled;
-	event[pos++] = indicator.status_changed;
-	strncpy((char*)&event[pos], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
+	event[pos++] = indicator->index;
+	event[pos++] = indicator->status;
+	event[pos++] = indicator->min_range;
+	event[pos++] = indicator->max_range;
+	event[pos++] = indicator->mandatory;
+	event[pos++] = indicator->enabled;
+	event[pos++] = indicator->status_changed;
+	strncpy((char*)&event[pos], indicator->name, HFP_MAX_INDICATOR_DESC_SIZE);
 	pos += HFP_MAX_INDICATOR_DESC_SIZE;
 	event[pos] = 0;
-	(*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void hfp_emit_network_operator_event(btstack_packet_handler_t callback, hfp_network_opearator_t network_operator){
-	if (!callback) return;
+static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connection){
+    if (hfp_hf_callback == NULL) return;
 	uint8_t event[5+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE+1];
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = sizeof(event) - 2;
 	event[2] = HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED;
-	event[3] = network_operator.mode;
-	event[4] = network_operator.format;
-	strncpy((char*)&event[5], network_operator.name, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
+	event[3] = hfp_connection->network_operator.mode;
+	event[4] = hfp_connection->network_operator.format;
+	strncpy((char*)&event[5], hfp_connection->network_operator.name, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
 	event[5+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE] = 0;
-	(*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 /* send commands */
@@ -1012,7 +1012,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
                     break;
                 case HPF_HF_QUERY_OPERATOR_W4_RESULT:
                     hfp_connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_FORMAT_SET;
-                    hfp_emit_network_operator_event(hfp_hf_callback, hfp_connection->network_operator);
+                    hfp_emit_network_operator_event(hfp_connection);
                     break;
                 default:
                     break;
@@ -1056,7 +1056,7 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                 hfp_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
             }
             hfp_connection->ag_indicators[i].status_changed = 0;
-            hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
+            hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             break;
         }
     }
@@ -1068,7 +1068,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
     switch (hfp_connection->command){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_subscriber_information(hfp_hf_callback, HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION, 0, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            hfp_hf_emit_subscriber_information(hfp_connection, 0);
             break;
         case HFP_CMD_RESPONSE_AND_HOLD_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
@@ -1076,7 +1076,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_LIST_CURRENT_CALLS:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_enhanced_call_status(hfp_hf_callback, hfp_connection);
+            hfp_hf_emit_enhanced_call_status(hfp_connection);
             break;
         case HFP_CMD_SET_SPEAKER_GAIN:
             hfp_connection->command = HFP_CMD_NONE;
@@ -1096,11 +1096,11 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_AG_SENT_CALL_WAITING_NOTIFICATION_UPDATE:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_type_and_number(hfp_hf_callback, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            hfp_hf_emit_type_and_number(hfp_connection, HFP_SUBEVENT_CALL_WAITING_NOTIFICATION);
             break;
         case HFP_CMD_AG_SENT_CLIP_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
-            hfp_hf_emit_type_and_number(hfp_hf_callback, HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION, hfp_connection->bnip_type, hfp_connection->bnip_number);
+            hfp_hf_emit_type_and_number(hfp_connection, HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION);
             break;
         case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
             hfp_connection->command = HFP_CMD_NONE;
@@ -1140,7 +1140,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
-                hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
+                hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             }
             break;
     	case HFP_CMD_AG_SUGGESTED_CODEC:
