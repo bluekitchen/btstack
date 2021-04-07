@@ -125,45 +125,49 @@ static hfp_connection_t * get_hfp_hf_connection_context_for_acl_handle(uint16_t 
 
 static void hfp_hf_emit_subscriber_information(const hfp_connection_t * hfp_connection, uint8_t status){
     if (hfp_hf_callback == NULL) return;
-    uint8_t event[31];
+    uint8_t event[33];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION;
-    event[3] = status;
-    event[4] = hfp_connection->bnip_type;
-    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - 6);
-    strncpy((char*)&event[5], hfp_connection->bnip_number, size);
-    event[5 + size] = 0;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = status;
+    event[6] = hfp_connection->bnip_type;
+    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - 8);
+    strncpy((char*)&event[7], hfp_connection->bnip_number, size);
+    event[7 + size] = 0;
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void hfp_hf_emit_type_and_number(const hfp_connection_t * hfp_connection, uint8_t event_subtype){
     if (hfp_hf_callback == NULL) return;
-    uint8_t event[30];
+    uint8_t event[32];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    event[3] = hfp_connection->bnip_type;
-    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - 5);
-    strncpy((char*)&event[4], hfp_connection->bnip_number, size);
-    event[4 + size] = 0;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = hfp_connection->bnip_type;
+    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - 7);
+    strncpy((char*)&event[6], hfp_connection->bnip_number, size);
+    event[6 + size] = 0;
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
-    uint8_t event[36];
+    uint8_t event[38];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
     event[pos++] = hfp_connection->clcc_idx;
     event[pos++] = hfp_connection->clcc_dir;
     event[pos++] = hfp_connection->clcc_status;
     event[pos++] = hfp_connection->clcc_mode;
     event[pos++] = hfp_connection->clcc_mpty;
     event[pos++] = hfp_connection->bnip_type;
-    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - pos);
+    uint16_t size = btstack_min(strlen(hfp_connection->bnip_number), sizeof(event) - pos - 1);
     strncpy((char*)&event[pos], hfp_connection->bnip_number, size);
     pos += size;
     event[pos++] = 0;
@@ -172,12 +176,14 @@ static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connec
 
 
 static void hfp_emit_ag_indicator_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
-    if (hfp_hf_callback == NULL) return;
-	uint8_t event[10+HFP_MAX_INDICATOR_DESC_SIZE+1];
+	if (hfp_hf_callback == NULL) return;
+	uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE+1];
 	int pos = 0;
 	event[pos++] = HCI_EVENT_HFP_META;
 	event[pos++] = sizeof(event) - 2;
 	event[pos++] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
 	event[pos++] = indicator->index;
 	event[pos++] = indicator->status;
 	event[pos++] = indicator->min_range;
@@ -193,14 +199,15 @@ static void hfp_emit_ag_indicator_event(const hfp_connection_t * hfp_connection,
 
 static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connection){
     if (hfp_hf_callback == NULL) return;
-	uint8_t event[5+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE+1];
+	uint8_t event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE+1];
 	event[0] = HCI_EVENT_HFP_META;
 	event[1] = sizeof(event) - 2;
 	event[2] = HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED;
-	event[3] = hfp_connection->network_operator.mode;
-	event[4] = hfp_connection->network_operator.format;
-	strncpy((char*)&event[5], hfp_connection->network_operator.name, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
-	event[5+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE] = 0;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+	event[5] = hfp_connection->network_operator.mode;
+	event[6] = hfp_connection->network_operator.format;
+	strncpy((char*)&event[7], hfp_connection->network_operator.name, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
+	event[7+HFP_MAX_NETWORK_OPERATOR_NAME_SIZE] = 0;
 	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 

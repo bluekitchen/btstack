@@ -1519,14 +1519,16 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
- * @format 11HB1
+ * @format 1H1HB1
  * @param subevent_code
+ * @param con_handle
  * @param status 0 == OK
  * @param sco_handle
  * @param bd_addr
@@ -1535,21 +1537,25 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
 
 /**
- * @format 1
+ * @format 1HH
  * @param subevent_code
+ * @param con_handle
+ * @param sco_handle
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param con_handle
  * @param status 0 == OK
  */
 #define HFP_SUBEVENT_COMPLETE                              0x05
 
 /**
- * @format 11111111T
+ * @format 1H1111111T
  * @param subevent_code
+ * @param con_handle
  * @param indicator_index
  * @param indicator_status
  * @param indicator_min_range
@@ -1562,8 +1568,9 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
 
 /**
- * @format 111T
+ * @format 1H11T
  * @param subevent_code
+ * @param con_handle
  * @param network_operator_mode
  * @param network_operator_format
  * @param network_operator_name
@@ -1571,21 +1578,24 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param con_handle
  * @param error
  */
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x08
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define HFP_SUBEVENT_START_RINGINIG                           0x0A
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define HFP_SUBEVENT_STOP_RINGINIG                            0x0B
 
@@ -1596,83 +1606,95 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param con_handle
  * @param number
  */
 #define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                   0x0D
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0E
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param con_handle
  * @param number
  */
 #define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x0F
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param con_handle
  * @param dtmf code
  */
 #define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x10
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
- #define HFP_SUBEVENT_CALL_ANSWERED                            0x11
+#define HFP_SUBEVENT_CALL_ANSWERED                            0x11
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define HFP_SUBEVENT_CONFERENCE_CALL                          0x12
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param con_handle
  */
 #define HFP_SUBEVENT_RING                                     0x13
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param con_handle
  * @param gain
  */
- #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
+#define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param con_handle
  * @param gain
  */
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15
 
 /**
- * @format 11T
+ * @format 1H1T
  * @param subevent_code
+ * @param con_handle
  * @param type
  * @param number
  */
 #define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16
 
 /**
- * @format 11T
+ * @format 1H1T
  * @param subevent_code
+ * @param con_handle
  * @param type
  * @param number
  */
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
 
 /**
- * @format 1111111T
+ * @format 1H111111T
  * @param subevent_code
+ * @param con_handle
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
@@ -1684,31 +1706,35 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x18
 
 /**
- * @format 111T
+ * @format 1H11T
  * @param subevent_code
+ * @param con_handle
  * @param status
  * @param bnip_type
  * @param bnip_number
  */
- #define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19
+#define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param con_handle
  * @param value
  */
 #define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param con_handle
  * @param command
  */
 #define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1B
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param con_handle
  * @param command
  */
 #define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C

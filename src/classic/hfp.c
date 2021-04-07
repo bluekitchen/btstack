@@ -331,19 +331,21 @@ static void hfp_emit_event_for_context(hfp_connection_t * hfp_connection, uint8_
 }
 
 void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
-    uint8_t event[3];
+    uint8_t event[5];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
 void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value){
-    uint8_t event[4];
+    uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    event[3] = value; // status 0 == OK
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = value; // status 0 == OK
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
@@ -361,23 +363,29 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection){
-    uint8_t event[3];
+static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection, hci_con_handle_t sco_handle){
+    uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, sco_handle);
+    pos += 2;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
-    uint8_t event[13];
+void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t sco_handle, bd_addr_t addr, uint8_t  negotiated_codec){
+    uint8_t event[15];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
     event[pos++] = status; // status 0 == OK
-    little_endian_store_16(event, pos, con_handle);
+    little_endian_store_16(event, pos, sco_handle);
     pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
@@ -394,9 +402,10 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    uint16_t size = btstack_min(strlen(value), sizeof(event) - 4);
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    uint16_t size = btstack_min(strlen(value), sizeof(event) - 6);
     strncpy((char*)&event[3], value, size);
-    event[3 + size] = 0;
+    event[5 + size] = 0;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
@@ -834,7 +843,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_audio_connection_released(hfp_connection);
+            hfp_emit_audio_connection_released(hfp_connection, handle);
 
             if (hfp_connection->release_slc_connection){
                 hfp_connection->release_slc_connection = 0;
@@ -926,9 +935,10 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             if ( hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
                 // service connection was released, this implicitly releases audio connection as well
                 hfp_connection->release_audio_connection = 0;
+                hci_con_handle_t sco_handle = hfp_connection->sco_handle;
                 gap_disconnect(hfp_connection->sco_handle);
                 hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
-                hfp_emit_audio_connection_released(hfp_connection);
+                hfp_emit_audio_connection_released(hfp_connection, sco_handle);
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
             } else {
                 // regular case
