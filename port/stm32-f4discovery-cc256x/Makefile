@@ -57,10 +57,10 @@ ${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
 ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
 ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \

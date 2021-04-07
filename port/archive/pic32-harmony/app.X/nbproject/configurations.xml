@@ -232,7 +232,7 @@
             <itemPath>../../../src/ble/att_server.c</itemPath>
             <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
             <itemPath>../../../src/ble/sm.c</itemPath>
-            <itemPath>../../../src/ble/ancs_client.c</itemPath>
+            <itemPath>../../../src/ble/gatt-service/ancs_client.c</itemPath>
             <itemPath>../../../src/ble/gatt_client.c</itemPath>
           </logicalFolder>
           <logicalFolder name="f1" displayName="classic" projectFiles="true">
