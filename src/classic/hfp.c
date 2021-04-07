@@ -361,6 +361,15 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection){
+    uint8_t event[3];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
 void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
     uint8_t event[13];
     int pos = 0;
@@ -825,7 +834,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+            hfp_emit_audio_connection_released(hfp_connection);
 
             if (hfp_connection->release_slc_connection){
                 hfp_connection->release_slc_connection = 0;
@@ -919,7 +928,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 hfp_connection->release_audio_connection = 0;
                 gap_disconnect(hfp_connection->sco_handle);
                 hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+                hfp_emit_audio_connection_released(hfp_connection);
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
             } else {
                 // regular case
