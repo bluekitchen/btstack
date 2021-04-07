@@ -195,6 +195,23 @@ static void hid_emit_descriptor_available_event(hid_host_connection_t * connecti
     hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
+static void hid_emit_sniff_params_event(hid_host_connection_t * connection){
+    uint8_t event[9];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_HID_META;
+    pos++;  // skip len
+    event[pos++] = HID_SUBEVENT_SNIFF_SUBRATING_PARAMS;
+    little_endian_store_16(event,pos,connection->hid_cid);
+    pos += 2;
+    little_endian_store_16(event,pos,connection->host_max_latency);
+    pos += 2;
+    little_endian_store_16(event,pos,connection->host_min_timeout);
+    pos += 2;
+    
+    event[1] = pos - 2;
+    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+}
+
 static void hid_emit_event(hid_host_connection_t * connection, uint8_t subevent_type){
     uint8_t event[5];
     uint16_t pos = 0;
@@ -455,6 +472,29 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                                 }
                             }                        
                             break;
+
+                        case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MAX_LATENCY:
+                            if (de_get_element_type(attribute_value) == DE_UINT) {
+                                uint16_t host_max_latency;
+                                if (de_element_get_uint16(attribute_value, &host_max_latency) == 1){
+                                    connection->host_max_latency = host_max_latency;
+                                } else {
+                                    connection->host_max_latency = 0xFFFF;
+                                }
+                            }
+                            break;
+
+                        case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MIN_TIMEOUT:
+                            if (de_get_element_type(attribute_value) == DE_UINT) {
+                                uint16_t host_min_timeout;
+                                if (de_element_get_uint16(attribute_value, &host_min_timeout) == 1){
+                                    connection->host_min_timeout = host_min_timeout;
+                                } else {
+                                    connection->host_min_timeout = 0xFFFF;
+                                }
+                            }
+                            break;
+                        
                         default:
                             break;
                     }
@@ -502,6 +542,8 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                 break;
             }
 
+            hid_emit_sniff_params_event(connection);
+                
             if (try_fallback_to_boot){
                 if (connection->incoming){
                     connection->set_protocol = true;

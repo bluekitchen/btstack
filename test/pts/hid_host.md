@@ -19,6 +19,9 @@ HID11/HOS/HCR/BV-02-I: c, c, (Confirmation), (Confirmation)
 HID11/HOS/HCR/BV-03-I: c, U, c, "OK", u
 HID11/HOS/HCR/BV-04-I: c, c, (ok)
 
+HID11/HOS/HGR/BV-02-C: rm /tmp/btstack*.tlv, c, y, w
+HID11/HOS/HGR/BV-03-C: rm /tmp/btstack*.tlv, c, y
+
 HID11/HOS/HCT/BV-01-C: c, 1, 2, 3
 HID11/HOS/HCT/BV-02-C: c, 4
 HID11/HOS/HCT/BV-03-C: c, 5

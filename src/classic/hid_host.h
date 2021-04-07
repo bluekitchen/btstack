@@ -97,6 +97,9 @@ typedef struct {
     bool w4_set_protocol_response;
     hid_protocol_mode_t requested_protocol_mode;
 
+    uint16_t host_max_latency;
+    uint16_t host_min_timeout;
+
     uint16_t hid_descriptor_offset;
     uint16_t hid_descriptor_len;
     uint16_t hid_descriptor_max_len;

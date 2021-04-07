@@ -123,6 +123,8 @@ static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
 static const char * remote_addr_string = "00:1B:DC:08:E2:5C";
 
 static bd_addr_t remote_addr;
+static uint16_t host_max_latency;
+static uint16_t host_min_timeout;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -288,6 +290,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             printf("HID Host connected...\n");
                             break;
                         
+                        case HID_SUBEVENT_SNIFF_SUBRATING_PARAMS:
+                            host_max_latency = hid_subevent_sniff_subrating_params_get_host_max_latency(packet);
+                            host_min_timeout = hid_subevent_sniff_subrating_params_get_host_min_timeout(packet);
+                            break;
+
                         case HID_SUBEVENT_DESCRIPTOR_AVAILABLE:
                             status = hid_subevent_descriptor_available_get_status(packet);
                             if (status == ERROR_CODE_SUCCESS){
@@ -410,7 +417,9 @@ static void show_usage(void){
     printf("b      - Set protocol in BOOT mode\n");
 
     printf("\n");
-    printf("z      - set link supervision timeout to 0\n");
+    printf("y      - set link supervision timeout to 0\n");
+    printf("w      - send sniff subrating cmd\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -530,10 +539,16 @@ static void stdin_process(char cmd){
             break;
         }
 
-        case 'z':
+        case 'y':
             printf("Set link supervision timeout to 0 \n");
             hci_send_cmd(&hci_write_link_supervision_timeout, hid_host_con_handle, 0);
             break;
+        
+        case 'w':
+            printf("Send sniff subrating cmd \n");
+            hci_send_cmd(&hci_sniff_subrating, hid_host_con_handle, host_max_latency, host_min_timeout, 0);
+            break;
+        
         case '\n':
         case '\r':
             break;
