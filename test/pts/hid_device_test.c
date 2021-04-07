@@ -126,6 +126,7 @@ static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
+static hci_con_handle_t hid_con_handle = HCI_CON_HANDLE_INVALID;
 static bd_addr_t device_addr;
 static int     report_data_ready = 1;
 static uint8_t report_data[20];
@@ -150,7 +151,6 @@ static enum {
 static bool virtual_cable_enabled  = false;
 static bool virtual_cable_unplugged = false;
 
-static hci_con_handle_t hid_con_handle = 0;
 // HID Report sending
 static int send_keycode;
 static int send_modifier;
@@ -392,6 +392,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 gap_drop_link_key_for_bd_addr(device_addr);
                                 gap_disconnect(hid_con_handle);
                             }
+                            hid_con_handle = HCI_CON_HANDLE_INVALID;
                             app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
                             break;
