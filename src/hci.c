@@ -6372,6 +6372,7 @@ uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_
     conn->sniff_subrating_min_remote_timeout = min_remote_timeout;
     conn->sniff_subrating_min_local_timeout = min_local_timeout;
     hci_run();
+    return ERROR_CODE_SUCCESS;
 }
 
 void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window){
