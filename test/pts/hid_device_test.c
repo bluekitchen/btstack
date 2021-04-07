@@ -265,7 +265,6 @@ static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type
     printf("do smth with report\n");
 }
 
-#ifdef HAVE_BTSTACK_STDIN
 
 // On systems with STDIN, we can directly type on the console
 #if 0
@@ -346,49 +345,8 @@ static void stdin_process(char character){
             break;
     }
 }
-#else
 
-// On embedded systems, send constant demo text with fixed period
 
-#define TYPING_PERIOD_MS 100
-static const char * demo_text = "\n\nHello World!\n\nThis is the BTstack HID Keyboard Demo running on an Embedded Device.\n\n";
-
-static int demo_pos;
-static btstack_timer_source_t typing_timer;
-
-static void typing_timer_handler(btstack_timer_source_t * ts){
-
-    // abort if not connected
-    if (!hid_cid) return;
-
-    // get next character
-    uint8_t character = demo_text[demo_pos++];
-    if (demo_text[demo_pos] == 0){
-        demo_pos = 0;
-    }
-
-    // get keycodeand send
-    uint8_t modifier;
-    uint8_t keycode;
-    int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
-    if (found){
-        send_key(modifier, keycode);
-    }
-
-    // set next timer
-    btstack_run_loop_set_timer(ts, TYPING_PERIOD_MS);
-    btstack_run_loop_add_timer(ts);
-}
-
-static void hid_embedded_start_typing(void){
-    demo_pos = 0;
-    // set one-shot timer
-    typing_timer.process = &typing_timer_handler;
-    btstack_run_loop_set_timer(&typing_timer, TYPING_PERIOD_MS);
-    btstack_run_loop_add_timer(&typing_timer);
-}
-
-#endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
@@ -425,12 +383,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             hid_subevent_connection_opened_get_bd_addr(packet, device_addr);
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
                             hid_con_handle = hid_subevent_connection_opened_get_con_handle(packet);
-#ifdef HAVE_BTSTACK_STDIN                        
                             printf("HID Connected, please start typing... %s\n", bd_addr_to_str(device_addr));
-#else                        
-                            printf("HID Connected, sending demo text...\n");
-                            hid_embedded_start_typing();
-#endif
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             printf("HID Disconnected\n");
