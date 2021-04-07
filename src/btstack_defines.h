@@ -2978,6 +2978,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define HID_SUBEVENT_DESCRIPTOR_AVAILABLE                                  0x0D
 
+/**
+ * @format 1222
+ * @param subevent_code
+ * @param hid_cid
+ * @param host_max_latency
+ * @param host_min_timeout
+ */
+#define HID_SUBEVENT_SNIFF_SUBRATING_PARAMS                                0x0E
 
 // HIDS Meta Event Group
 

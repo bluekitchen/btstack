@@ -8885,6 +8885,34 @@ static inline uint8_t hid_subevent_descriptor_available_get_status(const uint8_t
 }
 
 /**
+ * @brief Get field hid_cid from event HID_SUBEVENT_SNIFF_SUBRATING_PARAMS
+ * @param event packet
+ * @return hid_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_sniff_subrating_params_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field host_max_latency from event HID_SUBEVENT_SNIFF_SUBRATING_PARAMS
+ * @param event packet
+ * @return host_max_latency
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_sniff_subrating_params_get_host_max_latency(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field host_min_timeout from event HID_SUBEVENT_SNIFF_SUBRATING_PARAMS
+ * @param event packet
+ * @return host_min_timeout
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_sniff_subrating_params_get_host_min_timeout(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+
+/**
  * @brief Get field con_handle from event HIDS_SUBEVENT_CAN_SEND_NOW
  * @param event packet
  * @return con_handle
