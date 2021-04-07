@@ -591,7 +591,7 @@ const hci_cmd_t hci_write_link_policy_settings = {
  * @param min_local_timeout
  */
 const hci_cmd_t hci_sniff_subrating = {
-        HCI_OPCODE_HCI_SNIFF_MODE, "H222"
+        HCI_OPCODE_HCI_SNIFF_SUBRATING, "H222"
 };
 
 /**
