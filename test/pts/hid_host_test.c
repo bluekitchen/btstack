@@ -110,6 +110,7 @@ static enum {
 
 static bool     unplugged    = false;
 static uint16_t hid_host_cid = 0;
+static hci_con_handle_t hid_host_con_handle = HCI_CON_HANDLE_INVALID;
 static bool hid_host_descriptor_available = false;
 
 static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
@@ -282,6 +283,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                 return;
                             }
                             app_state = APP_CONNECTED;
+                            hid_host_con_handle = hid_subevent_connection_opened_get_con_handle(packet);
                             hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
                             printf("HID Host connected...\n");
                             break;
@@ -298,6 +300,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             hid_host_cid = 0;
+                            hid_host_con_handle = HCI_CON_HANDLE_INVALID;
                             printf("HID Host disconnected..\n");
                             break;
                         
@@ -406,6 +409,8 @@ static void show_usage(void){
     printf("r      - Set protocol in REPORT mode\n");
     printf("b      - Set protocol in BOOT mode\n");
 
+    printf("\n");
+    printf("z      - set link supervision timeout to 0\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -506,8 +511,8 @@ static void stdin_process(char cmd){
 
         case '7':{
             uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Set output report with id 0x01\n");
-            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x01, report, sizeof(report));
+            printf("Set input report with id 0x01\n");
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x01, report, sizeof(report));
             break;
         }
 
@@ -525,6 +530,10 @@ static void stdin_process(char cmd){
             break;
         }
 
+        case 'z':
+            printf("Set link supervision timeout to 0 \n");
+            hci_send_cmd(&hci_write_link_supervision_timeout, hid_host_con_handle, 0);
+            break;
         case '\n':
         case '\r':
             break;
