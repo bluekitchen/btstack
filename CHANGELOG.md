@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - HCI: `btstack_transport_sco.h` allows to support SCO over physical PCM/I2S interface (`HAVE_SCO_TRANSPORT`)
+- HCI: add `hci_sniff_subrating` command
 - POSIX: `btstack_transport_sco_i2s_test_bridge.c` implements SCO transport interface for UART-to-I2S test bridge
 - btstack_uart: `btstack_uart_t` interface extends `btstack_uart_block_t`:
   - supports sending and receiving SLIP frames for HCI H5

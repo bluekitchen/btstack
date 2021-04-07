@@ -128,6 +128,7 @@ typedef enum {
     HCI_OPCODE_HCI_READ_LINK_POLICY_SETTINGS = HCI_OPCODE (OGF_LINK_POLICY, 0x0c),
     HCI_OPCODE_HCI_WRITE_LINK_POLICY_SETTINGS = HCI_OPCODE (OGF_LINK_POLICY, 0x0d),
     HCI_OPCODE_HCI_WRITE_DEFAULT_LINK_POLICY_SETTING = HCI_OPCODE (OGF_LINK_POLICY, 0x0F),
+    HCI_OPCODE_HCI_SNIFF_SUBRATING = HCI_OPCODE (OGF_LINK_POLICY, 0x11),
     HCI_OPCODE_HCI_SET_EVENT_MASK = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x01),
     HCI_OPCODE_HCI_RESET = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x03),
     HCI_OPCODE_HCI_FLUSH = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x08),
@@ -299,6 +300,7 @@ extern const hci_cmd_t hci_set_controller_to_host_flow_control;
 extern const hci_cmd_t hci_set_event_mask;
 extern const hci_cmd_t hci_setup_synchronous_connection;
 extern const hci_cmd_t hci_sniff_mode;
+extern const hci_cmd_t hci_sniff_subrating;
 extern const hci_cmd_t hci_switch_role_command;
 extern const hci_cmd_t hci_user_confirmation_request_negative_reply;
 extern const hci_cmd_t hci_user_confirmation_request_reply;
