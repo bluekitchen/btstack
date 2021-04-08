@@ -15,5 +15,6 @@ SRC_BLE_GATT_SERVICE_FILES = \
     mesh_proxy_service_server.c \
     nordic_spp_service_server.c \
     scan_parameters_service_client.c \
+    scan_parameters_service_server.c \
     ublox_spp_service_server.c \
 
