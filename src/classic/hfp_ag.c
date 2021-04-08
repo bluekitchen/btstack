@@ -109,15 +109,6 @@ static hfp_phone_number_t * subscriber_numbers;
 static int subscriber_numbers_count;
 
 // code
-static void hfp_ag_emit_simple_event(uint8_t event_subtype){
-	uint8_t event[3];
-	event[0] = HCI_EVENT_HFP_META;
-	event[1] = sizeof(event) - 2;
-	event[2] = event_subtype;
-	if (!hfp_ag_callback) return;
-	(*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
         hfp_connection->ag_indicators_nr = hfp_ag_indicators_nr;
@@ -995,7 +986,7 @@ static void hfp_ag_trigger_terminate_call(void){
         }
         hfp_ag_run_for_context(hfp_connection);
     }
-    hfp_ag_emit_simple_event(HFP_SUBEVENT_CALL_TERMINATED);
+    hfp_emit_simple_event(NULL, HFP_SUBEVENT_CALL_TERMINATED);
 }
 
 static void hfp_ag_set_callsetup_indicator(void){

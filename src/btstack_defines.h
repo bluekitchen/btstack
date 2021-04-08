@@ -1521,14 +1521,14 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
  * @format 1H1HB1
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param status 0 == OK
  * @param sco_handle
  * @param bd_addr
@@ -1539,7 +1539,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1HH
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param sco_handle
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
@@ -1547,7 +1547,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param status 0 == OK
  */
 #define HFP_SUBEVENT_COMPLETE                              0x05
@@ -1555,7 +1555,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1111111T
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param indicator_index
  * @param indicator_status
  * @param indicator_min_range
@@ -1570,7 +1570,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H11T
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param network_operator_mode
  * @param network_operator_format
  * @param network_operator_name
@@ -1580,7 +1580,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param error
  */
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x08
@@ -1588,27 +1588,28 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_START_RINGINIG                           0x0A
 
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_STOP_RINGINIG                            0x0B
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
 
 /**
  * @format 1HT
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param number
  */
 #define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                   0x0D
@@ -1616,14 +1617,14 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0E
 
 /**
  * @format 1HT
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param number
  */
 #define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x0F
@@ -1631,7 +1632,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1HT
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param dtmf code
  */
 #define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x10
@@ -1639,28 +1640,28 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_CALL_ANSWERED                            0x11
 
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_CONFERENCE_CALL                          0x12
 
 /**
  * @format 1H
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_RING                                     0x13
 
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param gain
  */
 #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
@@ -1668,7 +1669,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param gain
  */
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15
@@ -1676,7 +1677,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1T
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param type
  * @param number
  */
@@ -1685,7 +1686,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H1T
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param type
  * @param number
  */
@@ -1694,7 +1695,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H111111T
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
@@ -1708,7 +1709,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1H11T
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param status
  * @param bnip_type
  * @param bnip_number
@@ -1718,7 +1719,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1HT
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param value
  */
 #define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
@@ -1726,7 +1727,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1HT
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param command
  */
 #define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1B
@@ -1734,7 +1735,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1HT
  * @param subevent_code
- * @param con_handle
+ * @param acl_handle
  * @param command
  */
 #define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C

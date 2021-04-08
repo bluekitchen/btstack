@@ -3979,22 +3979,22 @@ static inline void hfp_subevent_service_level_connection_established_get_bd_addr
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_service_level_connection_released_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_service_level_connection_released_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_audio_connection_established_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_audio_connection_established_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4035,12 +4035,12 @@ static inline uint8_t hfp_subevent_audio_connection_established_get_negotiated_c
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_audio_connection_released_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_audio_connection_released_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4054,12 +4054,12 @@ static inline hci_con_handle_t hfp_subevent_audio_connection_released_get_sco_ha
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_COMPLETE
+ * @brief Get field acl_handle from event HFP_SUBEVENT_COMPLETE
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_complete_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_complete_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4073,12 +4073,12 @@ static inline uint8_t hfp_subevent_complete_get_status(const uint8_t * event){
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_ag_indicator_status_changed_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_ag_indicator_status_changed_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4155,12 +4155,12 @@ static inline const char * hfp_subevent_ag_indicator_status_changed_get_indicato
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_network_operator_changed_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_network_operator_changed_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4192,12 +4192,12 @@ static inline const char * hfp_subevent_network_operator_changed_get_network_ope
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
+ * @brief Get field acl_handle from event HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_extended_audio_gateway_error_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_extended_audio_gateway_error_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4211,33 +4211,42 @@ static inline uint8_t hfp_subevent_extended_audio_gateway_error_get_error(const 
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_START_RINGINIG
+ * @brief Get field acl_handle from event HFP_SUBEVENT_START_RINGINIG
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_start_ringinig_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_start_ringinig_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_STOP_RINGINIG
+ * @brief Get field acl_handle from event HFP_SUBEVENT_STOP_RINGINIG
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_stop_ringinig_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_stop_ringinig_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
-
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+ * @brief Get field acl_handle from event HFP_SUBEVENT_CALL_TERMINATED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_place_call_with_number_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_call_terminated_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_place_call_with_number_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4251,22 +4260,22 @@ static inline const char * hfp_subevent_place_call_with_number_get_number(const 
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_attach_number_to_voice_tag_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_attach_number_to_voice_tag_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
+ * @brief Get field acl_handle from event HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_number_for_voice_tag_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_number_for_voice_tag_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4280,12 +4289,12 @@ static inline const char * hfp_subevent_number_for_voice_tag_get_number(const ui
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_TRANSMIT_DTMF_CODES
+ * @brief Get field acl_handle from event HFP_SUBEVENT_TRANSMIT_DTMF_CODES
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_transmit_dtmf_codes_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_transmit_dtmf_codes_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4299,42 +4308,42 @@ static inline const char * hfp_subevent_transmit_dtmf_codes_get_dtmf(const uint8
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_CALL_ANSWERED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_CALL_ANSWERED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_call_answered_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_call_answered_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_CONFERENCE_CALL
+ * @brief Get field acl_handle from event HFP_SUBEVENT_CONFERENCE_CALL
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_conference_call_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_conference_call_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_RING
+ * @brief Get field acl_handle from event HFP_SUBEVENT_RING
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_ring_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_ring_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_SPEAKER_VOLUME
+ * @brief Get field acl_handle from event HFP_SUBEVENT_SPEAKER_VOLUME
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_speaker_volume_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_speaker_volume_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4348,12 +4357,12 @@ static inline uint8_t hfp_subevent_speaker_volume_get_gain(const uint8_t * event
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_MICROPHONE_VOLUME
+ * @brief Get field acl_handle from event HFP_SUBEVENT_MICROPHONE_VOLUME
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_microphone_volume_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_microphone_volume_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4367,12 +4376,12 @@ static inline uint8_t hfp_subevent_microphone_volume_get_gain(const uint8_t * ev
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_CALL_WAITING_NOTIFICATION
+ * @brief Get field acl_handle from event HFP_SUBEVENT_CALL_WAITING_NOTIFICATION
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_call_waiting_notification_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_call_waiting_notification_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4395,12 +4404,12 @@ static inline const char * hfp_subevent_call_waiting_notification_get_number(con
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
+ * @brief Get field acl_handle from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_calling_line_identification_notification_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_calling_line_identification_notification_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4423,12 +4432,12 @@ static inline const char * hfp_subevent_calling_line_identification_notification
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_enhanced_call_status_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_enhanced_call_status_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4496,12 +4505,12 @@ static inline const char * hfp_subevent_enhanced_call_status_get_bnip_number(con
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION
+ * @brief Get field acl_handle from event HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_subscriber_number_information_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_subscriber_number_information_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4533,12 +4542,12 @@ static inline const char * hfp_subevent_subscriber_number_information_get_bnip_n
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS
+ * @brief Get field acl_handle from event HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_response_and_hold_status_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_response_and_hold_status_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4552,12 +4561,12 @@ static inline const char * hfp_subevent_response_and_hold_status_get_value(const
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_AT_MESSAGE_SENT
+ * @brief Get field acl_handle from event HFP_SUBEVENT_AT_MESSAGE_SENT
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_at_message_sent_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_at_message_sent_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4571,12 +4580,12 @@ static inline const char * hfp_subevent_at_message_sent_get_command(const uint8_
 }
 
 /**
- * @brief Get field con_handle from event HFP_SUBEVENT_AT_MESSAGE_RECEIVED
+ * @brief Get field acl_handle from event HFP_SUBEVENT_AT_MESSAGE_RECEIVED
  * @param event packet
- * @return con_handle
+ * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_at_message_received_get_con_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_at_message_received_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**

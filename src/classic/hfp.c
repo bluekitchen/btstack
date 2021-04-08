@@ -49,7 +49,6 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "classic/core.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
@@ -57,7 +56,6 @@
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
-#include "l2cap.h"
 
 #if defined(ENABLE_CC256X_ASSISTED_HFP) && !defined(ENABLE_SCO_OVER_PCM)
 #error "Assisted HFP is only possible over PCM/I2S. Please add define: ENABLE_SCO_OVER_PCM"
@@ -331,25 +329,28 @@ static void hfp_emit_event_for_context(hfp_connection_t * hfp_connection, uint8_
 }
 
 void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     uint8_t event[5];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    little_endian_store_16(event, 3, acl_handle);
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
 void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    little_endian_store_16(event, 3, acl_handle);
     event[5] = value; // status 0 == OK
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
+    btstack_assert(hfp_connection != NULL);
     uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -364,6 +365,7 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
 }
 
 static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection, hci_con_handle_t sco_handle){
+    btstack_assert(hfp_connection != NULL);
     uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -377,6 +379,7 @@ static void hfp_emit_audio_connection_released(hfp_connection_t * hfp_connection
 }
 
 void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t sco_handle, bd_addr_t addr, uint8_t  negotiated_codec){
+    btstack_assert(hfp_connection != NULL);
     uint8_t event[15];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -394,6 +397,7 @@ void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_c
 }
 
 void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
+    btstack_assert(hfp_connection != NULL);
 #ifdef ENABLE_HFP_AT_MESSAGES
     uint8_t event[256];
 #else
