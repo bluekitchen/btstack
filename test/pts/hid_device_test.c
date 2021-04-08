@@ -266,19 +266,29 @@ static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type
 }
 
 
-// On systems with STDIN, we can directly type on the console
-#if 0
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - connect \n");
-    printf("l      - set limited discoverable mode\n");
-    printf("L      - restset limited discoverable mode\n");
+    printf("c      - Connect to %s...\n", bd_addr_to_str(device_addr));
+    printf("D      - Disconnect\n");
+    printf("I      - Disconnect from intrrupt channel %s...\n", bd_addr_to_str(device_addr));
+    printf("C      - Disconnect from control channel %s...\n", bd_addr_to_str(device_addr));
+    printf("\n");
+    
+    printf("l      - Set limited discoverable mode\n");
+    printf("m      - Request can send now (mouse)\n");
+    printf("M      - Request can send now (keyboard)\n");
+    printf("L      - Reset limited discoverable mode\n");
+    printf("u      - Unplug\n");
+    printf("y      - Set link supervision timeout to 0 \n");
+    printf("w      - Send sniff subrating cmd \n");
+    printf("z      - Enter sniff mode \n");
+    printf("t      - Write Link Policy\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
-#endif
 
 static void stdin_process(char character){
     switch (character){
@@ -324,11 +334,36 @@ static void stdin_process(char character){
             printf("Send unplug request to %s...\n", bd_addr_to_str(device_addr));
             hid_device_send_virtual_cable_unplug(hid_cid);
             break;
+    
+        case 'y':
+            printf("Set link supervision timeout to 0 \n");
+            hci_send_cmd(&hci_write_link_supervision_timeout, hid_con_handle, 0);
+            break;
+        
+        case 'w':
+            printf("Send sniff subrating cmd \n");
+            hci_send_cmd(&hci_sniff_subrating, hid_con_handle, 0, 0, 0);
+            break;
+
+        case 'z':{
+            printf("Enter sniff mode \n");
+            uint16_t sniff_min_interval = 18;
+            uint16_t sniff_max_interval = 18;
+            uint16_t sniff_attempt = 4;
+            uint16_t sniff_timeout = 2;
+            gap_sniff_mode_enter(hid_con_handle, sniff_min_interval, sniff_max_interval, sniff_attempt, sniff_timeout);
+            break;
+        }
+        case 't':
+            printf("Write Link Policy\n");
+            hci_send_cmd(&hci_write_link_policy_settings, hid_con_handle, LM_LINK_POLICY_ENABLE_SNIFF_MODE);
+            break;
+
         case '\n':
         case '\r':
             break;
         default:
-            // show_usage();
+            show_usage();
             break;
     }
 
@@ -466,6 +501,9 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_class_of_device(0x2540);
     gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
     
+    // Allow sniff mode requests by HID device and support role switch
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
+
     // L2CAP
     l2cap_init();
 

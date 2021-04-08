@@ -240,12 +240,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             event = hci_event_packet_get_type(packet);
 
             switch (event) {            
-                case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("BTstack up and running. \n");
-                    }
-                    break;
-
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");
