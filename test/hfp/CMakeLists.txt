@@ -78,8 +78,12 @@ list(APPEND SOURCES mock.c test_sequences.c)
 add_library(btstack STATIC ${SOURCES})
 
 # create targets for all examples
-file(GLOB EXAMPLES_C    "*.c")
+file(GLOB EXAMPLES_C "*.c")
 list(SORT EXAMPLES_C)
+
+# remove some
+file(GLOB EXAMPLES_OFF "test_sequences.c" "mock.c")
+list(REMOVE_ITEM EXAMPLES_C   ${EXAMPLES_OFF})
 
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})

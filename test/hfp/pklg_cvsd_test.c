@@ -51,7 +51,7 @@
 #include <unistd.h>
 
 #include "btstack.h"
-#include "btstack_cvsd_plc.h"
+#include "classic/btstack_cvsd_plc.h"
 
 #include "wav_util.h"
 
