@@ -218,6 +218,12 @@ hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c
 hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+hfp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_hf_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
