@@ -546,6 +546,13 @@ typedef struct {
     uint16_t sniff_subrating_min_remote_timeout;
     uint16_t sniff_subrating_min_local_timeout;
 
+    // QoS
+    hci_service_type_t qos_service_type;
+    uint32_t qos_token_rate;
+    uint32_t qos_peak_bandwidth;
+    uint32_t qos_latency;
+    uint32_t qos_delay_variation;
+
 #ifdef ENABLE_SCO_OVER_HCI
     // track SCO rx event
     uint32_t sco_rx_ms;

@@ -807,8 +807,21 @@ uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
  * @param max_latency range: 0x0002 to 0xFFFE; Time = N * 0.625 ms
  * @param min_remote_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
  * @param min_local_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
+ @ @return 0 if ok
  */
 uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_latency, uint16_t min_remote_timeout, uint16_t min_local_timeout);
+
+/**
+ * @Brief Set QoS
+ * @param con_handle
+ * @param service_type
+ * @param token_rate
+ * @param peak_bandwidth
+ * @param latency
+ * @param delay_variation
+ @ @return 0 if ok
+ */
+uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type, uint32_t token_rate, uint32_t peak_bandwidth, uint32_t latency, uint32_t delay_variation);
 
 // LE
 

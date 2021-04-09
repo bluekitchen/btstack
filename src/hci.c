@@ -213,6 +213,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
 #ifdef ENABLE_CLASSIC
     conn->request_role = HCI_ROLE_INVALID;
     conn->sniff_subrating_max_latency = 0xffff;
+    conn->qos_service_type = HCI_SERVICE_TyPE_INVALID;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
@@ -4501,6 +4502,13 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
+        if (connection->qos_service_type != HCI_SERVICE_TyPE_INVALID){
+            uint8_t service_type = (uint8_t) connection->qos_service_type;
+            connection->qos_service_type = HCI_SERVICE_TyPE_INVALID;
+            hci_send_cmd(&hci_qos_setup, connection->con_handle, 0, service_type, connection->qos_token_rate, connection->qos_peak_bandwidth, connection->qos_latency, connection->qos_delay_variation);
+            return true;
+        }
+
         if (connection->request_role != HCI_ROLE_INVALID){
             hci_role_t role = connection->request_role;
             connection->request_role = HCI_ROLE_INVALID;
@@ -6371,6 +6379,18 @@ uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_
     conn->sniff_subrating_max_latency = max_latency;
     conn->sniff_subrating_min_remote_timeout = min_remote_timeout;
     conn->sniff_subrating_min_local_timeout = min_local_timeout;
+    hci_run();
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type, uint32_t token_rate, uint32_t peak_bandwidth, uint32_t latency, uint32_t delay_variation){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    conn->qos_service_type = service_type;
+    conn->qos_token_rate = token_rate;
+    conn->qos_peak_bandwidth = peak_bandwidth;
+    conn->qos_latency = latency;
+    conn->qos_delay_variation = delay_variation;
     hci_run();
     return ERROR_CODE_SUCCESS;
 }
