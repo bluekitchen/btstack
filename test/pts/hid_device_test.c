@@ -281,10 +281,9 @@ static void show_usage(void){
     printf("M      - Request can send now (keyboard)\n");
     printf("L      - Reset limited discoverable mode\n");
     printf("u      - Unplug\n");
-    printf("y      - Set link supervision timeout to 0 \n");
-    printf("w      - Send sniff subrating cmd \n");
-    printf("z      - Enter sniff mode \n");
-    printf("t      - Write Link Policy\n");
+    printf("w      - Set sniff subrating\n");
+    printf("z      - Enter sniff mode\n");
+    printf("q      - Set QoS 'Guaranteed'\n");
 
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -334,15 +333,10 @@ static void stdin_process(char character){
             printf("Send unplug request to %s...\n", bd_addr_to_str(device_addr));
             hid_device_send_virtual_cable_unplug(hid_cid);
             break;
-    
-        case 'y':
-            printf("Set link supervision timeout to 0 \n");
-            hci_send_cmd(&hci_write_link_supervision_timeout, hid_con_handle, 0);
-            break;
-        
+
         case 'w':
-            printf("Send sniff subrating cmd \n");
-            hci_send_cmd(&hci_sniff_subrating, hid_con_handle, 0, 0, 0);
+            printf("Set sniff subrating\n");
+            gap_sniff_subrating_configure(hid_con_handle, 0, 0, 0);
             break;
 
         case 'z':{
@@ -354,14 +348,15 @@ static void stdin_process(char character){
             gap_sniff_mode_enter(hid_con_handle, sniff_min_interval, sniff_max_interval, sniff_attempt, sniff_timeout);
             break;
         }
-        case 't':
-            printf("Write Link Policy\n");
-            hci_send_cmd(&hci_write_link_policy_settings, hid_con_handle, LM_LINK_POLICY_ENABLE_SNIFF_MODE);
+        case 'q':
+            printf("Set QoS 'Guaranteed'\n");
+            gap_qos_set(hid_con_handle, 1, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff);
             break;
 
         case '\n':
         case '\r':
             break;
+
         default:
             show_usage();
             break;

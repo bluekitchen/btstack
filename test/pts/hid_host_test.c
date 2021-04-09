@@ -539,8 +539,8 @@ static void stdin_process(char cmd){
             break;
         
         case 'w':
-            printf("Send sniff subrating cmd \n");
-            hci_send_cmd(&hci_sniff_subrating, hid_host_con_handle, host_max_latency, host_min_timeout, 0);
+            printf("Configure sniff subrating\n");
+            gap_sniff_subrating_configure(hid_host_con_handle, host_max_latency, host_min_timeout, 0);
             break;
         
         case '\n':
