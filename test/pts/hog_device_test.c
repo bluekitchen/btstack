@@ -250,6 +250,9 @@ static void le_keyboard_setup(void){
     // setup device information service
     device_information_service_server_init();
 
+    // setup scan parameters service
+    scan_parameters_service_server_init(packet_handler);
+
     // setup HID Device service
 
 #ifdef MAUSE_MODE
@@ -541,6 +544,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             break;
                     }
             }
+            break;
+        case HCI_EVENT_GATTSERVICE_META:
+            switch (hci_event_hids_meta_get_subevent_code(packet)){
+                case GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE:
+                    printf("Max scan interval 0x%02X, Min scan window 0x%02X \n", 
+                        gattservice_subevent_scan_parameters_service_scan_interval_update_get_max_scan_interval(packet),
+                        gattservice_subevent_scan_parameters_service_scan_interval_update_get_min_scan_window(packet));
+                    break;
+                default:  
+                    break;
+            }
+            break;
+
+        default:
             break;
     }
 }

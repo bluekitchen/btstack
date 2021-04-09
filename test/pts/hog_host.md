@@ -85,4 +85,9 @@ HOGP/BH/HGNF/BV-02-I: h
 HOGP/BH/HGNF/BV-03-I: h
 HOGP/BH/HGNF/BI-01-I: h
 
+Tool: hog_device_test
+
+HOGP/HD/HGDS/BV-01-I: (wait)
+HOGP/HD/HGDS/BV-02-I: (wait)
+
 
