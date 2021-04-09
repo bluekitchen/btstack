@@ -60,8 +60,6 @@ static btstack_packet_handler_t                 scan_parameters_packet_handler;
 static btstack_context_callback_registration_t  scan_parameters_callback;
 static att_service_handler_t                    scan_parameters_service;
 
-static uint16_t scan_interval_window_value;
-
 static uint16_t scan_interval_window_value_handle;
 static uint16_t scan_interval_window_value_handle_client_configuration;
 
@@ -72,6 +70,24 @@ static hci_con_handle_t scan_refresh_value_client_configuration_connection;
 
 static uint16_t scan_refresh_value_handle;
 static uint16_t scan_refresh_value_handle_client_configuration;
+
+static void scan_parameters_service_emit_state(hci_con_handle_t con_handle, uint16_t max_scan_interval, uint16_t min_scan_window){
+    if (scan_parameters_packet_handler == NULL) return;
+    
+    uint8_t  event[9];
+    uint16_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE;
+    little_endian_store_16(event, pos, (uint16_t) con_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, max_scan_interval);
+    pos += 2;
+    little_endian_store_16(event, pos, min_scan_window);
+    pos += 2;
+    
+    (*scan_parameters_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
 
 static uint16_t scan_parameters_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
@@ -88,27 +104,34 @@ static int scan_parameters_service_write_callback(hci_con_handle_t con_handle, u
     UNUSED(buffer_size);
 
     if (attribute_handle == scan_interval_window_value_handle){
-        if (buffer != NULL){
-            scan_interval_window_value = little_endian_read_16(buffer, 0);
+        if (buffer_size == 4){
+            uint16_t max_scan_interval = little_endian_read_16(buffer, 0);
+            uint16_t min_scan_window   = little_endian_read_16(buffer, 2);
+            scan_parameters_service_emit_state(con_handle, max_scan_interval, min_scan_window);
+            return ATT_ERROR_SUCCESS;
+        } else {
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
-        return 2;
     }
 
     if (attribute_handle == scan_refresh_value_handle_client_configuration){
-        if (buffer != NULL){
+        if (buffer_size == 2){
             scan_refresh_value_client_configuration = little_endian_read_16(buffer, 0);
             scan_refresh_value_client_configuration_connection = con_handle;
+            return ATT_ERROR_SUCCESS;
+        } else {
+            return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
         }
-        return 2;
     }
-    return 0;
+
+    return ATT_ERROR_UNLIKELY_ERROR;
 }
 
 static void scan_parameters_service_refresh_can_send_now(void * context){
-    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
+    UNUSED(context);
     uint8_t value[2];
     little_endian_store_16(value, 0, scan_refresh_value);
-    att_server_notify(con_handle, scan_refresh_value_handle, value, 2);
+    att_server_notify(scan_refresh_value_client_configuration_connection, scan_refresh_value_handle, value, 2);
 }
 
 /**
@@ -145,7 +168,7 @@ void scan_parameters_service_server_set_scan_refresh(uint16_t scan_refresh){
     scan_refresh_value = scan_refresh;
     if (scan_refresh_value_client_configuration != 0){
         scan_parameters_callback.callback = &scan_parameters_service_refresh_can_send_now;
-        scan_parameters_callback.context  = (void*) (uintptr_t) scan_refresh_value_client_configuration_connection;
+        scan_parameters_callback.context  = NULL;
         att_server_register_can_send_now_callback(&scan_parameters_callback, scan_refresh_value_client_configuration_connection);
     }
 }

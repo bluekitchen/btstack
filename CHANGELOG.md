@@ -20,8 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
 - GATT Client: Battery Service Client 
 - GATT Client: Device Information Service Client
-- GATT Client: Scan Parameters Service Client 
 - GATT Client: HID-over-GATT (HOG) Client, Report and Boot Host
+- GATT Client: Scan Parameters Service Client 
+- GATT Server: Scan Parameters Service Server 
 - GAP: add `gap_set_page_scan_activity` and `gap_set_page_scan_type`
 - GAP: support sniff subrating with `gap_sniff_subrating_configure`
 - AVRCP: new field `button_pressed` in `AVRCP_SUBEVENT_OPERATION`

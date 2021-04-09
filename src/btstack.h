@@ -92,6 +92,7 @@
 #include "ble/gatt-service/hids_client.h"
 #include "ble/gatt-service/hids_device.h"
 #include "ble/gatt-service/scan_parameters_service_client.h"
+#include "ble/gatt-service/scan_parameters_service_server.h"
 #ifdef ENABLE_MESH
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "ble/gatt-service/mesh_proxy_service_server.h"

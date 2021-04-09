@@ -9971,6 +9971,34 @@ static inline uint8_t gattservice_subevent_hid_service_reports_notification_get_
 }
 
 /**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gattservice_subevent_scan_parameters_service_scan_interval_update_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field max_scan_interval from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE
+ * @param event packet
+ * @return max_scan_interval
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_scan_parameters_service_scan_interval_update_get_max_scan_interval(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field min_scan_window from event GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE
+ * @param event packet
+ * @return min_scan_window
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_scan_parameters_service_scan_interval_update_get_min_scan_window(const uint8_t * event){
+    return little_endian_read_16(event, 7);
+}
+
+/**
  * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return map_cid

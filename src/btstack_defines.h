@@ -3295,6 +3295,16 @@ typedef uint8_t sm_key_t[16];
 */
 #define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17
 
+/**
+ * @format 1H22
+ * @param subevent_code
+ * @param con_handle
+ * @param max_scan_interval
+ * @param min_scan_window
+ */
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x18
+
+
 // MAP Meta Event Group
 
 /**
