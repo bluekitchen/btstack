@@ -485,7 +485,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 static int hid_device_connection_filter(bd_addr_t addr, hci_link_type_t link_type){
     UNUSED(link_type);
     if (virtual_cable_enabled && !virtual_cable_unplugged && (memcmp(addr, device_addr, 6) != 0)){
-        return 0;  
+        printf("Virtual Cable: reject incoming connection from %s\n", bd_addr_to_str(addr));
+        return 0;
     }
     return 1;
 }
@@ -497,9 +498,8 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     gap_discoverable_control(1);
-    
     gap_set_class_of_device(0x2540);
-    gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
+    gap_set_local_name("HID Device 00:00:00:00:00:00");
     
     // Allow sniff mode requests by HID device and support role switch
     gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
@@ -517,6 +517,7 @@ int btstack_main(int argc, const char * argv[]){
     uint8_t hid_normally_connectable = 1;
 
     if (hid_virtual_cable == 1){
+        printf("Virtual Cable enabled, accept only connections from %s\n", device_addr_string);
         virtual_cable_enabled = true;
         virtual_cable_unplugged = false;
     }
