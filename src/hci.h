@@ -51,11 +51,14 @@
 #include "btstack_control.h"
 #include "btstack_linked_list.h"
 #include "btstack_util.h"
-#include "classic/btstack_link_key_db.h"
 #include "hci_cmd.h"
 #include "gap.h"
 #include "hci_transport.h"
 #include "btstack_run_loop.h"
+
+#ifdef ENABLE_CLASSIC
+#include "classic/btstack_link_key_db.h"
+#endif
 
 #ifdef ENABLE_BLE
 #include "ble/att_db.h"
