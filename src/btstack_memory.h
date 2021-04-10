@@ -58,6 +58,7 @@ extern "C" {
 #include "l2cap.h"
 
 // Classic
+#ifdef ENABLE_CLASSIC
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
 #include "classic/avrcp.h"
@@ -68,6 +69,7 @@ extern "C" {
 #include "classic/hid_host.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
+#endif
 
 // BLE
 #ifdef ENABLE_BLE
