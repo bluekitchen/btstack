@@ -56,6 +56,7 @@
 #include "btstack_defines.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
+#include "btstack_ring_buffer.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
