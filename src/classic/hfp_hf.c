@@ -1335,7 +1335,6 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
     if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
 
     hfp_connection->trigger_codec_exchange = 0;
-    hfp_connection->establish_audio_connection = 1;
     if (!has_codec_negotiation_feature(hfp_connection)){
         log_info("no codec negotiation feature, using NBS");
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
@@ -1343,6 +1342,7 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
         hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
         hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
         hfp_init_link_settings(hfp_connection, hfp_hf_esco_s4_supported(hfp_connection));
+        hfp_connection->establish_audio_connection = 1;
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
     } else {
         switch (hfp_connection->codecs_state){

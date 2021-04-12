@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: allow to disable link supervision timeout
 - HFP HF: only emit single event for RING and AG Status updates
 - HFP AG: fix audio connection setup for in-band ringtone on incoming connection
+- HFP: fix audio connection setup by HF if codec negotiation is supported
 
 ### Changed
 - HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
@@ -67,7 +68,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 - HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 - Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
-- HFP: provide acl_handle in  events to identify connection
+- HFP: provide acl_handle in events to identify connection
 - HCI Transport: extract convenience function declaration for h4, h5, em9304_spi, and usb into separate hci_transport_{type}.h
 - GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic and Read Long Characteristic Descriptor
 - HID: Move `src/classic/hid.h` into `src` and prefix with `btstack_` to use it with BLE and avoid name clashes
