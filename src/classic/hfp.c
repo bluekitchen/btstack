@@ -729,9 +729,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
                     if (!hfp_connection) break;
                     if (hci_event_connection_request_get_link_type(packet) == 2){
-                        hfp_connection->hf_accept_sco = 2;
+                        hfp_connection->accept_sco = 2;
                     } else {
-                        hfp_connection->hf_accept_sco = 1;
+                        hfp_connection->accept_sco = 1;
                     }
 #ifdef ENABLE_CC256X_ASSISTED_HFP
                     hfp_cc256x_prepare_for_sco(hfp_connection);
@@ -739,7 +739,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_BCM_PCM_WBS
                     hfp_bcm_prepare_for_sco(hfp_connection);
 #endif
-                    log_info("hf accept sco %u\n", hfp_connection->hf_accept_sco);
+                    log_info("accept sco %u\n", hfp_connection->accept_sco);
                     sco_establishment_active = hfp_connection;
                     break;
                 default:
@@ -772,7 +772,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             status = hci_event_synchronous_connection_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                hfp_connection->hf_accept_sco = 0;
+                hfp_connection->accept_sco = 0;
                 if (hfp_handle_failed_sco_connection(status)) break;
 
                 hfp_connection->establish_audio_connection = 0;
@@ -1677,6 +1677,47 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     uint16_t packet_types = hfp_link_settings[setting].packet_types ^ 0x03c0;
     hci_send_cmd(&hci_setup_synchronous_connection, hfp_connection->acl_handle, 8000, 8000, hfp_link_settings[setting].max_latency,
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, packet_types);
+}
+
+void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO){
+
+    // remote supported feature eSCO is set if link type is eSCO
+    // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms,
+    uint16_t max_latency;
+    uint8_t  retransmission_effort;
+    uint16_t packet_types;
+
+    if (incoming_eSCO && hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
+        max_latency = 0x000c;
+        retransmission_effort = 0x02;
+        // eSCO: EV3 and 2-EV3
+        packet_types = 0x0048;
+    } else {
+        max_latency = 0xffff;
+        retransmission_effort = 0xff;
+        // sco: HV1 and HV3
+        packet_types = 0x005;
+    }
+
+    // mSBC only allows for transparent data
+    uint16_t sco_voice_setting = hci_get_sco_voice_setting();
+    if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
+#ifdef ENABLE_BCM_PCM_WBS
+        sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
+#else
+        sco_voice_setting = 0x0043; // Transparent data, 8-bit otherwise
+#endif
+    }
+
+    // filter packet types
+    packet_types &= hfp_get_sco_packet_types();
+
+    // bits 6-9 are 'don't allow'
+    packet_types ^= 0x3c0;
+
+    log_info("HFP: sending hci_accept_connection_request, packet types 0x%04x, sco_voice_setting 0x%02x", packet_types, sco_voice_setting);
+    hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency,
+                 sco_voice_setting, retransmission_effort, packet_types);
 }
 
 #ifdef ENABLE_CC256X_ASSISTED_HFP

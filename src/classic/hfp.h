@@ -559,11 +559,13 @@ typedef struct hfp_connection {
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
     uint8_t sco_for_msbc_failed;
-    
-    hfp_link_settings_t link_setting;
-
     uint8_t trigger_codec_exchange;
-    uint8_t establish_audio_connection; 
+
+    // establish audio connection
+    hfp_link_settings_t link_setting;
+    uint8_t accept_sco; // 1 = SCO, 2 = eSCO
+
+    uint8_t establish_audio_connection;
     uint8_t release_audio_connection; 
     uint8_t release_slc_connection; 
 
@@ -597,7 +599,6 @@ typedef struct hfp_connection {
     int next_call_index;
 
     // HF only
-    uint8_t hf_accept_sco;
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_initiate_outgoing_call;
@@ -700,6 +701,7 @@ void hfp_reset_context_flags(hfp_connection_t * connection);
 void hfp_release_audio_connection(hfp_connection_t * connection);
 
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
+void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO);
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
 void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);

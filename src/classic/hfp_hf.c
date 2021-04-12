@@ -604,53 +604,14 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
     }
 #endif
 
-    if (hfp_connection->hf_accept_sco){
-
-        bool eSCO = hfp_connection->hf_accept_sco == 2;
-        hfp_connection->hf_accept_sco = 0;
-
+    if (hfp_connection->accept_sco){
+        bool incoming_eSCO = hfp_connection->accept_sco == 2;
+        hfp_connection->accept_sco = 0;
         // notify about codec selection if not done already
         if (hfp_connection->negotiated_codec == 0){
             hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
         }
-
-        // remote supported feature eSCO is set if link type is eSCO
-        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
-        uint16_t max_latency;
-        uint8_t  retransmission_effort;
-        uint16_t packet_types;
-        
-        if (eSCO && hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
-            max_latency = 0x000c;
-            retransmission_effort = 0x02;
-            // eSCO: EV3 and 2-EV3
-            packet_types = 0x0048;
-        } else {
-            max_latency = 0xffff;
-            retransmission_effort = 0xff;
-            // sco: HV1 and HV3
-            packet_types = 0x005;
-        }
-
-        // mSBC only allows for transparent data
-        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
-        if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
-#ifdef ENABLE_BCM_PCM_WBS
-            sco_voice_setting = 0x0063; // Transparent data, 16-bit for BCM controllers
-#else
-            sco_voice_setting = 0x0043; // Transparent data, 8-bit otherwise
-#endif
-        }
-
-        // filter packet types
-        packet_types &= hfp_get_sco_packet_types();
-
-        // bits 6-9 are 'don't allow'
-        packet_types ^= 0x3c0;
-
-        log_info("HFP: sending hci_accept_connection_request, packet types 0x%04x, sco_voice_setting 0x%02x", packet_types, sco_voice_setting);
-        hci_send_cmd(&hci_accept_synchronous_connection, hfp_connection->remote_addr, 8000, 8000, max_latency, 
-                        sco_voice_setting, retransmission_effort, packet_types);
+        hfp_accept_synchronous_connection(hfp_connection, incoming_eSCO);
         return;
     }
 
