@@ -18,6 +18,7 @@ COMMON += \
 	ad_parser.c                 \
 	hci_cmd.c		            \
 	hci_dump.c		            \
+	hci_dump_posix_fs.c         \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
 	hci_transport_h2_libusb.c 	\
