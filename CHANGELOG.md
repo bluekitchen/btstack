@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
 - HFP: provide acl_handle in  events to identify connection
 - HCI Transport: extract convenience function declaration for h4, h5, em9304_spi, and usb into separate hci_transport_{type}.h
-- GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic
+- GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic and Read Long Characteristic Descriptor
 - HID: Move `src/classic/hid.h` into `src` and prefix with `btstack_` to use it with BLE and avoid name clashes
 
 ## Release v1.3.2
