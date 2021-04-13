@@ -572,6 +572,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
 
     uint16_t supported_features                   =
+        (1<<HFP_AGSF_EC_NR_FUNCTION)              |
         (1<<HFP_AGSF_ESCO_S4)                     |
         (1<<HFP_AGSF_HF_INDICATORS)               |
         (1<<HFP_AGSF_CODEC_NEGOTIATION)           |
