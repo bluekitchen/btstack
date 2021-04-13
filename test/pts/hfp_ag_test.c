@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -88,10 +88,10 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
     // index, name, min range, max range, status, mandatory, enabled, status changed
-    {1, "service",   0, 1, 1, 0, 0, 0},
+    {1, "service",   0, 1, 1, 0, 1, 0},
     {2, "call",      0, 1, 0, 1, 1, 0},
     {3, "callsetup", 0, 3, 0, 1, 1, 0},
-    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {4, "battchg",   0, 5, 3, 0, 1, 0},
     {5, "signal",    0, 5, 5, 0, 1, 0},
     {6, "roam",      0, 1, 0, 0, 1, 0},
     {7, "callheld",  0, 2, 0, 1, 1, 0}
