@@ -469,6 +469,13 @@ static int hfp_ag_send_report_network_operator_name_cmd(uint16_t cid, hfp_networ
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static inline int hfp_ag_send_cmd_with_space_and_int(uint16_t cid, const char * cmd, uint8_t value){
+    char buffer[30];
+    snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n", cmd, value);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+
 static inline int hfp_ag_send_cmd_with_int(uint16_t cid, const char * cmd, uint8_t value){
     char buffer[30];
     snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n", cmd, value);
@@ -480,7 +487,7 @@ static int hfp_ag_send_suggest_codec_cmd(uint16_t cid, uint8_t codec){
 }
 
 static int hfp_ag_send_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_voice_recognition){
-    return hfp_ag_send_cmd_with_int(cid, HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
+    return hfp_ag_send_cmd_with_space_and_int(cid, HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
 }
 
 static int hfp_ag_send_set_speaker_gain_cmd(uint16_t cid, uint8_t gain){
