@@ -53,6 +53,8 @@
 #include "classic/hfp_hf.h"
 #include "classic/sdp_client.h"
 #include "classic/sdp_client_rfcomm.h"
+#include "hci.h"
+#include "l2cap.h"
 
 #include "mock.h"
 
@@ -130,8 +132,8 @@ void print_without_newlines(uint8_t *data, uint16_t len){
     printf("\n");
 }
 
-extern "C" void l2cap_init(void){}
-extern "C" void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+void l2cap_init(void){}
+void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
     registered_hci_packet_handler = callback_handler->callback;
 }
 
