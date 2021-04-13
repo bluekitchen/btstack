@@ -287,7 +287,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
         for (c=0;c<SCO_IN_BUFFER_COUNT;c++){
             if (transfer == sco_in_transfer[c]){
                 libusb_free_transfer(transfer);
-                sco_in_transfer[c] = 0;
+                sco_in_transfer[c] = NULL;
                 return;
             }
         }
@@ -296,7 +296,7 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
             if (transfer == sco_out_transfers[c]){
                 sco_out_transfers_in_flight[c] = 0;
                 libusb_free_transfer(transfer);
-                sco_out_transfers[c] = 0;
+                sco_out_transfers[c] = NULL;
                 return;
             }
         }
@@ -877,19 +877,61 @@ static void usb_sco_stop(void){
     log_info("usb_sco_stop");
     sco_shutdown = 1;
 
+    // Free SCO transfers already in queue
+    struct libusb_transfer* transfer = handle_packet;
+    struct libusb_transfer* prev_transfer = NULL;
+    while (transfer != NULL) {
+        uint16_t c;
+        bool drop_transfer = false;
+        for (c=0;c<SCO_IN_BUFFER_COUNT;c++){
+            if (transfer == sco_in_transfer[c]){
+                sco_in_transfer[c] = NULL;
+                drop_transfer = true;
+                break;
+            }
+        }
+        for (c=0;c<SCO_OUT_BUFFER_COUNT;c++){
+            if (transfer == sco_out_transfers[c]){
+                sco_out_transfers_in_flight[c] = 0;
+                sco_out_transfers[c] = NULL;
+                drop_transfer = true;
+                break;
+            }
+        }
+        struct libusb_transfer * next_transfer = (struct libusb_transfer *) transfer->user_data;
+        if (drop_transfer) {
+            printf("Drop completed SCO transfer %p\n", transfer);
+            if (prev_transfer == NULL) {
+                // first item
+                handle_packet = (struct libusb_transfer *) next_transfer;
+            } else {
+                // other item
+                prev_transfer->user_data = (struct libusb_transfer *) next_transfer;
+            }
+            libusb_free_transfer(transfer);
+        } else {
+            prev_transfer = transfer;
+        }
+        transfer = next_transfer;
+    }
+
     libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
 
     int c;
     for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-        libusb_cancel_transfer(sco_in_transfer[c]);
+        if (sco_in_transfer[c] != NULL) {
+            libusb_cancel_transfer(sco_in_transfer[c]);
+        }
     }
 
     for (c = 0; c < SCO_OUT_BUFFER_COUNT ; c++){
         if (sco_out_transfers_in_flight[c]) {
             libusb_cancel_transfer(sco_out_transfers[c]);
         } else {
-            libusb_free_transfer(sco_out_transfers[c]);
-            sco_out_transfers[c] = 0;
+            if (sco_out_transfers[c] != NULL) {
+                libusb_free_transfer(sco_out_transfers[c]);
+                sco_out_transfers[c] = 0;
+            }
         }
     }
 
@@ -904,7 +946,7 @@ static void usb_sco_stop(void){
 
         // Cancel all synchronous transfer
         for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-            if (sco_in_transfer[c]){
+            if (sco_in_transfer[c] != NULL){
                 completed = 0;
                 break;
             }
@@ -913,7 +955,7 @@ static void usb_sco_stop(void){
         if (!completed) continue;
 
         for (c=0; c < SCO_OUT_BUFFER_COUNT ; c++){
-            if (sco_out_transfers[c]){
+            if (sco_out_transfers[c] != NULL){
                 completed = 0;
                 break;
             }
@@ -1225,8 +1267,10 @@ static int usb_close(void){
                     log_info("cancel sco_out_transfers[%u] = %p", c, sco_out_transfers[c]);
                     libusb_cancel_transfer(sco_out_transfers[c]);
                 } else {
-                    libusb_free_transfer(sco_out_transfers[c]);
-                    sco_out_transfers[c] = 0;
+                    if (sco_out_transfers[c] != NULL){
+                        libusb_free_transfer(sco_out_transfers[c]);
+                        sco_out_transfers[c] = 0;
+                    }
                 }
             }
 #endif
@@ -1279,7 +1323,7 @@ static int usb_close(void){
                 if (!completed) continue;
 
                 for (c=0; c < SCO_OUT_BUFFER_COUNT ; c++){
-                    if (sco_out_transfers[c]){
+                    if (sco_out_transfers[c] != NULL){
                         log_info("sco_out_transfers[%u] still active (%p)", c, sco_out_transfers[c]);
                         completed = 0;
                         break;
