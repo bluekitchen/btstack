@@ -133,11 +133,12 @@ int wav_writer_open(const char * filepath, int num_channels, int sampling_freque
 }
 
 int wav_writer_close(void){
-    if (!wav_writer_state.wav_file) return 0;
+    if (wav_writer_state.wav_file == NULL) return 0;
     rewind(wav_writer_state.wav_file);
     write_wav_header(wav_writer_state.wav_file, wav_writer_state.total_num_samples, 
         wav_writer_state.num_channels, wav_writer_state.sampling_frequency);
     fclose(wav_writer_state.wav_file);
+    wav_writer_state.wav_file = NULL;
     return 0;
 }
 
