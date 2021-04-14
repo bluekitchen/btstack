@@ -994,7 +994,7 @@ static hfp_command_entry_t hfp_ag_commmand_table[] = {
     { "AT+NREC=",  HFP_CMD_TURN_OFF_EC_AND_NR, },
     { "AT+VGM=",   HFP_CMD_SET_MICROPHONE_GAIN },
     { "AT+VGS=",   HFP_CMD_SET_SPEAKER_GAIN },
-    { "AT+VTS:",   HFP_CMD_TRANSMIT_DTMF_CODES },
+    { "AT+VTS=",   HFP_CMD_TRANSMIT_DTMF_CODES },
     { "ATA",       HFP_CMD_CALL_ANSWERED },
 };
 
