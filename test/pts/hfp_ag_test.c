@@ -160,11 +160,11 @@ static void show_usage(void){
     printf("g - Set signal strength to 0            | G - Set signal strength to 5\n");
     printf("h - Disable roaming                     | H - Enable roaming\n");
     printf("i - Set battery level to 3              | I - Set battery level to 5\n");
-    printf("j - Answering call on remote side\n");
+    printf("j - Answer call on remote side\n");
     printf("k - Clear memory #1                     | K - Set memory #1\n");
-    printf("l - Clear last number                   | L - Set last number\n");
+    printf("l - Clear last number                   | L - Set last number to 7654321\n");
     printf("m - simulate incoming call from 7654321\n");
-    // printf("M - simulate call from 7654321 dropped\n");
+    printf("M - simulate outgoing call to 1234567\n");
     printf("n - Disable Voice Regocnition           | N - Enable Voice Recognition\n");
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
@@ -308,6 +308,11 @@ static void stdin_process(char cmd){
             hfp_ag_clear_last_dialed_number();
             break;
         case 'L':
+            log_info("USER:\'%c\'", cmd);
+            printf("Set last dialed number to 7654321\n");
+            hfp_ag_set_last_dialed_number("7654321");
+            break;
+        case 'M':
             log_info("USER:\'%c\'", cmd);
             printf("Outgoing call connected, ringing\n");
             hfp_ag_outgoing_call_ringing();
@@ -520,7 +525,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 
                 case HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG:
-                    printf("Attach number to voice tag. Sending '1234567\n");
+                    printf("Attach number to voice tag. Sending 1234567\n");
                     hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
                     break;
                 case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
@@ -529,6 +534,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case HFP_SUBEVENT_CALL_ANSWERED:
                     printf("Call answered by HF\n");
+                    break;
+                case HFP_SUBEVENT_SPEAKER_VOLUME:
+                    printf("Set speaker volume to %d\n", hfp_subevent_speaker_volume_get_gain(event));
+                    break;
+                case HFP_SUBEVENT_MICROPHONE_VOLUME:
+                    printf("Set microphone volume to %d\n", hfp_subevent_microphone_volume_get_gain(event));
                     break;
                 default:
                     break;
@@ -582,7 +593,8 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_ABILITY_TO_REJECT_A_CALL)    |
         (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
         (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
-        (1<<HFP_AGSF_THREE_WAY_CALLING);
+        (1<<HFP_AGSF_THREE_WAY_CALLING)           |
+        (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG);
     int wide_band_speech = 1;
 
     // HFP
