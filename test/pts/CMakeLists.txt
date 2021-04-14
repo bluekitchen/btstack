@@ -62,6 +62,7 @@ endif()
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
 
+include_directories(.)
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)
@@ -80,8 +81,6 @@ include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
-include_directories(../../port/libusb)
-include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
