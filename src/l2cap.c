@@ -144,6 +144,7 @@ static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uin
 static uint8_t  l2cap_next_sig_id(void);
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
 #ifdef ENABLE_CLASSIC
+static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm);
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel);
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
@@ -608,7 +609,10 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, ertm_config->local_mtu, LEVEL_0);
+    // determine security level based on psm
+    const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
+
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, ertm_config->local_mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
