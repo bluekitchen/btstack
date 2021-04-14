@@ -499,7 +499,7 @@ static int hfp_ag_send_set_microphone_gain_cmd(uint16_t cid, uint8_t gain){
 }
             
 static int hfp_ag_send_set_response_and_hold(uint16_t cid, int state){
-    return hfp_ag_send_cmd_with_int(cid, HFP_RESPONSE_AND_HOLD, state);
+    return hfp_ag_send_cmd_with_space_and_int(cid, HFP_RESPONSE_AND_HOLD, state);
 }
 
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
