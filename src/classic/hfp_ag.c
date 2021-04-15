@@ -520,8 +520,14 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             ag_trigger_codec_connection_setup == received from AG to send BCS
         HFP_CMD_HF_CONFIRMED_CODEC == received AT+BCS
     */
-            
-     switch (hfp_connection->codecs_state){
+    switch (hfp_connection->codecs_state){
+        case HFP_CODECS_EXCHANGED:
+            if (hfp_connection->command == HFP_CMD_AVAILABLE_CODECS){
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                return 1;
+            }
+            break;
+
         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
             hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
             break;
@@ -542,7 +548,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
 
             switch (hfp_connection->codecs_state){
                 case HFP_CODECS_AG_SENT_COMMON_CODEC:
-                case HFP_CODECS_EXCHANGED:
                     hfp_connection->codecs_state = HFP_CODECS_AG_RESEND_COMMON_CODEC;
                     break;
                 default:
