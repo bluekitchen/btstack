@@ -164,6 +164,10 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
+# Enable ASAN
+add_compile_options( -g -fsanitize=address)
+add_link_options(       -fsanitize=address)
+
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
