@@ -1831,7 +1831,6 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 
     // trigger codec exchange (must be before hfp_ag_run_for_audio_connection)
     if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && hfp_connection->trigger_codec_exchange){
-        log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
         switch (hfp_connection->codecs_state){
             case HFP_CODECS_IDLE:
             case HFP_CODECS_RECEIVED_LIST:
@@ -2222,8 +2221,23 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
 #endif
         return;
     } 
+
+    uint8_t i;
+    bool codec_was_in_use = false;
+    bool better_codec_can_be_used = false;
+
+    for (i = 0; i<hfp_connection->remote_codecs_nr; i++){
+        if (hfp_connection->negotiated_codec == hfp_connection->remote_codecs[i]){
+            codec_was_in_use = true;
+        } else if (hfp_connection->negotiated_codec < hfp_connection->remote_codecs[i]){
+            better_codec_can_be_used = true;
+        }
+    }
     
-    hfp_connection->trigger_codec_exchange = 1;
+    if (!codec_was_in_use || better_codec_can_be_used){
+        hfp_connection->trigger_codec_exchange = 1;
+        hfp_connection->codecs_state = HFP_CODECS_IDLE;
+    }
 }
 
 void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
@@ -2232,7 +2246,7 @@ void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
     }
-    hfp_connection->trigger_codec_exchange = 0;
+
     hfp_connection->establish_audio_connection = 0;
     hfp_ag_setup_audio_connection(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
