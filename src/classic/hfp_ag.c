@@ -211,6 +211,13 @@ static int hfp_ag_send_ring(uint16_t cid){
     return send_str_over_rfcomm(cid, (char *) "\r\nRING\r\n");
 }
 
+static int hfp_ag_send_no_carrier(uint16_t cid){
+    char buffer[15];
+    snprintf(buffer, sizeof(buffer), "\r\nNO CARRIER\r\n");
+    buffer[sizeof(buffer) - 1] = 0;
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 static int hfp_ag_send_clip(uint16_t cid){
     char buffer[50];
     snprintf(buffer, sizeof(buffer), "\r\n%s: \"%s\",%u\r\n", HFP_ENABLE_CLIP,
@@ -925,7 +932,6 @@ static void hfp_ag_transfer_callheld_state(void){
 }
 
 static void hfp_ag_hf_accept_call(hfp_connection_t * source){
-    
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
 
@@ -958,7 +964,6 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
 }
 
 static void hfp_ag_ag_accept_call(void){
-    
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
 
@@ -1693,6 +1698,12 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         }
     }
 
+    if (hfp_connection->ag_send_no_carrier){
+        hfp_connection->ag_send_no_carrier = false;
+        hfp_ag_send_no_carrier(hfp_connection->rfcomm_cid);
+        return 1;
+    }
+
     if (hfp_connection->ag_ring){
         hfp_connection->ag_ring = 0;
         hfp_connection->command = HFP_CMD_NONE;
@@ -2345,23 +2356,38 @@ static void hfp_ag_set_ag_indicator(const char * name, int value){
     if (indicator_index < 0) return;
     hfp_ag_indicators[indicator_index].status = value;
 
-
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        if (! hfp_connection->ag_indicators[indicator_index].enabled) {
-            log_info("AG indicator '%s' changed to %u but not enabled", hfp_ag_indicators[indicator_index].name, value);
+        if (!hfp_connection->ag_indicators[indicator_index].enabled) {
+            log_info("Requested AG indicator '%s' update to %u, but it is not enabled", hfp_ag_indicators[indicator_index].name, value);
             continue;
         }
-        log_info("AG indicator '%s' changed to %u, request transfer statur", hfp_ag_indicators[indicator_index].name, value);
+        log_info("AG indicator '%s' changed to %u, request transfer status", hfp_ag_indicators[indicator_index].name, value);
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_ag_run_for_context(hfp_connection);
     }    
 }
 
 void hfp_ag_set_registration_status(int status){
+    if ( (status == 0) && (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
+
+        // if network goes away wihle a call is active:
+        // - the  call gets dropped
+        // - we send NO CARRIER
+        // NOTE: the CALL=0 has to be sent before NO CARRIER
+
+        hfp_ag_call_sm(HFP_AG_CALL_DROPPED, NULL);
+
+        btstack_linked_list_iterator_t it;    
+        btstack_linked_list_iterator_init(&it, hfp_get_connections());
+        while (btstack_linked_list_iterator_has_next(&it)){
+            hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+            hfp_connection->ag_send_no_carrier = true;
+        } 
+    }
     hfp_ag_set_ag_indicator("service", status);
 }
 
