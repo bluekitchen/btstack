@@ -74,7 +74,7 @@ static void obex_iterator_reset(obex_iterator_t *context){
 
 // check if num bytes are available, and if not, invalidate iterator
 static bool obex_iterator_check(obex_iterator_t *context, uint32_t num_bytes){
-    if ((context->offset + num_bytes) >= context->length){
+    if ((context->offset + num_bytes) > context->length){
         context->valid = false;
     }
     return context->valid;
@@ -91,6 +91,12 @@ static void obex_iterator_prepare(obex_iterator_t *context){
             if (obex_iterator_check(context, 3) == false) return;
             context->data_size   = big_endian_read_16(data, 1);
             context->header_size = 3;
+            // length includes the header, remove from data size
+            if (context->data_size < 3){
+                context->valid = false;
+                return;
+            }
+            context->data_size -= 3;
             break;
         case 2:
             // 8-bit value
