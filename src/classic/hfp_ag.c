@@ -1872,17 +1872,6 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     }
 }
 
-static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
-    int i;
-    for (i=0;i< hfp_generic_status_indicators_nr;i++){
-        hfp_generic_status_indicator_t * indicator = &hfp_generic_status_indicators[i];
-        if (indicator->uuid == number){
-            return indicator;
-        }
-    }
-    return NULL;
-}
-
 static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
@@ -1935,9 +1924,9 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
                 break;
             case HFP_CMD_HF_INDICATOR_STATUS:
                 hfp_connection->command = HFP_CMD_NONE;
-                // find indicator by assigned number 
-                indicator = get_hf_indicator_by_number(hfp_connection->parser_indicator_index);
-                if (!indicator){
+                if (hfp_connection->parser_indicator_index < hfp_generic_status_indicators_nr){
+                    indicator = &hfp_generic_status_indicators[hfp_connection->parser_indicator_index];
+                } else {
                     hfp_connection->send_error = 1;
                     break;
                 }
