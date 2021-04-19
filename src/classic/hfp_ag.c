@@ -186,7 +186,7 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
 
 static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(uint16_t cid){
     char buffer[20];
-    snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n",
+    snprintf(buffer, sizeof(buffer), "\r\n%s: %d\r\n",
              HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone());
     buffer[sizeof(buffer) - 1] = 0;
     return send_str_over_rfcomm(cid, buffer);
