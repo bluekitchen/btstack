@@ -782,14 +782,6 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if ((hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) ||
         (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return 0;
 
-
-    if ((hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) && hfp_connection->release_audio_connection){
-        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
-        hfp_connection->release_audio_connection = 0;
-        gap_disconnect(hfp_connection->sco_handle);
-        return 1;
-    }
-
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
 
     // accept incoming audio connection (codec negotiation is not used)
@@ -1772,7 +1764,14 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 
     // assert command could be sent
     if (hci_can_send_command_packet_now() == 0) return;
-
+    
+    if ((hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) && hfp_connection->release_audio_connection){
+        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
+        hfp_connection->release_audio_connection = 0;
+        gap_disconnect(hfp_connection->sco_handle);
+        return;
+    }
+    
 #ifdef ENABLE_CC256X_ASSISTED_HFP
     // WBS Disassociate
     if (hfp_connection->cc256x_send_wbs_disassociate){
