@@ -73,7 +73,7 @@ hfp_callsetup_status_t hfp_gsm_callsetup_status(void);
 int hfp_gsm_get_number_of_calls(void);
 char * hfp_gsm_last_dialed_number(void);
 void hfp_gsm_clear_last_dialed_number(void);
-
+void hfp_gsm_set_last_dialed_number(const char* number);
 
 hfp_gsm_call_t * hfp_gsm_call(int index);
 

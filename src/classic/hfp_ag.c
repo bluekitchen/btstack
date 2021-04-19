@@ -2489,6 +2489,10 @@ void hfp_ag_clear_last_dialed_number(void){
     hfp_gsm_clear_last_dialed_number();
 }
 
+void hfp_ag_set_last_dialed_number(const char * number){
+    hfp_gsm_set_last_dialed_number(number);
+}
+
 void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){

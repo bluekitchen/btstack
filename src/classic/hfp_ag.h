@@ -224,6 +224,11 @@ void hfp_ag_set_battery_level(int level);
 void hfp_ag_clear_last_dialed_number(void);
 
 /*
+ * @brief Set last dialed number.
+ */
+void hfp_ag_set_last_dialed_number(const char * number);
+
+/*
  * @brief Notify the HF that an incoming call is waiting 
  * during an ongoing call. The notification will be sent only if the HF has
  * has previously enabled the "Call Waiting notification" in the AG. 

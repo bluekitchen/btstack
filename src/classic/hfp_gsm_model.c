@@ -285,6 +285,11 @@ char * hfp_gsm_last_dialed_number(void){
     return &last_dialed_number[0];
 }
 
+void hfp_gsm_set_last_dialed_number(const char* number){
+    strncpy(last_dialed_number, number, sizeof(last_dialed_number));
+    last_dialed_number[sizeof(last_dialed_number) - 1] = 0;
+}
+
 hfp_gsm_call_t * hfp_gsm_call(int call_index){
     int i;
 
