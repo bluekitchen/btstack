@@ -734,14 +734,16 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
    
     switch(hfp_connection->command){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
-            hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, hfp_connection->ag_activate_voice_recognition);
             hfp_ag_send_activate_voice_recognition_cmd(hfp_connection->rfcomm_cid, hfp_connection->ag_activate_voice_recognition);
+            if (hfp_connection->ag_activate_voice_recognition > 0){
+                hfp_ag_setup_audio_connection(hfp_connection);
+            } else {
+                hfp_release_audio_connection(hfp_connection);
+            }
             return 1;
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             if (get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
-                hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, hfp_connection->ag_activate_voice_recognition);
                 hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                hfp_ag_setup_audio_connection(hfp_connection);
             } else {
                 hfp_ag_send_error(hfp_connection->rfcomm_cid);
             }
@@ -2402,10 +2404,6 @@ void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate
     if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) {
         log_info("AG cannot acivate voice recognition - not supported by HF");
         return;
-    }
-
-    if (activate){
-        hfp_ag_establish_audio_connection(acl_handle);
     }
 
     hfp_connection->ag_activate_voice_recognition = activate;
