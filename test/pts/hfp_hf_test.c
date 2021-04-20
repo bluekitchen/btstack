@@ -559,6 +559,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - type      : %d \n", hfp_subevent_enhanced_call_status_get_bnip_type(event));
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
+
+                        case HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION:
+                            printf("Subscriber number information:\n");
+                            printf("  - type      : %d \n", hfp_subevent_subscriber_number_information_get_bnip_type(event));
+                            printf("  - number    : %s \n", hfp_subevent_subscriber_number_information_get_bnip_number(event));
+                            break;
+                            break;
                         default:
                             break;
                     }
@@ -605,6 +612,10 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_HF_INDICATORS)         |
         (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
+        (1<<HFP_HFSF_ENHANCED_CALL_CONTROL) |
+        (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION) |
+        (1<<HFP_HFSF_THREE_WAY_CALLING) |
+        (1<<HFP_HFSF_EC_NR_FUNCTION)|
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;
 
