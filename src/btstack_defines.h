@@ -1740,6 +1740,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_IN_BAND_RING_TONE                        0x1D
+
 // ANCS Client
 
 /**

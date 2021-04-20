@@ -4598,6 +4598,25 @@ static inline const char * hfp_subevent_at_message_received_get_command(const ui
     return (const char *) &event[5];
 }
 
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_IN_BAND_RING_TONE
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_in_band_ring_tone_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event HFP_SUBEVENT_IN_BAND_RING_TONE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_in_band_ring_tone_get_status(const uint8_t * event){
+    return event[5];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED
