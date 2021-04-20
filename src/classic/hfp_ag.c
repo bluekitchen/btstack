@@ -916,6 +916,31 @@ static void hfp_ag_trigger_incoming_call(void){
     }
 }
 
+
+static void hfp_ag_handle_outgoing_call_accepted(hfp_connection_t * hfp_connection){
+    hfp_connection->call_state = HFP_CALL_OUTGOING_DIALING;
+
+    // trigger callsetup to be
+    int put_call_on_hold = hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT;
+    hfp_gsm_handler(HFP_AG_OUTGOING_CALL_ACCEPTED, 0, 0, NULL);
+
+    int indicator_index ;
+
+    hfp_ag_set_callsetup_indicator();
+    indicator_index = get_ag_indicator_index_for_name("callsetup");
+    hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+
+    // put current call on hold if active
+    if (put_call_on_hold){
+        log_info("AG putting current call on hold for new outgoing call");
+        hfp_ag_set_callheld_indicator();
+        indicator_index = get_ag_indicator_index_for_name("callheld");
+        hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[indicator_index]);
+    }
+
+    // start audio if needed
+    hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
+}
 static void hfp_ag_transfer_indicator(const char * name){
     int indicator_index = get_ag_indicator_index_for_name(name);
     if (indicator_index < 0) return;
@@ -1451,26 +1476,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             }
             
             hfp_connection->ok_pending = 1;
-            hfp_connection->call_state = HFP_CALL_OUTGOING_DIALING;
-
-            // trigger callsetup to be
-            int put_call_on_hold = hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT;
-            hfp_gsm_handler(HFP_AG_OUTGOING_CALL_ACCEPTED, 0, 0, NULL);
-
-            hfp_ag_set_callsetup_indicator();
-            indicator_index = get_ag_indicator_index_for_name("callsetup");
-            hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-
-            // put current call on hold if active
-            if (put_call_on_hold){
-                log_info("AG putting current call on hold for new outgoing calllog_info");
-                hfp_ag_set_callheld_indicator();
-                indicator_index = get_ag_indicator_index_for_name("callheld");
-                hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[indicator_index]);
-            }
-
-            // start audio if needed
-            hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
+            hfp_ag_handle_outgoing_call_accepted(hfp_connection);
             break;
         }
         case HFP_AG_OUTGOING_CALL_RINGING:
