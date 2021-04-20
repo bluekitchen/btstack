@@ -1355,13 +1355,28 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             switch(hfp_connection->parser_item_index){
                 case 0:
+                    // <alpha>: This optional field is not supported, and shall be left blank.
+                    break;
+                case 1:
+                    // <number>: Quoted string containing the phone number in the format specified by <type>.
                     strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
                     hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
                     break;
-                case 1:
+                case 2:
+                    /*
+                      <type> field specifies the format of the phone number provided, and can be one of the following values:
+                      - values 128-143: The phone number format may be a national or international format, and may contain prefix and/or escape digits. No changes on the number presentation are required.
+                     - values 144-159: The phone number format is an international number, including the country code prefix. If the plus sign ("+") is not included as part of the number and shall be added by the AG as needed.
+                     - values 160-175: National number. No prefix nor escape digits included.
+                     */
                     value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     hfp_connection->bnip_type = value;
                     break;
+                case 3:
+                    // <speed>: This optional field is not supported, and shall be left blank.
+                    break;
+                case 4:
+                    // <service>: Indicates which service this phone number relates to. Shall be either 4 (voice) or 5 (fax).
                 default:
                     break;
             }
