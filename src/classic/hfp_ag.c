@@ -853,6 +853,24 @@ static void hfp_timeout_stop(hfp_connection_t * hfp_connection){
     btstack_run_loop_remove_timer(& hfp_connection->hfp_timeout);
 } 
 
+static void hfp_ag_set_callsetup_indicator(void){
+    hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callsetup");
+    if (!indicator){
+        log_error("hfp_ag_set_callsetup_indicator: callsetup indicator is missing");
+        return;
+    };
+    indicator->status = hfp_gsm_callsetup_status();
+}
+
+static void hfp_ag_set_callheld_indicator(void){
+    hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
+    if (!indicator){
+        log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
+        return;
+    };
+    indicator->status = hfp_gsm_callheld_status();
+}
+
 //
 // transitition implementations for hfp_ag_call_state_machine
 //
@@ -1013,24 +1031,6 @@ static void hfp_ag_trigger_terminate_call(void){
         hfp_ag_run_for_context(hfp_connection);
     }
     hfp_emit_simple_event(NULL, HFP_SUBEVENT_CALL_TERMINATED);
-}
-
-static void hfp_ag_set_callsetup_indicator(void){
-    hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callsetup");
-    if (!indicator){
-        log_error("hfp_ag_set_callsetup_indicator: callsetup indicator is missing");
-        return;
-    };
-    indicator->status = hfp_gsm_callsetup_status();
-}
-
-static void hfp_ag_set_callheld_indicator(void){
-    hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callheld");
-    if (!indicator){
-        log_error("hfp_ag_set_callheld_state: callheld indicator is missing");
-        return;
-    };
-    indicator->status = hfp_gsm_callheld_status();
 }
 
 static void hfp_ag_set_call_indicator(void){
