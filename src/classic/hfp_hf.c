@@ -1115,6 +1115,8 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_connection->command = HFP_CMD_NONE;
     		hfp_hf_handle_suggested_codec(hfp_connection);
 			break;
+        case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_IN_BAND_RING_TONE, get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE));
         default:
             break;
     }
