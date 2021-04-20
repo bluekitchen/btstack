@@ -175,3 +175,6 @@ HFP/AG/ATAH/BV-01-I: a, c, B, B, b, C, A
 
 HFP/AG/OCA/BV-01-I: a, M, C, A
 
+IOPT/CL/HFP-AG/COD/BV-02-I: rm /tmp/btstack_*.tlv, a, t, D, a, t, D, a, t, D, a, t, D
+
+IOPT/CL/HFP-AG/SFC/BV-13-I: rm /tmp/btstack_*.tlv, a, 
