@@ -1402,14 +1402,14 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             }
             break;
 
-        case HFP_AG_OUTGOING_CALL_INITIATED:
+        case HFP_AG_OUTGOING_CALL_INITIATED_BY_HF:
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
                 hfp_connection->send_error = 1;
                 hfp_ag_run_for_context(hfp_connection);  
                 break;
             }
-            hfp_gsm_handler(HFP_AG_OUTGOING_CALL_INITIATED, 0, 0, (const char *) &hfp_connection->line_buffer[3]);
+            hfp_gsm_handler(HFP_AG_OUTGOING_CALL_INITIATED_BY_HF, 0, 0, (const char *) &hfp_connection->line_buffer[3]);
 
             hfp_connection->call_state = HFP_CALL_OUTGOING_INITIATED;
 
@@ -2041,7 +2041,7 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
             }
             case HFP_CMD_CALL_PHONE_NUMBER:
                 hfp_connection->command = HFP_CMD_NONE;
-                hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED, hfp_connection);
+                hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED_BY_HF, hfp_connection);
                 break;
             case HFP_CMD_REDIAL_LAST_NUMBER:
                 hfp_connection->command = HFP_CMD_NONE;

@@ -378,7 +378,7 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
     int i;
 
     switch (event){
-        case HFP_AG_OUTGOING_CALL_INITIATED:
+        case HFP_AG_OUTGOING_CALL_INITIATED_BY_HF:
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
             if (next_free_slot == -1){
                 log_error("gsm: max call nr exceeded");
