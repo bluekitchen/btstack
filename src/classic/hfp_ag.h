@@ -274,6 +274,11 @@ void hfp_ag_set_clip(uint8_t type, const char * number);
 void hfp_ag_incoming_call(void);
 
 /**
+ * @brief Outgoing call initiated
+ */
+void hfp_ag_outgoing_call_initiated(const char * number);
+
+/**
  * @brief Pass the reject outgoing call event to the AG.
  */
 void hfp_ag_outgoing_call_rejected(void);

@@ -916,6 +916,18 @@ static void hfp_ag_trigger_incoming_call(void){
     }
 }
 
+static void hfp_ag_trigger_outgoing_call(void){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+        hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
+        if (hfp_connection->call_state == HFP_CALL_IDLE){
+            hfp_connection->call_state = HFP_CALL_OUTGOING_INITIATED;
+        }
+    }
+}
 
 static void hfp_ag_handle_outgoing_call_accepted(hfp_connection_t * hfp_connection){
     hfp_connection->call_state = HFP_CALL_OUTGOING_DIALING;
@@ -941,6 +953,7 @@ static void hfp_ag_handle_outgoing_call_accepted(hfp_connection_t * hfp_connecti
     // start audio if needed
     hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
 }
+
 static void hfp_ag_transfer_indicator(const char * name){
     int indicator_index = get_ag_indicator_index_for_name(name);
     if (indicator_index < 0) return;
@@ -1434,6 +1447,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 hfp_ag_run_for_context(hfp_connection);  
                 break;
             }
+
+            // note: number not used currently
             hfp_gsm_handler(HFP_AG_OUTGOING_CALL_INITIATED_BY_HF, 0, 0, (const char *) &hfp_connection->line_buffer[3]);
 
             hfp_connection->call_state = HFP_CALL_OUTGOING_INITIATED;
@@ -1441,6 +1456,36 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, (const char *) &hfp_connection->line_buffer[3]);
             break;
 
+        case HFP_AG_OUTGOING_CALL_INITIATED_BY_AG:
+            // directly reject call if number of free slots is exceeded
+            if (!hfp_gsm_call_possible()) {
+                // TODO: no error for user
+                break;
+            }
+            switch (hfp_gsm_call_status()) {
+                case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
+                    switch (hfp_gsm_callsetup_status()) {
+                        case HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS:
+                            // note: number not used currently
+                            hfp_gsm_handler(HFP_AG_OUTGOING_CALL_INITIATED_BY_AG, 0, 0, "1234567");
+                            // init call state for all connections
+                            hfp_ag_trigger_outgoing_call();
+                            // get first one and accept call
+                            hfp_connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
+                            if (hfp_connection) {
+                                hfp_ag_handle_outgoing_call_accepted(hfp_connection);
+                            }
+                            break;
+                        default:
+                            // TODO: no error for user
+                            break;
+                    }
+                    break;
+                default:
+                    // TODO: no error for user
+                    break;
+            }
+            break;
         case HFP_AG_OUTGOING_REDIAL_INITIATED:{
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
@@ -2293,6 +2338,10 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
  */
 void hfp_ag_incoming_call(void){
     hfp_ag_call_sm(HFP_AG_INCOMING_CALL, NULL);
+}
+
+void hfp_ag_outgoing_call_initiated(const char * number) {
+    hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED_BY_AG, NULL);
 }
 
 /**
