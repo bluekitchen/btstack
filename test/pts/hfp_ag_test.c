@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:1B:DC:08:E2:5C";
+static const char * device_addr_string = "00:1B:DC:08:E2:72";
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -212,16 +212,6 @@ static void stdin_process(char cmd){
             hfp_ag_set_clip(129, "1234567");
             hfp_ag_incoming_call();
             break;
-        case 'D':
-            printf("Deleting all link keys\n");
-            gap_delete_all_link_keys();
-            break;
-        case 'm':
-            log_info("USER:\'%c\'", cmd);
-            printf("Simulate incoming call from 7654321\n");
-            hfp_ag_set_clip(129, "7654321");
-            hfp_ag_incoming_call();
-            break;
         case 'C':
             log_info("USER:\'%c\'", cmd);
             printf("Simulate terminate call\n");
@@ -231,6 +221,10 @@ static void stdin_process(char cmd){
             log_info("USER:\'%c\'", cmd);
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(acl_handle, HFP_CME_ERROR_AG_FAILURE);
+            break;
+        case 'D':
+            printf("Deleting all link keys\n");
+            gap_delete_all_link_keys();
             break;
         case 'e':
             log_info("USER:\'%c\'", cmd);
@@ -312,10 +306,17 @@ static void stdin_process(char cmd){
             printf("Set last dialed number to 7654321\n");
             hfp_ag_set_last_dialed_number("7654321");
             break;
+        case 'm':
+            log_info("USER:\'%c\'", cmd);
+            printf("Simulate incoming call from 7654321\n");
+            hfp_ag_set_clip(129, "7654321");
+            hfp_ag_incoming_call();
+            break;
         case 'M':
             log_info("USER:\'%c\'", cmd);
-            printf("Outgoing call connected, ringing\n");
-            hfp_ag_outgoing_call_ringing();
+            printf("Outgoing call inited and connected, ringing\n");
+            hfp_ag_outgoing_call_initiated("1234567");
+            hfp_ag_outgoing_call_established();
             break;
         case 'n':
             log_info("USER:\'%c\'", cmd);

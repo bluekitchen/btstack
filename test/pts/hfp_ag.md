@@ -173,5 +173,5 @@ HFP/AG/VTA/BV-02-I:
 
 HFP/AG/ATAH/BV-01-I: a, c, B, B, b, C, A
 
-HFP/AG/OCA/BV-01-I: a, M, j (fail, MTC FAIL: The AG should, but does not, have a call in progress // neither M nor j trigger an update to call status)
+HFP/AG/OCA/BV-01-I: a, M, C, A
 
