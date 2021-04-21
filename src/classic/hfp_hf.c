@@ -1331,14 +1331,27 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
         log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return;
     }
-    hfp_connection->establish_audio_connection = 0;
 
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
 
-    hfp_connection->trigger_codec_exchange = 0;
-    if (!has_codec_negotiation_feature(hfp_connection)){
-        log_info("no codec negotiation feature, using NBS");
+    if (has_codec_negotiation_feature(hfp_connection)) {
+        switch (hfp_connection->codecs_state) {
+            case HFP_CODECS_W4_AG_COMMON_CODEC:
+                break;
+            case HFP_CODECS_EXCHANGED:
+                hfp_connection->trigger_codec_exchange = 1;
+                break;
+            default:
+                hfp_connection->codec_confirmed = 0;
+                hfp_connection->suggested_codec = 0;
+                hfp_connection->negotiated_codec = 0;
+                hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
+                hfp_connection->trigger_codec_exchange = 1;
+                break;
+        }
+    } else {
+        log_info("no codec negotiation feature, use CVSD");
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
         hfp_connection->suggested_codec = HFP_CODEC_CVSD;
         hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
@@ -1346,21 +1359,6 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
         hfp_init_link_settings(hfp_connection, hfp_hf_esco_s4_supported(hfp_connection));
         hfp_connection->establish_audio_connection = 1;
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
-    } else {
-        switch (hfp_connection->codecs_state){
-            case HFP_CODECS_W4_AG_COMMON_CODEC:
-                break;
-            case HFP_CODECS_EXCHANGED:
-                hfp_connection->trigger_codec_exchange = 1;
-                break;
-            default:
-				hfp_connection->codec_confirmed = 0;
-				hfp_connection->suggested_codec = 0;
-				hfp_connection->negotiated_codec = 0;
-				hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
-                hfp_connection->trigger_codec_exchange = 1;
-                break;
-        } 
     }
 
     hfp_hf_run_for_context(hfp_connection);
