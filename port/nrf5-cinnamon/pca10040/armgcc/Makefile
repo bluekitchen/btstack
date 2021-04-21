@@ -26,9 +26,9 @@ C_SOURCES = \
   ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
   ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
   ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
-  ${BTSTACK_ROOT}/chipset/controller/controller.c \
-  ${BTSTACK_ROOT}/chipset/controller/hci_event.c \
-  ${BTSTACK_ROOT}/chipset/controller/hopping.c \
+  ${BTSTACK_ROOT}/chipset/cinnamon/controller.c \
+  ${BTSTACK_ROOT}/chipset/cinnamon/hci_event.c \
+  ${BTSTACK_ROOT}/chipset/cinnamon/hopping.c \
   ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
   ${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
   ${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
@@ -89,7 +89,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)//components/libraries/log/src \
   $(SDK_ROOT)/components/libraries/experimental_section_vars/ \
   $(BTSTACK_ROOT)/3rd-party/segger-rtt \
-  $(BTSTACK_ROOT)/chipset/controller \
+  $(BTSTACK_ROOT)/chipset/cinnamon \
   $(BTSTACK_ROOT)/src/ \
   $(BTSTACK_ROOT)/platform/embedded \
   ../config \

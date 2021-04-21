@@ -37,7 +37,7 @@ target_include_directories(port SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/port
         ../../3rd-party/segger-rtt
         ../../platform/embedded
-        ../../chipset/controller
+        ../../chipset/cinnamon
         ../../src
         ${NRF5_SDK_ROOT}/components/boards
         ${NRF5_SDK_ROOT}/components/libraries/delay
