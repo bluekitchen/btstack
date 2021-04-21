@@ -1350,6 +1350,9 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
         switch (hfp_connection->codecs_state){
             case HFP_CODECS_W4_AG_COMMON_CODEC:
                 break;
+            case HFP_CODECS_EXCHANGED:
+                hfp_connection->trigger_codec_exchange = 1;
+                break;
             default:
 				hfp_connection->codec_confirmed = 0;
 				hfp_connection->suggested_codec = 0;
