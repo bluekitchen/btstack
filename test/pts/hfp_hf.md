@@ -16,9 +16,9 @@ HFP/HF/ACS/BV-05-I: b
 HFP/HF/ACS/BV-07-I: f
 HFP/HF/ACS/BV-09-I: b
 HFP/HF/ACS/BV-12-I: f
-HFP/HF/ACS/BI-13-I: f (test passes if we restart test tool) 
+HFP/HF/ACS/BI-13-I: f (Secure Connections not enabled, BTstack will reject connection when Link Key with SC available)
 HFP/HF/ACS/BV-15-I: (confirm)
-HFP/HF/ACS/BV-17-I: (test fail, Error in SPP connect response) 
+HFP/HF/ACS/BV-17-I: b (requires Controller with Secure Connection)
 
 HFP/HF/ACR/BV-01-I: B
 HFP/HF/ACR/BV-02-I: (wait)
@@ -45,7 +45,7 @@ HFP/HF/ATH/BV-03-I: a, b
 HFP/HF/ATH/BV-04-I: f, b
 HFP/HF/ATH/BV-05-I: f
 HFP/HF/ATH/BV-06-I: f
-HFP/HF/ATH/BV-09-I: restart tool and wait
+HFP/HF/ATH/BV-09-I: restart tool and wait (the test is about HF power off/one)
 
 HFP/HF/ATA/BV-01-I: f
 HFP/HF/ATA/BV-02-I: f, A
@@ -63,7 +63,7 @@ HFP/HF/TWC/BV-01-I: f, u
 HFP/HF/TWC/BV-02-I: f, U
 HFP/HF/TWC/BV-03-I: f, v, v, U
 HFP/HF/TWC/BV-04-I: f, v, V
-HFP/HF/TWC/BV-05-I: f, W, U, I, U, j, U 
+HFP/HF/TWC/BV-05-I: f, W, U, I, U, j, U
 HFP/HF/TWC/BV-06-I: f, v, w
 
 HFP/HF/OCM/BV-01-I: (wait)
@@ -104,8 +104,8 @@ HFP/HF/RHH/BV-06-I: X, }, X
 HFP/HF/RHH/BV-07-I: X, X
 HFP/HF/RHH/BV-08-I: X, X 
 
-HFP/HF/NUM/BV-01-I: ?
-HFP/HF/NUM/BI-01-I: ?
+HFP/HF/NUM/BV-01-I: ? (use the `?` command to query caller subscriber number)
+HFP/HF/NUM/BI-02-I: ? (use the `?` command to query caller subscriber number)
 
 HFP/HF/SLC/BV-01-I: a
 HFP/HF/SLC/BV-02-I: (wait)
@@ -118,7 +118,7 @@ HFP/HF/SLC/BV-09-I: (wait)
 HFP/HF/SLC/BV-10-I: (wait)
 
 HFP/HF/ACC/BV-01-I: b
-HFP/HF/ACC/BV-02-I: b (test failed, ERROR_CODE_INVALID_LMP_PARAMETERS_INVALID_LL_PARAMETERS 0x1E, chsck SCO connection setup)
+HFP/HF/ACC/BV-02-I: b
 HFP/HF/ACC/BV-03-I: b
 HFP/HF/ACC/BV-04-I: (wait)
 HFP/HF/ACC/BV-05-I: (wait)
@@ -139,9 +139,9 @@ HFP/HF/IIA/BV-04-I: D
 
 HFP/HF/HFI/BV-01-I: !, !, !
 
-HFP/HF/VRR/BV-01-I: (test fail, support Enhanced Voice Recognition Status per BRSF exchange info)
+HFP/HF/VRR/BV-01-I: (test fail, not implemented / support Enhanced Voice Recognition Status per BRSF exchange info)
 
-HFP/HF/VTA/BV-01-I: (test fail, support Enhanced Voice Recognition Status per BRSF exchange info)
+HFP/HF/VTA/BV-01-I: (test fail, not implemented / support Enhanced Voice Recognition Status per BRSF exchange info)
 
 HFP/HF/ATAH/BV-01-I: f, b, B, A
 
