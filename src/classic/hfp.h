@@ -313,6 +313,24 @@ typedef enum {
     HFP_PARSER_THIRD_ITEM
 } hfp_parser_state_t;
 
+typedef enum {
+    HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT = 0,
+    HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF = 2,
+    HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT = 4
+} hfp_voice_recognition_state_t;
+
+typedef enum {
+    HFP_TEXT_TYPE_RECOGNISED_FROM_HF_AUDIO = 0,
+    HFP_TEXT_TYPE_MESSAGE_FROM_AG,
+    HFP_TEXT_TYPE_QUESTION_FROM_AG,
+    HFP_TEXT_TYPE_ERROR_FROM_AG
+} hfp_text_type_t;
+
+typedef enum {
+    HFP_TEXT_OPERATOR_NEW_TEXT = 1,
+    HFP_TEXT_OPERATOR_REPLACE,
+    HFP_TEXT_OPERATOR_APPEND
+} hfp_text_operator_t;
 
 typedef enum {
     HFP_IDLE = 0, //0
