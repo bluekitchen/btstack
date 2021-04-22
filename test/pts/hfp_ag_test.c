@@ -72,11 +72,10 @@ const char hfp_ag_service_name[] = "HFP AG Demo";
 static bd_addr_t device_addr;
 static const char * device_addr_string = "00:1B:DC:08:E2:72";
 
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+// configuration
+static const int wide_band_speech = 1;
+
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
-#else
-static uint8_t codecs[] = {HFP_CODEC_CVSD};
-#endif
 
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
@@ -598,7 +597,6 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG)    |
         (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
         (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT);
-    int wide_band_speech = 1;
 
     // HFP
     rfcomm_init();
