@@ -595,7 +595,9 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
         (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
         (1<<HFP_AGSF_THREE_WAY_CALLING)           |
-        (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG);
+        (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG)    |
+        (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT);
     int wide_band_speech = 1;
 
     // HFP

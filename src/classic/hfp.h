@@ -66,16 +66,18 @@ extern "C" {
 9: eSCO S4 (and T2) Settings Supported
 10-31: Reserved for future definition
 */
-#define HFP_HFSF_EC_NR_FUNCTION              0
-#define HFP_HFSF_THREE_WAY_CALLING           1
-#define HFP_HFSF_CLI_PRESENTATION_CAPABILITY 2
-#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION  3
-#define HFP_HFSF_REMOTE_VOLUME_CONTROL       4
-#define HFP_HFSF_ENHANCED_CALL_STATUS        5
-#define HFP_HFSF_ENHANCED_CALL_CONTROL       6
-#define HFP_HFSF_CODEC_NEGOTIATION           7
-#define HFP_HFSF_HF_INDICATORS               8
-#define HFP_HFSF_ESCO_S4                     9
+#define HFP_HFSF_EC_NR_FUNCTION                          0
+#define HFP_HFSF_THREE_WAY_CALLING                       1
+#define HFP_HFSF_CLI_PRESENTATION_CAPABILITY             2
+#define HFP_HFSF_VOICE_RECOGNITION_FUNCTION              3 
+#define HFP_HFSF_REMOTE_VOLUME_CONTROL                   4
+#define HFP_HFSF_ENHANCED_CALL_STATUS                    5  
+#define HFP_HFSF_ENHANCED_CALL_CONTROL                   6 
+#define HFP_HFSF_CODEC_NEGOTIATION                       7  
+#define HFP_HFSF_HF_INDICATORS                           8
+#define HFP_HFSF_ESCO_S4                                 9
+#define HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS      10
+#define HFP_HFSF_VOICE_RECOGNITION_TEXT                 11
 
 /* AG Supported Features:
 0: Three-way calling
@@ -92,18 +94,20 @@ extern "C" {
 11: eSCO S4 (and T2) Settings Supported
 12-31: Reserved for future definition
 */
-#define HFP_AGSF_THREE_WAY_CALLING              0
-#define HFP_AGSF_EC_NR_FUNCTION                 1
-#define HFP_AGSF_VOICE_RECOGNITION_FUNCTION     2
-#define HFP_AGSF_IN_BAND_RING_TONE              3
-#define HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG 4
-#define HFP_AGSF_ABILITY_TO_REJECT_A_CALL       5 
-#define HFP_AGSF_ENHANCED_CALL_STATUS           6
-#define HFP_AGSF_ENHANCED_CALL_CONTROL          7
-#define HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    8
-#define HFP_AGSF_CODEC_NEGOTIATION              9
-#define HFP_AGSF_HF_INDICATORS                 10
-#define HFP_AGSF_ESCO_S4                       11
+#define HFP_AGSF_THREE_WAY_CALLING                       0
+#define HFP_AGSF_EC_NR_FUNCTION                          1
+#define HFP_AGSF_VOICE_RECOGNITION_FUNCTION              2
+#define HFP_AGSF_IN_BAND_RING_TONE                       3
+#define HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG          4
+#define HFP_AGSF_ABILITY_TO_REJECT_A_CALL                5
+#define HFP_AGSF_ENHANCED_CALL_STATUS                    6
+#define HFP_AGSF_ENHANCED_CALL_CONTROL                   7
+#define HFP_AGSF_EXTENDED_ERROR_RESULT_CODES             8
+#define HFP_AGSF_CODEC_NEGOTIATION                       9
+#define HFP_AGSF_HF_INDICATORS                          10
+#define HFP_AGSF_ESCO_S4                                11
+#define HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS      12
+#define HFP_AGSF_VOICE_RECOGNITION_TEXT                 13
 
 #define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
 #define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
@@ -139,7 +143,7 @@ extern "C" {
 #define HFP_CALL_PHONE_NUMBER "ATD"
 #define HFP_REDIAL_LAST_NUMBER "+BLDN"
 #define HFP_TURN_OFF_EC_AND_NR "+NREC" // EC (Echo CAnceling), NR (Noise Reduction)
-#define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // EC (Echo CAnceling), NR (Noise Reduction)
+#define HFP_ACTIVATE_VOICE_RECOGNITION "+BVRA" // Voice Recognition
 #define HFP_SET_MICROPHONE_GAIN  "+VGM"
 #define HFP_SET_SPEAKER_GAIN     "+VGS"
 #define HFP_PHONE_NUMBER_FOR_VOICE_TAG "+BINP"

@@ -80,11 +80,8 @@ static void show_usage(void);
 #endif
 static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
 static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
-#else
-static uint8_t codecs[] = {HFP_CODEC_CVSD};
-#endif
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -613,12 +610,14 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
         (1<<HFP_HFSF_ENHANCED_CALL_CONTROL) |
-        (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION) |
-        (1<<HFP_HFSF_THREE_WAY_CALLING) |
-        (1<<HFP_HFSF_EC_NR_FUNCTION)|
-        (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;
-
+        (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION)        |
+        (1<<HFP_HFSF_THREE_WAY_CALLING)                 |
+        (1<<HFP_HFSF_EC_NR_FUNCTION)                    |
+        (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL)             |
+        (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT);
+    
     rfcomm_init();
     hfp_hf_init(rfcomm_channel_nr);
     hfp_hf_init_supported_features(hf_supported_features);

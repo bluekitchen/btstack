@@ -2567,9 +2567,18 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 	// Wide band speech (bit 5) requires Codec negotiation
 	//
 	uint16_t sdp_features = supported_features & 0x1f;
-	if (wide_band_speech && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
+	if ( (wide_band_speech == 1) && (supported_features & (1 << HFP_AGSF_CODEC_NEGOTIATION))){
 		sdp_features |= 1 << 5;
 	}
+
+    if (supported_features & (1 << HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
+        sdp_features |= 1 << 6;
+    }
+    
+    if (supported_features & (1 << HFP_AGSF_VOICE_RECOGNITION_TEXT)){
+        sdp_features |= 1 << 7;
+    }
+    
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
 	de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
