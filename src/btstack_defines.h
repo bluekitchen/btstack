@@ -1753,6 +1753,35 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_IN_BAND_RING_TONE                        0x1D
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param activated
+ */
+#define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                 0x1E
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param state
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS         0x1F
+
+/**
+ * @format 1H21LV
+ * @param subevent_code
+ * @param acl_handle
+ * @param text_id
+ * @param text_type
+ * @param text_length
+ * @param text
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT           0x20
+
+
+
 // ANCS Client
 
 /**

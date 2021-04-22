@@ -4662,6 +4662,90 @@ static inline uint8_t hfp_subevent_in_band_ring_tone_get_status(const uint8_t * 
     return event[5];
 }
 
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_voice_recognition_status_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field activated from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @param event packet
+ * @return activated
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_voice_recognition_status_get_activated(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_status_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field state from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_status_get_state(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_enhanced_voice_recognition_text_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field text_id from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT
+ * @param event packet
+ * @return text_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_enhanced_voice_recognition_text_get_text_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field text_type from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT
+ * @param event packet
+ * @return text_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_voice_recognition_text_get_text_type(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field text_length from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT
+ * @param event packet
+ * @return text_length
+ * @note: btstack_type L
+ */
+static inline uint16_t hfp_subevent_enhanced_voice_recognition_text_get_text_length(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field text from event HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT
+ * @param event packet
+ * @return text
+ * @note: btstack_type V
+ */
+static inline const uint8_t * hfp_subevent_enhanced_voice_recognition_text_get_text(const uint8_t * event){
+    return &event[10];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED
