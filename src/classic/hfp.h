@@ -650,8 +650,9 @@ typedef struct hfp_connection {
     uint8_t hf_deactivate_calling_line_notification;
     uint8_t hf_activate_echo_canceling_and_noise_reduction;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
-    uint8_t hf_activate_voice_recognition_notification;
-    uint8_t hf_deactivate_voice_recognition_notification;
+
+    uint8_t voice_recognition_state_required;
+    uint8_t voice_recognition_state_current; // 1-enabled; 0-dissabled
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;

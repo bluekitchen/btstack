@@ -675,20 +675,11 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 
-    if (hfp_connection->hf_deactivate_voice_recognition_notification){
-        hfp_connection->hf_deactivate_voice_recognition_notification = 0;
+    if (hfp_connection->voice_recognition_state_required != hfp_connection->voice_recognition_state_current){
         hfp_connection->ok_pending = 1;
         hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 0);
         return;
     }
-
-    if (hfp_connection->hf_activate_voice_recognition_notification){
-        hfp_connection->hf_activate_voice_recognition_notification = 0;
-        hfp_connection->ok_pending = 1;
-        hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 1);
-        return;
-    }
-
 
     if (hfp_connection->hf_deactivate_call_waiting_notification){
         hfp_connection->hf_deactivate_call_waiting_notification = 0;
@@ -1003,6 +994,14 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
             }
             break;
         default:
+            switch (hfp_connection->command){
+                case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+                    hfp_connection->voice_recognition_state_current = hfp_connection->voice_recognition_state_required;
+                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, hfp_connection->voice_recognition_state_current);
+                    break;
+                default:
+                    break;
+            }
             break;
     }
 
@@ -1077,13 +1076,14 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, hfp_connection->extended_audio_gateway_error_value);
             break;
         case HFP_CMD_ERROR:
-            hfp_connection->command = HFP_CMD_NONE;
             hfp_connection->ok_pending = 0;
             hfp_reset_context_flags(hfp_connection);
+            
             switch (hfp_connection->state){
                 case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
                     switch (hfp_connection->codecs_state){
                         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
+                            hfp_connection->command = HFP_CMD_NONE;
                             hfp_emit_sco_event(hfp_connection, HFP_REMOTE_REJECTS_AUDIO_CONNECTION, 0, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
                             return;
                         default:
@@ -1092,6 +1092,17 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                 default: 
                     break;
             }
+
+            switch (hfp_connection->command){
+                case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+                    // reset required voice recognition flag
+                    hfp_connection->voice_recognition_state_required = hfp_connection->voice_recognition_state_current;
+                    break;
+                default:
+                    break;
+            }
+
+            hfp_connection->command = HFP_CMD_NONE;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_COMPLETE, 1);
             break;
         case HFP_CMD_OK:
@@ -1622,8 +1633,14 @@ void hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle)
         log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return;
     }
-    
-    hfp_connection->hf_activate_voice_recognition_notification = 1;
+
+    if (hfp_connection->voice_recognition_state_current == 1){
+        hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 1);
+        return;
+    }
+
+    hfp_connection->command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
+    hfp_connection->voice_recognition_state_required = 1;
     hfp_hf_run_for_context(hfp_connection);
 }
 
@@ -1634,7 +1651,13 @@ void hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handl
         return;
     }
     
-    hfp_connection->hf_deactivate_voice_recognition_notification = 1;
+    if (hfp_connection->voice_recognition_state_current == 0){
+        hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 0);
+        return;
+    }
+    
+    hfp_connection->command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
+    hfp_connection->voice_recognition_state_required = 0;
     hfp_hf_run_for_context(hfp_connection);
 }
 
@@ -1809,11 +1832,11 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 	}
     
     if (supported_features & (1 << HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS)){
-        sdp_features |= 1 << 5;
+        sdp_features |= 1 << 6;
     }
     
     if (supported_features & (1 << HFP_HFSF_VOICE_RECOGNITION_TEXT)){
-        sdp_features |= 1 << 5;
+        sdp_features |= 1 << 7;
     }
     
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures

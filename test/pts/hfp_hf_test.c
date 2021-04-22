@@ -65,7 +65,8 @@
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
-
+static const int wide_band_speech = 1;
+    
 #ifdef HAVE_BTSTACK_STDIN
 // static const char * device_addr_string = "6C:72:E7:10:22:EE";
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
@@ -562,6 +563,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - type      : %d \n", hfp_subevent_subscriber_number_information_get_bnip_type(event));
                             printf("  - number    : %s \n", hfp_subevent_subscriber_number_information_get_bnip_number(event));
                             break;
+
+                        case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
+                            printf("Voice recognition status %d\n", hfp_subevent_voice_recognition_status_get_activated(event));
                             break;
                         default:
                             break;
@@ -610,7 +614,6 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
         (1<<HFP_HFSF_ENHANCED_CALL_CONTROL) |
-    int wide_band_speech = 1;
         (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION)        |
         (1<<HFP_HFSF_THREE_WAY_CALLING)                 |
         (1<<HFP_HFSF_EC_NR_FUNCTION)                    |
