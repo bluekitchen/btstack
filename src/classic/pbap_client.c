@@ -395,7 +395,7 @@ static void pbap_handle_can_send_now(void){
                     }
                 }
                 if (pbap_client->phone_number){
-                    // Search by phpone number
+                    // Search by phone number
                     phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
                     application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
                     application_parameters[i++] = phone_number_len;
@@ -424,10 +424,27 @@ static void pbap_handle_can_send_now(void){
                 }
                 goep_client_header_add_name(pbap_client->goep_cid, pbap_client->vcard_name);
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_entry_type);
+                // TODO: support property selector
+                // TODO: support format
                 i = 0;
-                if (i){
-                    // TODO: support property selector
-                    // TODO: support format
+                uint32_t property_selector_lower = 0;
+                if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
+                    property_selector_lower = 1U << 31;
+                }
+                if (strncmp(pbap_client->vcard_name, "X-BT-UCI:", 9) == 0) {
+                    property_selector_lower = 1U << 30;
+                }
+                if (property_selector_lower != 0){
+                    application_parameters[i++] = PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR;
+                    application_parameters[i++] = 8;
+                    uint32_t property_selector_higher = 0;
+                    uint32_t property_selector_lower = 1U << 31;
+                    big_endian_store_32(application_parameters, i, property_selector_higher);
+                    i += 4;
+                    big_endian_store_32(application_parameters, i, property_selector_lower);
+                    i += 4;
+                }
+                if (i > 0){
                     goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], i);
                 }
                 pbap_client->state = PBAP_W4_GET_CARD_ENTRY_COMPLETE;
