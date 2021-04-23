@@ -316,13 +316,17 @@ void hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_h
  * @brief Activate voice recognition function.
  * @param acl_handle of the AG
  */
-void hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Dectivate voice recognition function.
  * @param acl_handle of the AG
  */
-void hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
+
+uint8_t hfp_hf_activate_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
+
+uint8_t hfp_hf_deactivate_enhanced_voice_recognition_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set microphone gain. 

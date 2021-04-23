@@ -373,6 +373,7 @@ typedef enum {
     
     HFP_AUDIO_CONNECTION_ESTABLISHED, 
     
+
     HFP_W2_DISCONNECT_SCO,
     HFP_W4_SCO_DISCONNECTED,
     HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN,
@@ -383,6 +384,20 @@ typedef enum {
     HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART, 
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
+
+
+typedef enum {
+    HFP_VRA_VOICE_RECOGNITION_OFF,
+
+    HFP_VRA_W4_VOICE_RECOGNITION_OFF,
+    HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED,
+    HFP_VRA_VOICE_RECOGNITION_ACTIVATED,
+    
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF,
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED,
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_NEW_SESSION,
+    HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED
+} hfp_voice_recognition_activation_t;
 
 typedef enum {
     HFP_CODECS_IDLE,
@@ -651,8 +666,11 @@ typedef struct hfp_connection {
     uint8_t hf_activate_echo_canceling_and_noise_reduction;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
 
-    uint8_t voice_recognition_state_required;
-    uint8_t voice_recognition_state_current; // 1-enabled; 0-dissabled
+    hfp_voice_recognition_activation_t vra_state;
+    // uint8_t voice_recognition_status_required;
+    // uint8_t voice_recognition_status_current; // 1-enabled; 0-dissabled
+
+    // hfp_voice_recognition_state_t voice_recognition_state;
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;

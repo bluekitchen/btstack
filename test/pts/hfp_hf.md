@@ -139,9 +139,9 @@ HFP/HF/IIA/BV-04-I: D
 
 HFP/HF/HFI/BV-01-I: !, !, !
 
-HFP/HF/VRR/BV-01-I: (test fail, not implemented / support Enhanced Voice Recognition Status per BRSF exchange info)
+HFP/HF/VRR/BV-01-I: R, B, r
 
-HFP/HF/VTA/BV-01-I: (test fail, not implemented / support Enhanced Voice Recognition Status per BRSF exchange info)
+HFP/HF/VTA/BV-01-I: R, R
 
 HFP/HF/ATAH/BV-01-I: f, b, B, A
 
