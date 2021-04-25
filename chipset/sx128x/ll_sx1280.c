@@ -965,6 +965,9 @@ void ll_radio_on(void){
     // Go back to Frequcency Synthesis Mode, reduces transition time between Rx<->TX
     Radio.SetAutoFS(1);
 
+    uint16_t fw_version = SX1280GetFirmwareVersion();
+    printf("FW Version: 0x%04x\n", fw_version);
+
 	// quick test
 	uint8_t data[] = {1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128 };
 	Radio.WriteBuffer(0, data, sizeof(data));
