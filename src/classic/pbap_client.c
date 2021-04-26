@@ -1016,7 +1016,6 @@ uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     log_info("abort current operation, state 0x%02x", pbap_client->state);
     pbap_client->abort_operation = 1;
-    goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
 
