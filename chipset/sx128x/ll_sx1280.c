@@ -837,8 +837,8 @@ static void radio_on_rx_done(void ){
         // more data field not used yet
         // uint8_t more_data = (rx_packet->header >> 4) & 1;
 
-        // only accept packets where len <= payload size
-        if (rx_len <= LL_MAX_PAYLOAD){
+        // only accept packets with new sequence number and len <= payload size
+        if ((sequence_number == ctx.next_expected_sequence_number) && (rx_len <= LL_MAX_PAYLOAD)) {
 			// update state
 			ctx.next_expected_sequence_number = 1 - sequence_number;
 
