@@ -1,4 +1,9 @@
-# Experimental port for Semtech SX1280 2.4 GHz Multi Protocol Controller
+# BTstack port with Cinnamon for Semtech SX1280 2.4 GHz Multi Protocol Controller
+
+*Cinnamon* is BlueKitchen's minimal, yet robust Controller/Link Layer implementation for use with BTstack.
+
+In contrast to common Link Layer implementations, our focus is on a robust and compact implementation for production use,
+where code size matters (e.g. current code size about 8 kB).
 
 ## Overview
 

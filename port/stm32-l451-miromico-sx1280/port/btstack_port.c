@@ -99,7 +99,7 @@ void btstack_port(void){
     // lptim1_calibration();
 
     // Bring up BTstack
-    printf("BTstack Controller using Semtech SA1280\n");
+    printf("BlueKitchen Cinnamon Controller for Semtech SX1280\n");
 
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
