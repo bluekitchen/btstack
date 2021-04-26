@@ -2248,10 +2248,9 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 		//  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
 		//  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
 		if (packet[3] == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
-			// whitelist connect
-			if (hci_is_le_connection_type(addr_type)){
-				hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
-			}
+		    // reset state
+            hci_stack->le_connecting_state   = LE_CONNECTING_IDLE;
+            hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
 			// get outgoing connection conn struct for direct connect
 			conn = gap_get_outgoing_connection();
 		}
