@@ -36,6 +36,7 @@ BTSTACK_ROOT ?= ../..
 
 # VPATH to find .gatt files
 VPATH += ${BTSTACK_ROOT}/example
+VPATH += ./example
 
 ######################################
 # source
@@ -224,6 +225,7 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 EXAMPLES = 					\
 	gatt_counter            \
 	gatt_streamer_server    \
+	gatt_rgb          \
 #	hog_keyboard_demo       \
 #	hog_mouse_demo          \
 
@@ -232,6 +234,7 @@ GATT_FILES = \
 	gatt_streamer_server.gatt \
 	hog_keyboard_demo.gatt \
 	hog_mouse_demo.gatt \
+	gatt_rgb.gatt \
 
 # default action: build all
 all: \
