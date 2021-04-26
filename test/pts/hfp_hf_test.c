@@ -315,12 +315,12 @@ static void stdin_process(char c){
         case 'r':
             log_info("USER:\'%c\'", cmd);
             printf("Deactivate enhanced voice recognition\n");
-            hfp_hf_deactivate_enhanced_voice_recognition_notification(acl_handle);
+            hfp_hf_stop_enhanced_voice_recognition_session(acl_handle);
             break;
         case 'R':
             log_info("USER:\'%c\'", cmd);
             printf("Activate enhanced voice recognition %s\n", bd_addr_to_str(device_addr));
-            hfp_hf_activate_start_enhanced_voice_recognition_session(acl_handle);
+            hfp_hf_start_enhanced_voice_recognition_session(acl_handle);
             break;
 
         case 'o':

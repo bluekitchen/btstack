@@ -413,6 +413,44 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+static void hfp_emit_enhanced_voice_recognition_state(hfp_connection_t * hfp_connection){
+    btstack_assert(hfp_connection != NULL);
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
+    event[pos++] = hfp_connection->ag_vra_status;
+    event[pos++] = hfp_connection->ag_vra_state;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
+static void hfp_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_connection, uint16_t value_length, uint8_t * value){
+    btstack_assert(hfp_connection != NULL);
+    uint8_t event[HFP_MAX_VR_TEXT_SIZE];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, hfp_connection->ag_text_id);
+    pos += 2;
+    event[pos++] = hfp_connection->ag_text_operation;
+    event[pos++] = hfp_connection->ag_text_type;
+    
+    // length, zero ending
+    uint16_t size = btstack_min(value_length, sizeof(event) - pos - 2 - 1);
+    little_endian_store_16(event, pos, size+1);
+    pos += 2; 
+    memcpy(&event[pos], value, size);
+    event[pos + size] = 0;
+    pos += size + 1; 
+    hfp_emit_event_for_context(hfp_connection, event, pos);
+}
+
 btstack_linked_list_t * hfp_get_connections(void){
     return (btstack_linked_list_t *) &hfp_connections;
 } 
@@ -1572,6 +1610,36 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
             hfp_connection->call_waiting_notification_enabled = hfp_connection->line_buffer[0] != '0';
+            break;
+        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+            switch(hfp_connection->parser_item_index){
+                case 0:
+                    hfp_connection->ag_vra_status = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    break;
+                case 1:
+                    hfp_connection->ag_vra_state = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_emit_enhanced_voice_recognition_state(hfp_connection);
+                    break;
+                case 2:
+                    hfp_connection->ag_text_id = 0;
+                    for (i = 0 ; i < 4; i++){
+                        hfp_connection->ag_text_id = (hfp_connection->ag_text_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
+                    }
+                    printf("text ID 0x%04X\n", hfp_connection->ag_text_id);
+                    break;
+                case 3:
+                    hfp_connection->ag_text_operation = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    break;
+                case 4:
+                    hfp_connection->ag_text_type = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    break;
+                case 5:
+                    printf("text%s\n", hfp_connection->line_buffer);
+                    hfp_emit_enhanced_voice_recognition_text(hfp_connection, hfp_connection->line_size, &hfp_connection->line_buffer[0]);
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
             break;

@@ -480,7 +480,7 @@ static int voice_recognition_state_machine(hfp_connection_t * hfp_connection){
     }
     int done = 0;
     if (hfp_connection->ok_pending == 0) {
-        switch (hfp_connection->vra_state){
+        switch (hfp_connection->vra_status){
             case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
             case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF:
                 hfp_connection->ok_pending = 1;
@@ -503,20 +503,20 @@ static int voice_recognition_state_machine(hfp_connection_t * hfp_connection){
                 break;
         }
     } else {
-        switch (hfp_connection->vra_state){
+        switch (hfp_connection->vra_status){
             case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
-                hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
+                hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 1);
                 break;
             
             case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
-                hfp_connection->vra_state = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
+                hfp_connection->vra_status = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 2);
                 break;
 
             case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
             case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF:
-                hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
+                hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_OFF;
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 0);
                 break;
             default:
@@ -1140,16 +1140,16 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             }            
 
 
-            switch (hfp_connection->vra_state){
+            switch (hfp_connection->vra_status){
                 case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
-                    hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
+                    hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
                     break;
                 case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF:
-                    hfp_connection->vra_state = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
+                    hfp_connection->vra_status = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
                     break;
                 case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
                 case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
-                    hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
+                    hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_OFF;
                     break;
                 default:
                     break;
@@ -1701,12 +1701,12 @@ uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_hand
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    switch (hfp_connection->vra_state){
+    switch (hfp_connection->vra_status){
         case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 1);
             break;
         case HFP_VRA_VOICE_RECOGNITION_OFF:
-            hfp_connection->vra_state = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
+            hfp_connection->vra_status = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
             hfp_hf_run_for_context(hfp_connection);
             break;
         default:
@@ -1716,7 +1716,7 @@ uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_hand
 }
 
 
-uint8_t hfp_hf_activate_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
@@ -1727,10 +1727,10 @@ uint8_t hfp_hf_activate_start_enhanced_voice_recognition_session(hci_con_handle_
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
-    switch (hfp_connection->vra_state){
+    switch (hfp_connection->vra_status){
         case HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_VOICE_RECOGNITION_OFF:
-            hfp_connection->vra_state = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
+            hfp_connection->vra_status = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
             hfp_hf_run_for_context(hfp_connection);
             break;
         default:
@@ -1740,16 +1740,16 @@ uint8_t hfp_hf_activate_start_enhanced_voice_recognition_session(hci_con_handle_
 }
 
 static uint8_t hfp_hf_deactivate_voice_recognition(hfp_connection_t * hfp_connection){
-    switch (hfp_connection->vra_state){
+    switch (hfp_connection->vra_status){
         case HFP_VRA_VOICE_RECOGNITION_OFF:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_VOICE_RECOGNITION_STATUS, 0);
             break;
         case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
-            hfp_connection->vra_state = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
+            hfp_connection->vra_status = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
             hfp_hf_run_for_context(hfp_connection);
             break;
         case HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
-            hfp_connection->vra_state = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF;
+            hfp_connection->vra_status = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF;
             hfp_hf_run_for_context(hfp_connection);
             break;
         default:
@@ -1772,7 +1772,7 @@ uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_ha
 }
 
 
-uint8_t hfp_hf_deactivate_enhanced_voice_recognition_notification(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);

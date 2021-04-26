@@ -324,9 +324,9 @@ uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_hand
  */
 uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
 
-uint8_t hfp_hf_activate_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
 
-uint8_t hfp_hf_deactivate_enhanced_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set microphone gain. 

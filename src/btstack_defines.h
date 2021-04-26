@@ -1762,18 +1762,20 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                 0x1E
 
 /**
- * @format 1H1
+ * @format 1H11
  * @param subevent_code
  * @param acl_handle
+ * @param status
  * @param state
  */
 #define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS         0x1F
 
 /**
- * @format 1H21LV
+ * @format 1H211LV
  * @param subevent_code
  * @param acl_handle
  * @param text_id
+ * @param text_operation
  * @param text_type
  * @param text_length
  * @param text

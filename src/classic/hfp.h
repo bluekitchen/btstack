@@ -117,7 +117,8 @@ extern "C" {
 #define HFP_CALL_SERVICE_SIZE                    3
 #define HFP_MAX_NUM_CODECS                      10
 
-#define HFP_MAX_INDICATOR_DESC_SIZE 20 
+#define HFP_MAX_INDICATOR_DESC_SIZE  20
+#define HFP_MAX_VR_TEXT_SIZE        100
 #define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
 
     
@@ -205,6 +206,7 @@ typedef enum {
     HFP_CMD_REDIAL_LAST_NUMBER,
     HFP_CMD_TURN_OFF_EC_AND_NR,
     HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION,
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
     HFP_CMD_HF_REQUEST_PHONE_NUMBER,
     HFP_CMD_AG_SENT_PHONE_NUMBER,
@@ -327,10 +329,10 @@ typedef enum {
 } hfp_text_type_t;
 
 typedef enum {
-    HFP_TEXT_OPERATOR_NEW_TEXT = 1,
-    HFP_TEXT_OPERATOR_REPLACE,
-    HFP_TEXT_OPERATOR_APPEND
-} hfp_text_operator_t;
+    HFP_TEXT_OPERATION_NEW_TEXT = 1,
+    HFP_TEXT_OPERATION_REPLACE,
+    HFP_TEXT_OPERATION_APPEND
+} hfp_text_operation_t;
 
 typedef enum {
     HFP_IDLE = 0, //0
@@ -397,7 +399,7 @@ typedef enum {
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED,
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_NEW_SESSION,
     HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED
-} hfp_voice_recognition_activation_t;
+} hfp_voice_recognition_activation_status_t;
 
 typedef enum {
     HFP_CODECS_IDLE,
@@ -542,7 +544,7 @@ typedef struct hfp_connection {
     int      parser_indicator_index;
     uint32_t parser_indicator_value;
     bool     parser_quoted;
-    uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint8_t  line_buffer[HFP_MAX_VR_TEXT_SIZE];
     int      line_size;
     
     uint32_t remote_supported_features;
@@ -666,11 +668,13 @@ typedef struct hfp_connection {
     uint8_t hf_activate_echo_canceling_and_noise_reduction;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
 
-    hfp_voice_recognition_activation_t vra_state;
-    // uint8_t voice_recognition_status_required;
-    // uint8_t voice_recognition_status_current; // 1-enabled; 0-dissabled
+    hfp_voice_recognition_activation_status_t vra_status;
 
-    // hfp_voice_recognition_state_t voice_recognition_state;
+    hfp_voice_recognition_activation_status_t ag_vra_status;
+    hfp_voice_recognition_state_t ag_vra_state;
+    uint16_t ag_text_id;
+    hfp_text_operation_t ag_text_operation;
+    hfp_text_type_t ag_text_type;
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;
