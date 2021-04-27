@@ -46,7 +46,6 @@
 #include "att_dispatch.h"
 #include "ad_parser.h"
 #include "ble/att_db.h"
-#include "ble/core.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
@@ -55,9 +54,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
-#include "classic/sdp_util.h"
 #include "hci.h"
-#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 
