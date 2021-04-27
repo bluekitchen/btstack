@@ -5503,6 +5503,7 @@ uint8_t gap_connect_cancel(void){
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
+            hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
             hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
             btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
             btstack_memory_hci_connection_free( conn );
