@@ -206,8 +206,8 @@ typedef enum {
     HFP_CMD_REDIAL_LAST_NUMBER,
     HFP_CMD_TURN_OFF_EC_AND_NR,
     HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,
-    HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION,
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
+    HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION,
     HFP_CMD_HF_REQUEST_PHONE_NUMBER,
     HFP_CMD_AG_SENT_PHONE_NUMBER,
     HFP_CMD_TRANSMIT_DTMF_CODES,
@@ -316,7 +316,8 @@ typedef enum {
 } hfp_parser_state_t;
 
 typedef enum {
-    HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT = 0,
+    HFP_VOICE_RECOGNITION_STATE_AG_READY = 0,
+    HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT = 1,
     HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF = 2,
     HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT = 4
 } hfp_voice_recognition_state_t;
@@ -397,9 +398,18 @@ typedef enum {
     
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF,
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED,
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS,
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_MSG,
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_NEW_SESSION,
     HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED
 } hfp_voice_recognition_activation_status_t;
+
+typedef struct {
+    uint16_t text_id;
+    hfp_text_type_t text_type;
+    hfp_text_operation_t text_operation;
+    uint8_t * text;
+} hfp_voice_recognition_message_t;
 
 typedef enum {
     HFP_CODECS_IDLE,
@@ -672,9 +682,8 @@ typedef struct hfp_connection {
 
     hfp_voice_recognition_activation_status_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
-    uint16_t ag_text_id;
-    hfp_text_operation_t ag_text_operation;
-    hfp_text_type_t ag_text_type;
+    
+    hfp_voice_recognition_message_t ag_msg;
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;

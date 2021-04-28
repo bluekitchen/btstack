@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:1B:DC:08:E2:72";
+static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 
 // configuration
 static const int wide_band_speech = 1;
@@ -164,7 +164,9 @@ static void show_usage(void){
     printf("l - Clear last number                   | L - Set last number to 7654321\n");
     printf("m - simulate incoming call from 7654321\n");
     printf("M - simulate outgoing call to 1234567\n");
-    printf("n - Disable Voice Regocnition           | N - Enable Voice Recognition\n");
+    printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
+    printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
+    
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
     printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
@@ -327,6 +329,86 @@ static void stdin_process(char cmd){
             printf("Enable Voice Recognition\n");
             hfp_ag_activate_voice_recognition(acl_handle, 1);
             break;
+        
+        case '1':
+            printf("Enable Enhanced Voice Recognition\n");
+            hfp_ag_enhanced_voice_recognition_activate(acl_handle);
+            break;
+        case '2':
+            printf("EVR Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_ready_for_input(acl_handle);
+            break;
+        case '3':
+            printf("EVR Send audio outputt\n");
+            hfp_ag_enhanced_voice_recognition_starting_sound(acl_handle);
+            break;
+        case '4':
+            printf("EVR Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_processing_input(acl_handle);
+            break;
+        
+        case '5':
+            printf("Disable Enhanced Voice Recognition\n");
+            hfp_ag_enhanced_voice_recognition_deactivate(acl_handle);
+            break;
+        
+        case '6':{
+            hfp_voice_recognition_message_t msg = {
+                    0xAB13, 0, 1, (uint8_t *) "test"
+            };
+            printf("EVR Msg, Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            break;
+        }
+
+        case '7':{
+            // changed type, change iD
+            hfp_voice_recognition_message_t msg = {
+                    0xAB14, 1, 1, (uint8_t *) "test"
+            };
+            printf("EVR Msg Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            break;
+        }
+
+        case '8':{
+            // replace op, leave id and type
+            hfp_voice_recognition_message_t msg = {
+                    0xAB13, 0, 2, (uint8_t *) "test"
+            };
+            printf("EVR Msg Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            break;
+        }
+        
+        case '9':{
+            // replace op, leave id and type
+            hfp_voice_recognition_message_t msg = {
+                    0xAB13, 0, 3, (uint8_t *) "test"
+            };
+            printf("EVR Msg Processing Input\n");
+            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            break;
+        }
+
+        case '*':{
+            hfp_voice_recognition_message_t msg = {
+                    0xAB13, 2, 1, (uint8_t *) "test"
+            };
+            printf("EVR Msg, Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            break;
+        }
+
+        case '@':{
+            hfp_voice_recognition_message_t msg = {
+                    0xAB13, 3, 1, (uint8_t *) "test"
+            };
+            printf("EVR Msg, Status ready_for_input\n");
+            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            break;
+        }
+
         case 'o':
             log_info("USER:\'%c\'", cmd);
             printf("Set speaker gain to 0 (minimum)\n");
@@ -595,8 +677,8 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
         (1<<HFP_AGSF_THREE_WAY_CALLING)           |
         (1<<HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG)    |
-        (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
-        (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT);
+        (1<<HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_AGSF_VOICE_RECOGNITION_TEXT);
 
     // HFP
     rfcomm_init();

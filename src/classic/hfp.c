@@ -436,10 +436,10 @@ static void hfp_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_conn
     event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT;
     little_endian_store_16(event, pos, hfp_connection->acl_handle);
     pos += 2;
-    little_endian_store_16(event, pos, hfp_connection->ag_text_id);
+    little_endian_store_16(event, pos, hfp_connection->ag_msg.text_id);
     pos += 2;
-    event[pos++] = hfp_connection->ag_text_operation;
-    event[pos++] = hfp_connection->ag_text_type;
+    event[pos++] = hfp_connection->ag_msg.text_operation;
+    event[pos++] = hfp_connection->ag_msg.text_type;
     
     // length, zero ending
     uint16_t size = btstack_min(value_length, sizeof(event) - pos - 2 - 1);
@@ -1621,17 +1621,16 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     hfp_emit_enhanced_voice_recognition_state(hfp_connection);
                     break;
                 case 2:
-                    hfp_connection->ag_text_id = 0;
+                    hfp_connection->ag_msg.text_id = 0;
                     for (i = 0 ; i < 4; i++){
-                        hfp_connection->ag_text_id = (hfp_connection->ag_text_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
+                        hfp_connection->ag_msg.text_id = (hfp_connection->ag_msg.text_id << 4) | nibble_for_char(hfp_connection->line_buffer[i]);
                     }
-                    printf("text ID 0x%04X\n", hfp_connection->ag_text_id);
                     break;
                 case 3:
-                    hfp_connection->ag_text_operation = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_msg.text_operation = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 4:
-                    hfp_connection->ag_text_type = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_msg.text_type = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 5:
                     printf("text%s\n", hfp_connection->line_buffer);

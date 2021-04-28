@@ -245,6 +245,16 @@ void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
  */
 void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate);
 
+void hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
+
+void hfp_ag_enhanced_voice_recognition_status(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state);
+void hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle);
+void hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle);
+void hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle);
+
+void hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
+void hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
+
 /*
  * @brief Send a phone number back to the HF.
  * @param bd_addr Bluetooth address of the HF
