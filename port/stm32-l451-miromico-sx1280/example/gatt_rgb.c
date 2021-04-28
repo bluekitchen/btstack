@@ -65,7 +65,6 @@
 #define HEARTBEAT_BLINK_MS   200
 
 static btstack_timer_source_t heartbeat;
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bool connected;
 
