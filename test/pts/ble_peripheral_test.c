@@ -68,17 +68,7 @@
 // test profile
 #include "ble_peripheral_test.h"
 
-enum {
-    DISABLE_ADVERTISEMENTS   = 1 << 0,
-    SET_ADVERTISEMENT_PARAMS = 1 << 1,
-    SET_ADVERTISEMENT_DATA   = 1 << 2,
-    SET_SCAN_RESPONSE_DATA   = 1 << 3,
-    ENABLE_ADVERTISEMENTS    = 1 << 4,
-};
-static uint16_t todos = 0;
-
 ///------
-static int advertisements_enabled = 0;
 static int gap_advertisements = 0;
 static int gap_discoverable = 0;
 static int gap_connectable = 0;
@@ -483,64 +473,6 @@ static uint8_t gap_adv_type(void){
     return 0x00;
 }
 
-static void gap_run(void){
-    if (!hci_can_send_command_packet_now()) return;
-
-    if (todos & DISABLE_ADVERTISEMENTS){
-        todos &= ~DISABLE_ADVERTISEMENTS;
-        printf("GAP_RUN: disable advertisements\n");
-        advertisements_enabled = 0;
-        hci_send_cmd(&hci_le_set_advertise_enable, 0);
-        return;
-    }    
-
-    if (todos & SET_ADVERTISEMENT_DATA){
-        printf("GAP_RUN: set advertisement data\n");
-        todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-        return;
-    }    
-
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = gap_adv_type();
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x800;
-        uint16_t adv_int_max = 0x800;
-        switch (adv_type){
-            case 0:
-            case 2:
-            case 3:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_random, 0, &null_addr, 0x07, 0x00);
-                break;
-            case 1:
-            case 4:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_random, tester_address_type, &tester_address, 0x07, 0x00);
-                break;
-        }
-        return;
-    }    
-
-    if (todos & SET_SCAN_RESPONSE_DATA){
-        printf("GAP_RUN: set scan response data\n");
-        todos &= ~SET_SCAN_RESPONSE_DATA;
-        hci_send_cmd(&hci_le_set_scan_response_data, adv_data_len, adv_data);
-        // hack for menu
-        if ((todos & ENABLE_ADVERTISEMENTS) == 0) show_usage();
-        return;
-    }    
-
-    if (todos & ENABLE_ADVERTISEMENTS){
-        printf("GAP_RUN: enable advertisements\n");
-        todos &= ~ENABLE_ADVERTISEMENTS;
-        advertisements_enabled = 1;
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-        show_usage();
-        return;
-    }
-}
-
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -554,31 +486,11 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // bt stack activated, get started
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("SM Init completed\n");
-                        todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA | ENABLE_ADVERTISEMENTS;
                         update_advertisements();
-                        gap_run();
-                    }
-                    break;
-                
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            advertisements_enabled = 0;
-                            handle = little_endian_read_16(packet, 4);
-                            printf("Connection handle 0x%04x\n", handle);
-                            // request connection parameter update - test parameters
-                            // l2cap_le_request_connection_parameter_update(little_endian_read_16(packet, 4), 20, 1000, 100, 100);
-                            break;
-
-                        default:
-                            break;
                     }
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    if (advertisements_enabled && gap_discoverable){
-                        todos = ENABLE_ADVERTISEMENTS;
-                    }
                     att_attributes_init();
                     att_write_queue_init();
                     break;
@@ -620,7 +532,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
     }
-    gap_run();
 }
 
 void show_usage(void){
@@ -688,19 +599,29 @@ void update_advertisements(void){
     memcpy(&adv_data[adv_data_len], advertisements[advertisement_index].data, advertisements[advertisement_index].len);
     adv_data_len += advertisements[advertisement_index].len;
 
-    todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA;
+    // set as adv + scan response data
+    gap_advertisements_set_data(adv_data_len, adv_data);
+    gap_scan_response_set_data(adv_data_len, adv_data);
 
-    // disable advertisements, if thez are active
-    if (advertisements_enabled){
-        todos |= DISABLE_ADVERTISEMENTS;
+    // update advertisement params
+    uint8_t adv_type = gap_adv_type();
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    uint16_t adv_int_min = 0x800;
+    uint16_t adv_int_max = 0x800;
+    uint8_t filter_policy = 0;
+    uint8_t channel_map = 0x07;
+    switch (adv_type){
+        case 0:
+        case 2:
+        case 3:
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, channel_map, filter_policy);
+            break;
+        case 1:
+        case 4:
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, tester_address_type, tester_address, channel_map, filter_policy);
+            break;
     }
-
-    // enable advertisements, if they should be on
-    if (gap_advertisements) {
-        todos |= ENABLE_ADVERTISEMENTS;
-    }
-
-    gap_run();
 }
 
 static void update_auth_req(void){
@@ -733,12 +654,12 @@ static void stdin_process(char c){
     switch (c){
         case 'a':
             gap_advertisements = 0;
-            update_advertisements();
+            gap_advertisements_enable(gap_advertisements);
             show_usage();
             break;
         case 'A':
             gap_advertisements = 1;
-            update_advertisements();
+            gap_advertisements_enable(gap_advertisements);
             show_usage();
             break;
         case 'b':
@@ -971,7 +892,7 @@ int btstack_main(int argc, const char * argv[]){
     btstack_stdin_setup(stdin_process);
 
     gap_random_address_set_update_period(5000);
-    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
     strcpy(gap_device_name, "BTstack");
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
