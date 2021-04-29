@@ -587,6 +587,12 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         }
 #endif
 
+        // allow to return ATT Error Code in ATT Read Callback
+        if (it.value_len > ATT_READ_ERROR_CODE_OFFSET){
+            error_code =  it.value_len - ATT_READ_ERROR_CODE_OFFSET;
+            break;
+        }
+
         // check if value has same len as last one
         uint16_t this_pair_len = 2u + it.value_len;
         if ((offset > 1u) && (pair_len != this_pair_len)) {
@@ -685,6 +691,12 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
+    // allow to return ATT Error Code in ATT Read Callback
+    if (it.value_len > ATT_READ_ERROR_CODE_OFFSET){
+        error_code = it.value_len - ATT_READ_ERROR_CODE_OFFSET;
+        return setup_error(response_buffer, request_type, handle, error_code);
+    }
+
     // store
     uint16_t offset   = 1;
     uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);
@@ -732,6 +744,12 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
+
+    // allow to return ATT Error Code in ATT Read Callback
+    if (it.value_len > ATT_READ_ERROR_CODE_OFFSET){
+        error_code = it.value_len - ATT_READ_ERROR_CODE_OFFSET;
+        return setup_error(response_buffer, request_type, handle, error_code);
+    }
 
     if (value_offset > it.value_len){
         return setup_error_invalid_offset(response_buffer, request_type, handle);
@@ -808,6 +826,12 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
         if (read_request_pending) continue;
 #endif
+
+        // allow to return ATT Error Code in ATT Read Callback
+        if (it.value_len > ATT_READ_ERROR_CODE_OFFSET){
+            error_code = it.value_len -ATT_READ_ERROR_CODE_OFFSET;
+            break;
+        }
 
         // store
         uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, response_buffer_size - offset, att_connection->con_handle);

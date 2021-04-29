@@ -87,6 +87,9 @@ extern "C" {
 #define ATT_WRITE_COMMAND                0x52
 #define ATT_SIGNED_WRITE_COMMAND         0xD2
 
+// map ATT ERROR CODES on to att_read_callback length
+#define ATT_READ_ERROR_CODE_OFFSET       0xfe00
+
 // custom BTstack ATT Response Pending for att_read_callback
 #define ATT_READ_RESPONSE_PENDING                 0xffff
 
