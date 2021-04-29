@@ -1151,7 +1151,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // setup l2cap service
-    l2cap_register_service(&att_event_packet_handler, PSM_ATT, 0xffff, LEVEL_2);
+    l2cap_register_service(&att_event_packet_handler, PSM_ATT, 0xffff, gap_get_security_level());
 #endif
 
     att_set_db(db);
