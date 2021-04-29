@@ -46,6 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ble/att_db_util.h>
 
 #include "btstack_config.h"
 
@@ -53,6 +54,7 @@
 #include "ble/att_server.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
+#include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -62,11 +64,17 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_stdin.h"
- 
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+#include "classic/gatt_sdp.h"
+#include "classic/sdp_util.h"
+static uint8_t gatt_service_buffer[70];
+#endif
+
 #define HEARTBEAT_PERIOD_MS 1000
 
 // test profile
-#include "ble_peripheral_test.h"
+#include "gatt_server_test.h"
 
 ///------
 static int gap_advertisements = 0;
@@ -104,8 +112,13 @@ static uint8_t counter = 0;
 static int update_client = 0;
 static int client_configuration = 0;
 static uint16_t client_configuration_handle;
+static hci_con_handle_t handle = HCI_CON_HANDLE_INVALID;
 
-static uint16_t handle = 0;
+static bool dynamic_db;
+static uint8_t gatt_database_hash[16];
+static btstack_crypto_aes128_cmac_t gatt_aes_cmac_context;
+
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static void app_run(void);
 static void show_usage(void);
@@ -189,12 +202,15 @@ static advertisement_t advertisements[] = {
 
 static int advertisement_index = 2;
 
+// signed write
+static uint8_t signed_write_characteristic_value;
+
 // att write queue engine
 
-static const char default_value_long[]  = "abcdefghijklmnopqrstuvwxyz";
+static const char default_value_long[]  = "0123456789abcdef0123456789abcdef0123456789abcdef!!";
 static const char default_value_short[] = "a";
 
-#define ATT_VALUE_MAX_LEN 26
+#define ATT_VALUE_MAX_LEN 50
 
 typedef struct {
     uint16_t handle;
@@ -232,13 +248,6 @@ static int att_write_queue_for_handle(uint16_t aHandle){
     return -1;
 }
 
-static void att_attributes_init(void){
-    int i;
-    for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
-        att_attributes[i].handle = 0;
-    }
-}
-
 // handle == 0 finds free attribute
 static int att_attribute_for_handle(uint16_t aHandle){
     int i;
@@ -248,6 +257,29 @@ static int att_attribute_for_handle(uint16_t aHandle){
         }
     }
     return -1;
+}
+
+static void att_setup_attribute(uint16_t attribute_handle, const uint8_t * value, uint16_t len){
+    int index = att_attribute_for_handle(attribute_handle);
+    if (index < 0){
+        index = att_attribute_for_handle(0);
+    }
+    btstack_assert(index >= 0);
+    printf("Setup Attribute %04x, len %u, value: %s\n", attribute_handle, len, value);
+    btstack_assert(len <= ATT_VALUE_MAX_LEN);
+    att_attributes[index].handle = attribute_handle;
+    att_attributes[index].len    = len;
+    memcpy(att_attributes[index].value, value, len);
+}
+
+static void att_attributes_init(void){
+    int i;
+    for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
+        att_attributes[i].handle = 0;
+    }
+
+    // preset some attributes
+    att_setup_attribute(ATT_CHARACTERISTIC_FFF7_01_USER_DESCRIPTION_HANDLE, (const uint8_t *) default_value_long, strlen(default_value_long));
 }
 
 
@@ -292,8 +324,19 @@ static void app_run(void){
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 
     UNUSED(con_handle);
-    printf("READ Callback, handle %04x, offset %u, buffer size %u\n", attribute_handle, offset, buffer_size);
+    printf("READ Callback, handle %04x, offset %u, buffer size %u, buffer %p\n", attribute_handle, offset, buffer_size, buffer);
+
+    if (dynamic_db){
+        // support Database Hash
+        if (attribute_handle == 3){
+            uint8_t hash_buffer[16];
+            reverse_128(gatt_database_hash, hash_buffer);
+            return att_read_callback_handle_blob(hash_buffer, 16, offset, buffer, buffer_size);
+        }
+    }
+
     uint16_t  att_value_len;
+    const uint16_t long_characteristic_len = 51;
 
     switch (attribute_handle){
         case ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE:
@@ -317,14 +360,42 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
                 reverse_bd_addr(gap_reconnection_address, buffer);
             }
             return 6;
-
+        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+            // Value with size mtu - 1, buffer has size mtu - 1
+            if (buffer){
+                memset(buffer, 'x', buffer_size);
+            }
+            return buffer_size;
+        case ATT_CHARACTERISTIC_FFF1_01_CLIENT_CONFIGURATION_HANDLE:
+            if (buffer){
+                little_endian_store_16(buffer, 0, client_configuration);
+            }
+            return 2;
+        case ATT_CHARACTERISTIC_FFF8_01_VALUE_HANDLE:
+            // access only for BR/EDR, return application error (0x80-0x9f)
+            if (gap_get_connection_type(con_handle) != GAP_CONNECTION_ACL) return ATT_READ_ERROR_CODE_OFFSET + 0x80;
+            if (buffer) {
+                buffer[0] = 'A';
+            }
+            return 1;
+        case ATT_CHARACTERISTIC_FFF9_01_VALUE_HANDLE:
+            if (gap_get_connection_type(con_handle) != GAP_CONNECTION_LE) return ATT_READ_ERROR_CODE_OFFSET + 0x80;
+            if (buffer) {
+                buffer[0] = 'A';
+            }
+            return 1;
+        case ATT_CHARACTERISTIC_FFFB_01_VALUE_HANDLE:
+            if (buffer){
+                buffer[0] = signed_write_characteristic_value;
+            }
+            return 1;
         default:
             break;
     }
 
-    uint16_t uuid16 = att_uuid_for_handle(handle);
+    uint16_t uuid16 = att_uuid_for_handle(attribute_handle);
     if (uuid16){
-        printf("Resolved to UUID %04x\n", uuid16);
+        printf("- Resolved to UUID %04x\n", uuid16);
         switch (uuid16){
             case 0x2902:
                 if (buffer) {
@@ -337,10 +408,11 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
     }
     
     // find attribute
-    int index = att_attribute_for_handle(handle);
+    int index = att_attribute_for_handle(attribute_handle);
     uint8_t * att_value;
     if (index < 0){
         // not written before
+        printf("- Attribute not written before\n");
         if (att_default_value_long){
             att_value = (uint8_t*) default_value_long;
             att_value_len  = strlen(default_value_long);
@@ -349,10 +421,11 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
             att_value_len  = strlen(default_value_short);
         }
     } else {
+        printf("- Found existing attribute\n");
         att_value     = att_attributes[index].value;
         att_value_len = att_attributes[index].len;
     }
-    printf("Attribute len %u, data: ", att_value_len);
+    printf("- Attribute len %u, data: ", att_value_len);
     printf_hexdump(att_value, att_value_len);
 
     // assert offset <= att_value_len
@@ -369,41 +442,49 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
 }
 
 // write requests
-static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(con_handle);
-    printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", attribute_handle, transaction_mode, offset);
-    printf_hexdump(buffer, buffer_size);
-
+static void att_write_update_attribute(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t * value_data, uint16_t value_len){
     switch (attribute_handle){
         case ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE:
-            memcpy(gap_device_name, buffer, buffer_size);
-            gap_device_name[buffer_size]=0;
+            memcpy(gap_device_name, value_data, value_len);
+            gap_device_name[value_len]=0;
             printf("Setting device name to '%s'\n", gap_device_name);
-            return 0;
+            break;
         case ATT_CHARACTERISTIC_GAP_APPEARANCE_01_VALUE_HANDLE:
-            gap_appearance = little_endian_read_16(buffer, 0);
+            gap_appearance = little_endian_read_16(value_data, 0);
             printf("Setting appearance to 0x%04x'\n", gap_appearance);
-            return 0;
+            break;
         case ATT_CHARACTERISTIC_GAP_PERIPHERAL_PRIVACY_FLAG_01_VALUE_HANDLE:
-            gap_privacy = buffer[0];
+            gap_privacy = value_data[0];
             printf("Setting privacy to 0x%04x'\n", gap_privacy);
             update_advertisements();
-            return 0;
+            break;
         case ATT_CHARACTERISTIC_GAP_RECONNECTION_ADDRESS_01_VALUE_HANDLE:
-            reverse_bd_addr(buffer, gap_reconnection_address);
+            reverse_bd_addr(value_data, gap_reconnection_address);
             printf("Setting Reconnection Address to %s\n", bd_addr_to_str(gap_reconnection_address));
-            return 0;
+            break;
+        case ATT_CHARACTERISTIC_FFFB_01_VALUE_HANDLE:
+            signed_write_characteristic_value = value_data[0];
+            break;
         default:
             break;
     }
+}
+
+static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+
+    printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", attribute_handle, transaction_mode, offset);
+    printf_hexdump(buffer, buffer_size);
+
+    // lookup UUID for attribute handle
     uint16_t uuid16 = att_uuid_for_handle(attribute_handle);
     if (uuid16){
-        printf("Resolved to UUID %04x\n", uuid16);
+        printf("- Resolved to UUID %04x\n", uuid16);
         switch (uuid16){
             case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
-                client_configuration = buffer[0];
+                handle = con_handle;
                 client_configuration_handle = attribute_handle;
-                printf("Client Configuration set to %u for handle %04x\n", client_configuration, client_configuration_handle);
+                client_configuration = buffer[0];
+                printf("- Client Configuration set to %u for handle %04x\n", client_configuration, client_configuration_handle);
                 return 0;   // ok
             default:
                 break;
@@ -419,6 +500,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
             if (attributes_index < 0){
                 attributes_index = att_attribute_for_handle(0);
                 if (attributes_index < 0) return 0;    // ok, but we couldn't store it (our fault)
+                printf("- Setup new attribute buffer for UUID %04x, long %u, index %u\n", uuid16, att_default_value_long, attributes_index);
                 att_attributes[attributes_index].handle = attribute_handle;
                 // not written before
                 uint8_t * att_value;
@@ -435,12 +517,23 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
             if (buffer_size > att_attributes[attributes_index].len) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
             att_attributes[attributes_index].len = buffer_size;
             memcpy(att_attributes[attributes_index].value, buffer, buffer_size);
+            // commit changes
+            att_write_update_attribute(con_handle, attribute_handle, buffer, buffer_size);
             break;
         case ATT_TRANSACTION_MODE_ACTIVE:
             writes_index = att_write_queue_for_handle(attribute_handle);
             if (writes_index < 0)                            return ATT_ERROR_PREPARE_QUEUE_FULL;
             if (offset > att_write_queues[writes_index].len) return ATT_ERROR_INVALID_OFFSET;
             if (buffer_size + offset > ATT_VALUE_MAX_LEN)    return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+            // check offset for known attributes
+            switch (attribute_handle){
+                case ATT_CHARACTERISTIC_GAP_APPEARANCE_01_VALUE_HANDLE:
+                    if (offset > 1) return ATT_ERROR_INVALID_OFFSET;
+                    if (offset + buffer_size > 2) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
+                    break;
+                default:
+                    break;
+            }
             att_write_queues[writes_index].len = buffer_size + offset;
             memcpy(&(att_write_queues[writes_index].value[offset]), buffer, buffer_size);
             break;
@@ -456,6 +549,8 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
                 }
                 att_attributes[attributes_index].len = att_write_queues[writes_index].len;
                 memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
+                // commit changes
+                att_write_update_attribute(con_handle, attribute_handle, buffer, buffer_size);
             }
             att_write_queue_init();
             break;
@@ -491,6 +586,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    handle = HCI_CON_HANDLE_INVALID;
                     att_attributes_init();
                     att_write_queue_init();
                     break;
@@ -575,6 +671,8 @@ void show_usage(void){
     printf("o/O - OOB data off/on ('%s')\n", sm_oob_data);
     printf("m/M - MITM protection off\n");
     printf("k/k - encryption key range [7..16]/[16..16]\n");
+    printf("n   - setup dynamic test db\n");
+    printf("N   - add Characteristic to test db\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -633,6 +731,11 @@ static void update_auth_req(void){
         auth_req |= SM_AUTHREQ_BONDING;
     }
     sm_set_authentication_requirements(auth_req);
+}
+
+static void gatt_hash_calculated(void * arg){
+    printf("GATT Hash calculated: ");
+    printf_hexdump(gatt_database_hash, 16);
 }
 
 static void stdin_process(char c){
@@ -847,12 +950,25 @@ static void stdin_process(char c){
                 1000       // max ce length
                 );
             break;
+        case 'n':
+            printf("Switch to dynamic database\n");
+            dynamic_db = true;
+            att_set_db(att_db_util_get_address());
+            att_db_util_add_service_uuid16(ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE);
+            att_db_util_add_characteristic_uuid16(0x2b2a, ATT_PROPERTY_READ | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
+            att_db_util_hash_calc(&gatt_aes_cmac_context, gatt_database_hash, &gatt_hash_calculated, NULL);
+            break;
+        case 'N':
+            printf("Adding Characteristic to dynamic database\n");
+            att_db_util_add_service_uuid16(0xfff0);
+            att_db_util_add_characteristic_uuid16(0xfff1, ATT_PROPERTY_READ | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
+            att_db_util_hash_calc(&gatt_aes_cmac_context, gatt_database_hash, &gatt_hash_calculated, NULL);
+            break;
         default:
             show_usage();
             break;
 
     }
-    return;
 }
 
 static int get_oob_data_callback(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data){
@@ -879,7 +995,19 @@ int btstack_main(int argc, const char * argv[]){
     // setup SM: Display only
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &app_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // configure Classic GAP
+    gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_set_security_level(LEVEL_0);
+    gap_discoverable_control(1);
+#endif
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
@@ -887,7 +1015,17 @@ int btstack_main(int argc, const char * argv[]){
     att_attributes_init();
     att_server_register_packet_handler(app_packet_handler);
 
-    att_dump_attributes();
+    // prepare for dynamic db construction
+    att_db_util_init();
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // init SDP, create record for GATT and register with SDP
+    sdp_init();
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
+#endif
 
     btstack_stdin_setup(stdin_process);
 
@@ -905,6 +1043,13 @@ int btstack_main(int argc, const char * argv[]){
     heartbeat.process = &heartbeat_handler;
     btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(&heartbeat);
+
+    // report gatt service handle range for SDP tests
+    uint16_t start_handle = 0;
+    uint16_t end_handle   = 0xffff;
+    int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_GENERIC_ATTRIBUTE, &start_handle, &end_handle);
+    btstack_assert(service_found != 0);
+    printf("GATT Service range: 0x%04x - 0x%04x\n", start_handle, end_handle);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
