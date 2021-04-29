@@ -62,7 +62,12 @@ endif()
 # enable optional features
 add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
 
+# to find generated .h from .gatt files
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# local dir for btstack_config.h after build dir to avoid using .h from Makefile
 include_directories(.)
+
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
 include_directories(../../3rd-party/bluedroid/encoder/include)

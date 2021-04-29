@@ -1158,7 +1158,6 @@ static void hfp_ag_handle_reject_outgoing_call(void){
 
 // hfp_connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_connection){
-    int indicator_index;
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
     int callheld_indicator_index = get_ag_indicator_index_for_name("callheld");
     int call_indicator_index = get_ag_indicator_index_for_name("call");
