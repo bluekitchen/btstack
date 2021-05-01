@@ -1136,6 +1136,8 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             ll_terminate();
             break;
         default:
+            btstack_assert(false);
+            printf("Unhandled LL Control PDU 0x%02x\n", opcode);
             break;
     }
 }
