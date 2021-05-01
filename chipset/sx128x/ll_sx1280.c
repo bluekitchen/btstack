@@ -369,6 +369,7 @@ static btstack_memory_pool_t ll_pdu_pool;
 
 // single ll control response
 static ll_pdu_t ll_tx_packet;
+static ll_pdu_t ll_empty_packet;
 
 // Link Layer State
 static ll_state_t ll_state;
@@ -756,10 +757,10 @@ static void radio_prepare_auto_tx(uint16_t packet_end_ticks, uint8_t rx_len){
 
 	// setup empty packet in ll buffer if no tx packet was preloaded
 	if (ctx.num_tx_pdus_on_controller == 0) {
-		ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_tx_packet;
+		ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_empty_packet;
 		ctx.num_tx_pdus_on_controller++;
-		ll_tx_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
-		ll_tx_packet.len = 0;
+        ll_empty_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
+        ll_empty_packet.len = 0;
 	}
 
 	// setup pdu header
@@ -850,10 +851,11 @@ static void radio_on_rx_done(void ){
         bool tx_acked = ctx.transmit_sequence_number != next_expected_sequence_number;
         if (tx_acked){
             if (ctx.num_tx_pdus_on_controller > 0){
-            	btstack_assert(ctx.tx_buffer_pdu[ctx.next_tx_buffer] != NULL);
+                ll_pdu_t * acked_pdu = ctx.tx_buffer_pdu[ctx.next_tx_buffer];
+            	btstack_assert(acked_pdu != NULL);
             	// if non link-layer packet, free buffer and report as completed
-				if (ctx.tx_buffer_pdu[ctx.next_tx_buffer] != &ll_tx_packet){
-					btstack_memory_ll_pdu_free(ctx.tx_buffer_pdu[ctx.next_tx_buffer]);
+				if ((acked_pdu != &ll_tx_packet) && (acked_pdu != &ll_empty_packet)){
+					btstack_memory_ll_pdu_free(acked_pdu);
 					ctx.tx_buffer_pdu[ctx.next_tx_buffer] = NULL;
 					ctx.num_completed++;
 				}
