@@ -723,15 +723,19 @@ static void radio_fetch_rx_pdu(void){
 
 /** Radio IRQ handlers */
 static void radio_on_tx_done(void ){
-    switch (radio_state){
-        case RADIO_W4_TX_DONE_TO_RX:
-            receive_response();
-            break;
-        default:
-            break;
-    }
     switch (ll_state){
+        case LL_STATE_ADVERTISING:
+            switch (radio_state){
+                case RADIO_W4_TX_DONE_TO_RX:
+                    receive_response();
+                    break;
+                default:
+                    break;
+            }
+            break;
         case LL_STATE_CONNECTED:
+            btstack_assert(radio_state == RADIO_W4_TX_DONE_TO_RX);
+            receive_response();
             radio_fetch_rx_pdu();
             preload_tx_buffer();
             break;
