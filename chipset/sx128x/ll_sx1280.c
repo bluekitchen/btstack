@@ -845,11 +845,15 @@ static void radio_on_rx_done(void ){
 
         // only accept packets with new sequence number and len <= payload size
         if ((sequence_number == ctx.next_expected_sequence_number) && (rx_len <= LL_MAX_PAYLOAD)) {
-			// update state
-			ctx.next_expected_sequence_number = 1 - sequence_number;
 
-			// register pdu fetch
-			ctx.rx_pdu_received = true;
+            bool rx_buffer_available = receive_prepare_rx_bufffer();
+            if (rx_buffer_available){
+                // update state
+                ctx.next_expected_sequence_number = 1 - sequence_number;
+
+                // register pdu fetch
+                ctx.rx_pdu_received = true;
+            }
         }
 
         // report outgoing packet as ack'ed and free if confirmed by peer
