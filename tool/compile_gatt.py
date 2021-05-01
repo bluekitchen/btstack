@@ -632,47 +632,6 @@ def parseCharacteristic(fout, parts):
 
         handle = handle + 1
 
-def parseCharacteristicUserDescription(fout, parts):
-    global handle
-    global total_size
-    global current_characteristic_uuid_string
-
-    properties = parseProperties(parts[1])
-    value      = parts[2]
-
-    size = 2 + 2 + 2 + 2
-    if is_string(value):
-        size = size + len(value)
-    else:
-        size = size + len(value.split())
-
-    # use write, write permissions and encryption key size from attribute value and set READ_ANYBODY
-    flags  = write_permissions_and_key_size_flags_from_properties(properties)
-    flags |= properties & property_flags['WRITE']
-    flags |= property_flags['READ']
-
-    write_indent(fout)
-    fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:])))
-
-    dump_flags(fout, flags)
-
-    write_indent(fout)
-    write_16(fout, size)
-    write_16(fout, flags)
-    write_16(fout, handle)
-    write_16(fout, 0x2901)
-    if is_string(value):
-        write_string(fout, value)
-    else:
-        write_sequence(fout,value)
-    fout.write("\n")
-
-    database_hash_append_uint16(handle)
-    database_hash_append_uint16(0x2901)
-
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_USER_DESCRIPTION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
-    handle = handle + 1
-
 def parseGenericDynamicDescriptor(fout, parts, uuid, name):
     global handle
     global total_size
@@ -696,7 +655,7 @@ def parseGenericDynamicDescriptor(fout, parts, uuid, name):
     write_16(fout, size)
     write_16(fout, flags)
     write_16(fout, handle)
-    write_16(fout, 0x2903)
+    write_16(fout, uuid)
     fout.write("\n")
 
     database_hash_append_uint16(handle)
@@ -940,7 +899,7 @@ def parseLines(fname_in, fin, fout):
 
             # 2901
             if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
-                parseCharacteristicUserDescription(fout, parts)
+                parseGenericDynamicDescriptor(fout, parts, 0x2901, 'USER_DESCRIPTION')
                 continue
 
 
