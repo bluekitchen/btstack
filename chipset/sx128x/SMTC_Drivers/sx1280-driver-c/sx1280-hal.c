@@ -257,6 +257,7 @@ void SX1280HalWaitOnBusy( void )
 void SX1280HalInit( DioIrqHandler **irqHandlers )
 {
     SX1280HalReset( );
+    SX1280HalWakeup();
     SX1280HalIoIrqInit( irqHandlers );
 }
 
