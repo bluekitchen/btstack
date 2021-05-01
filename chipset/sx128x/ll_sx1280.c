@@ -1075,6 +1075,12 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     ll_send_connection_complete = true;
 }
 
+static void ll_queue_control_tx(void){
+    hal_cpu_disable_irqs();
+    btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) &ll_tx_packet);
+    hal_cpu_enable_irqs();
+}
+
 static void ll_handle_control(ll_pdu_t * rx_packet){
     ll_pdu_t * tx_packet = &ll_tx_packet;
     uint8_t opcode = rx_packet->payload[0];
@@ -1086,7 +1092,7 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             tx_packet->payload[1] = 0x06; // VersNr = Bluetooth Core V4.0
             little_endian_store_16(tx_packet->payload, 2, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
             little_endian_store_16(tx_packet->payload, 4, 0);
-            btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) tx_packet);
+            ll_queue_control_tx();
             printf("Queue Version Ind\n");
             break;
         case PDU_DATA_LLCTRL_TYPE_FEATURE_REQ:
@@ -1095,7 +1101,7 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             tx_packet->payload[0] = PDU_DATA_LLCTRL_TYPE_FEATURE_RSP;
             // TODO: set features of our controller
             memset(&tx_packet->payload[1], 0, 8);
-            btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) tx_packet);
+            ll_queue_control_tx();
             printf("Queue Feature Rsp\n");
             break;
         case PDU_DATA_LLCTRL_TYPE_CHAN_MAP_IND:
