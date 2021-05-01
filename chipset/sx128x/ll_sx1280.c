@@ -590,17 +590,18 @@ static void ll_terminate(void){
     // free outgoing tx packets
     uint8_t i;
     for (i=0;i<2;i++){
-        if ((ctx.tx_buffer_pdu[i] != NULL) && (ctx.tx_buffer_pdu[i] != &ll_tx_packet)){
-            btstack_memory_ll_pdu_free(ctx.tx_buffer_pdu[i]);
+        ll_pdu_t * tx_pdu = ctx.tx_buffer_pdu[i];
+        if ((tx_pdu != NULL) && (tx_pdu != &ll_tx_packet) && (tx_pdu != &ll_empty_packet)){
+            btstack_memory_ll_pdu_free(tx_pdu);
             ctx.tx_buffer_pdu[i] = NULL;
         }
     }
     ctx.num_tx_pdus_on_controller = 0;
     // free queued tx packets
     while (true){
-        ll_pdu_t * tx_packet = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
-        if (tx_packet != NULL) {
-            btstack_memory_ll_pdu_free(tx_packet);
+        ll_pdu_t * tx_pdu = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
+        if (tx_pdu != NULL) {
+            btstack_memory_ll_pdu_free(tx_pdu);
         } else {
             break;
         }
