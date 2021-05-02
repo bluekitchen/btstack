@@ -65,11 +65,20 @@ static uint8_t can_send_now_pending;
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     uint8_t index;
     uint8_t i;
+    uint8_t opcode;
+    uint8_t method;
+    bool for_server;
+    bool command;
+    bool invalid;
     switch (packet_type){
         case ATT_DATA_PACKET:
-            // odd PDUs are sent from server to client - even PDUs are sent from client to server
-            index = packet[0u] & 1u;
-            // log_info("att_data_packet with opcode 0x%x", packet[0]);
+            // parse opcode
+            opcode  = packet[0u];
+            method  = opcode & 0x03f;
+            invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
+            // odd PDUs are sent from server to client - even PDUs are sent from client to server, also let server handle invalid ones
+            for_server = ((method & 1u) == 0) || invalid;
+            index = for_server ? ATT_SERVER : ATT_CLIENT;
             if (!subscriptions[index].packet_handler) return;
             subscriptions[index].packet_handler(packet_type, handle, packet, size);
             break;

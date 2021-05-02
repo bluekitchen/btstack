@@ -786,8 +786,18 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
     att_server_t * att_server = &hci_connection->att_server;
     att_connection_t * att_connection = &hci_connection->att_connection;
 
+    uint8_t opcode  = packet[0u];
+    uint8_t method  = opcode & 0x03f;
+    bool invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
+    bool command = (opcode & 0x40) != 0;
+
+    // ignore invalid commands
+    if (invalid && command){
+        return;
+    }
+
     // handle value indication confirms
-    if ((packet[0] == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
+    if ((opcode == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
         uint16_t att_handle = att_server->value_indication_handle;
         att_server->value_indication_handle = 0;    
@@ -798,7 +808,7 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
 
     // directly process command
     // note: signed write cannot be handled directly as authentication needs to be verified
-    if (packet[0] == ATT_WRITE_COMMAND){
+    if (opcode == ATT_WRITE_COMMAND){
         att_handle_request(att_connection, packet, size, NULL);
         return;
     }
