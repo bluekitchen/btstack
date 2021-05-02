@@ -34,7 +34,6 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-
 #define BTSTACK_FILE__ "hog_host_test.c"
 
 /*
@@ -75,10 +74,12 @@ static le_device_addr_t remote_device;
 static hci_con_handle_t connection_handle;
 static uint16_t hids_cid;
 static uint16_t battery_service_cid;
+static uint16_t scan_parameters_cid;
 
 static bool connect_hids_client = false;
 static bool connect_battery_client = false;
 static bool connect_device_information_client = false;
+static bool connect_scan_parameters_client = false;
 
 static hid_protocol_mode_t protocol_mode = HID_PROTOCOL_MODE_REPORT;
 
@@ -92,6 +93,7 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void hid_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void battery_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void device_information_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void scan_parameters_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 
 // used to store remote device in TLV
@@ -265,6 +267,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (app_state != READY) break;
                     hids_client_disconnect(hids_cid);
                     battery_service_client_disconnect(battery_service_cid);
+                    scan_parameters_service_client_disconnect(scan_parameters_cid);
 
                     connection_handle = HCI_CON_HANDLE_INVALID;
                     hids_cid = 0;
@@ -273,6 +276,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     connect_hids_client = false;
                     connect_battery_client = false;
                     connect_device_information_client = false;
+                    connect_scan_parameters_client = false;
+
                     app_state = IDLE;
                     printf("\nDisconnected\n");
                     break;
@@ -312,6 +317,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         connect_device_information_client = false;
                         (void) device_information_service_client_query(connection_handle, device_information_service_gatt_client_event_handler);
                     }
+
+                    if (connect_scan_parameters_client){
+                        connect_scan_parameters_client = false;
+                        (void) scan_parameters_service_client_connect(connection_handle, scan_parameters_service_gatt_client_event_handler, &scan_parameters_cid);
+                    }
+                    
                     break;
                 default:
                     break;
@@ -442,7 +453,7 @@ static void hid_service_gatt_client_event_handler(uint8_t packet_type, uint16_t 
     }
 }
 
-static void device_information_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void scan_parameters_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     /* LISTING_PAUSE */
     UNUSED(packet_type);
     UNUSED(channel);
@@ -455,6 +466,37 @@ static void device_information_service_gatt_client_event_handler(uint8_t packet_
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
 
         case GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID:
+            status = gattservice_subevent_scan_parameters_service_connected_get_att_status(packet);
+            switch (status){
+                case ERROR_CODE_SUCCESS:
+                    app_state = READY;
+                    printf("Scan Parameters service found\n");
+                    break;
+                default:
+                    printf("Scan Parameters service client connection failed, err 0x%02x.\n", status);
+                    gap_disconnect(connection_handle);
+                    break;
+            }
+            break;
+        default:    
+            break;
+    }
+
+}
+
+static void device_information_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    /* LISTING_PAUSE */
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+    
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
+        return;
+    }
+    uint8_t status;
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+
+        case GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED:
             printf("PnP ID: vendor source ID 0x%02X, vendor ID 0x%02X, product ID 0x%02X, product version 0x%02X\n",
                 gattservice_subevent_device_information_pnp_id_get_vendor_source_id(packet),
                 gattservice_subevent_device_information_pnp_id_get_vendor_id(packet),
@@ -481,6 +523,8 @@ static void device_information_service_gatt_client_event_handler(uint8_t packet_
     }
 
 }
+
+
 
 static void battery_service_gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     /* LISTING_PAUSE */
@@ -540,6 +584,10 @@ static void show_usage(void){
     printf("h      - Connect to HID Service Client\n");
     printf("b      - Connect to Battery Service\n");
     printf("d      - Connect to Device Information Service\n");
+    printf("s      - Connect to Scan Parameters Service\n");
+    printf("S      - Write Scan Parameters 0x1E0, 0x30\n");
+    printf("R      - Enable notifications Scan Parameters\n");
+
     printf("\n");
 
     printf("r      - switch to READ mode\n");
@@ -651,6 +699,24 @@ static void hog_host_connect_device_information_client(void){
     }
 }
 
+
+static void hog_host_connect_scan_parameters_client(void){
+    switch (app_state){
+        case READY:
+            app_state = W4_CLIENT_CONNECTED;
+            (void) scan_parameters_service_client_connect(connection_handle, scan_parameters_service_gatt_client_event_handler, &scan_parameters_cid);
+            break;
+
+        default:
+            printf("Connect to remote device\n");
+            connect_scan_parameters_client = true;
+            app_state = W4_CONNECTED;
+            gap_connect(remote_device.addr, remote_device.addr_type);
+            break;
+    }
+}
+
+
 static void stdin_process(char character){
     switch (character){
         case 'c':
@@ -678,6 +744,21 @@ static void stdin_process(char character){
             printf("Connect to Device Information Service\n");
             hog_host_connect_device_information_client();
             return;
+
+        case 's':
+            printf("Connect to Scan Parameters Service\n");
+            hog_host_connect_scan_parameters_client();
+            return;
+
+        case 'S':
+            printf("Write Scan Parameters\n");
+            scan_parameters_service_client_set(0x1E0, 0x30);
+            return;
+
+        case 'R':
+            printf("Enable notifications Scan Parameters\n");
+            scan_parameters_service_client_enable_notifications(scan_parameters_cid);
+            break;
 
         case 'r':
             printf("Switch to READ mode\n");
@@ -913,7 +994,7 @@ int btstack_main(int argc, const char * argv[]){
     gatt_client_init();
 
     hids_client_init(hid_descriptor_storage, sizeof(hid_descriptor_storage));
-
+    scan_parameters_service_client_init();
     /* LISTING_END */
 
     // Disable stdout buffering
