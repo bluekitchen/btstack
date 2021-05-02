@@ -86,7 +86,7 @@ static void scan_parameters_service_emit_state(hci_con_handle_t con_handle, uint
     little_endian_store_16(event, pos, min_scan_window);
     pos += 2;
     
-    (*scan_parameters_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+    (*scan_parameters_packet_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, pos);
 }
 
 static uint16_t scan_parameters_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){

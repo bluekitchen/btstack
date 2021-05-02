@@ -133,7 +133,7 @@ static void scan_parameters_service_emit_connection_established(scan_parameters_
     little_endian_store_16(event, pos, client->cid);
     pos += 2;
     event[pos++] = status;
-    (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*client->client_handler)(HCI_EVENT_GATTSERVICE_META, 0, event, sizeof(event));
 }
 
 static void handle_notification_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
