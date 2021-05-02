@@ -1217,6 +1217,12 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, co
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    att_server_t * att_server = &hci_connection->att_server;
+    if (att_server->l2cap_cid != 0){
+        return  l2cap_send_prepared(att_server->l2cap_cid, size);;
+    }
+#endif
 	return l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
@@ -1238,6 +1244,11 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(att_connection, attribute_handle, value, value_len, packet_buffer);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        return  l2cap_send_prepared(att_server->l2cap_cid, size);;
+    }
+#endif
 	l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
 }
