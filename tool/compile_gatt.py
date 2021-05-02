@@ -751,10 +751,11 @@ def parseCharacteristicAggregateFormat(fout, parts):
     write_16(fout, handle)
     write_16(fout, 0x2905)
     for identifier in parts[1:]:
-        format_handle = presentation_formats[identifier]
-        if format == 0:
+        if not identifier in presentation_formats:
+            print(parts)
             print("ERROR: identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier)
             sys.exit(1)
+        format_handle = presentation_formats[identifier]
         write_16(fout, format_handle)
     fout.write("\n")
 
