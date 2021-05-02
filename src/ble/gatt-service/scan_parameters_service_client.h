@@ -54,6 +54,13 @@ typedef enum {
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC,
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT,
+#ifdef ENABLE_TESTING_SUPPORT   
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CCC,
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CCC,
+#endif
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS,
+    SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED,
+    
     SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED
 } scan_parameters_service_client_state_t;
 
@@ -72,7 +79,14 @@ typedef struct {
 
     // characteristic
     uint16_t scan_interval_window_value_handle;
+
+    uint16_t scan_refresh_value_handle;
+    uint16_t scan_refresh_end_handle;
+    uint16_t scan_refresh_properties;
+
     bool     scan_interval_window_value_update;
+
+    gatt_client_notification_t notification_listener;
 } scan_parameters_service_client_t;
 
 /* API_START */
@@ -81,6 +95,13 @@ typedef struct {
  * @brief Initialize Scan Parameters Service. 
  */
 void scan_parameters_service_client_init(void);
+
+/**
+ * @brief Set Scan Parameters Service. It will update all connected devices.
+ * @param scan_interval
+ * @param scan_window
+ */
+void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_window);
 
 /**
  * @brief Connect to Scan Parameters Service of remote device. 
@@ -100,11 +121,11 @@ void scan_parameters_service_client_init(void);
 uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle,  btstack_packet_handler_t packet_handler, uint16_t * scan_parameters_cid);
 
 /**
- * @brief Set Scan Parameters Service. It will update all connected devices.
- * @param scan_interval
- * @param scan_window
+ * @brief Enable notifications
+ * @param scan_parameters_cid
+ * @return status ERROR_CODE_SUCCESS on success, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if client with con_handle is not found
  */
-void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_window);
+uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parameters_cid);
 
 /**
  * @brief Disconnect from Scan Parameters Service.

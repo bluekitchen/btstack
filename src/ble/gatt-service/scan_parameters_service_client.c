@@ -42,6 +42,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
 
 #include "scan_parameters_service_client.h"
 
@@ -62,6 +65,7 @@ static uint16_t scan_parameters_service_scan_window = 0;
 static uint16_t scan_parameters_service_scan_interval = 0;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void scan_parameters_service_run_for_client(scan_parameters_service_client_t * client);
 
 static uint16_t scan_parameters_service_get_next_cid(void){
     if (scan_parameters_service_cid_counter == 0xffff) {
@@ -93,6 +97,7 @@ static scan_parameters_service_client_t * scan_parameters_service_create_client(
 }
 
 static void scan_parameters_service_finalize_client(scan_parameters_service_client_t * client){
+    gatt_client_stop_listening_for_characteristic_value_updates(&client->notification_listener);
     btstack_linked_list_remove(&clients, (btstack_linked_item_t *) client);
     btstack_memory_scan_parameters_service_client_free(client); 
 }
@@ -108,12 +113,12 @@ static scan_parameters_service_client_t * scan_parameters_service_get_client_for
     return NULL;
 }
 
-static scan_parameters_service_client_t * scan_parameters_service_get_client_for_cid(uint16_t scann_parameters_service_cid){
+static scan_parameters_service_client_t * scan_parameters_service_get_client_for_cid(uint16_t scan_parameters_service_cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &clients);
     while (btstack_linked_list_iterator_has_next(&it)){
         scan_parameters_service_client_t * client = (scan_parameters_service_client_t *)btstack_linked_list_iterator_next(&it);
-        if (client->cid != scann_parameters_service_cid) continue;
+        if (client->cid != scan_parameters_service_cid) continue;
         return client;
     }
     return NULL;
@@ -131,13 +136,32 @@ static void scan_parameters_service_emit_connection_established(scan_parameters_
     (*client->client_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void handle_notification_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    if (hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) return;
+
+    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
+    btstack_assert(client != NULL);
+    client->scan_interval_window_value_update = true;
+    scan_parameters_service_run_for_client(client);
+}
 
 static void scan_parameters_service_run_for_client(scan_parameters_service_client_t * client){
     uint8_t att_status;
     gatt_client_service_t service;
 
+#ifdef ENABLE_TESTING_SUPPORT
+    gatt_client_characteristic_t characteristic;
+#endif
+
     switch (client->state){
         case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("\n\nQuery Services:\n");
+#endif
             client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT;
             att_status = gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, client->con_handle, ORG_BLUETOOTH_SERVICE_SCAN_PARAMETERS);
             // TODO handle status
@@ -145,27 +169,67 @@ static void scan_parameters_service_run_for_client(scan_parameters_service_clien
             break;
         
         case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("\n\nQuery Characteristics of service\n");
+#endif
             client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT;
-            
             service.start_group_handle = client->start_handle;
             service.end_group_handle = client->end_handle;
-            att_status = gatt_client_discover_characteristics_for_service_by_uuid16(
-                handle_gatt_client_event, client->con_handle, &service, ORG_BLUETOOTH_CHARACTERISTIC_SCAN_INTERVAL_WINDOW);
+            att_status = gatt_client_discover_characteristics_for_service(
+                handle_gatt_client_event, client->con_handle, &service);
             // TODO handle status
             UNUSED(att_status);
             break;
 
         case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED:
             if (client->scan_interval_window_value_update){
+                client->scan_interval_window_value_update = false;
+                
+#ifdef ENABLE_TESTING_SUPPORT
+                printf("\n\nUpdate - interval %d, window %d:\n", scan_parameters_service_scan_interval, scan_parameters_service_scan_window);
+#endif
                 uint8_t value[4];
                 little_endian_store_16(value, 0, scan_parameters_service_scan_interval);
                 little_endian_store_16(value, 2, scan_parameters_service_scan_window);
 
                 att_status = gatt_client_write_value_of_characteristic_without_response(client->con_handle, client->scan_interval_window_value_handle, 4, value);
-                client->scan_interval_window_value_update = false;
                 // TODO handle status
                 UNUSED(att_status);
             }
+            break;
+#ifdef ENABLE_TESTING_SUPPORT
+        case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CCC:
+            client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CCC;
+
+            characteristic.value_handle = client->scan_refresh_value_handle;
+            characteristic.end_handle   =  client->scan_refresh_end_handle;
+
+            // result in GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT
+            att_status = gatt_client_discover_characteristic_descriptors(&handle_gatt_client_event, client->con_handle, &characteristic);
+            UNUSED(att_status);
+            break;
+#endif
+        case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS:
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("    Notification configuration enable ");
+#endif
+
+            client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_NOTIFICATIONS_CONFIGURED;
+
+            characteristic.value_handle = client->scan_refresh_value_handle;
+            characteristic.end_handle = client->scan_refresh_end_handle;
+            characteristic.properties = client->scan_refresh_properties;
+            
+            // end of write marked in GATT_EVENT_QUERY_COMPLETE
+
+            att_status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, client->con_handle, &characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+            
+            if (att_status == ERROR_CODE_SUCCESS){
+                gatt_client_listen_for_characteristic_value_updates(
+                            &client->notification_listener, 
+                            &handle_notification_event, client->con_handle, &characteristic);
+            } 
+            client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED;
             break;
         default:
             break;
@@ -182,6 +246,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     gatt_client_characteristic_t characteristic;
     uint8_t att_status;
 
+#ifdef ENABLE_TESTING_SUPPORT
+    gatt_client_characteristic_descriptor_t characteristic_descriptor;
+#endif
+
     switch(hci_event_packet_get_type(packet)){
         case GATT_EVENT_SERVICE_QUERY_RESULT:
             client = scan_parameters_service_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
@@ -196,6 +264,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             gatt_event_service_query_result_get_service(packet, &service);
             client->start_handle = service.start_group_handle;
             client->end_handle = service.end_group_handle;
+#ifdef ENABLE_TESTING_SUPPORT
+            printf("ScS Service: start handle 0x%04X, end handle 0x%04X\n", client->start_handle, client->end_handle);
+#endif
             break;
 
         case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
@@ -204,9 +275,56 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             // found scan_interval_window_value_handle, check att_status
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
-            client->scan_interval_window_value_handle = characteristic.value_handle;
+            switch (characteristic.uuid16){
+                case ORG_BLUETOOTH_CHARACTERISTIC_SCAN_INTERVAL_WINDOW:
+                    client->scan_interval_window_value_handle = characteristic.value_handle;
+
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("ScS Scan Interval Characteristic:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X\n", 
+                        characteristic.start_handle, 
+                        characteristic.properties, 
+                        characteristic.value_handle, characteristic.uuid16);
+#endif
+                    break;
+                case ORG_BLUETOOTH_CHARACTERISTIC_SCAN_REFRESH:
+                    client->scan_refresh_value_handle = characteristic.value_handle;
+                    client->scan_refresh_end_handle = characteristic.end_handle;
+                    client->scan_refresh_properties = characteristic.properties;
+
+#ifdef ENABLE_TESTING_SUPPORT
+                    printf("ScS Scan Refresh Characteristic:  \n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X\n", 
+                        characteristic.start_handle, 
+                        characteristic.properties, 
+                        characteristic.value_handle, characteristic.uuid16);
+#endif
+                    break;
+                default:
+                    break;
+            }
             break;
+
+#ifdef ENABLE_TESTING_SUPPORT    
+        case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+            client = scan_parameters_service_get_client_for_con_handle(gatt_event_all_characteristic_descriptors_query_result_get_handle(packet));
+            btstack_assert(client != NULL);
             
+            gatt_event_all_characteristic_descriptors_query_result_get_characteristic_descriptor(packet, &characteristic_descriptor);
+            if (characteristic_descriptor.uuid16 == ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION){
+                printf("    Client Characteristic Configuration Descriptor: Handle 0x%04X, UUID 0x%04X\n", 
+                    characteristic_descriptor.handle,
+                    characteristic_descriptor.uuid16);
+            }
+            break;
+
+        case GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+            client = scan_parameters_service_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
+            btstack_assert(client != NULL);
+
+            printf("    Received CCC value: ");
+            printf_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),  gatt_event_characteristic_value_query_result_get_value_length(packet));
+            break;
+#endif
+
         case GATT_EVENT_QUERY_COMPLETE:
             client = scan_parameters_service_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(client != NULL);
@@ -220,13 +338,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         scan_parameters_service_finalize_client(client);      
                         break;  
                     }
-
+                    
                     if (client->start_handle != 0){
-                        scan_parameters_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
-                        scan_parameters_service_finalize_client(client);
+                        client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC;
                         break;   
                     }
-                    client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTIC;
+                    
+                    scan_parameters_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
+                    scan_parameters_service_finalize_client(client);
                     break;
 
                 case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
@@ -235,16 +354,27 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         scan_parameters_service_finalize_client(client);      
                         break;  
                     }
-
                     if (client->scan_interval_window_value_handle == 0){
                         scan_parameters_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
                         scan_parameters_service_finalize_client(client);
                         break;   
                     }
+#ifdef ENABLE_TESTING_SUPPORT
+                    client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CCC;
+#else
                     client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED;
                     client->scan_interval_window_value_update = true;
+                    scan_parameters_service_emit_connection_established(client, ERROR_CODE_SUCCESS);  
+#endif
                     break;
 
+#ifdef ENABLE_TESTING_SUPPORT
+                case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CCC:
+                    client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED;
+                    client->scan_interval_window_value_update = true;
+                    scan_parameters_service_emit_connection_established(client, ERROR_CODE_SUCCESS);  
+                    break;
+#endif
                 default:
                     break;
             }
@@ -269,6 +399,22 @@ void scan_parameters_service_client_set(uint16_t scan_interval, uint16_t scan_wi
         client->scan_interval_window_value_update = true;
         scan_parameters_service_run_for_client(client);
     }
+}
+
+uint8_t scan_parameters_service_client_enable_notifications(uint16_t scan_parameters_service_cid){
+    scan_parameters_service_client_t * client = scan_parameters_service_get_client_for_cid(scan_parameters_service_cid);
+    
+    if (client == NULL){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (client->state != SCAN_PARAMETERS_SERVICE_CLIENT_STATE_CONNECTED) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_CONFIGURE_NOTIFICATIONS;
+    scan_parameters_service_run_for_client(client);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t scan_parameters_service_client_connect(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler, uint16_t * scan_parameters_service_cid){
