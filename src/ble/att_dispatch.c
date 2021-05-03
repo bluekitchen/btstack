@@ -68,7 +68,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     uint8_t opcode;
     uint8_t method;
     bool for_server;
-    bool command;
     bool invalid;
     switch (packet_type){
         case ATT_DATA_PACKET:
