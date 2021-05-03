@@ -61,10 +61,9 @@ extern "C" {
 void scan_parameters_service_server_init(btstack_packet_handler_t packet_handler);
 
 /** 
- * @brief Set scan parameters
- * @param scan_refresh
+ * @brief Request scan parameters from Scan Parameters Client.
  */
-void scan_parameters_service_server_set_scan_refresh(uint16_t scan_refresh);
+void scan_parameters_service_server_request_scan_parameters(void);
 
 /* API_END */
 

@@ -396,10 +396,15 @@ static void stdin_process(char character){
     uint8_t c = character;
     btstack_ring_buffer_write(&ascii_input_buffer, &c, 1);
     // start sending
+    if (c == 'x'){
+        scan_parameters_service_server_request_scan_parameters();
+        return;
+    }
     if (state == W4_INPUT && con_handle != HCI_CON_HANDLE_INVALID){
         state = W4_CAN_SEND_FROM_BUFFER;
         hids_device_request_can_send_now_event(con_handle);
     }
+
 }
 
 #else
