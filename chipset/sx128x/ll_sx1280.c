@@ -168,6 +168,7 @@ typedef enum {
     RADIO_RX_ERROR,
     RADIO_TX_TIMEOUT,
     RADIO_W4_TX_DONE_TO_RX,
+    RADIO_W4_TX_ONLY_DONE,
     RADIO_W4_TIMER,
 } radio_state_t;
 
@@ -324,6 +325,7 @@ static struct {
     // adv param
     uint8_t  adv_map;
     uint32_t adv_interval_us;
+    uint8_t  adv_type;
 
 	// adv data
 	uint8_t scan_resp_len;
@@ -496,7 +498,13 @@ static void ll_advertising_statemachine(void){
                 if ((ctx.adv_map & (1 << (ctx.channel - 37))) != 0) {
                     // Set Channel
                     select_channel(ctx.channel);
-                    radio_state = RADIO_W4_TX_DONE_TO_RX;
+                    if (ctx.adv_type == 3) {
+                        // Non connectable undirected advertising (ADV_NONCONN_IND)
+                        radio_state = RADIO_W4_TX_ONLY_DONE;
+                    } else {
+                        // All other are either connectable and/or scannable
+                        radio_state = RADIO_W4_TX_DONE_TO_RX;
+                    }
                     send_adv();
                     break;
                 }
@@ -730,6 +738,9 @@ static void radio_on_tx_done(void ){
                 case RADIO_W4_TX_DONE_TO_RX:
                     receive_response();
                     break;
+                case RADIO_W4_TX_ONLY_DONE:
+                    radio_state = RADIO_LOWPOWER;
+                    break;
                 default:
                     break;
             }
@@ -812,6 +823,7 @@ static void radio_on_rx_done(void ){
 		if (pdu_type == PDU_ADV_TYPE_SCAN_REQ){
 			// scan request, select TX1 for active AutoTx
 			SX1280SetBufferBaseAddresses( SX1280_TX1_OFFSET, SX1280_RX0_OFFSET);
+			radio_state = RADIO_W4_TX_ONLY_DONE;
 		} else {
 
 			// fetch reserved rx pdu
@@ -1264,6 +1276,7 @@ uint8_t ll_set_advertising_parameters(uint16_t advertising_interval_min, uint16_
 
     ctx.adv_map = advertising_channel_map;
     ctx.adv_interval_us = advertising_interval_max * 625;
+    ctx.adv_type= advertising_type;
 
     // TODO: validate other params
     // TODO: process other params
