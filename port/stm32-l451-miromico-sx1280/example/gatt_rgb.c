@@ -66,8 +66,6 @@
 
 static btstack_timer_source_t heartbeat;
 
-static bool connected;
-
 static void  heartbeat_handler_led_on(struct btstack_timer_source *ts);
 static void  heartbeat_handler_led_off(struct btstack_timer_source *ts);
 
@@ -98,6 +96,13 @@ static void heartbeat_handler_led_on(struct btstack_timer_source *ts){
     btstack_run_loop_add_timer(ts);
 } 
 
+static void set_rgb(uint8_t r, uint8_t g, uint8_t b){
+    printf("R: %u,  G: %u, B: %u\n", r, g, b);
+    HAL_GPIO_WritePin(LED_R_PORT, LED_R_PIN, r > 128 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_G_PORT, LED_G_PIN, g > 128 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_B_PORT, LED_B_PIN, b > 128 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -119,6 +124,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     printf("Disconnected\n");
                     // restart heartbeat
+                    set_rgb(0,0,0);
                     heartbeat_handler_led_on(&heartbeat);
                     break;
             }
@@ -129,13 +135,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(connection_handle);
     return 0;
-}
-
-void set_rgb(uint8_t r, uint8_t g, uint8_t b){
-    printf("R: %u,  G: %u, B: %u\n", r, g, b);
-    HAL_GPIO_WritePin(LED_R_PORT, LED_R_PIN, r > 128 ? GPIO_PIN_RESET : GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LED_G_PORT, LED_G_PIN, g > 128 ? GPIO_PIN_RESET : GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LED_B_PORT, LED_B_PIN, b > 128 ? GPIO_PIN_RESET : GPIO_PIN_SET);
 }
 
 static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
