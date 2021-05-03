@@ -537,7 +537,6 @@ def parseCharacteristic(fout, parts):
     write_16(fout, handle+1)
     write_uuid(fout, uuid)
     fout.write("\n")
-    handle = handle + 1
     total_size = total_size + size
 
     database_hash_append_uint16(handle)
@@ -545,6 +544,8 @@ def parseCharacteristic(fout, parts):
     database_hash_append_uint8(characteristic_properties)
     database_hash_append_uint16(handle+1)
     database_hash_append_value(uuid)
+
+    handle = handle + 1
 
     uuid_is_database_hash = len(uuid) == 2 and uuid[0] == 0x2a and uuid[1] == 0x2b
 
