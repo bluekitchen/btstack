@@ -158,7 +158,7 @@ static uint8_t sdp_avrcp_target_service_buffer[200];
 static uint16_t avdtp_cid = 0;
 static avdtp_sep_t sep;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
-static uint8_t  avrcp_value[100];
+static uint8_t  avrcp_value[500];
 static uint16_t browsing_uid_counter = 0;
 static avrcp_browsing_state_t browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
