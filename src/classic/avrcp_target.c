@@ -516,7 +516,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
 static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_t offset){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     if ((offset - 4) > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
-
+            
     connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
     connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
@@ -789,17 +789,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint16_t length;
     avrcp_pdu_id_t   pdu_id;
     connection->cmd_operands_length = 0;
-    
+    uint8_t offset;
+
     switch (opcode){
         case AVRCP_CMD_OPCODE_UNIT_INFO:
             avrcp_target_unit_info(connection);
             break;
-        case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
+        case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
             if ((size - pos) < 3) return;
-            uint8_t offset =  4 * (packet[pos+2]>>4);
+            // page: packet[pos] >> 4, 
+            offset =  4 * (packet[pos]>>4);
+            // extension code (fixed 7) = packet[pos] & 0x0F
+            // 4 bytes paga data, all 0xFF
             avrcp_target_subunit_info(connection, offset);
             break;
-        }
+
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
             if (size < 8) return;
             log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d", packet[6], packet[7]);
