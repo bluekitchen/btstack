@@ -38,14 +38,13 @@
 #define BTSTACK_FILE__ "ble_central_test.c"
 
 /*
- * ble_central_test.c : Tool for testig BLE central
+ * gatt.c : Tool for testig BLE central
  */
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "btstack_config.h"
 
@@ -54,10 +53,7 @@
 #include "ble/att_server.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
-#include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -65,7 +61,7 @@
 #include "btstack_stdin.h"
 
 // test profile
-#include "ble_central_test.h"
+#include "gatt_client_test.h"
 
 // Non standard IXIT
 #define PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
@@ -198,6 +194,7 @@ static gatt_client_service_t        service;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
+static gatt_client_notification_t gatt_client_notification;
 
 static void show_usage(void);
 ///
@@ -316,10 +313,6 @@ static void update_advertisment_params(void){
         }
 }
 
-static void gap_run(void){
-    if (!hci_can_send_command_packet_now()) return;
-}
-
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     uint16_t aHandle;
@@ -333,9 +326,12 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case BTSTACK_EVENT_STATE:
                     // bt stack activated, get started
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                        // add bonded device with IRK 0x00112233..FF for gap-conn-prda-bv-2
+                        uint8_t pts_irk[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+                        le_device_db_add(public_pts_address_type, public_pts_address, pts_irk);
+                        // ready
                         printf("Central test ready\n");
                         show_usage();
-                        gap_run();
                     }
                     break;
                 
@@ -401,7 +397,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
     }
-    gap_run();
 }
 
 static void use_public_pts_address(void){
@@ -900,6 +895,7 @@ static void show_usage(void){
     printf_row("W   - signed write on attribute with handle 0x%04x and value 0x12", pts_signed_write_characteristic_handle);
     printf_row("z   - Update L2CAP Connection Parameters");
     printf_row("---");
+    printf_row("A   - Send MTU Exchange");
     printf_row("e   - Discover all Primary Services");
     printf_row("f/F - Discover Primary Service by UUID16/UUID128");
     printf_row("g   - Discover all characteristics by UUID16");
@@ -1371,6 +1367,8 @@ static void ui_process_command(char buffer){
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
             show_usage();
             break;
+        case 'A':
+            gatt_client_send_mtu_negotiation(&handle_gatt_client_event, handle);
         case 'b':
             sm_request_pairing(handle);
             break;
@@ -1622,8 +1620,6 @@ static void stdin_process(char c){
     }
 
     ui_process_command(c);
-
-    return;
 }
 
 static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data){
@@ -1700,6 +1696,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // setup GATT Client
     gatt_client_init();
+    gatt_client_listen_for_characteristic_value_updates(&gatt_client_notification, &handle_gatt_client_event, GATT_CLIENT_ANY_CONNECTION, NULL);
 
     // Setup ATT/GATT Server
     att_server_init(profile_data, att_read_callback, NULL);    
@@ -1707,10 +1704,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // Setup LE Device DB
     le_device_db_init();
-
-    // add bonded device with IRK 0x00112233..FF for gap-conn-prda-bv-2
-    uint8_t pts_irk[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
-    le_device_db_add(public_pts_address_type, public_pts_address, pts_irk);
 
     // set adv params
     update_advertisment_params();
