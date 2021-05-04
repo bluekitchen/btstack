@@ -153,9 +153,7 @@ static void scan_parameters_service_run_for_client(scan_parameters_service_clien
     uint8_t att_status;
     gatt_client_service_t service;
 
-#ifdef ENABLE_TESTING_SUPPORT
     gatt_client_characteristic_t characteristic;
-#endif
 
     switch (client->state){
         case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE:
