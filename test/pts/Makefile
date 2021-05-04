@@ -147,7 +147,7 @@ AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
-EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test le_data_channel
+EXAMPLES  = iopt gatt_server_test ble_central_test l2cap_test classic_test bnep_test le_data_channel
 EXAMPLES += hsp_ag_test hsp_hs_test sco_loopback hfp_ag_test hfp_hf_test
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
 EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
@@ -200,14 +200,14 @@ avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_EN
 avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral_test.h: ble_peripheral_test.gatt
+gatt_server_test.h: gatt_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 ble_central_test.h: ble_central_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
-ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ble_peripheral_test.o
-	${CC} $(filter-out ble_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+gatt_server_test: gatt_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} att_db_util.o gatt_sdp.o gatt_server_test.o
+	${CC} $(filter-out gatt_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
