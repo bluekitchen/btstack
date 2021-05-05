@@ -21,8 +21,8 @@
 #include "hci_cmd.h"
 #include "btstack_util.h"
 #include "btstack_run_loop.h"
+#include "btstack_event.h"
 #include "btstack_run_loop_embedded.h"
-#include "classic/sdp_util.h"
 #include "hci_transport.h"
 #include "hci_transport_h4.h"
 
@@ -70,7 +70,6 @@ static const uint8_t iBeaconAdvertisement01[] = { 0x02, 0x01 };
 static const uint8_t iBeaconAdvertisement38[] = { 0x1a, 0xff, 0x4c, 0x00, 0x02, 0x15 };
 static uint8_t   adv_data[31];
 static uint16_t  adv_data_len = 0;
-static uint16_t gatt_client_id;
 static int gatt_is_characteristics_query;
 
 static uint16_t le_peripheral_todos = 0;
@@ -131,7 +130,6 @@ extern "C" void hal_cpu_enable_irqs_and_sleep(void) { }
 // 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    bd_addr_t addr;
     hci_con_handle_t con_handle;
 
     switch (packet_type) {
@@ -146,6 +144,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         le_peripheral_todos |= SET_ADVERTISEMENT_PARAMS
                                             | SET_ADVERTISEMENT_DATA
                                             | SET_ADVERTISEMENT_ENABLED;
+                        bd_addr_t addr;
+                        gap_local_bd_addr(addr);
+                        printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
                     }
                     break;
                 
@@ -165,14 +166,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
                 }
-
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
-                        bt_flip_addr(addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
-                        printf("Local Address: %s\n", bd_addr_to_str(addr));
-                        break;
-                    }
-                    break;
 
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
@@ -302,19 +295,12 @@ static void gatt_client_callback(uint8_t packet_type, uint8_t * packet, uint16_t
 
 static void connection_timeout_handler(btstack_timer_source_t * timer){
     // log_info("Cancel outgoing connection");
-    gap_le_connect_cancel();
+    gap_connect_cancel();
     if (!bleDeviceConnectedCallback) return;
     (*bleDeviceConnectedCallback)(BLE_STATUS_CONNECTION_TIMEOUT, NULL);  // page timeout 0x04
 }
 
 //
-
-static int nibble_for_char(const char c){
-    if ('0' <= c && c <= '9') return c - '0';
-    if ('a' <= c && c <= 'f') return c - 'a' + 10;
-    if ('A' <= c && c <= 'F') return c - 'A' + 10;
-    return 0;
-}
 
 /// UUID class
 UUID::UUID(void){
@@ -414,7 +400,7 @@ data_length(event_packet[11]),
 iBeacon_UUID(NULL)
 {
     bd_addr_t addr;
-    bt_flip_addr(addr, &event_packet[4]);    
+    reverse_bd_addr(&event_packet[4], addr);
     bd_addr = BD_ADDR(addr, (BD_ADDR_TYPE)event_packet[3]);
     memcpy(data, &event_packet[12], LE_ADVERTISING_DATA_SIZE);
 }
@@ -613,7 +599,7 @@ BTstackManager::BTstackManager(void){
     att_db_util_init();
 
     // disable LOG_INFO messages
-    hci_dump_enable_log_level(LOG_LEVEL_INFO, 0);
+    hci_dump_enable_log_level(HCI_DUMP_LOG_LEVEL_INFO, 0);
 
 #ifdef __AVR__
     // configure stdout to go via Serial
@@ -658,42 +644,42 @@ void BTstackManager::setGATTCharacteristicUnsubscribedCallback(void (*callback)(
 
 int BTstackManager::discoverGATTServices(BLEDevice * device){
     gattAction = gattActionServiceQuery;
-    return gatt_client_discover_primary_services(gatt_client_id, device->getHandle());
+    return gatt_client_discover_primary_services(gatt_client_callback, device->getHandle());
 }
 int BTstackManager::discoverCharacteristicsForService(BLEDevice * device, BLEService * service){
     gattAction = gattActionCharacteristicQuery;
-    return gatt_client_discover_characteristics_for_service(gatt_client_id, device->getHandle(), (gatt_client_service_t*) service->getService());
+    return gatt_client_discover_characteristics_for_service(gatt_client_callback, device->getHandle(), (gatt_client_service_t*) service->getService());
 }
 int  BTstackManager::readCharacteristic(BLEDevice * device, BLECharacteristic * characteristic){
-    return gatt_client_read_value_of_characteristic(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic());
+    return gatt_client_read_value_of_characteristic(gatt_client_callback, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic());
 }
 int  BTstackManager::writeCharacteristic(BLEDevice * device, BLECharacteristic * characteristic, uint8_t * data, uint16_t size){
     gattAction = gattActionWrite;
-    return gatt_client_write_value_of_characteristic(gatt_client_id, device->getHandle(), characteristic->getCharacteristic()->value_handle,
+    return gatt_client_write_value_of_characteristic(gatt_client_callback, device->getHandle(), characteristic->getCharacteristic()->value_handle,
         size, data);
 }
 int  BTstackManager::writeCharacteristicWithoutResponse(BLEDevice * device, BLECharacteristic * characteristic, uint8_t * data, uint16_t size){
-    return gatt_client_write_value_of_characteristic_without_response(gatt_client_id, device->getHandle(), characteristic->getCharacteristic()->value_handle,
+    return gatt_client_write_value_of_characteristic_without_response(device->getHandle(), characteristic->getCharacteristic()->value_handle,
          size, data);
 }
 int BTstackManager::subscribeForNotifications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionSubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_callback, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
 }
 int BTstackManager::subscribeForIndications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionSubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_callback, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
 }
 int BTstackManager::unsubscribeFromNotifications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionUnsubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_callback, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE);
 }
 int BTstackManager::unsubscribeFromIndications(BLEDevice * device, BLECharacteristic * characteristic){
     gattAction = gattActionUnsubscribe;
-    return gatt_client_write_client_characteristic_configuration(gatt_client_id, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
+    return gatt_client_write_client_characteristic_configuration(gatt_client_callback, device->getHandle(), (gatt_client_characteristic_t*) characteristic->getCharacteristic(),
      GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE);
 }
 void BTstackManager::bleConnect(BLEAdvertisement * advertisement, int timeout_ms){
@@ -707,7 +693,7 @@ void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const char * address,
     // log_error("BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const char * address, int timeout_ms) not implemented");
 }
 void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const uint8_t address[6], int timeout_ms){
-    gap_le_connect((uint8_t*)address, (bd_addr_type_t) address_type);
+    gap_connect((uint8_t*)address, (bd_addr_type_t) address_type);
     if (!timeout_ms) return;
     btstack_run_loop_set_timer(&connection_timer, timeout_ms);
     btstack_run_loop_set_timer_handler(&connection_timer, connection_timeout_handler);
@@ -769,7 +755,6 @@ void BTstackManager::setup(void){
     att_server_register_packet_handler(packet_handler);
 
     gatt_client_init();
-    gatt_client_id = gatt_client_register_packet_handler(gatt_client_callback);
 
     // setup advertisements params
     uint16_t adv_int_min = 0x0030;
@@ -809,7 +794,7 @@ void BTstackManager::enablePacketLogger(void){
 
 void BTstackManager::enableDebugLogger(){
     // enable LOG_INFO messages
-    hci_dump_enable_log_level(LOG_LEVEL_INFO, 1);
+    hci_dump_enable_log_level(HCI_DUMP_LOG_LEVEL_INFO, 1);
 }
 
 
@@ -822,10 +807,10 @@ void BTstackManager::loop(void){
 
 void BTstackManager::bleStartScanning(void){
     printf("Start scanning\n");
-    gap_le_start_scan();
+    gap_start_scan();
 }
 void BTstackManager::bleStopScanning(void){
-    gap_le_stop_scan();
+    gap_stop_scan();
 }
 
 void BTstackManager::setGATTCharacteristicRead(uint16_t (*cb)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size)){
@@ -838,13 +823,13 @@ void BTstackManager::addGATTService(UUID * uuid){
     att_db_util_add_service_uuid128((uint8_t*)uuid->getUuid());
 }
 uint16_t BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, const char * text){
-    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, (uint8_t*)text, strlen(text));
+    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, ATT_SECURITY_NONE, ATT_SECURITY_NONE, (uint8_t*)text, strlen(text));
 }
 uint16_t BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t * data, uint16_t data_len){
-    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, data, data_len);
+    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, ATT_SECURITY_NONE, ATT_SECURITY_NONE, data, data_len);
 }
 uint16_t BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
-    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags | ATT_PROPERTY_DYNAMIC, NULL, 0);
+    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags | ATT_PROPERTY_DYNAMIC, ATT_SECURITY_NONE, ATT_SECURITY_NONE, NULL, 0);
 }
 void BTstackManager::setAdvData(uint16_t adv_data_len, const uint8_t * adv_data){
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
