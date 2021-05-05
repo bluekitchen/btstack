@@ -48,15 +48,12 @@
 
 #include "ble/gatt-service/device_information_service_client.h"
 
-#include "btstack_memory.h"
 #include "ble/att_db.h"
 #include "ble/core.h"
 #include "ble/gatt_client.h"
-#include "ble/sm.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_run_loop.h"
 #include "gap.h"
 
 #define DEVICE_INFORMATION_MAX_STRING_LEN 32

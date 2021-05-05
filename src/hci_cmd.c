@@ -45,7 +45,6 @@
 
 #include "btstack_config.h"
 
-#include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "btstack_debug.h"

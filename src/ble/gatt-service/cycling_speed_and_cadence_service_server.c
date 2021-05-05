@@ -45,7 +45,6 @@
 #include "btstack_util.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
-#include "l2cap.h"
 
 #include "ble/gatt-service/cycling_speed_and_cadence_service_server.h"
 
