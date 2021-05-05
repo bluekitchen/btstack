@@ -45,7 +45,6 @@
 #include "btstack_util.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
-#include "l2cap.h"
 
 #include "ble/gatt-service/heart_rate_service_server.h"
 
@@ -197,8 +196,7 @@ static void heart_rate_service_can_send_now(void * context){
         pos += 2;
     }
 
-    // TODO: get actual MTU from ATT server
-    uint16_t bytes_left = btstack_min(sizeof(value), l2cap_max_mtu() - 3u - pos);
+    uint16_t bytes_left = btstack_min(sizeof(value), att_server_get_mtu(instance->con_handle) - 3u - pos);
 
     while ((bytes_left > 2u) && instance->rr_interval_count){
         little_endian_store_16(value, pos, instance->rr_intervals[0]);
