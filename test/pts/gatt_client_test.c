@@ -1321,7 +1321,7 @@ static void ui_process_command(char buffer){
             printf("Enabling non-resolvable private address\n");
             gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
             gap_privacy = 1;
-            update_advertisment_params(); 
+            update_advertisement_params();
             show_usage();
             break;
         case '2':
@@ -1374,13 +1374,13 @@ static void ui_process_command(char buffer){
             break;
         case 'c':
             gap_connectable = 0;
-            update_advertisment_params();
+            update_advertisement_params();
             gap_connectable_control(gap_connectable);
             show_usage();
             break;
         case 'C':
             gap_connectable = 1;
-            update_advertisment_params();
+            update_advertisement_params();
             gap_connectable_control(gap_connectable);
             show_usage();
             break;
@@ -1706,7 +1706,7 @@ int btstack_main(int argc, const char * argv[]){
     le_device_db_init();
 
     // set adv params
-    update_advertisment_params();
+    update_advertisement_params();
 
     memcpy(current_pts_address, public_pts_address, 6);
     current_pts_address_type = public_pts_address_type;
