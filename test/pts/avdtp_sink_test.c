@@ -901,7 +901,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (is_cmd_triggered_locally){
                 is_cmd_triggered_locally = 0;
             }
-            printf("AVDTP Sink event 0x%02x not parsed\n", packet[2]);
             break; 
     }
 }
