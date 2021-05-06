@@ -3023,9 +3023,9 @@ static void sm_run(void){
                     // slave -> receive master keys if any
                     if (sm_key_distribution_all_received(connection)){
                         sm_key_distribution_handle_all_received(connection);
-                        connection->sm_engine_state = SM_RESPONDER_IDLE;
-                        sm_pairing_complete(connection, ERROR_CODE_SUCCESS, 0);
-                        sm_done_for_handle(connection->sm_handle);
+                        sm_key_distribution_complete_responder(connection);
+                        // start CTKD right away
+                        continue;
                     } else {
                         connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                     }
