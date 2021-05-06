@@ -801,8 +801,10 @@ typedef struct {
     // hardware power controller
     const btstack_control_t * control;
 
+#ifdef ENABLE_CLASSIC
     /* link key db */
     const btstack_link_key_db_t * link_key_db;
+#endif
 
     // list of existing baseband connections
     btstack_linked_list_t     connections;
@@ -1073,10 +1075,12 @@ void hci_set_control(const btstack_control_t *hardware_control);
 void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport);
 #endif
 
+#ifdef ENABLE_CLASSIC
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
  */
 void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
+#endif
 
 /**
  * @brief Set callback for Bluetooth Hardware Error

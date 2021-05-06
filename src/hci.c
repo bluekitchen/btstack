@@ -3302,11 +3302,14 @@ void hci_set_control(const btstack_control_t *hardware_control){
 }
 
 void hci_close(void){
+
+#ifdef ENABLE_CLASSIC
     // close remote device db
     if (hci_stack->link_key_db) {
         hci_stack->link_key_db->close();
     }
-
+#endif
+    
     btstack_linked_list_iterator_t lit;
     btstack_linked_list_iterator_init(&lit, &hci_stack->connections);
     while (btstack_linked_list_iterator_has_next(&lit)){

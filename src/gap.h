@@ -44,7 +44,10 @@ extern "C" {
 
 #include "btstack_defines.h"
 #include "btstack_util.h"
+
+#ifdef ENABLE_CLASSIC
 #include "classic/btstack_link_key_db.h"
+#endif
 
 typedef enum {
 
@@ -116,6 +119,19 @@ typedef enum {
 /* API_START */
 
 // Classic + LE
+
+/**
+ * @brief Read RSSI
+ * @param con_handle
+ * @events: GAP_EVENT_RSSI_MEASUREMENT
+ */
+int gap_read_rssi(hci_con_handle_t con_handle);
+
+
+/**
+ * @brief Gets local address.
+ */
+void gap_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Disconnect connection with handle
@@ -574,6 +590,7 @@ authorization_state_t gap_authorization_state(hci_con_handle_t con_handle);
 bool gap_bonded(hci_con_handle_t con_handle);
 
 // Classic
+#ifdef ENABLE_CLASSIC
 
 /**
  * @brief Override page scan mode. Page scan mode enabled by l2cap when services are registered
@@ -586,11 +603,6 @@ void gap_connectable_control(uint8_t enable);
  * @brief Allows to control if device is discoverable. OFF by default.
  */
 void gap_discoverable_control(uint8_t enable);
-
-/**
- * @brief Gets local address.
- */
-void gap_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Deletes link key for remote device with baseband address.
@@ -684,13 +696,6 @@ int gap_inquiry_stop(void);
  * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
 int gap_remote_name_request(const bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
-
-/**
- * @brief Read RSSI
- * @param con_handle
- * @events: GAP_EVENT_RSSI_MEASUREMENT
- */
-int gap_read_rssi(hci_con_handle_t con_handle);
 
 /**
  * @brief Legacy Pairing Pin Code Response
@@ -822,6 +827,8 @@ uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_
  @ @return 0 if ok
  */
 uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type, uint32_t token_rate, uint32_t peak_bandwidth, uint32_t latency, uint32_t delay_variation);
+
+#endif
 
 // LE
 
