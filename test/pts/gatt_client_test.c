@@ -293,7 +293,7 @@ static uint8_t gap_adv_type(void){
     return 0x00;
 }
 
-static void update_advertisment_params(void){
+static void update_advertisement_params(void){
     uint8_t adv_type = gap_adv_type();
     printf("GAP: Connectable = %u -> advertising_type %u (%s)\n", gap_connectable, adv_type, ad_event_types[adv_type]);
     bd_addr_t null_addr;
