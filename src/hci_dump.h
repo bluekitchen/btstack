@@ -82,7 +82,7 @@ typedef struct {
     void (*log_message)(const char * format, va_list argptr);
 #ifdef __AVR__ \
     // log message - AVR
-    void (*log_message_P)(int log_level, PGM_P * format, va_list argptr);
+    void (*log_message_P)(PGM_P * format, va_list argptr);
 #endif
 } hci_dump_t;
 
@@ -134,10 +134,11 @@ __attribute__ ((format (__printf__, 2, 3)))
  * @param log_level
  * @param format
  */
-void hci_dump_log_P(int log_level, PGM_P format, ...);
+void hci_dump_log_P(int log_level, PGM_P format, ...)
 #ifdef __GNUC__
 __attribute__ ((format (__printf__, 2, 3)))
 #endif
+;
 #endif
 
 /**

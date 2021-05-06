@@ -111,7 +111,7 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 
     va_list argptr;
     va_start(argptr, format);
-    (*hci_dump_impl->log_packet_P)(format, argptr);
+    (*hci_dump_impl->log_message_P)(format, argptr);
     va_end(argptr);
 }
 #endif
