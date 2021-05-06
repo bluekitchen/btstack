@@ -3136,8 +3136,8 @@ static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
 	// - bonding needs to be enabled:
 	bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
 	if (!bonding_enabled) return false;
-	// - need identity address
-	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0);
+	// - need identity address / public addr
+	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0) || (setup->sm_peer_addr_type == 0);
 	if (!have_identity_address_info) return false;
 	// - there is no stored BR/EDR link key or the derived key has at least the same level of authentication (bail if stored key has higher authentication)
 	//   this requirement is motivated by BLURtooth paper. The paper recommends to not overwrite keys at all.
