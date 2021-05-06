@@ -312,13 +312,19 @@ static void playback_close(void){
 }
 
 static void playback_queue_audio(int16_t * data, int num_audio_frames, int num_channels){
+
+    if (playback_active == false) {
+        return;
+    }
+
     // write to wav file
     wav_writer_write_int16(num_audio_frames * num_channels, data);
 
     // do not write into buffer if audio is not present
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
-    if (!audio)
+    if (audio == NULL){
         return;
+    }
 
     // store in audio ring buffer
     int status = btstack_ring_buffer_write(&decoded_audio_ring_buffer, (uint8_t *)data, num_audio_frames * num_channels * 2);
