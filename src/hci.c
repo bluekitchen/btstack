@@ -4310,7 +4310,8 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
-        if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
+        // Handling link key request requires remote supported features
+        if ( ((connection->authentication_flags & HANDLE_LINK_KEY_REQUEST) != 0) && ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0)){
             log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
 
