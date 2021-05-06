@@ -2431,6 +2431,15 @@ static void sm_key_distribution_complete_responder(sm_connection_t * connection)
     }
 }
 
+static void sm_key_distribution_complete_initiator(sm_connection_t * connection){
+    if (sm_ctkd_from_le(connection)){
+        bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+        connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
+    } else {
+        sm_master_pairing_success(connection);
+    }
+}
+
 static void sm_run(void){
 
     // assert that stack has already bootet
@@ -3188,12 +3197,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
             // slave -> receive master keys
             connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
         } else {
-			if (sm_ctkd_from_le(connection)){
-				bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
-				connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
-            } else {
-                sm_master_pairing_success(connection);
-            }
+            sm_key_distribution_complete_initiator(connection);
         }
     }
     sm_trigger_run();
