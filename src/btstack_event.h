@@ -8621,6 +8621,25 @@ static inline uint8_t avrcp_subevent_browsing_get_total_num_items_get_scope(cons
 }
 
 /**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_set_browsed_player_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field player_id from event AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER
+ * @param event packet
+ * @return player_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_set_browsed_player_get_player_id(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return goep_cid

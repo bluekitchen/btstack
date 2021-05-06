@@ -2819,6 +2819,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x35
 
+/**
+ * @format 122
+ * @param subevent_code
+ * @param browsing_cid
+ * @param player_id
+ */
+#define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36
 
 
 
