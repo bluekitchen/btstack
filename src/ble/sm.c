@@ -2389,6 +2389,37 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
     btstack_assert(false);
 }
 
+static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+    // requirements to derive link key from  LE:
+    // - use secure connections
+    if (setup->sm_use_secure_connections == 0) return false;
+    // - bonding needs to be enabled:
+    bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
+    if (!bonding_enabled) return false;
+    // - need identity address / public addr
+    bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0) || (setup->sm_peer_addr_type == 0);
+    if (!have_identity_address_info) return false;
+    // - there is no stored BR/EDR link key or the derived key has at least the same level of authentication (bail if stored key has higher authentication)
+    //   this requirement is motivated by BLURtooth paper. The paper recommends to not overwrite keys at all.
+    //      If SC is authenticated, we consider it safe to overwrite a stored key.
+    //      If stored link key is not authenticated, it could already be compromised by a MITM attack. Allowing overwrite by unauthenticated derived key does not make it worse.
+    uint8_t link_key[16];
+    link_key_type_t link_key_type;
+    bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
+    bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type) != 0;
+    bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
+    if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
+        return false;
+    }
+    // get started (all of the above are true)
+    return true;
+#else
+    UNUSED(sm_connection);
+	return false;
+#endif
+}
+
 static void sm_run(void){
 
     // assert that stack has already bootet
@@ -3127,36 +3158,6 @@ static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
     sm_d1_d_prime(setup->sm_local_div, 1, sm_aes128_plaintext);
     sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, (void *)(uintptr_t) connection->sm_handle);
-}
-static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-	// requirements to derive link key from  LE:
-	// - use secure connections
-	if (setup->sm_use_secure_connections == 0) return false;
-	// - bonding needs to be enabled:
-	bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
-	if (!bonding_enabled) return false;
-	// - need identity address / public addr
-	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0) || (setup->sm_peer_addr_type == 0);
-	if (!have_identity_address_info) return false;
-	// - there is no stored BR/EDR link key or the derived key has at least the same level of authentication (bail if stored key has higher authentication)
-	//   this requirement is motivated by BLURtooth paper. The paper recommends to not overwrite keys at all.
-	//      If SC is authenticated, we consider it safe to overwrite a stored key.
-	//      If stored link key is not authenticated, it could already be compromised by a MITM attack. Allowing overwrite by unauthenticated derived key does not make it worse.
-	uint8_t link_key[16];
-	link_key_type_t link_key_type;
-	bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
-	bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type) != 0;
-	bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
-	if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
-		return false;
-	}
-	// get started (all of the above are true)
-	return true;
-#else
-    UNUSED(sm_connection);
-	return false;
-#endif
 }
 
 static void sm_handle_encryption_result_enc_csrk(void *arg){
