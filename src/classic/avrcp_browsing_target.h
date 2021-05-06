@@ -67,6 +67,23 @@ void avrcp_browsing_target_init(void);
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
+ * @brief Accept set browsed player
+ * @param browsing_cid
+ * @param uid_counter
+ * @param browsed_player_id
+ * @param response
+ * @param response_size
+ */
+uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t browsing_cid, uint16_t uid_counter, uint16_t browsed_player_id, uint8_t * response, uint16_t response_len);
+
+/**
+ * @brief Reject set browsed player
+ * @param browsing_cid
+ * @param status
+ */
+uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t browsing_cid, avrcp_status_code_t status);
+
+/**
  * @brief Send answer to get folder items query on event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS. The first byte of this event defines the scope of the query, see avrcp_browsing_scope_t.
  * @param browsing_cid
  * @param uid_counter

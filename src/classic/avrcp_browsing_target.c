@@ -119,6 +119,21 @@ static void avrcp_browsing_target_emit_get_total_num_items(btstack_packet_handle
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avrcp_browsing_target_emit_set_browsed_player(btstack_packet_handler_t callback, uint16_t browsing_cid, uint16_t browsed_player_id){
+    btstack_assert(callback != NULL);
+
+    uint8_t event[10];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    little_endian_store_16(event, pos, browsed_player_id);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(size);
@@ -174,6 +189,14 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
                             avrcp_browsing_target_emit_get_total_num_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
                             break;
                         }
+                        case AVRCP_PDU_ID_SET_BROWSED_PLAYER:
+                            // param length (2), player_id (2)
+                            if (big_endian_read_16(packet, pos) != 2){
+                                avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                                break;
+                            }
+                            avrcp_browsing_target_emit_set_browsed_player(avrcp_target_context.browsing_avrcp_callback, channel, big_endian_read_16(packet, pos+2));
+                            break;
                         default:
                             avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                             log_info("not parsed pdu ID 0x%02x", browsing_connection->pdu_id);
@@ -260,6 +283,80 @@ uint8_t avrcp_browsing_target_send_get_folder_items_response(uint16_t avrcp_brow
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_browsing_target_send_accept_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint16_t browsed_player_id, uint8_t * response, uint16_t response_size){
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    if (!avrcp_connection){
+        log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
+    if (!connection){
+        log_info("Could not find a browsing connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (connection->state != AVCTP_CONNECTION_OPENED) {
+        log_info("Browsing connection wrong state.");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
+    connection->browsed_player_id = browsed_player_id;
+
+    uint16_t pos = 0;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_BROWSED_PLAYER;
+    big_endian_store_16(connection->cmd_operands, pos, response_size + 2 + 1); // uuid counter + status
+    pos += 2;
+
+    connection->cmd_operands[pos++] = AVRCP_STATUS_SUCCESS;
+    big_endian_store_16(connection->cmd_operands, pos, uid_counter);
+    pos += 2;
+
+    // TODO: fragmentation
+    if (response_size >  sizeof(connection->cmd_operands)){
+        connection->attr_list = response;
+        connection->attr_list_size = response_size;
+        log_info(" todo: list too big, invoke fragmentation");
+        return 1;
+    }
+    
+    (void)memcpy(&connection->cmd_operands[pos], response, response_size);
+    pos += response_size;
+    connection->cmd_operands_length = pos;
+
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_browsing_target_send_reject_set_browsed_player(uint16_t avrcp_browsing_cid, avrcp_status_code_t status){
+    avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
+    if (!avrcp_connection){
+        log_error("Could not find an AVRCP Target connection for browsing_cid 0x%02x.", avrcp_browsing_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
+    if (!connection){
+        log_info("Could not find a browsing connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (connection->state != AVCTP_CONNECTION_OPENED) {
+        log_info("Browsing connection wrong state.");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
+    int pos = 0;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_BROWSED_PLAYER;
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    connection->cmd_operands[pos++] = status;
+    connection->cmd_operands_length = pos;    
+
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_browsing_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint32_t total_num_items){
     avrcp_connection_t * avrcp_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_cid);
@@ -273,7 +370,6 @@ uint8_t avrcp_browsing_target_send_get_total_num_items_response(uint16_t avrcp_b
         log_info("Could not find a browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_info("Browsing connection wrong state.");
