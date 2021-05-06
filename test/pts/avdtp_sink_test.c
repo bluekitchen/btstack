@@ -759,7 +759,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             dump_sbc_configuration(sbc_configuration);
             
-            avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
+            avdtp_sink_delay_report(avdtp_cid, local_seid, 100);
             break;
 
 #ifdef HAVE_AAC_FDK
@@ -1067,7 +1067,7 @@ static void stdin_process(char cmd){
             break;
         case 'D':
             printf("Send delay report between local %d and remote %d seid\n", local_seid, remote_seid);
-            status = avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
+            status = avdtp_sink_delay_report(avdtp_cid, local_seid, 100);
             break;
         case '\n':
         case '\r':
