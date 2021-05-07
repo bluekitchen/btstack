@@ -689,6 +689,12 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units);
 int gap_inquiry_stop(void);
 
 /**
+ * @brief Set LAP for GAP Classic Inquiry
+ * @param lap GAP_IAC_GENERAL_INQUIRY (default), GAP_IAC_LIMITED_INQUIRY
+ */
+void gap_inquiry_set_lap(uint32_t lap);
+
+/**
  * @brief Remote Name Request
  * @param addr
  * @param page_scan_repetition_mode

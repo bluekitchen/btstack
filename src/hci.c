@@ -3131,10 +3131,11 @@ static void hci_state_reset(void){
 
     hci_stack->secure_connections_active = false;
 
-    #ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CLASSIC
     hci_stack->new_page_scan_interval = 0xffff;
     hci_stack->new_page_scan_window = 0xffff;
     hci_stack->new_page_scan_type = 0xff;
+    hci_stack->inquiry_lap = GAP_IAC_GENERAL_INQUIRY;
 #endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -3828,7 +3829,7 @@ static bool hci_run_general_gap_classic(void){
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)){
         uint8_t duration = hci_stack->inquiry_state;
         hci_stack->inquiry_state = GAP_INQUIRY_STATE_W4_ACTIVE;
-        hci_send_cmd(&hci_inquiry, GAP_IAC_GENERAL_INQUIRY, duration, 0);
+        hci_send_cmd(&hci_inquiry, hci_stack->inquiry_lap, duration, 0);
         return true;
     }
     if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_CANCEL){
@@ -5989,7 +5990,11 @@ int gap_inquiry_stop(void){
     hci_stack->inquiry_state = GAP_INQUIRY_STATE_W2_CANCEL;
     hci_run();
     return 0;
-}    
+}
+
+void gap_inquiry_set_lap(uint32_t lap){
+    hci_stack->inquiry_lap = lap;
+}
 
 
 /**
