@@ -1,6 +1,12 @@
 # GATT Sever Test
 
-If GATT over BR/EDR is selected, tests will be performed for both
+CASE0071203:
+- PTS 8.0.2 requests to connect via BR/EDR although GATT_1a_2 "GATT Client over BR/DER" is not selected ->
+- Temp. workaround: enable GATT_2_1 "Attribute Protocol Support over BR/EDR" for GATT Server tests.
+
+CASE0071217: TSE ID: 16914
+- GATT/SR/GAS/BV-04-C, GATT/SR/GAS/BV-05-C,  GATT/SR/GAS/BV-06-C,  GATT/SR/GAS/BV-07-C
+- Test Case Waiver can be requested by BQC
 
 ## TODO:
 - Check if we should return an empty read blob response when reading at offset = len (value) - instead of returning an invalid offset error
@@ -82,11 +88,11 @@ If GATT over BR/EDR is selected, tests will be performed for both
 - GATT/SR/GAI/BV-01-C: A
 
 - GATT/SR/GAS/BV-02-C: n, N, A, N
-- GATT/SR/GAS/BV-04-C: -- should not be needed/enabled if Client Supported Features Characteristic 4/26 is not supported
-- GATT/SR/GAS/BV-05-C: -- should not be needed/enabled if Client Supported Features Characteristic 4/26 is not supported
-- GATT/SR/GAS/BV-06-C: -- should not be needed/enabled if Client Supported Features Characteristic 4/26 is not supported
-- GATT/SR/GAS/BV-07-C: -- should not be needed/enabled if Client Supported Features Characteristic 4/26 is not supported
-
+- GATT/SR/GAS/BV-04-C: -- invalid: TSE ID: 16914
+  GATT/SR/GAS/BV-05-C: -- invalid: TSE ID: 16914
+- GATT/SR/GAS/BV-06-C: -- invalid: TSE ID: 16914
+- GATT/SR/GAS/BV-07-C: -- invalid: TSE ID: 16914
+  
 - GATT/SR/GAT/BV-01-C: A (wait 30 seconds)
 
 - GATT/SR/GPA/BV-11-C: A

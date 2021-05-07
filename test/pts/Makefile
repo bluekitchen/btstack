@@ -152,6 +152,7 @@ EXAMPLES += hsp_ag_test hsp_hs_test sco_loopback hfp_ag_test hfp_hf_test
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
 EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
+EXAMPLES += gap_peripheral_test gap_central_test
 
 all: ${EXAMPLES}
 
@@ -211,6 +212,18 @@ gatt_server_test: gatt_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT
 
 gatt_client_test: gatt_client_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o gatt_client_test.c
 	${CC} $(filter-out gatt_client_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gap_peripheral_test.h: gap_peripheral_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+gap_central_test.h: gap_central_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	
+gap_peripheral_test: gap_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} att_db_util.o gatt_sdp.o gap_peripheral_test.o
+	${CC} $(filter-out gap_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gap_central_test: gap_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} att_db_util.o ad_parser.o gap_central_test.c
+	${CC} $(filter-out gap_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@

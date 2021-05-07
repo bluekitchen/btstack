@@ -38,4 +38,6 @@ sco_loopbackiopt
 SM_*
 sm_test
 sm_test.h
+gap_peripheral_test.h
+gap_central_test.h
 TEST_FAIL-*

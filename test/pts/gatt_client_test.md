@@ -2,8 +2,9 @@
 
 Tool: gatt_client_test
 
-PTS requests to connect via BR/EDR although GATT_1a_2 "GATT Client over BR/DER" is not selected. 
-Temp. workaround: disable GATT_2_1 "Attribute Protocol Support over BR/EDR" for GATT Client LE-only tests.
+CASE0071203:
+- PTS 8.0.2 requests to connect via BR/EDR although GATT_1a_2 "GATT Client over BR/DER" is not selected -> 
+- Temp. workaround: disable GATT_2_1 "Attribute Protocol Support over BR/EDR" for GATT Client LE-only tests.
 
 # Sequences
 
