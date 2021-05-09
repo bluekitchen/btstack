@@ -2340,6 +2340,7 @@ void hfp_ag_incoming_call(void){
 }
 
 void hfp_ag_outgoing_call_initiated(const char * number) {
+    UNUSED(number);
     hfp_ag_call_sm(HFP_AG_OUTGOING_CALL_INITIATED_BY_AG, NULL);
 }
 
