@@ -4,9 +4,7 @@
 
 DIR=.
 BTSTACK_ROOT=${realpath ../..}
-DUMMY=$(shell )
-VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' ${BTSTACK_ROOT}/platform/daemon/src/btstack_version.h`
-BTSTACK_PACKAGE=/tmp/btstack
+VERSION=$(shell ${BTSTACK_ROOT}/tool/get_git_version.sh)
 ARCHIVE=$(BTSTACK_ROOT)/btstack-arduino-${VERSION}.zip
 
 SRC_C_FILES  = btstack_memory.c btstack_linked_list.c btstack_memory_pool.c btstack_run_loop.c btstack_crypto.c
@@ -29,9 +27,6 @@ PATHS += ${BTSTACK_ROOT}/port/arduino/examples
 ARDUINO_LIBS=~/Documents/arduino/libraries/BTstack
 
 all: release
-
-clean:
-	rm -rf ${BTSTACK_PACKAGE}
 
 update_version:
 	${BTSTACK_ROOT}/tool/get_version.sh 
