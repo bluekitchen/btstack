@@ -20,7 +20,7 @@ EM9301_C_FILES = btstack_chipset_em9301.c
 
 PATHS  = $(addprefix ${BTSTACK_ROOT}/src/,     ${SRC_C_FILES})
 PATHS += $(addprefix ${BTSTACK_ROOT}/src/ble/, ${BLE_C_FILES})
-PATHS += $(addprefix ${BTSTACK_ROOT}/src/ble/gatt-service/, ${BLE_GATT_FILES})
+PATHS += $(addprefix ${BTSTACK_ROOT}/src/ble/gatt-service/, ${BLE_GATT_C_FILES})
 PATHS += $(addprefix ${BTSTACK_ROOT}/platform/embedded/,    ${EMBEDDED_C_FILES})
 PATHS += $(addprefix ${BTSTACK_ROOT}/chipset/em9301/,       ${EM9301_C_FILES})
 PATHS += $(addprefix ${DIR}/, ${PORT_FILES})
