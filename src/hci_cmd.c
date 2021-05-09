@@ -51,6 +51,10 @@
 
 #include <string.h>
 
+#ifdef ENABLE_SDP
+#include "classic/sdp_util.h"
+#endif
+
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
 
