@@ -198,7 +198,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("PTS Tool: ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
-			DEPENDS ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt
+			DEPENDS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt
 			COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
 			ARGS ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)
