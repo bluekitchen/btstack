@@ -48,7 +48,7 @@
 
 #include "btstack_config.h"
 
-#include "att_dispatch.h"
+#include "ble/att_dispatch.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/core.h"

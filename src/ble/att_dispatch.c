@@ -42,7 +42,7 @@
  * Dispatcher for independent implementation of ATT client and server
  */
 
-#include "att_dispatch.h"
+#include "ble/att_dispatch.h"
 #include "ble/core.h"
 #include "btstack_debug.h"
 #include "l2cap.h"
