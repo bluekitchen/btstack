@@ -40,6 +40,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /*
  *  hal_audio.h
  *
@@ -120,5 +124,9 @@ void hal_audio_source_stop(void);
  * @brief Close audio codec
  */
 void hal_audio_source_close(void);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif
