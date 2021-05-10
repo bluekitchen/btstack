@@ -3194,8 +3194,13 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
     } else {
         // no keys to send, just continue
         if (IS_RESPONDER(connection->sm_role)){
-            // slave -> receive master keys
-            connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+            if (sm_key_distribution_all_received(connection)){
+                sm_key_distribution_handle_all_received(connection);
+                sm_key_distribution_complete_responder(connection);
+            } else {
+                // slave -> receive master keys
+                connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+            }
         } else {
             sm_key_distribution_complete_initiator(connection);
         }
