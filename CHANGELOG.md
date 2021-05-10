@@ -74,6 +74,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic and Read Long Characteristic Descriptor
 - GATT Server: Allow ATT Read Callback to return custom ATT Error Code
 - HID: Move `src/classic/hid.h` into `src` and prefix with `btstack_` to use it with BLE and avoid name clashes
+- SM: start pairing as Central for already encrypted connection on Slave Security Request 
 
 ## Release v1.3.2
 

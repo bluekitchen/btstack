@@ -3864,9 +3864,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 case IRK_LOOKUP_SUCCEEDED:
                     le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
-                    log_info("central: security request - have_ltk %u", have_ltk);
-                    if (have_ltk){
-                        // start re-encrypt
+                    log_info("central: security request - have_ltk %u, encryption %u", have_ltk, sm_conn->sm_connection_encrypted);
+                    if (have_ltk && (sm_conn->sm_connection_encrypted == 0)){
+                        // start re-encrypt if we have LTK and the connection is not already encrypted
                         sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
                     } else {
                         // start pairing
