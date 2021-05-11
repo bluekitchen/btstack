@@ -2722,6 +2722,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             conn->authentication_flags |= CONNECTION_AUTHENTICATED;
                         }
 
+#ifdef ENABLE_TESTING_SUPPORT
+                         // work around for issue with PTS dongle
+                        conn->authentication_flags |= CONNECTION_AUTHENTICATED;
+#endif
+
                         if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
                             // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
                             conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
