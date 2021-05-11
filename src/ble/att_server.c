@@ -67,6 +67,10 @@
 #include "ble/sm.h"
 #endif
 
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
+#endif
+
 #ifndef NVN_NUM_GATT_SERVER_CCC
 #define NVN_NUM_GATT_SERVER_CCC 20
 #endif
@@ -507,10 +511,16 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     reverse_64(hash, hash_flipped);
     if (memcmp(hash_flipped, &att_server->request_buffer[att_server->request_size-8], 8)){
         log_info("ATT Signed Write, invalid signature");
+#ifdef ENABLE_TESTING_SUPPORT
+        printf("ATT Signed Write, invalid signature\n");
+#endif
         att_server->state = ATT_SERVER_IDLE;
         return;
     }
     log_info("ATT Signed Write, valid signature");
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("ATT Signed Write, valid signature\n");
+#endif
 
     // update sequence number
     uint32_t counter_packet = little_endian_read_32(att_server->request_buffer, att_server->request_size-12);
