@@ -2766,9 +2766,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 // authenticated
                 conn->authentication_flags |= CONNECTION_AUTHENTICATED;
 
-                // If link key sufficient for requested security and not already encrypted, start encryption
-                if (((gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level)) &&
-                    ((conn->authentication_flags & CONNECTION_ENCRYPTED) == 0)){
+                // If not already encrypted, start encryption
+                if ((conn->authentication_flags & CONNECTION_ENCRYPTED) == 0){
                     conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
                     break;
                 }
