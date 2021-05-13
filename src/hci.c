@@ -2039,6 +2039,7 @@ static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn
     conn->encryption_key_size = encryption_key_size;
 
     if ((conn->authentication_flags & CONNECTION_AUTHENTICATED) != 0) {
+        conn->requested_security_level = LEVEL_0;
         hci_emit_security_level(conn->con_handle, gap_security_level_for_connection(conn));
         return;
     }
@@ -2774,6 +2775,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 
             // emit updated security level
+            conn->requested_security_level = LEVEL_0;
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 #endif
@@ -5344,31 +5346,28 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
         requested_level, connection->requested_security_level, current_level);
 
-    // assumption: earlier requested security higher than current level => security request is active
-    if (current_level < connection->requested_security_level){
+    // authentication already active if planned level > 0
+    if (connection->requested_security_level > LEVEL_0){
+        // authentication already active
         if (connection->requested_security_level < requested_level){
             // increase requested level as new level is higher
-
             // TODO: handle re-authentication when done
-
             connection->requested_security_level = requested_level;
         }
-        return;
+    } else {
+        // no request active, notify if security sufficient
+        if (requested_level <= current_level){
+            hci_emit_security_level(con_handle, current_level);
+            return;
+        }
+
+        // store request
+        connection->requested_security_level = requested_level;
+
+        // start to authenticate connection
+        connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+        hci_run();
     }
-
-    // no request active, notify if security sufficient
-    if (requested_level <= current_level){
-        hci_emit_security_level(con_handle, current_level);
-        return;
-    }
-
-    // store request
-    connection->requested_security_level = requested_level;
-
-    // start to authenticate connection if authentication not already active
-    if ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) return;
-    connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-    hci_run();
 }
 
 /**
