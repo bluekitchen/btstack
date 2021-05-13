@@ -428,6 +428,7 @@ static void pbap_handle_can_send_now(void){
                 // TODO: support format
                 i = 0;
                 uint32_t property_selector_lower = 0;
+                uint32_t property_selector_higher = 0;
                 if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
                     property_selector_lower = 1U << 31;
                 }
@@ -437,8 +438,6 @@ static void pbap_handle_can_send_now(void){
                 if (property_selector_lower != 0){
                     application_parameters[i++] = PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR;
                     application_parameters[i++] = 8;
-                    uint32_t property_selector_higher = 0;
-                    uint32_t property_selector_lower = 1U << 31;
                     big_endian_store_32(application_parameters, i, property_selector_higher);
                     i += 4;
                     big_endian_store_32(application_parameters, i, property_selector_lower);
