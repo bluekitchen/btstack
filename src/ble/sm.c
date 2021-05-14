@@ -1189,6 +1189,14 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     }
 
     uint8_t auth_req = sm_auth_req & ~SM_AUTHREQ_CT2;
+    uint8_t max_encryptinon_key_size = sm_max_encryption_key_size;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // enable SC for SC only mode
+    if (sm_sc_only_mode){
+        auth_req |= SM_AUTHREQ_SECURE_CONNECTION;
+        max_encryptinon_key_size = 16;
+    }
+#endif
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 	// set CT2 if SC + Bonding + CTKD
 	const uint8_t auth_req_for_ct2 = SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING;
@@ -1199,7 +1207,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, setup->sm_have_oob_data);
     sm_pairing_packet_set_auth_req(*local_packet, auth_req);
-    sm_pairing_packet_set_max_encryption_key_size(*local_packet, sm_max_encryption_key_size);
+    sm_pairing_packet_set_max_encryption_key_size(*local_packet, max_encryptinon_key_size);
 }
 
 static int sm_stk_generation_init(sm_connection_t * sm_conn){
@@ -1217,6 +1225,12 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     }
 
     // check key size
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // SC Only mandates 128 bit key size
+    if (sm_sc_only_mode && (sm_pairing_packet_get_max_encryption_key_size(*remote_packet) < 16)) {
+        return SM_REASON_ENCRYPTION_KEY_SIZE;
+    }
+#endif
     sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
     if (sm_conn->sm_actual_encryption_key_size == 0u) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
@@ -1228,7 +1242,7 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     if (!sm_validate_stk_generation_method()) return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    // check LE SC Only mode
+    // Check LE SC Only mode
     if (sm_sc_only_mode && (setup->sm_use_secure_connections == false)){
         log_info("SC Only mode active but SC not possible");
         return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
@@ -2190,6 +2204,16 @@ static bool sm_run_basic(void){
                 return true;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case SM_GENERAL_SEND_PAIRING_FAILED: {
+                // respond with auth req error if received sec req with SC = 0 in SC Only mode
+                btstack_assert(sm_connection->sm_role == 0);
+                sm_connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+                uint8_t buffer[2];
+                buffer[0] = SM_CODE_PAIRING_FAILED;
+                buffer[1] = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+                l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t *) buffer, sizeof(buffer));
+                break;
+            }
             case SM_SC_RECEIVED_LTK_REQUEST:
                 switch (sm_connection->sm_irk_lookup_state){
                     case IRK_LOOKUP_FAILED:
@@ -3857,6 +3881,16 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            if (sm_sc_only_mode){
+                uint8_t auth_req = packet[1];
+                if ((auth_req & SM_AUTHREQ_SECURE_CONNECTION) == 0){
+                    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                    break;
+                }
+            }
+#endif
 
             // IRK complete?
             switch (sm_conn->sm_irk_lookup_state){
