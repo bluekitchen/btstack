@@ -854,7 +854,9 @@ typedef struct {
     uint16_t           link_supervision_timeout;
     gap_security_level_t gap_security_level;
 
-    uint32_t  inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
+    uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
+
+    bool                gap_secure_connections_only_mode;
 #endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers

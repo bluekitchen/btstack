@@ -3356,6 +3356,14 @@ void gap_set_security_level(gap_security_level_t security_level){
 gap_security_level_t gap_get_security_level(void){
     return hci_stack->gap_security_level;
 }
+
+void gap_set_secure_connections_only_mode(bool enable){
+    hci_stack->gap_secure_connections_only_mode = enable;
+}
+
+bool gap_get_secure_connections_only_mode(void){
+    return hci_stack->gap_secure_connections_only_mode;
+}
 #endif
 
 #ifdef ENABLE_CLASSIC
