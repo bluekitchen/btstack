@@ -1949,6 +1949,14 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
+    // abort if Secure Connections Only Mode with legacy connection
+    if (gap_get_secure_connections_only_mode() && gap_secure_connection(channel->con_handle) == false){
+        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
+        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
+        l2cap_free_channel_entry(channel);
+        return;
+    }
+
     // we have been waiting for remote supported features
     if (channel->required_security_level > LEVEL_0){
         // request security level
@@ -2352,7 +2360,8 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
 
         switch (channel->state){
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
-                if (actual_level >= required_level){
+                if ((actual_level >= required_level) &&
+                        ((gap_get_secure_connections_only_mode() == false) || gap_secure_connection(channel->con_handle))){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                     // we need to know if ERTM is supported before sending a config response
                     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
