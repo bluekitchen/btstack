@@ -2579,6 +2579,15 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         return;
     }
 
+    // Core V5.2, Vol 3, Part C, 5.2.2.2
+    //   If the remote device has indicated support for Secure Simple Pairing, a channel establishment request is
+    //   received for a service other than SDP, and encryption has not yet been enabled, then the local device shall
+    //   disconnect the ACL link with error code 0x05 - Authentication Failure.
+    if (gap_ssp_supported_on_both_sides(handle) && (psm != PSM_SDP) && (gap_encryption_key_size(handle) == 0)){
+        hci_disconnect_security_block(handle);
+        return;
+    }
+
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
     l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL, 
