@@ -65,7 +65,8 @@
 static void show_usage(void);
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};;
+// static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};;
+static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
 
 static uint16_t handle;
 static uint16_t local_cid;
@@ -152,6 +153,7 @@ static void show_usage(void){
     printf("s      - send some data\n");
     printf("S      - send more data\n");
     printf("p      - send echo request\n");
+    printf("i      - send connectionless data\n");
     printf("e      - optional ERTM mode\n");
     printf("E      - mandatory ERTM mode\n");
     printf("b      - set channel as busy (ERTM)\n");
@@ -187,6 +189,10 @@ static void stdin_process(char buffer){
         case 'S':
             printf("Send more L2CAP Data\n");
             l2cap_send(local_cid, (uint8_t *) "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", 100);
+            break;
+        case 'u':
+            printf("Send connection-less L2CAP Data\n");
+            l2cap_send_connectionless(handle, 0x0002, (uint8_t *) "0123456789", 10);
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");
