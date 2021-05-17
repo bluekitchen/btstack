@@ -3352,7 +3352,7 @@ void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
     hci_stack->gap_required_encyrption_key_size = encryption_key_size;
 }
 
-void gap_get_security_mode(gap_security_mode_t security_mode){
+void gap_set_security_mode(gap_security_mode_t security_mode){
     btstack_assert((security_mode == GAP_SECURITY_MODE_4) || (security_mode == GAP_SECURITY_MODE_2));
     hci_stack->gap_security_mode = security_mode;
 }
