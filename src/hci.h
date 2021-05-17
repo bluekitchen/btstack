@@ -422,6 +422,7 @@ typedef struct sm_connection {
     bd_addr_t                sm_peer_address;
     security_manager_state_t sm_engine_state;
     irk_lookup_state_t       sm_irk_lookup_state;
+    uint8_t                  sm_pairing_failed_reason;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
     uint8_t                  sm_connection_sc;

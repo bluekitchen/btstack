@@ -301,9 +301,6 @@ typedef struct sm_setup_context {
 
     btstack_timer_source_t sm_timeout;
 
-    // used in all phases
-    uint8_t   sm_pairing_failed_reason;
-
     // user response, (Phase 1 and/or 2)
     uint8_t   sm_user_response;
     uint8_t   sm_keypress_notification; // bitmap: passkey started, digit entered, digit erased, passkey cleared, passkey complete, 3 bit count
@@ -1533,7 +1530,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 }
 
 static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
-    setup->sm_pairing_failed_reason = reason;
+    sm_conn->sm_pairing_failed_reason = reason;
     sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
@@ -2197,6 +2194,19 @@ static bool sm_run_basic(void){
         hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         switch(sm_connection->sm_engine_state){
+
+            // general
+            case SM_GENERAL_SEND_PAIRING_FAILED: {
+                uint8_t buffer[2];
+                buffer[0] = SM_CODE_PAIRING_FAILED;
+                buffer[1] = sm_connection->sm_pairing_failed_reason;
+                sm_connection->sm_engine_state = sm_connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
+                l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_pairing_complete(sm_connection, ERROR_CODE_AUTHENTICATION_FAILURE, sm_connection->sm_pairing_failed_reason);
+                sm_done_for_handle(sm_connection->sm_handle);
+                break;
+            }
+
             // responder side
             case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
                 sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
@@ -2204,16 +2214,6 @@ static bool sm_run_basic(void){
                 return true;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-            case SM_GENERAL_SEND_PAIRING_FAILED: {
-                // respond with auth req error if received sec req with SC = 0 in SC Only mode
-                btstack_assert(sm_connection->sm_role == 0);
-                sm_connection->sm_engine_state = SM_INITIATOR_CONNECTED;
-                uint8_t buffer[2];
-                buffer[0] = SM_CODE_PAIRING_FAILED;
-                buffer[1] = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
-                l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t *) buffer, sizeof(buffer));
-                break;
-            }
             case SM_SC_RECEIVED_LTK_REQUEST:
                 switch (sm_connection->sm_irk_lookup_state){
                     case IRK_LOOKUP_FAILED:
@@ -2544,18 +2544,6 @@ static void sm_run(void){
         }
         switch (connection->sm_engine_state){
 
-            // general
-            case SM_GENERAL_SEND_PAIRING_FAILED: {
-                uint8_t buffer[2];
-                buffer[0] = SM_CODE_PAIRING_FAILED;
-                buffer[1] = setup->sm_pairing_failed_reason;
-                connection->sm_engine_state = connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                sm_pairing_complete(connection, ERROR_CODE_AUTHENTICATION_FAILURE, setup->sm_pairing_failed_reason);
-                sm_done_for_handle(connection->sm_handle);
-                break;
-            }
-
             // secure connections, initiator + responding states
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case SM_SC_W2_CMAC_FOR_CONFIRMATION:
@@ -2858,8 +2846,7 @@ static void sm_run(void){
                     }
 #endif
 				if (err != 0){
-					setup->sm_pairing_failed_reason = err;
-					connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                    sm_pairing_error(connection, err);
 					sm_trigger_run();
 					break;
 				}
@@ -3112,8 +3099,7 @@ static void sm_handle_encryption_result_enc_d(void * arg){
 
     log_info_key("c1!", sm_aes128_ciphertext);
     if (memcmp(setup->sm_peer_confirm, sm_aes128_ciphertext, 16) != 0){
-        setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-        connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+        sm_pairing_error(connection, SM_REASON_CONFIRM_VALUE_FAILED);
         sm_trigger_run();
         return;
     }
@@ -3886,7 +3872,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             if (sm_sc_only_mode){
                 uint8_t auth_req = packet[1];
                 if ((auth_req & SM_AUTHREQ_SECURE_CONNECTION) == 0){
-                    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                    sm_pairing_error(sm_conn, SM_REASON_AUTHENTHICATION_REQUIREMENTS);
                     break;
                 }
             }
@@ -3945,8 +3931,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 #endif
 
             if (err != 0){
-                setup->sm_pairing_failed_reason = err;
-                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_pairing_error(sm_conn, err);
                 break;
             }
 
@@ -4241,8 +4226,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // handle user cancel pairing?
             if (setup->sm_user_response == SM_USER_RESPONSE_DECLINE){
-                setup->sm_pairing_failed_reason = SM_REASON_PASSKEY_ENTRY_FAILED;
-                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_pairing_error(sm_conn, SM_REASON_PASSKEY_ENTRY_FAILED);
                 break;
             }
 
