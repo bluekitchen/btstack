@@ -3221,6 +3221,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // Default / minimum security level = 2
     hci_stack->gap_security_level = LEVEL_2;
 
+    // Default Security Mode 4
+    hci_stack->gap_security_mode = GAP_SECURITY_MODE_4;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3
     hci_stack->gap_required_encyrption_key_size = 7;
 
@@ -3347,6 +3350,15 @@ void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
     if (encryption_key_size < 7)  return;
     if (encryption_key_size > 16) return;
     hci_stack->gap_required_encyrption_key_size = encryption_key_size;
+}
+
+void gap_set_security_mdoe(gap_security_mode_t security_mode){
+    btstack_assert((security_mode == GAP_SECURITY_MODE_4) || (security_mode == GAP_SECURITY_MODE_2));
+    hci_stack->gap_security_mode = security_mode;
+}
+
+gap_security_mode_t gap_get_security_mode(void){
+    return hci_stack->gap_security_mode;
 }
 
 void gap_set_security_level(gap_security_level_t security_level){

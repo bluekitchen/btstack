@@ -77,9 +77,24 @@ typedef enum {
 	LEVEL_4,	
 } gap_security_level_t;
 
+
+typedef enum {
+    // non-secure
+    GAP_SECURITY_MODE_1 = 1,
+
+    // service level enforced security
+    GAP_SECURITY_MODE_2,
+
+    // link level enforced security
+    GAP_SECURITY_MODE_3,
+
+    // service level enforced security
+    GAP_SECURITY_MODE_4
+} gap_security_mode_t;
+
 typedef enum {
 	GAP_SECURITY_NONE,
-	GAP_SECUIRTY_ENCRYPTED,		// SSP: JUST WORKS
+	GAP_SECURITY_ENCRYPTED,		// SSP: JUST WORKS
 	GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB 
 	// GAP_SECURITY_AUTHORIZED
 } gap_security_state;
@@ -219,6 +234,18 @@ void gap_set_bondable_mode(int enabled);
  * @return 1 if bondable
  */
 int gap_get_bondable_mode(void);
+
+/**
+ * @brief Set security mode for all outgoing and incoming connections. Default: GAP_SECURITY_MODE_4
+ * @param security_mode is GAP_SECURITY_MODE_2 or GAP_SECURITY_MODE_4
+ */
+void gap_set_security_mode(gap_security_mode_t security_mode);
+
+/**
+ * @brief Get security mode
+ * @return security_mode
+ */
+gap_security_mode_t gap_get_security_mode(void);
 
 /**
  * @brief Set security level for all outgoing and incoming connections. Default: LEVEL_2
