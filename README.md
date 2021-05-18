@@ -31,7 +31,7 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **GATT Service Servers:** Battery, Cycling Power, Cycling Speed and Cadence, Device Information,  Heart Rate, HID over GATT (HOG) Device, Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters, u-Blox SPP. 
 
-**GATT Service Clients:**: Battery, Device Information, HID-over-GATT (HOG) Host, Scan Parameters.
+**GATT Service Clients:**: ANCS, Battery, Device Information, HID-over-GATT (HOG) Host, Scan Parameters.
 
 GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](https://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 

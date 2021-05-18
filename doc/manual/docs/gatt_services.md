@@ -1,7 +1,7 @@
 
 BTstack allows to implement and use GATT Services in a modular way.
 
-To use an already implemented GATT Service, you only have to add it to your application's
+To use an already implemented GATT Service Server, you only have to add it to your application's
 GATT file with:
 
   - `#import <service_name.gatt>` for .gatt files located in *src/ble/gatt-service* 
@@ -10,7 +10,7 @@ GATT file with:
 Each service will have an API at *src/ble/gatt-service/service_name_server.h. To activate it, you need
 to call *service_name_init(..)*. Please see the .h file for details.
 
-### Battery Service {#sec:BatteryService}}
+### Battery Service Server {#sec:BatteryServiceServer}}
 
 The Battery Service allows to query your device's battery level in a standardized way.
 
@@ -20,8 +20,34 @@ current value of your battery. The valid range for the battery level is 0-100.
 
 If the battery level changes, you can call *battery_service_server_set_battery_value(value)*. The service supports sending Notifications if the client enables them.
 
+See [Battery Service Server API](appendix/apis/#battery-service-server-api).
 
-### Heart Rate Service {#sec:HeartRateService}}
+### Cycling Power Service Server {#sec:CyclingPowerServiceServer}
+
+The Cycling Power Service allows to query device's power- and force-related data and optionally speed- and cadence-related data for use in sports and fitness applications.
+
+To use with your application, add `#import <cycling_power_service.gatt>` to your .gatt file. 
+
+See [Cycling Power Service Server API](appendix/apis/#cycling-power-service-server-api).
+
+### Cycling Speed and Cadence Service Server {#sec:CyclingSpeedAndCadenceServiceServer}
+
+The Cycling Speed and Cadence Service allows to query device's speed- and cadence-related data for use in sports and fitness applications.
+
+To use with your application, add `#import <cycling_speed_and_cadence_service.gatt>` to your .gatt file. 
+
+See [Cycling Speed and Cadence Service Server API](appendix/apis/#cycling-speed-and-cadence-service-server-api).
+
+### Device Information Service Server {#sec:DeviceInformationServiceServer}
+
+TheDevice Information Service allows to query manufacturer and/or vendor information about a device.
+
+To use with your application, add `#import <device_information_service.gatt>` to your .gatt file. 
+
+See [Device Information Service Server API](appendix/apis/#device-information-service-server-api).
+
+
+### Heart Rate Service Server {#sec:HeartRateServiceServer}}
  
 The heart rate service server provides heart rate measurements via notifications.
 
@@ -49,3 +75,45 @@ If energy expanded is supported, you can call *heart_rate_service_add_energy_exp
 with the newly expanded energy. The accumulated energy expended value
 will be emitted with the next heart rate measurement.
 
+See [Heart Rate Service Server API](appendix/apis/#heart-rate-service-server-api).
+
+
+### Mesh Provisioning Service Server {#sec:MeshProvisioningServiceServer}
+
+The Mesh Provisioning Service allows a Provisioning Client to provision a device to participate in the mesh network.
+
+To use with your application, add `#import <mesh_provisioning_service.gatt>` to your .gatt file. 
+
+See [Mesh Provisioning Service Server API](appendix/apis/#mesh-provisioning-service-server-api).
+
+### Mesh Proxy Service Server {#sec:MeshProxyServiceServer}
+
+The Mesh Proxy Service is used to enable a server to send and receive Proxy PDUs with a client.
+
+To use with your application, add `#import <mesh_proxy_service.gatt>` to your .gatt file. 
+
+See [Mesh Proxy Service Server API](appendix/apis/#mesh-proxy-service-server-api).
+
+### Nordic SPP Service Server {#sec:NordicSPPServiceServer}
+
+The Nordic SPP Service is implementation of the Nordic SPP-like profile.
+
+To use with your application, add `#import <nordic_spp_service.gatt>` to your .gatt file. 
+
+See [Nordic SPP Service Server API](appendix/apis/#nordic-spp-service-server-api).
+
+### Scan Parameters Service Server {#sec:ScanParametersServiceServer}
+
+The Scan Parameters Service enables a remote GATT Client to store the LE scan parameters it is using locally. These parameters can be utilized by the application to optimize power consumption and/or reconnection latency.
+
+To use with your application, add `#import <scan_parameters_service.gatt>` to your .gatt file. 
+
+See [Scan Parameters Service Server API](appendix/apis/#scan-parameters-server-api).
+
+### u-blox SPP Service Server {#sec:ubloxSPPServiceServer}
+
+The u-blox SPP Service is implementation of the u-Blox SPP-like profile.
+
+To use with your application, add `#import <ublox_spp_service.gatt>` to your .gatt file. 
+
+See [u-blox SPP Service Server API](appendix/apis/#ublox-spp-service-server-api).
