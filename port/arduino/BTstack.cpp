@@ -723,6 +723,16 @@ void bluetooth_hardware_error(uint8_t error){
     while(1);
 }
 
+static hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
+    115200,
+    0,  // main baudrate
+    1,  // flow control
+    NULL,
+};
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 void BTstackManager::setup(void){
 
 #ifdef PIN_LED
@@ -735,7 +745,7 @@ void BTstackManager::setup(void){
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
-	hci_init(transport, NULL);
+	hci_init(transport, (void*) &config);
     hci_set_chipset(btstack_chipset_em9301_instance());
     
     if (have_custom_addr){
@@ -743,6 +753,10 @@ void BTstackManager::setup(void){
     }
 
     hci_set_hardware_error_callback(&bluetooth_hardware_error);
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
 
@@ -752,7 +766,6 @@ void BTstackManager::setup(void){
     sm_init();
     
     att_server_init(att_db_util_get_address(),att_read_callback, att_write_callback);    
-    att_server_register_packet_handler(packet_handler);
 
     gatt_client_init();
 
@@ -780,12 +793,6 @@ void BTstackManager::setup(void){
     // turn on!
     btstack_state = 0;
     hci_power_control(HCI_POWER_ON);
-
-    // poll until working
-    while (btstack_state != HCI_STATE_WORKING){
-        loop();
-    }
-    printf("--> READY <--\n");
 }
 
 void BTstackManager::enablePacketLogger(void){
