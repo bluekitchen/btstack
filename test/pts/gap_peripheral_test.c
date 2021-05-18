@@ -1132,7 +1132,7 @@ static void stdin_process(char c){
         case 'F':
             printf("Drop bonding information\n");
             for (i=0;i<le_device_db_max_count();i++){
-                le_device_db_remove(le_device_db_index);
+                le_device_db_remove(i);
             }
             gap_drop_link_key_for_bd_addr(tester_address);
             break;

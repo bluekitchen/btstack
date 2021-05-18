@@ -73,8 +73,8 @@ GAP/SEC/SEM/BI-05-C
 
 - GAP/CONN/TERM/BV-01-C: p, t
 
-- GAP/CONN/PRDA/BV-01-C: C, A, t, t, t
-- GAP/CONN/PRDA/BV-02-C: A, BD_ADDR, p, b, P, b, P, b
+- GAP/CONN/PRDA/BV-01-C: C, a, t, t, t
+- GAP/CONN/PRDA/BV-02-C: f, BD_ADDR, p, b, P, b, P, b
 
 - GAP/BOND/NBON/BV-01-C: p, d, p, p
 - GAP/BOND/NBON/BV-02-C: p, d, b, p, b

@@ -356,14 +356,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             switch (packet[0]) {
                 
                 case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        // add bonded device with IRK 0x00112233..FF for gap-conn-prda-bv-2
-                        uint8_t pts_irk[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
-                        le_device_db_add(public_pts_address_type, public_pts_address, pts_irk);
                         // ready
                         printf("Central test ready\n");
-                        show_usage();
                     }
                     break;
 
@@ -1543,7 +1538,7 @@ static void ui_process_command(char buffer){
         case 'F':
             printf("Drop bonding information\n");
             for (i=0;i<le_device_db_max_count();i++){
-                 le_device_db_remove(le_device_db_index);
+                 le_device_db_remove(i);
             }
             gap_drop_link_key_for_bd_addr(public_pts_address);
             break;
