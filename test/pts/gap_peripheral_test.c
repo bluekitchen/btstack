@@ -133,9 +133,9 @@ static void show_usage(void);
 static void update_advertisements(void);
 
 
-// static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
 static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
-static bd_addr_t tester_address2 = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
+// static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
+// static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
 static int tester_address_type = 0;
 
 // general discoverable flags
@@ -875,7 +875,7 @@ static void stdin_process(char c){
         }
         return;
     }
-
+    int i;
     switch (c){
         case 'a':
             printf("a - advertisements off\n");
@@ -968,7 +968,6 @@ static void stdin_process(char c){
         case 'q':
             printf("Add PTS to whitelist");
             gap_whitelist_add(tester_address_type, tester_address);
-            gap_whitelist_add(tester_address_type, tester_address2);
             break;
         case '1':
         case '2':
@@ -1132,9 +1131,10 @@ static void stdin_process(char c){
             break;
         case 'F':
             printf("Drop bonding information\n");
-            le_device_db_remove(le_device_db_index);
+            for (i=0;i<le_device_db_max_count();i++){
+                le_device_db_remove(le_device_db_index);
+            }
             gap_drop_link_key_for_bd_addr(tester_address);
-            gap_drop_link_key_for_bd_addr(tester_address2);
             break;
         case '\n':
         case '\r':

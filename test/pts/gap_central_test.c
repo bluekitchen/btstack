@@ -183,9 +183,9 @@ static uint8_t ui_presentation_format[7];
 static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 
-//static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 //static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x72};
-static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x5C};
+//static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x08, 0xe2, 0x5C};
 
 static int       public_pts_address_type = 0;
 static bd_addr_t current_pts_address;
@@ -1452,6 +1452,7 @@ static int ui_process_data_request(char buffer){
 
 static void ui_process_command(char buffer){
     int res;
+    int i;
     switch (buffer){
         case '1':
             printf("Enabling non-resolvable private address\n");
@@ -1541,7 +1542,9 @@ static void ui_process_command(char buffer){
             break;
         case 'F':
             printf("Drop bonding information\n");
-            le_device_db_remove(le_device_db_index);
+            for (i=0;i<le_device_db_max_count();i++){
+                 le_device_db_remove(le_device_db_index);
+            }
             gap_drop_link_key_for_bd_addr(public_pts_address);
             break;
         case 'H':
