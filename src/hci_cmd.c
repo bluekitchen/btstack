@@ -1548,7 +1548,7 @@ const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
  * @param master burst after tx enable
  * @param master burst after rx limit
  */
-const hci_cmd_t hci_ti_vs_configure_ddip = {
+const hci_cmd_t hci_ti_configure_ddip = {
         HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP, "1111111"
 };
 
