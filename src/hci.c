@@ -5027,7 +5027,7 @@ static void hci_notify_if_sco_can_send_now(void){
 
 // parsing end emitting has been merged to reduce code size
 static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
-    uint8_t event[19+GAP_INQUIRY_MAX_NAME_LEN];
+    uint8_t event[28+GAP_INQUIRY_MAX_NAME_LEN];
 
     uint8_t * eir_data;
     ad_context_t context;
@@ -5089,7 +5089,7 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
                     uint8_t data_type    = ad_iterator_get_data_type(&context);
                     uint8_t data_size    = ad_iterator_get_data_len(&context);
                     const uint8_t * data = ad_iterator_get_data(&context);
-                    // Prefer Complete Local Name over Shortend Local Name
+                    // Prefer Complete Local Name over Shortened Local Name
                     switch (data_type){
                         case BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME:
                             if (name) continue;
@@ -5098,16 +5098,21 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
                             name = data;
                             name_len = data_size;
                             break;
+                        case BLUETOOTH_DATA_TYPE_DEVICE_ID:
+                            if (data_size != 8) break;
+                            event[16] = 1;
+                            memcpy(event[17], data, 8);
+                            break;
                         default:
                             break;
                     }
                 }
                 if (name){
-                    event[16] = 1;
+                    event[25] = 1;
                     // truncate name if needed
                     int len = btstack_min(name_len, GAP_INQUIRY_MAX_NAME_LEN);
-                    event[17] = len;
-                    (void)memcpy(&event[18], name, len);
+                    event[26] = len;
+                    (void)memcpy(&event[27], name, len);
                     event_size += len;
                 }
                 break;

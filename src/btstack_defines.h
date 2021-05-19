@@ -1370,13 +1370,18 @@ typedef uint8_t sm_key_t[16];
 #define GAP_EVENT_ADVERTISING_REPORT                          0xE2
 
  /**
- * @format B132111JV
+ * @format B13211122221JV
  * @param bd_addr
  * @param page_scan_repetition_mode
  * @param class_of_device
  * @param clock_offset
  * @param rssi_available
  * @param rssi
+ * @param device_id_available
+ * @param device_id_vendor_id_source
+ * @param device_id_vendor_id
+ * @param device_id_product_id
+ * @param device_id_version
  * @param name_available
  * @param name_len
  * @param name

@@ -3316,13 +3316,58 @@ static inline uint8_t gap_event_inquiry_result_get_rssi(const uint8_t * event){
     return event[15];
 }
 /**
+ * @brief Get field device_id_available from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return device_id_available
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_inquiry_result_get_device_id_available(const uint8_t * event){
+    return event[16];
+}
+/**
+ * @brief Get field device_id_vendor_id_source from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return device_id_vendor_id_source
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_inquiry_result_get_device_id_vendor_id_source(const uint8_t * event){
+    return little_endian_read_16(event, 17);
+}
+/**
+ * @brief Get field device_id_vendor_id from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return device_id_vendor_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_inquiry_result_get_device_id_vendor_id(const uint8_t * event){
+    return little_endian_read_16(event, 19);
+}
+/**
+ * @brief Get field device_id_product_id from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return device_id_product_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_inquiry_result_get_device_id_product_id(const uint8_t * event){
+    return little_endian_read_16(event, 21);
+}
+/**
+ * @brief Get field device_id_version from event GAP_EVENT_INQUIRY_RESULT
+ * @param event packet
+ * @return device_id_version
+ * @note: btstack_type 2
+ */
+static inline uint16_t gap_event_inquiry_result_get_device_id_version(const uint8_t * event){
+    return little_endian_read_16(event, 23);
+}
+/**
  * @brief Get field name_available from event GAP_EVENT_INQUIRY_RESULT
  * @param event packet
  * @return name_available
  * @note: btstack_type 1
  */
 static inline uint8_t gap_event_inquiry_result_get_name_available(const uint8_t * event){
-    return event[16];
+    return event[25];
 }
 /**
  * @brief Get field name_len from event GAP_EVENT_INQUIRY_RESULT
@@ -3331,7 +3376,7 @@ static inline uint8_t gap_event_inquiry_result_get_name_available(const uint8_t 
  * @note: btstack_type J
  */
 static inline uint8_t gap_event_inquiry_result_get_name_len(const uint8_t * event){
-    return event[17];
+    return event[26];
 }
 /**
  * @brief Get field name from event GAP_EVENT_INQUIRY_RESULT
@@ -3340,7 +3385,7 @@ static inline uint8_t gap_event_inquiry_result_get_name_len(const uint8_t * even
  * @note: btstack_type V
  */
 static inline const uint8_t * gap_event_inquiry_result_get_name(const uint8_t * event){
-    return &event[18];
+    return &event[27];
 }
 
 /**
