@@ -66,9 +66,10 @@ static float rcos[CVSD_OLAL] = {
     0.13049554f,0.03376389f};
 
 float btstack_cvsd_plc_rcos(int index){
-    if (index > CVSD_OLAL) return 0;
+    if (index >= CVSD_OLAL) return 0;
     return rcos[index];
 }
+
 // taken from http://www.codeproject.com/Articles/69941/Best-Square-Root-Method-Algorithm-Function-Precisi
 // Algorithm: Babylonian Method + some manipulations on IEEE 32 bit floating point representation
 static float sqrt3(const float x){
