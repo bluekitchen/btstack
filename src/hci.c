@@ -5101,7 +5101,7 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
                         case BLUETOOTH_DATA_TYPE_DEVICE_ID:
                             if (data_size != 8) break;
                             event[16] = 1;
-                            memcpy(event[17], data, 8);
+                            memcpy(&event[17], data, 8);
                             break;
                         default:
                             break;
