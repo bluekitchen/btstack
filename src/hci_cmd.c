@@ -604,6 +604,20 @@ const hci_cmd_t hci_write_default_link_policy_setting = {
     HCI_OPCODE_HCI_WRITE_DEFAULT_LINK_POLICY_SETTING, "2"
 };
 
+/**
+ * @param handle
+ * @param unused
+ * @param flow_direction
+ * @param service_type
+ * @param token_rate
+ * @param token_bucket_size
+ * @param peak_bandwidth
+ * @param access_latency
+ */
+const hci_cmd_t hci_flow_specification = {
+        HCI_OPCODE_HCI_FLOW_SPECIFICATION, "H1114444"
+};
+
 
 /**
  *  Controller & Baseband Commands 
@@ -1522,6 +1536,20 @@ const hci_cmd_t hci_ti_drpb_tester_con_tx = {
  */
 const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
     0xFD85, "1111112112"
+};
+
+
+/**
+ * @param best effort access percentage
+ * @param guaranteed access percentage
+ * @param poll period
+ * @param slave burst after tx
+ * @param slave master search count
+ * @param master burst after tx enable
+ * @param master burst after rx limit
+ */
+const hci_cmd_t hci_ti_vs_configure_ddip = {
+        HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP, "1111111"
 };
 
 /**

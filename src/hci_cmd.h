@@ -128,6 +128,7 @@ typedef enum {
     HCI_OPCODE_HCI_READ_LINK_POLICY_SETTINGS = HCI_OPCODE (OGF_LINK_POLICY, 0x0c),
     HCI_OPCODE_HCI_WRITE_LINK_POLICY_SETTINGS = HCI_OPCODE (OGF_LINK_POLICY, 0x0d),
     HCI_OPCODE_HCI_WRITE_DEFAULT_LINK_POLICY_SETTING = HCI_OPCODE (OGF_LINK_POLICY, 0x0F),
+    HCI_OPCODE_HCI_FLOW_SPECIFICATION = HCI_OPCODE(OGF_LINK_POLICY, 0x10),
     HCI_OPCODE_HCI_SNIFF_SUBRATING = HCI_OPCODE (OGF_LINK_POLICY, 0x11),
     HCI_OPCODE_HCI_SET_EVENT_MASK = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x01),
     HCI_OPCODE_HCI_RESET = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x03),
@@ -237,6 +238,7 @@ typedef enum {
     HCI_OPCODE_HCI_BCM_ENABLE_WBS = HCI_OPCODE(0x3f, 0x7e),
     HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE = HCI_OPCODE (0x3f, 0x1C9),
     HCI_OPCODE_HCI_BCM_SET_TX_PWR = HCI_OPCODE (0x3f, 0x1A5),
+    HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP = 0xFD55,
 } hci_opcode_t;
 
 // HCI Commands - see hci_cmd.c for info on parameters
@@ -253,6 +255,7 @@ extern const hci_cmd_t hci_enable_device_under_test_mode;
 extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
 extern const hci_cmd_t hci_exit_sniff_mode;
+extern const hci_cmd_t hci_flow_specification;
 extern const hci_cmd_t hci_flush;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
@@ -392,6 +395,7 @@ extern const hci_cmd_t hci_bcm_set_tx_pwr;
 
 // TI specific HCI commands
 extern const hci_cmd_t hci_ti_avrp_enable;
+extern const hci_cmd_t hci_ti_configure_ddip;
 extern const hci_cmd_t hci_ti_drpb_tester_con_tx;
 extern const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx;
 extern const hci_cmd_t hci_ti_wbs_associate;
