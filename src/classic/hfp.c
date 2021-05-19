@@ -1614,10 +1614,10 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             switch(hfp_connection->parser_item_index){
                 case 0:
-                    hfp_connection->ag_vra_status = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_vra_status = (hfp_voice_recognition_activation_status_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 1:
-                    hfp_connection->ag_vra_state = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_vra_state = (hfp_voice_recognition_state_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     hfp_emit_enhanced_voice_recognition_state(hfp_connection);
                     break;
                 case 2:
@@ -1627,10 +1627,10 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     }
                     break;
                 case 3:
-                    hfp_connection->ag_msg.text_operation = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_msg.text_operation = (hfp_text_operation_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 4:
-                    hfp_connection->ag_msg.text_type = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 5:
                     printf("text%s\n", hfp_connection->line_buffer);
