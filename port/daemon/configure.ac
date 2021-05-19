@@ -159,6 +159,7 @@ echo "#define ENABLE_LE_SECURE_CONNECTIONS"                >> btstack_config.h
 echo "#define ENABLE_LOG_ERROR"                            >> btstack_config.h
 echo "#define ENABLE_LOG_INFO "                            >> btstack_config.h
 echo "#define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS"  >> btstack_config.h
+echo "#define ENABLE_SOFTWARE_AES128"                      >> btstack_config.h
 echo "#define ENABLE_PRINTF_HEXDUMP"                       >> btstack_config.h
 echo "#define ENABLE_RFCOMM"                               >> btstack_config.h
 echo "#define ENABLE_SDP"                                  >> btstack_config.h
