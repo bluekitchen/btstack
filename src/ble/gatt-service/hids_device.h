@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the GATT HIDS Device
+ * @text Implementation of the GATT HIDS Device
  * To use with your application, add '#import <hids.gatt>' to your .gatt file
  */
 

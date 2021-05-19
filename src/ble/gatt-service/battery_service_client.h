@@ -44,10 +44,15 @@
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
 
-
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/** 
+ * @text The Battery Service Client connects to the Battery Services of a remote device 
+ * and queries its battery level values. Level updates are either received via notifications 
+ * (if supported by the remote Battery Service), or by manual polling.
+ */
 
 #ifndef MAX_NUM_BATTERY_SERVICES
 #define MAX_NUM_BATTERY_SERVICES 3

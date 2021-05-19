@@ -22,3 +22,4 @@ stm32-f103rb-nucleo
 stm32-f4discovery-cc256x
 stm32-l053r8-em9304
 windows-winusb
+*.jpg

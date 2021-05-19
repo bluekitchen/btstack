@@ -38,13 +38,18 @@
 #ifndef ANCS_CLIENT_H
 #define ANCS_CLIENT_H
 
+
+#include <stdint.h>
+#include "btstack_defines.h"
+    
 #if defined __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include "btstack_defines.h"
-	
+/**
+ * @text The ANCS Client implements Notification Consumer (NC) of the [Apple Notification Center Service (ANCS)](https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleNotificationCenterServiceSpecification/Introduction/Introduction.html). 
+ */
+
 /* API_START */
 
 void ancs_client_init(void);

@@ -44,15 +44,13 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the GATT Cycling Speed and Cadence Service Server 
- */
-
-// *****************************************************************************
-/* GATT_SERVICE_SERVER_START(cycling_speed_and_cadence_service_server){Cycling Speed and Cadence Service} 
+ * @text The Cycling Speed and Cadence Service allows to query 
+ * device's speed- and cadence-related data for use in sports and 
+ * fitness applications.
  *
+ * To use with your application, add `#import <cycling_speed_and_cadence_service.gatt>` 
+ * to your .gatt file. 
  */
-// *****************************************************************************
-/* GATT_SERVICE_SERVER_END */
 
 /* API_START */
 

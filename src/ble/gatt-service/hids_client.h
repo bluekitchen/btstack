@@ -38,16 +38,20 @@
 #ifndef HIDS_CLIENT_H
 #define HIDS_CLIENT_H
 
-#if defined __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "btstack_hid.h"
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
 #include "ble/gatt_client.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+/** 
+ * @text The HID Service Client is used on the HID Host to receive reports and other HID data.
+ */
 
 #ifndef MAX_NUM_HID_SERVICES
 #define MAX_NUM_HID_SERVICES 3

@@ -11,6 +11,7 @@ nav:
 - 'Protocols': protocols.md
 - 'Profiles':  profiles.md
 - 'Implemented GATT Services': gatt_services.md
+- 'Implemented GATT Clients':  gatt_clients.md
 - 'Examples': examples/examples.md
 - 'Chipsets': chipsets.md
 - 'Porting to Other Platforms': porting.md

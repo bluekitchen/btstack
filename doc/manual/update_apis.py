@@ -221,7 +221,7 @@ def main(argv):
     
     docsfolder    = "docs/"
     apifile   = docsfolder + "appendix/apis.md"
-    indexfile = docsfolder + "appendix/index.md"
+    indexfile = "api_index.md"
 
     cmd = 'update_apis.py [-b <btstackfolder>] [-a <apifile>] [-g <githubfolder>] [-i <indexfile>]'
     try:

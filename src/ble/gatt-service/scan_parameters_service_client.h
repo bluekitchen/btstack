@@ -35,6 +35,13 @@
  *
  */
 
+/** 
+ * @text The Scan Parameters Service Client allows to store its 
+ * LE scan parameters on a remote device such that the remote device 
+ * can utilize this information to optimize power consumption and/or 
+ * reconnection latency.
+ */
+
 #ifndef SCAN_PARAMAETERS_SERVICE_CLIENT_H
 #define SCAN_PARAMAETERS_SERVICE_CLIENT_H
 

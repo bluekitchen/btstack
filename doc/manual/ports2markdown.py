@@ -73,11 +73,12 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
 def main(argv):
     btstackfolder = "../../"
     docsfolder    = "docs/"
+    template_folder = "template/"
     
-    inputfolder = btstackfolder + "port/"
-    portsfolder = docsfolder + "ports/"
-    introfile   = portsfolder + "intro.md"
-    outputfile  = portsfolder + "existing_ports.md"
+    inputfolder = btstackfolder   + "port/"
+    portsfolder = docsfolder      + "ports/"
+    introfile   = template_folder + "ports_intro.md"
+    outputfile  = portsfolder     + "existing_ports.md"
     process_readmes(introfile, inputfolder, outputfile, portsfolder)
 
 if __name__ == "__main__":

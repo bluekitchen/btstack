@@ -341,10 +341,11 @@ def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name
 def main(argv):
     btstackfolder = "../../"
     docsfolder    = "docs/"
+    template_folder = "template/"
     git_branch_name = "master"
 
     inputfolder = btstackfolder + "example/"
-    introfile   = docsfolder + "examples/intro.md"
+    introfile   = template_folder + "examples_intro.md"
     outputfile  = docsfolder + "examples/examples.md"
     
     cmd = 'update_listings.py [-f <inputfolder>] [-i <introfile>] [-o <outputfile>]'
@@ -363,9 +364,9 @@ def main(argv):
             introfile = arg
         elif opt in ("-o", "--ofile"):
             outputfile = arg
-    print ('Input folder is : ', inputfolder)
-    print ('Intro file is   : ', introfile)
-    print ('Output file is  : ', outputfile)
+    print ('Input folder: ', inputfolder)
+    print ('Intro file:   ', introfile)
+    print ('Output file:  ', outputfile)
     
     try:
         output = subprocess.check_output("git symbolic-ref --short HEAD", stderr=subprocess.STDOUT, timeout=3, shell=True)

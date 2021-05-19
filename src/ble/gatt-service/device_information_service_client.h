@@ -43,10 +43,22 @@
 #include "bluetooth.h"
 #include "ble/gatt_client.h"
 
-
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/** 
+ * @text The Device Information Service Client retrieves the following information from a remote device:
+ * - manufacturer name
+ * - model number     
+ * - serial number    
+ * - hardware revision
+ * - firmware revision
+ * - software revision
+ * - system ID        
+ * - IEEE regulatory certification
+ * - PNP ID  
+ */
 
 /* API_START */
 

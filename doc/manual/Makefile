@@ -36,13 +36,16 @@ update_content:
 	./update_listings.py
 	# create docs/ports/existing_ports.md
 	./ports2markdown.py
+	# create docs/gatt_clients.md and  docs/gatt_services.md
+	./update_gatt_services.py
 	# re-create docs_final
 	rm -rf docs_final
 	cp -r docs docs_final
 
 clean:
 	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
-	rm -rf docs/appendix/apis.md docs/appendix/index.md docs/examples/examples.md docs/chipsets.md
+	rm -rf docs/appendix/apis.md api_index.md docs/examples/examples.md docs/chipsets.md
+	rm -rf docs/gatt_clients.md docs/gatt_services.md
 	rm -rf latex btstack help
 	
 

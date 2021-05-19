@@ -4,3 +4,5 @@ docs_final
 docs_tmp
 latex
 mkdocs.yml
+api_index.md
+tmp
