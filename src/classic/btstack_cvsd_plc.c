@@ -53,12 +53,22 @@
 #include "btstack_cvsd_plc.h"
 #include "btstack_debug.h"
 
+// static float rcos[CVSD_OLAL] = {
+//     0.99148655f,0.96623611f,0.92510857f,0.86950446f,
+//     0.80131732f,0.72286918f,0.63683150f,0.54613418f, 
+//     0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
+//     0.13049554f,0.07489143f,0.03376389f,0.00851345f};
+
 static float rcos[CVSD_OLAL] = {
     0.99148655f,0.92510857f,
-    0.80131732f,0.63683150f,
-    0.45386582f,0.27713082f,
+    0.80131732f,0.63683150f, 
+    0.45386582f,0.27713082f, 
     0.13049554f,0.03376389f};
 
+float btstack_cvsd_plc_rcos(int index){
+    if (index > CVSD_OLAL) return 0;
+    return rcos[index];
+}
 // taken from http://www.codeproject.com/Articles/69941/Best-Square-Root-Method-Algorithm-Function-Precisi
 // Algorithm: Babylonian Method + some manipulations on IEEE 32 bit floating point representation
 static float sqrt3(const float x){

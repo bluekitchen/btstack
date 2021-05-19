@@ -87,6 +87,7 @@ void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);
 int   btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y);
 float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch);
 BTSTACK_CVSD_PLC_SAMPLE_FORMAT btstack_cvsd_plc_crop_sample(float val);
+float btstack_cvsd_plc_rcos(int index);
 
 #ifdef OCTAVE_OUTPUT
 void btstack_cvsd_plc_octave_set_base_name(const char * name);
