@@ -818,6 +818,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     connection->cmd_operands_length = 0;
     uint8_t offset;
     uint8_t operand;
+    avrcp_operation_id_t operation_id;
 
     switch (opcode){
         case AVRCP_CMD_OPCODE_UNIT_INFO:
@@ -835,7 +836,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         case AVRCP_CMD_OPCODE_PASS_THROUGH:
             if (size < 8) return;
             log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d", packet[6], packet[7]);
-            avrcp_operation_id_t operation_id = (avrcp_operation_id_t) (packet[6] & 0x7f);
+            operation_id = (avrcp_operation_id_t) (packet[6] & 0x7f);
             operand = 0;
             if ((packet[7] >= 1) && (size >= 9)){
                 operand = packet[8];
