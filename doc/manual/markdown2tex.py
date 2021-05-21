@@ -65,8 +65,11 @@ def main(argv):
                 title   = list(page.keys())[0]
                 md_file = list(page.values())[0]
                 with open(docs_folder +"/"+ md_file, 'r') as mdin:
-                    aout.write("\n\n#"+ title +"\n\n")
+                    
                     for line in mdin:
+                        if line == "#\n":
+                            aout.write("\n\n#"+ title +"\n\n")
+                            continue
                         # remove path from section reference
                         # e.g. [the SPP Counter example](examples/generated/#sec:sppcounterExample)
                         # replace with [the SPP Counter example](#sec:sppcounterExample)
