@@ -29,7 +29,7 @@ abrevations = {
 }
 
 description_template = """
-### NAME {#sec:REFERENCE}
+## NAME {#sec:REFERENCE}
 
 """
 

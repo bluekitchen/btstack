@@ -56,9 +56,14 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                 for line in fin:
                     #increase level of indentation
                     parts = re.match('#(.*)\n',line)
-                    title_parts = re.match('(#\s+)(.*)\n',line)
-                    if parts and title_parts:
-                        ports.write("# " + title_parts.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
+
+                    title_parts_level1 = re.match('(#\s+)(.*)\n',line)
+                    title_parts_level2 = re.match('(##\s+)(.*)\n',line)
+                    
+                    if parts and title_parts_level1:
+                        ports.write("## " + title_parts_level1.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
+                    elif parts and title_parts_level2:
+                        ports.write("### " + title_parts_level2.group(2)+ "\n" )
                     else:
                         ports.write(line)
 

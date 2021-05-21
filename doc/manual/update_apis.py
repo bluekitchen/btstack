@@ -100,6 +100,7 @@ def codeReference(fname, githubfolder, filepath, linenr):
 
 def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
     with open(apifile, 'w') as fout:
+        fout.write("#\n\n")
         for api_tuple in apis:
             api_filename = btstackfolder + api_tuple[0]
             api_title = api_tuple[1]
