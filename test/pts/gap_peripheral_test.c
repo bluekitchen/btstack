@@ -351,7 +351,6 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
     }
 
     uint16_t  att_value_len;
-    const uint16_t long_characteristic_len = 51;
 
     switch (attribute_handle){
         case ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE:
@@ -458,6 +457,8 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t attribut
 
 // write requests
 static void att_write_update_attribute(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t * value_data, uint16_t value_len){
+    UNUSED(con_handle);
+
     switch (attribute_handle){
         case ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE:
             memcpy(gap_device_name, value_data, value_len);
@@ -837,6 +838,7 @@ static void update_auth_req(void){
 }
 
 static void gatt_hash_calculated(void * arg){
+    UNUSED(arg);
     printf("GATT Hash calculated: ");
     printf_hexdump(gatt_database_hash, 16);
 }
