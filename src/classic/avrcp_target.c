@@ -741,6 +741,33 @@ static uint8_t avrcp_target_get_transaction_label_for_notification(avrcp_connect
     return connection->notifications_transaction_label[notification];
 }
 
+static bool avcrp_operation_id_is_valid(avrcp_operation_id_t operation_id){
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_1) return true;
+
+    if (operation_id < AVRCP_OPERATION_ID_0) return false;
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_2) return true;
+
+    if (operation_id < AVRCP_OPERATION_ID_CHANNEL_UP) return false;
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_3) return true;
+
+    if (operation_id < AVRCP_OPERATION_ID_CHANNEL_UP) return false;
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_3) return true;
+
+    if (operation_id < AVRCP_OPERATION_ID_SKIP) return false;
+    if (operation_id == AVRCP_OPERATION_ID_SKIP) return true;
+    
+    if (operation_id < AVRCP_OPERATION_ID_POWER) return false;
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_4) return true;
+    
+    if (operation_id < AVRCP_OPERATION_ID_ANGLE) return false;
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_5) return true;
+    
+    if (operation_id < AVRCP_OPERATION_ID_F1) return false;
+    if (operation_id < AVRCP_OPERATION_ID_RESERVED_6) return true;
+    
+    return false;
+}
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
 
     if (size < 6u) return;
@@ -790,6 +817,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     avrcp_pdu_id_t   pdu_id;
     connection->cmd_operands_length = 0;
     uint8_t offset;
+    uint8_t operand;
 
     switch (opcode){
         case AVRCP_CMD_OPCODE_UNIT_INFO:
@@ -804,49 +832,26 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             avrcp_target_subunit_info(connection, offset);
             break;
 
-        case AVRCP_CMD_OPCODE_PASS_THROUGH:{
+        case AVRCP_CMD_OPCODE_PASS_THROUGH:
             if (size < 8) return;
             log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d", packet[6], packet[7]);
             avrcp_operation_id_t operation_id = (avrcp_operation_id_t) (packet[6] & 0x7f);
-            bool button_pressed = (packet[6] & 0x80) == 0;
-            uint8_t operand = 0;
+            operand = 0;
             if ((packet[7] >= 1) && (size >= 9)){
                 operand = packet[8];
             }
 
-            switch (operation_id){
-                case AVRCP_OPERATION_ID_PLAY:
-                case AVRCP_OPERATION_ID_PAUSE:
-                case AVRCP_OPERATION_ID_STOP:
-                case AVRCP_OPERATION_ID_VOLUME_UP:
-                case AVRCP_OPERATION_ID_VOLUME_DOWN:
-                case AVRCP_OPERATION_ID_REWIND:
-                case AVRCP_OPERATION_ID_FAST_FORWARD:
-                case AVRCP_OPERATION_ID_FORWARD:
-                case AVRCP_OPERATION_ID_BACKWARD:
-                case AVRCP_OPERATION_ID_SKIP:
-                case AVRCP_OPERATION_ID_MUTE:
-                case AVRCP_OPERATION_ID_CHANNEL_UP:
-                case AVRCP_OPERATION_ID_CHANNEL_DOWN:
-                case AVRCP_OPERATION_ID_SELECT:
-                case AVRCP_OPERATION_ID_UP:
-                case AVRCP_OPERATION_ID_DOWN:
-                case AVRCP_OPERATION_ID_LEFT:
-                case AVRCP_OPERATION_ID_RIGHT:
-                case AVRCP_OPERATION_ID_ROOT_MENU:
-                    avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
-                    avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid,
+            if (avcrp_operation_id_is_valid(operation_id)){
+                bool button_pressed = (packet[6] & 0x80) == 0;
+            
+                avrcp_target_operation_accepted(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
+                avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid,
                                                 operation_id, button_pressed, packet[7], operand);
-                    break;
-                case AVRCP_OPERATION_ID_UNDEFINED:
-                    avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
-                    return;
-                default:
-                    avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
-                    return;
+            } else {
+                avrcp_target_operation_not_implemented(connection->avrcp_cid, (avrcp_operation_id_t) packet[6], packet[7], operand);
             }
             break;
-        }
+    
 
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
 
