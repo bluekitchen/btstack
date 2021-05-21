@@ -191,9 +191,13 @@ initscripts-TIInit_6.12.26_avpr_add-on_v1.4.bts: cc256xc_bt_sp_v1.4.zip
 # Various scripts for WL chipsets
 
 # V4.2 from BlueKitchen website, original: http://www.ti.com/tool/wl18xx-bt-sp
-TIInit_11.8.32.bts:
+TIInit_11.8.32_4.2.bts:
 	@echo "Downloading $@"
-	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_11.8.32.bts
+	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_11.8.32_4.2.bts
+
+TIInit_11.8.32_4.6.bts:
+	@echo "Downloading $@"
+	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_11.8.32_4.6.bts
 
 TIInit_12.10.28.bts:
 	@echo "Downloading $@"
@@ -317,9 +321,14 @@ bluetooth_init_cc2564C_1.4.c: initscripts-TIInit_6.12.26_v1.4.bts initscripts-TI
 	@$(CONVERSION_SCRIPT) $^ $@
 
 
-TIInit_11.8.32.c: TIInit_11.8.32.bts
+TIInit_11.8.32_4.2.c: TIInit_11.8.32_4.2.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
+
+TIInit_11.8.32_4.6.c: TIInit_11.8.32_4.6.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
 
 TIInit_12.10.28.c: TIInit_12.10.28.bts
 	@echo "Creating $@"
@@ -338,7 +347,8 @@ all-scripts: \
 	bluetooth_init_cc2560C_1.4.c \
 	bluetooth_init_cc2560C_avpr_1.4.c \
 	bluetooth_init_cc2564C_1.4.c \
-	TIInit_11.8.32.c \
+	TIInit_11.8.32_4.2.c \
+	TIInit_11.8.32_4.6.c \
 	TIInit_12.10.28.c \
 	TIInit_12.8.32.c \
 
