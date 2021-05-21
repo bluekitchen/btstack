@@ -934,6 +934,8 @@ static void show_usage(void){
     printf("a/A - register/deregister TRACK_CHANGED\n");
     printf("R/P - register/deregister PLAYBACK_POS_CHANGED\n");
 
+    printf("s/S - send/release long button press REWIND\n");
+
     printf("\n--- Volume Control ---\n");
     printf("t - volume up   for 10 percent\n");
     printf("T - volume down for 10 percent\n");
@@ -1080,7 +1082,14 @@ static void stdin_process(char cmd){
             printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
-
+         case 's':
+            printf("AVRCP: send long button press REWIND\n");
+            avrcp_controller_start_press_and_hold_cmd(avrcp_cid, AVRCP_OPERATION_ID_REWIND);
+            break;
+        case 'S':
+            printf("AVRCP: release long button press REWIND\n");
+            avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
+            break;
         default:
             show_usage();
             return;
