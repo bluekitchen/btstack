@@ -34,6 +34,9 @@
 \newcommand{\toread}[1]{{\color{bklightblue} #1}}
 
 \usepackage{listings}
+% add passthrough command used by pandoc for listings, apparently not defined by rmarkdown (maybe need to be removed later)
+% https://github.com/rstudio/rmarkdown/commit/bc2a49ed9da00fd5ec414bc192b112bbba34513d
+\newcommand{\passthrough}[1]{#1}
 \lstset{ %
 float,
 language=C,                % choose the language of the code
