@@ -1125,6 +1125,10 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    if (stream_endpoint->start_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     stream_endpoint->start_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
@@ -1151,6 +1155,10 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
     }
     
     if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->close_stream){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (stream_endpoint->close_stream == 1) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -1183,6 +1191,10 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
+    if (stream_endpoint->abort_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     stream_endpoint->abort_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
@@ -1211,6 +1223,10 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    if (stream_endpoint->suspend_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     stream_endpoint->suspend_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
