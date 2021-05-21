@@ -818,21 +818,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_OPERATION:
             operation_id = avrcp_subevent_operation_get_operation_id(packet);
             button_pressed = avrcp_subevent_operation_get_button_pressed(packet) > 0;
-            button_state =button_pressed ? "PRESS" : "RELEASE";
-            switch (operation_id) {
-                case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target: PLAY (%s)\n", button_state);
-                    break;
-                case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target: PAUSE (%s)\n", button_state);
-                    break;
-                case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target: STOP (%s)\n", button_state);
-                    break;
-                default:
-                    printf("AVRCP Target: operation 0x%2x (%s) not handled\n", operation_id, button_state);
-                    break;
-            }
+            button_state = button_pressed ? "PRESS" : "RELEASE";
+
+            printf("AVRCP Target: operation %s (%s)\n", avrcp_operation2str(operation_id), button_state);
+
             if (!button_pressed){
                 break;
             }
