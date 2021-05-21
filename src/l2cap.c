@@ -2056,7 +2056,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
     // check if hci connection is already usable,
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
-    if (conn && conn->con_handle != HCI_CON_HANDLE_INVALID){
+    if (conn && conn->state == OPEN){
     	// simulate connection complete
 	    l2cap_handle_connection_complete(conn->con_handle, channel);
 

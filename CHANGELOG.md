@@ -33,13 +33,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP Source: `ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG` disables auto config. Requires call to `a2dp_source_set_config_{CODEC}'
 
 ### Fixed
-- HCI: handle start inquiry failure
-- AVRCP Target: fix notification changed event
-- HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off
 - GAP: calculate IO Cap AuthReq Bondable Mode based on `gap_ssp_set_authentication_requirement` and `gap_set_bondable_mode`
 - GAP: only store link key for ssp if remote side has set bondable in io cap auth requirements as well 
 - GAP: allow to disable link supervision timeout
 - GAP: fix `gap_connect` after `gap_connect_cancel` 
+- HCI: handle start inquiry failure
+- L2CAP: fix create outgoing connection triggered in hci disconnect event callback
+- AVRCP Target: fix notification changed event
+- HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off
 - HFP HF: only emit single event for RING and AG Status updates
 - HFP AG: fix audio connection setup for in-band ringtone on incoming connection
 - HFP: fix audio connection setup by HF if codec negotiation is supported
