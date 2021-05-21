@@ -111,14 +111,24 @@ const char * avrcp_event2str(uint16_t index){
 }
 
 static const char * avrcp_operation_name[] = {
-    "NOT SUPPORTED", // 0x3B
-    "SKIP", "NOT SUPPORTED", "NOT SUPPORTED", "NOT SUPPORTED", "NOT SUPPORTED", 
-    "VOLUME_UP", "VOLUME_DOWN", "MUTE", "PLAY", "STOP", "PAUSE", "NOT SUPPORTED",
-    "REWIND", "FAST_FORWARD", "NOT SUPPORTED", "FORWARD", "BACKWARD" // 0x4C
+    NULL, // 0x3B
+    "SKIP", NULL, NULL, NULL, NULL, 
+    "VOLUME_UP", "VOLUME_DOWN", "MUTE", "PLAY", "STOP", "PAUSE", NULL,
+    "REWIND", "FAST_FORWARD", NULL, "FORWARD", "BACKWARD" // 0x4C
 };
 const char * avrcp_operation2str(uint8_t index){
-    if ((index >= 0x3B) && (index <= 0x4C)) return avrcp_operation_name[index - 0x3B];
-    return avrcp_operation_name[0];
+    char * name = NULL;
+    if ((index >= 0x3B) && (index <= 0x4C)){
+        name = (char *)avrcp_operation_name[index - 0x3B];
+    } 
+    if (name == NULL){
+        static char buffer[13];
+        snprintf(buffer, sizeof(buffer), "Unknown 0x%02x", index);
+        buffer[sizeof(buffer)-1] = 0;
+        return buffer;
+    } else {
+        return name;
+    }
 }
 
 static const char * avrcp_media_attribute_id_name[] = {
