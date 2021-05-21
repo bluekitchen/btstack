@@ -111,6 +111,14 @@ typedef enum {
     AVRCP_END_PACKET
 } avrcp_packet_type_t;
 
+
+typedef enum {
+    AVCTP_SINGLE_PACKET= 0,
+    AVCTP_START_PACKET    ,
+    AVCTP_CONTINUE_PACKET ,
+    AVCTP_END_PACKET
+} avctp_packet_type_t;
+
 typedef enum {
     AVRCP_COMMAND_FRAME = 0,
     AVRCP_RESPONSE_FRAME    
@@ -375,7 +383,7 @@ typedef struct {
     avctp_connection_state_t state;
     bool     wait_to_send;
     uint8_t  transaction_label;
-    // used for AVCTP fragmentation
+    // used for fragmentation
     uint8_t  num_packets;
     uint16_t bytes_to_send;
 
@@ -555,6 +563,12 @@ typedef struct {
     uint8_t num_received_fragments;
 
     uint8_t accept_response;
+
+#ifdef ENABLE_AVCTP_FRAGMENTATION
+    uint16_t avctp_reassembly_size;
+    uint8_t  avctp_reassembly_buffer[200];
+#endif
+
 } avrcp_connection_t;
 
 typedef struct {

@@ -690,33 +690,92 @@ avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_comma
     avrcp_controller_emit_notification_for_event_id(connection->avrcp_cid, event_id, ctype, payload + pos, size - pos);
 }
 
+#ifdef ENABLE_AVCTP_FRAGMENTATION
+static void avctp_reassemble_message(avrcp_connection_t * connection, avctp_packet_type_t packet_type, uint8_t *packet, uint16_t size){
+    // after header (transaction label and packet type)
+    uint16_t pos;
+    uint16_t bytes_to_store;
+    
+    switch (packet_type){
+        case AVCTP_START_PACKET:
+            if (size < 2) return;
+            
+            // store header
+            pos = 0;
+            connection->avctp_reassembly_buffer[pos] = packet[pos];
+            pos++;
+            connection->avctp_reassembly_size = pos;
+
+            // NOTE: num packets not needed for reassembly, ignoring it does not pose security risk -> no need to store it
+            pos++;
+            
+            // PID in reassembled packet is at offset 1, it will be read later after the avctp_reassemble_message with AVCTP_END_PACKET is called
+            
+            bytes_to_store = btstack_min(size - pos, sizeof(connection->avctp_reassembly_buffer) - connection->avctp_reassembly_size);
+            memcpy(&connection->avctp_reassembly_buffer[connection->avctp_reassembly_size], &packet[pos], bytes_to_store);
+            connection->avctp_reassembly_size += bytes_to_store;
+            break;
+        
+        case AVCTP_CONTINUE_PACKET:
+        case AVCTP_END_PACKET:
+            if (size < 1) return;
+            
+            // store remaining data, ignore header
+            pos = 1;
+            bytes_to_store = btstack_min(size - pos, sizeof(connection->avctp_reassembly_buffer) - connection->avctp_reassembly_size);
+            memcpy(&connection->avctp_reassembly_buffer[connection->avctp_reassembly_size], &packet[pos], bytes_to_store);
+            connection->avctp_reassembly_size += bytes_to_store;
+            break;
+        
+        default:
+            return;
+    }
+}
+#endif
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 6u) return;
-    
     uint8_t  pdu_id;
-    uint8_t  vendor_dependent_packet_type;
+    avrcp_packet_type_t  vendor_dependent_packet_type;
 
-    connection->last_confirmed_transaction_id = packet[0] >> 4;
+    uint16_t pos = 0;
+    connection->last_confirmed_transaction_id = packet[pos] >> 4;
+    avrcp_frame_type_t  frame_type =  (avrcp_frame_type_t)((packet[pos] >> 1) & 0x01);
+    avctp_packet_type_t packet_type = (avctp_packet_type_t)((packet[pos] >> 2) & 0x03);
+    pos++;
 
-    avrcp_frame_type_t  frame_type = (avrcp_frame_type_t)((packet[0] >> 1) & 0x01);
     if (frame_type != AVRCP_RESPONSE_FRAME) return;
-
-    avrcp_packet_type_t packet_type = (avrcp_packet_type_t)((packet[0] >> 2) & 0x03);
+        
     switch (packet_type){
-        case AVRCP_SINGLE_PACKET:
+        case AVCTP_SINGLE_PACKET:
             break;
+        
+#ifdef ENABLE_AVCTP_FRAGMENTATION
+        case AVCTP_START_PACKET:
+        case AVCTP_CONTINUE_PACKET:
+            avctp_reassemble_message(connection, packet_type, packet, size);
+            return;
+        
+        case AVCTP_END_PACKET:
+            avctp_reassemble_message(connection, packet_type, packet, size);
+
+            packet = connection->avctp_reassembly_buffer;
+            size   = connection->avctp_reassembly_size; 
+            break;
+#endif
+        
         default:
-            log_info("Fragmentation is not supported");
             return;
     }
 
-    uint16_t pos = 3;
+    pos += 2; // PID
+
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     
 #ifdef ENABLE_LOG_INFO
     uint8_t byte_value = packet[pos];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
-    avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t)   (byte_value & 0x07);
+    avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t) (byte_value & 0x07);
 #endif
     pos++;
     
@@ -763,8 +822,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             vendor_dependent_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);            
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
-            log_info("operands length %d, remaining size %d", param_length, size - pos);
-                
+            
             if ((size - pos) < param_length) return;
 
             // handle asynchronous notifications, without changing state
