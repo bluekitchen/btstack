@@ -13,3 +13,6 @@ SM/CEN/SCCT/BV-09-C: S, p, b, t, 9, t
 
 SM/PER/SCCT/BV-08-C: S, C, a
 SM/PER/SCCT/BV-10-C: S, C, a
+
+SM/CEN/KDU/BI-01-C: { p, t }
+SM/PER/KDU/BI-01-C: C, a
