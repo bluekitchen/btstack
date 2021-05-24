@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: fix `gap_connect` after `gap_connect_cancel` 
 - HCI: handle start inquiry failure
 - L2CAP: fix create outgoing connection triggered in hci disconnect event callback
+- L2CAP: return unknown mandatory option in config response
 - AVRCP Target: fix notification changed event
 - HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off
 - HFP HF: only emit single event for RING and AG Status updates

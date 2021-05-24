@@ -245,6 +245,8 @@ typedef struct {
 
     uint8_t   reason; // used in decline internal
 
+    uint8_t   unknown_option; // used for ConfigResponse
+
     // LE Data Channels
 
     // incoming SDU

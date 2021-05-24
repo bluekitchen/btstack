@@ -1543,7 +1543,7 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
                 }
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 0, NULL);
+                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 1, &channel->unknown_option);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
@@ -2739,7 +2739,8 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 #endif        
         // check for unknown options
         if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
-            log_info("l2cap cid %u, unknown options", channel->local_cid);
+            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
+            channel->unknown_option = option_type;
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
         pos += length;
@@ -2797,7 +2798,8 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
 
         // check for unknown options
         if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
-            log_info("l2cap cid %u, unknown options", channel->local_cid);
+            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
+            channel->unknown_option = option_type;
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
 
