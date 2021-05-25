@@ -2623,6 +2623,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // only store link key:
             // - if bondable enabled
             if (hci_stack->bondable == false) break;
+            // - if security level sufficient
+            if (gap_security_level_for_link_key_type(link_key_type) < conn->requested_security_level) break;
             // - for SSP, also check if remote side requested bonding as well
             if (conn->link_key_type != COMBINATION_KEY){
                 uint8_t auth_req_ignoring_mitm = conn->io_cap_response_auth_req & 0xfe;

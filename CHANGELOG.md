@@ -79,6 +79,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID: Move `src/classic/hid.h` into `src` and prefix with `btstack_` to use it with BLE and avoid name clashes
 - SM: start pairing as Central for already encrypted connection on Slave Security Request 
 - GAP: provide Device ID from EIR in GAP_EVENT_INQUIRY_RESULT
+- GAP: only store link key if it allows requested security level
 
 ## Release v1.3.2
 
