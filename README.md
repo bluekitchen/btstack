@@ -25,20 +25,20 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 ### Supported Protocols and Profiles
 
-**Protocols:** L2CAP (incl. LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections).
+**Protocols:** L2CAP (incl. Enhanced Retransmission Mode and LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections and Cross-transport key derivation).
 
 **Profiles:** A2DP, AVRCP incl. Browsing, GAP, GATT, HFP, HID, HSP, IOP, SPP, PAN, PBAP Client.
 
-**GATT Service Servers:** Battery, Cycling Power, Cycling Speed and Cadence, Device Information,  Heart Rate, HID over GATT (HOG) Device, Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters, u-Blox SPP. 
+**GATT Service Servers:** Battery (BAS), Cycling Power (CPS), Cycling Speed and Cadence (CSCS), Device Information (DID), Heart Rate (HRS), HID over GATT (HIDS) Device , Mesh Provisioning, Mesh Proxy, Nordic SPP, Scan Parameters (SCPS), u-Blox SPP. 
 
-**GATT Service Clients:**: ANCS, Battery, Device Information, HID-over-GATT (HOG) Host, Scan Parameters.
+**GATT Service Clients:**: ANCS, Battery (BAS), Device Information (DID), HID-over-GATT (HOGP) Host, Scan Parameters (SCPP).
 
 GATT Services are in general easy to implement and require short development time. For more GATT Services please contact us, or follow the [implementation guidelines](https://bluekitchen-gmbh.com/btstack/profiles/#gatt-generic-attribute-profile).  
 
 **In Development:** BLE Mesh and more.
 
-It has been qualified with the Bluetooth SIG (QDID 110883) for GAP 1.1, IOP, HFP 1.7, HSP 1.2, SPP 1.2, PAN 1.0, A2DP 1.3, AVRCP 1.6 profiles and
-GATT, SM of the Bluetooth Core 5.0 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
+It has been qualified with the Bluetooth SIG (QDID 166433) for A2DP 1.3.2, AVRCP 1.6.2, DID 1.3, HFP 1.8, HSP 1.2, PAN 1.0, PBAP Client 1.2, SPP 1.2 BR/EDR profiles, 
+BAS 1.0, CPP 1.1, CPS 1.1, CSCP 1.0, CSCS 1.0, DIS 1.1, HIDS 1.0, HOGP 1.0, HRP 1.0, HRS 1.0, SCPP 1.0, SCPS 1.0 GATT profiles as well as and GAP, GATT, IOP, SM of the Bluetooth Core 5.2 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
 ## Evaluation Platforms
 
