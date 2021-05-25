@@ -7,9 +7,9 @@ commit=`git rev-parse --short HEAD`
 # use tag if available
 if [ -z "$tag" ]
 then
-  version=$commit
+  version="Commit $commit"
 else
-  version=$tag
+  version="Version $tag ($commit)"
 fi
 
 # create mkdocs.yml
