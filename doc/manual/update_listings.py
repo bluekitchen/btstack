@@ -340,7 +340,7 @@ def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name
 
 def main(argv):
     btstackfolder = "../../"
-    docsfolder    = "docs/"
+    docsfolder    = "docs-template/"
     template_folder = "template/"
     git_branch_name = "master"
 

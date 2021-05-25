@@ -11,7 +11,7 @@ btstack_root    = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../../')
 inputfolder     = btstack_root + "/src/ble/gatt-service/"
 
 manual_folder   = btstack_root + "/doc/manual/"
-docsfolder      = manual_folder + "docs/"
+docsfolder      = manual_folder + "docs-template/"
 template_folder = manual_folder + "template/"
     
 mdfiles = {

@@ -77,7 +77,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
 
 def main(argv):
     btstackfolder = "../../"
-    docsfolder    = "docs/"
+    docsfolder    = "docs-template/"
     template_folder = "template/"
     
     inputfolder = btstackfolder   + "port/"

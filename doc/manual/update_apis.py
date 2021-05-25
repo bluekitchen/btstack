@@ -220,7 +220,7 @@ def main(argv):
     btstackfolder = "../../"
     githubfolder  = "https://github.com/bluekitchen/btstack/blob/master/"
     
-    docsfolder    = "docs/"
+    docsfolder    = "docs-template/"
     apifile   = docsfolder + "appendix/apis.md"
     indexfile = "api_index.md"
 

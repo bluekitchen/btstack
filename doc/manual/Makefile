@@ -22,31 +22,32 @@ pdf:
 
 preview: update_content html
 	# race condition, open browser before starting MKdocs server
-	open http://127.0.0.1:8000
-	mkdocs serve
+	open http://127.0.0.1:8010
+	mkdocs serve -a localhost:8010
 
 update_content:
-	sed -e "s|../doc/manual/docs/||g" ../../chipset/README.md > docs/chipsets.md
+	sed -e "s|../doc/manual/docs-template/||g" ../../chipset/README.md > docs-template/chipsets.md
 	rm -rf tmp
 	mkdir tmp
 	# create mkdocs.yml
 	./update_mkdocs_yml.sh
-	# create docs/appendix/apis.md
+	# create docs-template/appendix/apis.md
 	./update_apis.py	
-	# create docs/examples/examples.md
+	# create docs-template/examples/examples.md
 	./update_listings.py
-	# create docs/ports/existing_ports.md
+	# create docs-template/ports/existing_ports.md
 	./ports2markdown.py
-	# create docs/gatt_clients.md and  docs/gatt_services.md
+	# create docs-template/gatt_clients.md and  docs-template/gatt_services.md
 	./update_gatt_services.py
 	# re-create docs_final
-	rm -rf docs_final
-	cp -r docs docs_final
+	rm -rf docs
+	cp -r docs-template docs
 
 clean:
-	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
-	rm -rf docs/appendix/apis.md api_index.md docs/examples/examples.md docs/chipsets.md
-	rm -rf docs/gatt_clients.md docs/gatt_services.md
+	rm -rf docs tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
+	rm -rf docs-template/appendix/apis.md docs-template/examples/examples.md docs-template/chipsets.md
+	rm -rf docs-template/gatt_clients.md docs-template/gatt_services.md 
+	rm -rf api_index.md
 	rm -rf latex btstack help
 	
 

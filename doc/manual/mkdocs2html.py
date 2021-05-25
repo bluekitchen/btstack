@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os, sys, shutil, re, pickle
-
+from pathlib import Path
 
 def writeCodeBlock(aout, code, references):
     for function_name, url in references.items():
@@ -13,14 +13,15 @@ def writeCodeBlock(aout, code, references):
 
 def main(argv):
     html_path = "btstack/examples/"
-    html_tmppath = html_path + "tmp/"
+    html_tmppath = "btstack/examples/tmp/"
 
-    html_in  = html_path + "examples.html"
-    html_tmp = html_tmppath + "examples.html"
+    html_in  = html_path + "examples/index.html"
+    html_tmp = html_tmppath + "index.html"
     references = pickle.load(open( "tmp/references.p", "rb" ))
-    
-    os.mkdir(html_tmppath)
 
+    Path(html_tmppath).mkdir(parents=True, exist_ok=True)
+
+    
     codeblock = 0
     codeblock_end = 0
 

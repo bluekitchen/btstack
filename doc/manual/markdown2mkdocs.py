@@ -69,8 +69,8 @@ def process_listing(mdin, mdout, line):
     return line
 
 def main(argv):
-    md_template = "docs"
-    md_final = "docs_final"
+    md_template = "docs-template"
+    md_final = "docs"
     yml_file = "mkdocs.yml"
     
     with open(yml_file, 'r') as yin:
