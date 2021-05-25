@@ -2656,6 +2656,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
             conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
+            conn->io_cap_response_io       = hci_event_io_capability_response_get_io_capability(packet);
             break;
 
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
