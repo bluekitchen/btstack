@@ -80,6 +80,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: start pairing as Central for already encrypted connection on Slave Security Request 
 - GAP: provide Device ID from EIR in GAP_EVENT_INQUIRY_RESULT
 - GAP: only store link key if it allows requested security level
+- GAP: abort SSP pairing if MITM protection required but not possible
 
 ## Release v1.3.2
 
