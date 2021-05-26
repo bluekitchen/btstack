@@ -4451,6 +4451,11 @@ void sm_init(void){
     sm_initialized = true;
 }
 
+void sm_deinit(void){
+    sm_initialized = false;
+    btstack_run_loop_remove_timer(&sm_run_timer);
+}
+
 void sm_use_fixed_passkey_in_display_role(uint32_t passkey){
     sm_fixed_passkey_in_display_role = passkey;
 }

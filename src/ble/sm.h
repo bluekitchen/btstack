@@ -257,6 +257,11 @@ void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t a
 
 /* API_END */
 
+/**
+ * @brief De-Init SM
+ */
+void sm_deinit(void);
+
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
