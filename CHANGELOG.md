@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: only store link key for ssp if remote side has set bondable in io cap auth requirements as well 
 - GAP: allow to disable link supervision timeout
 - GAP: fix `gap_connect` after `gap_connect_cancel` 
+- GAP: re-configure advertisements after power cycle
 - HCI: handle start inquiry failure
 - L2CAP: fix create outgoing connection triggered in hci disconnect event callback
 - L2CAP: return unknown mandatory option in config response

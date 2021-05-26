@@ -3191,10 +3191,19 @@ static void hci_state_reset(void){
     hci_stack->le_random_address_set = 0;
 #endif
 #ifdef ENABLE_LE_CENTRAL
-    hci_stack->le_scanning_active  = 0;
+    hci_stack->le_scanning_active  = false;
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist_capacity = 0;
+#endif
+#ifdef ENABLE_LE_PERIPHERAL
+    hci_stack->le_advertisements_active = false;
+    if ((hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_PARAMS_SET) != 0){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    }
+    if (hci_stack->le_advertisements_data != NULL){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
+    }
 #endif
 }
 
@@ -4046,9 +4055,10 @@ static bool hci_run_general_gap_le(void){
         // - it's disabled
         // - whitelist change required but used for advertisement filter policy
         // - resolving list modified
-        bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy > 0;
-        if ((hci_stack->le_advertisements_todo != 0) ||
-            !hci_stack->le_advertisements_enabled_for_current_roles ||
+        bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy != 0;
+        bool advertising_change = (hci_stack->le_advertisements_todo & (LE_ADVERTISEMENT_TASKS_SET_PARAMS | LE_ADVERTISEMENT_TASKS_SET_ADV_DATA)) != 0;
+        if (advertising_change ||
+            (hci_stack->le_advertisements_enabled_for_current_roles == 0) ||
             (advertising_uses_whitelist & whitelist_modification_pending) ||
             resolving_list_modification_pending) {
 
@@ -5715,7 +5725,7 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
     (void)memcpy(hci_stack->le_advertisements_direct_address, direct_address,
                  6);
 
-    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS | LE_ADVERTISEMENT_TASKS_PARAMS_SET;
     hci_run();
  }
 

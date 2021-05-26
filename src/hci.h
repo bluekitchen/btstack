@@ -761,9 +761,12 @@ typedef enum hci_init_state{
 } hci_substate_t;
 
 enum {
+    // Tasks
     LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
     LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
+    // State
+    LE_ADVERTISEMENT_TASKS_PARAMS_SET    = 1 << 7,
 };
 
 enum {
