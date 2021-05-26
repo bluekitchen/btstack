@@ -1503,6 +1503,17 @@ const hci_cmd_t hci_bcm_set_tx_pwr = {
 };
 
 /**
+ * @brief This command starts receiving packets using packet transmission parameters such as
+ *        frequency channel, packet type, and packet length. It is used for Packet RX.
+ * @see   https://processors.wiki.ti.com/index.php/CC256x_Testing_Guide#Continuous_RX
+ * @param frequency
+ * @param ADPLL loop mode
+ */
+const hci_cmd_t hci_ti_drpb_tester_con_rx = {
+        0xFD17, "11"
+};
+
+/**
  *
  *
  * @brief This command tests the RF transceiver in continuous transmission mode.
@@ -1510,7 +1521,7 @@ const hci_cmd_t hci_bcm_set_tx_pwr = {
  *        modulation, and frequency. 
  * @see   processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Tester_Con_TX.280xFD84.29
  * @param modulation
- * @param test_patern
+ * @param test_pattern
  * @param frequency
  * @param power_level
  * @param reserved1
@@ -1607,4 +1618,25 @@ const hci_cmd_t hci_ti_wbs_disassociate = {
  */
 const hci_cmd_t hci_ti_write_codec_config = {
         0xFD06, "214211122122112212211"
+};
+
+/**
+ * @brief This command is used only for internal testing.
+ * @see   https://processors.wiki.ti.com/index.php/CC256x_Testing_Guide#Continuous_TX
+ * @param frequency
+ * @param ADPLL loop mode
+ */
+const hci_cmd_t hci_ti_drpb_enable_rf_calibration = {
+        0xFD80, "141"
+};
+
+/**
+ * @brief This command command is only required for the continuous TX test of modulated
+ * (GFSK, π/4-DQPSK or 8DPSK) signal. This command should be skipped when performing continuous TX test for CW.
+ * @see   https://processors.wiki.ti.com/index.php/CC256x_Testing_Guide#Continuous_RX
+ * @param frequency
+ * @param ADPLL loop mode
+ */
+const hci_cmd_t hci_ti_write_hardware_register = {
+        0xFF01, "42"
 };

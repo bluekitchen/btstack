@@ -396,11 +396,14 @@ extern const hci_cmd_t hci_bcm_set_tx_pwr;
 // TI specific HCI commands
 extern const hci_cmd_t hci_ti_avrp_enable;
 extern const hci_cmd_t hci_ti_configure_ddip;
+extern const hci_cmd_t hci_ti_drpb_enable_rf_calibration;
+extern const hci_cmd_t hci_ti_drpb_tester_con_rx;
 extern const hci_cmd_t hci_ti_drpb_tester_con_tx;
 extern const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx;
 extern const hci_cmd_t hci_ti_wbs_associate;
 extern const hci_cmd_t hci_ti_wbs_disassociate;
 extern const hci_cmd_t hci_ti_write_codec_config;
+extern const hci_cmd_t hci_ti_write_hardware_register;
 
 /**
  * construct HCI Command based on template
