@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: add `hci_sniff_subrating` command
 - POSIX: `btstack_transport_sco_i2s_test_bridge.c` implements SCO transport interface for UART-to-I2S test bridge
 - btstack_uart: `btstack_uart_t` interface extends `btstack_uart_block_t`:
-  - supports sending and receiving SLIP frames for HCI H5
-  - suppports odd parity as well
-  - `hci_transport_h4` and chipset drivers have new functions to pass provide `btstack_uart_t`
+  - support sending and receiving SLIP frames for HCI H5
+  - support odd parity
+  - `hci_transport_h4` and chipset drivers have new functions to provide `btstack_uart_t`
 - btstack_uart_slip_wrapper: wrapper that implements SLIP functionality for existing `btstack_uart_block` drivers.
 - hci_transport: add parity field and pass on to `btstack_uart_t` in h4 and h5
 - GATT Client: Battery Service Client 
