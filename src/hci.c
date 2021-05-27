@@ -2746,6 +2746,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
 #ifdef ENABLE_CLASSIC
                     else {
+
+                        // dedicated bonding: send result and disconnect
+                        if (conn->bonding_flags & BONDING_DEDICATED){
+                            conn->bonding_flags &= ~BONDING_DEDICATED;
+                            conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+                            conn->bonding_status = packet[2];
+                            break;
+                        }
+
                         // Detect Secure Connection -> Legacy Connection Downgrade Attack (BIAS)
                         bool sc_used_during_pairing = gap_secure_connection_for_link_key_type(conn->link_key_type) != 0;
                         bool connected_uses_aes_ccm = encryption_enabled == 2;
@@ -2754,16 +2763,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
                             break;
                         }
-
-                        // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
-                        if (connected_uses_aes_ccm){
-                            conn->authentication_flags |= CONNECTION_AUTHENTICATED;
-                        }
-
-#ifdef ENABLE_TESTING_SUPPORT
-                         // work around for issue with PTS dongle
-                        conn->authentication_flags |= CONNECTION_AUTHENTICATED;
-#endif
 
                         if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
                             // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
@@ -2786,17 +2785,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             handle = hci_event_authentication_complete_get_connection_handle(packet);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
-
-            // ignore authentication event if we didn't request it
-            if ((conn->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) == 0) break;
-
-            // dedicated bonding: send result and disconnect
-            if (conn->bonding_flags & BONDING_DEDICATED){
-                conn->bonding_flags &= ~BONDING_DEDICATED;
-                conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
-                conn->bonding_status = packet[2];
-                break;
-            }
 
             // authenticated only if auth status == 0
             if (hci_event_authentication_complete_get_status(packet) == 0){
@@ -5287,6 +5275,7 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
     if (!connection) return LEVEL_0;
     if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
+    // BIAS: we only consider Authenticated if the connection is already encrypted, which requires that both sides have link key
     if ((connection->authentication_flags & CONNECTION_AUTHENTICATED) == 0) return LEVEL_0;
     if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
     gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
