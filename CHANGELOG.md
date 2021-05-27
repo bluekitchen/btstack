@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: handle start inquiry failure
 - L2CAP: fix create outgoing connection triggered in hci disconnect event callback
 - L2CAP: return unknown mandatory option in config response
+- AVDTP: fix spelling `avdtp_set_preferred_sampling_frequency`
 - AVRCP Target: fix notification changed event
 - HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off
 - HFP HF: only emit single event for RING and AG Status updates

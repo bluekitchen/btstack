@@ -658,7 +658,7 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
 uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
 
 // frequency will be used by avdtp_choose_sbc_sampling_frequency (if supported by both endpoints)
-void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
+void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
 
 // channel_mode will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
 void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode);

@@ -1600,7 +1600,7 @@ int btstack_main(int argc, const char * argv[]){
     stream_endpoint->media_codec_configuration_info = local_stream_endpoint_sbc_media_codec_configuration;
     stream_endpoint->media_codec_configuration_len  = sizeof(local_stream_endpoint_sbc_media_codec_configuration);
     avdtp_source_register_delay_reporting_category(avdtp_local_seid(stream_endpoint));
-    avdtp_set_preferred_sampling_frequeny(stream_endpoint, 44100);
+    avdtp_set_preferred_sampling_frequency(stream_endpoint, 44100);
     avdtp_set_preferred_channel_mode(stream_endpoint, AVDTP_SBC_STEREO);
 
 #ifdef HAVE_AAC_FDK

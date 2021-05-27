@@ -1390,7 +1390,7 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     return avdtp_request_can_send_now_initiator(connection);
 }
 
-void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency){
+void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency){
     stream_endpoint->preferred_sampling_frequency = sampling_frequency;
 }
 
