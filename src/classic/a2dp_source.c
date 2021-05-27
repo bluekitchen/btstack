@@ -271,7 +271,9 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
     uint16_t cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
     avdtp_connection_t * avdtp_connection = avdtp_get_connection_for_avdtp_cid(cid);
     btstack_assert(avdtp_connection != NULL);
-    avdtp_connection->a2dp_source_stream_endpoint_configured = true;
+    local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    // bail out if local seid invalid
+    if (!local_stream_endpoint) return;
 
     // stop timer
     if (sep_discovery_cid == cid) {
@@ -279,14 +281,14 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
         sep_discovery_cid = 0;
     }
 
+    avdtp_connection->a2dp_source_stream_endpoint_configured = true;
+
     // outgoing active?
     if (avdtp_connection->a2dp_source_state == A2DP_W4_SET_CONFIGURATION){
         // outgoing: discovery and config of remote sink sep successful, trigger stream open
         avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
     } else {
-        // incoming: accept cid, lookup local stream endpoint and wait for stream open
-        local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
-        btstack_assert(local_stream_endpoint != NULL);
+        // incoming: wait for stream open
         avdtp_connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
     }
 }
