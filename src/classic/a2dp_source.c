@@ -69,14 +69,14 @@
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 
-static btstack_timer_source_t   a2dp_source_set_config_timer;
 static btstack_packet_handler_t a2dp_source_packet_handler_user;
 
-// remote sep discovery - singleton, sep_discovery_cid is used as mutex
-static uint16_t     sep_discovery_cid;
-static uint16_t     sep_discovery_count;
-static uint16_t     sep_discovery_index;
-static avdtp_sep_t  sep_discovery_seps[AVDTP_MAX_SEP_NUM];
+// config process - singletons using sep_discovery_cid is used as mutex
+static uint16_t                 sep_discovery_cid;
+static uint16_t                 sep_discovery_count;
+static uint16_t                 sep_discovery_index;
+static avdtp_sep_t              sep_discovery_seps[AVDTP_MAX_SEP_NUM];
+static btstack_timer_source_t   a2dp_source_set_config_timer;
 
 static avdtp_stream_endpoint_t * local_stream_endpoint;
 
@@ -593,12 +593,10 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             connection = avdtp_get_connection_for_avdtp_cid(cid);
             btstack_assert(connection != NULL);
 
-			// reset discovery timer while remote is active
-			if (avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) {
-				uint16_t avdtp_cid = (uint16_t)(uintptr_t) btstack_run_loop_get_timer_context(&a2dp_source_set_config_timer);
-				if ((avdtp_cid == 0) || (avdtp_cid != cid)) break;
+			// reset discovery timer while remote is active for current cid
+			if ((avdtp_subevent_signaling_accept_get_is_initiator(packet) == 0) && (cid == sep_discovery_cid)){
 				log_info("Reset discovery timer");
-				a2dp_source_set_config_timer_start(avdtp_cid);
+				a2dp_source_set_config_timer_start(sep_discovery_cid);
 				break;
 			}
 
