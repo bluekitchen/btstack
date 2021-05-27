@@ -471,11 +471,10 @@ static void avdtp_handle_can_send_now(uint16_t l2cap_cid) {
 	if (stream_endpoint != NULL) {
 		log_debug("call avdtp_initiator_stream_config_subsm_handle_can_send_now_stream_endpoint %p", stream_endpoint);
 		if (stream_endpoint->request_can_send_now) {
-			stream_endpoint->request_can_send_now = 0;
+			stream_endpoint->request_can_send_now = false;
 			avdtp_initiator_stream_config_subsm_handle_can_send_now_stream_endpoint(stream_endpoint);
 		}
-		bool more_to_send = stream_endpoint->request_can_send_now != 0;
-		if (more_to_send){
+		if (stream_endpoint->request_can_send_now){
 			l2cap_request_can_send_now_event(l2cap_cid);
 		}
 	}
