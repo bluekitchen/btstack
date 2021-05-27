@@ -271,7 +271,8 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
     uint16_t cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
     avdtp_connection_t * avdtp_connection = avdtp_get_connection_for_avdtp_cid(cid);
     btstack_assert(avdtp_connection != NULL);
-    local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    avdtp_connection->a2dp_source_local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    local_stream_endpoint = avdtp_connection->a2dp_source_local_stream_endpoint;
     // bail out if local seid invalid
     if (!local_stream_endpoint) return;
 
@@ -691,6 +692,7 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
             if (sep_discovery_cid == cid){
                 a2dp_source_set_config_timer_stop();
                 connection->a2dp_source_stream_endpoint_configured = false;
+                connection->a2dp_source_local_stream_endpoint = NULL;
                 local_stream_endpoint = NULL;
 
                 connection->a2dp_source_state = A2DP_IDLE;
@@ -860,6 +862,7 @@ static uint8_t a2dp_source_config_init(avdtp_connection_t *connection, uint8_t l
     }
 
     // suitable Sink stream endpoint found, configure it
+    connection->a2dp_source_local_stream_endpoint = stream_endpoint;
     local_stream_endpoint = stream_endpoint;
     connection->a2dp_source_have_config = true;
 

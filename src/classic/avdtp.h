@@ -534,8 +534,7 @@ typedef struct {
 
     // configuration state machine
     avtdp_configuration_state_t configuration_state;
-    // btstack_timer_source_t configuration_timer;
-    
+
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
 
@@ -544,6 +543,7 @@ typedef struct {
     bool         a2dp_source_have_config;
     bool         a2dp_source_stream_endpoint_configured;
     a2dp_state_t a2dp_source_state;
+    struct avdtp_stream_endpoint * a2dp_source_local_stream_endpoint;
 
 } avdtp_connection_t;
 
