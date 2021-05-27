@@ -120,7 +120,7 @@ def main(argv):
     markdownfolder = "docs-markdown/"
     templatefolder    = "docs-intro/"
     
-    cmd = 'update_gatt_services.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
+    cmd = 'markdown_create_gatt_services_and_clients.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
     
     try:
         opts, args = getopt.getopt(argv,"r:t:o:",["rfolder=","tfolder=","ofolder="])

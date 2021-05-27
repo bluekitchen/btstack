@@ -222,7 +222,7 @@ def main(argv):
     githuburl  = "https://github.com/bluekitchen/btstack/blob/master/"
     markdownfolder = "docs-markdown/"
     
-    cmd = 'update_apis.py [-r <root_btstackfolder>] [-g <githuburl>] [-o <output_markdownfolder>]'
+    cmd = 'markdown_create_apis.py [-r <root_btstackfolder>] [-g <githuburl>] [-o <output_markdownfolder>]'
     try:
         opts, args = getopt.getopt(argv,"r:g:o:",["rfolder=","github=","ofolder="])
     except getopt.GetoptError:
@@ -240,7 +240,7 @@ def main(argv):
             markdownfolder = arg
         
     apifile   = markdownfolder + "appendix/apis.md"
-    indexfile = markdownfolder + "api_index.md"
+    # indexfile = markdownfolder + "api_index.md"
 
     try:
         output = subprocess.check_output("git symbolic-ref --short HEAD", stderr=subprocess.STDOUT, timeout=3, shell=True)
@@ -255,7 +255,7 @@ def main(argv):
     print ('BTstack folder is : ' + btstackfolder)
     print ('API file is       : ' + apifile)
     print ('Github URL is    : ' +  githuburl)
-    print ('Index file is     : ' + indexfile)
+    # print ('Index file is     : ' + indexfile)
 
     writeAPI(apifile, btstackfolder, apis, mk_codeidentation)
     createIndex(btstackfolder, apis, githuburl)
@@ -268,11 +268,11 @@ def main(argv):
     references = functions.copy()
     references.update(typedefs)
 
-    with open(indexfile, 'w') as fout:
-        for function, reference in references.items():
-            fout.write("[" + function + "](" + reference + ")\n")
+    # with open(indexfile, 'w') as fout:
+    #     for function, reference in references.items():
+    #         fout.write("[" + function + "](" + reference + ")\n")
             
-    pickle.dump(references, open( markdownfolder + "references.p", "wb" ) )
+    pickle.dump(references, open("references.p", "wb" ) )
 
 if __name__ == "__main__":
    main(sys.argv[1:])

@@ -72,7 +72,7 @@ def main(argv):
     markdownfolder = "docs-markdown/"
     mkdocsfolder = "docs/"
 
-    cmd = 'markdown2mkdocs.py [-i <markdownfolder>] [-o <mkdocsfolder>] '
+    cmd = 'markdown_update_references.py [-i <markdownfolder>] [-o <mkdocsfolder>] '
 
     try:
         opts, args = getopt.getopt(argv,"i:o:",["ifolder=","ofolder="])

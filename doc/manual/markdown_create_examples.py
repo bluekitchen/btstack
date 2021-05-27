@@ -342,7 +342,7 @@ def main(argv):
     btstackfolder = "../../"
     git_branch_name = "master"
 
-    cmd = 'update_listings.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
+    cmd = 'markdown_create_examples.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
     
     try:
         opts, args = getopt.getopt(argv,"r:t:o:",["rfolder=","tfolder=","ofolder="])

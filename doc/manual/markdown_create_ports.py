@@ -80,7 +80,7 @@ def main(argv):
     markdownfolder = "docs-markdown/"
     templatefolder    = "docs-intro/"
     
-    cmd = 'ports2markdown.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
+    cmd = 'markdown_create_ports.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
     
     try:
         opts, args = getopt.getopt(argv,"r:t:o:",["rfolder=","tfolder=","ofolder="])

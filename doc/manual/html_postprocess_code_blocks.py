@@ -14,10 +14,10 @@ def writeCodeBlock(aout, code, references):
 def main(argv):
     htmlfolder = "btstack/"
     
-    cmd = 'mkdocs2html.py [-i <markdownfolder>] [-o <htmlkfolder>]'
+    cmd = 'html_postprocess_code_blocks.py [-o <htmlkfolder>]'
     
     try:
-        opts, args = getopt.getopt(argv,"i:o:",["ifolder", "ofolder="])
+        opts, args = getopt.getopt(argv,"o:",["ofolder="])
     except getopt.GetoptError:
         print (cmd)
         sys.exit(2)
@@ -27,15 +27,13 @@ def main(argv):
             sys.exit()
         elif opt in ("-o", "--ofolder"):
             htmlfolder = arg
-        elif opt in ("-i", "--ifolder"):
-            markdownfolder = arg
-
+        
     html_path = htmlfolder + "examples/"
     html_tmppath = htmlfolder + "examples/tmp/"
 
     html_in  = html_path + "examples/index.html"
     html_tmp = html_tmppath + "index.html"
-    references = pickle.load(open( markdownfolder + "references.p", "rb" ))
+    references = pickle.load(open( "references.p", "rb" ))
 
     Path(html_tmppath).mkdir(parents=True, exist_ok=True)
     

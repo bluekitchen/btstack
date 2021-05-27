@@ -1,8 +1,7 @@
 btstack
 btstack.pdf
 docs
-docs_tmp
+docs-markdown
 latex
 mkdocs.yml
-api_index.md
-tmp
+references.p

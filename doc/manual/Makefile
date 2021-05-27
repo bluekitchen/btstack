@@ -24,17 +24,17 @@ docs-markdown:
 
 	# create docs-markdown/appendix/apis.md
 	# create docs-markdown/api_index.md
-	# create docs-markdown/references.p
-	./update_apis.py -r ${BTSTACK_FOLDER} -g ${GITHUB_URL} -o ${MARKDOWN_FOLDER}
+	# create references.p
+	./markdown_create_apis.py -r ${BTSTACK_FOLDER} -g ${GITHUB_URL} -o ${MARKDOWN_FOLDER}
 
 	# create docs-markdown/examples/examples.md
-	./update_listings.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
+	./markdown_create_examples.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
 
 	# create docs-markdown/ports/existing_ports.md
-	./ports2markdown.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
+	./markdown_create_ports.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
 
 	# create docs-markdown/gatt_clients.md and  docs-template/gatt_services.md
-	./update_gatt_services.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
+	./markdown_create_gatt_services_and_clients.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
 
 docs: docs-markdown 
 	# create new docs_final
@@ -42,15 +42,15 @@ docs: docs-markdown
 	cp -r  docs-markdown docs
 
 	# docs-markdown -> docs
-	./markdown2mkdocs.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} 
+	./markdown_update_references.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} 
 	
 
 html: docs
 	# generate HTML into btstack folder
 	mkdocs build --clean
 	
-	# post-process HTML using docs-markdown/references.p 
-	./mkdocs2html.py -i ${MARKDOWN_FOLDER} -o ${HTML_FOLDER}
+	# post-process HTML using references.p 
+	./html_postprocess_code_blocks.py -o ${HTML_FOLDER}
 
 pdf: docs
 	rm -rf latex
@@ -72,6 +72,6 @@ preview: docs
 clean:
 	rm -rf docs-markdown docs tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
 	rm -rf latex btstack help
-	
+	rm -rf references.p
 
 	
