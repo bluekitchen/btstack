@@ -34,7 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
+
+/**
+ * OBEX Iterator
+ *
+ */
+
 #ifndef OBEX_ITERATOR_H
 #define OBEX_ITERATOR_H
 
@@ -45,7 +50,8 @@ extern "C" {
 #include <stdint.h>
 #include "btstack_bool.h"
 
-    /* API_START */
+
+/* API_START */
 
 typedef struct obex_iterator {
     const uint8_t * data;

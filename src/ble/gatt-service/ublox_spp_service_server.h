@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title u-blox SPP Service Server
+ * 
+ */
+
 #ifndef UBLOX_SPP_H
 #define UBLOX_SPP_H
 

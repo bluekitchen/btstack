@@ -35,12 +35,11 @@
  *
  */
 
-/*
- * a2dp_sink.h
- * 
- * Advanced Audio Distribution Transport Profile (A2DP) Sink
+/**
+ * @title A2DP Sink
  *
- * A2DP Sink is a device that accepts streamed media data.  
+ * Audio/Video Distribution Transport Protocol A2DP Sink is a device that accepts streamed media data.  
+ *
  */
 
 #ifndef A2DP_SINK_H

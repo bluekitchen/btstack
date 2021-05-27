@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Cycling Speed and Cadence Service Server
+ * 
+ */
+
 #ifndef CYCLING_SPEED_AND_CADENCE_SERVICE_SERVER_H
 #define CYCLING_SPEED_AND_CADENCE_SERVICE_SERVER_H
 

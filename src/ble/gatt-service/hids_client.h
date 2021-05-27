@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title HID Service Client
+ * 
+ */
+
 #ifndef HIDS_CLIENT_H
 #define HIDS_CLIENT_H
 

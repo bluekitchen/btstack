@@ -35,9 +35,7 @@
  *
  */
 
-/*
- * avdtp_int.h
- * 
+/**
  * Audio/Video Distribution Transport Protocol - Initiator Role
  *
  */

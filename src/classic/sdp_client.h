@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  sdp_client.h
+/**
+ * @title SDP Client
+ *
  */
 
 #ifndef SDP_CLIENT_H

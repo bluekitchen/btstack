@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  btstack_linked_queue.h
+/**
+ * @title Linked Queue
+ *
  */
 
 #ifndef BTSTACK_LINKED_QUEUE_H

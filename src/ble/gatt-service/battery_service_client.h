@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title Battery Service Client
+ * 
+ */
+
 #ifndef BATTERY_SERVICE_CLIENT_H
 #define BATTERY_SERVICE_CLIENT_H
 

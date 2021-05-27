@@ -35,10 +35,11 @@
  *
  */
 
-/*
- * device_id_server.h
+/**
+ * @title Device ID Server
  * 
- * Create Device ID SDP Records
+ * Create Device ID SDP Records.
+ *
  */
 
 #ifndef DEVICE_ID_SERVER_H

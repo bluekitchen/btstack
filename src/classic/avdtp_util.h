@@ -35,9 +35,7 @@
  *
  */
 
-/*
- * avdtp_util.h
- * 
+/**
  * Audio/Video Distribution Transport Protocol - Utils
  *
  */

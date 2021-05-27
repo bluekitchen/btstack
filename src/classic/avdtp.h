@@ -35,10 +35,8 @@
  *
  */
 
-/*
- * avdtp.h
- * 
- * Audio/Video Distribution Transport Protocol
+/**
+ * Audio/Video Distribution Transport Protocol (AVDTP)
  *
  * This protocol defines A/V stream negotiation, establishment, and transmission 
  * procedures. Also specified are the message formats that are exchanged between 

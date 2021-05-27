@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  RFCOMM.h
+/**
+ * @title RFCOMM
+ *
  */
 
 #ifndef RFCOMM_H

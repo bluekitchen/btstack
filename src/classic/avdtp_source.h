@@ -35,12 +35,11 @@
  *
  */
 
-/*
- * avdtp_source.h
- * 
- * Audio/Video Distribution Transport Protocol Source
+/**
+ * @title AVDTP Source
  *
- * AVDTP Source is a device that streames media data.
+ * Audio/Video Distribution Transport Protocol (AVDTP) Source is a device that streames media data.
+ *
  */
 
 #ifndef AVDTP_SOURCE_H

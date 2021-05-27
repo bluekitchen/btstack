@@ -29,11 +29,12 @@
  *
  */
 
-/*
- *  btstack_tlv_.h
+/**
+ * @title Tag-Value-Length Persistent Storage (TLV)
  *
- *  Inteface for BTstack's Tag Value Length Persistent Storage implementations
- *  used to store pairing/bonding data
+ * Inteface for BTstack's Tag Value Length Persistent Storage implementations
+ * used to store pairing/bonding data.
+ *
  */
 
 #ifndef BTSTACK_TLV_H
@@ -44,6 +45,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 typedef struct {
 
@@ -91,6 +94,8 @@ void btstack_tlv_set_instance(const btstack_tlv_t * tlv_impl, void * tlv_context
  * @param tlv_context
  */
 void btstack_tlv_get_instance(const btstack_tlv_t ** tlv_impl, void ** tlv_context);
+
+/* API_END */
 
 #if defined __cplusplus
 }

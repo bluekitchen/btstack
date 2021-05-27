@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Mesh Provisioning Service Server
+ * 
+ */
+
 #ifndef __MESH_PROVISIONING_SERVICE_SERVER_H
 #define __MESH_PROVISIONING_SERVICE_SERVER_H
 

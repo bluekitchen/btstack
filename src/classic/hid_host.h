@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title HID Host
+ *
+ */
+
 #ifndef HID_HOST_H
 #define HID_HOST_H
 

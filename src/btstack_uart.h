@@ -35,10 +35,10 @@
  *
  */
 
-/*
- *  btstack_uart.h
+/**
+ * @title UART
  *
- *  Common types for UART transports
+ * Common types for UART transports
  *
  */
 
@@ -75,6 +75,8 @@ typedef struct {
     const char *          device_name;
     int                   parity;
 } btstack_uart_config_t;
+
+/* API_START */
 
 typedef struct {
     /**
@@ -176,6 +178,8 @@ typedef struct {
     void (*send_frame)(const uint8_t *buffer, uint16_t length);
 
 } btstack_uart_t;
+
+/* API_END */
 
 // common implementations
 const btstack_uart_t * btstack_uart_posix_instance(void);

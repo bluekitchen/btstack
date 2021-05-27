@@ -36,7 +36,10 @@
  */
 
 /**
- * interface to provide link key storage via BTstack's TLV storage
+ * @title Link Key TLV Storage
+ *
+ * Interface to provide link key storage via BTstack's TLV storage.
+ *
  */
 
 #ifndef BTSTACK_LINK_KEY_DB_TLV_H

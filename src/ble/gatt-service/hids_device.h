@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title HID Service Server
+ * 
+ */
+
 #ifndef HIDS_DEVICE_H
 #define HIDS_DEVICE_H
 

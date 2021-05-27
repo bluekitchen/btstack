@@ -35,10 +35,15 @@
  *
  */
 
+/**
+ * @title Security Manager
+ * 
+ */
+
 #ifndef SM_H
 #define SM_H
 
- #if defined __cplusplus
+#if defined __cplusplus
 extern "C" {
 #endif
 

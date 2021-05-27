@@ -35,10 +35,10 @@
  *
  */
 
-/*
- *  btstack_control.h
+/**
+ * @title BTstack Bluetooth Hardware Control
  *
- *  BTstack Bluetooth Hardware Control API -- allows HCI to manage Bluetooth chipsets via direct hardware controls
+ * The API allows HCI to manage Bluetooth chipsets via direct hardware controls.
  *
  */
 

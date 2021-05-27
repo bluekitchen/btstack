@@ -35,12 +35,10 @@
  *
  */
 
-
-
-/*
- *  btstack_memory.h
+/**
+ * @title BTstack Memory Management
  *
- *  @brief BTstack memory management via configurable memory pools
+ * BTstack memory management is performed via configurable memory pools.
  *
  */
 

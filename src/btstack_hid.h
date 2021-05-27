@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title Human Interface Device (HID)
+ *
+ */
+
 #ifndef HID_H
 #define HID_H
 

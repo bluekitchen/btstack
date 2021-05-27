@@ -35,12 +35,11 @@
  *
  */
 
-/*
- * avdtp_sink.h
- * 
- * Audio/Video Distribution Transport Protocol (AVDTP) Sink
+/**
+ * @title AVDTP Sink
  *
- * AVDTP Sink is a device that accepts streamed media data.  
+ * Audio/Video Distribution Transport Protocol (AVDTP) Sink is a device that accepts streamed media data.  
+ *
  */
 
 #ifndef AVDTP_SINK_H

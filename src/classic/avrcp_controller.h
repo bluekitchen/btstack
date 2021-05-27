@@ -35,10 +35,8 @@
  *
  */
 
-/*
- * avrcp.h
- * 
- * Audio/Video Remote Control Profile
+/**
+ * @title AVRCP Controller
  *
  */
 

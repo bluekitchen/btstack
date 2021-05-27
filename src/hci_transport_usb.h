@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  HCI Transport USB API
+/**
+ * @title HCI Transport USB
+ *
  */
 
 #ifndef HCI_TRANSPORT_USB_H

@@ -36,9 +36,7 @@
  */
 
 /*
- * avrcp_target.h
- * 
- * Audio/Video Remote Control Profile
+ * @title AVRCP Target
  *
  */
 

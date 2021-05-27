@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title Device Information Service Client
+ * 
+ */
+
 #ifndef DEVICE_INFORMATION_SERVICE_CLIENT_H
 #define DEVICE_INFORMATION_SERVICE_CLIENT_H
 

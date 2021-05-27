@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Scan Parameters Service Server
+ * 
+ */
+
 #ifndef SCAN_PARAMETERS_H
 #define SCAN_PARAMETERS_H
 

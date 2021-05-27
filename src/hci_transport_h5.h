@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  HCI Transport H5 API
+/**
+ * @title HCI Transport H5
+ *
  */
 
 #ifndef HCI_TRANSPORT_H5_H

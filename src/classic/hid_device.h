@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title HID Device
+ *
+ */
+
 #ifndef HID_DEVICE_H
 #define HID_DEVICE_H
 

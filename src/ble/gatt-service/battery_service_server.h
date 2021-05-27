@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Battery Service Server
+ * 
+ */
+
 #ifndef BATTERY_SERVICE_SERVER_H
 #define BATTERY_SERVICE_SERVER_H
 

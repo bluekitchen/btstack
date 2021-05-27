@@ -35,12 +35,11 @@
  *
  */
 
-/*
- *  hci_dump.h
+/**
+ * @title HCI Logging
  *
- *  Dump HCI trace as BlueZ's hcidump format, Apple's PacketLogger, or stdout
- * 
- *  Created by Matthias Ringwald on 5/26/09.
+ * Dump HCI trace as BlueZ's hcidump format, Apple's PacketLogger, or stdout.
+ *
  */
 
 #ifndef HCI_DUMP_H

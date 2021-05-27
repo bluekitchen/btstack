@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title Genral Access Profile (GAP)
+ *
+ */
+
 #ifndef GAP_H
 #define GAP_H
 

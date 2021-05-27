@@ -35,10 +35,9 @@
  *
  */
 
-/*
- *  run_loop.h
+/**
+ * @title Run Loop
  *
- *  Created by Matthias Ringwald on 6/6/09.
  */
 
 #ifndef btstack_run_loop_H
@@ -55,7 +54,6 @@
 extern "C" {
 #endif
 	
-
 /**
  * Callback types for run loop data sources
  */

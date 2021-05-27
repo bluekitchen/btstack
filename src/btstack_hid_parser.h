@@ -35,10 +35,11 @@
  *
  */
 
-/*
- *  btstack_hid_parser.h
+/**
+ * @title HID Parser
  *
- *  Single-pass HID Report Parser: HID Report is directly parsed without preprocessing HID Descriptor to minimize memory
+ * Single-pass HID Report Parser: HID Report is directly parsed without preprocessing HID Descriptor to minimize memory.
+ *
  */
 
 #ifndef BTSTACK_HID_PARSER_H

@@ -35,9 +35,9 @@
  *
  */
 
-/*
- *  btstack_slip.h
- *  SLIP encoder/decoder
+/**
+ * @title SLIP encoder/decoder
+ *
  */
 
 #ifndef BTSTACK_SLIP_H
@@ -50,6 +50,8 @@ extern "C" {
 #endif
 
 #define BTSTACK_SLIP_SOF 0xc0
+
+/* API_START */
 
 // ENCODER
 
@@ -94,6 +96,8 @@ void btstack_slip_decoder_process(uint8_t input);
  */
 
 uint16_t btstack_slip_decoder_frame_size(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

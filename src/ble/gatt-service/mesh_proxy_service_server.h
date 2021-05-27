@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Mesh Proxy Service Server
+ * 
+ */
+
 #ifndef __MESH_PROXY_SERVICE_SERVER_H
 #define __MESH_PROXY_SERVICE_SERVER_H
 

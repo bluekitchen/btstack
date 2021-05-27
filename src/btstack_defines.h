@@ -35,10 +35,11 @@
  *
  */
 
-/*
- * btstack-defines.h
+/**
  *
- * BTstack definitions, events, and error codes */
+ * BTstack definitions, events, and error codes 
+ *
+ */
 
 #ifndef BTSTACK_DEFINES_H
 #define BTSTACK_DEFINES_H

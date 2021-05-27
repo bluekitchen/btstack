@@ -35,11 +35,10 @@
  *
  */
 
-// *****************************************************************************
-//
-// AVRCP Media Item Iterator 
-//
-// *****************************************************************************
+/**
+ * @title AVRCP Media Item Iterator 
+ *
+ */
 
 #ifndef AVRCP_MEDIA_ITEM_ITERATOR_H
 #define AVRCP_MEDIA_ITEM_ITERATOR_H

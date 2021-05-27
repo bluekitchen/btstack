@@ -35,12 +35,11 @@
  *
  */
 
-/*
- *  l2cap.h
+/**
+ * @title L2CAP
  *
- *  Logical Link Control and Adaption Protocol (L2CAP)
+ * Logical Link Control and Adaption Protocol 
  *
- *  Created by Matthias Ringwald on 5/16/09.
  */
 
 #ifndef L2CAP_H

@@ -35,12 +35,10 @@
  *
  */
 
-// *****************************************************************************
-//
-//  HFP Hands-Free (HF) unit and Audio Gateway Commons
-//
-// *****************************************************************************
-
+/**
+ * HFP Hands-Free (HF) unit and Audio Gateway Commons
+ *
+ */
 
 #ifndef BTSTACK_HFP_H
 #define BTSTACK_HFP_H

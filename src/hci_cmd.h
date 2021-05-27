@@ -35,10 +35,9 @@
  *
  */
 
-/*
- *  hci_cmd.h
+/**
+ *  HCI Command Builder and official commands
  *
- *  Created by Matthias Ringwald on 7/23/09.
  */
 
 #ifndef HCI_CMDS_H
@@ -419,8 +418,8 @@ extern const hci_cmd_t hci_ti_write_hardware_register;
  *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
  */
- uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
 
+uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
     
 #if defined __cplusplus
 }

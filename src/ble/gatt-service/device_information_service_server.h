@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Device Information Service Server
+ * 
+ */
+
 #ifndef DEVICE_INFORMATION_SERVICE_SERVER_H
 #define DEVICE_INFORMATION_SERVICE_SERVER_H
 

@@ -35,6 +35,12 @@
  *
  */
 
+/** 
+ * @title Audio Interface
+ *
+ * Abstraction layer for 16-bit audio playback and recording within BTstack.
+ */
+
 #ifndef BTSTACK_AUDIO_H
 #define BTSTACK_AUDIO_H
 
@@ -44,11 +50,7 @@
 extern "C" {
 #endif
 
-/*
- *  btstack_audio.h
- *
- *  Abstraction layer for 16-bit audio playback and recording within BTstack
- */
+/* API_START */
 
 typedef struct {
 
@@ -158,6 +160,8 @@ const btstack_audio_sink_t *   btstack_audio_embedded_sink_get_instance(void);
 const btstack_audio_source_t * btstack_audio_embedded_source_get_instance(void);
 
 const btstack_audio_sink_t *   btstack_audio_esp32_sink_get_instance(void);
+/* API_END */
+
 // const btstack_audio_source_t *   btstack_audio_esp32_source_get_instance(void);
 
 #if defined __cplusplus

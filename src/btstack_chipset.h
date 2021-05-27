@@ -35,11 +35,12 @@
  *
  */
 
-/*
- *  btstack_chipset.h
+/**
+ * @title Chipset Driver 
+ * 
+ * The API implements custom chipset initialization and support of proprietary extensions
+ * to set UART baud rate, Bluetooth Address, and similar.
  *
- *  Chipset Driver - implements custom chipset initializtion and support proprietary extensions
- *  to set UART baud rate, Bluetooth Address, and similar.
  */
 
 #ifndef BTSTACK_CHIPSET_H

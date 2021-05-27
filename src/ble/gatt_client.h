@@ -35,6 +35,10 @@
  *
  */
 
+/**
+ * @title GATT Client
+ *
+ */
 
 #ifndef btstack_gatt_client_h
 #define btstack_gatt_client_h

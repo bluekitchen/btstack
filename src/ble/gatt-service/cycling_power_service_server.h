@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Cycling Power Service Server
+ * 
+ */
+
 #ifndef CYCLING_POWER_SERVICE_SERVER_H
 #define CYCLING_POWER_SERVICE_SERVER_H
 

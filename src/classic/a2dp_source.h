@@ -35,12 +35,11 @@
  *
  */
 
-/*
- * a2dp_source.h
- * 
- * Advanced Audio Distribution Transport Profile (A2DP) Source
+/**
+ * @title A2DP Source
  *
- * A2DP Source is a device that streames media data.
+ *  Audio/Video Distribution Transport Protocol A2DP Source is a device that streames media data.
+ *
  */
 
 #ifndef A2DP_SOURCE_H

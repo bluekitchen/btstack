@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Nordic SPP Service Server
+ * 
+ */
+
 #ifndef NORDIC_SPP_H
 #define NORDIC_SPP_H
 

@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Heart Rate Service Server
+ * 
+ */
+
 #ifndef HEART_RATE_SERVICE_SERVER_H
 #define HEART_RATE_SERVICE_SERVER_H
 

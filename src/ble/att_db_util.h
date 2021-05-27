@@ -36,8 +36,10 @@
  */
 
 /**
- * Helper to construct ATT DB at runtime 
- * (BTstack GATT Compiler is not used)
+ * @title Runtine ATT Database Setup
+ * 
+ * Helper to construct ATT DB at runtime (BTstack GATT Compiler is not used).
+ *
  */
 
 #ifndef ATT_DB_UTIL_H

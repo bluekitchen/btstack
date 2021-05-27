@@ -35,10 +35,13 @@
  *
  */
 
-/*
- * bnep.h
- * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
+/**
+ * @title BNEP
  *
+ */
+
+/**
+ * @author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
  */
 
 #ifndef BNEP_H

@@ -35,6 +35,13 @@
  *
  */
 
+/**
+ * @title Lienar Resampling
+ *
+ * Linear resampling for 16-bit audio code samples using 16 bit/16 bit fixed point math.
+ *
+ */
+
 #ifndef BTSTACK_RESAMPLE_H
 #define BTSTACK_RESAMPLE_H
 
@@ -44,12 +51,6 @@
 extern "C" {
 #endif
 
-/*
- *  btstack_resample.h
- *
- *  Linear resampling for 16-bit audio code samples using 16 bit/16 bit fixed point math
- */
-
 #define BTSTACK_RESAMPLE_MAX_CHANNELS 2
 
 typedef struct {
@@ -58,6 +59,8 @@ typedef struct {
     int16_t  last_sample[BTSTACK_RESAMPLE_MAX_CHANNELS];
     int      num_channels;
 } btstack_resample_t;
+
+/* API_START */
 
 /**
  * @brief Init resample context
@@ -81,6 +84,8 @@ void btstack_resample_set_factor(btstack_resample_t * context, uint32_t factor);
  * @returns number destination frames
  */
 uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer);
+
+/* API_END */
 
 #if defined __cplusplus
 }

@@ -35,9 +35,11 @@
  *
  */
 
-/*
- *  HCI Transport EM9304 API
- *  The EM9304 uses an extended SPI interface and this HCI Transport is based on the the btstack_em9304.h interface
+/**
+ * @title HCI Transport EM9304 API
+ *
+ * The EM9304 uses an extended SPI interface and this HCI Transport is based on the the btstack_em9304.h interface.
+ *
  */
 
 #ifndef BTSTACK_HCI_TRANSPORT_EM9304_SPI_H

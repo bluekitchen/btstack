@@ -35,10 +35,8 @@
  *
  */
 
-/*
- * avrcp_browsing_controller.h
- * 
- * Audio/Video Remote Control Profile Browsing
+/**
+ * @title AVRCP Browsing Controller
  *
  */
 

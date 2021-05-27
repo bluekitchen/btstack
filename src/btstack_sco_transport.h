@@ -35,9 +35,11 @@
  *
  */
 
-/*
- * btstack_sco_transport.h
- * Hardware abstraction for PCM/I2S Inteface used for HSP/HFP profiles
+/**
+ * @title SCO Transport
+ *
+ * Hardware abstraction for PCM/I2S Inteface used for HSP/HFP profiles.
+ *
  */
 
 #ifndef BTSTACK_SCO_TRANSPORT_H
@@ -58,6 +60,8 @@ typedef enum {
     SCO_FORMAT_8_BIT,
     SCO_FORMAT_16_BIT,
 } sco_format_t;
+
+/* API_START */
 
 typedef struct {
 
@@ -85,6 +89,8 @@ typedef struct {
     void (*close)(hci_con_handle_t con_handle);
 
 } btstack_sco_transport_t;
+
+/* API_END */
 
 #if defined __cplusplus
 }

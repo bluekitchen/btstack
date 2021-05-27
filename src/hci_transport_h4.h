@@ -35,9 +35,11 @@
  *
  */
 
-/*
- *  HCI Transport H4 API
+/**
+ * @title HCI Transport H4
+ *
  */
+
 #ifndef HCI_TRANSPORT_H4_H
 #define HCI_TRANSPORT_H4_H
 

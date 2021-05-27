@@ -35,10 +35,8 @@
  *
  */
 
-/*
- *  hci.h
- *
- *  Created by Matthias Ringwald on 4/29/09.
+/**
+ * @title Host Controler Interface (HCI)
  *
  */
 

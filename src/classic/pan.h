@@ -35,10 +35,10 @@
  *
  */
 
-/*
- *  pan.h
+
+/**
+ * @title Personal Area Network (PAN) 
  *
- *  Created by Milanka Ringwald on 10/16/14.
  */
 
 #ifndef PAN_H

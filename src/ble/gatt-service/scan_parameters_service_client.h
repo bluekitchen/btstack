@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title Scan Parameters Service Client
+ * 
+ */
+
 /** 
  * @text The Scan Parameters Service Client allows to store its 
  * LE scan parameters on a remote device such that the remote device 

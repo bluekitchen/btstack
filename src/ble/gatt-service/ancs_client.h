@@ -35,9 +35,13 @@
  *
  */
 
+/**
+ * @title ANCS Client
+ * 
+ */
+
 #ifndef ANCS_CLIENT_H
 #define ANCS_CLIENT_H
-
 
 #include <stdint.h>
 #include "btstack_defines.h"

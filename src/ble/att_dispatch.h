@@ -37,7 +37,10 @@
 
 
 /**
- * Dispatcher for independent implementation of ATT client and server
+ * @title ATT Dispatch
+ *
+ * Dispatcher for independent implementation of ATT client and server.
+ *
  */
 
 #ifndef ATT_DISPATCH_H

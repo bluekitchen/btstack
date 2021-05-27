@@ -35,14 +35,13 @@
  *
  */
 
-/*
- *  hci_transport.h
+/**
+ * @title HCI Transport
  *
- *  HCI Transport API -- allows BTstack to use different transport interfaces
- *
- *  Created by Matthias Ringwald on 4/29/09.
+ * The API allows BTstack to use different transport interfaces.
  *
  */
+
 #ifndef HCI_TRANSPORT_H
 #define HCI_TRANSPORT_H
 

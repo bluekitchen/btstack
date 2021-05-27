@@ -35,10 +35,11 @@
  *
  */
 
-/*
- *  btstack_uart_block.h
+/**
+ * @title UART Block
  *
- *  Compatibility layer for ports that use btstack_uart_block_t 
+ * Compatibility layer for ports that use btstack_uart_block_t 
+ *
  */
 
 #ifndef BTSTACK_UART_BLOCK_H
@@ -51,6 +52,8 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 typedef btstack_uart_t btstack_uart_block_t;
 
 // existing block-only implementations
@@ -62,6 +65,7 @@ const btstack_uart_t * btstack_uart_block_freertos_instance(void);
 static inline const btstack_uart_block_t * btstack_uart_block_posix_instance(void){
     return (const btstack_uart_block_t *) btstack_uart_posix_instance();
 }
+/* API_STOP */
 
 #if defined __cplusplus
 }
