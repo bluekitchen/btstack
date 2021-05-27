@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, shutil, re
+import sys, os, shutil, re,  getopt
 
 blacklist = []
 
@@ -77,13 +77,37 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
 
 def main(argv):
     btstackfolder = "../../"
-    docsfolder    = "docs-template/"
-    template_folder = "template/"
+    markdownfolder = "docs-markdown/"
+    templatefolder    = "docs-intro/"
     
+    cmd = 'ports2markdown.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
+    
+    try:
+        opts, args = getopt.getopt(argv,"r:t:o:",["rfolder=","tfolder=","ofolder="])
+    except getopt.GetoptError:
+        print (cmd)
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print (cmd)
+            sys.exit()
+        elif opt in ("-r", "--rfolder"):
+            btstackfolder = arg
+        elif opt in ("-t", "--tfolder"):
+            templatefolder = arg
+        elif opt in ("-o", "--ofolder"):
+            markdownfolder = arg
+
+
     inputfolder = btstackfolder   + "port/"
-    portsfolder = docsfolder      + "ports/"
-    introfile   = template_folder + "ports_intro.md"
+    portsfolder = markdownfolder      + "ports/"
+    introfile   = templatefolder + "ports_intro.md"
     outputfile  = portsfolder     + "existing_ports.md"
+
+    print ('Input folder: ', inputfolder)
+    print ('Intro file:   ', introfile)
+    print ('Output file:  ', outputfile)
+
     process_readmes(introfile, inputfolder, outputfile, portsfolder)
 
 if __name__ == "__main__":

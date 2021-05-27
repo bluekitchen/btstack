@@ -6,7 +6,7 @@ In this chapter, we first explain how Bluetooth chipsets are connected physicall
 
 The communication between a Host (a computer or an MCU) and a Host Controller (the actual Bluetooth chipset) follows the Host Controller Interface (HCI), see {@fig:HostChipsetConnection}. HCI defines how commands, events, asynchronous and synchronous data packets are exchanged. Asynchronous packets (ACL) are used for data transfer, while synchronous packets (SCO) are used for Voice with the Headset and the Hands-Free Profiles.
 
-![Host Controller to Host connection](../doc/manual/docs/picts/host_chipset_connection.png){#fig:HostChipsetConnection}
+![Host Controller to Host connection](../doc/manual/docs-template/picts/host_chipset_connection.png){#fig:HostChipsetConnection}
 
 ### HCI H2
 On desktop-class computers incl. laptops, USB is mainly used as HCI transport layer. For USB Bluetooth chipsets, there is little variation: most USB dongles on the market currently contain a Broadcom BCM20702 or a CSR 851x chipset. It is also called H2.

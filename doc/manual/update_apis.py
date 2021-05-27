@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os, sys, getopt, re, pickle
+import subprocess
 
 class State:
     SearchStartAPI = 0
@@ -90,9 +91,9 @@ api_ending = """
 code_ref = """GITHUBFPATH#LLINENR"""
 
 
-def codeReference(fname, githubfolder, filepath, linenr):
+def codeReference(fname, githuburl, filepath, linenr):
     global code_ref
-    ref = code_ref.replace("GITHUB", githubfolder)
+    ref = code_ref.replace("GITHUB", githuburl)
     ref = ref.replace("FPATH", filepath)
     ref = ref.replace("LINENR", str(linenr))
     return ref
@@ -127,7 +128,7 @@ def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
                         continue
 
 
-def createIndex(btstackfolder, apis, githubfolder):
+def createIndex(btstackfolder, apis, githuburl):
     global typedefs, functions
     
     for api_tuple in apis:
@@ -185,12 +186,12 @@ def createIndex(btstackfolder, apis, githubfolder):
                     typedef = re.match('}\s*(.*);\n', line)
                     if typedef:
                         typedefFound = 0
-                        typedefs[typedef.group(1)] = codeReference(typedef.group(1), githubfolder, api_tuple[0], linenr)
+                        typedefs[typedef.group(1)] = codeReference(typedef.group(1), githuburl, api_tuple[0], linenr)
                     continue
 
                 ref_function =  re.match('.*typedef\s+void\s+\(\s*\*\s*(.*?)\)\(.*', line)
                 if ref_function:
-                    functions[ref_function.group(1)] = codeReference(ref_function.group(1), githubfolder, api_tuple[0], linenr)
+                    functions[ref_function.group(1)] = codeReference(ref_function.group(1), githuburl, api_tuple[0], linenr)
                     continue
 
                 function = re.match('(.*?)\s*\(.*\(*.*;\n', line)
@@ -200,7 +201,7 @@ def createIndex(btstackfolder, apis, githubfolder):
                     if len(name) == 0:
                         print(parts);
                         sys.exit(10)
-                    functions[name] = codeReference( name, githubfolder, api_tuple[0], linenr)
+                    functions[name] = codeReference( name, githuburl, api_tuple[0], linenr)
                     continue
 
                 function = re.match('.(.*?)\s*\(.*\(*.*', line)
@@ -211,22 +212,19 @@ def createIndex(btstackfolder, apis, githubfolder):
                     parts = function.group(1).split(" ");
                     name = parts[len(parts)-1]
                     multiline_function_def = 1
-                    functions[name] = codeReference(name, githubfolder, api_tuple[0], linenr)
+                    functions[name] = codeReference(name, githuburl, api_tuple[0], linenr)
 
                         
 def main(argv):
     mk_codeidentation = "    "
-    
+    git_branch_name = "master"
     btstackfolder = "../../"
-    githubfolder  = "https://github.com/bluekitchen/btstack/blob/master/"
+    githuburl  = "https://github.com/bluekitchen/btstack/blob/master/"
+    markdownfolder = "docs-markdown/"
     
-    docsfolder    = "docs-template/"
-    apifile   = docsfolder + "appendix/apis.md"
-    indexfile = "api_index.md"
-
-    cmd = 'update_apis.py [-b <btstackfolder>] [-a <apifile>] [-g <githubfolder>] [-i <indexfile>]'
+    cmd = 'update_apis.py [-r <root_btstackfolder>] [-g <githuburl>] [-o <output_markdownfolder>]'
     try:
-        opts, args = getopt.getopt(argv,"hiso:",["bfolder=","afile=","gfolder=","ifile="])
+        opts, args = getopt.getopt(argv,"r:g:o:",["rfolder=","github=","ofolder="])
     except getopt.GetoptError:
         print (cmd)
         sys.exit(2)
@@ -234,21 +232,33 @@ def main(argv):
         if opt == '-h':
             print (cmd)
             sys.exit()
-        elif opt in ("-b", "--bfolder"):
+        elif opt in ("-r", "--rfolder"):
             btstackfolder = arg
-        elif opt in ("-a", "--afile"):
-            apifile = arg
-        elif opt in ("-g", "--gfolder"):
-            btstackfolder = arg
-        elif opt in ("-i", "--ifile"):
-            indexfile = arg
+        elif opt in ("-g", "--github"):
+            githuburl = arg
+        elif opt in ("-o", "--ofolder"):
+            markdownfolder = arg
+        
+    apifile   = markdownfolder + "appendix/apis.md"
+    indexfile = markdownfolder + "api_index.md"
+
+    try:
+        output = subprocess.check_output("git symbolic-ref --short HEAD", stderr=subprocess.STDOUT, timeout=3, shell=True)
+        git_branch_name = output.decode().rstrip()
+    except subprocess.CalledProcessError as exc:
+        print('GIT branch name: failed to get, use default value \"%s\""  ', git_branch_name, exc.returncode, exc.output)
+    else:
+        print ('GIT branch name :  %s' % git_branch_name)
+
+    githuburl = githuburl + git_branch_name
+
     print ('BTstack folder is : ' + btstackfolder)
     print ('API file is       : ' + apifile)
-    print ('Github path is    : ' + githubfolder)
+    print ('Github URL is    : ' +  githuburl)
     print ('Index file is     : ' + indexfile)
 
     writeAPI(apifile, btstackfolder, apis, mk_codeidentation)
-    createIndex(btstackfolder, apis, githubfolder)
+    createIndex(btstackfolder, apis, githuburl)
 
     for function in functions:
         parts = function.split(' ')
@@ -262,7 +272,7 @@ def main(argv):
         for function, reference in references.items():
             fout.write("[" + function + "](" + reference + ")\n")
             
-    pickle.dump(references, open( "tmp/references.p", "wb" ) )
+    pickle.dump(references, open( markdownfolder + "references.p", "wb" ) )
 
 if __name__ == "__main__":
    main(sys.argv[1:])

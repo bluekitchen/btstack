@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, sys, shutil, re, pickle
+import os, sys, shutil, re, pickle, getopt
 from pathlib import Path
 
 def writeCodeBlock(aout, code, references):
@@ -12,15 +12,32 @@ def writeCodeBlock(aout, code, references):
 
 
 def main(argv):
-    html_path = "btstack/examples/"
-    html_tmppath = "btstack/examples/tmp/"
+    htmlfolder = "btstack/"
+    
+    cmd = 'mkdocs2html.py [-i <markdownfolder>] [-o <htmlkfolder>]'
+    
+    try:
+        opts, args = getopt.getopt(argv,"i:o:",["ifolder", "ofolder="])
+    except getopt.GetoptError:
+        print (cmd)
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print (cmd)
+            sys.exit()
+        elif opt in ("-o", "--ofolder"):
+            htmlfolder = arg
+        elif opt in ("-i", "--ifolder"):
+            markdownfolder = arg
+
+    html_path = htmlfolder + "examples/"
+    html_tmppath = htmlfolder + "examples/tmp/"
 
     html_in  = html_path + "examples/index.html"
     html_tmp = html_tmppath + "index.html"
-    references = pickle.load(open( "tmp/references.p", "rb" ))
+    references = pickle.load(open( markdownfolder + "references.p", "rb" ))
 
     Path(html_tmppath).mkdir(parents=True, exist_ok=True)
-
     
     codeblock = 0
     codeblock_end = 0

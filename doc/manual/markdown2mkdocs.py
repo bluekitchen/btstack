@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, os, shutil
+import sys, os, shutil, getopt
 import re, yaml
 
 # helper to write anchors and references
@@ -69,16 +69,33 @@ def process_listing(mdin, mdout, line):
     return line
 
 def main(argv):
-    md_template = "docs-template"
-    md_final = "docs"
+    markdownfolder = "docs-markdown/"
+    mkdocsfolder = "docs/"
+
+    cmd = 'markdown2mkdocs.py [-i <markdownfolder>] [-o <mkdocsfolder>] '
+
+    try:
+        opts, args = getopt.getopt(argv,"i:o:",["ifolder=","ofolder="])
+    except getopt.GetoptError:
+        print (cmd)
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print (cmd)
+            sys.exit()
+        elif opt in ("-i", "--ifolder"):
+            markdownfolder = arg
+        elif opt in ("-o", "--ofolder"):
+            mkdocsfolder = arg
+
     yml_file = "mkdocs.yml"
     
     with open(yml_file, 'r') as yin:
         doc = yaml.load(yin, Loader=yaml.SafeLoader)
         for page in doc["nav"]:
             mk_file = list(page.values())[0]
-            source_file = md_template +"/"+ mk_file
-            dest_file   = md_final +"/"+ mk_file
+            source_file = markdownfolder +"/"+ mk_file
+            dest_file   = mkdocsfolder +"/"+ mk_file
             print("Processing %s -> %s" % (source_file, dest_file))
             with open(dest_file, 'w') as mdout:
                 with open(source_file, 'r') as mdin:

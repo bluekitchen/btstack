@@ -7,13 +7,6 @@ class State:
     IntroFound = 1
     SearchAPI = 2
 
-btstack_root    = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../../')
-inputfolder     = btstack_root + "/src/ble/gatt-service/"
-
-manual_folder   = btstack_root + "/doc/manual/"
-docsfolder      = manual_folder + "docs-template/"
-template_folder = manual_folder + "template/"
-    
 mdfiles = {
     # source file sufix : docu file, [white list od source files]
     "_server.h" : ["gatt_services.md", ["hids_device.h"]],
@@ -121,12 +114,34 @@ def process_file(basename, inputfile_path, outputfile_path):
     fout.close()
     
 def main(argv):
+    btstackfolder   = os.path.abspath(os.path.dirname(sys.argv[0]) + '/../../')
+    inputfolder     = btstackfolder + "/src/ble/gatt-service/"
+    
+    markdownfolder = "docs-markdown/"
+    templatefolder    = "docs-intro/"
+    
+    cmd = 'update_gatt_services.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
+    
+    try:
+        opts, args = getopt.getopt(argv,"r:t:o:",["rfolder=","tfolder=","ofolder="])
+    except getopt.GetoptError:
+        print (cmd)
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print (cmd)
+            sys.exit()
+        elif opt in ("-r", "--rfolder"):
+            btstackfolder = arg
+        elif opt in ("-t", "--tfolder"):
+            templatefolder = arg
+        elif opt in ("-o", "--ofolder"):
+            markdownfolder = arg
+
+
     for source_filename_sufix, [outputfile, white_list] in mdfiles.items():
-        outputfile_path = docsfolder + outputfile 
-        introfile_path = template_folder + outputfile[:-3] + "_intro.md"
-        print('Code folder:  ', inputfolder)
-        print('Intro file:   ', introfile_path)
-        print('Output file:  ', outputfile_path)
+        outputfile_path = markdownfolder + outputfile 
+        introfile_path = templatefolder + outputfile[:-3] + "_intro.md"
         
         with open(outputfile_path, 'w') as fout:
             with open(introfile_path, 'r') as fin:

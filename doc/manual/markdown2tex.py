@@ -54,7 +54,7 @@ def fix_tightlist(line):
         return line
 
 def main(argv):
-    docs_folder = "docs-template"
+    docs_folder = "docs"
     yml_file = "mkdocs.yml"
     mk_file  = "latex/btstack_generated.md"
 

@@ -340,17 +340,12 @@ def processExamples(intro_file, examples_folder, examples_ofile, git_branch_name
 
 def main(argv):
     btstackfolder = "../../"
-    docsfolder    = "docs-template/"
-    template_folder = "template/"
     git_branch_name = "master"
 
-    inputfolder = btstackfolder + "example/"
-    introfile   = template_folder + "examples_intro.md"
-    outputfile  = docsfolder + "examples/examples.md"
+    cmd = 'update_listings.py [-r <root_btstackfolder>] [-t <templatefolder>] [-o <output_markdownfolder>]'
     
-    cmd = 'update_listings.py [-f <inputfolder>] [-i <introfile>] [-o <outputfile>]'
     try:
-        opts, args = getopt.getopt(argv,"hiso:",["ffolder=","ifile=","ofile="])
+        opts, args = getopt.getopt(argv,"r:t:o:",["rfolder=","tfolder=","ofolder="])
     except getopt.GetoptError:
         print (cmd)
         sys.exit(2)
@@ -358,14 +353,20 @@ def main(argv):
         if opt == '-h':
             print (cmd)
             sys.exit()
-        elif opt in ("-f", "--ffolder"):
-            inputfolder = arg
-        elif opt in ("-i", "--ifile"):
-            introfile = arg
-        elif opt in ("-o", "--ofile"):
-            outputfile = arg
-    print ('Input folder: ', inputfolder)
-    print ('Intro file:   ', introfile)
+        elif opt in ("-r", "--rfolder"):
+            btstackfolder = arg
+        elif opt in ("-t", "--tfolder"):
+            templatefolder = arg
+        elif opt in ("-o", "--ofolder"):
+            markdownfolder = arg
+
+
+    examples_folder    = btstackfolder + "example/"
+    examples_introfile = templatefolder + "examples_intro.md"
+    outputfile         = markdownfolder + "examples/examples.md"
+
+    print ('Input folder: ', examples_folder)
+    print ('Intro file:   ', examples_introfile)
     print ('Output file:  ', outputfile)
     
     try:
@@ -376,7 +377,7 @@ def main(argv):
     else:
         print ('GIT branch name :  %s' % git_branch_name)
     
-    processExamples(introfile, inputfolder, outputfile, git_branch_name)
+    processExamples(examples_introfile, examples_folder, outputfile, git_branch_name)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
