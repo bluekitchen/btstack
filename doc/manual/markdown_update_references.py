@@ -121,20 +121,24 @@ def main(argv):
     with open(yml_file, 'r') as yin:
         doc = yaml.load(yin, Loader=yaml.SafeLoader)
         
+        # page is either:
+        # - {title: filepath} dictionary for a direcr yml reference (e.g.  - 'Welcome': index.md), or
+        # - {navigation_group_title: [{title: filepath}, ...] } dictionary for a navigation group 
         for page in doc["nav"]:    
-            # navigation item is either:
-            # - a string for a simple reference, (e.g.  - 'Welcome': index.md), or
-            # - a list of dictionaries for a navigation group [{file_path : title}]
-            navigation_item = list(page.values())[0]
+            
+            # navigation_group_filepath is either:
+            # - filepath string for a direcr yml reference (e.g.  - 'Welcome': index.md), or
+            # - list of [{title: filepath}, ...] dictionaries for each item in navigation group 
+            navigation_group_filepath = list(page.values())[0]
 
-            if type(navigation_item) == str:
-                process_file(navigation_item, markdownfolder, mkdocsfolder)
+            if type(navigation_group_filepath) == str:
+                process_file(navigation_group_filepath, markdownfolder, mkdocsfolder)
                 continue
 
-            if type(navigation_item) == list:
-                for file_description_dict in navigation_item:
-                    api_filepath = list(file_description_dict.values())[0]
-                    process_file(api_filepath, markdownfolder, mkdocsfolder)
+            if type(navigation_group_filepath) == list:
+                for file_description_dict in navigation_group_filepath:
+                    filepath = list(file_description_dict.values())[0]
+                    process_file(filepath, markdownfolder, mkdocsfolder)
                 continue
             
                 

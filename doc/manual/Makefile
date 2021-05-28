@@ -4,15 +4,16 @@ INTRO_FOLDER = docs-intro/
 MARKDOWN_FOLDER = docs-markdown/
 MKDOCS_FOLDER = docs/
 HTML_FOLDER = btstack/
+LATEX_FOLDER = latex/
 
 all: html pdf
 
 docs-markdown:
 	# create new docs_markdown
-	rm -rf docs-markdown
-	cp -r  docs-template docs-markdown
-	mkdir  docs-markdown/examples
-	mkdir  docs-markdown/ports
+	rm -rf ${MARKDOWN_FOLDER}
+	cp -r  docs-template ${MARKDOWN_FOLDER}
+	mkdir  ${MARKDOWN_FOLDER}/examples
+	mkdir  ${MARKDOWN_FOLDER}/ports
 
 	# create mkdocs-temp.yml
 	./update_mkdocs_yml.sh
@@ -20,12 +21,12 @@ docs-markdown:
 	# following should create files in docs-markdown
 
 	# Use chipsets/readme as chipsets.md
-	sed -e "s|../doc/manual/docs-template/||g" ../../chipset/README.md > docs-markdown/chipsets.md
+	sed -e "s|../doc/manual/docs-template/||g" ../../chipset/README.md > ${MARKDOWN_FOLDER}/chipsets.md
 
 	# create docs-markdown/appendix/apis.md
-	# create docs-markdown/api_index.md
 	# create references.p
 	# create mkdocs.yml
+	# create mkdocs-latex.yml
 	./markdown_create_apis.py -r ${BTSTACK_FOLDER} -g ${GITHUB_URL} -o ${MARKDOWN_FOLDER}
 
 	# create docs-markdown/examples/examples.md
@@ -39,8 +40,8 @@ docs-markdown:
 
 docs: docs-markdown 
 	# create new docs
-	rm -rf docs
-	cp -r  docs-markdown docs
+	rm -rf ${MKDOCS_FOLDER}
+	cp -r ${MARKDOWN_FOLDER} ${MKDOCS_FOLDER}
 
 	# docs-markdown -> docs
 	./markdown_update_references.py  -i ${MARKDOWN_FOLDER} -o ${MKDOCS_FOLDER} 
@@ -54,16 +55,20 @@ html: docs
 	./html_postprocess_code_blocks.py -o ${HTML_FOLDER}
 
 pdf: docs
-	rm -rf latex
-	mkdir -p latex
-	cp -r docs/picts latex
+	rm -rf ${LATEX_FOLDER}
+	mkdir -p ${LATEX_FOLDER}
+	cp -r ${MKDOCS_FOLDER}/picts ${LATEX_FOLDER}
+
+	cp mkdocs-latex.yml mkdocs.yml
 	# create latex/btstack_gettingstartec.tex with version
-	./update_getting_started.sh
+	./update_getting_started.sh ${LATEX_FOLDER}
+	
 	# create latex/btstack_generated.md -> latex/btstack_final.tex
-	./markdown2tex.py
-	cp docs/ports/*.jpg latex
-	cd latex && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
-	mv latex/btstack_gettingstarted.pdf btstack.pdf
+	./markdown2tex.py  -i ${MKDOCS_FOLDER} -o ${LATEX_FOLDER}
+	
+	cp ${MKDOCS_FOLDER}/ports/*.jpg ${LATEX_FOLDER}
+	cd ${LATEX_FOLDER} && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
+	mv ${LATEX_FOLDER}/btstack_gettingstarted.pdf btstack.pdf
 
 preview: docs
 	# race condition, open browser before starting MKdocs server
@@ -71,8 +76,9 @@ preview: docs
 	mkdocs serve -a localhost:8010
 
 clean:
-	rm -rf docs-markdown docs tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
-	rm -rf latex btstack help
-	rm -rf references.p mkdocs-temp.yml
+	rm -rf ${MARKDOWN_FOLDER} ${LATEX_FOLDER} ${HTML_FOLDER} ${MKDOCS_FOLDER}
+	rm -f *.pdf 
+	rm -f references.p 
+	rm -f mkdocs.yml mkdocs-latex.yml mkdocs-temp.yml 
 
 	

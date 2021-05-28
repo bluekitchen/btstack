@@ -24,6 +24,10 @@ api_header = """
 # API_TITLE API {#sec:API_LABEL_api}
 
 """
+api_subheader = """
+## API_TITLE API {#sec:API_LABEL_api}
+
+"""
 
 api_ending = """
 """
@@ -286,11 +290,32 @@ def main(argv):
                     markdown_reference = "appendix/" + filename_stem(header_filepath) + ".md"
                     
                     fout.write(identation + "'" + header_title + "': " + markdown_reference + "\n")
-                        
-    for function in functions:
-        parts = function.split(' ')
-        if (len(parts) > 1):
-            print (parts)
+
+    
+    # create singe appendix/apis.md for latex
+    with open("mkdocs-temp.yml", 'rt') as fin:
+        with open("mkdocs-latex.yml", 'wt') as fout:
+            for line in fin:
+                if not isTagAPI(line):
+                    fout.write(line)
+                    continue
+
+                fout.write("  - 'APIs': appendix/apis.md\n")
+    
+
+    markdown_filepath = markdownfolder + "appendix/apis.md"
+    with open(markdown_filepath, 'wt') as fout:
+        fout.write("\n# APIs\n\n")
+        for header_filepath in sorted(header_files.keys()):
+            header_label = filename_stem(header_filepath) # file name without 
+            header_description = header_files[header_filepath][1]
+            subheader_title = api_subheader.replace("API_TITLE", header_files[header_filepath][0]).replace("API_LABEL", header_label)
+            
+            with open(header_filepath, 'rt') as fin:
+                    fout.write(subheader_title)
+                    fout.write(header_description)
+                    writeAPI(fout, fin, mk_codeidentation)
+                
 
     references = functions.copy()
     references.update(typedefs)

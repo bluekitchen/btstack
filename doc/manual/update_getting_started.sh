@@ -14,4 +14,4 @@ else
 fi
 
 # create mkdocs.yml
-sed -e "s|VERSION|$version|" btstack_gettingstarted.tex > latex/btstack_gettingstarted.tex
+sed -e "s|VERSION|$version|" btstack_gettingstarted.tex > $1/btstack_gettingstarted.tex
