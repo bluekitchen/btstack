@@ -36,8 +36,9 @@
  */
 
 /**
- * @title AD Data (Advertisements and EIR) Parser 
+ * @title AD Data Parser 
  *
+ * AD Data (Advertisements and EIR) Parser
  */
 
 #ifndef AD_PARSER_H

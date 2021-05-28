@@ -60,6 +60,7 @@ typedef enum {
   BTSTACK_CHIPSET_NO_INIT_SCRIPT,
 } btstack_chipset_result_t;
 
+/* API_START */
 
 typedef struct {
     /**
@@ -95,6 +96,8 @@ typedef struct {
     void (*set_bd_addr_command)(bd_addr_t addr, uint8_t *hci_cmd_buffer); 
 
 } btstack_chipset_t;
+
+/* API_END */
 
 #if defined __cplusplus
 }

@@ -51,6 +51,8 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 /**
  * @text Implementation of the GATT HIDS Device
  * To use with your application, add '#import <hids.gatt>' to your .gatt file
@@ -98,6 +100,8 @@ void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const
  * @brief Send HID Boot Mouse Input Report
  */
 void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+
+/* API_END */
 
 #if defined __cplusplus
 }
