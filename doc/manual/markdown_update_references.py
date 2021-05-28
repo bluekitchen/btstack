@@ -68,6 +68,34 @@ def process_listing(mdin, mdout, line):
         line = ''
     return line
 
+def process_file(mk_file, markdownfolder, mkdocsfolder):
+    source_file = markdownfolder +"/"+ mk_file
+    dest_file   = mkdocsfolder +"/"+ mk_file
+    # print("Processing %s -> %s" % (source_file, dest_file))
+
+    with open(dest_file, 'wt') as mdout:
+        with open(source_file, 'rt') as mdin:
+            for line in mdin:
+                line = process_section(mdin, mdout, line)
+                if len(line) == 0:
+                    continue
+                line = process_figure(mdin, mdout, line)
+                if len(line) == 0:
+                    continue
+                line = process_fig_ref(mdin, mdout, line)
+                if len(line) == 0:
+                    continue
+                line = process_table(mdin, mdout, line)
+                if len(line) == 0:
+                    continue
+                line = process_tbl_ref(mdin, mdout, line)
+                if len(line) == 0:
+                    continue
+                line = process_listing(mdin, mdout, line)
+                if len(line) == 0:
+                    continue
+                mdout.write(line)
+
 def main(argv):
     markdownfolder = "docs-markdown/"
     mkdocsfolder = "docs/"
@@ -92,33 +120,23 @@ def main(argv):
     
     with open(yml_file, 'r') as yin:
         doc = yaml.load(yin, Loader=yaml.SafeLoader)
-        for page in doc["nav"]:
-            mk_file = list(page.values())[0]
-            source_file = markdownfolder +"/"+ mk_file
-            dest_file   = mkdocsfolder +"/"+ mk_file
-            print("Processing %s -> %s" % (source_file, dest_file))
-            with open(dest_file, 'w') as mdout:
-                with open(source_file, 'r') as mdin:
-                    for line in mdin:
-                        line = process_section(mdin, mdout, line)
-                        if len(line) == 0:
-                            continue
-                        line = process_figure(mdin, mdout, line)
-                        if len(line) == 0:
-                            continue
-                        line = process_fig_ref(mdin, mdout, line)
-                        if len(line) == 0:
-                            continue
-                        line = process_table(mdin, mdout, line)
-                        if len(line) == 0:
-                            continue
-                        line = process_tbl_ref(mdin, mdout, line)
-                        if len(line) == 0:
-                            continue
-                        line = process_listing(mdin, mdout, line)
-                        if len(line) == 0:
-                            continue
-                        mdout.write(line)
+        
+        for page in doc["nav"]:    
+            # navigation item is either:
+            # - a string for a simple reference, (e.g.  - 'Welcome': index.md), or
+            # - a list of dictionaries for a navigation group [{file_path : title}]
+            navigation_item = list(page.values())[0]
 
+            if type(navigation_item) == str:
+                process_file(navigation_item, markdownfolder, mkdocsfolder)
+                continue
+
+            if type(navigation_item) == list:
+                for file_description_dict in navigation_item:
+                    api_filepath = list(file_description_dict.values())[0]
+                    process_file(api_filepath, markdownfolder, mkdocsfolder)
+                continue
+            
+                
 if __name__ == "__main__":
    main(sys.argv[1:])
