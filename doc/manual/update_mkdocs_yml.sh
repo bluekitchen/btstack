@@ -13,5 +13,5 @@ else
   version=$tag
 fi
 
-# create mkdocs.yml
-sed -e "s|VERSION|$version|" mkdocs-template.yml > mkdocs.yml
+# create mkdocs-temp.yml
+sed -e "s|VERSION|$version|" mkdocs-template.yml > mkdocs-temp.yml

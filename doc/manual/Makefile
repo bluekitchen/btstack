@@ -14,7 +14,7 @@ docs-markdown:
 	mkdir  docs-markdown/examples
 	mkdir  docs-markdown/ports
 
-	# create mkdocs.yml
+	# create mkdocs-temp.yml
 	./update_mkdocs_yml.sh
 	
 	# following should create files in docs-markdown
@@ -25,6 +25,7 @@ docs-markdown:
 	# create docs-markdown/appendix/apis.md
 	# create docs-markdown/api_index.md
 	# create references.p
+	# create mkdocs.yml
 	./markdown_create_apis.py -r ${BTSTACK_FOLDER} -g ${GITHUB_URL} -o ${MARKDOWN_FOLDER}
 
 	# create docs-markdown/examples/examples.md
@@ -37,7 +38,7 @@ docs-markdown:
 	./markdown_create_gatt_services_and_clients.py -r ${BTSTACK_FOLDER} -t ${INTRO_FOLDER} -o ${MARKDOWN_FOLDER}
 
 docs: docs-markdown 
-	# create new docs_final
+	# create new docs
 	rm -rf docs
 	cp -r  docs-markdown docs
 
@@ -72,6 +73,6 @@ preview: docs
 clean:
 	rm -rf docs-markdown docs tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex mkdocs.yml
 	rm -rf latex btstack help
-	rm -rf references.p
+	rm -rf references.p mkdocs-temp.yml
 
 	

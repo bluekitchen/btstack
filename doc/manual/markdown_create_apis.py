@@ -9,13 +9,19 @@ class State:
     SearchEndAPI = 3
     DoneAPI = 4
 
-api_files = []
+header_files = {}
 functions = {}
 typedefs = {}
 
-api_header = """
+linenr = 0
+typedefFound = 0
+multiline_function_def = 0
+state = State.SearchStartAPI
 
-## API_TITLE API {#sec:API_LABLEAPIAppendix}
+# if dash is used in api_header, the windmill theme will repeat the same API_TITLE twice in the menu (i.e: APIs/API_TITLE/API_TITLE)
+# if <h2> is used, this is avoided (i.e: APIs/API_TITLE), but reference {...} is not translated to HTML
+api_header = """
+# API_TITLE API {#sec:API_LABEL_api}
 
 """
 
@@ -41,6 +47,19 @@ def codeReference(fname, githuburl, filepath, linenr):
     ref = ref.replace("LINENR", str(linenr))
     return ref
 
+def isTagAPI(line):
+    return re.match('(.*)(-\s*\')(APIs).*',line)
+
+def getSecondLevelIdentation(line):
+    indentation = ""
+    parts = re.match('(.*)(-\s*\')(APIs).*',line)
+    if parts:
+        # return double identation for the submenu
+        indentation = parts.group(1) + parts.group(1) + "- "
+    return indentation
+
+def filename_stem(filepath):
+    return os.path.splitext(os.path.basename(filepath))[0]
 
 def writeAPI(fout, fin, mk_codeidentation):
     state = State.SearchStartAPI
@@ -61,12 +80,8 @@ def writeAPI(fout, fin, mk_codeidentation):
             continue
 
 
-linenr = 0
-typedefFound = 0
-multiline_function_def = 0
-state = State.SearchStartAPI
 
-def createIndex(fin, api_filename, api_title, api_lable, githuburl):
+def createIndex(fin, api_filepath, api_title, api_label, githuburl):
     global typedefs, functions
     global linenr, multiline_function_def, typedefFound, state
     
@@ -114,12 +129,12 @@ def createIndex(fin, api_filename, api_title, api_lable, githuburl):
             typedef = re.match('}\s*(.*);\n', line)
             if typedef:
                 typedefFound = 0
-                typedefs[typedef.group(1)] = codeReference(typedef.group(1), githuburl, api_filename, linenr)
+                typedefs[typedef.group(1)] = codeReference(typedef.group(1), githuburl, api_filepath, linenr)
             continue
 
         ref_function =  re.match('.*typedef\s+void\s+\(\s*\*\s*(.*?)\)\(.*', line)
         if ref_function:
-            functions[ref_function.group(1)] = codeReference(ref_function.group(1), githuburl, api_filename, linenr)
+            functions[ref_function.group(1)] = codeReference(ref_function.group(1), githuburl, api_filepath, linenr)
             continue
 
 
@@ -130,7 +145,7 @@ def createIndex(fin, api_filename, api_title, api_lable, githuburl):
             if len(name) == 0:
                 print(parts);
                 sys.exit(10)
-            functions[name] = codeReference( name, githuburl, api_filename, linenr)
+            functions[name] = codeReference( name, githuburl, api_filepath, linenr)
             continue
 
         multi_line_function_definition = re.match('.(.*?)\s*\(.*\(*.*', line)
@@ -142,7 +157,7 @@ def createIndex(fin, api_filename, api_title, api_lable, githuburl):
                 print(parts);
                 sys.exit(10)
             multiline_function_def = 1
-            functions[name] = codeReference(name, githuburl, api_filename, linenr)
+            functions[name] = codeReference(name, githuburl, api_filepath, linenr)
 
 
 def findTitle(fin):
@@ -169,7 +184,7 @@ def findTitle(fin):
             parts = re.match('(\s*\*\s*)(.*\n)',line)
             if parts:
                 desc = desc + parts.group(2)
-    return title, desc
+    return [title, desc]
 
 def main(argv):
     global linenr, multiline_function_def, typedefFound, state
@@ -214,51 +229,64 @@ def main(argv):
     print ('BTstack src folder is : ' + btstack_srcfolder)
     print ('API file is       : ' + apifile)
     print ('Github URL is    : ' +  githuburl)
-    # print ('Index file is     : ' + indexfile)
-
     
+    # create a dictionary of header files {file_path : [title, description]}
+    # title and desctiption are extracted from the file
     for root, dirs, files in os.walk(btstack_srcfolder, topdown=True):
         for f in files:
             if not f.endswith(".h"):
                 continue
-            api_files.append(root + "/" + f)
 
-    api_files.sort()
+            if not root.endswith("/"):
+                root = root + "/"
 
-    print(api_files)
+            header_filepath = root + f
+            
+            with open(header_filepath, 'rt') as fin:
+                [header_title, header_desc] = findTitle(fin)
 
-    with open(apifile, 'w') as fout:
-        fout.write("#\n\n")
+            if header_title:
+                header_files[header_filepath] = [header_title, header_desc]
+            else:
+                print("No @title flag found. Skip %s" % header_filepath)
     
-        for api_filename in api_files:
-            api_title = None
-            api_lable = None
+    
+    for header_filepath in sorted(header_files.keys()):
+        header_label = filename_stem(header_filepath) # file name without 
+        header_description = header_files[header_filepath][1]
+        header_title = api_header.replace("API_TITLE", header_files[header_filepath][0]).replace("API_LABEL", header_label)
+        markdown_filepath = markdownfolder + "appendix/" + header_label + ".md"
 
-            print(api_filename)
+        with open(header_filepath, 'rt') as fin:
+            with open(markdown_filepath, 'wt') as fout:
+                fout.write(header_title)
+                fout.write(header_description)
+                writeAPI(fout, fin, mk_codeidentation)
+            
+        with open(header_filepath, 'rt') as fin:
+            linenr = 0
+            typedefFound = 0
+            multiline_function_def = 0
+            state = State.SearchStartAPI
+            createIndex(fin, markdown_filepath, header_title, header_label, githuburl)
+     
+    # add API list to the navigation menu           
+    with open("mkdocs-temp.yml", 'rt') as fin:
+        with open("mkdocs.yml", 'wt') as fout:
+            for line in fin:
+                fout.write(line)
 
-            with open(api_filename, 'r') as fin:
-                api_title, api_desc = findTitle(fin)
-                if api_title:
-                    api_lable = f[:-2]
+                if not isTagAPI(line):
+                    continue
+
+                identation = getSecondLevelIdentation(line)
+               
+                for header_filepath in sorted(header_files.keys()):
+                    header_title = header_files[header_filepath][0]
+                    markdown_reference = "appendix/" + filename_stem(header_filepath) + ".md"
                     
-                    title = api_header.replace("API_TITLE", api_title).replace("API_LABLE", api_lable)
-                    fout.write(title)
-                    fout.write(api_desc)
-
-                    writeAPI(fout, fin, mk_codeidentation)
-                fin.close()
-        
-            if api_title:
-                
-                linenr = 0
-                typedefFound = 0
-                multiline_function_def = 0
-                state = State.SearchStartAPI
-
-                with open(api_filename, 'r') as fin:
-                    createIndex(fin, api_filename, api_title, api_lable, githuburl)
-                    fin.close()
-
+                    fout.write(identation + "'" + header_title + "': " + markdown_reference + "\n")
+                        
     for function in functions:
         parts = function.split(' ')
         if (len(parts) > 1):
