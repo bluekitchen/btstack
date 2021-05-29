@@ -619,7 +619,7 @@ const hci_cmd_t hci_enhanced_accept_synchronous_connection = {
  * @param r_256 Simple Pairing Randomizer derived from P-256 public key
  */
 const hci_cmd_t hci_remote_oob_extended_data_request_reply = {
-        HCI_OPCODE_HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, "BKKKK"
+    HCI_OPCODE_HCI_REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY, "BKKKK"
 };
 
 /**
@@ -694,7 +694,7 @@ const hci_cmd_t hci_write_link_policy_settings = {
  * @param min_local_timeout
  */
 const hci_cmd_t hci_sniff_subrating = {
-        HCI_OPCODE_HCI_SNIFF_SUBRATING, "H222"
+    HCI_OPCODE_HCI_SNIFF_SUBRATING, "H222"
 };
 
 /**
@@ -715,7 +715,7 @@ const hci_cmd_t hci_write_default_link_policy_setting = {
  * @param access_latency
  */
 const hci_cmd_t hci_flow_specification = {
-        HCI_OPCODE_HCI_FLOW_SPECIFICATION, "H1114444"
+    HCI_OPCODE_HCI_FLOW_SPECIFICATION, "H1114444"
 };
 
 
@@ -1118,8 +1118,8 @@ const hci_cmd_t hci_le_read_buffer_size = {
     HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE, ""
     // return: status, le acl data packet len (16), total num le acl data packets(8)
 };
-const hci_cmd_t hci_le_read_supported_features = {
-    HCI_OPCODE_HCI_LE_READ_SUPPORTED_FEATURES, ""
+const hci_cmd_t hci_le_read_local_supported_features = {
+    HCI_OPCODE_HCI_LE_READ_LOCAL_SUPPORTED_FEATURES, ""
     // return: LE_Features See [Vol 6] Part B, Section 4.6
 };
 
@@ -1438,7 +1438,7 @@ const hci_cmd_t hci_le_generate_dhkey = {
  * @param Local_IRK
  */
 const hci_cmd_t hci_le_add_device_to_resolving_list = {
-        HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_RESOLVING_LIST, "1BPP"
+    HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_RESOLVING_LIST, "1BPP"
 };
 
 /**
@@ -1446,19 +1446,19 @@ const hci_cmd_t hci_le_add_device_to_resolving_list = {
  * @param Peer_Identity_Address
  */
 const hci_cmd_t hci_le_remove_device_from_resolving_list = {
-        HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_RESOLVING_LIST, "1B"
+    HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_RESOLVING_LIST, "1B"
 };
 
 /**
  */
 const hci_cmd_t hci_le_clear_resolving_list = {
-        HCI_OPCODE_HCI_LE_CLEAR_RESOLVING_LIST, ""
+    HCI_OPCODE_HCI_LE_CLEAR_RESOLVING_LIST, ""
 };
 
 /**
  */
 const hci_cmd_t hci_le_read_resolving_list_size = {
-        HCI_OPCODE_HCI_LE_READ_RESOLVING_LIST_SIZE, ""
+    HCI_OPCODE_HCI_LE_READ_RESOLVING_LIST_SIZE, ""
 };
 
 /**
@@ -1466,7 +1466,7 @@ const hci_cmd_t hci_le_read_resolving_list_size = {
  * @param Peer_Identity_Address
  */
 const hci_cmd_t hci_le_read_peer_resolvable_address = {
-        HCI_OPCODE_HCI_LE_READ_PEER_RESOLVABLE_ADDRESS, ""
+    HCI_OPCODE_HCI_LE_READ_PEER_RESOLVABLE_ADDRESS, ""
 };
 
 /**
@@ -1474,21 +1474,21 @@ const hci_cmd_t hci_le_read_peer_resolvable_address = {
  * @param Peer_Identity_Address
  */
 const hci_cmd_t hci_le_read_local_resolvable_address = {
-        HCI_OPCODE_HCI_LE_READ_LOCAL_RESOLVABLE_ADDRESS, ""
+    HCI_OPCODE_HCI_LE_READ_LOCAL_RESOLVABLE_ADDRESS, ""
 };
 
 /**
  * @param Address_Resolution_Enable
  */
 const hci_cmd_t hci_le_set_address_resolution_enabled= {
-        HCI_OPCODE_HCI_LE_SET_ADDRESS_RESOLUTION_ENABLED, "1"
+    HCI_OPCODE_HCI_LE_SET_ADDRESS_RESOLUTION_ENABLED, "1"
 };
 
 /**
  * @param RPA_Timeout in seconds, range 0x0001 to 0x0E10, default: 900 s
  */
 const hci_cmd_t hci_le_set_resolvable_private_address_timeout= {
-        HCI_OPCODE_HCI_LE_SET_RESOLVABLE_PRIVATE_ADDRESS_TIMEOUT, "2"
+    HCI_OPCODE_HCI_LE_SET_RESOLVABLE_PRIVATE_ADDRESS_TIMEOUT, "2"
 };
 
 /**
@@ -1528,6 +1528,754 @@ const hci_cmd_t hci_le_set_phy = {
 // LE PHY Update Complete is generated on completion
 };
 
+/**
+ * @param rx_channel
+ * @param phy
+ * @param modulation_index
+ */
+const hci_cmd_t hci_le_receiver_test_v2 = {
+    HCI_OPCODE_HCI_LE_RECEIVER_TEST_V2, "111"
+};
+
+/**
+ * @param tx_channel
+ * @param test_data_length
+ * @param packet_payload
+ * @param phy
+ */
+const hci_cmd_t hci_le_transmitter_test_v2 = {
+    HCI_OPCODE_HCI_LE_TRANSMITTER_TEST_V2, "1111"
+};
+
+/**
+ * @param advertising_handle
+ * @param random_address
+ */
+const hci_cmd_t hci_le_set_advertising_set_random_address = {
+    HCI_OPCODE_HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS, "1B"
+};
+
+/**
+ * @param advertising_handle
+ * @param advertising_event_properties
+ * @param primary_advertising_interval_min in 0.625 ms, range: 0x000020..0xffffff
+ * @param primary_advertising_interval_max in 0.625 ms, range: 0x000020..0xffffff
+ * @param primary_advertising_channel_map
+ * @param own_address_type
+ * @param peer_address_type
+ * @param peer_address
+ * @param advertising_filter_policy
+ * @param advertising_tx_power in dBm, range: -127..20
+ * @param primary_advertising_phy
+ * @param secondary_advertising_max_skip
+ * @param secondary_advertising_phy
+ * @param advertising_sid
+ * @param scan_request_notification_enable
+ */
+const hci_cmd_t hci_le_set_extended_advertising_parameters = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS, "1233111B1111111"
+};
+
+/**
+ * @param advertising_handle
+ * @param operation
+ * @param fragment_preference
+ * @param advertising_data_length
+ * @param advertising_data
+ */
+
+const hci_cmd_t hci_le_set_extended_advertising_data = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_DATA, "111JV"
+};
+
+/**
+ * @param advertising_handle
+ * @param operation
+ * @param fragment_preference
+ * @param scan_response_data_length
+ * @param scan_response_data
+ */
+
+const hci_cmd_t hci_le_set_extended_scan_response_data = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_RESPONSE_DATA, "111JV"
+};
+
+/**
+ * @param enable
+ * @param num_sets
+ * @param advertising_handle[i]
+ * @param duration[i]
+ * @param max_extended_advertising_events[i]
+ */
+
+const hci_cmd_t hci_le_set_extended_advertising_enable = {
+        HCI_OPCODE_HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE, "11[121]"
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_maximum_advertising_data_length = {
+    HCI_OPCODE_HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH, ""
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_number_of_supported_advertising_sets = {
+    HCI_OPCODE_HCI_LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS, ""
+};
+
+/**
+ * @param advertising_handle
+ */
+const hci_cmd_t hci_le_remove_advertising_set = {
+    HCI_OPCODE_HCI_LE_REMOVE_ADVERTISING_SET, "1"
+};
+
+/**
+ */
+const hci_cmd_t hci_le_clear_advertising_sets = {
+    HCI_OPCODE_HCI_LE_CLEAR_ADVERTISING_SETS, ""
+};
+
+/**
+ * @param advertising_handle
+ * @param periodic_advertising_interval_min * 1.25 ms, range 0x0006..0xffff
+ * @param periodic_advertising_interval_max * 1.25 ms, range 0x0006..0xffff
+ * @param periodic_advertising_properties
+ */
+const hci_cmd_t hci_le_set_periodic_advertising_parameters = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_PARAMETERS, "1222"
+};
+
+/**
+ * @param advertising_handle
+ * @param operation
+ * @param advertising_data_length
+ * @param advertising_data
+ */
+
+const hci_cmd_t hci_le_set_periodic_advertising_data = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_DATA, "11JV"
+};
+
+/**
+ * @param enable
+ * @param advertising_handle
+ */
+const hci_cmd_t hci_le_set_periodic_advertising_enable = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_ENABLE, "11"
+};
+
+/**
+ * @param own_address_type
+ * @param scanning_filter_policy
+ * @param scanning_phys 0 = LE 1M PHY | 2 = LE Coded PHY
+ * @param scan_type
+ * @param scan_interval * 0.625, range = 0x0004..0xffff
+ * @param scan_window * 0.625, range = 0x0004..0xffff
+ */
+
+// Variants for 1 (1M or Coded) PHY
+const hci_cmd_t hci_le_set_extended_scan_parameters_1 = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "111122"
+};
+
+// Variants for 2 (1M and Coded) PHY
+const hci_cmd_t hci_le_set_extended_scan_parameters_2 = {
+        HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_PARAMETERS, "111122122"
+};
+
+/**
+ * @param enable
+ * @param filter_duplicates
+ * @param duration 0 = Scan continuously until explicitly disable, 10 ms
+ * @param period 0 = Scan continuously, 1.28 s
+ */
+const hci_cmd_t hci_le_set_extended_scan_enable = {
+    HCI_OPCODE_HCI_LE_SET_EXTENDED_SCAN_ENABLE, "1122"
+};
+
+/**
+ * @param initiator_filter_policy
+ * @param own_address_type
+ * @param peer_address_type
+ * @param peer_address
+ * @param initiating_phys with bit 0 = LE 1M PHY, bit 1 = LE 2M PHY, bit 2 = Coded PHY
+ * @param scan_interval[i] * 0.625 ms
+ * @param scan_window[i] * 0.625 ms
+ * @param connection_interval_min[i] * 1.25 ms
+ * @param connection_interval_max[i] * 1.25 ms
+ * @param connection_latency[i]
+ * @param supervision_timeout[i] * 10 ms
+ * @param min_ce_length[i] * 0.625 ms
+ * @param max_ce_length[i] * 0.625 ms
+ */
+
+const hci_cmd_t hci_le_extended_create_connection = {
+    HCI_OPCODE_HCI_LE_EXTENDED_CREATE_CONNECTION, "111Bb[22222222]"
+};
+
+/**
+ * @param options
+ * @param advertising_sid
+ * @param advertiser_address_type
+ * @param advertiser_address
+ * @param skip
+ * @param sync_timeout * 10 ms
+ * @param sync_cte_type
+ */
+const hci_cmd_t hci_le_periodic_advertising_create_sync = {
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_CREATE_SYNC, "111B221"
+};
+
+/**
+ */
+const hci_cmd_t hci_le_periodic_advertising_create_sync_cancel = {
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_CREATE_SYNC_CANCEL, ""
+};
+
+/**
+ * @param sync_handle
+ */
+const hci_cmd_t hci_le_periodic_advertising_terminate_sync = {
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_TERMINATE_SYNC, ""
+};
+
+/**
+ * @param advertiser_address_type
+ * @param advertiser_address
+ * @param advertising_sid
+ */
+const hci_cmd_t hci_le_add_device_to_periodic_advertiser_list = {
+    HCI_OPCODE_HCI_LE_ADD_DEVICE_TO_PERIODIC_ADVERTISER_LIST, "1B1"
+};
+
+/**
+ * @param advertiser_address_type
+ * @param advertiser_address
+ * @param advertising_sid
+ */
+const hci_cmd_t hci_le_remove_device_from_periodic_advertiser_list = {
+    HCI_OPCODE_HCI_LE_REMOVE_DEVICE_FROM_PERIODIC_ADVERTISER_LIST, "1B1"
+};
+
+/**
+ */
+const hci_cmd_t hci_le_clear_periodic_advertiser_list = {
+    HCI_OPCODE_HCI_LE_CLEAR_PERIODIC_ADVERTISER_LIST, ""
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_periodic_advertiser_list_size = {
+    HCI_OPCODE_HCI_LE_READ_PERIODIC_ADVERTISER_LIST_SIZE, ""
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_transmit_power = {
+    HCI_OPCODE_HCI_LE_READ_TRANSMIT_POWER, ""
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_rf_path_compensation = {
+    HCI_OPCODE_HCI_LE_READ_RF_PATH_COMPENSATION, ""
+};
+
+/**
+ * @param rf_tx_path_compensation_value * 0.1 dB, signed
+ * @param rf_rx_path_compensation_value * 0.1 dB, signed
+ */
+const hci_cmd_t hci_le_write_rf_path_compensation = {
+    HCI_OPCODE_HCI_LE_WRITE_RF_PATH_COMPENSATION, "22"
+};
+
+/**
+ * @param peer_identity_address_type
+ * @param peer_identity_address
+ * @param privacy_mode
+ */
+const hci_cmd_t hci_le_set_privacy_mode = {
+    HCI_OPCODE_HCI_LE_SET_PRIVACY_MODE, "1B1"
+};
+
+/**
+ * @param rx_channel
+ * @param phy
+ * @param modulation_index
+ * @param expected_cte_length
+ * @param expected_cte_type
+ * @param slot_durations
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ */
+
+const hci_cmd_t hci_le_receiver_test_v3 = {
+    HCI_OPCODE_HCI_LE_RECEIVER_TEST_V3, "111111a[1]"
+};
+
+/**
+ * @param tx_channel
+ * @param test_data_length
+ * @param packet_payload
+ * @param phy
+ * @param cte_length
+ * @param cte_type
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ */
+
+const hci_cmd_t hci_le_transmitter_test_v3 = {
+    HCI_OPCODE_HCI_LE_TRANSMITTER_TEST_V3, "111111a[1]"
+};
+
+/**
+ * @param advertising_handle
+ * @param cte_length
+ * @param cte_type
+ * @param cte_count
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ */
+
+const hci_cmd_t hci_le_set_connectionless_cte_transmit_parameters = {
+    HCI_OPCODE_HCI_LE_SET_CONNECTIONLESS_CTE_TRANSMIT_PARAMETERS, "1111a[1]"
+};
+
+/**
+ * @param advertising_handle
+ * @param cte_enable
+ */
+const hci_cmd_t hci_le_set_connectionless_cte_transmit_enable = {
+    HCI_OPCODE_HCI_LE_SET_CONNECTIONLESS_CTE_TRANSMIT_ENABLE, "11"
+};
+
+/**
+ * @param sync_handle
+ * @param sampling_enable
+ * @param slot_durations
+ * @param max_sampled_ctes
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ */
+
+const hci_cmd_t hci_le_set_connectionless_iq_sampling_enable = {
+    HCI_OPCODE_HCI_LE_SET_CONNECTIONLESS_IQ_SAMPLING_ENABLE, "2111a[i]"
+};
+
+/**
+ * @param connection_handle
+ * @param sampling_enable
+ * @param slot_durations
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ */
+
+const hci_cmd_t hci_le_set_connection_cte_receive_parameters = {
+    HCI_OPCODE_HCI_LE_SET_CONNECTION_CTE_RECEIVE_PARAMETERS, "211a[1]"
+};
+
+/**
+ * @param connection_handle
+ * @param cte_types
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ */
+
+const hci_cmd_t hci_le_set_connection_cte_transmit_parameters = {
+    HCI_OPCODE_HCI_LE_SET_CONNECTION_CTE_TRANSMIT_PARAMETERS, "21a[1]"
+};
+
+/**
+ * @param connection_handle
+ * @param enable
+ * @param cte_request_interval
+ * @param requested_cte_length
+ * @param requested_cte_type
+ */
+const hci_cmd_t hci_le_connection_cte_request_enable = {
+    HCI_OPCODE_HCI_LE_CONNECTION_CTE_REQUEST_ENABLE, "H1211"
+};
+
+/**
+ * @param connection_handle
+ * @param enable
+ */
+const hci_cmd_t hci_le_connection_cte_response_enable = {
+    HCI_OPCODE_HCI_LE_CONNECTION_CTE_RESPONSE_ENABLE, "H1"
+};
+
+/**
+ */
+const hci_cmd_t hci_le_read_antenna_information = {
+    HCI_OPCODE_HCI_LE_READ_ANTENNA_INFORMATION, ""
+};
+
+/**
+ * @param sync_handle
+ * @param enable
+ */
+const hci_cmd_t hci_le_set_periodic_advertising_receive_enable = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_RECEIVE_ENABLE, "H1"
+};
+
+/**
+ * @param connection_handle
+ * @param service_data
+ * @param sync_handle
+ */
+const hci_cmd_t hci_le_periodic_advertising_sync_transfer = {
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_SYNC_TRANSFER, "H22"
+};
+
+/**
+ * @param connection_handle
+ * @param service_data
+ * @param advertising_handle
+ */
+const hci_cmd_t hci_le_periodic_advertising_set_info_transfer = {
+    HCI_OPCODE_HCI_LE_PERIODIC_ADVERTISING_SET_INFO_TRANSFER, "H21"
+};
+
+/**
+ * @param connection_handle
+ * @param mode
+ * @param skip
+ * @param sync_timeout
+ * @param cte_type
+ */
+const hci_cmd_t hci_le_set_periodic_advertising_sync_transfer_parameters = {
+    HCI_OPCODE_HCI_LE_SET_PERIODIC_ADVERTISING_SYNC_TRANSFER_PARAMETERS, "H1221"
+};
+
+/**
+ * @param mode
+ * @param skip
+ * @param sync_timeout
+ * @param cte_type
+ */
+const hci_cmd_t hci_le_set_default_periodic_advertising_sync_transfer_parameters = {
+    HCI_OPCODE_HCI_LE_SET_DEFAULT_PERIODIC_ADVERTISING_SYNC_TRANSFER_PARAMETERS, "1221"
+};
+
+/**
+ * @param 256Remote_P-256_public_key_x
+ * @param 256Remote_P-256_public_key_y
+ * @param key_type
+ */
+const hci_cmd_t hci_le_generate_dhkey_v2 = {
+    HCI_OPCODE_HCI_LE_GENERATE_DHKEY_V2, "QQ1"
+};
+
+/**
+ * @param action
+ */
+const hci_cmd_t hci_le_modify_sleep_clock_accuracy = {
+    HCI_OPCODE_HCI_LE_MODIFY_SLEEP_CLOCK_ACCURACY, "1"
+};
+
+/**
+ */
+const hci_cmd_t hci_opcode_hci_le_read_buffer_size_v2 = {
+    HCI_OPCODE_HCI_OPCODE_HCI_LE_READ_BUFFER_SIZE_V2, ""
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_read_iso_tx_sync = {
+    HCI_OPCODE_HCI_LE_READ_ISO_TX_SYNC, "H"
+};
+
+/**
+ * @param cig_id
+ * @param sdu_interval_m_to_s
+ * @param sdu_interval_s_to_m
+ * @param slaves_clock_accuracy
+ * @param packing
+ * @param framing
+ * @param max_transport_latency_m_to_s
+ * @param max_transport_latency_s_to_m
+ * @param cis_count
+ * @param cis_id[i]
+ * @param max_sdu_m_to_s[i]
+ * @param max_sdu_s_to_m[i]
+ * @param phy_m_to_s[i]
+ * @param phy_s_to_m[i]
+ * @param rtn_m_to_s[i]
+ * @param rtn_s_to_m[i]
+ */
+
+const hci_cmd_t hci_le_set_cig_parameters = {
+    HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS, "13311122a[1221111]"
+};
+
+/**
+ * @param cig_id
+ * @param sdu_interval_m_to_s
+ * @param sdu_interval_s_to_m
+ * @param ft_m_to_s
+ * @param ft_s_to_m
+ * @param iso_interval
+ * @param slaves_clock_accuracy
+ * @param packing
+ * @param framing
+ * @param max_transport_latency_m_to_s
+ * @param max_transport_latency_s_to_m
+ * @param cis_count
+ * @param cis_id[i]
+ * @param nse[i]
+ * @param max_sdu_m_to_s[i]
+ * @param max_sdu_s_to_m[i]
+ * @param max_pdu_m_to_s[i]
+ * @param max_pdu_s_to_m[i]
+ * @param phy_m_to_s[i]
+ * @param phy_s_to_m[i]
+ * @param bn_m_to_s[i]
+ * @param bn_s_to_m[i]
+ */
+
+const hci_cmd_t hci_le_set_cig_parameters_test = {
+    HCI_OPCODE_HCI_LE_SET_CIG_PARAMETERS_TEST, "133112111a[1122221111]"
+};
+
+/**
+ * @param cis_count
+ * @param cis_connection_handle[i]
+ * @param acl_connection_handle[i]
+ */
+
+const hci_cmd_t hci_le_create_cis = {
+    HCI_OPCODE_HCI_LE_CREATE_CIS, "a[22]"
+};
+
+/**
+ * @param cig_id
+ */
+const hci_cmd_t hci_le_remove_cig = {
+    HCI_OPCODE_HCI_LE_REMOVE_CIG, "1"
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_accept_cis_request = {
+    HCI_OPCODE_HCI_LE_ACCEPT_CIS_REQUEST, "H"
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_reject_cis_request = {
+    HCI_OPCODE_HCI_LE_REJECT_CIS_REQUEST, "H"
+};
+
+/**
+ * @param big_handle
+ * @param advertising_handle
+ * @param num_bis
+ * @param sdu_interval
+ * @param max_sdu
+ * @param max_transport_latency
+ * @param rtn
+ * @param phy
+ * @param packing
+ * @param framing
+ * @param encryption
+ * @param broadcast_code
+ */
+const hci_cmd_t hci_le_create_big = {
+    HCI_OPCODE_HCI_LE_CREATE_BIG, "11132211111P"
+};
+
+/**
+ * @param big_handle
+ * @param advertising_handle
+ * @param num_bis
+ * @param sdu_interval
+ * @param iso_interval
+ * @param nse
+ * @param max_sdu
+ * @param max_PDU
+ * @param phy
+ * @param packing
+ * @param framing
+ * @param bn
+ * @param irc
+ * @param pto
+ * @param encryption
+ * @param broadcast_code
+ */
+const hci_cmd_t hci_le_create_big_test = {
+    HCI_OPCODE_HCI_LE_CREATE_BIG_TEST, "111321221111111P"
+};
+
+/**
+ * @param big_handle
+ * @param reason
+ */
+const hci_cmd_t hci_le_terminate_big = {
+    HCI_OPCODE_HCI_LE_TERMINATE_BIG, "11"
+};
+
+/**
+ * @param big_handle
+ * @param sync_handle
+ * @param encryption
+ * @param broadcast_code
+ * @param mse
+ * @param big_sync_timeout
+ * @param num_bis
+ * @param bis[i]
+ */
+
+const hci_cmd_t hci_le_big_create_sync = {
+    HCI_OPCODE_HCI_LE_BIG_CREATE_SYNC, "1H1P12a[1]"
+};
+
+/**
+ * @param big_handle
+ */
+const hci_cmd_t hci_le_big_terminate_sync = {
+    HCI_OPCODE_HCI_LE_BIG_TERMINATE_SYNC, ""
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_request_peer_sca = {
+        HCI_OPCODE_HCI_LE_REQUEST_PEER_SCA, "H"
+};
+
+/**
+ * @param connection_handle
+ * @param data_path_direction
+ * @param data_path_id
+ * @param codec_id_coding_format
+ * @param codec_id_company_identifier (Shall be ignored if codec_id_coding_format is not 0xFF)
+ * @param codec_id_vendor_codec_id (Shall be ignored if codec_id_coding_format is not 0xFF)
+ * @param controller_delay
+ * @param codec_configuration_length
+ * @param codec_configuration
+ */
+
+const hci_cmd_t hci_le_setup_iso_data_path = {
+    HCI_OPCODE_HCI_LE_SETUP_ISO_DATA_PATH, "H111223JV"
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_remove_iso_data_path = {
+    HCI_OPCODE_HCI_LE_REMOVE_ISO_DATA_PATH, "H1"
+};
+
+/**
+ * @param connection_handle
+ * @param paylaod_type
+ */
+const hci_cmd_t hci_le_iso_transmit_test = {
+    HCI_OPCODE_HCI_LE_ISO_TRANSMIT_TEST, "H1"
+};
+
+/**
+ * @param connection_handle
+ * @param paylaod_type
+ */
+const hci_cmd_t hci_le_iso_receive_test = {
+    HCI_OPCODE_HCI_LE_ISO_RECEIVE_TEST, "H1"
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_iso_read_test_counters = {
+    HCI_OPCODE_HCI_LE_ISO_READ_TEST_COUNTERS, "H"
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_iso_test_end = {
+    HCI_OPCODE_HCI_LE_ISO_TEST_END, "H"
+};
+
+/**
+ * @param bit_number
+ * @param bit_value
+ */
+const hci_cmd_t hci_le_set_host_feature = {
+    HCI_OPCODE_HCI_LE_SET_HOST_FEATURE, "11"
+};
+
+/**
+ * @param connection_handle
+ */
+const hci_cmd_t hci_le_read_iso_link_quality = {
+    HCI_OPCODE_HCI_LE_READ_ISO_LINK_QUALITY, "H"
+};
+
+/**
+ * @param connection_handle
+ * @param phy
+ */
+const hci_cmd_t hci_le_enhanced_read_transmit_power_level = {
+    HCI_OPCODE_HCI_LE_ENHANCED_READ_TRANSMIT_POWER_LEVEL, "H1"
+};
+
+/**
+ * @param connection_handle
+ * @param phy
+ */
+const hci_cmd_t hci_le_read_remote_transmit_power_level = {
+    HCI_OPCODE_HCI_LE_READ_REMOTE_TRANSMIT_POWER_LEVEL, "H1"
+};
+
+/**
+ * @param connection_handle
+ * @param high_threshold
+ * @param high_hysteresis
+ * @param low_threshold
+ * @param low_hysteresis
+ * @param min_time_spent
+ */
+const hci_cmd_t hci_le_set_path_loss_reporting_parameters = {
+    HCI_OPCODE_HCI_LE_SET_PATH_LOSS_REPORTING_PARAMETERS, "211112"
+};
+
+/**
+ * @param connection_handle
+ * @param enable
+ */
+const hci_cmd_t hci_le_set_path_loss_reporting_enable = {
+    HCI_OPCODE_HCI_LE_SET_PATH_LOSS_REPORTING_ENABLE, "H1"
+};
+
+/**
+ * @param connection_handle
+ * @param local_enable
+ * @param remote_enable
+ */
+const hci_cmd_t hci_le_set_transmit_power_reporting_enable = {
+    HCI_OPCODE_HCI_LE_SET_TRANSMIT_POWER_REPORTING_ENABLE, "H11"
+};
+
+/**
+ * @param tx_channel
+ * @param test_data_length
+ * @param packet_payload
+ * @param phy
+ * @param cte_length
+ * @param cte_type
+ * @param switching_pattern_length
+ * @param antenna_ids[i]
+ * @param transmit_power_level
+ */
+
+const hci_cmd_t hci_le_transmitter_test_v4 = {
+    HCI_OPCODE_HCI_LE_TRANSMITTER_TEST_V4, "111111a[1]1"
+};
 
 #endif
 
@@ -1539,7 +2287,7 @@ const hci_cmd_t hci_le_set_phy = {
  * @param uuid_wbs is 2 for EV2/EV3
  */
 const hci_cmd_t hci_bcm_enable_wbs = {
-        HCI_OPCODE_HCI_BCM_ENABLE_WBS, "12"
+    HCI_OPCODE_HCI_BCM_ENABLE_WBS, "12"
         // return: status
 };
 
@@ -1565,7 +2313,7 @@ const hci_cmd_t hci_bcm_write_sco_pcm_int = {
  * @param clock_mode is 0 for slabe and 1 for master
  */
 const hci_cmd_t hci_bcm_write_i2spcm_interface_param = {
-        HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM, "1111"
+    HCI_OPCODE_HCI_BCM_WRITE_I2SPCM_INTERFACE_PARAM, "1111"
         // return: status
 };
 
@@ -1660,7 +2408,7 @@ const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
  * @param master burst after rx limit
  */
 const hci_cmd_t hci_ti_configure_ddip = {
-        HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP, "1111111"
+    HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP, "1111111"
 };
 
 /**
