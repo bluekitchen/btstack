@@ -1,4 +1,4 @@
-# BTstack port with Cinnamon for Nordic nRF5 Series 
+# BTstack Port with Cinnamon for Nordic nRF5 Series 
 
 *Cinnamon* is BlueKitchen's minimal, yet robust Controller/Link Layer implementation for use with BTstack.
 

@@ -1,4 +1,4 @@
-# BTstack port for Renesas Target Board TB-S1JA with CC256x
+# BTstack Port for Renesas Target Board TB-S1JA with CC256x
 
 This port uses the Renesas TB-S1JA with TI's CC256XEM ST Adapter Kit that allows to plug in a CC256xB or CC256xC Bluetooth module.
 Renesas e2 Studio (Eclise-based) was used with the SSP HAL and without an RTOS.

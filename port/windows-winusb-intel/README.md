@@ -1,4 +1,4 @@
-# BTstack port for Windows Systems with Intel Wireless 8260/8265 Controllers
+# BTstack Port for Windows Systems with Intel Wireless 8260/8265 Controllers
 
 Same as port/windows-winusb, but customized for Intel Wireless 8260 and 8265 Controllers.
 These controller require firmware upload and configuration to work. Firmware and config is downloaded from the Linux firmware repository.

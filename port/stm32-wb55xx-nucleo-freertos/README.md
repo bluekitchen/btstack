@@ -1,4 +1,4 @@
-# BTstack port for STM32WB55 Nucleo Boards using FreeRTOS
+# BTstack Port for STM32WB55 Nucleo Boards using FreeRTOS
 
 This port supports the Nucleo68 and the USB dongle of the [P-NUCLEO-WB55 kit](https://www.st.com/en/evaluation-tools/p-nucleo-wb55.html). Both have 1 MB of Flash memory.
 

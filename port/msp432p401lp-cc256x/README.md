@@ -1,4 +1,4 @@
-# BTstack port for MSP432P401 Launchpad with CC256x
+# BTstack Port for MSP432P401 Launchpad with CC256x
 
 This port is for the the TI MSP432P401R Launchpad with TI's CC256x Bluetooth Controller using TI's DriverLib (without RTOS). 
 For easy development, Ozone project files are generated as well.

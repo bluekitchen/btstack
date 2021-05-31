@@ -1,4 +1,4 @@
-# BTstack port with Cinnamon for Semtech SX1280 2.4 GHz Multi Protocol Controller
+# BTstack Port with Cinnamon for Semtech SX1280 Controller on Miromico FMLR-80
 
 *Cinnamon* is BlueKitchen's minimal, yet robust Controller/Link Layer implementation for use with BTstack.
 

@@ -1,4 +1,4 @@
-# Experimental port of BTstack to Zephyr running on Nordic nRF5 Series
+# BTstack Port for Zephyr RTOS running on Nordic nRF5 Series
 
 ## Overview
 

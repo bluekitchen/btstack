@@ -1,4 +1,4 @@
-# BTstack port for Windows Systems using the WinUSB Driver
+# BTstack Port for Windows Systems using the WinUSB Driver
 
 The Windows-WinUSB port uses the native run loop and WinUSB API to access a USB Bluetooth dongle.
 

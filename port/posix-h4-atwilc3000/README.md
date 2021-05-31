@@ -1,5 +1,4 @@
-# POSIX H4 Port for Atmel ATWILC3000
-
+# BTstack Port for POSIX Systems with Atmel ATWILC3000 Controller
 This port allows to use the ATWILC3000 connected via UART with BTstack running on a POSIX host system, see test setup below (which lacks a proper RESET button).
 
 ## Compilation
