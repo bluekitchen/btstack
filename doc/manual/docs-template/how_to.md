@@ -621,9 +621,18 @@ and address from the *gap_event_advertising_report* event use following getters:
 If things don't work as expected, having a look at the data exchanged
 between BTstack and the Bluetooth chipset often helps.
 
-For this, BTstack provides a configurable packet logging mechanism via hci_dump.h:
+For this, BTstack provides a configurable packet logging mechanism via hci_dump.h and the following implementations:
 
     void hci_dump_init(const hci_dump_t * hci_dump_implementation);
+
+Platform | File                         | Description
+---------|------------------------------|------------
+POSIX    | `hci_dump_posix_fs.c`        | HCI log file for Apple PacketLogger and Wireshark
+POSIX    | `hci_dump_posix_stdout.c`    | Console output via printf
+Embedded | `hci_dump_embedded_stdout.c` | Console output via printf
+Embedded | `hci_dump_segger_stdout.c`   | Console output via SEGGER RTT
+Embedded | `hci_dump_segger_binary.c`   | HCI log file for Apple PacketLogger via SEGGER RTT
+
 
 On POSIX systems, you can call *hci_dump_init* with a *hci_dump_posix_fs_get_instance()* and 
 configure the path and output format with *hci_dump_posix_fs_open(const char * path, hci_dump_format_t format)*
