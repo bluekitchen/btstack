@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
-- HCI: `btstack_transport_sco.h` allows to support SCO over physical PCM/I2S interface (`HAVE_SCO_TRANSPORT`)
-- HCI: add `hci_sniff_subrating` command
+### Fixed
+### Changed
+
+## Release v1.4
+
+### Added
+- HCI: `btstack_transport_sco.h` supports SCO over physical PCM/I2S interface (`HAVE_SCO_TRANSPORT`)
 - POSIX: `btstack_transport_sco_i2s_test_bridge.c` implements SCO transport interface for UART-to-I2S test bridge
 - btstack_uart: `btstack_uart_t` interface extends `btstack_uart_block_t`:
   - support sending and receiving SLIP frames for HCI H5
@@ -24,41 +29,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: Scan Parameters Service Client 
 - GATT Server: Scan Parameters Service Server
 - GAP: support scan page configuration with `gap_set_page_scan_activity` and `gap_set_page_scan_type`
-- GAP: support sniff subrating with `gap_sniff_subrating_configure
+- GAP: support sniff subrating with `gap_sniff_subrating_configure`
 - GAP: support QoS setup with `gap_qos_set`
 - AVRCP: new field `button_pressed` in `AVRCP_SUBEVENT_OPERATION`
 - AVRCP: `AVRCP_SUBEVENT_OPERATION` emitted for button release
-- AVRCP Controller: avrcp_controller_start_press_and_hold_cmd helps to support device buttons
+- AVRCP Controller: `avrcp_controller_start_press_and_hold_cmd` supports arbitrary device buttons
 - AVRCP Controller: reassemble fragmented AVCTP packets
 - AVDTP: `avdtp_register_media_config_validator` allows to validate media codec configuration
-- A2DP Source: `ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG` disables auto config. Requires call to `a2dp_source_set_config_{CODEC}'
+- A2DP Source: `ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG` disables auto config. requires call to `a2dp_source_set_config_{CODEC}`
 
 ### Fixed
 - GAP: calculate IO Cap AuthReq Bondable Mode based on `gap_ssp_set_authentication_requirement` and `gap_set_bondable_mode`
-- GAP: only store link key for ssp if remote side has set bondable in io cap auth requirements as well 
+- GAP: only store link key for SSP if remote side has set bondable in io cap auth requirements 
 - GAP: allow to disable link supervision timeout
 - GAP: fix `gap_connect` after `gap_connect_cancel` 
 - GAP: re-configure advertisements after power cycle
 - HCI: handle start inquiry failure
-- L2CAP: fix create outgoing connection triggered in hci disconnect event callback
+- L2CAP: fix create outgoing connection triggered from packet handler on hci disconnect event
 - L2CAP: return unknown mandatory option in config response
 - AVDTP: fix spelling `avdtp_set_preferred_sampling_frequency`
 - AVRCP Target: fix notification changed event
-- HFP: Emit Audio Connection Released on SLC Release, e.g. remote power off
+- HFP: Emit audio connection released on SLC Release, e.g. on remote power off
+- HFP HF: fix audio connection setup if codec negotiation is supported
 - HFP HF: only emit single event for RING and AG Status updates
 - HFP AG: fix audio connection setup for in-band ringtone on incoming connection
-- HFP: fix audio connection setup by HF if codec negotiation is supported
 
 ### Changed
-- HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
-- btstack_uart_posix: supports SLIP frames and replaces `btstack_uart_block_posix`
-- hci_transport_h5: new more performant H5 implementation that requires `btstack_uart_t` driver with SLIP support.
-- POSIX Ports: use new `btstack_uart_posix` implementation
-- posix-h5/posix-h5-bcm: use even parity for UART
 - Port Archive: moved ports that are not recommended for new designs to port/archive folder:
   - MSP430: the ports used the older community GCC version without 20-bit support needed for code size > 64kB
   - Broadcom/Cypress H5: uploading PatchRAM is only possible in H4 mode. It's better to also use H4 in general
-  - PIC32-Harmony: the port used Harmony v1 while Harmony v3 has been out since a while.
+  - PIC32-Harmony: the port used Harmony v1 while Harmony v3 has been out since a while
+  - iOS: not supported
 - Run Loop Base: functionality used in most platform run loop implementations
   - code from `btstack_run_loop_base.c` moved into `btstack_run_loop.c` to minimize changes to build systems
   - `btstack_run_loop_base.c` is a placeholder and can be removed from build
@@ -68,21 +69,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `embedded/hci_dump_embedded_stdout` - log to console using printf
   - `embedded/hci_dump_segger_stdout` - log to RTT console using `SEGGER_printf`
   - `embedded/hci_dump_segger_binary` - writes binary log over RTT to host
+- HCI: config I2S for BCM Controllers if `ENABLE_SCO_OVER_PCM`, reduce bit clock to 256/512 kHz
+- btstack_uart_posix: supports SLIP frames and replaces `btstack_uart_block_posix`
+- hci_transport_h5: more performant H5 implementation that requires `btstack_uart_t` driver with SLIP support
+- POSIX Ports: use new `btstack_uart_posix` implementation
+- posix-h5/posix-h5-bcm: use even parity for UART
+- HCI Transport: extract convenience function declaration for h4, h5, em9304_spi, and usb into separate hci_transport_{type}.h
+- GAP: provide Device ID from EIR in GAP_EVENT_INQUIRY_RESULT
+- GAP: only store link key if it allows requested security level
+- GAP: abort SSP pairing if MITM protection required but not possible
+- SM: start pairing as Central for already encrypted connection on Slave Security Request
+- GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic and Read Long Characteristic Descriptor
+- GATT Server: Allow ATT Read Callback to return custom ATT Error Code
 - Nordic SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED`
   events instead of callback, and `RFCOMM_DATA_PACKET` for received data
 - u-blox SPP Service Server: use `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED` and `GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED`
   events instead of callback, and `RFCOMM_DATA_PACKET` for received data
-- HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
-- Examples: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
-- HFP: provide acl_handle in events to identify connection
-- HCI Transport: extract convenience function declaration for h4, h5, em9304_spi, and usb into separate hci_transport_{type}.h
-- GATT Client: Use ATT_READ_REQUEST for first blob of Read Long Characteristic and Read Long Characteristic Descriptor
-- GATT Server: Allow ATT Read Callback to return custom ATT Error Code
 - HID: Move `src/classic/hid.h` into `src` and prefix with `btstack_` to use it with BLE and avoid name clashes
-- SM: start pairing as Central for already encrypted connection on Slave Security Request 
-- GAP: provide Device ID from EIR in GAP_EVENT_INQUIRY_RESULT
-- GAP: only store link key if it allows requested security level
-- GAP: abort SSP pairing if MITM protection required but not possible
+- HFP: provide acl_handle in events to identify connection
+- HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
+- Example: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
 
 ## Release v1.3.2
 
