@@ -121,17 +121,21 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
 
 // STATE
 
-static uint8_t hid_service_buffer[250];
+static uint8_t hid_service_buffer[300];
 static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
+static hci_con_handle_t hid_con_handle = HCI_CON_HANDLE_INVALID;
 static bd_addr_t device_addr;
 static int     report_data_ready = 1;
 static uint8_t report_data[20];
-static uint8_t hid_boot_device = 1;
-static int send_mouse_on_interrupt_channel = 0;
-static int send_keyboard_on_interrupt_channel = 0;
+static bool    hid_boot_device = true;
+static bool    send_mouse_on_interrupt_channel = false;
+static bool    send_keyboard_on_interrupt_channel = false;
+
+static uint16_t host_max_latency = 1600;
+static uint16_t host_min_timeout = 3200;
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "00:1B:DC:08:E2:5C";
@@ -147,7 +151,6 @@ static enum {
 static bool virtual_cable_enabled  = false;
 static bool virtual_cable_unplugged = false;
 
-static hci_con_handle_t hid_con_handle = 0;
 // HID Report sending
 static int send_keycode;
 static int send_modifier;
@@ -262,21 +265,29 @@ static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type
     printf("do smth with report\n");
 }
 
-#ifdef HAVE_BTSTACK_STDIN
 
-// On systems with STDIN, we can directly type on the console
-#if 0
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - connect \n");
-    printf("l      - set limited discoverable mode\n");
-    printf("L      - restset limited discoverable mode\n");
+    printf("c      - Connect to %s...\n", bd_addr_to_str(device_addr));
+    printf("D      - Disconnect\n");
+    printf("I      - Disconnect from intrrupt channel %s...\n", bd_addr_to_str(device_addr));
+    printf("C      - Disconnect from control channel %s...\n", bd_addr_to_str(device_addr));
+    printf("\n");
+    
+    printf("l      - Set limited discoverable mode\n");
+    printf("m      - Request can send now (mouse)\n");
+    printf("M      - Request can send now (keyboard)\n");
+    printf("L      - Reset limited discoverable mode\n");
+    printf("u      - Unplug\n");
+    printf("w      - Set sniff subrating\n");
+    printf("z      - Enter sniff mode\n");
+    printf("q      - Set QoS 'Guaranteed'\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
-#endif
 
 static void stdin_process(char character){
     switch (character){
@@ -307,11 +318,11 @@ static void stdin_process(char character){
             hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
             return;
         case 'm':
-            send_mouse_on_interrupt_channel = 1;
+            send_mouse_on_interrupt_channel = true;
             hid_device_request_can_send_now_event(hid_cid);
             break;
         case 'M':
-            send_keyboard_on_interrupt_channel = 1;
+            send_keyboard_on_interrupt_channel = true;
             hid_device_request_can_send_now_event(hid_cid);
             break;
         case 'L':
@@ -322,11 +333,32 @@ static void stdin_process(char character){
             printf("Send unplug request to %s...\n", bd_addr_to_str(device_addr));
             hid_device_send_virtual_cable_unplug(hid_cid);
             break;
+
+        case 'w':
+            printf("Set sniff subrating\n");
+            gap_sniff_subrating_configure(hid_con_handle, 0, 0, 0);
+            break;
+
+        case 'z':{
+            printf("Enter sniff mode \n");
+            uint16_t sniff_min_interval = 18;
+            uint16_t sniff_max_interval = 18;
+            uint16_t sniff_attempt = 4;
+            uint16_t sniff_timeout = 2;
+            gap_sniff_mode_enter(hid_con_handle, sniff_min_interval, sniff_max_interval, sniff_attempt, sniff_timeout);
+            break;
+        }
+        case 'q':
+            printf("Set QoS 'Guaranteed'\n");
+            gap_qos_set(hid_con_handle, 1, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff);
+            break;
+
         case '\n':
         case '\r':
             break;
+
         default:
-            // show_usage();
+            show_usage();
             break;
     }
 
@@ -343,49 +375,8 @@ static void stdin_process(char character){
             break;
     }
 }
-#else
 
-// On embedded systems, send constant demo text with fixed period
 
-#define TYPING_PERIOD_MS 100
-static const char * demo_text = "\n\nHello World!\n\nThis is the BTstack HID Keyboard Demo running on an Embedded Device.\n\n";
-
-static int demo_pos;
-static btstack_timer_source_t typing_timer;
-
-static void typing_timer_handler(btstack_timer_source_t * ts){
-
-    // abort if not connected
-    if (!hid_cid) return;
-
-    // get next character
-    uint8_t character = demo_text[demo_pos++];
-    if (demo_text[demo_pos] == 0){
-        demo_pos = 0;
-    }
-
-    // get keycodeand send
-    uint8_t modifier;
-    uint8_t keycode;
-    int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
-    if (found){
-        send_key(modifier, keycode);
-    }
-
-    // set next timer
-    btstack_run_loop_set_timer(ts, TYPING_PERIOD_MS);
-    btstack_run_loop_add_timer(ts);
-}
-
-static void hid_embedded_start_typing(void){
-    demo_pos = 0;
-    // set one-shot timer
-    typing_timer.process = &typing_timer_handler;
-    btstack_run_loop_set_timer(&typing_timer, TYPING_PERIOD_MS);
-    btstack_run_loop_add_timer(&typing_timer);
-}
-
-#endif
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
@@ -393,7 +384,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     uint8_t status;
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            switch (packet[0]){
+            switch (hci_event_packet_get_type(packet)){
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
                     app_state = APP_NOT_CONNECTED;
@@ -422,12 +413,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             hid_subevent_connection_opened_get_bd_addr(packet, device_addr);
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
                             hid_con_handle = hid_subevent_connection_opened_get_con_handle(packet);
-#ifdef HAVE_BTSTACK_STDIN                        
                             printf("HID Connected, please start typing... %s\n", bd_addr_to_str(device_addr));
-#else                        
-                            printf("HID Connected, sending demo text...\n");
-                            hid_embedded_start_typing();
-#endif
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             printf("HID Disconnected\n");
@@ -436,6 +422,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 gap_drop_link_key_for_bd_addr(device_addr);
                                 gap_disconnect(hid_con_handle);
                             }
+                            hid_con_handle = HCI_CON_HANDLE_INVALID;
                             app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
                             break;
@@ -456,12 +443,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_mouse_on_interrupt_channel){
-                                send_mouse_on_interrupt_channel = 0;
+                                send_mouse_on_interrupt_channel = false;
                                 send_mouse_report_on_interrupt_channel(0,0,0);
                                 break;     
                             }
                             if (send_keyboard_on_interrupt_channel){
-                                send_keyboard_on_interrupt_channel = 0;
+                                send_keyboard_on_interrupt_channel = false;
                                 send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
                                 send_keycode = 0;
                                 send_modifier = 0;
@@ -490,9 +477,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     }
 }
 
-static int hid_device_connection_filter(bd_addr_t addr){
+static int hid_device_connection_filter(bd_addr_t addr, hci_link_type_t link_type){
+    UNUSED(link_type);
     if (virtual_cable_enabled && !virtual_cable_unplugged && (memcmp(addr, device_addr, 6) != 0)){
-        return 0;  
+        printf("Virtual Cable: reject incoming connection from %s\n", bd_addr_to_str(addr));
+        return 0;
     }
     return 1;
 }
@@ -504,10 +493,12 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     gap_discoverable_control(1);
-    
     gap_set_class_of_device(0x2540);
-    gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
+    gap_set_local_name("HID Device 00:00:00:00:00:00");
     
+    // Allow sniff mode requests by HID device and support role switch
+    gap_set_default_link_policy_settings(LM_LINK_POLICY_ENABLE_SNIFF_MODE | LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
+
     // L2CAP
     l2cap_init();
 
@@ -521,13 +512,25 @@ int btstack_main(int argc, const char * argv[]){
     uint8_t hid_normally_connectable = 1;
 
     if (hid_virtual_cable == 1){
+        printf("Virtual Cable enabled, accept only connections from %s\n", device_addr_string);
         virtual_cable_enabled = true;
         virtual_cable_unplugged = false;
     }
-    // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable on, hid reconnect initiate on, hid boot device off 
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
-        hid_virtual_cable, hid_remote_wake, hid_reconnect_initiate, hid_normally_connectable,
-        hid_boot_device, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+
+    hid_sdp_record_t hid_params = {
+        // hid sevice subclass 2540 Keyboard, hid counntry code 33 US
+        0x2540, 33, 
+        hid_virtual_cable, hid_remote_wake, 
+        hid_reconnect_initiate, hid_normally_connectable,
+        hid_boot_device, 
+        host_max_latency, host_min_timeout, 
+        3200,
+        hid_descriptor_keyboard_boot_mode,
+        sizeof(hid_descriptor_keyboard_boot_mode), 
+        hid_device_name
+    };
+
+    hid_create_sdp_record(hid_service_buffer, 0x10001, &hid_params);
 
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);

@@ -443,6 +443,9 @@ const uint8_t hci_reset_2[] = { 0x01, 0x03, 0x0c, 0x00 };
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci_dump.h"
+#include "hci_dump_embedded_stdout.h"
+#include "hci_transport.h"
+#include "hci_transport_em9304_spi.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 int btstack_main(int argc, char ** argv);
@@ -518,7 +521,7 @@ int main(void)
 
     // init HCI
     hci_init(hci_transport_em9304_spi_instance(btstack_em9304_spi_embedded_instance()), NULL);
-    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

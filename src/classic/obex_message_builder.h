@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * OBEX Message Builder
+ *
+ */
+
 #ifndef OBEX_MESSAGE_BUILDER_H
 #define OBEX_MESSAGE_BUILDER_H
 

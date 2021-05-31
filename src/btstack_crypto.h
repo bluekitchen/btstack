@@ -35,8 +35,8 @@
  *
  */
 
-/*
- * btstack_crypto.h
+/**
+ * Crypto-related functions
  *
  * Central place for all crypto-related functions with completion callbacks to allow
  * using of MCU crypto peripherals or the Bluetooth controller

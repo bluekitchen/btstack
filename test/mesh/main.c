@@ -59,10 +59,14 @@
 #include "btstack_run_loop_posix.h"
 #include "bluetooth_company_id.h"
 #include "hci.h"
+#include "hci_transport_h4.h"
+#include "hci_transport_usb.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_uart.h"
 
 int is_bcm;
 
@@ -205,15 +209,17 @@ int main(int argc, const char * argv[]){
 
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     strcat(log_path, ".pklg");
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    hci_dump_posix_fs_open(log_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
     printf("Packet Log: %s\n", log_path);
-    hci_dump_open(log_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
     const hci_transport_t * transport;
     if (config.device_name){
         // PTY
-        const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-        transport = hci_transport_h4_instance(uart_driver);
+        const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
+        transport = hci_transport_h4_instance_for_uart(uart_driver);
     } else {
         // libusb
         if (usb_path_len){

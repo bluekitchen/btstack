@@ -168,6 +168,7 @@ typedef enum {
     RADIO_RX_ERROR,
     RADIO_TX_TIMEOUT,
     RADIO_W4_TX_DONE_TO_RX,
+    RADIO_W4_TX_ONLY_DONE,
     RADIO_W4_TIMER,
 } radio_state_t;
 
@@ -324,6 +325,7 @@ static struct {
     // adv param
     uint8_t  adv_map;
     uint32_t adv_interval_us;
+    uint8_t  adv_type;
 
 	// adv data
 	uint8_t scan_resp_len;
@@ -369,6 +371,7 @@ static btstack_memory_pool_t ll_pdu_pool;
 
 // single ll control response
 static ll_pdu_t ll_tx_packet;
+static ll_pdu_t ll_empty_packet;
 
 // Link Layer State
 static ll_state_t ll_state;
@@ -495,7 +498,13 @@ static void ll_advertising_statemachine(void){
                 if ((ctx.adv_map & (1 << (ctx.channel - 37))) != 0) {
                     // Set Channel
                     select_channel(ctx.channel);
-                    radio_state = RADIO_W4_TX_DONE_TO_RX;
+                    if (ctx.adv_type == 3) {
+                        // Non connectable undirected advertising (ADV_NONCONN_IND)
+                        radio_state = RADIO_W4_TX_ONLY_DONE;
+                    } else {
+                        // All other are either connectable and/or scannable
+                        radio_state = RADIO_W4_TX_DONE_TO_RX;
+                    }
                     send_adv();
                     break;
                 }
@@ -589,17 +598,18 @@ static void ll_terminate(void){
     // free outgoing tx packets
     uint8_t i;
     for (i=0;i<2;i++){
-        if ((ctx.tx_buffer_pdu[i] != NULL) && (ctx.tx_buffer_pdu[i] != &ll_tx_packet)){
-            btstack_memory_ll_pdu_free(ctx.tx_buffer_pdu[i]);
+        ll_pdu_t * tx_pdu = ctx.tx_buffer_pdu[i];
+        if ((tx_pdu != NULL) && (tx_pdu != &ll_tx_packet) && (tx_pdu != &ll_empty_packet)){
+            btstack_memory_ll_pdu_free(tx_pdu);
             ctx.tx_buffer_pdu[i] = NULL;
         }
     }
     ctx.num_tx_pdus_on_controller = 0;
     // free queued tx packets
     while (true){
-        ll_pdu_t * tx_packet = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
-        if (tx_packet != NULL) {
-            btstack_memory_ll_pdu_free(tx_packet);
+        ll_pdu_t * tx_pdu = (ll_pdu_t *) btstack_linked_queue_dequeue(&ctx.tx_queue);
+        if (tx_pdu != NULL) {
+            btstack_memory_ll_pdu_free(tx_pdu);
         } else {
             break;
         }
@@ -722,15 +732,22 @@ static void radio_fetch_rx_pdu(void){
 
 /** Radio IRQ handlers */
 static void radio_on_tx_done(void ){
-    switch (radio_state){
-        case RADIO_W4_TX_DONE_TO_RX:
-            receive_response();
-            break;
-        default:
-            break;
-    }
     switch (ll_state){
+        case LL_STATE_ADVERTISING:
+            switch (radio_state){
+                case RADIO_W4_TX_DONE_TO_RX:
+                    receive_response();
+                    break;
+                case RADIO_W4_TX_ONLY_DONE:
+                    radio_state = RADIO_LOWPOWER;
+                    break;
+                default:
+                    break;
+            }
+            break;
         case LL_STATE_CONNECTED:
+            btstack_assert(radio_state == RADIO_W4_TX_DONE_TO_RX);
+            receive_response();
             radio_fetch_rx_pdu();
             preload_tx_buffer();
             break;
@@ -756,10 +773,10 @@ static void radio_prepare_auto_tx(uint16_t packet_end_ticks, uint8_t rx_len){
 
 	// setup empty packet in ll buffer if no tx packet was preloaded
 	if (ctx.num_tx_pdus_on_controller == 0) {
-		ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_tx_packet;
+		ctx.tx_buffer_pdu[ctx.next_tx_buffer] = &ll_empty_packet;
 		ctx.num_tx_pdus_on_controller++;
-		ll_tx_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
-		ll_tx_packet.len = 0;
+        ll_empty_packet.header = PDU_DATA_LLID_DATA_CONTINUE;
+        ll_empty_packet.len = 0;
 	}
 
 	// setup pdu header
@@ -806,6 +823,7 @@ static void radio_on_rx_done(void ){
 		if (pdu_type == PDU_ADV_TYPE_SCAN_REQ){
 			// scan request, select TX1 for active AutoTx
 			SX1280SetBufferBaseAddresses( SX1280_TX1_OFFSET, SX1280_RX0_OFFSET);
+			radio_state = RADIO_W4_TX_ONLY_DONE;
 		} else {
 
 			// fetch reserved rx pdu
@@ -837,23 +855,28 @@ static void radio_on_rx_done(void ){
         // more data field not used yet
         // uint8_t more_data = (rx_packet->header >> 4) & 1;
 
-        // only accept packets where len <= payload size
-        if (rx_len <= LL_MAX_PAYLOAD){
-			// update state
-			ctx.next_expected_sequence_number = 1 - sequence_number;
+        // only accept packets with new sequence number and len <= payload size
+        if ((sequence_number == ctx.next_expected_sequence_number) && (rx_len <= LL_MAX_PAYLOAD)) {
 
-			// register pdu fetch
-			ctx.rx_pdu_received = true;
+            bool rx_buffer_available = receive_prepare_rx_bufffer();
+            if (rx_buffer_available){
+                // update state
+                ctx.next_expected_sequence_number = 1 - sequence_number;
+
+                // register pdu fetch
+                ctx.rx_pdu_received = true;
+            }
         }
 
         // report outgoing packet as ack'ed and free if confirmed by peer
         bool tx_acked = ctx.transmit_sequence_number != next_expected_sequence_number;
         if (tx_acked){
             if (ctx.num_tx_pdus_on_controller > 0){
-            	btstack_assert(ctx.tx_buffer_pdu[ctx.next_tx_buffer] != NULL);
+                ll_pdu_t * acked_pdu = ctx.tx_buffer_pdu[ctx.next_tx_buffer];
+            	btstack_assert(acked_pdu != NULL);
             	// if non link-layer packet, free buffer and report as completed
-				if (ctx.tx_buffer_pdu[ctx.next_tx_buffer] != &ll_tx_packet){
-					btstack_memory_ll_pdu_free(ctx.tx_buffer_pdu[ctx.next_tx_buffer]);
+				if ((acked_pdu != &ll_tx_packet) && (acked_pdu != &ll_empty_packet)){
+					btstack_memory_ll_pdu_free(acked_pdu);
 					ctx.tx_buffer_pdu[ctx.next_tx_buffer] = NULL;
 					ctx.num_completed++;
 				}
@@ -965,6 +988,9 @@ void ll_radio_on(void){
     // Go back to Frequcency Synthesis Mode, reduces transition time between Rx<->TX
     Radio.SetAutoFS(1);
 
+    uint16_t fw_version = SX1280GetFirmwareVersion();
+    printf("FW Version: 0x%04x\n", fw_version);
+
 	// quick test
 	uint8_t data[] = {1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128,  1, 2, 4, 8, 16, 32, 64, 128 };
 	Radio.WriteBuffer(0, data, sizeof(data));
@@ -1072,6 +1098,12 @@ static void ll_handle_conn_ind(ll_pdu_t * rx_packet){
     ll_send_connection_complete = true;
 }
 
+static void ll_queue_control_tx(void){
+    hal_cpu_disable_irqs();
+    btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) &ll_tx_packet);
+    hal_cpu_enable_irqs();
+}
+
 static void ll_handle_control(ll_pdu_t * rx_packet){
     ll_pdu_t * tx_packet = &ll_tx_packet;
     uint8_t opcode = rx_packet->payload[0];
@@ -1083,7 +1115,7 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             tx_packet->payload[1] = 0x06; // VersNr = Bluetooth Core V4.0
             little_endian_store_16(tx_packet->payload, 2, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
             little_endian_store_16(tx_packet->payload, 4, 0);
-            btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) tx_packet);
+            ll_queue_control_tx();
             printf("Queue Version Ind\n");
             break;
         case PDU_DATA_LLCTRL_TYPE_FEATURE_REQ:
@@ -1092,7 +1124,7 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             tx_packet->payload[0] = PDU_DATA_LLCTRL_TYPE_FEATURE_RSP;
             // TODO: set features of our controller
             memset(&tx_packet->payload[1], 0, 8);
-            btstack_linked_queue_enqueue(&ctx.tx_queue, (btstack_linked_item_t *) tx_packet);
+            ll_queue_control_tx();
             printf("Queue Feature Rsp\n");
             break;
         case PDU_DATA_LLCTRL_TYPE_CHAN_MAP_IND:
@@ -1116,6 +1148,8 @@ static void ll_handle_control(ll_pdu_t * rx_packet){
             ll_terminate();
             break;
         default:
+            btstack_assert(false);
+            printf("Unhandled LL Control PDU 0x%02x\n", opcode);
             break;
     }
 }
@@ -1242,6 +1276,7 @@ uint8_t ll_set_advertising_parameters(uint16_t advertising_interval_min, uint16_
 
     ctx.adv_map = advertising_channel_map;
     ctx.adv_interval_us = advertising_interval_max * 625;
+    ctx.adv_type= advertising_type;
 
     // TODO: validate other params
     // TODO: process other params

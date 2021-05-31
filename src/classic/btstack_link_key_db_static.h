@@ -36,9 +36,12 @@
  */
 
 /**
- *  Static Link Key implementation to use during development/porting:
+ * @title Static Link Key Storage
+ *  
+ * Static Link Key Storage implementation to use during development/porting:
  *  - Link keys have to be manually added to this file to make them usable
  *  + Link keys are preserved on reflash in constrast to the program flash based link key store
+ *
  */
 
 #ifndef BTSTACK_LINK_KEY_DB_STATIC_H
@@ -49,6 +52,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 /*
  * @brief

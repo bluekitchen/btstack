@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  btstack_ring_buffer.h
+/**
+ * @title Ring Buffer
+ *
  */
 
 #ifndef BTSTACK_RING_BUFFER_H
@@ -55,6 +56,8 @@ typedef struct btstack_ring_buffer {
     uint32_t last_written_index;
     uint8_t  full;
 } btstack_ring_buffer_t;
+
+/* API_START */
 
 /**
  * Init ring buffer
@@ -108,6 +111,8 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
  * @param number_of_bytes_read
  */
 void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * buffer, uint32_t length, uint32_t * number_of_bytes_read); 
+
+/* API_END */
 
 #if defined __cplusplus
 }

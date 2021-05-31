@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title ATT Server
+ *
+ */
+
 #ifndef ATT_SERVER_H
 #define ATT_SERVER_H
 

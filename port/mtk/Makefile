@@ -30,12 +30,14 @@ libBTstack_OBJS  = 		           \
 	btstack.o                      \
 	btstack_linked_list.o          \
 	btstack_run_loop.o             \
+	btstack_run_loop_base.o        \
 	btstack_run_loop_posix.o       \
     btstack_tlv.o                  \
 	btstack_util.o 	               \
 	hci_cmd.o                      \
 	daemon_cmds.o                  \
 	hci_dump.o                     \
+	hci_dump_posix_fs.o            \
 	sdp_util.o                     \
 	spp_server.o                   \
 	socket_connection.o            \
@@ -53,7 +55,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS) \
 	gatt_client.o                  \
 	hci.o                          \
 	hci_transport_h4_mtk.o         \
-	btstack_uart_block_posix.o     \
+	btstack_uart_posix.o           \
 	l2cap.o                        \
 	l2cap_signaling.o              \
 	le_device_db_tlv.o             \

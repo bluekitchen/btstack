@@ -46,6 +46,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 typedef struct hfp_test_item{
     char * name;
     char ** test;
@@ -93,3 +97,6 @@ hfp_test_item_t * hfp_pts_ag_rhh_tests();
 int hfp_pts_hf_rhh_tests_size();
 hfp_test_item_t * hfp_pts_hf_rhh_tests();
 
+#if defined __cplusplus
+}
+#endif

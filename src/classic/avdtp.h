@@ -35,10 +35,8 @@
  *
  */
 
-/*
- * avdtp.h
- * 
- * Audio/Video Distribution Transport Protocol
+/**
+ * Audio/Video Distribution Transport Protocol (AVDTP)
  *
  * This protocol defines A/V stream negotiation, establishment, and transmission 
  * procedures. Also specified are the message formats that are exchanged between 
@@ -74,31 +72,32 @@ extern "C" {
 #define AVDTP_SINK_FEATURE_MASK_AMPLIFIER       0x0008u
 
 // ACP to INT, Signal Response Header Error Codes
-#define BAD_HEADER_FORMAT 0x01
+#define AVDTP_ERROR_CODE_BAD_HEADER_FORMAT     0x01
 
 // ACP to INT, Signal Response Payload Format Error Codes
-#define BAD_LENGTH 0x11
-#define BAD_ACP_SEID 0x12
-#define SEP_IN_USE 0x13
-#define SEP_NOT_IN_USE 0x14
-#define BAD_SERV_CATEGORY 0x17
-#define BAD_PAYLOAD_FORMAT 0x18
-#define NOT_SUPPORTED_COMMAND 0x19
-#define INVALID_CAPABILITIES 0x1A
+#define AVDTP_ERROR_CODE_BAD_LENGTH                 0x11
+#define AVDTP_ERROR_CODE_BAD_ACP_SEID               0x12
+#define AVDTP_ERROR_CODE_SEP_IN_USE                 0x13
+#define AVDTP_ERROR_CODE_SEP_NOT_IN_USE             0x14
+#define AVDTP_ERROR_CODE_BAD_SERV_CATEGORY          0x17
+#define AVDTP_ERROR_CODE_BAD_PAYLOAD_FORMAT         0x18
+#define AVDTP_ERROR_CODE_NOT_SUPPORTED_COMMAND      0x19
+#define AVDTP_ERROR_CODE_INVALID_CAPABILITIES       0x1A
 
 // ACP to INT, Signal Response Transport Service Capabilities Error Codes
-#define BAD_RECOVERY_TYPE 0x22
-#define BAD_MEDIA_TRANSPORT_FORMAT 0x23
-#define BAD_RECOVERY_FORMAT 0x25
-#define BAD_ROHC_FORMAT 0x26
-#define BAD_CP_FORMAT 0x27
-#define BAD_MULTIPLEXING_FORMAT 0x28
-#define UNSUPPORTED_CONFIGURATION 0x29
+#define AVDTP_ERROR_CODE_BAD_RECOVERY_TYPE          0x22
+#define AVDTP_ERROR_CODE_BAD_MEDIA_TRANSPORT_FORMAT 0x23
+#define AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT        0x25
+#define AVDTP_ERROR_CODE_BAD_ROHC_FORMAT            0x26
+#define AVDTP_ERROR_CODE_BAD_CP_FORMAT              0x27
+#define AVDTP_ERROR_CODE_BAD_MULTIPLEXING_FORMAT    0x28
+#define AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION  0x29
 
 // ACP to INT, Procedure Error Codes
-#define BAD_STATE 0x31
+#define AVDTP_ERROR_CODE_BAD_STATE                  0x31
 
-#define AVDTP_INVALID_SEP_SEID 0xFF
+// Internal Error Codes
+#define AVDTP_INVALID_SEP_SEID                      0xFF
 
 
 // Signal Identifier fields
@@ -467,6 +466,7 @@ typedef enum {
     A2DP_DISCOVER_SEPS,
     A2DP_GET_CAPABILITIES,
     A2DP_W2_GET_ALL_CAPABILITIES, //5
+    A2DP_DISCOVERY_DONE,
     A2DP_SET_CONFIGURATION,      
     A2DP_W4_GET_CONFIGURATION,
     A2DP_W4_SET_CONFIGURATION,
@@ -532,12 +532,16 @@ typedef struct {
 
     // configuration state machine
     avtdp_configuration_state_t configuration_state;
-    // btstack_timer_source_t configuration_timer;
-    
+
     bool incoming_declined;
     btstack_timer_source_t retry_timer;
 
-    bool    a2dp_source_discover_seps;
+    bool         a2dp_source_discover_seps;
+    bool         a2dp_source_outgoing_active;
+    bool         a2dp_source_have_config;
+    bool         a2dp_source_stream_endpoint_configured;
+    a2dp_state_t a2dp_source_state;
+    struct avdtp_stream_endpoint * a2dp_source_local_stream_endpoint;
 
 } avdtp_connection_t;
 
@@ -575,7 +579,6 @@ typedef struct avdtp_stream_endpoint {
     // temporary codec config used by A2DP Source
     uint8_t set_config_remote_seid;
     avdtp_media_codec_type_t media_codec_type;
-    avdtp_media_type_t media_type;
     uint8_t media_codec_info[8];
 
     // preferred SBC codec settings
@@ -587,7 +590,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t media_connect;
     uint8_t start_stream;
     uint8_t close_stream;
-    uint8_t request_can_send_now;
+    bool  request_can_send_now;
     uint8_t abort_stream;
     uint8_t suspend_stream;
     uint16_t sequence_number;
@@ -596,6 +599,7 @@ typedef struct avdtp_stream_endpoint {
 void avdtp_init(void);
 void avdtp_deinit(void);
 
+avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr);
 avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid);
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
 btstack_linked_list_t * avdtp_get_connections(void);
@@ -603,6 +607,7 @@ btstack_linked_list_t * avdtp_get_stream_endpoints(void);
 
 avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_seid(uint16_t seid);
 avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp_media_codec_type_t codec_type);
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other(uint32_t vendor_id, uint16_t codec_id);
 
 btstack_packet_handler_t avdtp_packet_handler_for_stream_endpoint(const avdtp_stream_endpoint_t *stream_endpoint);
 void avdtp_emit_sink_and_source(uint8_t * packet, uint16_t size);
@@ -614,11 +619,18 @@ void avdtp_register_delay_reporting_category(avdtp_stream_endpoint_t * stream_en
 void avdtp_register_recovery_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t maximum_recovery_window_size, uint8_t maximum_number_media_packets);
 void avdtp_register_content_protection_category(avdtp_stream_endpoint_t * stream_endpoint, uint16_t cp_type, const uint8_t * cp_type_value, uint8_t cp_type_value_len);
 void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t back_ch, uint8_t media, uint8_t recovery);
-void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len);
+void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t *media_codec_info, uint16_t media_codec_info_len);
 void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpoint, uint8_t fragmentation);
 
 // sink only
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
+
+/**
+ * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
+ * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
+ * @param callback
+ */
+void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len));
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
@@ -641,9 +653,10 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid);
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
+uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
 
 // frequency will be used by avdtp_choose_sbc_sampling_frequency (if supported by both endpoints)
-void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
+void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency);
 
 // channel_mode will be used by avdtp_choose_sbc_channel_mode (if supported by both endpoints)
 void    avdtp_set_preferred_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t channel_mode);

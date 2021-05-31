@@ -110,6 +110,7 @@ static enum {
 
 static bool     unplugged    = false;
 static uint16_t hid_host_cid = 0;
+static hci_con_handle_t hid_host_con_handle = HCI_CON_HANDLE_INVALID;
 static bool hid_host_descriptor_available = false;
 
 static hid_protocol_mode_t hid_host_protocol_mode = HID_PROTOCOL_MODE_REPORT_WITH_FALLBACK_TO_BOOT;
@@ -122,6 +123,8 @@ static uint8_t hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
 static const char * remote_addr_string = "00:1B:DC:08:E2:5C";
 
 static bd_addr_t remote_addr;
+static uint16_t host_max_latency;
+static uint16_t host_min_timeout;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -237,12 +240,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             event = hci_event_packet_get_type(packet);
 
             switch (event) {            
-                case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("BTstack up and running. \n");
-                    }
-                    break;
-
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");
@@ -282,10 +279,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                 return;
                             }
                             app_state = APP_CONNECTED;
+                            hid_host_con_handle = hid_subevent_connection_opened_get_con_handle(packet);
                             hid_host_cid = hid_subevent_connection_opened_get_hid_cid(packet);
                             printf("HID Host connected...\n");
                             break;
                         
+                        case HID_SUBEVENT_SNIFF_SUBRATING_PARAMS:
+                            host_max_latency = hid_subevent_sniff_subrating_params_get_host_max_latency(packet);
+                            host_min_timeout = hid_subevent_sniff_subrating_params_get_host_min_timeout(packet);
+                            break;
+
                         case HID_SUBEVENT_DESCRIPTOR_AVAILABLE:
                             status = hid_subevent_descriptor_available_get_status(packet);
                             if (status == ERROR_CODE_SUCCESS){
@@ -298,6 +301,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             hid_host_cid = 0;
+                            hid_host_con_handle = HCI_CON_HANDLE_INVALID;
                             printf("HID Host disconnected..\n");
                             break;
                         
@@ -406,6 +410,10 @@ static void show_usage(void){
     printf("r      - Set protocol in REPORT mode\n");
     printf("b      - Set protocol in BOOT mode\n");
 
+    printf("\n");
+    printf("y      - set link supervision timeout to 0\n");
+    printf("w      - send sniff subrating cmd\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -506,8 +514,8 @@ static void stdin_process(char cmd){
 
         case '7':{
             uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Set output report with id 0x01\n");
-            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_OUTPUT, 0x01, report, sizeof(report));
+            printf("Set input report with id 0x01\n");
+            status = hid_host_send_set_report(hid_host_cid, HID_REPORT_TYPE_INPUT, 0x01, report, sizeof(report));
             break;
         }
 
@@ -520,11 +528,21 @@ static void stdin_process(char cmd){
 
         case 'o':{
             uint8_t report[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            printf("Set output report with id 0x01\n");
+            printf("Send output report with id 0x01\n");
             status = hid_host_send_report(hid_host_cid, 0x01, report, sizeof(report));
             break;
         }
 
+        case 'y':
+            printf("Set link supervision timeout to 0 \n");
+            hci_send_cmd(&hci_write_link_supervision_timeout, hid_host_con_handle, 0);
+            break;
+        
+        case 'w':
+            printf("Configure sniff subrating\n");
+            gap_sniff_subrating_configure(hid_host_con_handle, host_max_latency, host_min_timeout, 0);
+            break;
+        
         case '\n':
         case '\r':
             break;

@@ -7,13 +7,14 @@ BTSTACK_ROOT =  ../..
 CPPFLAGS =  -x c++ -Wall -Wno-unused
 
 CFLAGS  = -DUNIT_TEST -g
-CFLAGS += -I. -I${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/src
+CFLAGS += -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/src ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
 	btstack_util.c \
 	btstack_hid_parser.c \
-	hci_dump.c
+	hci_dump.c \
+	hci_dump_posix_fs.c \
 	
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT

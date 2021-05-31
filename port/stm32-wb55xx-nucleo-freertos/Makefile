@@ -43,14 +43,17 @@ C_SOURCES =  \
 ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
 ${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
 ${BTSTACK_ROOT}/platform/freertos/btstack_run_loop_freertos.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
 ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
 ${BTSTACK_ROOT}/src/ble/gatt_client.c \
@@ -76,6 +79,8 @@ ${BTSTACK_ROOT}/src/l2cap_signaling.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/platform/embedded/hal_flash_bank_memory.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
 $(FREERTOS_ROOT)/FreeRTOS/tasks.c \
 $(FREERTOS_ROOT)/FreeRTOS/queue.c \
 $(FREERTOS_ROOT)/FreeRTOS/list.c \

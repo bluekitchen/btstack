@@ -36,7 +36,10 @@
  */
 
 /**
- * interface to provide link key storage
+ * @title Link Key DB
+ * 
+ * Interface to provide link key storage.
+ *
  */
 
 #ifndef BTSTACK_LINK_KEY_DB_H

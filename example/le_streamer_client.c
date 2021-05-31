@@ -205,6 +205,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(size);
 
     uint16_t mtu;
+    uint8_t att_status;
     switch(state){
         case TC_W4_SERVICE_RESULT:
             switch(hci_event_packet_get_type(packet)){
@@ -213,8 +214,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_service_query_result_get_service(packet, &le_streamer_service);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
-                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS){
+                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -234,8 +236,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_characteristic_query_result_get_characteristic(packet, &le_streamer_characteristic_rx);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
-                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS){
+                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -255,8 +258,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_characteristic_query_result_get_characteristic(packet, &le_streamer_characteristic_tx);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
-                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS){
+                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 

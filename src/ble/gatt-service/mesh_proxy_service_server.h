@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Mesh Proxy Service Server
+ * 
+ */
+
 #ifndef __MESH_PROXY_SERVICE_SERVER_H
 #define __MESH_PROXY_SERVICE_SERVER_H
 
@@ -46,7 +52,9 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the Mesh Proxy Service Server 
+ * @text The Mesh Proxy Service is used to enable a server to send and receive Proxy PDUs with a client.
+ *
+ * To use with your application, add `#import <mesh_proxy_service.gatt>` to your .gatt file. 
  */
 
 /* API_START */

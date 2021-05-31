@@ -1,4 +1,4 @@
-# POSIX H4 Port for Dialog Semiconductor DA14581
+# BTstack Port for POSIX Systems with Dialog Semiconductor DA14581 Controller
 
 This port allows to use the DA14581 connected via UART with BTstack running on a POSIX host system.
 

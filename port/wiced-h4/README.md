@@ -1,4 +1,4 @@
-# BTstack port for WICED platform
+# BTstack Port for WICED platform
 
 Tested with:
 - WICED SDK 3.4-6.2.1

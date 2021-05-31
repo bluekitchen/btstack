@@ -537,7 +537,6 @@ def parseCharacteristic(fout, parts):
     write_16(fout, handle+1)
     write_uuid(fout, uuid)
     fout.write("\n")
-    handle = handle + 1
     total_size = total_size + size
 
     database_hash_append_uint16(handle)
@@ -545,6 +544,8 @@ def parseCharacteristic(fout, parts):
     database_hash_append_uint8(characteristic_properties)
     database_hash_append_uint16(handle+1)
     database_hash_append_value(uuid)
+
+    handle = handle + 1
 
     uuid_is_database_hash = len(uuid) == 2 and uuid[0] == 0x2a and uuid[1] == 0x2b
 
@@ -632,48 +633,7 @@ def parseCharacteristic(fout, parts):
 
         handle = handle + 1
 
-def parseCharacteristicUserDescription(fout, parts):
-    global handle
-    global total_size
-    global current_characteristic_uuid_string
-
-    properties = parseProperties(parts[1])
-    value      = parts[2]
-
-    size = 2 + 2 + 2 + 2
-    if is_string(value):
-        size = size + len(value)
-    else:
-        size = size + len(value.split())
-
-    # use write, write permissions and encryption key size from attribute value and set READ_ANYBODY
-    flags  = write_permissions_and_key_size_flags_from_properties(properties)
-    flags |= properties & property_flags['WRITE']
-    flags |= property_flags['READ']
-
-    write_indent(fout)
-    fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:])))
-
-    dump_flags(fout, flags)
-
-    write_indent(fout)
-    write_16(fout, size)
-    write_16(fout, flags)
-    write_16(fout, handle)
-    write_16(fout, 0x2901)
-    if is_string(value):
-        write_string(fout, value)
-    else:
-        write_sequence(fout,value)
-    fout.write("\n")
-
-    database_hash_append_uint16(handle)
-    database_hash_append_uint16(0x2901)
-
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_USER_DESCRIPTION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
-    handle = handle + 1
-
-def parseServerCharacteristicConfiguration(fout, parts):
+def parseGenericDynamicDescriptor(fout, parts, uuid, name):
     global handle
     global total_size
     global current_characteristic_uuid_string
@@ -688,7 +648,38 @@ def parseServerCharacteristicConfiguration(fout, parts):
     flags |= property_flags['DYNAMIC']
 
     write_indent(fout)
-    fout.write('// 0x%04x SERVER_CHARACTERISTIC_CONFIGURATION-%s\n' % (handle, '-'.join(parts[1:])))
+    fout.write('// 0x%04x %s-%s\n' % (handle, name, '-'.join(parts[1:])))
+
+    dump_flags(fout, flags)
+
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, flags)
+    write_16(fout, handle)
+    write_16(fout, uuid)
+    fout.write("\n")
+
+    database_hash_append_uint16(handle)
+    database_hash_append_uint16(uuid)
+
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_%s_HANDLE 0x%04x' % (current_characteristic_uuid_string, name, handle))
+    handle = handle + 1
+
+def parseGenericDynamicReadOnlyDescriptor(fout, parts, uuid, name):
+    global handle
+    global total_size
+    global current_characteristic_uuid_string
+
+    properties = parseProperties(parts[1])
+    size = 2 + 2 + 2 + 2
+
+    # use write permissions and encryption key size from attribute value and set READ, DYNAMIC, READ_ANYBODY
+    flags  = write_permissions_and_key_size_flags_from_properties(properties)
+    flags |= property_flags['READ']
+    flags |= property_flags['DYNAMIC']
+
+    write_indent(fout)
+    fout.write('// 0x%04x %s-%s\n' % (handle, name, '-'.join(parts[1:])))
 
     dump_flags(fout, flags)
 
@@ -700,10 +691,13 @@ def parseServerCharacteristicConfiguration(fout, parts):
     fout.write("\n")
 
     database_hash_append_uint16(handle)
-    database_hash_append_uint16(0x2903)
+    database_hash_append_uint16(uuid)
 
-    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_SERVER_CONFIGURATION_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    defines_for_characteristics.append('#define ATT_CHARACTERISTIC_%s_%s_HANDLE 0x%04x' % (current_characteristic_uuid_string, name, handle))
     handle = handle + 1
+
+def parseServerCharacteristicConfiguration(fout, parts):
+    parseGenericDynamicDescriptor(fout, parts, 0x2903, 'SERVER_CONFIGURATION')
 
 def parseCharacteristicFormat(fout, parts):
     global handle
@@ -758,16 +752,37 @@ def parseCharacteristicAggregateFormat(fout, parts):
     write_16(fout, handle)
     write_16(fout, 0x2905)
     for identifier in parts[1:]:
-        format_handle = presentation_formats[identifier]
-        if format == 0:
+        if not identifier in presentation_formats:
+            print(parts)
             print("ERROR: identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier)
             sys.exit(1)
+        format_handle = presentation_formats[identifier]
         write_16(fout, format_handle)
     fout.write("\n")
 
     database_hash_append_uint16(handle)
     database_hash_append_uint16(0x2905)
 
+    handle = handle + 1
+
+def parseExternalReportReference(fout, parts):
+    global handle
+    global total_size
+
+    read_only_anybody_flags = property_flags['READ'];
+    size = 2 + 2 + 2 + 2 + 2
+    
+    report_uuid = int(parts[2], 16)
+    
+    write_indent(fout)
+    fout.write('// 0x%04x EXTERNAL_REPORT_REFERENCE-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, read_only_anybody_flags)
+    write_16(fout, handle)
+    write_16(fout, 0x2907)
+    write_16(fout, report_uuid)
+    fout.write("\n")
     handle = handle + 1
 
 def parseReportReference(fout, parts):
@@ -791,7 +806,6 @@ def parseReportReference(fout, parts):
     write_sequence(fout, report_type)
     fout.write("\n")
     handle = handle + 1
-
 
 def parseNumberOfDigitals(fout, parts):
     global handle
@@ -887,7 +901,7 @@ def parseLines(fname_in, fin, fout):
 
             # 2901
             if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
-                parseCharacteristicUserDescription(fout, parts)
+                parseGenericDynamicDescriptor(fout, parts, 0x2901, 'USER_DESCRIPTION')
                 continue
 
 
@@ -898,7 +912,7 @@ def parseLines(fname_in, fin, fout):
 
             # 2903
             if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
-                parseServerCharacteristicConfiguration(fout, parts)
+                parseGenericDynamicDescriptor(fout, parts, 0x2903, 'SERVER_CONFIGURATION')
                 continue
 
             # 2904
@@ -911,14 +925,14 @@ def parseLines(fname_in, fin, fout):
                 parseCharacteristicAggregateFormat(fout, parts)
                 continue
 
-            # 2906 
+            # 2906
             if parts[0] == 'VALID_RANGE':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicReadOnlyDescriptor(fout, parts, 0x2906, 'VALID_RANGE')
                 continue
 
             # 2907 
             if parts[0] == 'EXTERNAL_REPORT_REFERENCE':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseExternalReportReference(fout, parts)
                 continue
 
             # 2908
@@ -933,27 +947,22 @@ def parseLines(fname_in, fin, fout):
 
             # 290A
             if parts[0] == 'VALUE_TRIGGER_SETTING':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicDescriptor(fout, parts, 0x290A, 'VALUE_TRIGGER_SETTING')
                 continue
 
             # 290B
             if parts[0] == 'ENVIRONMENTAL_SENSING_CONFIGURATION':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicDescriptor(fout, parts, 0x290B, 'ENVIRONMENTAL_SENSING_CONFIGURATION')
                 continue
 
             # 290C
             if parts[0] == 'ENVIRONMENTAL_SENSING_MEASUREMENT':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicReadOnlyDescriptor(fout, parts, 0x290C, 'ENVIRONMENTAL_SENSING_MEASUREMENT')
                 continue
 
             # 290D 
             if parts[0] == 'ENVIRONMENTAL_SENSING_TRIGGER_SETTING':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
-                continue
-
-            # 2906 
-            if parts[0] == 'VALID_RANGE':
-                print("WARNING: %s not implemented yet\n" % (parts[0]))
+                parseGenericDynamicDescriptor(fout, parts, 0x290D, 'ENVIRONMENTAL_SENSING_TRIGGER_SETTING')
                 continue
 
             print("WARNING: unknown token: %s\n" % (parts[0]))

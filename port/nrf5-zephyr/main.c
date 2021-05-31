@@ -41,6 +41,7 @@
 #include "btstack_run_loop.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_embedded_stdout.h"
 #include "hci_transport.h"
 
 // static struct device *hci_uart_dev;
@@ -195,63 +196,21 @@ static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32
 }
 
 /**
- * Add timer to run_loop (keep list sorted)
- */
-static void btstack_run_loop_zephyr_add_timer(btstack_timer_source_t *ts){
-    btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
-        // don't add timer that's already in there
-        if ((btstack_timer_source_t *) it->next == ts){
-            log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
-            return;
-        }
-        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
-            break;
-        }
-    }
-    ts->item.next = it->next;
-    it->next = (btstack_linked_item_t *) ts;
-}
-
-/**
- * Remove timer from run loop
- */
-static int btstack_run_loop_zephyr_remove_timer(btstack_timer_source_t *ts){
-    return btstack_linked_list_remove(&timers, (btstack_linked_item_t *) ts);
-}
-
-static void btstack_run_loop_zephyr_dump_timer(void){
-#ifdef ENABLE_LOG_INFO 
-    btstack_linked_item_t *it;
-    int i = 0;
-    for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
-        btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
-    }
-#endif
-}
-
-/**
  * Execute run_loop
  */
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
-        // get next timeout
-        int32_t timeout_ticks = K_FOREVER;
-        if (timers) {
-            btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
-            uint32_t now = k_uptime_get_32();
-            if (ts->timeout < now){
-                // remove timer before processing it to allow handler to re-register with run loop
-                btstack_run_loop_remove_timer(ts);
-                // printf("RL: timer %p\n", ts->process);
-                ts->process(ts);
-                continue;
-            }
-            timeout_ticks = ts->timeout - now;
+        // process timers
+        uint32_t now = k_uptime_get_32();
+        btstack_run_loop_base_process_timers(now);
+
+        // get time until next timer expires
+        int32_t timeout_ticks = btstack_run_loop_base_get_time_until_timeout(now);
+        if (timeout_ticks < 0){
+            timeout_ticks = K_FOREVER;
         }
-                
- 	   	// process RX fifo only
+
+        // process RX fifo only
     	struct net_buf *buf = net_buf_get(&rx_queue, timeout_ticks);
 		if (buf){
 			transport_deliver_controller_packet(buf);
@@ -260,7 +219,7 @@ static void btstack_run_loop_zephyr_execute(void) {
 }
 
 static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
-    timers = NULL;
+    btstack_run_loop_base_init();
 }
 
 static const btstack_run_loop_t btstack_run_loop_wiced = {
@@ -270,10 +229,10 @@ static const btstack_run_loop_t btstack_run_loop_wiced = {
     NULL,
     NULL,
     &btstack_run_loop_zephyr_set_timer,
-    &btstack_run_loop_zephyr_add_timer,
-    &btstack_run_loop_zephyr_remove_timer,
+    &btstack_run_loop_base_add_timer,
+    &btstack_run_loop_base_remove_timer,
     &btstack_run_loop_zephyr_execute,
-    &btstack_run_loop_zephyr_dump_timer,
+    &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_zephyr_get_time_ms,
 };
 /**
@@ -316,7 +275,7 @@ void main(void)
     btstack_run_loop_init(btstack_run_loop_zephyr_get_instance());
 
     // enable full log output while porting
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
     // init HCI
     hci_init(transport_get_instance(), NULL);

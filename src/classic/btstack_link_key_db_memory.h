@@ -36,7 +36,8 @@
  */
 
 /**
- * interface to provide link key storage
+ * @title In-Memory Link Key Storage
+ *
  */
 
 #ifndef BTSTACK_LINK_KEY_DB_MEMORY_H
@@ -48,6 +49,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+/* API_START */
 
 /*
  * @brief

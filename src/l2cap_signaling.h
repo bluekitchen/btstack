@@ -35,10 +35,9 @@
  *
  */
 
-/*
- *  l2cap_signaling.h
+/**
+ * l2cap_signaling.h
  *
- *  Created by Matthias Ringwald on 7/23/09.
  */
 
 #ifndef L2CAP_SIGNALING_H

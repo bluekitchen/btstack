@@ -113,7 +113,7 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     if (ring_buffer->last_written_index == ring_buffer->last_read_index){
         ring_buffer->full = 1;
     }
-    return 0;
+    return ERROR_CODE_SUCCESS;
 } 
 
 // fetch data_length bytes from ring buffer

@@ -63,6 +63,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
             printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
+            break;
         default:
             break;
     }

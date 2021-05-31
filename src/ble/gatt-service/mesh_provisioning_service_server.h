@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Mesh Provisioning Service Server
+ * 
+ */
+
 #ifndef __MESH_PROVISIONING_SERVICE_SERVER_H
 #define __MESH_PROVISIONING_SERVICE_SERVER_H
 
@@ -46,7 +52,9 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the Mesh Provisioning Service Server 
+ * @text The Mesh Provisioning Service allows a Provisioning Client to provision a device to participate in the mesh network.
+ *
+ * To use with your application, add `#import <mesh_provisioning_service.gatt>` to your .gatt file.
  */
 
 /* API_START */

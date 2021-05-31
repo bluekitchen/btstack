@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  gatt_sdp.h
+/**
+ * @title GATT SDP
+ *
  */
 
 #ifndef GATT_SDP_H

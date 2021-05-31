@@ -395,7 +395,7 @@ static void pbap_handle_can_send_now(void){
                     }
                 }
                 if (pbap_client->phone_number){
-                    // Search by phpone number
+                    // Search by phone number
                     phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
                     application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
                     application_parameters[i++] = phone_number_len;
@@ -424,10 +424,26 @@ static void pbap_handle_can_send_now(void){
                 }
                 goep_client_header_add_name(pbap_client->goep_cid, pbap_client->vcard_name);
                 goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_entry_type);
+                // TODO: support property selector
+                // TODO: support format
                 i = 0;
-                if (i){
-                    // TODO: support property selector
-                    // TODO: support format
+                uint32_t property_selector_lower = 0;
+                uint32_t property_selector_higher = 0;
+                if (strncmp(pbap_client->vcard_name, "X-BT-UID:", 9) == 0) {
+                    property_selector_lower = 1U << 31;
+                }
+                if (strncmp(pbap_client->vcard_name, "X-BT-UCI:", 9) == 0) {
+                    property_selector_lower = 1U << 30;
+                }
+                if (property_selector_lower != 0){
+                    application_parameters[i++] = PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR;
+                    application_parameters[i++] = 8;
+                    big_endian_store_32(application_parameters, i, property_selector_higher);
+                    i += 4;
+                    big_endian_store_32(application_parameters, i, property_selector_lower);
+                    i += 4;
+                }
+                if (i > 0){
                     goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], i);
                 }
                 pbap_client->state = PBAP_W4_GET_CARD_ENTRY_COMPLETE;
@@ -582,6 +598,7 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
             int handle_found = 0;
             char name[PBAP_MAX_NAME_LEN];
             char handle[PBAP_MAX_HANDLE_LEN];
+            uint16_t char_len;
             while (data_len--){
                 yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
                 switch (r){
@@ -610,13 +627,15 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
                     case YXML_ATTRVAL:
                         if (name_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                            if ((strlen(name) + 4 + 1) >= sizeof(name)) break;
+                            char_len = strlen(pbap_client->xml_parser.data);
+                            if ((strlen(name) + char_len + 1) >= sizeof(name)) break;
                             strcat(name, pbap_client->xml_parser.data);
                             break;
                         }
                         if (handle_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                            if ((strlen(handle) + 4 + 1) >= sizeof(handle)) break;
+                            char_len = strlen(pbap_client->xml_parser.data);
+                            if ((strlen(handle) + char_len + 1) >= sizeof(handle)) break;
                             strcat(handle, pbap_client->xml_parser.data);
                             break;
                         }
@@ -996,7 +1015,6 @@ uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     log_info("abort current operation, state 0x%02x", pbap_client->state);
     pbap_client->abort_operation = 1;
-    goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
 

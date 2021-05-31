@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Nordic SPP Service Server
+ * 
+ */
+
 #ifndef NORDIC_SPP_H
 #define NORDIC_SPP_H
 
@@ -48,17 +54,17 @@ extern "C" {
 /* API_START */
 
 /**
- * Implementation of the Nordic SPP-like profile
+ * @text The Nordic SPP Service is implementation of the Nordic SPP-like profile.
  *
- * To use with your application, add '#import <nordic_spp_service.gatt' to your .gatt file
+ * To use with your application, add `#import <nordic_spp_service.gatt` to your .gatt file
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  */
 
 /**
  * @brief Init Nordic SPP Service Server with ATT DB
- * @param callback for tx data from peer. Will be called with empty data after service gets activated
+ * @param packet_handler for events and tx data from peer as RFCOMM_DATA_PACKET
  */
-void nordic_spp_service_server_init(void (*callback)(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size));
+void nordic_spp_service_server_init(btstack_packet_handler_t packet_handler);
 
 /** 
  * @brief Queue send request. When called, one packet can be send via nordic_spp_service_send below

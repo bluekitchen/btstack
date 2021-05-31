@@ -45,12 +45,15 @@
 
 #include "btstack_config.h"
 
-#include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
 #include "btstack_debug.h"
 
 #include <string.h>
+
+#ifdef ENABLE_SDP
+#include "classic/sdp_util.h"
+#endif
 
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
@@ -585,10 +588,34 @@ const hci_cmd_t hci_write_link_policy_settings = {
 };
 
 /**
+ * @param handle
+ * @param max_latency
+ * @param min_remote_timeout
+ * @param min_local_timeout
+ */
+const hci_cmd_t hci_sniff_subrating = {
+        HCI_OPCODE_HCI_SNIFF_SUBRATING, "H222"
+};
+
+/**
  * @param policy
  */
 const hci_cmd_t hci_write_default_link_policy_setting = {
     HCI_OPCODE_HCI_WRITE_DEFAULT_LINK_POLICY_SETTING, "2"
+};
+
+/**
+ * @param handle
+ * @param unused
+ * @param flow_direction
+ * @param service_type
+ * @param token_rate
+ * @param token_bucket_size
+ * @param peak_bandwidth
+ * @param access_latency
+ */
+const hci_cmd_t hci_flow_specification = {
+        HCI_OPCODE_HCI_FLOW_SPECIFICATION, "H1114444"
 };
 
 
@@ -807,10 +834,24 @@ const hci_cmd_t hci_write_current_iac_lap_two_iacs = {
 };
 
 /**
+ * @param inquiry_scan_type (0x00 = standard, 0x01 = interlaced)
+ */
+const hci_cmd_t hci_write_inquiry_scan_type = {
+    HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_TYPE,  "1"
+};
+
+/**
  * @param inquiry_mode (0x00 = standard, 0x01 = with RSSI, 0x02 = extended)
  */
 const hci_cmd_t hci_write_inquiry_mode = {
     HCI_OPCODE_HCI_WRITE_INQUIRY_MODE, "1"
+};
+
+/**
+ * @param page_scan_type (0x00 = standard, 0x01 = interlaced)
+ */
+const hci_cmd_t hci_write_page_scan_type = {
+    HCI_OPCODE_HCI_WRITE_PAGE_SCAN_TYPE, "1"
 };
 
 /**
@@ -1462,6 +1503,17 @@ const hci_cmd_t hci_bcm_set_tx_pwr = {
 };
 
 /**
+ * @brief This command starts receiving packets using packet transmission parameters such as
+ *        frequency channel, packet type, and packet length. It is used for Packet RX.
+ * @see   https://processors.wiki.ti.com/index.php/CC256x_Testing_Guide#Continuous_RX
+ * @param frequency
+ * @param ADPLL loop mode
+ */
+const hci_cmd_t hci_ti_drpb_tester_con_rx = {
+        0xFD17, "11"
+};
+
+/**
  *
  *
  * @brief This command tests the RF transceiver in continuous transmission mode.
@@ -1469,7 +1521,7 @@ const hci_cmd_t hci_bcm_set_tx_pwr = {
  *        modulation, and frequency. 
  * @see   processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_DRPb_Tester_Con_TX.280xFD84.29
  * @param modulation
- * @param test_patern
+ * @param test_pattern
  * @param frequency
  * @param power_level
  * @param reserved1
@@ -1495,6 +1547,20 @@ const hci_cmd_t hci_ti_drpb_tester_con_tx = {
  */
 const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx = {
     0xFD85, "1111112112"
+};
+
+
+/**
+ * @param best effort access percentage
+ * @param guaranteed access percentage
+ * @param poll period
+ * @param slave burst after tx
+ * @param slave master search count
+ * @param master burst after tx enable
+ * @param master burst after rx limit
+ */
+const hci_cmd_t hci_ti_configure_ddip = {
+        HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP, "1111111"
 };
 
 /**
@@ -1552,4 +1618,25 @@ const hci_cmd_t hci_ti_wbs_disassociate = {
  */
 const hci_cmd_t hci_ti_write_codec_config = {
         0xFD06, "214211122122112212211"
+};
+
+/**
+ * @brief This command is used only for internal testing.
+ * @see   https://processors.wiki.ti.com/index.php/CC256x_Testing_Guide#Continuous_TX
+ * @param frequency
+ * @param ADPLL loop mode
+ */
+const hci_cmd_t hci_ti_drpb_enable_rf_calibration = {
+        0xFD80, "141"
+};
+
+/**
+ * @brief This command command is only required for the continuous TX test of modulated
+ * (GFSK, π/4-DQPSK or 8DPSK) signal. This command should be skipped when performing continuous TX test for CW.
+ * @see   https://processors.wiki.ti.com/index.php/CC256x_Testing_Guide#Continuous_RX
+ * @param frequency
+ * @param ADPLL loop mode
+ */
+const hci_cmd_t hci_ti_write_hardware_register = {
+        0xFF01, "42"
 };

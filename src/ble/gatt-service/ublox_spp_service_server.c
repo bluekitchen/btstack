@@ -83,8 +83,7 @@ typedef struct {
     
     btstack_context_callback_registration_t credits_callback;
 
-    void (*client_data_callback)(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size);
-    void (*client_credits_callback)(hci_con_handle_t con_handle, uint16_t credits);
+    btstack_packet_handler_t client_packet_handler;
 
     // flow control
     btstack_context_callback_registration_t * request;
@@ -92,6 +91,17 @@ typedef struct {
 
 static att_service_handler_t  ublox_spp_service;
 static ublox_spp_service_t    ublox_spp;
+
+static void ublox_spp_service_emit_state(ublox_spp_service_t * instance, bool enabled){
+    uint8_t event[5];
+    uint8_t pos = 0;
+    event[pos++] = HCI_EVENT_GATTSERVICE_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = enabled ? GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED : GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED;
+    little_endian_store_16(event,pos, instance->con_handle);
+    pos += 2;
+    (*instance->client_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+}
 
 static int ublox_spp_service_flow_control_enabled(ublox_spp_service_t * instance){
     return instance->credits_client_configuration_descriptor_value;
@@ -140,7 +150,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
     if (!instance) return 0; 
 
     if (attribute_handle == instance->fifo_value_handle){
-        instance->client_data_callback(con_handle, &buffer[0], buffer_size);
+        instance->client_packet_handler(RFCOMM_DATA_PACKET, (uint16_t) con_handle, &buffer[0], buffer_size);
         if (!ublox_spp_service_flow_control_enabled(instance)) return 0;
         if (!instance->incoming_credits) return 0;
         instance->incoming_credits--;
@@ -155,7 +165,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
         }
         instance->fifo_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
         log_info("ublox spp service FIFO control: %d", instance->fifo_client_configuration_descriptor_value);
-        instance->client_data_callback(con_handle, NULL, 0);
+        ublox_spp_service_emit_state(instance,  instance->fifo_client_configuration_descriptor_value != 0);
     }
 
     if (attribute_handle == instance->credits_value_handle){
@@ -201,16 +211,14 @@ static void ublox_spp_credits_callback(void * context){
  * @brief Init ublox SPP Service Server with ATT DB
  * @param callback for tx data from peer
  */
-void ublox_spp_service_server_init(void (*client_data_callback)(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size), 
-                                   void (*client_credits_callback)(hci_con_handle_t con_handle, uint16_t credits)){
+void ublox_spp_service_server_init(btstack_packet_handler_t packet_handler){
 
     static const uint8_t ublox_spp_profile_uuid128[] = { 0x24, 0x56, 0xE1, 0xB9, 0x26, 0xE2, 0x8F, 0x83, 0xE7, 0x44, 0xF3, 0x4F, 0x01, 0xE9, 0xD7, 0x01 };
     static const uint8_t ublox_spp_fifo_uuid128[]    = { 0x24, 0x56, 0xE1, 0xB9, 0x26, 0xE2, 0x8F, 0x83, 0xE7, 0x44, 0xF3, 0x4F, 0x01, 0xE9, 0xD7, 0x03 };
     static const uint8_t ublox_spp_credits_uuid128[] = { 0x24, 0x56, 0xE1, 0xB9, 0x26, 0xE2, 0x8F, 0x83, 0xE7, 0x44, 0xF3, 0x4F, 0x01, 0xE9, 0xD7, 0x04 };
 
     ublox_spp_service_t * instance = &ublox_spp;
-    instance->client_data_callback = client_data_callback;
-    instance->client_credits_callback = client_credits_callback;
+    instance->client_packet_handler = packet_handler;
 
     instance->credits_callback.callback = ublox_spp_credits_callback;
     instance->credits_callback.context = instance;

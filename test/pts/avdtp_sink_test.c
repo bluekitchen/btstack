@@ -58,6 +58,20 @@
 #include <fdk-aac/aacdecoder_lib.h>
 #endif
 
+#ifdef HAVE_APTX
+#include <openaptx.h>
+#endif
+#define A2DP_CODEC_VENDOR_ID_APT_LTD 0x4f
+#define A2DP_CODEC_VENDOR_ID_QUALCOMM 0xd7
+#define A2DP_APT_LTD_CODEC_APTX 0x1
+#define A2DP_QUALCOMM_CODEC_APTX_HD 0x24
+
+#ifdef HAVE_LDAC_DECODER
+#include <ldacdec.h>
+#endif
+#define A2DP_CODEC_VENDOR_ID_SONY 0x12d
+#define A2DP_SONY_CODEC_LDAC 0xaa
+
 //
 // Configuration
 //
@@ -114,6 +128,22 @@ typedef struct {
 } avdtp_media_codec_configuration_aac_t;
 
 typedef struct {
+    int reconfigure;
+    int channel_mode;
+    int num_channels;
+    int sampling_frequency;
+} avdtp_media_codec_configuration_aptx_t;
+
+typedef struct {
+    int reconfigure;
+    int channel_mode;
+    int num_channels;
+    int num_samples;
+    int sampling_frequency;
+} avdtp_media_codec_configuration_ldac_t;
+
+
+typedef struct {
     uint8_t  num_channels;
     uint32_t sampling_frequency;
 } playback_configuration_t;
@@ -166,6 +196,25 @@ static HANDLE_AACDECODER aac_handle;
 static avdtp_media_codec_configuration_aac_t aac_configuration;
 static uint8_t local_seid_aac;
 #endif
+
+// APTX
+#ifdef HAVE_APTX
+static struct aptx_context *aptx_handle;
+static avdtp_media_codec_configuration_aptx_t aptx_configuration;
+static uint8_t local_seid_aptx;
+static avdtp_media_codec_configuration_aptx_t aptxhd_configuration;
+static uint8_t local_seid_aptxhd;
+#endif
+
+// LDAC
+#ifdef HAVE_LDAC_DECODER
+static ldacdec_t ldac_handle;
+static avdtp_media_codec_configuration_ldac_t ldac_configuration;
+static uint8_t local_seid_ldac;
+#endif
+
+static uint32_t vendor_id;
+static uint16_t codec_id;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
@@ -263,8 +312,19 @@ static void playback_close(void){
 }
 
 static void playback_queue_audio(int16_t * data, int num_audio_frames, int num_channels){
+
+    if (playback_active == false) {
+        return;
+    }
+
     // write to wav file
     wav_writer_write_int16(num_audio_frames * num_channels, data);
+
+    // do not write into buffer if audio is not present
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
+    if (audio == NULL){
+        return;
+    }
 
     // store in audio ring buffer
     int status = btstack_ring_buffer_write(&decoded_audio_ring_buffer, (uint8_t *)data, num_audio_frames * num_channels * 2);
@@ -363,6 +423,54 @@ static void handle_l2cap_media_data_packet_aac(uint8_t *packet, uint16_t size){
 }
 #endif
 
+static void handle_l2cap_media_data_packet_aptx(uint8_t *packet, uint16_t size) {
+#ifdef HAVE_APTX
+    size_t written;
+    int16_t decode_buf16[2048 * 2]; // 2 == num_channel
+    unsigned char decode_buf8[2048 * 2 * 2];
+    aptx_decode(aptx_handle, packet, size, decode_buf8, sizeof(decode_buf8), &written);
+    // convert to 16-bit
+    for (int i = 0; i < written/3; i++) {
+        decode_buf16[i] = (decode_buf8[i * 3 + 2] << 8) | decode_buf8[i * 3 + 1];
+    }
+    playback_queue_audio(decode_buf16, written/(3 * aptx_configuration.num_channels), aptx_configuration.num_channels);
+#endif
+}
+
+static void handle_l2cap_media_data_packet_aptxhd(uint8_t *packet, uint16_t size) {
+#ifdef HAVE_APTX
+    uint16_t pos = 0;
+    size_t written;
+    int16_t decode_buf16[2048 * 2]; // 2 == num_channel
+    unsigned char decode_buf8[2048 * 2 * 2];
+    avdtp_media_packet_header_t media_header;
+    if (!read_media_data_header(packet, size, &pos, &media_header)) return;
+    aptx_decode(aptx_handle, packet+pos, size-12, decode_buf8, sizeof(decode_buf8), &written);
+    // convert to 16-bit
+    for (int i = 0; i < written/3; i++) {
+        decode_buf16[i] = (decode_buf8[i * 3 + 2] << 8) | decode_buf8[i * 3 + 1];
+    }
+    playback_queue_audio(decode_buf16, written/(3 * aptxhd_configuration.num_channels), aptxhd_configuration.num_channels);
+#endif
+}
+
+static void handle_l2cap_media_data_packet_ldac(uint8_t *packet, uint16_t size) {
+#ifdef HAVE_LDAC_DECODER
+    uint16_t pos = 0;
+    int used;
+    int16_t decode_buf16[2048 * 2] = {0}; // 2 == num_channel
+    avdtp_media_packet_header_t media_header;
+    if (!read_media_data_header(packet, size, &pos, &media_header)) return;
+    pos++; // first byte is header
+    while (pos < size) {
+        ldacDecode(&ldac_handle, packet+pos, decode_buf16, &used);
+        playback_queue_audio(decode_buf16, ldac_handle.frame.frameSamples, ldac_configuration.num_channels);
+        pos += used;
+    }
+#endif
+}
+
+
 // Codec XXX
 //
 //
@@ -418,11 +526,100 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
         case AVDTP_CODEC_MPEG_2_4_AAC:
             handle_l2cap_media_data_packet_aac(packet, size);
             break;
+        case AVDTP_CODEC_NON_A2DP:
+            if (vendor_id == A2DP_CODEC_VENDOR_ID_APT_LTD && codec_id == A2DP_APT_LTD_CODEC_APTX) {
+                handle_l2cap_media_data_packet_aptx(packet, size);
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD) {
+                handle_l2cap_media_data_packet_aptxhd(packet, size);
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_SONY && codec_id == A2DP_SONY_CODEC_LDAC) {
+                handle_l2cap_media_data_packet_ldac(packet, size);
+            }
+            break;
         default:
             printf("Media Codec %u not supported yet\n", codec_type);
             return;
     }
 }
+
+static uint32_t get_vendor_id(const uint8_t *codec_info) {
+    uint32_t vendor_id = 0;
+    vendor_id |= codec_info[0];
+    vendor_id |= codec_info[1] << 8;
+    vendor_id |= codec_info[2] << 16;
+    vendor_id |= codec_info[3] << 24;
+    return vendor_id;
+}
+
+static uint16_t get_codec_id(const uint8_t *codec_info) {
+    uint16_t codec_id = 0;
+    codec_id |= codec_info[4];
+    codec_id |= codec_info[5] << 8;
+    return codec_id;
+}
+
+static int convert_aptx_sampling_frequency(uint8_t frequency_bitmap) {
+    switch (frequency_bitmap) {
+    case 1 << 4:
+        return 48000;
+    case 1 << 5:
+        return 44100;
+    case 1 << 6:
+        return 32000;
+    case 1 <<7:
+        return 16000;
+    default:
+        printf("invalid aptx sampling frequency %d\n", frequency_bitmap);
+        return 0;
+    }
+}
+
+static int convert_aptx_num_channels(uint8_t channel_mode) {
+    switch (channel_mode) {
+    case 1 << 0:
+    case 1 << 1:
+    case 1 << 2:
+        return 2;
+    case 1 << 3:
+        return 1;
+    default:
+        printf("invalid aptx channel mode %d\n", channel_mode);
+        return 0;
+    }
+}
+
+static int convert_ldac_sampling_frequency(uint8_t frequency_bitmap) {
+    switch (frequency_bitmap) {
+    case 1 << 0:
+        return 192000;
+    case 1 << 1:
+        return 176400;
+    case 1 << 2:
+        return 96000;
+    case 1 << 3:
+        return 88200;
+    case 1 << 4:
+        return 48000;
+    case 1 << 5:
+        return 44100;
+    default:
+        printf("invalid ldac sampling frequency %d\n", frequency_bitmap);
+        return 0;
+    }
+}
+
+static int convert_ldac_num_channels(uint8_t channel_mode) {
+    switch (channel_mode) {
+    case 1 << 0: // stereo
+    case 1 << 1: // dual channel
+        return 2;
+    case 1 << 2:
+        return 1;
+    default:
+        printf("error ldac channel mode\n");
+        return 0;
+    }
+}
+
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -525,9 +722,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("    - recovery  %d\n", avdtp_subevent_signaling_header_compression_capability_get_recovery(packet));
             break;
             
-        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
-            printf("Received non SBC codec, event not parsed.\n");
-            break;
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:{
+            printf("OTHER CAPABILITY\n");
+            const uint8_t *media_info = avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information(packet);
+            vendor_id = get_vendor_id(media_info);
+            codec_id = get_codec_id(media_info);
+            // APTX
+            if (vendor_id == A2DP_CODEC_VENDOR_ID_APT_LTD && codec_id == A2DP_APT_LTD_CODEC_APTX) {
+#ifdef HAVE_APTX
+                local_seid = local_seid_aptx;
+                printf("Selecting local APTX endpoint with SEID %u\n", local_seid);
+#endif
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD) {
+#ifdef HAVE_APTX
+                local_seid = local_seid_aptxhd;
+                printf("Selecting local APTX HD endpoint with SEID %u\n", local_seid);
+#endif
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_SONY && codec_id == A2DP_SONY_CODEC_LDAC) {
+#ifdef HAVE_LDAC_DECODER
+                local_seid = local_seid_ldac;
+                printf("Selecting local LDAC endpoint with SEID %u\n", local_seid);
+#endif
+            }
+            break;}
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:
             codec_type = AVDTP_CODEC_SBC;
@@ -548,7 +765,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             dump_sbc_configuration(sbc_configuration);
             
-            avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
+            avdtp_sink_delay_report(avdtp_cid, local_seid, 100);
             break;
 
 #ifdef HAVE_AAC_FDK
@@ -586,6 +803,54 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         }
 #endif
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:{
+            codec_type = AVDTP_CODEC_NON_A2DP;
+            local_seid = a2dp_subevent_signaling_media_codec_other_configuration_get_local_seid(packet);
+            const uint8_t *media_info = avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information(packet);
+            vendor_id = get_vendor_id(media_info);
+            codec_id = get_codec_id(media_info);
+            // APTX
+            if (vendor_id == A2DP_CODEC_VENDOR_ID_APT_LTD && codec_id == A2DP_APT_LTD_CODEC_APTX) {
+#if HAVE_APTX
+                aptx_configuration.reconfigure = a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet);
+                aptx_configuration.sampling_frequency = media_info[6] & 0xF0;
+                aptx_configuration.channel_mode = media_info[6] & 0x0F;
+                aptx_configuration.sampling_frequency = convert_aptx_sampling_frequency(aptx_configuration.sampling_frequency);
+                aptx_configuration.num_channels = convert_aptx_num_channels(aptx_configuration.channel_mode);
+                printf("A2DP Source: Received APTX configuration! Sampling frequency: %d, channel mode: %d channels: %d\n",
+                        aptx_configuration.sampling_frequency, aptx_configuration.channel_mode, aptx_configuration.num_channels);
+                aptx_handle = aptx_init(0);
+                playback_configuration.num_channels = aptx_configuration.num_channels;
+                playback_configuration.sampling_frequency = aptx_configuration.sampling_frequency;
+#endif
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_QUALCOMM && codec_id == A2DP_QUALCOMM_CODEC_APTX_HD) {
+#if HAVE_APTX
+                aptxhd_configuration.reconfigure = a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet);
+                aptxhd_configuration.sampling_frequency = media_info[6] & 0xF0;
+                aptxhd_configuration.channel_mode = media_info[6] & 0x0F;
+                aptxhd_configuration.sampling_frequency = convert_aptx_sampling_frequency(aptxhd_configuration.sampling_frequency);
+                aptxhd_configuration.num_channels = convert_aptx_num_channels(aptxhd_configuration.channel_mode);
+                printf("A2DP Source: Received APTX HD configuration! Sampling frequency: %d, channel mode: %d channels: %d\n",
+                        aptxhd_configuration.sampling_frequency, aptxhd_configuration.channel_mode, aptxhd_configuration.num_channels);
+                aptx_handle = aptx_init(1);
+                playback_configuration.num_channels = aptxhd_configuration.num_channels;
+                playback_configuration.sampling_frequency = aptxhd_configuration.sampling_frequency;
+#endif
+            } else if (vendor_id == A2DP_CODEC_VENDOR_ID_SONY && codec_id == A2DP_SONY_CODEC_LDAC) {
+#ifdef HAVE_LDAC_DECODER
+                ldac_configuration.reconfigure = a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet);
+                ldac_configuration.sampling_frequency = media_info[6];
+                ldac_configuration.channel_mode = media_info[7];
+                ldac_configuration.sampling_frequency = convert_ldac_sampling_frequency(ldac_configuration.sampling_frequency);
+                ldac_configuration.num_channels = convert_ldac_num_channels(ldac_configuration.channel_mode);
+                printf("A2DP Source: Received LDAC configuration! Sampling frequency: %d, channel mode: %d channels: %d\n",
+                        ldac_configuration.sampling_frequency, ldac_configuration.channel_mode, ldac_configuration.num_channels);
+                ldacdecInit(&ldac_handle);
+                playback_configuration.num_channels = ldac_configuration.num_channels;
+                playback_configuration.sampling_frequency = ldac_configuration.sampling_frequency;
+#endif
+            }
+            break;}
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
             avdtp_cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
@@ -636,7 +901,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (is_cmd_triggered_locally){
                 is_cmd_triggered_locally = 0;
             }
-            printf("AVDTP Sink event 0x%02x not parsed\n", packet[2]);
             break; 
     }
 }
@@ -674,6 +938,30 @@ static uint8_t media_aac_codec_capabilities[] = {
 
 static uint8_t media_aac_codec_configuration[6];
 
+static uint8_t media_aptx_codec_capabilities[] = {
+        0x4F, 0x0, 0x0, 0x0,
+        0x1, 0,
+        0xFF,
+};
+
+static uint8_t media_aptx_codec_configuration[7];
+
+static uint8_t media_aptxhd_codec_capabilities[] = {
+        0xD7, 0x0, 0x0, 0x0,
+        0x24, 0,
+        0xFF,
+        0, 0, 0, 0
+};
+static uint8_t media_aptxhd_codec_configuration[11];
+
+static uint8_t media_ldac_codec_capabilities[] = {
+        0x2D, 0x1, 0x0, 0x0,
+        0xAA, 0,
+        0x3C,
+        0x7
+};
+static uint8_t media_ldac_codec_configuration[8];
+
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
@@ -681,6 +969,12 @@ static void show_usage(void){
     printf("Supported Codecs: SBC");
 #ifdef HAVE_AAC_FDK
     printf(", MPEG AAC");
+#endif
+#ifdef HAVE_APTX
+    printf(", aptX, aptX HD");
+#endif
+#ifdef HAVE_LDAC_DECODER
+    printf(", LDAC");
 #endif
     printf("\n");
     printf("c      - create connection to addr %s\n", device_addr_string);
@@ -778,7 +1072,7 @@ static void stdin_process(char cmd){
             break;
         case 'D':
             printf("Send delay report between local %d and remote %d seid\n", local_seid, remote_seid);
-            status = avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
+            status = avdtp_sink_delay_report(avdtp_cid, local_seid, 100);
             break;
         case '\n':
         case '\r':
@@ -822,6 +1116,37 @@ int btstack_main(int argc, const char * argv[]){
     local_seid_aac = avdtp_local_seid(local_stream_endpoint);
     avdtp_sink_register_media_transport_category(local_seid_aac);
     avdtp_sink_register_media_codec_category(local_seid_aac, AVDTP_AUDIO, AVDTP_CODEC_MPEG_2_4_AAC, media_aac_codec_capabilities, sizeof(media_aac_codec_capabilities));
+#endif
+
+#ifdef HAVE_LDAC_DECODER
+    // Setup LDAC Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
+    local_stream_endpoint->media_codec_configuration_info = media_ldac_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_ldac_codec_configuration);
+    local_seid_ldac = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_ldac);
+    avdtp_sink_register_media_codec_category(local_seid_ldac, AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, media_ldac_codec_capabilities, sizeof(media_ldac_codec_capabilities));
+#endif
+
+#ifdef HAVE_APTX
+    // Setup APTX Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
+    local_stream_endpoint->media_codec_configuration_info = media_aptx_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_aptx_codec_configuration);
+    local_seid_aptx = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_aptx);
+    avdtp_sink_register_media_codec_category(local_seid_aptx, AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, media_aptx_codec_capabilities, sizeof(media_aptx_codec_capabilities));
+
+    // Setup APTX HD Endpoint
+    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    btstack_assert(local_stream_endpoint != NULL);
+    local_stream_endpoint->media_codec_configuration_info = media_aptxhd_codec_configuration;
+    local_stream_endpoint->media_codec_configuration_len  = sizeof(media_aptxhd_codec_configuration);
+    local_seid_aptxhd = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid_aptxhd);
+    avdtp_sink_register_media_codec_category(local_seid_aptxhd, AVDTP_AUDIO, AVDTP_CODEC_NON_A2DP, media_aptxhd_codec_capabilities, sizeof(media_aptxhd_codec_capabilities));
 #endif
 
     // Setup SBC Endpoint

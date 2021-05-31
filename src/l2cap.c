@@ -144,6 +144,7 @@ static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uin
 static uint8_t  l2cap_next_sig_id(void);
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
 #ifdef ENABLE_CLASSIC
+static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm);
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel);
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
@@ -608,7 +609,10 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, ertm_config->local_mtu, LEVEL_0);
+    // determine security level based on psm
+    const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
+
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, ertm_config->local_mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -1367,7 +1371,7 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 }
 
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len){
-    return l2cap_send_signaling_packet(con_handle, ECHO_REQUEST, 0x77, len, data);
+    return l2cap_send_signaling_packet(con_handle, ECHO_REQUEST,  l2cap_next_sig_id(), len, data);
 }
 
 static inline void channelStateVarSetFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
@@ -1539,7 +1543,7 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
                 }
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 0, NULL);
+                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 1, &channel->unknown_option);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
@@ -1945,6 +1949,14 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
+    // abort if Secure Connections Only Mode with legacy connection
+    if (gap_get_secure_connections_only_mode() && gap_secure_connection(channel->con_handle) == false){
+        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
+        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
+        l2cap_free_channel_entry(channel);
+        return;
+    }
+
     // we have been waiting for remote supported features
     if (channel->required_security_level > LEVEL_0){
         // request security level
@@ -2044,7 +2056,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
     // check if hci connection is already usable,
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
-    if (conn && conn->con_handle != HCI_CON_HANDLE_INVALID){
+    if (conn && conn->state == OPEN){
     	// simulate connection complete
 	    l2cap_handle_connection_complete(conn->con_handle, channel);
 
@@ -2348,7 +2360,8 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
 
         switch (channel->state){
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
-                if (actual_level >= required_level){
+                if ((actual_level >= required_level) &&
+                        ((gap_get_secure_connections_only_mode() == false) || gap_secure_connection(channel->con_handle))){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                     // we need to know if ERTM is supported before sending a config response
                     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
@@ -2566,6 +2579,27 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         return;
     }
 
+    // Core V5.2, Vol 3, Part C, 5.2.2.2 - Security Mode 4
+    //   When a remote device attempts to access a service offered by a Bluetooth device that is in security mode 4
+    //   and a sufficient link key exists and authentication has not been performed the local device shall authenticate
+    //   the remote device and enable encryption after the channel establishment request is received but before a channel
+    //   establishment confirmation (L2CAP_ConnectRsp with result code of 0x0000 or a higher-level channel establishment
+    //   confirmation such as that of RFCOMM) is sent.
+
+    //   If the remote device has indicated support for Secure Simple Pairing, a channel establishment request is
+    //   received for a service other than SDP, and encryption has not yet been enabled, then the local device shall
+    //   disconnect the ACL link with error code 0x05 - Authentication Failure.
+
+    // => Disconnect if l2cap request received in mode 4 and ssp supported, non-sdp psm, not encrypted, no link key available
+    if ((gap_get_security_mode() == GAP_SECURITY_MODE_4)
+        && gap_ssp_supported_on_both_sides(handle)
+        && (psm != PSM_SDP)
+        && (gap_encryption_key_size(handle) == 0)
+        && (gap_bonded(handle) == false)){
+        hci_disconnect_security_block(handle);
+        return;
+    }
+
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
     l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL, 
@@ -2717,7 +2751,8 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 #endif        
         // check for unknown options
         if ((option_hint == 0) && ((option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT) || (option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE))){
-            log_info("l2cap cid %u, unknown options", channel->local_cid);
+            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
+            channel->unknown_option = option_type;
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
         pos += length;
@@ -2775,7 +2810,8 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
 
         // check for unknown options
         if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
-            log_info("l2cap cid %u, unknown options", channel->local_cid);
+            log_info("l2cap cid %u, unknown option 0x%02x", channel->local_cid, option_type);
+            channel->unknown_option = option_type;
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
 

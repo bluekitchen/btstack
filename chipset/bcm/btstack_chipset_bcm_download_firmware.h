@@ -47,4 +47,12 @@
  * @param uart_driver -- already initialized
  * @param done callback. 0 = Success
  */
+void btstack_chipset_bcm_download_firmware_with_uart(const btstack_uart_t * the_uart_driver, int baudrate_upload, void (*done)(int result));
+
+/**
+ * @brief Download firmware via uart_driver
+ * @param uart_driver -- already initialized
+ * @param done callback. 0 = Success
+ * @depreacted use btstack_chipset_bcm_download_firmware_with_uart
+*/
 void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart_driver, int baudrate_upload, void (*done)(int result));

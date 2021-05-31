@@ -43,7 +43,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_run_loop.h"
+#include "btstack_util.h"
 
 #include "mesh/mesh_crypto.h"
 #include "mesh/pb_adv.h"

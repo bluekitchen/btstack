@@ -263,8 +263,8 @@ static int a2dp_and_avrcp_setup(void){
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, AVDTP_SINK_FEATURE_MASK_HEADPHONE, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
-    
-    // Create AVRCP Controller service record and register it with SDP
+
+    // Create AVRCP Controller service record and register it with SDP. We send Category 1 commands to the media player, e.g. play/pause
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
@@ -273,7 +273,7 @@ static int a2dp_and_avrcp_setup(void){
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10002, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
     
-    // Create AVRCP Target service record and register it with SDP
+    // Create AVRCP Target service record and register it with SDP. We receive Category 2 commands from the media player, e.g. volume up/down
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
     uint16_t target_supported_features = AVRCP_FEATURE_MASK_CATEGORY_MONITOR_OR_AMPLIFIER;
     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10003, target_supported_features, NULL, NULL);
@@ -488,7 +488,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     sbc_frame_size = (size-pos)/ sbc_header.num_frames;
         
     int status = btstack_ring_buffer_write(&sbc_frame_ring_buffer, packet+pos, size-pos);
-    if (status){
+    if (status != ERROR_CODE_SUCCESS){
         printf("Error storing samples in SBC ring buffer!!!\n");
     }
 
@@ -751,6 +751,8 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
     uint8_t volume;
+    char const * button_state;
+    avrcp_operation_id_t operation_id;
 
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
@@ -770,65 +772,20 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
             avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
-        case AVRCP_SUBEVENT_OPERATION:{
-            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
+        case AVRCP_SUBEVENT_OPERATION:
+            operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            button_state = avrcp_subevent_operation_get_button_pressed(packet) > 0 ? "PRESS" : "RELEASE";
             switch (operation_id){
-                case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target    : PLAY\n");
+                case AVRCP_OPERATION_ID_VOLUME_UP:
+                    printf("AVRCP Target    : VOLUME UP (%s)\n", button_state);
                     break;
-                case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target    : PAUSE\n");
-                    break;
-                case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target    : STOP\n");
-                    break;
-                case AVRCP_OPERATION_ID_REWIND:
-                    printf("AVRCP Target    : REWIND\n");
-                    break;
-                case AVRCP_OPERATION_ID_FAST_FORWARD:
-                    printf("AVRCP Target    : FAST_FORWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_FORWARD:
-                    printf("AVRCP Target    : FORWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_BACKWARD:
-                    printf("AVRCP Target    : BACKWARD\n");
-                    break;
-                case AVRCP_OPERATION_ID_SKIP:
-                    printf("AVRCP Target    : SKIP\n");
-                    break;
-                case AVRCP_OPERATION_ID_MUTE:
-                    printf("AVRCP Target    : MUTE\n");
-                    break;
-                case AVRCP_OPERATION_ID_CHANNEL_UP:
-                    printf("AVRCP Target    : CHANNEL_UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_CHANNEL_DOWN:
-                    printf("AVRCP Target    : CHANNEL_DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_SELECT:
-                    printf("AVRCP Target    : SELECT\n");
-                    break;
-                case AVRCP_OPERATION_ID_UP:
-                    printf("AVRCP Target    : UP\n");
-                    break;
-                case AVRCP_OPERATION_ID_DOWN:
-                    printf("AVRCP Target    : DOWN\n");
-                    break;
-                case AVRCP_OPERATION_ID_LEFT:
-                    printf("AVRCP Target    : LEFT\n");
-                    break;
-                case AVRCP_OPERATION_ID_RIGHT:
-                    printf("AVRCP Target    : RIGTH\n");
-                    break;
-                case AVRCP_OPERATION_ID_ROOT_MENU:
-                    printf("AVRCP Target    : ROOT_MENU\n");
+                case AVRCP_OPERATION_ID_VOLUME_DOWN:
+                    printf("AVRCP Target    : VOLUME UP (%s)\n", button_state);
                     break;
                 default:
                     return;
             }
             break;
-        }
         default:
             printf("AVRCP Target    : Event 0x%02x is not parsed\n", packet[2]);
             break;
@@ -853,7 +810,6 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
     bd_addr_t address;
     uint8_t status;
 
-    uint8_t channel_mode;
     uint8_t allocation_method;
 
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -874,23 +830,17 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             
             allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
-            channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
             sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
-            switch (channel_mode){
-                case AVDTP_SBC_JOINT_STEREO:
-                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
+            switch (sbc_configuration.channel_mode){
+                case SBC_CHANNEL_MODE_JOINT_STEREO:
+                case SBC_CHANNEL_MODE_STEREO:
+                case SBC_CHANNEL_MODE_DUAL_CHANNEL:
                     break;
-                case AVDTP_SBC_STEREO:
-                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
-                    break;
-                case AVDTP_SBC_DUAL_CHANNEL:
-                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
-                    break;
-                case AVDTP_SBC_MONO:
-                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
+                case SBC_CHANNEL_MODE_MONO:
                     sbc_configuration.num_channels = 1;
                     break;
                 default:
@@ -909,7 +859,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
-            if (status){
+            if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP  Sink      : Streaming connection failed, status 0x%02x\n", status);
                 break;
             }
@@ -983,6 +933,8 @@ static void show_usage(void){
 
     printf("a/A - register/deregister TRACK_CHANGED\n");
     printf("R/P - register/deregister PLAYBACK_POS_CHANGED\n");
+
+    printf("s/S - send/release long button press REWIND\n");
 
     printf("\n--- Volume Control ---\n");
     printf("t - volume up   for 10 percent\n");
@@ -1130,7 +1082,14 @@ static void stdin_process(char cmd){
             printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
-
+         case 's':
+            printf("AVRCP: send long button press REWIND\n");
+            avrcp_controller_start_press_and_hold_cmd(avrcp_cid, AVRCP_OPERATION_ID_REWIND);
+            break;
+        case 'S':
+            printf("AVRCP: release long button press REWIND\n");
+            avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
+            break;
         default:
             show_usage();
             return;

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.12)
 project(PTS)
 
 # fink pkgconfig
@@ -11,11 +11,13 @@ link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
 
 # portaudio
-pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
-include_directories(${PORTAUDIO_INCLUDE_DIRS})
-link_directories(${PORTAUDIO_LIBRARY_DIRS})
-link_libraries(${PORTAUDIO_LIBRARIES})
-add_compile_definitions(HAVE_PORTAUDIO)
+pkg_check_modules(PORTAUDIO portaudio-2.0)
+if(PORTAUDIO_FOUND)
+    include_directories(${PORTAUDIO_INCLUDE_DIRS})
+    link_directories(${PORTAUDIO_LIBRARY_DIRS})
+    link_libraries(${PORTAUDIO_LIBRARIES})
+    add_compile_definitions(HAVE_PORTAUDIO)
+endif()
 
 # fdk-aac
 pkg_check_modules(FDK_AAC fdk-aac)
@@ -26,6 +28,45 @@ if(FDK_AAC_FOUND)
 	link_libraries(${FDK_AAC_LIBRARIES})
 	add_compile_definitions(HAVE_AAC_FDK)
 endif()
+
+# ldac encoder
+pkg_check_modules(LDAC_ENCODER ldacBT-enc)
+if (LDAC_ENCODER_FOUND)
+	message("HAVE_LDAC_ENCODER")
+    include_directories(${LDAC_ENCODER_INCLUDE_DIRS})
+    link_directories(${LDAC_ENCODER_LIBRARY_DIRS})
+    link_libraries(${LDAC_ENCODER_LIBRARIES})
+	add_compile_definitions(HAVE_LDAC_ENCODER)
+endif()
+
+# ldac decoder
+pkg_check_modules(LDAC_DECODER libldacdec)
+if (LDAC_DECODER_FOUND)
+    message("HAVE_LDAC_DECODER")
+    include_directories(${LDAC_DECODER_INCLUDE_DIRS})
+    link_directories(${LDAC_DECODER_LIBRARY_DIRS})
+    link_libraries(${LDAC_DECODER_LIBRARIES})
+    add_compile_definitions(HAVE_LDAC_DECODER)
+endif()
+
+# openaptx
+pkg_check_modules(APTX libopenaptx)
+if (APTX_FOUND)
+    message("HAVE_APTX")
+    include_directories(${APTX_INCLUDE_DIRS})
+    link_directories(${APTX_LIBRARY_DIRS})
+    link_libraries(${APTX_LIBRARIES})
+    add_compile_definitions(HAVE_APTX)
+endif()
+
+# enable optional features
+add_compile_definitions(ENABLE_TESTING_SUPPORT ENABLE_LE_SIGNED_WRITE)
+
+# to find generated .h from .gatt files
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# local dir for btstack_config.h after build dir to avoid using .h from Makefile
+include_directories(.)
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
@@ -39,13 +80,12 @@ include_directories(../../3rd-party/rijndael)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
+include_directories(../../example)
 include_directories(../../chipset/zephyr)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
-include_directories(../../port/libusb)
-include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
@@ -128,6 +168,10 @@ set(SOURCES
 )
 list(SORT SOURCES)
 
+# Enable ASAN
+add_compile_options( -g -fsanitize=address)
+add_link_options(       -fsanitize=address)
+
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
@@ -137,8 +181,8 @@ list(SORT EXAMPLES_C)
 file(GLOB EXAMPLES_GATT "*.gatt")
 
 # remove some
-# file(GLOB EXAMPLES_OFF  "../../example/sco_demo_util.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
-# list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
+file(GLOB EXAMPLES_OFF  "btstack_stdin_pts.c")
+list(REMOVE_ITEM EXAMPLES_C   ${EXAMPLES_OFF})
 
 # on Mac 10.14, adding lwip to libstack results in a yet not understood link error
 # workaround: add lwip sources only to lwip_examples
@@ -154,6 +198,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("PTS Tool: ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+			DEPENDS ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt
 			COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
 			ARGS ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)

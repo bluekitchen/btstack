@@ -8,6 +8,7 @@ CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -Ibuild-
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \

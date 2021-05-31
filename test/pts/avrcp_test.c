@@ -75,8 +75,14 @@ static const char * device_addr_string = "00:1B:DC:08:E2:5C";
 static bd_addr_t device_addr;
 static bd_addr_t device_addr_browsing;
 
-static const uint8_t fragmented_message[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+static const uint8_t fragmented_message[] = { 
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  
+    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,  
+    20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+    30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 
+    50, 51, 52, 53, 54, 55, 56, 57, 58, 59 
+};
 
 typedef enum {
     AVRCP_BROWSING_STATE_IDLE,
@@ -158,7 +164,7 @@ static uint8_t sdp_avrcp_target_service_buffer[200];
 static uint16_t avdtp_cid = 0;
 static avdtp_sep_t sep;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
-static uint8_t  avrcp_value[100];
+static uint8_t  avrcp_value[500];
 static uint16_t browsing_uid_counter = 0;
 static avrcp_browsing_state_t browsing_state = AVRCP_BROWSING_STATE_IDLE;
 
@@ -284,7 +290,28 @@ static uint8_t media_player_list[] = {
     0x00, 0x10, 
     // Displayable Name
     0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64, 0x20, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72}; 
-    
+
+
+static uint8_t browsed_player_data[]= {
+    // number of items (3)
+    0x00, 0x00, 0x04,
+    // Character Set Id (2B): 0x006A (UTF-8)
+    0x00, 0x6A, 
+    // Folder depth
+    0x03,
+    // Folder Name Length (2)
+    0x00, 0x01,
+    // FOlder Name
+    0x41,
+    // Folder Name Length (2)
+    0x00, 0x01,
+    // FOlder Name
+    0x42,
+    // Folder Name Length (2)
+    0x00, 0x01,
+    // FOlder Name
+    0x43
+};
 
 static uint8_t virtual_filesystem_list[] ={ 0x00, 0x07, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x02, 0x00, 0x00, 0x6A, 0x00, 0x06, 0x41, 0x6C, 0x62, 0x75, 0x6D, 0x73, 0x02, 0x00, 0x15, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x6A, 0x00, 0x07, 0x41, 0x72, 0x74, 0x69, 0x73, 0x74, 0x73, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x04, 0x00, 0x00, 0x6A, 0x00, 0x06, 0x47, 0x65, 0x6E, 0x72, 0x65, 0x73, 0x02, 0x00, 0x17, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x05, 0x00, 0x00, 0x6A, 0x00, 0x09, 0x50, 0x6C, 0x61, 0x79, 0x6C, 0x69, 0x73, 0x74, 0x73, 0x02, 0x00, 0x13, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x01, 0x01, 0x00, 0x6A, 0x00, 0x05, 0x53, 0x6F, 0x6E, 0x67, 0x73, 0x02, 0x00, 0x13, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x06, 0x06, 0x00, 0x00}; // 0x71, 0x00, 0xA7, 0x04, 0x5A, 0x73,
 static uint8_t search_list[] = {};
@@ -914,6 +941,15 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
     
     switch (packet[2]){
+        case AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER:{
+            uint16_t browsed_player_id =  avrcp_subevent_browsing_set_browsed_player_get_player_id(packet);
+            if (browsed_player_id == 1){
+                avrcp_status = avrcp_browsing_target_send_accept_set_browsed_player(browsing_cid, uid_counter, browsed_player_id, browsed_player_data, sizeof(browsed_player_data));
+            } else {
+                avrcp_status = avrcp_browsing_target_send_reject_set_browsed_player(browsing_cid, AVRCP_STATUS_PLAYER_NOT_BROWSABLE);
+            }
+            break;
+        }
         case AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS:{
             avrcp_browsing_scope_t scope = avrcp_subevent_browsing_get_folder_items_get_scope(packet);
             switch (scope){

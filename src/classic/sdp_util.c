@@ -204,7 +204,7 @@ void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t si
 /* starts a new sequence in empty buffer - first call */
 void de_create_sequence(uint8_t *header){
     de_store_descriptor_with_len( header, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
-};
+}
 
 /* starts a sub-sequence, @returns handle for sub-sequence */
 uint8_t * de_push_sequence(uint8_t *header){

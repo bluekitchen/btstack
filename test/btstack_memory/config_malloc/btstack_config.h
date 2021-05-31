@@ -23,6 +23,6 @@
 #define HCI_INCOMING_PRE_BUFFER_SIZE 6
 
 // test hook to mock malloc
-#define malloc test_malloc
+#define ENABLE_MALLOC_TEST
 
 #endif

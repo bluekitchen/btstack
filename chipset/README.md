@@ -1,10 +1,12 @@
+#
+
 In this chapter, we first explain how Bluetooth chipsets are connected physically and then provide information about popular Bluetooth chipset and their use with BTstack.
 
 ## HCI Interface
 
 The communication between a Host (a computer or an MCU) and a Host Controller (the actual Bluetooth chipset) follows the Host Controller Interface (HCI), see {@fig:HostChipsetConnection}. HCI defines how commands, events, asynchronous and synchronous data packets are exchanged. Asynchronous packets (ACL) are used for data transfer, while synchronous packets (SCO) are used for Voice with the Headset and the Hands-Free Profiles.
 
-![Host Controller to Host connection](../doc/manual/docs/picts/host_chipset_connection.png){#fig:HostChipsetConnection}
+![Host Controller to Host connection](../doc/manual/docs-template/picts/host_chipset_connection.png){#fig:HostChipsetConnection}
 
 ### HCI H2
 On desktop-class computers incl. laptops, USB is mainly used as HCI transport layer. For USB Bluetooth chipsets, there is little variation: most USB dongles on the market currently contain a Broadcom BCM20702 or a CSR 851x chipset. It is also called H2.
@@ -68,7 +70,7 @@ Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.         
 Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Not yet          | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
-Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | Don't know     |    Don't know      | intel          | Firmware size: 400 kB 
+Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | Don't know     |    Don't know      | intel          | Firmware size: 400 kB 
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           | n.a.           |       Yes          |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | Don't know       | n.a    |         n.a.         | No             |       n.a.         | stlc2500d      | Custom deep sleep management not supported
 Renesas RX23W        | LE        | H4             | No           | n.a.             | Yes    |        Yes           | n.a .          |    Don't know      |                | HCI Firmware part of BTTS
@@ -292,22 +294,22 @@ CC256xB |         0x1B90 | 6.7.16
 CC256xC |         0x9a1a | 6.12.26
 WL18xx  |         0xac20 | 11.8.32
 
-**SCO data:** Routing of SCO data can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
+**SCO data:** Routing of SCO data can be configured with the `HCI_VS_Write_SCO_Configuration` command.
 
-**Baud rate** can be set with [HCI_VS_Update_UART_HCI_Baudrate](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Update_UART_HCI_Baudrate_.280xFF36.29). The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. 
+**Baud rate** can be set with `HCI_VS_Update_UART_HCI_Baudrate`. The chipset confirms the change with a command complete event after which the local UART is set to the new speed. Oddly enough, the CC256x chipsets ignore the incoming CTS line during this particular command complete response. 
 
 If you've implemented the hal_uart_dma.h without an additional ring buffer (as recommended!) and you have a bit of delay, e.g. because of thread switching on a RTOS, this could cause a UART overrun.
 If this happens, BTstack provides a workaround in the HCI H4 transport implementation by adding `ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND`. 
 If this is enabled, the H4 transport layer will resort to "deep packet inspection" to first check if its a TI controller and then wait for the HCI_VS_Update_UART_HCI_Baudrate. 
 When detected, it will tweak the next UART read to expect the HCI Command Complete event.
 
-**BD Addr** can be set with [HCI_VS_Write_BD_Addr](2.2.1 HCI_VS_Write_BD_Addr (0xFC06)) although all chipsets have an official address stored.
+**BD Addr** can be set with `HCI_VS_Write_BD_Addr` although all chipsets have an official address stored.
 
 **Init Scripts.** In order to use the CC256x chipset an initialization script must be obtained and converted into a C file for use with BTstack. For newer revisions, TI provides a main.bts and a ble_add_on.bts that need to be combined.
 
 The Makefile at *chipset/cc256x/Makefile.inc* is able to automatically download and convert the requested file. It does this by:
 
--   Downloading one or more [BTS files](http://processors.wiki.ti.com/index.php/CC256x_Downloads) for your chipset.
+-   Downloading one or more `BTS files` for your chipset.
 -   Running the Python script:
 
 <!-- -->

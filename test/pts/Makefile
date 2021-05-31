@@ -21,6 +21,7 @@ COMMON += \
 	ad_parser.c                 \
 	hci_cmd.c		            \
 	hci_dump.c		            \
+	hci_dump_posix_fs.c         \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
 	rfcomm.c                    \
@@ -96,9 +97,8 @@ CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -D ENABLE_LE_SIGNED_WRITE
 CFLAGS += -fsanitize=address -fno-omit-frame-pointer
 
-# CFLAGS += -I..
 CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I${BTSTACK_ROOT}/src/classic
+CFLAGS += -I${BTSTACK_ROOT}/example
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/eCC
@@ -114,6 +114,7 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/ble/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/port/libusb
@@ -146,23 +147,25 @@ AVRCP_OBJ  = $(AVRCP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
-EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
+EXAMPLES  = iopt gatt_server_test gatt_client_test l2cap_test classic_test bnep_test le_data_channel
+EXAMPLES += hsp_ag_test hsp_hs_test sco_loopback hfp_ag_test hfp_hf_test
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_test gatt_profiles hrp_col_test hrp_server_test
-EXAMPLES += hog_demo_test hid_device_test hid_host_test 
+EXAMPLES += hog_device_test hog_host_test hid_device_test hid_host_test 
 EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
+EXAMPLES += gap_peripheral_test gap_central_test
 
 all: ${EXAMPLES}
 
 cycling_power_server_test.h: cycling_power_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-cycling_power_server_test: cycling_power_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} cycling_power_server_test.c
+cycling_power_server_test: cycling_power_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o cycling_power_server_test.c
 	${CC} $(filter-out cycling_power_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 csc_server_test.h: csc_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-csc_server_test: csc_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} csc_server_test.c
+csc_server_test: csc_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o csc_server_test.c
 	${CC} $(filter-out csc_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 csc_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} csc_client_test.c
@@ -174,8 +177,11 @@ hid_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hi
 hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o btstack_ring_buffer.o hid_device.o hid_device_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} btstack_ring_buffer.o hog_demo_test.c
-	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+hog_device_test: hog_device_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.o btstack_ring_buffer.o hog_device_test.c
+	${CC} $(filter-out hog_device_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+hog_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hrp_server_test.h: hrp_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
@@ -195,17 +201,29 @@ avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_EN
 avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral_test.h: ble_peripheral_test.gatt
+gatt_server_test.h: gatt_server_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-ble_central_test.h: ble_central_test.gatt
+gatt_client_test.h: gatt_client_test.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
-ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ble_peripheral_test.o
-	${CC} $(filter-out ble_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+gatt_server_test: gatt_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} att_db_util.o gatt_sdp.o gatt_server_test.o
+	${CC} $(filter-out gatt_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
-	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+gatt_client_test: gatt_client_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o gatt_client_test.c
+	${CC} $(filter-out gatt_client_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gap_peripheral_test.h: gap_peripheral_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+gap_central_test.h: gap_central_test.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	
+gap_peripheral_test: gap_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} att_db_util.o gatt_sdp.o gap_peripheral_test.o
+	${CC} $(filter-out gap_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gap_central_test: gap_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} att_db_util.o ad_parser.o gap_central_test.c
+	${CC} $(filter-out gap_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -214,6 +232,12 @@ hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_hf_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
@@ -234,19 +258,21 @@ iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gs
 gatt_profiles.h: gatt_profiles.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_profiles.o
+gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_client.c gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
-	rm -rf hog_demo_test.h
-	rm -rf ble_central_test.h
-	rm -rf ble_peripheral_test.h
+	rm -rf hog_device_test.h
+	rm -rf gatt_client_test.h
+	rm -rf gatt_server_test.h
 	rm -rf csc_server_test.h
 	rm -rf cycling_power_server_test.h
 	rm -rf gatt_profiles.h
 	rm -rf hrp_server_test.h
-	
+	rm -f sco_input.msbc
+	rm -f sco_output.msbc
+
 clean: myclean
 
 test:

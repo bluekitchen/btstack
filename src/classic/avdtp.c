@@ -60,6 +60,7 @@ static bool l2cap_registered;
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
 static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
+static uint8_t (*avdtp_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
 
 static uint16_t sdp_query_context_avdtp_cid = 0;
 
@@ -106,7 +107,7 @@ btstack_linked_list_t * avdtp_get_connections(void){
     return &connections;
 }
 
-static avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
+avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -147,7 +148,26 @@ avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec(avdtp
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
         if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.media_type != AVDTP_AUDIO) continue;
         if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != codec_type) continue;
+        if (stream_endpoint->sep.in_use) continue;
+        return stream_endpoint;
+    }
+    return NULL;
+}
+
+avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other(uint32_t vendor_id, uint16_t codec_id){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, avdtp_get_stream_endpoints());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->sep.type != AVDTP_SOURCE) continue;
+        if (stream_endpoint->sep.media_type != AVDTP_AUDIO) continue;
+        if (stream_endpoint->sep.in_use) continue;
+        if (stream_endpoint->sep.capabilities.media_codec.media_codec_type != AVDTP_CODEC_NON_A2DP) continue;
+        if (stream_endpoint->sep.capabilities.media_codec.media_codec_information_len < 6) continue;
+        if (little_endian_read_32(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 0) != vendor_id) continue;
+        if (little_endian_read_16(stream_endpoint->sep.capabilities.media_codec.media_codec_information, 4) != codec_id) continue;
         return stream_endpoint;
     }
     return NULL;
@@ -384,7 +404,7 @@ void avdtp_register_header_compression_category(avdtp_stream_endpoint_t * stream
     stream_endpoint->sep.capabilities.header_compression.recovery = recovery;
 }
 
-void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, uint8_t * media_codec_info, uint16_t media_codec_info_len){
+void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, const uint8_t *media_codec_info, uint16_t media_codec_info_len){
     if (!stream_endpoint){
         log_error("Stream endpoint with given seid is not registered.");
         return;
@@ -393,7 +413,8 @@ void avdtp_register_media_codec_category(avdtp_stream_endpoint_t * stream_endpoi
     stream_endpoint->sep.registered_service_categories = bitmap;
     stream_endpoint->sep.capabilities.media_codec.media_type = media_type;
     stream_endpoint->sep.capabilities.media_codec.media_codec_type = media_codec_type;
-    stream_endpoint->sep.capabilities.media_codec.media_codec_information = media_codec_info;
+    // @todo should be stored in struct as const
+    stream_endpoint->sep.capabilities.media_codec.media_codec_information = (uint8_t*) media_codec_info;
     stream_endpoint->sep.capabilities.media_codec.media_codec_information_len = media_codec_info_len;
 }
 
@@ -409,6 +430,17 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
 
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
     avdtp_sink_handle_media_data = callback;
+}
+
+void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len)){
+    avdtp_media_config_validator = callback;
+}
+
+uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len){
+    if (avdtp_media_config_validator == NULL) {
+        return 0;
+    }
+    return (*avdtp_media_config_validator)(stream_endpoint, media_codec_type, media_codec_info, media_codec_info_len);
 }
 
 /* START: tracking can send now requests per l2cap cid */
@@ -441,11 +473,10 @@ static void avdtp_handle_can_send_now(uint16_t l2cap_cid) {
 	if (stream_endpoint != NULL) {
 		log_debug("call avdtp_initiator_stream_config_subsm_handle_can_send_now_stream_endpoint %p", stream_endpoint);
 		if (stream_endpoint->request_can_send_now) {
-			stream_endpoint->request_can_send_now = 0;
+			stream_endpoint->request_can_send_now = false;
 			avdtp_initiator_stream_config_subsm_handle_can_send_now_stream_endpoint(stream_endpoint);
 		}
-		bool more_to_send = stream_endpoint->request_can_send_now != 0;
-		if (more_to_send){
+		if (stream_endpoint->request_can_send_now){
 			l2cap_request_can_send_now_event(l2cap_cid);
 		}
 	}
@@ -1095,6 +1126,10 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    if (stream_endpoint->start_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     stream_endpoint->start_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
@@ -1121,6 +1156,10 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid){
     }
     
     if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->close_stream){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (stream_endpoint->close_stream == 1) {
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
@@ -1153,6 +1192,10 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
+    if (stream_endpoint->abort_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     stream_endpoint->abort_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
@@ -1181,6 +1224,10 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    if (stream_endpoint->suspend_stream == 1) {
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     stream_endpoint->suspend_stream = 1;
     connection->initiator_local_seid = local_seid;
     connection->initiator_remote_seid = stream_endpoint->remote_sep.seid;
@@ -1344,7 +1391,7 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     return avdtp_request_can_send_now_initiator(connection);
 }
 
-void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency){
+void    avdtp_set_preferred_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency){
     stream_endpoint->preferred_sampling_frequency = sampling_frequency;
 }
 
@@ -1499,6 +1546,7 @@ void avdtp_deinit(void){
     stream_endpoints = NULL;
     connections = NULL;
     avdtp_sink_handle_media_data = NULL;
+    avdtp_media_config_validator = NULL;
 
     sdp_query_context_avdtp_cid = 0;
     stream_endpoints_id_counter = 0;

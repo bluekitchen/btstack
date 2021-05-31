@@ -35,8 +35,8 @@
  *
  */
 
-/*
- * btstack_sbc_plc.h
+/**
+ * SBC Packet Loss Concealment
  *
  */
 

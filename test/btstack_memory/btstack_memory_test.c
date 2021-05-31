@@ -506,6 +506,48 @@ TEST(btstack_memory, hfp_connection_NotEnoughBuffers){
 
 
 
+TEST(btstack_memory, hid_host_connection_GetAndFree){
+    hid_host_connection_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_hid_host_connection_get();
+    CHECK(context != NULL);
+    btstack_memory_hid_host_connection_free(context);
+#else
+#ifdef MAX_NR_HID_HOST_CONNECTIONS
+    // single
+    context = btstack_memory_hid_host_connection_get();
+    CHECK(context != NULL);
+    btstack_memory_hid_host_connection_free(context);
+#else
+    // none
+    context = btstack_memory_hid_host_connection_get();
+    CHECK(context == NULL);
+    btstack_memory_hid_host_connection_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, hid_host_connection_NotEnoughBuffers){
+    hid_host_connection_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_HID_HOST_CONNECTIONS
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_HID_HOST_CONNECTIONS; i++){
+        context = btstack_memory_hid_host_connection_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_hid_host_connection_get();
+    CHECK(context == NULL);
+}
+
+
+
 TEST(btstack_memory, service_record_item_GetAndFree){
     service_record_item_t * context;
 #ifdef HAVE_MALLOC
@@ -718,6 +760,48 @@ TEST(btstack_memory, avrcp_browsing_connection_NotEnoughBuffers){
 #ifdef ENABLE_BLE
 
 
+TEST(btstack_memory, battery_service_client_GetAndFree){
+    battery_service_client_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_battery_service_client_get();
+    CHECK(context != NULL);
+    btstack_memory_battery_service_client_free(context);
+#else
+#ifdef MAX_NR_BATTERY_SERVICE_CLIENTS
+    // single
+    context = btstack_memory_battery_service_client_get();
+    CHECK(context != NULL);
+    btstack_memory_battery_service_client_free(context);
+#else
+    // none
+    context = btstack_memory_battery_service_client_get();
+    CHECK(context == NULL);
+    btstack_memory_battery_service_client_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, battery_service_client_NotEnoughBuffers){
+    battery_service_client_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_BATTERY_SERVICE_CLIENTS
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_BATTERY_SERVICE_CLIENTS; i++){
+        context = btstack_memory_battery_service_client_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_battery_service_client_get();
+    CHECK(context == NULL);
+}
+
+
+
 TEST(btstack_memory, gatt_client_GetAndFree){
     gatt_client_t * context;
 #ifdef HAVE_MALLOC
@@ -760,43 +844,85 @@ TEST(btstack_memory, gatt_client_NotEnoughBuffers){
 
 
 
-TEST(btstack_memory, whitelist_entry_GetAndFree){
-    whitelist_entry_t * context;
+TEST(btstack_memory, hids_client_GetAndFree){
+    hids_client_t * context;
 #ifdef HAVE_MALLOC
-    context = btstack_memory_whitelist_entry_get();
+    context = btstack_memory_hids_client_get();
     CHECK(context != NULL);
-    btstack_memory_whitelist_entry_free(context);
+    btstack_memory_hids_client_free(context);
 #else
-#ifdef MAX_NR_WHITELIST_ENTRIES
+#ifdef MAX_NR_HIDS_CLIENTS
     // single
-    context = btstack_memory_whitelist_entry_get();
+    context = btstack_memory_hids_client_get();
     CHECK(context != NULL);
-    btstack_memory_whitelist_entry_free(context);
+    btstack_memory_hids_client_free(context);
 #else
     // none
-    context = btstack_memory_whitelist_entry_get();
+    context = btstack_memory_hids_client_get();
     CHECK(context == NULL);
-    btstack_memory_whitelist_entry_free(context);
+    btstack_memory_hids_client_free(context);
 #endif
 #endif
 }
 
-TEST(btstack_memory, whitelist_entry_NotEnoughBuffers){
-    whitelist_entry_t * context;
+TEST(btstack_memory, hids_client_NotEnoughBuffers){
+    hids_client_t * context;
 #ifdef HAVE_MALLOC
     simulate_no_memory = 1;
 #else
-#ifdef MAX_NR_WHITELIST_ENTRIES
+#ifdef MAX_NR_HIDS_CLIENTS
     int i;
     // alloc all static buffers
-    for (i = 0; i < MAX_NR_WHITELIST_ENTRIES; i++){
-        context = btstack_memory_whitelist_entry_get();
+    for (i = 0; i < MAX_NR_HIDS_CLIENTS; i++){
+        context = btstack_memory_hids_client_get();
         CHECK(context != NULL);
     }
 #endif
 #endif
     // get one more
-    context = btstack_memory_whitelist_entry_get();
+    context = btstack_memory_hids_client_get();
+    CHECK(context == NULL);
+}
+
+
+
+TEST(btstack_memory, scan_parameters_service_client_GetAndFree){
+    scan_parameters_service_client_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context != NULL);
+    btstack_memory_scan_parameters_service_client_free(context);
+#else
+#ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
+    // single
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context != NULL);
+    btstack_memory_scan_parameters_service_client_free(context);
+#else
+    // none
+    context = btstack_memory_scan_parameters_service_client_get();
+    CHECK(context == NULL);
+    btstack_memory_scan_parameters_service_client_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, scan_parameters_service_client_NotEnoughBuffers){
+    scan_parameters_service_client_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_SCAN_PARAMETERS_SERVICE_CLIENTS; i++){
+        context = btstack_memory_scan_parameters_service_client_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_scan_parameters_service_client_get();
     CHECK(context == NULL);
 }
 
@@ -839,6 +965,48 @@ TEST(btstack_memory, sm_lookup_entry_NotEnoughBuffers){
 #endif
     // get one more
     context = btstack_memory_sm_lookup_entry_get();
+    CHECK(context == NULL);
+}
+
+
+
+TEST(btstack_memory, whitelist_entry_GetAndFree){
+    whitelist_entry_t * context;
+#ifdef HAVE_MALLOC
+    context = btstack_memory_whitelist_entry_get();
+    CHECK(context != NULL);
+    btstack_memory_whitelist_entry_free(context);
+#else
+#ifdef MAX_NR_WHITELIST_ENTRIES
+    // single
+    context = btstack_memory_whitelist_entry_get();
+    CHECK(context != NULL);
+    btstack_memory_whitelist_entry_free(context);
+#else
+    // none
+    context = btstack_memory_whitelist_entry_get();
+    CHECK(context == NULL);
+    btstack_memory_whitelist_entry_free(context);
+#endif
+#endif
+}
+
+TEST(btstack_memory, whitelist_entry_NotEnoughBuffers){
+    whitelist_entry_t * context;
+#ifdef HAVE_MALLOC
+    simulate_no_memory = 1;
+#else
+#ifdef MAX_NR_WHITELIST_ENTRIES
+    int i;
+    // alloc all static buffers
+    for (i = 0; i < MAX_NR_WHITELIST_ENTRIES; i++){
+        context = btstack_memory_whitelist_entry_get();
+        CHECK(context != NULL);
+    }
+#endif
+#endif
+    // get one more
+    context = btstack_memory_whitelist_entry_get();
     CHECK(context == NULL);
 }
 

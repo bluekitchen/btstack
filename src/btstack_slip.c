@@ -47,6 +47,7 @@
 
 typedef enum {
 	SLIP_ENCODER_DEFAULT,
+	SLIP_ENCODER_SEND_C0,
 	SLIP_ENCODER_SEND_DC,
 	SLIP_ENCODER_SEND_DD
 } btstack_slip_encoder_state_t;
@@ -81,7 +82,8 @@ static uint16_t  decoder_pos;
  * @param len
  */
 void btstack_slip_encoder_start(const uint8_t * data, uint16_t len){
-	encoder_state = SLIP_ENCODER_DEFAULT;
+	// start with C0 SOF
+	encoder_state = SLIP_ENCODER_SEND_C0;
 	encoder_data  = data;
 	encoder_len   = len;
 }
@@ -108,24 +110,36 @@ uint8_t btstack_slip_encoder_get_byte(void){
 			switch (next_byte){
 				case BTSTACK_SLIP_SOF:
 					encoder_state = SLIP_ENCODER_SEND_DC;
-					return 0xdb;
+					next_byte = 0xdb;
+					break;
 				case 0xdb:
 					encoder_state = SLIP_ENCODER_SEND_DD;
-					return 0xdb;
+					next_byte = 0xdb;
 				default:
                     break;
 			}
-			return next_byte;
+			break;
+		case SLIP_ENCODER_SEND_C0:
+			encoder_state = SLIP_ENCODER_DEFAULT;
+			return 0xc0;
 		case SLIP_ENCODER_SEND_DC:
 			encoder_state = SLIP_ENCODER_DEFAULT;
-			return 0x0dc;
+			next_byte = 0xdc;
+			break;
 		case SLIP_ENCODER_SEND_DD:
 			encoder_state = SLIP_ENCODER_DEFAULT;
-			return 0x0dd;
+			next_byte = 0x0dd;
+			break;
         default:
             log_error("btstack_slip_encoder_get_byte invalid state %x", encoder_state);
             return 0x00;
 	}
+
+	// After last byte, send CO SOF again
+	if ((encoder_state == SLIP_ENCODER_DEFAULT) && (encoder_len == 0)){
+		encoder_state = SLIP_ENCODER_SEND_C0;
+	}
+	return next_byte;
 }
 
 // Decoder

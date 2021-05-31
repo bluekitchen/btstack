@@ -44,9 +44,10 @@
 #define BTSTACK_FILE__ "btstack_uart_block_wiced.c"
 
 #include "btstack_config.h"
-#include "btstack_run_loop_wiced.h"
-
 #include "btstack_debug.h"
+#include "btstack_run_loop_wiced.h"
+#include "btstack_uart_block.h"
+
 #include "hci.h"
 #include "hci_transport.h"
 #include "platform_bluetooth.h"
@@ -378,6 +379,7 @@ static const btstack_uart_block_t btstack_uart_block_wiced = {
     /* int (*get_supported_sleep_modes); */                           NULL,
     /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL,
     /* void (*set_wakeup_handler)(void (*handler)(void)); */          NULL,
+    NULL, NULL, NULL, NULL,
 };
 
 const btstack_uart_block_t * btstack_uart_block_wiced_instance(void){

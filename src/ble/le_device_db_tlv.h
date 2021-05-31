@@ -34,7 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
- 
+
+/**
+ * @title Device Database TLV
+ * 
+ */
+
 #ifndef LE_DEVICE_DB_TLV_H
 #define LE_DEVICE_DB_TLV_H
 

@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include "ble/att_server.h"
 #include "ble/gatt_client.h"
-#include "ancs_client.h"
-#include "btstack_event.h"
+#include "ble/gatt-service/ancs_client.h"
 #include "ble/sm.h"
+#include "btstack_event.h"
 #include <SPI.h>
 
 /* 
@@ -75,7 +75,7 @@ void loop(void){
 void ancs_callback(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     const char * attribute_name;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_ANCS_META) return;
-    switch (hci_event_ancs_meta_get_subevent_code()]){
+    switch (hci_event_ancs_meta_get_subevent_code(packet)){
         case ANCS_SUBEVENT_CLIENT_CONNECTED:
             Serial.println("ANCS Client: Connected");
             break;

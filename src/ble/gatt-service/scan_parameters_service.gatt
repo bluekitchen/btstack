@@ -1,0 +1,7 @@
+// Specification Type org.bluetooth.service.scan_parameters
+// https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Services/org.bluetooth.service.scan_parameters.xml
+
+// Scan Parameters 1813
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_SCAN_PARAMETERS
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_SCAN_INTERVAL_WINDOW, DYNAMIC | WRITE_WITHOUT_RESPONSE,
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_SCAN_REFRESH, DYNAMIC | NOTIFY,

@@ -16,6 +16,9 @@
 #include "hal_tick.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_embedded_stdout.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "wilc3000_ble_firmware.h"
 
 // #define USE_XDMAC_FOR_USART
@@ -567,7 +570,7 @@ int main(void)
 	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	// enable full log output while porting
-	// hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 
 	// setup UART HAL + Run Loop integration
 	uart_driver = btstack_uart_block_embedded_instance();

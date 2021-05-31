@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title Genral Access Profile (GAP)
+ *
+ */
+
 #ifndef GAP_H
 #define GAP_H
 
@@ -44,7 +49,10 @@ extern "C" {
 
 #include "btstack_defines.h"
 #include "btstack_util.h"
+
+#ifdef ENABLE_CLASSIC
 #include "classic/btstack_link_key_db.h"
+#endif
 
 typedef enum {
 
@@ -74,9 +82,24 @@ typedef enum {
 	LEVEL_4,	
 } gap_security_level_t;
 
+
+typedef enum {
+    // non-secure
+    GAP_SECURITY_MODE_1 = 1,
+
+    // service level enforced security
+    GAP_SECURITY_MODE_2,
+
+    // link level enforced security
+    GAP_SECURITY_MODE_3,
+
+    // service level enforced security
+    GAP_SECURITY_MODE_4
+} gap_security_mode_t;
+
 typedef enum {
 	GAP_SECURITY_NONE,
-	GAP_SECUIRTY_ENCRYPTED,		// SSP: JUST WORKS
+	GAP_SECURITY_ENCRYPTED,		// SSP: JUST WORKS
 	GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB 
 	// GAP_SECURITY_AUTHORIZED
 } gap_security_state;
@@ -116,6 +139,19 @@ typedef enum {
 /* API_START */
 
 // Classic + LE
+
+/**
+ * @brief Read RSSI
+ * @param con_handle
+ * @events: GAP_EVENT_RSSI_MEASUREMENT
+ */
+int gap_read_rssi(hci_con_handle_t con_handle);
+
+
+/**
+ * @brief Gets local address.
+ */
+void gap_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Disconnect connection with handle
@@ -188,7 +224,7 @@ void gap_set_allow_role_switch(bool allow_role_switch);
 
 /**
  * @brief Set  link supervision timeout for outgoing classic ACL links
- * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds
+ * @param default_link_supervision_timeout * 0.625 ms, default 0x7d00 = 20 seconds, 0 = no link supervision timeout
  */
 void gap_set_link_supervision_timeout(uint16_t link_supervision_timeout);
 
@@ -205,6 +241,18 @@ void gap_set_bondable_mode(int enabled);
 int gap_get_bondable_mode(void);
 
 /**
+ * @brief Set security mode for all outgoing and incoming connections. Default: GAP_SECURITY_MODE_4
+ * @param security_mode is GAP_SECURITY_MODE_2 or GAP_SECURITY_MODE_4
+ */
+void gap_set_security_mode(gap_security_mode_t security_mode);
+
+/**
+ * @brief Get security mode
+ * @return security_mode
+ */
+gap_security_mode_t gap_get_security_mode(void);
+
+/**
  * @brief Set security level for all outgoing and incoming connections. Default: LEVEL_2
  * @param security_level
  * @note has to be called before services or profiles are initialized
@@ -216,6 +264,18 @@ void gap_set_security_level(gap_security_level_t security_level);
  * @return security_level
  */
 gap_security_level_t gap_get_security_level(void);
+
+/**
+ * @brief Set Secure Connections Only Mode for BR/EDR (Classic) Default: false
+ * @param enable
+ */
+void gap_set_secure_connections_only_mode(bool enable);
+
+/**
+ * @breif Get Secure Connections Only Mode
+ * @param enabled
+ */
+bool gap_get_secure_connections_only_mode(void);
 
 /**
  * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
@@ -281,6 +341,19 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 
 int  gap_mitm_protection_required_for_security_level(gap_security_level_t level);
+
+/**
+ * @brief Set Page Scan Type
+ * @param page_scan_interval * 0.625 ms, range: 0x0012..0x1000, default: 0x0800
+ * @param page_scan_windows  * 0.625 ms, range: 0x0011..page_scan_interval, default: 0x0012
+ */
+void gap_set_page_scan_activity(uint16_t page_scan_interval, uint16_t page_scan_window);
+
+/**
+ * @brief Set Page Scan Type
+ * @param page_scan_mode
+ */
+void gap_set_page_scan_type(page_scan_type_t page_scan_type);
 
 // LE
 
@@ -561,6 +634,7 @@ authorization_state_t gap_authorization_state(hci_con_handle_t con_handle);
 bool gap_bonded(hci_con_handle_t con_handle);
 
 // Classic
+#ifdef ENABLE_CLASSIC
 
 /**
  * @brief Override page scan mode. Page scan mode enabled by l2cap when services are registered
@@ -573,11 +647,6 @@ void gap_connectable_control(uint8_t enable);
  * @brief Allows to control if device is discoverable. OFF by default.
  */
 void gap_discoverable_control(uint8_t enable);
-
-/**
- * @brief Gets local address.
- */
-void gap_local_bd_addr(bd_addr_t address_buffer);
 
 /**
  * @brief Deletes link key for remote device with baseband address.
@@ -664,6 +733,12 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units);
 int gap_inquiry_stop(void);
 
 /**
+ * @brief Set LAP for GAP Classic Inquiry
+ * @param lap GAP_IAC_GENERAL_INQUIRY (default), GAP_IAC_LIMITED_INQUIRY
+ */
+void gap_inquiry_set_lap(uint32_t lap);
+
+/**
  * @brief Remote Name Request
  * @param addr
  * @param page_scan_repetition_mode
@@ -671,13 +746,6 @@ int gap_inquiry_stop(void);
  * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
 int gap_remote_name_request(const bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
-
-/**
- * @brief Read RSSI
- * @param con_handle
- * @events: GAP_EVENT_RSSI_MEASUREMENT
- */
-int gap_read_rssi(hci_con_handle_t con_handle);
 
 /**
  * @brief Legacy Pairing Pin Code Response
@@ -787,6 +855,30 @@ uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_int
  @ @return 0 if ok
  */
 uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
+
+/**
+ * @brief Configure Sniff Subrating
+ * @param con_handle
+ * @param max_latency range: 0x0002 to 0xFFFE; Time = N * 0.625 ms
+ * @param min_remote_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
+ * @param min_local_timeout range:  0x0002 to 0xFFFE; Time = N * 0.625 ms
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_subrating_configure(hci_con_handle_t con_handle, uint16_t max_latency, uint16_t min_remote_timeout, uint16_t min_local_timeout);
+
+/**
+ * @Brief Set QoS
+ * @param con_handle
+ * @param service_type
+ * @param token_rate
+ * @param peak_bandwidth
+ * @param latency
+ * @param delay_variation
+ @ @return 0 if ok
+ */
+uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type, uint32_t token_rate, uint32_t peak_bandwidth, uint32_t latency, uint32_t delay_variation);
+
+#endif
 
 // LE
 

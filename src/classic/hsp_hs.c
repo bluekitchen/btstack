@@ -392,7 +392,9 @@ static void hsp_run_handle_state(void){
                     return;
                 }
                 char buffer[20];
-                sprintf(buffer, "%s=%d\r\n", HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
+                snprintf(buffer, sizeof(buffer), "%s=%d\r",
+                         HSP_HS_MICROPHONE_GAIN, hs_microphone_gain);
+                buffer[sizeof(buffer) - 1] = 0;
                 hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
                 hs_microphone_gain = -1;
                 break;
@@ -404,7 +406,9 @@ static void hsp_run_handle_state(void){
                     return;
                 }
                 char buffer[20];
-                sprintf(buffer, "%s=%d\r\n", HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
+                snprintf(buffer, sizeof(buffer), "%s=%d\r",
+                         HSP_HS_SPEAKER_GAIN, hs_speaker_gain);
+                buffer[sizeof(buffer) - 1] = 0;
                 hsp_hs_send_str_over_rfcomm(rfcomm_cid, buffer);
                 hs_speaker_gain = -1;
                 break;

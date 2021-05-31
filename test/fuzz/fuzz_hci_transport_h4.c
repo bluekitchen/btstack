@@ -4,6 +4,7 @@
 
 #include <btstack_util.h>
 #include "hci_transport.h"
+#include "hci_transport_h4.h"
 
 static hci_transport_config_uart_t config = {
         HCI_TRANSPORT_CONFIG_UART,

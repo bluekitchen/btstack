@@ -38,7 +38,9 @@
 #define BTSTACK_FILE__ "hci_transport_em9304_spi.c"
 
 #include "btstack_config.h"
-#include "btstack_em9304_spi.h"
+#include "hci_transport_em9304_spi.h"
+
+#include "hci_transport.h"
 
 // EM9304 SPI Driver
 static const btstack_em9304_spi_t * btstack_em9304_spi;

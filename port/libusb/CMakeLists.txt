@@ -1,5 +1,10 @@
 cmake_minimum_required (VERSION 3.5)
+
+SET(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
+SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(BTstack)
+
 
 # fink pkgconfig
 find_package(PkgConfig REQUIRED)
@@ -9,6 +14,17 @@ pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 include_directories(${LIBUSB_INCLUDE_DIRS})
 link_directories(${LIBUSB_LIBRARY_DIRS})
 link_libraries(${LIBUSB_LIBRARIES})
+
+# portaudio
+pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
+if(PORTAUDIO_FOUND)
+	message("HAVE_PORTAUDIO")
+	include_directories(${PORTAUDIO_INCLUDE_DIRS})
+	link_directories(${PORTAUDIO_LIBRARY_DIRS})
+	link_libraries(${PORTAUDIO_LIBRARIES})
+	# CMake 3.12 - add_compile_definitions(HAVE_PORTAUDIO)
+	SET(CMAKE_C_FLAGS  "-DHAVE_PORTAUDIO")
+endif()
 
 # extra compiler warnings
 if ("${CMAKE_C_COMPILER_ID}" MATCHES ".*Clang.*")
@@ -22,6 +38,12 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
 	# using Visual Studio C++
 endif()
+
+# to find generated .h from .gatt files
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# local dir for btstack_config.h after build dir to avoid using .h from Makefile
+include_directories(.)
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
@@ -40,7 +62,6 @@ include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
 include_directories(../../platform/lwip/port)
-include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
 file(GLOB SOURCES_BLE       "../../src/ble/*.c")
@@ -99,6 +120,9 @@ set (LWIP_PORT
 
 set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
+file(GLOB SOURCES_SRC_OFF "../../src/hci_transport_*.c")
+list(REMOVE_ITEM SOURCES_SRC   ${SOURCES_SRC_OFF})
+
 file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
 list(REMOVE_ITEM SOURCES_BLE   ${SOURCES_BLE_OFF})
 
@@ -154,6 +178,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_C})
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+			DEPENDS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt
 			COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py
 			ARGS ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 		)

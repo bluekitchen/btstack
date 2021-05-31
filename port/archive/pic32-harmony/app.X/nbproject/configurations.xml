@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="65">
+  <logicalFolder name="root" displayName="root" projectFiles="true">
+    <logicalFolder name="HeaderFiles"
+                   displayName="Header Files"
+                   projectFiles="true">
+      <logicalFolder name="f1" displayName="app" projectFiles="true">
+        <logicalFolder name="f1" displayName="system_config" projectFiles="true">
+          <logicalFolder name="f1" displayName="bt_audio_dk" projectFiles="true">
+            <itemPath>../src/system_config/bt_audio_dk/system_definitions.h</itemPath>
+            <itemPath>../src/system_config/bt_audio_dk/system_config.h</itemPath>
+          </logicalFolder>
+        </logicalFolder>
+        <itemPath>../../../src/btstack_debug.h</itemPath>
+        <itemPath>../src/btstack_config.h</itemPath>
+        <itemPath>../src/btstack_port.h</itemPath>
+        <itemPath>../src/app.h</itemPath>
+      </logicalFolder>
+      <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="3rd-party" displayName="3rd-party" projectFiles="true">
+          <logicalFolder name="bluedroid" displayName="bluedroid" projectFiles="true">
+            <logicalFolder name="decoder" displayName="decoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_assert.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_bitstream.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_bt_spec.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_codec_sbc.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_codec_sbc_private.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_common.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_cpu_dep.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_modules.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_osinterface.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_status.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_stddefs.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_string.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_time.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/include/oi_utils.h</itemPath>
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/readsamplesjoint.inc</itemPath>
+              </logicalFolder>
+              <itemPath>../../../3rd-party/bluedroid/decoder/Makefile.inc</itemPath>
+            </logicalFolder>
+            <logicalFolder name="encoder" displayName="encoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_dct.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_enc_func_declare.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_encoder.h</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/include/sbc_types.h</itemPath>
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+              </logicalFolder>
+              <itemPath>../../../3rd-party/bluedroid/encoder/Makefile.inc</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="f1" displayName="hxcmod-player" projectFiles="true">
+            <logicalFolder name="f1" displayName="mods" projectFiles="true">
+              <itemPath>../../../3rd-party/hxcmod-player/mods/mod.h</itemPath>
+            </logicalFolder>
+            <itemPath>../../../3rd-party/hxcmod-player/hxcmod.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f2" displayName="md5" projectFiles="true">
+            <itemPath>../../../3rd-party/md5/md5.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
+            <itemPath>../../../3rd-party/micro-ecc/btstack_config_uECC.h</itemPath>
+            <itemPath>../../../3rd-party/micro-ecc/uECC.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f3" displayName="yxml" projectFiles="true">
+            <itemPath>../../../3rd-party/yxml/yxml.h</itemPath>
+          </logicalFolder>
+        </logicalFolder>
+        <logicalFolder name="ble" displayName="ble" projectFiles="true">
+          <itemPath>../../../src/ble/ancs_client.h</itemPath>
+          <itemPath>../../../src/ble/att_db.h</itemPath>
+          <itemPath>../../../src/ble/att_dispatch.h</itemPath>
+          <itemPath>../../../src/ble/att_server.h</itemPath>
+          <itemPath>../../../src/ble/gatt_client.h</itemPath>
+          <itemPath>../../../src/ble/le_device_db.h</itemPath>
+          <itemPath>../../../src/ble/sm.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="classic" displayName="classic" projectFiles="true">
+          <itemPath>../../../src/classic/bnep.h</itemPath>
+          <itemPath>../../../src/classic/sdp_util.h</itemPath>
+          <itemPath>../../../src/classic/btstack_link_key_db.h</itemPath>
+          <itemPath>../../../src/classic/rfcomm.h</itemPath>
+          <itemPath>../../../src/classic/sdp_server.h</itemPath>
+          <itemPath>../../../src/classic/sdp_client.h</itemPath>
+          <itemPath>../../../src/classic/sdp_client_rfcomm.h</itemPath>
+          <itemPath>../../../src/classic/spp_server.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="embedded" displayName="embedded" projectFiles="true">
+          <itemPath>../../../platform/embedded/hal_cpu.h</itemPath>
+          <itemPath>../../../platform/embedded/hal_led.h</itemPath>
+          <itemPath>../../../platform/embedded/hal_tick.h</itemPath>
+          <itemPath>../../../platform/embedded/hal_uart_dma.h</itemPath>
+          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="src" displayName="src" projectFiles="true">
+          <itemPath>../../../src/hci_cmd.h</itemPath>
+          <itemPath>../../../src/btstack_linked_list.h</itemPath>
+          <itemPath>../../../src/btstack_memory_pool.h</itemPath>
+          <itemPath>../../../src/btstack_run_loop.h</itemPath>
+          <itemPath>../../../src/btstack_util.h</itemPath>
+          <itemPath>../../../src/btstack_control.h</itemPath>
+          <itemPath>../../../src/btstack_memory.h</itemPath>
+          <itemPath>../../../src/gap.h</itemPath>
+          <itemPath>../../../src/hci.h</itemPath>
+          <itemPath>../../../src/hci_dump.h</itemPath>
+          <itemPath>../../../src/hci_transport.h</itemPath>
+          <itemPath>../../../src/l2cap.h</itemPath>
+          <itemPath>../../../src/l2cap_signaling.h</itemPath>
+          <itemPath>../../../src/btstack_uart_block.h</itemPath>
+          <itemPath>../../../src/ad_parser.h</itemPath>
+        </logicalFolder>
+      </logicalFolder>
+      <logicalFolder name="f2" displayName="framework" projectFiles="true">
+        <logicalFolder name="f1" displayName="driver" projectFiles="true">
+          <logicalFolder name="f1" displayName="tmr" projectFiles="true">
+            <itemPath>../../../../driver/tmr/drv_tmr.h</itemPath>
+          </logicalFolder>
+          <itemPath>../../../../driver/driver.h</itemPath>
+          <itemPath>../../../../driver/driver_common.h</itemPath>
+        </logicalFolder>
+        <logicalFolder name="f2" displayName="system" projectFiles="true">
+          <logicalFolder name="f1" displayName="clk" projectFiles="true">
+            <itemPath>../../../../system/clk/sys_clk.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f2" displayName="devcon" projectFiles="true">
+            <itemPath>../../../../system/devcon/sys_devcon.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f3" displayName="int" projectFiles="true">
+            <itemPath>../../../../system/int/sys_int.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f4" displayName="ports" projectFiles="true">
+            <itemPath>../../../../system/ports/sys_ports.h</itemPath>
+          </logicalFolder>
+          <itemPath>../../../../system/system.h</itemPath>
+        </logicalFolder>
+      </logicalFolder>
+    </logicalFolder>
+    <logicalFolder name="LinkerScript"
+                   displayName="Linker Files"
+                   projectFiles="true">
+    </logicalFolder>
+    <logicalFolder name="SourceFiles"
+                   displayName="Source Files"
+                   projectFiles="true">
+      <logicalFolder name="f1" displayName="app" projectFiles="true">
+        <logicalFolder name="f1" displayName="system_config" projectFiles="true">
+          <logicalFolder name="f1" displayName="bt_audio_dk" projectFiles="true">
+            <itemPath>../src/system_config/bt_audio_dk/system_init.c</itemPath>
+            <itemPath>../src/system_config/bt_audio_dk/system_tasks.c</itemPath>
+          </logicalFolder>
+        </logicalFolder>
+        <itemPath>../src/btstack_port.c</itemPath>
+        <itemPath>../src/app_debug.c</itemPath>
+        <itemPath>../src/app.c</itemPath>
+        <itemPath>../src/main.c</itemPath>
+        <itemPath>../../../example/spp_counter.c</itemPath>
+      </logicalFolder>
+      <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="3rd-party" displayName="3rd-party" projectFiles="true">
+          <logicalFolder name="bluedroid" displayName="bluedroid" projectFiles="true">
+            <logicalFolder name="decoder" displayName="decoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/alloc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/bitalloc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/bitstream-decode.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/decoder-oina.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/decoder-private.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/decoder-sbc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/dequant.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/framing-sbc.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/framing.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/oi_codec_version.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/synthesis-8-generated.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/synthesis-dct8.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/decoder/srce/synthesis-sbc.c</itemPath>
+              </logicalFolder>
+            </logicalFolder>
+            <logicalFolder name="encoder" displayName="encoder" projectFiles="true">
+              <logicalFolder name="include" displayName="include" projectFiles="true">
+              </logicalFolder>
+              <logicalFolder name="srce" displayName="srce" projectFiles="true">
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_analysis.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_dct.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_mono.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_ste.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_enc_coeffs.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_encoder.c</itemPath>
+                <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_packing.c</itemPath>
+              </logicalFolder>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="f1" displayName="hxcmod-player" projectFiles="true">
+            <logicalFolder name="f1" displayName="mods" projectFiles="true">
+              <itemPath>../../../3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c</itemPath>
+            </logicalFolder>
+            <itemPath>../../../3rd-party/hxcmod-player/hxcmod.c</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f2" displayName="md5" projectFiles="true">
+            <itemPath>../../../3rd-party/md5/md5.c</itemPath>
+          </logicalFolder>
+          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
+            <itemPath>../../../3rd-party/micro-ecc/uECC.c</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f3" displayName="yxml" projectFiles="true">
+            <itemPath>../../../3rd-party/yxml/yxml.c</itemPath>
+          </logicalFolder>
+        </logicalFolder>
+        <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
+          <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
+        </logicalFolder>
+        <logicalFolder name="f1" displayName="platform-embedded" projectFiles="true">
+          <itemPath>../../../platform/embedded/btstack_run_loop_embedded.c</itemPath>
+          <itemPath>../../../platform/embedded/btstack_uart_block_embedded.c</itemPath>
+        </logicalFolder>
+        <logicalFolder name="src" displayName="src" projectFiles="true">
+          <logicalFolder name="f2" displayName="ble" projectFiles="true">
+            <logicalFolder name="f1" displayName="gatt-service" projectFiles="true">
+              <itemPath>../../../src/ble/gatt-service/battery_service_server.c</itemPath>
+              <itemPath>../../../src/ble/gatt-service/device_information_service_server.c</itemPath>
+              <itemPath>../../../src/ble/gatt-service/hids_device.c</itemPath>
+            </logicalFolder>
+            <itemPath>../../../src/ble/att_db.c</itemPath>
+            <itemPath>../../../src/ble/att_dispatch.c</itemPath>
+            <itemPath>../../../src/ble/att_server.c</itemPath>
+            <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
+            <itemPath>../../../src/ble/sm.c</itemPath>
+            <itemPath>../../../src/ble/gatt-service/ancs_client.c</itemPath>
+            <itemPath>../../../src/ble/gatt_client.c</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f1" displayName="classic" projectFiles="true">
+            <itemPath>../../../src/classic/btstack_link_key_db_memory.c</itemPath>
+            <itemPath>../../../src/classic/sdp_client.c</itemPath>
+            <itemPath>../../../src/classic/sdp_client_rfcomm.c</itemPath>
+            <itemPath>../../../src/classic/sdp_server.c</itemPath>
+            <itemPath>../../../src/classic/sdp_util.c</itemPath>
+            <itemPath>../../../src/classic/spp_server.c</itemPath>
+            <itemPath>../../../src/classic/a2dp_sink.c</itemPath>
+            <itemPath>../../../src/classic/a2dp_source.c</itemPath>
+            <itemPath>../../../src/classic/avdtp.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_acceptor.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_initiator.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_sink.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_source.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_util.c</itemPath>
+            <itemPath>../../../src/classic/avrcp.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_browsing_controller.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_controller.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_media_item_iterator.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_target.c</itemPath>
+            <itemPath>../../../src/classic/bnep.c</itemPath>
+            <itemPath>../../../src/classic/btstack_cvsd_plc.c</itemPath>
+            <itemPath>../../../src/classic/btstack_sbc_decoder_bluedroid.c</itemPath>
+            <itemPath>../../../src/classic/btstack_sbc_encoder_bluedroid.c</itemPath>
+            <itemPath>../../../src/classic/btstack_sbc_plc.c</itemPath>
+            <itemPath>../../../src/classic/device_id_server.c</itemPath>
+            <itemPath>../../../src/classic/goep_client.c</itemPath>
+            <itemPath>../../../src/classic/hfp.c</itemPath>
+            <itemPath>../../../src/classic/hfp_ag.c</itemPath>
+            <itemPath>../../../src/classic/hfp_gsm_model.c</itemPath>
+            <itemPath>../../../src/classic/hfp_hf.c</itemPath>
+            <itemPath>../../../src/classic/hfp_msbc.c</itemPath>
+            <itemPath>../../../src/classic/hid_device.c</itemPath>
+            <itemPath>../../../src/classic/hsp_ag.c</itemPath>
+            <itemPath>../../../src/classic/hsp_hs.c</itemPath>
+            <itemPath>../../../src/classic/obex_iterator.c</itemPath>
+            <itemPath>../../../src/classic/pan.c</itemPath>
+            <itemPath>../../../src/classic/pbap_client.c</itemPath>
+          </logicalFolder>
+          <itemPath>../../../src/btstack_memory.c</itemPath>
+          <itemPath>../../../src/hci.c</itemPath>
+          <itemPath>../../../src/hci_cmd.c</itemPath>
+          <itemPath>../../../src/hci_dump.c</itemPath>
+          <itemPath>../../../src/l2cap.c</itemPath>
+          <itemPath>../../../src/l2cap_signaling.c</itemPath>
+          <itemPath>../../../src/btstack_linked_list.c</itemPath>
+          <itemPath>../../../src/btstack_memory_pool.c</itemPath>
+          <itemPath>../../../src/classic/rfcomm.c</itemPath>
+          <itemPath>../../../src/btstack_run_loop.c</itemPath>
+          <itemPath>../../../src/btstack_util.c</itemPath>
+          <itemPath>../../../src/hci_transport_h4.c</itemPath>
+          <itemPath>../../../src/hci_transport_h5.c</itemPath>
+          <itemPath>../../../src/btstack_slip.c</itemPath>
+          <itemPath>../../../src/ad_parser.c</itemPath>
+          <itemPath>../../../src/btstack_tlv.c</itemPath>
+          <itemPath>../../../src/btstack_crypto.c</itemPath>
+          <itemPath>../../../src/btstack_hid_parser.c</itemPath>
+          <itemPath>../../../src/btstack_uart_slip_wrapper.c</itemPath>
+        </logicalFolder>
+      </logicalFolder>
+      <logicalFolder name="f2" displayName="framework" projectFiles="true">
+        <logicalFolder name="f2" displayName="driver" projectFiles="true">
+          <logicalFolder name="f1" displayName="tmr" projectFiles="true">
+            <logicalFolder name="f1" displayName="src" projectFiles="true">
+              <logicalFolder name="f1" displayName="dynamic" projectFiles="true">
+                <itemPath>../../../../driver/tmr/src/dynamic/drv_tmr.c</itemPath>
+              </logicalFolder>
+            </logicalFolder>
+          </logicalFolder>
+        </logicalFolder>
+        <logicalFolder name="f1" displayName="system" projectFiles="true">
+          <logicalFolder name="f1" displayName="clk" projectFiles="true">
+            <logicalFolder name="f1" displayName="src" projectFiles="true">
+              <itemPath>../../../../system/clk/src/sys_clk.c</itemPath>
+              <itemPath>../../../../system/clk/src/sys_clk_pic32mx.c</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="f2" displayName="devcon" projectFiles="true">
+            <logicalFolder name="f1" displayName="src" projectFiles="true">
+              <itemPath>../../../../system/devcon/src/sys_devcon.c</itemPath>
+              <itemPath>../../../../system/devcon/src/sys_devcon_cache.h</itemPath>
+              <itemPath>../../../../system/devcon/src/sys_devcon_pic32mx.c</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="f3" displayName="int" projectFiles="true">
+            <logicalFolder name="f1" displayName="src" projectFiles="true">
+              <itemPath>../../../../system/int/src/sys_int_pic32.c</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="f4" displayName="ports" projectFiles="true">
+            <logicalFolder name="f1" displayName="src" projectFiles="true">
+              <itemPath>../../../../system/ports/src/sys_ports.c</itemPath>
+            </logicalFolder>
+          </logicalFolder>
+        </logicalFolder>
+      </logicalFolder>
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceRootList>
+    <Elem>../src</Elem>
+    <Elem>../../../../system</Elem>
+    <Elem>../../../../driver</Elem>
+    <Elem>../../../include</Elem>
+    <Elem>../../../src</Elem>
+    <Elem>../../../ble</Elem>
+    <Elem>../../../chipset/csr</Elem>
+    <Elem>../../../example</Elem>
+    <Elem>../../../platform/embedded</Elem>
+    <Elem>../../../3rd-party</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="default" type="2">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <targetDevice>PIC32MX450F256L</targetDevice>
+        <targetHeader></targetHeader>
+        <targetPluginBoard></targetPluginBoard>
+        <platformTool></platformTool>
+        <languageToolchain>XC32</languageToolchain>
+        <languageToolchainVersion>2.40</languageToolchainVersion>
+        <platform>4</platform>
+      </toolsSet>
+      <packs>
+        <pack name="PIC32MX_DFP" vendor="Microchip" version="1.2.228"/>
+      </packs>
+      <compileType>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibFileItem>../../../../../bin/framework/peripheral/PIC32MX450F256L_peripherals.a</linkerLibFileItem>
+          </linkerLibItems>
+        </linkerTool>
+        <archiverTool>
+        </archiverTool>
+        <loading>
+          <useAlternateLoadableFile>false</useAlternateLoadableFile>
+          <parseOnProdLoad>false</parseOnProdLoad>
+          <alternateLoadableFile></alternateLoadableFile>
+        </loading>
+        <subordinates>
+        </subordinates>
+      </compileType>
+      <makeCustomizationType>
+        <makeCustomizationPreStepEnabled>false</makeCustomizationPreStepEnabled>
+        <makeCustomizationPreStep></makeCustomizationPreStep>
+        <makeCustomizationPostStepEnabled>false</makeCustomizationPostStepEnabled>
+        <makeCustomizationPostStep></makeCustomizationPostStep>
+        <makeCustomizationPutChecksumInUserID>false</makeCustomizationPutChecksumInUserID>
+        <makeCustomizationEnableLongLines>false</makeCustomizationEnableLongLines>
+        <makeCustomizationNormalizeHexFile>false</makeCustomizationNormalizeHexFile>
+      </makeCustomizationType>
+      <C32>
+        <property key="additional-warnings" value="false"/>
+        <property key="addresss-attribute-use" value="false"/>
+        <property key="enable-app-io" value="false"/>
+        <property key="enable-omit-frame-pointer" value="false"/>
+        <property key="enable-symbols" value="true"/>
+        <property key="enable-unroll-loops" value="false"/>
+        <property key="exclude-floating-point" value="false"/>
+        <property key="extra-include-directories"
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/micro-ecc;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include;../../../3rd-party/hxcmod-player;../../../3rd-party/hxcmod-player/mods;../../../3rd-party/md5;../../../3rd-party/yxml"/>
+        <property key="generate-16-bit-code" value="false"/>
+        <property key="generate-micro-compressed-code" value="false"/>
+        <property key="isolate-each-function" value="false"/>
+        <property key="make-warnings-into-errors" value="false"/>
+        <property key="optimization-level" value="-Os"/>
+        <property key="place-data-into-section" value="false"/>
+        <property key="post-instruction-scheduling" value="default"/>
+        <property key="pre-instruction-scheduling" value="default"/>
+        <property key="preprocessor-macros" value=""/>
+        <property key="strict-ansi" value="false"/>
+        <property key="support-ansi" value="false"/>
+        <property key="toplevel-reordering" value=""/>
+        <property key="unaligned-access" value=""/>
+        <property key="use-cci" value="false"/>
+        <property key="use-iar" value="false"/>
+        <property key="use-indirect-calls" value="false"/>
+      </C32>
+      <C32-AR>
+        <property key="additional-options-chop-files" value="false"/>
+      </C32-AR>
+      <C32-AS>
+        <property key="assembler-symbols" value=""/>
+        <property key="enable-symbols" value="true"/>
+        <property key="exclude-floating-point-library" value="false"/>
+        <property key="expand-macros" value="false"/>
+        <property key="extra-include-directories-for-assembler" value=""/>
+        <property key="extra-include-directories-for-preprocessor" value=""/>
+        <property key="false-conditionals" value="false"/>
+        <property key="generate-16-bit-code" value="false"/>
+        <property key="generate-micro-compressed-code" value="false"/>
+        <property key="keep-locals" value="false"/>
+        <property key="list-assembly" value="false"/>
+        <property key="list-source" value="false"/>
+        <property key="list-symbols" value="false"/>
+        <property key="oXC32asm-list-to-file" value="false"/>
+        <property key="omit-debug-dirs" value="false"/>
+        <property key="omit-forms" value="false"/>
+        <property key="preprocessor-macros" value=""/>
+        <property key="warning-level" value=""/>
+      </C32-AS>
+      <C32-CO>
+        <property key="coverage-enable" value=""/>
+      </C32-CO>
+      <C32-LD>
+        <property key="additional-options-use-response-files" value="false"/>
+        <property key="additional-options-write-sla" value="false"/>
+        <property key="allocate-dinit" value="false"/>
+        <property key="code-dinit" value="false"/>
+        <property key="ebase-addr" value=""/>
+        <property key="enable-check-sections" value="false"/>
+        <property key="exclude-floating-point-library" value="false"/>
+        <property key="exclude-standard-libraries" value="false"/>
+        <property key="extra-lib-directories" value=""/>
+        <property key="fill-flash-options-addr" value=""/>
+        <property key="fill-flash-options-const" value=""/>
+        <property key="fill-flash-options-how" value="0"/>
+        <property key="fill-flash-options-inc-const" value="1"/>
+        <property key="fill-flash-options-increment" value=""/>
+        <property key="fill-flash-options-seq" value=""/>
+        <property key="fill-flash-options-what" value="0"/>
+        <property key="generate-16-bit-code" value="false"/>
+        <property key="generate-cross-reference-file" value="false"/>
+        <property key="generate-micro-compressed-code" value="false"/>
+        <property key="heap-size" value="16"/>
+        <property key="input-libraries" value=""/>
+        <property key="kseg-length" value=""/>
+        <property key="kseg-origin" value=""/>
+        <property key="linker-symbols" value=""/>
+        <property key="map-file" value="${DISTDIR}/${PROJECTNAME}.${IMAGE_TYPE}.map"/>
+        <property key="no-device-startup-code" value="false"/>
+        <property key="no-startup-files" value="false"/>
+        <property key="oXC32ld-extra-opts" value=""/>
+        <property key="optimization-level" value=""/>
+        <property key="preprocessor-macros" value=""/>
+        <property key="remove-unused-sections" value="true"/>
+        <property key="report-memory-usage" value="false"/>
+        <property key="serial-length" value=""/>
+        <property key="serial-origin" value=""/>
+        <property key="stack-size" value=""/>
+        <property key="symbol-stripping" value=""/>
+        <property key="trace-symbols" value=""/>
+        <property key="warn-section-align" value="false"/>
+      </C32-LD>
+      <C32CPP>
+        <property key="additional-warnings" value="false"/>
+        <property key="addresss-attribute-use" value="false"/>
+        <property key="check-new" value="false"/>
+        <property key="eh-specs" value="true"/>
+        <property key="enable-app-io" value="false"/>
+        <property key="enable-omit-frame-pointer" value="false"/>
+        <property key="enable-symbols" value="true"/>
+        <property key="enable-unroll-loops" value="false"/>
+        <property key="exceptions" value="true"/>
+        <property key="exclude-floating-point" value="false"/>
+        <property key="extra-include-directories" value=""/>
+        <property key="generate-16-bit-code" value="false"/>
+        <property key="generate-micro-compressed-code" value="false"/>
+        <property key="isolate-each-function" value="false"/>
+        <property key="make-warnings-into-errors" value="false"/>
+        <property key="optimization-level" value=""/>
+        <property key="place-data-into-section" value="false"/>
+        <property key="post-instruction-scheduling" value="default"/>
+        <property key="pre-instruction-scheduling" value="default"/>
+        <property key="preprocessor-macros" value=""/>
+        <property key="rtti" value="true"/>
+        <property key="strict-ansi" value="false"/>
+        <property key="toplevel-reordering" value=""/>
+        <property key="unaligned-access" value=""/>
+        <property key="use-cci" value="false"/>
+        <property key="use-iar" value="false"/>
+        <property key="use-indirect-calls" value="false"/>
+      </C32CPP>
+      <C32Global>
+        <property key="common-include-directories" value=""/>
+        <property key="gp-relative-option" value=""/>
+        <property key="legacy-libc" value="false"/>
+        <property key="mdtcm" value=""/>
+        <property key="mitcm" value=""/>
+        <property key="mstacktcm" value="false"/>
+        <property key="omit-pack-options" value="1"/>
+        <property key="relaxed-math" value="false"/>
+        <property key="save-temps" value="false"/>
+        <property key="wpo-lto" value="false"/>
+      </C32Global>
+      <PICkit3PlatformTool>
+        <property key="ADC 1" value="true"/>
+        <property key="AutoSelectMemRanges" value="auto"/>
+        <property key="CHANGE NOTICE" value="true"/>
+        <property key="COMPARATOR" value="true"/>
+        <property key="CTMU" value="true"/>
+        <property key="DMA" value="true"/>
+        <property key="Freeze All Other Peripherals" value="true"/>
+        <property key="I2C1" value="true"/>
+        <property key="I2C2" value="true"/>
+        <property key="INPUT CAPTURE 1" value="true"/>
+        <property key="INPUT CAPTURE 2" value="true"/>
+        <property key="INPUT CAPTURE 3" value="true"/>
+        <property key="INPUT CAPTURE 4" value="true"/>
+        <property key="INPUT CAPTURE 5" value="true"/>
+        <property key="INTERRUPT CONTROL" value="true"/>
+        <property key="OUTPUT COMPARE 1" value="true"/>
+        <property key="OUTPUT COMPARE 2" value="true"/>
+        <property key="OUTPUT COMPARE 3" value="true"/>
+        <property key="OUTPUT COMPARE 4" value="true"/>
+        <property key="OUTPUT COMPARE 5" value="true"/>
+        <property key="PARALLEL MASTER/SLAVE PORT" value="true"/>
+        <property key="REAL TIME CLOCK" value="true"/>
+        <property key="SPI/I2S 1" value="true"/>
+        <property key="SPI/I2S 2" value="true"/>
+        <property key="SecureSegment.SegmentProgramming" value="FullChipProgramming"/>
+        <property key="TIMER1" value="true"/>
+        <property key="TIMER2" value="true"/>
+        <property key="TIMER3" value="true"/>
+        <property key="TIMER4" value="true"/>
+        <property key="TIMER5" value="true"/>
+        <property key="ToolFirmwareFilePath"
+                  value="Press to browse for a specific firmware version"/>
+        <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
+        <property key="UART1" value="true"/>
+        <property key="UART2" value="true"/>
+        <property key="UART3" value="true"/>
+        <property key="UART4" value="true"/>
+        <property key="UART5" value="true"/>
+        <property key="USB" value="true"/>
+        <property key="debugoptions.useswbreakpoints" value="false"/>
+        <property key="hwtoolclock.frcindebug" value="false"/>
+        <property key="memories.aux" value="false"/>
+        <property key="memories.bootflash" value="true"/>
+        <property key="memories.configurationmemory" value="true"/>
+        <property key="memories.configurationmemory2" value="true"/>
+        <property key="memories.dataflash" value="true"/>
+        <property key="memories.eeprom" value="true"/>
+        <property key="memories.flashdata" value="true"/>
+        <property key="memories.id" value="true"/>
+        <property key="memories.instruction.ram" value="true"/>
+        <property key="memories.instruction.ram.ranges"
+                  value="${memories.instruction.ram.ranges}"/>
+        <property key="memories.programmemory" value="true"/>
+        <property key="memories.programmemory.ranges" value="1d000000-1d03ffff"/>
+        <property key="poweroptions.powerenable" value="false"/>
+        <property key="programmertogo.imagename" value=""/>
+        <property key="programoptions.donoteraseauxmem" value="false"/>
+        <property key="programoptions.eraseb4program" value="true"/>
+        <property key="programoptions.pgmspeed" value="2"/>
+        <property key="programoptions.preservedataflash" value="false"/>
+        <property key="programoptions.preservedataflash.ranges"
+                  value="${programoptions.preservedataflash.ranges}"/>
+        <property key="programoptions.preserveeeprom" value="false"/>
+        <property key="programoptions.preserveeeprom.ranges" value=""/>
+        <property key="programoptions.preserveprogram.ranges" value=""/>
+        <property key="programoptions.preserveprogramrange" value="false"/>
+        <property key="programoptions.preserveuserid" value="false"/>
+        <property key="programoptions.programcalmem" value="false"/>
+        <property key="programoptions.programuserotp" value="false"/>
+        <property key="programoptions.testmodeentrymethod" value="VPPFirst"/>
+        <property key="programoptions.usehighvoltageonmclr" value="false"/>
+        <property key="programoptions.uselvpprogramming" value="false"/>
+        <property key="voltagevalue" value="3.25"/>
+      </PICkit3PlatformTool>
+    </conf>
+  </confs>
+</configurationDescriptor>

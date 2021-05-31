@@ -41,6 +41,7 @@ VPATH += ${BTSTACK_ROOT}/example
 C_SOURCES =  \
 ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
 ${BTSTACK_ROOT}/chipset/em9301/btstack_chipset_em9301.c \
 ${BTSTACK_ROOT}/chipset/em9301/0000000_META_hci_patches_v7.c \
@@ -48,12 +49,16 @@ ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
 ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
 ${BTSTACK_ROOT}/src/ble/gatt_client.c \
@@ -170,6 +175,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
 C_INCLUDES += -I${BTSTACK_ROOT}/src
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
+C_INCLUDES += -I${BTSTACK_ROOT}/chipset/em9301
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I bsp
 C_INCLUDES += -I pdm

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "main.c"
 
 // *****************************************************************************
 //
@@ -56,10 +56,14 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+#include "btstack_uart.h"
 #include "bluetooth_company_id.h"
 #include "ble/le_device_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "btstack_stdin.h"
 #include "btstack_chipset_zephyr.h"
 #include "btstack_tlv_posix.h"
@@ -137,10 +141,12 @@ int main(int argc, const char * argv[]){
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+
+    // log into file using HCI_DUMP_PACKETLOGGER format
     const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
 
     // pick serial port
@@ -155,8 +161,8 @@ int main(int argc, const char * argv[]){
     printf("H4 device: %s\n", config.device_name);
 
     // init HCI
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
-	const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
+	const hci_transport_t * transport = hci_transport_h4_instance_for_uart(uart_driver);
 	hci_init(transport, (void*) &config);
     hci_set_chipset(btstack_chipset_zephyr_instance());
     

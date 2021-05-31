@@ -204,8 +204,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
-					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr);
                     rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
                     rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
                     printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
@@ -213,7 +212,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					break;
 					
 				case RFCOMM_EVENT_CHANNEL_OPENED:
-					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (rfcomm_event_channel_opened_get_status(packet)) {
                         printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {
@@ -256,6 +254,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case RFCOMM_DATA_PACKET:
             test_track_transferred(size);
 #if 0
+            // optional: print received data as ASCII text
             printf("RCV: '");
             for (i=0;i<size;i++){
                 putchar(packet[i]);

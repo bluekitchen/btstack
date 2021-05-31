@@ -41,9 +41,14 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "btstack.h"
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
+
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_util.h"
+#include "l2cap.h"
 
 #define AVRCP_CMD_BUFFER_SIZE 30
 
@@ -87,9 +92,12 @@ static int avrcp_controller_supports_browsing(uint16_t controller_supported_feat
     return controller_supported_features & AVRCP_FEATURE_MASK_BROWSING;
 }
 
-static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id, avrcp_command_type_t ctype, const uint8_t * payload){
+static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id,
+                                                            avrcp_command_type_t ctype, const uint8_t *payload,
+                                                            uint16_t size) {
     switch (event_id){
         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:{
+            if (size < 4) break;
             uint32_t song_position = big_endian_read_32(payload, 0);
             uint16_t offset = 0;
             uint8_t event[10];
@@ -105,6 +113,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -154,6 +163,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -167,6 +177,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
+            if (size < 2) break;
             uint8_t event[8];
             uint16_t offset = 0;
             uint16_t uuid = big_endian_read_16(payload, 0);
@@ -207,6 +218,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
             break;
         }
         case AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -221,6 +233,7 @@ static void avrcp_controller_emit_notification_for_event_id(uint16_t avrcp_cid, 
         }
 
         case AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED:{
+            if (size < 1) break;
             uint16_t offset = 0;
             uint8_t event[7];
             event[offset++] = HCI_EVENT_AVRCP_META;
@@ -531,14 +544,14 @@ static void avrcp_press_and_hold_timer_start(avrcp_connection_t * connection){
 }
 
 static void avrcp_press_and_hold_timer_stop(avrcp_connection_t * connection){
-    connection->continuous_fast_forward_cmd = 0;   
+    connection->press_and_hold_cmd = 0;
     btstack_run_loop_remove_timer(&connection->press_and_hold_cmd_timer);
 } 
 
 
 static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-    if (connection->continuous_fast_forward_cmd){
+    if (connection->press_and_hold_cmd){
         avrcp_press_and_hold_timer_stop(connection);
     }
     connection->cmd_operands[0] = 0x80 | connection->cmd_operands[0];
@@ -547,7 +560,7 @@ static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_c
     return ERROR_CODE_SUCCESS;
 }
 
-static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, uint8_t continuous_fast_forward_cmd){
+static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, bool continuous_fast_forward_cmd){
     log_info("Send command %d", opid);
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
@@ -566,7 +579,7 @@ static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(ui
     connection->subunit_id =   AVRCP_SUBUNIT_ID;
     connection->cmd_operands_length = 0;
 
-    connection->continuous_fast_forward_cmd = continuous_fast_forward_cmd;
+    connection->press_and_hold_cmd = continuous_fast_forward_cmd;
     connection->cmd_operands_length = 2;
     connection->cmd_operands[0] = opid;
     if (playback_speed > 0){
@@ -575,7 +588,7 @@ static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(ui
     }
     connection->cmd_operands[1] = connection->cmd_operands_length - 2;
     
-    if (connection->continuous_fast_forward_cmd){
+    if (connection->press_and_hold_cmd){
         avrcp_press_and_hold_timer_start(connection);
     }
 
@@ -585,11 +598,11 @@ static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(ui
 }
 
 static uint8_t request_single_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed){
-    return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, 0);
+    return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, false);
 }
 
 static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed){
-    return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, 1);
+    return avrcp_controller_request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, true);
 }
 
 static int avrcp_controller_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
@@ -644,7 +657,9 @@ static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * c
     return ERROR_CODE_SUCCESS;
 }
 
-static void avrcp_controller_handle_notification(avrcp_connection_t * connection, avrcp_command_type_t ctype, uint8_t * payload){
+static void
+avrcp_controller_handle_notification(avrcp_connection_t *connection, avrcp_command_type_t ctype, uint8_t *payload, uint16_t size) {
+    if (size < 1) return;
     uint16_t pos = 0;
     avrcp_notification_event_id_t event_id = (avrcp_notification_event_id_t) payload[pos++];
     uint16_t event_mask = (1 << event_id);
@@ -671,37 +686,96 @@ static void avrcp_controller_handle_notification(avrcp_connection_t * connection
             connection->notifications_to_deregister &= reset_event_mask;
             break;
     }
-    
-    avrcp_controller_emit_notification_for_event_id(connection->avrcp_cid, event_id, ctype, payload+pos);
+
+    avrcp_controller_emit_notification_for_event_id(connection->avrcp_cid, event_id, ctype, payload + pos, size - pos);
 }
+
+#ifdef ENABLE_AVCTP_FRAGMENTATION
+static void avctp_reassemble_message(avrcp_connection_t * connection, avctp_packet_type_t packet_type, uint8_t *packet, uint16_t size){
+    // after header (transaction label and packet type)
+    uint16_t pos;
+    uint16_t bytes_to_store;
+    
+    switch (packet_type){
+        case AVCTP_START_PACKET:
+            if (size < 2) return;
+            
+            // store header
+            pos = 0;
+            connection->avctp_reassembly_buffer[pos] = packet[pos];
+            pos++;
+            connection->avctp_reassembly_size = pos;
+
+            // NOTE: num packets not needed for reassembly, ignoring it does not pose security risk -> no need to store it
+            pos++;
+            
+            // PID in reassembled packet is at offset 1, it will be read later after the avctp_reassemble_message with AVCTP_END_PACKET is called
+            
+            bytes_to_store = btstack_min(size - pos, sizeof(connection->avctp_reassembly_buffer) - connection->avctp_reassembly_size);
+            memcpy(&connection->avctp_reassembly_buffer[connection->avctp_reassembly_size], &packet[pos], bytes_to_store);
+            connection->avctp_reassembly_size += bytes_to_store;
+            break;
+        
+        case AVCTP_CONTINUE_PACKET:
+        case AVCTP_END_PACKET:
+            if (size < 1) return;
+            
+            // store remaining data, ignore header
+            pos = 1;
+            bytes_to_store = btstack_min(size - pos, sizeof(connection->avctp_reassembly_buffer) - connection->avctp_reassembly_size);
+            memcpy(&connection->avctp_reassembly_buffer[connection->avctp_reassembly_size], &packet[pos], bytes_to_store);
+            connection->avctp_reassembly_size += bytes_to_store;
+            break;
+        
+        default:
+            return;
+    }
+}
+#endif
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     if (size < 6u) return;
-    
-    uint16_t pos = 3;
     uint8_t  pdu_id;
-    uint8_t  vendor_dependent_packet_type;
+    avrcp_packet_type_t  vendor_dependent_packet_type;
 
-    connection->last_confirmed_transaction_id = packet[0] >> 4;
+    uint16_t pos = 0;
+    connection->last_confirmed_transaction_id = packet[pos] >> 4;
+    avrcp_frame_type_t  frame_type =  (avrcp_frame_type_t)((packet[pos] >> 1) & 0x01);
+    avctp_packet_type_t packet_type = (avctp_packet_type_t)((packet[pos] >> 2) & 0x03);
+    pos++;
 
-    avrcp_frame_type_t  frame_type = (avrcp_frame_type_t)((packet[0] >> 1) & 0x01);
     if (frame_type != AVRCP_RESPONSE_FRAME) return;
-
-    avrcp_packet_type_t packet_type = (avrcp_packet_type_t)((packet[0] >> 2) & 0x03);
+        
     switch (packet_type){
-        case AVRCP_SINGLE_PACKET:
+        case AVCTP_SINGLE_PACKET:
             break;
+        
+#ifdef ENABLE_AVCTP_FRAGMENTATION
+        case AVCTP_START_PACKET:
+        case AVCTP_CONTINUE_PACKET:
+            avctp_reassemble_message(connection, packet_type, packet, size);
+            return;
+        
+        case AVCTP_END_PACKET:
+            avctp_reassemble_message(connection, packet_type, packet, size);
+
+            packet = connection->avctp_reassembly_buffer;
+            size   = connection->avctp_reassembly_size; 
+            break;
+#endif
+        
         default:
-            log_info("Fragmentation is not supported");
             return;
     }
-    
+
+    pos += 2; // PID
+
     avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     
 #ifdef ENABLE_LOG_INFO
     uint8_t byte_value = packet[pos];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
-    avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t)   (byte_value & 0x07);
+    avrcp_subunit_type_t subunit_id   = (avrcp_subunit_type_t) (byte_value & 0x07);
 #endif
     pos++;
     
@@ -739,22 +813,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+
+            if ((size - pos) < 7) return;
+
             // Company ID (3)
             pos += 3;
             pdu_id = packet[pos++];
             vendor_dependent_packet_type = (avrcp_packet_type_t)(packet[pos++] & 0x03);            
             param_length = big_endian_read_16(packet, pos);
             pos += 2;
-            log_info("operands length %d, remaining size %d", param_length, size - pos);
-                
-            if ((size - pos) < param_length) {
-                log_error("Wrong packet size %d < %d", size - pos, param_length);
-                return;
-            };
+            
+            if ((size - pos) < param_length) return;
 
             // handle asynchronous notifications, without changing state
             if (pdu_id == AVRCP_PDU_ID_REGISTER_NOTIFICATION){
-                avrcp_controller_handle_notification(connection, ctype, packet+pos);
+                avrcp_controller_handle_notification(connection, ctype, packet + pos, size - pos);
                 break;
             }
 
@@ -955,10 +1028,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             }
             break;
         case AVRCP_CMD_OPCODE_PASS_THROUGH:{
+            if ((size - pos) < 1) return;
             uint8_t operation_id = packet[pos++];
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
-                    if (connection->continuous_fast_forward_cmd){
+                    if (connection->press_and_hold_cmd){
                         connection->state = AVCTP_W4_STOP;
                     } else {
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
@@ -1123,6 +1197,10 @@ uint8_t avrcp_controller_rewind(uint16_t avrcp_cid){
 }
 
 /* start continuous cmds */
+
+uint8_t avrcp_controller_start_press_and_hold_cmd(uint16_t avrcp_cid, avrcp_operation_id_t operation_id){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, operation_id, 0);
+}
 
 uint8_t avrcp_controller_press_and_hold_play(uint16_t avrcp_cid){
     return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PLAY, 0);

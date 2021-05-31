@@ -66,6 +66,7 @@ extern "C" {
 #include "l2cap.h"
 
 // Classic
+#ifdef ENABLE_CLASSIC
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
 #include "classic/avrcp.h"
@@ -76,9 +77,13 @@ extern "C" {
 #include "classic/hid_host.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
+#endif
 
 // BLE
 #ifdef ENABLE_BLE
+#include "ble/gatt-service/battery_service_client.h"
+#include "ble/gatt-service/hids_client.h"
+#include "ble/gatt-service/scan_parameters_service_client.h"
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
 #endif
@@ -132,6 +137,11 @@ cfile_header_begin = """
 #include "btstack_debug.h"
 
 #include <stdlib.h>
+
+#ifdef ENABLE_MALLOC_TEST
+extern "C" void * test_malloc(size_t size);
+#define malloc test_malloc
+#endif
 
 #ifdef HAVE_MALLOC
 typedef struct btstack_memory_buffer {
@@ -292,7 +302,7 @@ list_of_classic_structs = [
     ["avrcp_browsing_connection"],   
 ]
 list_of_le_structs = [
-    ["gatt_client", "whitelist_entry", "sm_lookup_entry"],
+    ["battery_service_client", "gatt_client", "hids_client", "scan_parameters_service_client", "sm_lookup_entry", "whitelist_entry"],
 ]
 list_of_mesh_structs = [
     ['mesh_network_pdu', 'mesh_segmented_pdu', 'mesh_upper_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address', 'mesh_subnet']

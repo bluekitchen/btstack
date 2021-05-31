@@ -83,7 +83,11 @@ GATT_SERVER += \
 	att_server.c        	    \
 
 GATT_CLIENT += \
-	gatt_client.c        	    \
+	gatt_client.c        	    			\
+	battery_service_client.c 				\
+	device_information_service_client.c 	\
+	scan_parameters_service_client.c 	    \
+	hids_client.c 	    					\
 
 PAN += \
 	pan.c \
@@ -212,28 +216,30 @@ EXAMPLES_CLASSIC_ONLY =     \
 
 # List of Examples that only use Bluetooth LE
 
-EXAMPLES_LE_ONLY=           \
-	ancs_client_demo        \
-	att_delayed_response    \
-	gap_le_advertisements   \
-	gatt_battery_query      \
-	gatt_browser            \
-	gatt_counter            \
-	gatt_heart_rate_client  \
-	gatt_streamer_server    \
-	hog_keyboard_demo       \
-	hog_mouse_demo          \
-	hog_boot_host_demo      \
-	le_data_channel_client  \
-	le_data_channel_server  \
-	le_mitm                 \
-	le_streamer_client      \
-	mesh_node_demo          \
-	nordic_spp_le_counter   \
-	nordic_spp_le_streamer  \
-	sm_pairing_central      \
-	sm_pairing_peripheral   \
-	ublox_spp_le_counter    \
+EXAMPLES_LE_ONLY=           		\
+	ancs_client_demo        		\
+	att_delayed_response    		\
+	gap_le_advertisements   		\
+	gatt_battery_query      		\
+	gatt_browser            		\
+	gatt_counter            		\
+	gatt_device_information_query	\
+	gatt_heart_rate_client  		\
+	gatt_streamer_server    		\
+	hog_boot_host_demo      		\
+	hog_host_demo      		        \
+	hog_keyboard_demo       		\
+	hog_mouse_demo          		\
+	le_data_channel_client  		\
+	le_data_channel_server  		\
+	le_mitm                 		\
+	le_streamer_client      		\
+	mesh_node_demo          		\
+	nordic_spp_le_counter   		\
+	nordic_spp_le_streamer  		\
+	sm_pairing_central      		\
+	sm_pairing_peripheral   		\
+	ublox_spp_le_counter    		\
 
 # List of Examples that use Bluetooth BR/EDR/LE = Dual Mode
 
@@ -245,23 +251,24 @@ EXAMPLES_DUAL_MODE=         \
 
 # List of GATT files used by either LE_ONLY or DUAL_MODE examples
 
-EXAMPLES_GATT_FILES =           \
-	att_delayed_response.gatt   \
-	ancs_client_demo.gatt       \
-	gatt_battery_query.gatt     \
-	gatt_browser.gatt           \
-	gatt_counter.gatt           \
-	gatt_streamer_server.gatt   \
-	hog_keyboard_demo.gatt      \
-	hog_mouse_demo.gatt         \
-	le_data_channel_server.gatt \
-	nordic_spp_le_counter.gatt  \
-	nordic_spp_le_streamer.gatt \
-	sm_pairing_central.gatt     \
-	sm_pairing_peripheral.gatt  \
-	spp_and_gatt_counter.gatt   \
-	spp_and_gatt_streamer.gatt  \
-	ublox_spp_le_counter.gatt   \
+EXAMPLES_GATT_FILES =           		\
+	ancs_client_demo.gatt       		\
+	att_delayed_response.gatt   		\
+	gatt_battery_query.gatt     		\
+	gatt_browser.gatt           		\
+	gatt_counter.gatt           		\
+	gatt_device_information_query.gatt 	\
+	gatt_streamer_server.gatt   		\
+	hog_keyboard_demo.gatt      		\
+	hog_mouse_demo.gatt         		\
+	le_data_channel_server.gatt 		\
+	nordic_spp_le_counter.gatt  		\
+	nordic_spp_le_streamer.gatt 		\
+	sm_pairing_central.gatt     		\
+	sm_pairing_peripheral.gatt  		\
+	spp_and_gatt_counter.gatt   		\
+	spp_and_gatt_streamer.gatt  		\
+	ublox_spp_le_counter.gatt  			\
 
 # .h for .gatt
 EXAMPLES_GATT_H_FILES = $(EXAMPLES_GATT_FILES:.gatt=.h)
@@ -309,29 +316,64 @@ sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_bnep_
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-att_delayed_response: att_delayed_response.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} att_delayed_response.c
-	${CC} $(filter-out att_delayed_response.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_keyboard_demo: hog_keyboard_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.c
-	${CC} $(filter-out hog_keyboard_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+att_delayed_response.o: att_delayed_response.h att_delayed_response.c
+	${CC} ${CFLAGS} -c $(filter-out att_delayed_response.h,$^) -o $@
 
-hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.c
-	${CC} $(filter-out hog_mouse_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+att_delayed_response: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} att_delayed_response.o
+	${CC} $^ ${LDFLAGS} -o $@
 
-hog_boot_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_boot_host_demo.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_peripheral.c
-	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+hog_keyboard_demo.o: hog_keyboard_demo.h hog_keyboard_demo.c
+	${CC} ${CFLAGS} -c $(filter-out hog_keyboard_demo.h,$^) -o $@
 
-sm_pairing_central: sm_pairing_central.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_central.o
-	${CC} $(filter-out sm_pairing_central.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+hog_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
 
-gatt_counter: gatt_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${CLASSIC_OBJ} battery_service_server.o gatt_counter.c
-	${CC} $(filter-out gatt_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_streamer_server: gatt_streamer_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${CLASSIC_OBJ} gatt_streamer_server.c
-	${CC} $(filter-out gatt_streamer_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+hog_mouse_demo.o: hog_mouse_demo.h hog_mouse_demo.c
+	${CC} ${CFLAGS} -c $(filter-out hog_mouse_demo.h,$^) -o $@
+
+hog_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+hog_boot_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} hog_boot_host_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+
+hog_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} btstack_hid_parser.o btstack_hid.o hog_host_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+sm_pairing_peripheral.o: sm_pairing_peripheral.h sm_pairing_peripheral.c
+	${CC} ${CFLAGS} -c $(filter-out sm_pairing_peripheral.h,$^) -o $@
+
+sm_pairing_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_peripheral.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+sm_pairing_central.o: sm_pairing_central.h sm_pairing_central.c
+	${CC} ${CFLAGS} -c $(filter-out sm_pairing_central.h,$^) -o $@
+
+sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} sm_pairing_central.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+gatt_counter.o: gatt_counter.h gatt_counter.c
+	${CC} ${CFLAGS} -c $(filter-out gatt_counter.h,$^) -o $@
+
+gatt_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${CLASSIC_OBJ} battery_service_server.o gatt_counter.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+gatt_streamer_server.o: gatt_streamer_server.h gatt_streamer_server.c
+	${CC} ${CFLAGS} -c $(filter-out gatt_streamer_server.h,$^) -o $@
+
+gatt_streamer_server: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${CLASSIC_OBJ} gatt_streamer_server.o
+	${CC} $^ ${LDFLAGS} -o $@
+
 
 le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} le_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -342,11 +384,20 @@ le_mitm: ${CORE_OBJ} ${COMMON_OBJ} le_mitm.c
 gatt_heart_rate_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_heart_rate_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_gatt_counter: spp_and_gatt_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_counter.c
-	${CC} $(filter-out spp_and_gatt_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_gatt_streamer: spp_and_gatt_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_streamer.c
-	${CC} $(filter-out spp_and_gatt_streamer.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
+spp_and_gatt_counter.o: spp_and_gatt_counter.h spp_and_gatt_counter.c
+	${CC} ${CFLAGS} -c $(filter-out spp_and_gatt_counter.h,$^) -o $@
+
+spp_and_gatt_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_counter.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+spp_and_gatt_streamer.o: spp_and_gatt_streamer.h spp_and_gatt_streamer.c
+	${CC} ${CFLAGS} -c $(filter-out spp_and_gatt_streamer.h,$^) -o $@
+
+spp_and_gatt_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_gatt_streamer.o
+	${CC} $^ ${LDFLAGS} -o $@
+
 
 spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -372,14 +423,34 @@ panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${PAN_OBJ} pan
 pan_lwip_http_server: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${PAN_OBJ} ${LWIP_SRC} btstack_ring_buffer.o bnep_lwip.o pan_lwip_http_server.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_browser.c
-	${CC} $(filter-out gatt_browser.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_battery_query: gatt_battery_query.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_battery_query.c
-	${CC} $(filter-out gatt_battery_query.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+gatt_browser.o: gatt_browser.h gatt_browser.c
+	${CC} ${CFLAGS} -c $(filter-out gatt_browser.h,$^) -o $@
 
-ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ancs_client.c ancs_client_demo.c
-	${CC} $(filter-out ancs_client_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_browser.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+gatt_battery_query.o: gatt_battery_query.h gatt_battery_query.c
+	${CC} ${CFLAGS} -c $(filter-out gatt_battery_query.h,$^) -o $@
+
+gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_battery_query.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+gatt_device_information_query.o: gatt_device_information_query.h gatt_device_information_query.c
+	${CC} ${CFLAGS} -c $(filter-out gatt_device_information_query.h,$^) -o $@
+
+gatt_device_information_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_device_information_query.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+ancs_client_demo.o: ancs_client_demo.h ancs_client_demo.c
+	${CC} ${CFLAGS} -c $(filter-out ancs_client_demo.h,$^) -o $@
+
+ancs_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ancs_client.o ancs_client_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
+
 
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -423,8 +494,13 @@ dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
 le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} le_data_channel_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_data_channel_server.c
-	${CC} $(filter-out le_data_channel_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+le_data_channel_server.o: le_data_channel_server.h le_data_channel_server.c
+	${CC} ${CFLAGS} -c $(filter-out le_data_channel_server.h,$^) -o $@
+
+le_data_channel_server: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_data_channel_server.o
+	${CC} $^ ${LDFLAGS} -o $@
+
 
 mod_player: ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -435,17 +511,33 @@ sine_player: ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o sine_player.c
 audio_duplex: ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o btstack_ring_buffer.o audio_duplex.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-nordic_spp_le_counter: nordic_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.c
-	${CC} $(filter-out nordic_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-nordic_spp_le_streamer: nordic_spp_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.c
-	${CC} $(filter-out nordic_spp_le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+nordic_spp_le_counter.o: nordic_spp_le_counter.h nordic_spp_le_counter.c
+	${CC} ${CFLAGS} -c $(filter-out nordic_spp_le_counter.h,$^) -o $@
 
-ublox_spp_le_counter: ublox_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.c
-	${CC} $(filter-out ublox_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+nordic_spp_le_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.o
+	${CC} $^ ${LDFLAGS} -o $@
 
-mesh_node_demo: mesh_node_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
-	${CC} $(filter-out mesh_node_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+nordic_spp_le_streamer.o: nordic_spp_le_streamer.h nordic_spp_le_streamer.c
+	${CC} ${CFLAGS} -c $(filter-out nordic_spp_le_streamer.h,$^) -o $@
+
+nordic_spp_le_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+ublox_spp_le_counter.o: ublox_spp_le_counter.h ublox_spp_le_counter.c
+	${CC} ${CFLAGS} -c $(filter-out ublox_spp_le_counter.h,$^) -o $@
+
+ublox_spp_le_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+
+mesh_node_demo.o: mesh_node_demo.h mesh_node_demo.c
+	${CC} ${CFLAGS} -c $(filter-out mesh_node_demo.h,$^) -o $@
+
+mesh_node_demo:${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
+	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES} ${EXAMPLES_GATT_H_FILES}

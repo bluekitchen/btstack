@@ -1,4 +1,4 @@
-# BTstack port for STM32 F4 Discovery Board with CC256x
+# BTstack Port for STM32 F4 Discovery Board with CC256x
 
 This port uses the STM32 F4 Discovery Board with TI's CC256XEM ST Adapter Kit that allows to plug in a CC256xB or CC256xC Bluetooth module.
 STCubeMX was used to provide the HAL, initialize the device, and the Makefile. For easy development, Ozone project files are generated as well.
@@ -45,12 +45,10 @@ All debug output can be either send via SEGGER RTT or via USART2. To get the con
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in src/port.c resp. btstack/port/stm32-f4discovery-cc256x/src/port.c by uncommenting the hci_dump_open(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
+Also, the full packet log can be enabled in src/port.c resp. btstack/port/stm32-f4discovery-cc256x/src/port.c by uncommenting the hci_dump_init(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
 
 ## GATT Database
 In BTstack, the GATT Database is defined via the .gatt file in the example folder. The Makefile contains rules to update the .h file when the .gatt was modified.
-
-Note: In theory, this can be integrated into the Eclipse project, in fact, it's easy to configure it as an Eclipse Builder, but it got tricky to 
 
 
 ## Maintainer Notes - Updating The Port

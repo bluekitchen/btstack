@@ -35,12 +35,10 @@
  *
  */
 
-// *****************************************************************************
-//
-// HFP Audio Gateway (AG) unit
-//
-// *****************************************************************************
-
+/**
+ * @title HFP Audio Gateway (AG)
+ *
+ */
 
 #ifndef btstack_hfp_ag_h
 #define btstack_hfp_ag_h
@@ -82,7 +80,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr);
  * @param codecs_nr
  * @param codecs
  */
-void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs);
+void hfp_ag_init_codecs(int codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set supported features.
@@ -95,14 +93,14 @@ void hfp_ag_init_supported_features(uint32_t supported_features);
  * @param indicators_nr
  * @param indicators
  */
-void hfp_ag_init_ag_indicators(int ag_indicators_nr, hfp_ag_indicator_t * ag_indicators);
+void hfp_ag_init_ag_indicators(int ag_indicators_nr, const hfp_ag_indicator_t * ag_indicators);
 
 /**
  * @brief Set HF indicators. 
  * @param indicators_nr
  * @param indicators
  */
-void hfp_ag_init_hf_indicators(int hf_indicators_nr, hfp_generic_status_indicator_t * hf_indicators);
+void hfp_ag_init_hf_indicators(int hf_indicators_nr, const hfp_generic_status_indicator_t * hf_indicators);
 
 /**
  * @brief Set Call Hold services. 
@@ -224,6 +222,11 @@ void hfp_ag_set_battery_level(int level);
 void hfp_ag_clear_last_dialed_number(void);
 
 /*
+ * @brief Set last dialed number.
+ */
+void hfp_ag_set_last_dialed_number(const char * number);
+
+/*
  * @brief Notify the HF that an incoming call is waiting 
  * during an ongoing call. The notification will be sent only if the HF has
  * has previously enabled the "Call Waiting notification" in the AG. 
@@ -239,6 +242,16 @@ void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
  * @param activate
  */
 void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate);
+
+void hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
+
+void hfp_ag_enhanced_voice_recognition_status(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state);
+void hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle);
+void hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle);
+void hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle);
+
+void hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
+void hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
 
 /*
  * @brief Send a phone number back to the HF.
@@ -267,6 +280,11 @@ void hfp_ag_set_clip(uint8_t type, const char * number);
  * @brief Pass the accept incoming call event to the AG.
  */
 void hfp_ag_incoming_call(void);
+
+/**
+ * @brief Outgoing call initiated
+ */
+void hfp_ag_outgoing_call_initiated(const char * number);
 
 /**
  * @brief Pass the reject outgoing call event to the AG.

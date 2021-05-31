@@ -35,14 +35,14 @@
  *
  */
 
-/*
- * btstack-defines.h
+/**
  *
- * BTstack definitions, events, and error codes */
+ * BTstack definitions, events, and error codes 
+ *
+ */
 
 #ifndef BTSTACK_DEFINES_H
 #define BTSTACK_DEFINES_H
-
 #include <stdint.h>
 
 #include "btstack_linked_list.h" 
@@ -1102,6 +1102,7 @@ typedef uint8_t sm_key_t[16];
  */
 #define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
 
+
 /** 
  * @format 1BH
  * @param address_type
@@ -1370,13 +1371,18 @@ typedef uint8_t sm_key_t[16];
 #define GAP_EVENT_ADVERTISING_REPORT                          0xE2
 
  /**
- * @format B132111JV
+ * @format B13211122221JV
  * @param bd_addr
  * @param page_scan_repetition_mode
  * @param class_of_device
  * @param clock_offset
  * @param rssi_available
  * @param rssi
+ * @param device_id_available
+ * @param device_id_vendor_id_source
+ * @param device_id_vendor_id
+ * @param device_id_product_id
+ * @param device_id_version
  * @param name_available
  * @param name_len
  * @param name
@@ -1501,6 +1507,11 @@ typedef uint8_t sm_key_t[16];
  */
 #define HSP_SUBEVENT_AG_INDICATION                         0x09
 
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define HSP_SUBEVENT_BUTTON_PRESSED                        0x0a
 
 /** HFP Subevent */
 
@@ -1508,43 +1519,49 @@ typedef uint8_t sm_key_t[16];
  * @format 11HB
  * @param subevent_code
  * @param status 0 == OK
- * @param con_handle
+ * @param acl_handle
  * @param bd_addr
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
 
 /**
- * @format 11HB1
+ * @format 1H1HB1
  * @param subevent_code
+ * @param acl_handle
  * @param status 0 == OK
- * @param handle
+ * @param sco_handle
  * @param bd_addr
  * @param negotiated_codec
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
 
 /**
- * @format 1
+ * @format 1HH
  * @param subevent_code
+ * @param acl_handle
+ * @param sco_handle
  */
 #define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param acl_handle
  * @param status 0 == OK
  */
 #define HFP_SUBEVENT_COMPLETE                              0x05
 
 /**
- * @format 11111111T
+ * @format 1H1111111T
  * @param subevent_code
+ * @param acl_handle
  * @param indicator_index
  * @param indicator_status
  * @param indicator_min_range
@@ -1557,8 +1574,9 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
 
 /**
- * @format 111T
+ * @format 1H11T
  * @param subevent_code
+ * @param acl_handle
  * @param network_operator_mode
  * @param network_operator_format
  * @param network_operator_name
@@ -1566,108 +1584,124 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param acl_handle
  * @param error
  */
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x08
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_START_RINGINIG                           0x0A
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_STOP_RINGINIG                            0x0B
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_CALL_TERMINATED                          0x0C
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param acl_handle
  * @param number
  */
 #define HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER                   0x0D
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG               0x0E
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param acl_handle
  * @param number
  */
 #define HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG                     0x0F
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param acl_handle
  * @param dtmf code
  */
 #define HFP_SUBEVENT_TRANSMIT_DTMF_CODES                      0x10
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
- #define HFP_SUBEVENT_CALL_ANSWERED                            0x11
+#define HFP_SUBEVENT_CALL_ANSWERED                            0x11
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_CONFERENCE_CALL                          0x12
 
 /**
- * @format 1
+ * @format 1H
  * @param subevent_code
+ * @param acl_handle
  */
 #define HFP_SUBEVENT_RING                                     0x13
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param acl_handle
  * @param gain
  */
- #define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
+#define HFP_SUBEVENT_SPEAKER_VOLUME                           0x14
 
 /**
- * @format 11
+ * @format 1H1
  * @param subevent_code
+ * @param acl_handle
  * @param gain
  */
 #define HFP_SUBEVENT_MICROPHONE_VOLUME                        0x15
 
 /**
- * @format 11T
+ * @format 1H1T
  * @param subevent_code
+ * @param acl_handle
  * @param type
  * @param number
  */
 #define HFP_SUBEVENT_CALL_WAITING_NOTIFICATION                0x16
 
 /**
- * @format 11T
+ * @format 1H1T
  * @param subevent_code
+ * @param acl_handle
  * @param type
  * @param number
  */
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
 
 /**
- * @format 1111111T
+ * @format 1H111111T
  * @param subevent_code
+ * @param acl_handle
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
@@ -1679,34 +1713,77 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_ENHANCED_CALL_STATUS                     0x18
 
 /**
- * @format 111T
+ * @format 1H11T
  * @param subevent_code
+ * @param acl_handle
  * @param status
  * @param bnip_type
  * @param bnip_number
  */
- #define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19
+#define HFP_SUBEVENT_SUBSCRIBER_NUMBER_INFORMATION            0x19
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param acl_handle
  * @param value
  */
 #define HFP_SUBEVENT_RESPONSE_AND_HOLD_STATUS                 0x1A
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param acl_handle
  * @param command
  */
 #define HFP_SUBEVENT_AT_MESSAGE_SENT                          0x1B
 
 /**
- * @format 1T
+ * @format 1HT
  * @param subevent_code
+ * @param acl_handle
  * @param command
  */
 #define HFP_SUBEVENT_AT_MESSAGE_RECEIVED                      0x1C
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_IN_BAND_RING_TONE                        0x1D
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param activated
+ */
+#define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                 0x1E
+
+/**
+ * @format 1H11
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ * @param state
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS         0x1F
+
+/**
+ * @format 1H211LV
+ * @param subevent_code
+ * @param acl_handle
+ * @param text_id
+ * @param text_operation
+ * @param text_type
+ * @param text_length
+ * @param text
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT           0x20
+
+
 
 // ANCS Client
 
@@ -2595,10 +2672,11 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x1B
 
 /**
- * @format 12111
+ * @format 121111
  * @param subevent_code
  * @param avrcp_cid
  * @param operation_id
+ * @param button_pressed
  * @param operands_length
  * @param operand
  */
@@ -2778,6 +2856,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x35
 
+/**
+ * @format 122
+ * @param subevent_code
+ * @param browsing_cid
+ * @param player_id
+ */
+#define AVRCP_SUBEVENT_BROWSING_SET_BROWSED_PLAYER                            0x36
 
 
 
@@ -2972,6 +3057,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define HID_SUBEVENT_DESCRIPTOR_AVAILABLE                                  0x0D
 
+/**
+ * @format 1222
+ * @param subevent_code
+ * @param hid_cid
+ * @param host_max_latency
+ * @param host_min_timeout
+ */
+#define HID_SUBEVENT_SNIFF_SUBRATING_PARAMS                                0x0E
 
 // HIDS Meta Event Group
 
@@ -3066,6 +3159,202 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
 */
 #define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param hids_cid
+ * @param status
+ * @param num_instances
+ * @param poll_bitmap
+*/
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED                     0x04
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param hids_cid
+ * @param sevice_index
+ * @param att_status  see ATT errors in bluetooth.h  
+ * @param level
+*/
+#define GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL                         0x05
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_DONE                       0x06
+
+/**
+ * @format 1H1T
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME          0x07
+
+/**
+ * @format 1H1T
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER               0x08
+
+/**
+ * @format 1H1T
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER              0x09
+
+/**
+ * @format 1H1T
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION          0x0A
+
+/**
+ * @format 1H1T
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION          0x0B
+
+/**
+ * @format 1H1T
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION          0x0C
+
+/**
+ * @format 1H1413
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param manufacturer_id_low
+ * @param manufacturer_id_high
+ * @param organizationally_unique_id
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID                  0x0D
+
+/**
+ * @format 1H122
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param value_a
+ * @param value_b
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION     0x0E
+
+/**
+ * @format 1H11222
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ * @param vendor_source_id
+ * @param vendor_id
+ * @param product_id
+ * @param product_version
+ */
+#define GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID                    0x0F
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param con_handle
+ * @param att_status
+ */
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_CONNECTED            0x10
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED                        0x11
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED                     0x12
+
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param hids_cid
+ * @param status
+ * @param protocol_mode
+ * @param num_instances
+*/
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_CONNECTED                        0x13
+
+/** 
+ * @format 1211LV
+ * @param subevent_code
+ * @param hids_cid
+ * @param service_index
+ * @param report_id
+ * @param report_len
+ * @param report
+*/
+#define GATTSERVICE_SUBEVENT_HID_REPORT                                   0x14
+
+/**
+ * @format 1212111
+ * @param subevent_code
+ * @param hids_cid
+ * @param service_index
+ * @param base_usb_hid_version      Version number of base USB HID Specification implemented by HID Device
+ * @param country_code              Country HID Device hardware is localized for (not localized: 0x00)
+ * @param remote_wake               Indicates whether HID Device is capable of sending a wake-signal to a HID Host
+ * @param normally_connectable      Indicates whether HID Device will be advertising when bonded but not connected.
+*/
+#define GATTSERVICE_SUBEVENT_HID_INFORMATION                              0x15
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param hids_cid
+ * @param service_index
+ * @param protocol_mode    see hid_protocol_mode_t in btstack_hid.h
+*/
+#define GATTSERVICE_SUBEVENT_HID_PROTOCOL_MODE                            0x16
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param hids_cid
+ * @param configuration    
+*/
+#define GATTSERVICE_SUBEVENT_HID_SERVICE_REPORTS_NOTIFICATION             0x17
+
+/**
+ * @format 1H22
+ * @param subevent_code
+ * @param con_handle
+ * @param max_scan_interval
+ * @param min_scan_window
+ */
+#define GATTSERVICE_SUBEVENT_SCAN_PARAMETERS_SERVICE_SCAN_INTERVAL_UPDATE 0x18
 
 
 // MAP Meta Event Group

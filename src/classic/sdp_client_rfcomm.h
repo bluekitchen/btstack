@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  sdp_rfcomm_query.h
+/**
+ * @title SDP Client RFCOMM
+ *
  */
 
 #ifndef SDP_QUERY_RFCOMM_H

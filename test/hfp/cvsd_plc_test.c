@@ -8,7 +8,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "btstack_cvsd_plc.h"
+#include "classic/btstack_cvsd_plc.h"
 #include "wav_util.h"
 
 const  int     audio_samples_per_frame = 60;

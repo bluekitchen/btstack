@@ -24,7 +24,6 @@
 #include "hal_uart_dma.h"
 
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_base.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"
@@ -180,8 +179,6 @@ TEST(RunLoopBase,Timer){
     // add timer 2
     btstack_run_loop_base_add_timer(&timer_2);
     // add timer 1
-    btstack_run_loop_base_add_timer(&timer_1);
-    // add timer again - to trigger log_error
     btstack_run_loop_base_add_timer(&timer_1);
     // dump timers
     btstack_run_loop_base_dump_timer();

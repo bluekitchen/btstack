@@ -35,12 +35,10 @@
  *
  */
 
-// *****************************************************************************
-//
-//  HFP Hands-Free (HF) unit
-//
-// *****************************************************************************
-
+/**
+ * @title HFP Hands-Free (HF)
+ *
+ */
 
 #ifndef BTSTACK_HFP_HF_H
 #define BTSTACK_HFP_HF_H
@@ -76,7 +74,7 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr);
  * @param codecs_nr
  * @param codecs
  */
-void hfp_hf_init_codecs(int codecs_nr, uint8_t * codecs);
+void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs);
 
 /**
  * @brief Set supported features.
@@ -89,7 +87,7 @@ void hfp_hf_init_supported_features(uint32_t supported_features);
  * @param indicators_nr
  * @param indicators
  */
-void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators);
+void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators);
 
 
 /**
@@ -316,13 +314,17 @@ void hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_h
  * @brief Activate voice recognition function.
  * @param acl_handle of the AG
  */
-void hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle);
 
 /*
  * @brief Dectivate voice recognition function.
  * @param acl_handle of the AG
  */
-void hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
+
+uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
+
+uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set microphone gain. 

@@ -285,6 +285,11 @@ char * hfp_gsm_last_dialed_number(void){
     return &last_dialed_number[0];
 }
 
+void hfp_gsm_set_last_dialed_number(const char* number){
+    strncpy(last_dialed_number, number, sizeof(last_dialed_number));
+    last_dialed_number[sizeof(last_dialed_number) - 1] = 0;
+}
+
 hfp_gsm_call_t * hfp_gsm_call(int call_index){
     int i;
 
@@ -373,7 +378,8 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
     int i;
 
     switch (event){
-        case HFP_AG_OUTGOING_CALL_INITIATED:
+        case HFP_AG_OUTGOING_CALL_INITIATED_BY_HF:
+        case HFP_AG_OUTGOING_CALL_INITIATED_BY_AG:
         case HFP_AG_OUTGOING_REDIAL_INITIATED:
             if (next_free_slot == -1){
                 log_error("gsm: max call nr exceeded");

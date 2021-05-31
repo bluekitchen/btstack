@@ -443,7 +443,7 @@ static void btstack_audio_portaudio_source_close(void){
     if (!recording_callback) return;
 
     if (source_active){
-        btstack_audio_portaudio_sink_stop_stream();
+        btstack_audio_portaudio_source_stop_stream();
     }
 
     PaError err = Pa_CloseStream(stream_source);

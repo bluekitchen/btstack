@@ -136,6 +136,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
     uint16_t heart_rate;
     uint8_t  sensor_contact;
+    uint8_t  att_status;
 
     switch(state){
         case TC_W4_SERVICE_RESULT:
@@ -145,8 +146,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_service_query_result_get_service(packet, &heart_rate_service);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
-                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS){
+                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -165,8 +167,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_characteristic_query_result_get_characteristic(packet, &heart_rate_measurement_characteristic);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
-                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
+                    att_status = gatt_event_query_complete_get_att_status(packet);
+                    if (att_status != ATT_ERROR_SUCCESS){
+                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", att_status);
                         gap_disconnect(connection_handle);
                         break;  
                     } 
@@ -205,7 +208,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     gatt_event_characteristic_query_result_get_characteristic(packet, &body_sensor_location_characteristic);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
-                    if (packet[4] != 0){
+                    if (gatt_event_query_complete_get_att_status(packet) != ATT_ERROR_SUCCESS){
                         printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
                         state = TC_CONNECTED;
                         break;  

@@ -1,0 +1,13 @@
+Tool: hog_host_test
+
+SCPP/CL/SPDS/BV-01-I: s
+
+SCPP/CL/SPDC/BV-01-I: s
+SCPP/CL/SPDC/BV-02-I: s
+SCPP/CL/SPDC/BV-03-I: s
+
+SCPP/CL/SPWF/BV-01-I: s, S
+
+SCPP/CL/SPCF/BV-01-I: s, R
+
+SCPP/CL/SPNF/BV-01-I: s, R

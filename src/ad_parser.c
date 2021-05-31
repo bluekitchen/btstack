@@ -49,7 +49,6 @@
 
 #include "bluetooth_data_types.h"
 #include "btstack_util.h"
-#include "classic/sdp_util.h"
 #include "hci.h"
 #include "hci_cmd.h"
 

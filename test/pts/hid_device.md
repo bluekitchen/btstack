@@ -7,9 +7,13 @@ HID11/DEV/DRE/BV-09-I: (wait), c
 HID11/DEV/DCR/BV-01-I: (wait), c, M, M
 HID11/DEV/DCR/BV-02-I: I, C, c, M, I, C, (wait), M
 
-NOTE: if you want to redo the next two testa, remove link key on PTS side
+NOTE: if you want to redo the next two tests, remove link key on PTS side
 HID11/DEV/DCR/BV-03-I: I, C, c, (OK) 
 HID11/DEV/DCR/BV-04-I: u, c, (OK)
+
+HID11/DEV/DCR/BV-02-I: c, q, w, z, D
+HID11/DEV/DCR/BV-03-I: c, q, w, z, D
+HID11/DEV/DCR/BV-04-I: c, q, w, z, D
 
 HID11/DEV/DCT/BV-01-C: (wait)
 HID11/DEV/DCT/BV-02-C: (wait)

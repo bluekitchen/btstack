@@ -89,7 +89,11 @@
 #include "hci.h"
 #include "hci_cmd.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_dump_posix_stdout.h"
 #include "hci_transport.h"
+#include "hci_transport_h4.h"
+#include "hci_transport_usb.h"
 #include "l2cap.h"
 #include "rfcomm_service_db.h"
 #include "socket_connection.h"
@@ -1392,24 +1396,27 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 static void daemon_set_logging_enabled(int enabled){
     if (enabled && !loggingEnabled){
         // construct path to log file
+        const hci_dump_t * hci_dump_impl;
         switch (BTSTACK_LOG_TYPE){
-            case HCI_DUMP_STDOUT:
-                snprintf(string_buffer, sizeof(string_buffer), "stdout");
-                break;
             case HCI_DUMP_PACKETLOGGER:
+                hci_dump_impl = hci_dump_posix_fs_get_instance();
                 snprintf(string_buffer, sizeof(string_buffer), "%s/hci_dump.pklg", btstack_server_storage_path);
+                hci_dump_posix_fs_open(string_buffer, HCI_DUMP_PACKETLOGGER);
                 break;
             case HCI_DUMP_BLUEZ:
+                hci_dump_impl = hci_dump_posix_fs_get_instance();
                 snprintf(string_buffer, sizeof(string_buffer), "%s/hci_dump.snoop", btstack_server_storage_path);
+                hci_dump_posix_fs_open(string_buffer, HCI_DUMP_BLUEZ);
                 break;
             default:
                 break;
         }
-        hci_dump_open(string_buffer, BTSTACK_LOG_TYPE);
+        hci_dump_init(hci_dump_impl);
         printf("Logging to %s\n", string_buffer);
     }
     if (!enabled && loggingEnabled){
-        hci_dump_close();
+        hci_dump_posix_fs_close();
+        hci_dump_init(NULL);
     }
     loggingEnabled = enabled;
 }
@@ -2022,9 +2029,9 @@ int btstack_server_run(int tcp_flag){
     socket_connection_init();
 
     btstack_control_t * control = NULL;
-    const btstack_uart_block_t * uart_block_implementation = NULL;
-    (void) uart_block_implementation;
-    
+    const btstack_uart_t *       uart_implementation = NULL;
+    (void) uart_implementation;
+
 #ifdef HAVE_TRANSPORT_H4
     hci_transport_config_uart.type = HCI_TRANSPORT_CONFIG_UART;
     hci_transport_config_uart.baudrate_init = UART_SPEED;
@@ -2034,9 +2041,9 @@ int btstack_server_run(int tcp_flag){
 
 #ifndef HAVE_PLATFORM_IPHONE_OS
 #ifdef _WIN32
-    uart_block_implementation = btstack_uart_block_windows_instance();
+    uart_implementation = (const btstack_uart_t *) btstack_uart_block_windows_instance();
 #else
-    uart_block_implementation = btstack_uart_block_posix_instance();
+    uart_implementation = btstack_uart_posix_instance();
 #endif
 #endif
     
@@ -2046,7 +2053,7 @@ int btstack_server_run(int tcp_flag){
 #endif
 
     config = &hci_transport_config_uart;
-    transport = hci_transport_h4_instance(uart_block_implementation);
+    transport = hci_transport_h4_instance_for_uart(uart_implementation);
 #endif
 
 #ifdef HAVE_TRANSPORT_USB

@@ -111,45 +111,53 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     gatt_client_characteristic_t characteristic;
     gatt_client_characteristic_descriptor_t descriptor;
 
+    uint8_t response_type = 0;
     switch (cmd_type){
         case 1:
             gatt_client_discover_primary_services(gatt_client_packet_handler, ble_handle);
+            response_type = ATT_READ_BY_GROUP_TYPE_RESPONSE;
             break;
         case 2:
             offset = 2;
             if (size < offset) return 0;
             uuid16 = big_endian_read_16(data, 0);
             gatt_client_discover_primary_services_by_uuid16(gatt_client_packet_handler, ble_handle, uuid16);
+            response_type = ATT_FIND_BY_TYPE_VALUE_RESPONSE;
             break;
         case 3:
             offset = 16;
             if (size < offset) return 0;
             memcpy(uuid128, data, 16);
             gatt_client_discover_primary_services_by_uuid128(gatt_client_packet_handler, ble_handle, uuid128);
+            response_type = ATT_FIND_BY_TYPE_VALUE_RESPONSE;
             break;
         case 4:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_service_uuid16(&service, data, size);
             gatt_client_find_included_services_for_service(gatt_client_packet_handler, ble_handle, &service);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 5:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_service_uuid16(&service, data, size);
             gatt_client_discover_characteristics_for_service(gatt_client_packet_handler, ble_handle, &service);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 6:
             offset = 2;
             if (size < offset) return 0;
             uuid16 = big_endian_read_16(data, 0);
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_packet_handler, ble_handle, 0x0001, 0xffff, uuid16);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 7:
             offset = 16;
             if (size < offset) return 0;
             memcpy(uuid128, data, 16);
             gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_packet_handler, ble_handle, 0x0001, 0xffff, uuid128);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 8:
             offset = 4;
@@ -157,6 +165,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             set_gatt_service_uuid16(&service, data, size);
             uuid16 = big_endian_read_16(data, 2);
             gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_packet_handler, ble_handle, &service, uuid16);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 9:
             offset = 18;
@@ -164,92 +173,123 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             set_gatt_service_uuid16(&service, data, size);
             memcpy(uuid128, data + 2, 16);
             gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_packet_handler, ble_handle, &service, uuid128);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 10:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid16(&characteristic, data, size);
             gatt_client_discover_characteristic_descriptors(gatt_client_packet_handler, ble_handle, &characteristic);
+            response_type = ATT_FIND_INFORMATION_REPLY;
             break;
         case 11:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid16(&characteristic, data, size);
             gatt_client_read_value_of_characteristic(gatt_client_packet_handler, ble_handle, &characteristic);
+            response_type = ATT_READ_RESPONSE;
             break;
         case 12:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid16(&characteristic, data, size);
             gatt_client_read_value_of_characteristics_by_uuid16(gatt_client_packet_handler, ble_handle, characteristic.start_handle, characteristic.end_handle, characteristic.uuid16);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 13:
             offset = 16;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid128(&characteristic, data, size);
             gatt_client_read_value_of_characteristics_by_uuid128(gatt_client_packet_handler, ble_handle, characteristic.start_handle, characteristic.end_handle, characteristic.uuid128);
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
             break;
         case 14:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid16(&characteristic, data, size);
             gatt_client_read_long_value_of_characteristic(gatt_client_packet_handler, ble_handle, &characteristic);
+            response_type = ATT_READ_BLOB_RESPONSE;
             break;
         case 15:
             offset = 4;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid16(&characteristic, data, size);
             gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(gatt_client_packet_handler, ble_handle, characteristic.value_handle, big_endian_read_16(data, 2));
+            response_type = ATT_READ_BLOB_RESPONSE;
             break;
         case 16: 
             gatt_client_read_multiple_characteristic_values(gatt_client_packet_handler, ble_handle, 0, NULL);
+            response_type = ATT_READ_MULTIPLE_RESPONSE;
             break;
         case 17:
             gatt_client_write_value_of_characteristic(gatt_client_packet_handler, ble_handle, 5, 0, NULL);
+            response_type = ATT_WRITE_RESPONSE;
             break;
         case 18:
             gatt_client_write_long_value_of_characteristic(gatt_client_packet_handler, ble_handle, 5, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             break;
         case 19:
             gatt_client_reliable_write_long_value_of_characteristic(gatt_client_packet_handler, ble_handle, 5, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             break;
         case 20:
             gatt_client_read_characteristic_descriptor_using_descriptor_handle(gatt_client_packet_handler, ble_handle, 5);
+            response_type = ATT_READ_RESPONSE;
             break;
         case 21:
             gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(gatt_client_packet_handler, ble_handle, 5);
+            response_type = ATT_READ_BLOB_RESPONSE;
             break;
         case 22:
             gatt_client_write_characteristic_descriptor_using_descriptor_handle(gatt_client_packet_handler, ble_handle, 5, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             break;
         case 23:
             gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(gatt_client_packet_handler, ble_handle, 5, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             break;
         case 24:
             offset = 2;
             if (size < offset) return 0;
             set_gatt_characteristic_uuid16(&characteristic, data, size);
             gatt_client_write_client_characteristic_configuration(gatt_client_packet_handler, ble_handle, &characteristic, 1);
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+            response_type = ATT_FIND_INFORMATION_REPLY;
+#else
+            response_type = ATT_READ_BY_TYPE_RESPONSE;
+#endif
             break;
         case 25:
             gatt_client_prepare_write(gatt_client_packet_handler, ble_handle, 5, 0, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             break;
+
+#if 0
+        // TODO: won't work as only single packet is simulate
         case 26:
             gatt_client_prepare_write(gatt_client_packet_handler, ble_handle, 5, 0, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             gatt_client_execute_write(gatt_client_packet_handler, ble_handle);
             break;
         case 27:
             gatt_client_prepare_write(gatt_client_packet_handler, ble_handle, 5, 0, 0, NULL);
+            response_type = ATT_PREPARE_WRITE_RESPONSE;
             gatt_client_cancel_write(gatt_client_packet_handler, ble_handle);
             break;
+#endif
         default:
             return 0;
     }
 
     data += offset;
     size -= offset;
-    
+
+    uint8_t response_buffer[256];
+    response_buffer[0] = response_type;
+    uint32_t bytes_to_copy = btstack_min(size, sizeof(response_buffer)-1);
+    memcpy(&response_buffer[1], data, bytes_to_copy);
     // send test response
-    gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, ble_handle, (uint8_t *) data, size);
+    gatt_client_att_packet_handler_fuzz(ATT_DATA_PACKET, ble_handle, response_buffer, bytes_to_copy+1);
     return 0;
 }

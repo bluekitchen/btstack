@@ -35,8 +35,8 @@
  *
  */
 
-/*
- * btstack_cvsd_plc.h
+/**
+ * CVSD Packet Loss Concealment 
  *
  */
 

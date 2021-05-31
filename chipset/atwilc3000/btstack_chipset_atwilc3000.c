@@ -90,7 +90,7 @@ static void atwilc3000_write_memory(void);
 
 // globals
 static void (*download_complete)(int result);
-static const btstack_uart_block_t * the_uart_driver;
+static const btstack_uart_t * the_uart_driver;
 static btstack_timer_source_t reset_timer;
 
 static int     download_count;
@@ -269,8 +269,7 @@ static void atwilc3000_done(void){
     download_complete(0);
 }
 
-void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, uint32_t baudrate, int flowcontrol, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
-
+void btstack_chipset_atwilc3000_download_firmware_with_uart(const btstack_uart_t * uart_driver, uint32_t baudrate, int flowcontrol, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
 	the_uart_driver   = uart_driver;
     download_complete = done;
     fw_data = da_fw_data;
@@ -288,6 +287,10 @@ void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * u
 
     download_count = 0;
     atwilc3000_start();
+}
+
+void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, uint32_t baudrate, int flowcontrol, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
+    btstack_chipset_atwilc3000_download_firmware_with_uart((const btstack_uart_t *) uart_driver, baudrate, flowcontrol, da_fw_data, da_fw_size, done);
 }
 
 static const btstack_chipset_t btstack_chipset_atwilc3000 = {

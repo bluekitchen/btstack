@@ -35,6 +35,11 @@
  *
  */
  
+/**
+ * @title Device Database
+ *
+ */
+
 #ifndef LE_DEVICE_DB_H
 #define LE_DEVICE_DB_H
 

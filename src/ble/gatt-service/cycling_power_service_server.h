@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Cycling Power Service Server
+ * 
+ */
+
 #ifndef CYCLING_POWER_SERVICE_SERVER_H
 #define CYCLING_POWER_SERVICE_SERVER_H
 
@@ -44,15 +50,13 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the GATT Cycling Power Service Server 
- */
-
-// *****************************************************************************
-/* GATT_SERVICE_SERVER_START(cycling_power_service_server){Cycling PowerService} 
+ * @text The Cycling Power Service allows to query device's power- and 
+ * force-related data and optionally speed- and cadence-related data for 
+ * use in sports and fitness applications.
  *
+ * To use with your application, add `#import <cycling_power_service.gatt>` 
+ * to your .gatt file.
  */
-// *****************************************************************************
-/* GATT_SERVICE_SERVER_END */
 
 /* API_START */
 #define CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE   16

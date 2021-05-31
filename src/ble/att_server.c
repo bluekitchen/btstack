@@ -48,7 +48,7 @@
 
 #include "btstack_config.h"
 
-#include "att_dispatch.h"
+#include "ble/att_dispatch.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "ble/core.h"
@@ -65,6 +65,10 @@
 #include "btstack_tlv.h"
 #ifdef ENABLE_LE_SIGNED_WRITE
 #include "ble/sm.h"
+#endif
+
+#ifdef ENABLE_TESTING_SUPPORT
+#include <stdio.h>
 #endif
 
 #ifndef NVN_NUM_GATT_SERVER_CCC
@@ -507,10 +511,16 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     reverse_64(hash, hash_flipped);
     if (memcmp(hash_flipped, &att_server->request_buffer[att_server->request_size-8], 8)){
         log_info("ATT Signed Write, invalid signature");
+#ifdef ENABLE_TESTING_SUPPORT
+        printf("ATT Signed Write, invalid signature\n");
+#endif
         att_server->state = ATT_SERVER_IDLE;
         return;
     }
     log_info("ATT Signed Write, valid signature");
+#ifdef ENABLE_TESTING_SUPPORT
+    printf("ATT Signed Write, valid signature\n");
+#endif
 
     // update sequence number
     uint32_t counter_packet = little_endian_read_32(att_server->request_buffer, att_server->request_size-12);
@@ -786,8 +796,18 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
     att_server_t * att_server = &hci_connection->att_server;
     att_connection_t * att_connection = &hci_connection->att_connection;
 
+    uint8_t opcode  = packet[0u];
+    uint8_t method  = opcode & 0x03f;
+    bool invalid = method > ATT_MULTIPLE_HANDLE_VALUE_NTF;
+    bool command = (opcode & 0x40) != 0;
+
+    // ignore invalid commands
+    if (invalid && command){
+        return;
+    }
+
     // handle value indication confirms
-    if ((packet[0] == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
+    if ((opcode == ATT_HANDLE_VALUE_CONFIRMATION) && att_server->value_indication_handle){
         btstack_run_loop_remove_timer(&att_server->value_indication_timer);
         uint16_t att_handle = att_server->value_indication_handle;
         att_server->value_indication_handle = 0;    
@@ -798,7 +818,7 @@ static void att_server_handle_att_pdu(hci_connection_t * hci_connection, uint8_t
 
     // directly process command
     // note: signed write cannot be handled directly as authentication needs to be verified
-    if (packet[0] == ATT_WRITE_COMMAND){
+    if (opcode == ATT_WRITE_COMMAND){
         att_handle_request(att_connection, packet, size, NULL);
         return;
     }
@@ -1151,7 +1171,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
 
 #ifdef ENABLE_GATT_OVER_CLASSIC
     // setup l2cap service
-    l2cap_register_service(&att_event_packet_handler, PSM_ATT, 0xffff, LEVEL_2);
+    l2cap_register_service(&att_event_packet_handler, PSM_ATT, 0xffff, gap_get_security_level());
 #endif
 
     att_set_db(db);
@@ -1217,6 +1237,12 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, co
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(att_connection, attribute_handle, value, value_len, packet_buffer);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    att_server_t * att_server = &hci_connection->att_server;
+    if (att_server->l2cap_cid != 0){
+        return  l2cap_send_prepared(att_server->l2cap_cid, size);;
+    }
+#endif
 	return l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
@@ -1238,6 +1264,11 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(att_connection, attribute_handle, value, value_len, packet_buffer);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        return  l2cap_send_prepared(att_server->l2cap_cid, size);;
+    }
+#endif
 	l2cap_send_prepared_connectionless(att_connection->con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
 }

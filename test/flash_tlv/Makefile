@@ -8,12 +8,14 @@ COMMON = \
 	btstack_util.c \
 	hal_flash_bank_memory.c \
 	hci_dump.c \
+	hci_dump_posix_fs.c \
 
 VPATH = \
 	${BTSTACK_ROOT}/src \
 	${BTSTACK_ROOT}/src/classic \
 	${BTSTACK_ROOT}/src/ble \
 	${BTSTACK_ROOT}/platform/embedded \
+	${BTSTACK_ROOT}/platform/posix \
 
 CFLAGS  = \
     -DBTSTACK_TEST \
@@ -25,6 +27,7 @@ CFLAGS  = \
     -I.. \
     -I${BTSTACK_ROOT}/src \
     -I${BTSTACK_ROOT}/platform/embedded \
+    -I${BTSTACK_ROOT}/platform/posix \
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT

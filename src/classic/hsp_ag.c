@@ -487,8 +487,10 @@ static void hsp_run(void){
                 }
                 int gain = ag_microphone_gain;
                 ag_microphone_gain = -1;
-                char buffer[10];
-                sprintf(buffer, "%s=%d\r\n", HSP_MICROPHONE_GAIN, gain);
+                char buffer[12];
+                snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
+                         HSP_MICROPHONE_GAIN, gain);
+                buffer[sizeof(buffer) - 1] = 0;
                 hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
                 break;
             }
@@ -500,8 +502,10 @@ static void hsp_run(void){
                 }
                 int gain = ag_speaker_gain;
                 ag_speaker_gain = -1;
-                char buffer[10];
-                sprintf(buffer, "%s=%d\r\n", HSP_SPEAKER_GAIN, gain);
+                char buffer[12];
+                snprintf(buffer, sizeof(buffer), "\r\n%s=%d\r\n",
+                         HSP_SPEAKER_GAIN, gain);
+                buffer[sizeof(buffer) - 1] = 0;
                 hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
                 break;
             }
@@ -524,16 +528,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, strlen(HSP_HS_BUTTON_PRESS)) == 0){
             log_info("Received button press %s", HSP_HS_BUTTON_PRESS);
             ag_send_ok = 1;
-            switch (hsp_state){
-                case HSP_AUDIO_CONNECTION_ESTABLISHED:
-                    hsp_release_audio_connection = 1;
-                    break;
-                case HSP_RFCOMM_CONNECTION_ESTABLISHED:
-                    hsp_state = HSP_W2_CONNECT_SCO;
-                    break;
-                default:
-                    break;
-            } 
+            emit_event(HSP_SUBEVENT_BUTTON_PRESSED, 0);
         } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, strlen(HSP_HS_MICROPHONE_GAIN)) == 0){
             uint8_t gain = (uint8_t)btstack_atoi((char*)&packet[strlen(HSP_HS_MICROPHONE_GAIN)]);
             ag_send_ok = 1;

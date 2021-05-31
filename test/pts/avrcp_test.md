@@ -87,7 +87,7 @@ AVRCP/CT/PTT/BV-05-I :  (Yes), 11, (wait 2sec), 2,
                         (Yes), 10, (wait 2sec), 2
 
 AVRCP/CT/RCR/BV-01-C : /
-AVRCP/CT/RCR/BV-03-C : X, /
+AVRCP/CT/RCR/BV-03-C : /
 
 AVRCP/CT/VLH/BI-01-C : v, R, (Confirmation expected)
 AVRCP/CT/VLH/BI-04-C : v, (Confirmation expected)
@@ -138,8 +138,8 @@ AVRCP/TG/PTT/BV-03-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-04-I : (Confirmation expected)
 AVRCP/TG/PTT/BV-05-I : (Confirmation expected)
 
-AVRCP/TG/RCR/BV-02-C : $
-AVRCP/TG/RCR/BV-04-C : $
+AVRCP/TG/RCR/BV-02-C : tl
+AVRCP/TG/RCR/BV-04-C : tl
 
 AVRCP/TG/VLH/BI-01-C : (wait)
 AVRCP/TG/VLH/BI-02-C : (wait)

@@ -1,3 +1,4 @@
+\UseRawInputEncoding
 \documentclass[a4paper,titlepage,oneside,12pt]{amsart} %amsart
 \usepackage{graphicx}
 \usepackage[colorlinks=true]{hyperref}
@@ -33,6 +34,9 @@
 \newcommand{\toread}[1]{{\color{bklightblue} #1}}
 
 \usepackage{listings}
+% add passthrough command used by pandoc for listings, apparently not defined by rmarkdown (maybe need to be removed later)
+% https://github.com/rstudio/rmarkdown/commit/bc2a49ed9da00fd5ec414bc192b112bbba34513d
+\newcommand{\passthrough}[1]{#1}
 \lstset{ %
 float,
 language=C,                % choose the language of the code
@@ -67,7 +71,7 @@ morekeywords={*, btstack_timer_source_t, btstack_data_source_t, uint32_t, uint16
 							le_characteristic_event_t}
 }
 
-\newcommand{\versionNr}{1.0}
+\newcommand{\versionNr}{VERSION}
 \newcommand{\authorMila}{Dr. sc. Milanka Ringwald}
 \newcommand{\authorMatthias}{Dr. sc. Matthias Ringwald}
 \newcommand{\bkContact}{\href{contact@bluekitchen-gmbh.com}{contact@bluekitchen-gmbh.com}}
@@ -85,7 +89,7 @@ morekeywords={*, btstack_timer_source_t, btstack_data_source_t, uint32_t, uint16
         \end{minipage}
         \hfill\begin{minipage}[b]{.8\textwidth}\begin{flushright}
             {\color{bkblue}
-            VERSION \versionNr{} \\
+            \versionNr{} \\
             \today \\}
             \vspace*{7.5cm}
             \hfill\includegraphics[width=0.85\textwidth]{picts/bklogo.pdf}
@@ -134,6 +138,53 @@ morekeywords={*, btstack_timer_source_t, btstack_data_source_t, uint32_t, uint16
 \newcommand{\Zadig}{\urlfoot{http://zadig.akeo.ie}{Zadig}}
 \newcommand{\MSYS}{\urlfoot{www.mingw.org/wiki/msys}{MSYS}}
 \newcommand{\MINGW}{\urlfoot{www.mingw.org}{MINGW32}}
+
+%% pandoc-tablenos: required package
+\usepackage{caption}
+
+%% pandoc-fignos: environment to disable figure caption prefixes
+\makeatletter
+\newcounter{figno}
+\newenvironment{fignos:no-prefix-figure-caption}{
+  \caption@ifcompatibility{}{
+    \let\oldthefigure\thefigure
+    \let\oldtheHfigure\theHfigure
+    \renewcommand{\thefigure}{figno:\thefigno}
+    \renewcommand{\theHfigure}{figno:\thefigno}
+    \stepcounter{figno}
+    \captionsetup{labelformat=empty}
+  }
+}{
+  \caption@ifcompatibility{}{
+    \captionsetup{labelformat=default}
+    \let\thefigure\oldthefigure
+    \let\theHfigure\oldtheHfigure
+    \addtocounter{figure}{-1}
+  }
+}
+\makeatother
+
+%% pandoc-tablenos: environment to disable table caption prefixes
+\makeatletter
+\newcounter{tableno}
+\newenvironment{tablenos:no-prefix-table-caption}{
+  \caption@ifcompatibility{}{
+    \let\oldthetable\thetable
+    \let\oldtheHtable\theHtable
+    \renewcommand{\thetable}{tableno:\thetableno}
+    \renewcommand{\theHtable}{tableno:\thetableno}
+    \stepcounter{tableno}
+    \captionsetup{labelformat=empty}
+  }
+}{
+  \caption@ifcompatibility{}{
+    \captionsetup{labelformat=default}
+    \let\thetable\oldthetable
+    \let\theHtable\oldtheHtable
+    \addtocounter{table}{-1}
+  }
+}
+\makeatother
 
 
 %level -1: part, 0: chapter, 1: section, etc.

@@ -4,7 +4,8 @@ BTSTACK_ROOT ?= ../..
 CORE += \
 	btstack_run_loop_posix.c \
 	btstack_tlv_posix.c \
-	btstack_uart_block_posix.c \
+	btstack_uart_posix.c \
+	hci_dump_posix_fs.c \
 	hci_transport_h4.c \
 	le_device_db_tlv.c \
 	main.c \

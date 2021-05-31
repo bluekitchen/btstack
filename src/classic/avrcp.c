@@ -111,14 +111,24 @@ const char * avrcp_event2str(uint16_t index){
 }
 
 static const char * avrcp_operation_name[] = {
-    "NOT SUPPORTED", // 0x3B
-    "SKIP", "NOT SUPPORTED", "NOT SUPPORTED", "NOT SUPPORTED", "NOT SUPPORTED", 
-    "VOLUME_UP", "VOLUME_DOWN", "MUTE", "PLAY", "STOP", "PAUSE", "NOT SUPPORTED",
-    "REWIND", "FAST_FORWARD", "NOT SUPPORTED", "FORWARD", "BACKWARD" // 0x4C
+    "SKIP", NULL, NULL, NULL, NULL, 
+    "VOLUME_UP", "VOLUME_DOWN", "MUTE", "PLAY", "STOP", "PAUSE", NULL,
+    "REWIND", "FAST_FORWARD", NULL, "FORWARD", "BACKWARD" // 0x4C
 };
-const char * avrcp_operation2str(uint8_t index){
-    if ((index >= 0x3B) && (index <= 0x4C)) return avrcp_operation_name[index - 0x3B];
-    return avrcp_operation_name[0];
+
+const char * avrcp_operation2str(uint8_t operation_id){
+    char * name = NULL;
+    if ((operation_id >= AVRCP_OPERATION_ID_SKIP) && (operation_id <= AVRCP_OPERATION_ID_BACKWARD)){
+        name = (char *)avrcp_operation_name[operation_id - AVRCP_OPERATION_ID_SKIP];
+    } 
+    if (name == NULL){
+        static char buffer[13];
+        snprintf(buffer, sizeof(buffer), "Unknown 0x%02x", operation_id);
+        buffer[sizeof(buffer)-1] = 0;
+        return buffer;
+    } else {
+        return name;
+    }
 }
 
 static const char * avrcp_media_attribute_id_name[] = {
@@ -1013,13 +1023,14 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback){
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 #define FUZZ_CID 0x44
+#define FUZZ_CON_HANDLE 0x0001
 static bd_addr_t remote_addr = { 0x33, 0x33, 0x33, 0x33, 0x33, 0x33 };
 void avrcp_init_fuzz(void){
     // setup avrcp connections for cid
     avrcp_connection_t * connection_controller = avrcp_create_connection(AVRCP_CONTROLLER, remote_addr);
     avrcp_connection_t * connection_target     = avrcp_create_connection(AVRCP_TARGET, remote_addr);
-    avrcp_handle_open_connection(connection_controller, FUZZ_CID, 999);
-    avrcp_handle_open_connection(connection_target, FUZZ_CID, 999);
+    avrcp_handle_open_connection(connection_controller, FUZZ_CON_HANDLE, FUZZ_CID, 999);
+    avrcp_handle_open_connection(connection_target, FUZZ_CON_HANDLE, FUZZ_CID, 999);
 }
 void avrcp_packet_handler_fuzz(uint8_t *packet, uint16_t size){
     avrcp_packet_handler(L2CAP_DATA_PACKET, FUZZ_CID, packet, size);

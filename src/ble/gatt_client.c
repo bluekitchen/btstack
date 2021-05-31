@@ -43,10 +43,9 @@
 
 #include "btstack_config.h"
 
-#include "att_dispatch.h"
+#include "ble/att_dispatch.h"
 #include "ad_parser.h"
 #include "ble/att_db.h"
-#include "ble/core.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
@@ -55,9 +54,7 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
-#include "classic/sdp_util.h"
 #include "hci.h"
-#include "hci_cmd.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 
@@ -435,7 +432,11 @@ static void send_gatt_read_by_type_request(gatt_client_t * gatt_client){
 }
 
 static void send_gatt_read_blob_request(gatt_client_t *gatt_client){
-    att_read_blob_request(ATT_READ_BLOB_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_offset);
+    if (gatt_client->attribute_offset == 0){
+        att_read_request(ATT_READ_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle);
+    } else {
+        att_read_blob_request(ATT_READ_BLOB_REQUEST, gatt_client->con_handle, gatt_client->attribute_handle, gatt_client->attribute_offset);
+    }
 }
 
 static void send_gatt_read_multiple_request(gatt_client_t * gatt_client){
@@ -479,17 +480,23 @@ static void send_gatt_signed_write_request(gatt_client_t * gatt_client, uint32_t
 #endif
 
 static uint16_t get_last_result_handle_from_service_list(uint8_t * packet, uint16_t size){
+    if (size < 2) return 0xffff;
     uint8_t attr_length = packet[1];
+    if ((2 + attr_length) > size) return 0xffff;
     return little_endian_read_16(packet, size - attr_length + 2u);
 }
 
 static uint16_t get_last_result_handle_from_characteristics_list(uint8_t * packet, uint16_t size){
+    if (size < 2) return 0xffff;
     uint8_t attr_length = packet[1];
+    if ((2 + attr_length) > size) return 0xffff;
     return little_endian_read_16(packet, size - attr_length + 3u);
 }
 
 static uint16_t get_last_result_handle_from_included_services_list(uint8_t * packet, uint16_t size){
+    if (size < 2) return 0xffff;
     uint8_t attr_length = packet[1];
+    if ((2 + attr_length) > size) return 0xffff;
     return little_endian_read_16(packet, size - attr_length);
 }
 
@@ -609,11 +616,12 @@ static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * gatt_client, ui
 }
 ///
 static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, uint16_t size){
+    if (size < 2) return;
     uint8_t attr_length = packet[1];
     uint8_t uuid_length = attr_length - 4u;
     
     int i;
-    for (i = 2; i < size; i += attr_length){
+    for (i = 2; (i+attr_length) <= size; i += attr_length){
         uint16_t start_group_handle = little_endian_read_16(packet,i);
         uint16_t end_group_handle   = little_endian_read_16(packet,i+2);
         uint8_t  uuid128[16];
@@ -622,8 +630,10 @@ static void report_gatt_services(gatt_client_t * gatt_client, uint8_t * packet, 
         if (uuid_length == 2u){
             uuid16 = little_endian_read_16(packet, i+4);
             uuid_add_bluetooth_prefix((uint8_t*) &uuid128, uuid16);
-        } else {
+        } else if (uuid_length == 16u) {
             reverse_128(&packet[i+4], uuid128);
+        } else {
+            return;
         }
         emit_gatt_service_query_result_event(gatt_client, start_group_handle, end_group_handle, uuid128);
     }
@@ -1410,12 +1420,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 #endif
                 case P_W4_READ_BY_TYPE_RESPONSE: {
                     uint16_t pair_size = packet[1];
-                    uint16_t offset;
-                    uint16_t last_result_handle = 0;
-                    for (offset = 2; offset < size ; offset += pair_size){
-                        uint16_t value_handle = little_endian_read_16(packet, offset);
-                        report_gatt_characteristic_value(gatt_client, value_handle, &packet[offset + 2u], pair_size - 2u);
-                        last_result_handle = value_handle;
+                    // set last result handle to last valid handle, only used if pair_size invalid
+                    uint16_t last_result_handle = 0xffff;
+                    if (pair_size > 2){
+                        uint16_t offset;
+                        for (offset = 2; offset < size ; offset += pair_size){
+                            uint16_t value_handle = little_endian_read_16(packet, offset);
+                            report_gatt_characteristic_value(gatt_client, value_handle, &packet[offset + 2u], pair_size - 2u);
+                            last_result_handle = value_handle;
+                        }
                     }
                     trigger_next_read_by_type_query(gatt_client, last_result_handle);
                     break;
@@ -1426,26 +1439,42 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
         case ATT_READ_RESPONSE:
             switch (gatt_client->gatt_client_state){
-                case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT: {
-                    uint8_t uuid128[16];
-                    reverse_128(&packet[1], uuid128);
-                    report_gatt_included_service_uuid128(gatt_client, gatt_client->start_group_handle, uuid128);
+                case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT:
+                    if (size >= 17){
+                        uint8_t uuid128[16];
+                        reverse_128(&packet[1], uuid128);
+                        report_gatt_included_service_uuid128(gatt_client, gatt_client->start_group_handle, uuid128);
+                    }
                     trigger_next_included_service_query(gatt_client, gatt_client->start_group_handle);
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
-                }
+
                 case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
                     report_gatt_characteristic_value(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u);
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
                     break;
 
-                case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:{
+                case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     gatt_client_handle_transaction_complete(gatt_client);
                     report_gatt_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u, 0u);
                     emit_gatt_complete_event(gatt_client, ATT_ERROR_SUCCESS);
                     break;
-                }
+
+                // Use ATT_READ_REQUEST for first blob of Read Long Characteristic
+                case P_W4_READ_BLOB_RESULT:
+                    report_gatt_long_characteristic_value_blob(gatt_client, gatt_client->attribute_handle, &packet[1], size - 1u, gatt_client->attribute_offset);
+                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_QUERY, size - 1u);
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    break;
+
+                // Use ATT_READ_REQUEST for first blob of Read Long Characteristic Descriptor
+                case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                    report_gatt_long_characteristic_descriptor(gatt_client, gatt_client->attribute_handle, &packet[1], size-1u, gatt_client->attribute_offset);
+                    trigger_next_blob_query(gatt_client, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, size-1u);
+                    // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    break;
+
                 default:
                     break;
             }

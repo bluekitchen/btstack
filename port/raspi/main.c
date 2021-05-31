@@ -67,12 +67,20 @@
 #include "bluetooth_company_id.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
+#include "hci_transport_h5.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_uart.h"
+#include "btstack_uart_block.h"
+#include "btstack_uart_slip_wrapper.h"
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
 #include "btstack_control_raspi.h"
+
 
 #include "raspi_get_model.h"
 
@@ -296,9 +304,11 @@ int main(int argc, const char * argv[]){
     /// GET STARTED with BTstack ///
     btstack_memory_init();
 
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    // log into file using HCI_DUMP_PACKETLOGGER format
     const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
 
     // setup run loop
@@ -367,7 +377,7 @@ int main(int argc, const char * argv[]){
     btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware/brcm");
 
     // setup UART driver
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
+    const btstack_uart_t * uart_driver = btstack_uart_posix_instance();
 
     // extract UART config from transport config
     uart_config.baudrate    = transport_config.baudrate_init;

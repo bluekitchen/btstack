@@ -14,7 +14,7 @@ CORE += \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
 	btstack_stdin_posix.c \
-	btstack_uart_block_posix_pty.c \
+	btstack_uart_posix_pty.c \
 	hci_transport_h2_libusb.c \
 	hci_transport_h4.c \
 	btstack_tlv_posix.c \
@@ -24,7 +24,7 @@ CORE += \
 	l2cap.c \
 	uECC.c \
 	rijndael.c \
-	
+	hci_dump_posix_fs.c \
 
 
 # examples
@@ -112,13 +112,13 @@ build-asan/sniffer: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${SM_OBJ
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 
-build-asan/mesh_message_test: $(addprefix build-asan/, mesh_message_test.o mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o) | build-asan
+build-asan/mesh_message_test: $(addprefix build-asan/, mesh_message_test.o mesh_foundation.o mesh_node.o  mesh_iv_index_seq_number.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o hci_dump_posix_fs.o) | build-asan
 	g++ $^ ${CFLAGS} ${LDFLAGS_ASAN} -o $@
 
-build-asan/provisioning_device_test:  $(addprefix build-asan/, provisioning_device_test.o uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o) | build-asan
+build-asan/provisioning_device_test:  $(addprefix build-asan/, provisioning_device_test.o uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o  mesh_node.o mock.o rijndael.o hci_cmd.o hci_dump.o hci_dump_posix_fs.o) | build-asan
 	${CC_UNIT} ${LDFLAGS_ASAN} $^ -lCppUTest -lCppUTestExt -o $@	
 
-build-asan/provisioning_provisioner_test:  $(addprefix build-asan/, provisioning_provisioner_test.o uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o) | build-asan
+build-asan/provisioning_provisioner_test:  $(addprefix build-asan/, provisioning_provisioner_test.o uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o hci_dump_posix_fs.o) | build-asan
 	${CC_UNIT} ${LDFLAGS_ASAN} $^ -lCppUTest -lCppUTestExt -o $@
 
 build-asan/mesh_configuration_composition_data_message_test: ${CORE_OBJ_ASAN} ${COMMON_OBJ_ASAN} ${ATT_OBJ_ASAN} ${MESH_OBJ_ASAN} build-asan/mesh_configuration_composition_data_message_test.o | build-asan

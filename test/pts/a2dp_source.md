@@ -1,7 +1,7 @@
 Tool: avdtp_source_test
 
 A2DP/SRC/AS/BV-01-I : d, g, s, o, m, (confirm)
-A2DP/SRC/AS/BV-02-I : 
+A2DP/SRC/AS/BV-02-I : d, g, s, o, m, d, g, s, o, m
 A2DP/SRC/AS/BV-03-I : 
 
 A2DP/SRC/CC/BV-09-I : (wait)

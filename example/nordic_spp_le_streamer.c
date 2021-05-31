@@ -303,21 +303,42 @@ static void nordic_can_send(void * some_context){
 } 
 /* LISTING_END */
 
-static void nordic_data_received(hci_con_handle_t tx_con_handle, const uint8_t * data, uint16_t size){
-    nordic_spp_le_streamer_connection_t * context = connection_for_conn_handle(tx_con_handle);
-
-    if (!context) return;
-
-    if (size == 0 && context->le_notification_enabled == 0){
-        context->le_notification_enabled = 1;
-        test_reset(context);
-        context->send_request.callback = &nordic_can_send;
-        nordic_spp_service_server_request_can_send_now(&context->send_request, context->connection_handle);
-    } else {
-        printf("RECV: ");
-        printf_hexdump(data, size);
-        test_track_sent(context, size);
-   }
+static void nordic_spp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hci_con_handle_t con_handle;
+    nordic_spp_le_streamer_connection_t * context;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META) break;
+            switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+                case GATTSERVICE_SUBEVENT_SPP_SERVICE_CONNECTED:
+                    con_handle = gattservice_subevent_spp_service_connected_get_con_handle(packet);
+                    context = connection_for_conn_handle(con_handle);
+                    if (!context) break;
+                    context->le_notification_enabled = 1;
+                    test_reset(context);
+                    context->send_request.callback = &nordic_can_send;
+                    nordic_spp_service_server_request_can_send_now(&context->send_request, context->connection_handle);
+                    break;
+                case GATTSERVICE_SUBEVENT_SPP_SERVICE_DISCONNECTED:
+                    con_handle = HCI_CON_HANDLE_INVALID;
+                    context = connection_for_conn_handle(con_handle);
+                    if (!context) break;
+                    context->le_notification_enabled = 0;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case RFCOMM_DATA_PACKET:
+            printf("RECV: ");
+            printf_hexdump(packet, size);
+            context = connection_for_conn_handle((hci_con_handle_t) channel);
+            if (!context) break;
+            test_track_sent(context, size);
+            break;
+        default:
+            break;
+    }
 }
 
 int btstack_main(void);
@@ -338,7 +359,7 @@ int btstack_main(void){
     att_server_init(profile_data, NULL, NULL);    
     
     // setup Nordic SPP service
-    nordic_spp_service_server_init(&nordic_data_received);
+    nordic_spp_service_server_init(&nordic_spp_packet_handler);
 
     // register for ATT events
     att_server_register_packet_handler(att_packet_handler);

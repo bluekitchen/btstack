@@ -7,6 +7,7 @@
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "btstack_util.h"
@@ -327,6 +328,11 @@ TEST(LINK_KEY_DB, KeyReplacement){
 }
 
 int main (int argc, const char * argv[]){
-	hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * pklg_path = "hci_dump.pklg";
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
+    printf("Packet Log: %s\n", pklg_path);
+
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

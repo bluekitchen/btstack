@@ -8,6 +8,7 @@ CFLAGS  = -DUNIT_TEST -g
 CFLAGS += -Wall -Wno-unused
 CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
@@ -16,7 +17,7 @@ LDFLAGS +=  -lCppUTest -lCppUTestExt
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
 VPATH += ${BTSTACK_ROOT}/platform/embedded
-# VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 
@@ -29,6 +30,7 @@ COMMON = \
 	btstack_run_loop_embedded.c \
 	hci_cmd.c					\
 	hci_dump.c					\
+	hci_dump_posix_fs.c  		\
 	le_device_db_memory.c       \
 	mock.c 				        \
 	rijndael.c 					\

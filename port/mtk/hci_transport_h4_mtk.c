@@ -53,6 +53,7 @@
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
+#include "hci_transport_h4.h"
 
 static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
@@ -156,7 +157,8 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-const hci_transport_t * hci_transport_h4_instance(const btstack_uart_block_t * uart_driver){
+const hci_transport_t * hci_transport_h4_instance_for_uart(const btstack_uart_t * uart_driver){
+    (void) uart_driver;
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = (hci_transport_h4_t*)malloc( sizeof(hci_transport_h4_t));
         memset(hci_transport_h4, 0, sizeof(hci_transport_h4_t));

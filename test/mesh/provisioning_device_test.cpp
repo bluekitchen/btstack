@@ -40,6 +40,7 @@
 #include "btstack_memory.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "mesh/mesh_node.h"
 #include "mesh/pb_adv.h"
 #include "mesh/pb_gatt.h"
@@ -246,6 +247,11 @@ TEST(Provisioning, Prov1){
 }
 
 int main (int argc, const char * argv[]){
-    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * log_path = "hci_dump.pklg";
+    hci_dump_posix_fs_open(log_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
+    printf("Packet Log: %s\n", log_path);
+
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

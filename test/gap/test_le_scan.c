@@ -14,6 +14,7 @@
 #include "ble/gatt_client.h"
 #include "btstack_event.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
 #include "btstack_debug.h"
 
 typedef struct {
@@ -132,8 +133,11 @@ TEST(GAP_LE, ScanStartParam){
 }
 
 int main (int argc, const char * argv[]){
-    const char * log_path = "/tmp/test_scan.pklg";
-    printf("Log: %s\n", log_path);
-    hci_dump_open(log_path, HCI_DUMP_PACKETLOGGER);
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * pklg_path = "hci_dump.pklg";
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_init(hci_dump_posix_fs_get_instance());
+    printf("Packet Log: %s\n", pklg_path);
+
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

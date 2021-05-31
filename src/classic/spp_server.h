@@ -35,10 +35,11 @@
  *
  */
 
-/*
- * spp_server.h
- * 
- * Create SPP SDP Records
+/**
+ * @title SPP Server
+ *
+ * Create SPP SDP Records.
+ *
  */
 
 #ifndef SPP_SERVER_H

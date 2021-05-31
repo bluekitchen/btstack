@@ -121,6 +121,36 @@ typedef enum {
   INQUIRY_MODE_RSSI_AND_EIR,
 } inquiry_mode_t;
 
+/**
+ * @brief Page Scan Types
+ */
+typedef enum {
+    PAGE_SCAN_MODE_STANDARD = 0,
+    PAGE_SCAN_MODE_INTERLACED,
+} page_scan_type_t;
+
+/**
+ * @brief Inquiry Scan Types
+ */
+typedef enum {
+    INQUIRY_SCAN_MODE_STANDARD = 0,
+    INQUIRY_SCAN_MODE_INTERLACED,
+} inquiry_scan_type_t;
+
+/**
+ * Link Supervision Timeout Default, 0x7d00 * 0.625ms = 20s
+ */
+#define HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT 0x7D00
+
+/**
+ * Service Type used for QoS Setup and Flow Specification
+ */
+typedef enum {
+    HCI_SERVICE_TYPE_NO_TRAFFIC = 0,
+    HCI_SERVICE_TYPE_BEST_EFFORT,
+    HCI_SERVICE_TYPE_GUARANTEED,
+    HCI_SERVICE_TyPE_INVALID,
+} hci_service_type_t;
 
 /**
  * HCI Transport 

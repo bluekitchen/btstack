@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Heart Rate Service Server
+ * 
+ */
+
 #ifndef HEART_RATE_SERVICE_SERVER_H
 #define HEART_RATE_SERVICE_SERVER_H
 
@@ -44,15 +50,8 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the GATT Heart Rate Service Server 
- */
-
-// *****************************************************************************
-/* GATT_SERVICE_SERVER_START(heart_rate_service_server){Heart Rate Service} 
- *
- * The heart rate service server provides heart rate measurements via 
- * notifications.
- *
+ * @text The heart rate service server provides heart rate measurements via notifications.
+ * 
  * Each notification reports the heart rate measurement in beats per minute, and if enabled, 
  * the total energy expended in kilo Joules, as well as RR-intervals in 1/1024 seconds resolution.
  *
@@ -60,15 +59,15 @@ extern "C" {
  * in kilo Joules since the last time it was reset. If the maximum value of 65535
  * kilo Joules is reached, it will remain at this value, until a reset command
  * from the client is received.
- *  
+ *
  * The RR-Interval represents the time between two consecutive R waves in 
  * an Electrocardiogram (ECG) waveform. If needed, the RR-Intervals are sent in
  * multiple notifications.
- * 
+ *
  * To use with your application, add `#import <heart_rate_service.gatt>` to your .gatt file.
  * After adding it to your .gatt file, you call *heart_rate_server_init(body_sensor_location, energy_expended_supported)*
  * with the intended sensor location, and a flag indicating if energy expanded is supported.
- * 
+ *
  * If heart rate measurement changes, you can call 
  * *heart_rate_service_server_update_heart_rate_values(heart_rate_bpm, service_sensor_contact_status, rr_interval_count, rr_intervals)*. 
  * This function will trigger sending Notifications if the client enables them.
@@ -76,10 +75,7 @@ extern "C" {
  * If energy expanded is supported, you can call *heart_rate_service_add_energy_expended(energy_expended_kJ)* 
  * with the newly expanded energy. The accumulated energy expended value
  * will be emitted with the next heart rate measurement.
- *
  */
-// *****************************************************************************
-/* GATT_SERVICE_SERVER_END */
 
 /* API_START */
 

@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  btstack_linked_list.h
+/**
+ * @title Linked List
+ *
  */
 
 #ifndef BTSTACK_LINKED_LIST_H

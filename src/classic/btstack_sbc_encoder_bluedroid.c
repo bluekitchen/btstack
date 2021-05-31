@@ -51,9 +51,10 @@
 
 #include "btstack_sbc.h"
 #include "btstack_sbc_plc.h"
+#include "btstack_debug.h"
+#include "btstack_util.h"
 
 #include "sbc_encoder.h"
-#include "btstack.h"
 
 #define mSBC_SYNCWORD 0xad
 #define SBC_SYNCWORD 0x9c

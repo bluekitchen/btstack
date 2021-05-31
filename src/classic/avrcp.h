@@ -35,10 +35,8 @@
  *
  */
 
-/*
- * avrcp.h
- * 
- * Audio/Video Remote Control Profile
+/**
+ * Audio/Video Remote Control Profile (AVRCP)
  *
  */
 
@@ -110,6 +108,14 @@ typedef enum {
     AVRCP_CONTINUE_PACKET ,
     AVRCP_END_PACKET
 } avrcp_packet_type_t;
+
+
+typedef enum {
+    AVCTP_SINGLE_PACKET= 0,
+    AVCTP_START_PACKET    ,
+    AVCTP_CONTINUE_PACKET ,
+    AVCTP_END_PACKET
+} avctp_packet_type_t;
 
 typedef enum {
     AVRCP_COMMAND_FRAME = 0,
@@ -238,28 +244,80 @@ typedef enum {
 } avrcp_command_opcode_t;
 
 typedef enum {
-    AVRCP_OPERATION_ID_CHANNEL_UP = 0x30,
-    AVRCP_OPERATION_ID_CHANNEL_DOWN = 0x31,
     AVRCP_OPERATION_ID_SELECT = 0x00,
     AVRCP_OPERATION_ID_UP = 0x01,
     AVRCP_OPERATION_ID_DOWN = 0x02,
     AVRCP_OPERATION_ID_LEFT = 0x03,
     AVRCP_OPERATION_ID_RIGHT = 0x04,
+    AVRCP_OPERATION_ID_RIGHT_UP = 0x05,
+    AVRCP_OPERATION_ID_RIGHT_DOWN = 0x06,
+    AVRCP_OPERATION_ID_LEFT_UP = 0x07,
+    AVRCP_OPERATION_ID_LEFT_DOWN = 0x07,
     AVRCP_OPERATION_ID_ROOT_MENU = 0x09,
+    AVRCP_OPERATION_ID_SETUP_MENU = 0x0A,
+    AVRCP_OPERATION_ID_CONTENTS_MENU = 0x0B,
+    AVRCP_OPERATION_ID_FAVORITE_MENU = 0x0C,
+    AVRCP_OPERATION_ID_EXIT = 0x0D,
 
+    AVRCP_OPERATION_ID_RESERVED_1 = 0x0E,
+
+    AVRCP_OPERATION_ID_0 = 0x20,
+    AVRCP_OPERATION_ID_1 = 0x21,
+    AVRCP_OPERATION_ID_2 = 0x22,
+    AVRCP_OPERATION_ID_3 = 0x23,
+    AVRCP_OPERATION_ID_4 = 0x24,
+    AVRCP_OPERATION_ID_5 = 0x25,
+    AVRCP_OPERATION_ID_6 = 0x26,
+    AVRCP_OPERATION_ID_7 = 0x27,
+    AVRCP_OPERATION_ID_8 = 0x28,
+    AVRCP_OPERATION_ID_9 = 0x29,
+    AVRCP_OPERATION_ID_DOT   = 0x2A,
+    AVRCP_OPERATION_ID_ENTER = 0x2B,
+    AVRCP_OPERATION_ID_CLEAR = 0x2C,
+
+    AVRCP_OPERATION_ID_RESERVED_2 = 0x2D,
+
+    AVRCP_OPERATION_ID_CHANNEL_UP = 0x30,
+    AVRCP_OPERATION_ID_CHANNEL_DOWN = 0x31,
+    AVRCP_OPERATION_ID_PREVIOUS_CHANNEL = 0x32,
+    AVRCP_OPERATION_ID_SOUND_SELECT = 0x33,
+    AVRCP_OPERATION_ID_INPUT_SELECT = 0x34,
+    AVRCP_OPERATION_ID_DISPLAY_INFORMATION = 0x35,
+    AVRCP_OPERATION_ID_HELP = 0x36,
+    AVRCP_OPERATION_ID_PAGE_UP = 0x37,
+    AVRCP_OPERATION_ID_PAGE_DOWN = 0x38,
+    
+    AVRCP_OPERATION_ID_RESERVED_3 = 0x39,
+    
     AVRCP_OPERATION_ID_SKIP = 0x3C,
+   
+    AVRCP_OPERATION_ID_POWER = 0x40,
     AVRCP_OPERATION_ID_VOLUME_UP = 0x41,
     AVRCP_OPERATION_ID_VOLUME_DOWN = 0x42,
     AVRCP_OPERATION_ID_MUTE = 0x43,
-    
     AVRCP_OPERATION_ID_PLAY = 0x44,
     AVRCP_OPERATION_ID_STOP = 0x45,
     AVRCP_OPERATION_ID_PAUSE = 0x46,
+    AVRCP_OPERATION_ID_RECORD = 0x47,
     AVRCP_OPERATION_ID_REWIND = 0x48,
     AVRCP_OPERATION_ID_FAST_FORWARD = 0x49,
+    AVRCP_OPERATION_ID_EJECT = 0x4A,
     AVRCP_OPERATION_ID_FORWARD = 0x4B,
     AVRCP_OPERATION_ID_BACKWARD = 0x4C,
-    AVRCP_OPERATION_ID_UNDEFINED = 0xFF
+
+    AVRCP_OPERATION_ID_RESERVED_4 = 0x4D,
+
+    AVRCP_OPERATION_ID_ANGLE = 0x50,
+    AVRCP_OPERATION_ID_SUBPICTURE = 0x51,
+
+    AVRCP_OPERATION_ID_RESERVED_5 = 0x3D,
+
+    AVRCP_OPERATION_ID_F1 = 0xF1,
+    AVRCP_OPERATION_ID_F2 = 0xF2,
+    AVRCP_OPERATION_ID_F3 = 0xF3,
+    AVRCP_OPERATION_ID_F4 = 0xF4,
+    AVRCP_OPERATION_ID_F5 = 0xF5,
+    AVRCP_OPERATION_ID_RESERVED_6 = 0xF7
 } avrcp_operation_id_t;
 
 typedef enum{
@@ -375,7 +433,7 @@ typedef struct {
     avctp_connection_state_t state;
     bool     wait_to_send;
     uint8_t  transaction_label;
-    // used for AVCTP fragmentation
+    // used for fragmentation
     uint8_t  num_packets;
     uint16_t bytes_to_send;
 
@@ -494,7 +552,7 @@ typedef struct {
 
     btstack_timer_source_t retry_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
-    uint8_t  continuous_fast_forward_cmd;
+    bool     press_and_hold_cmd;
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
@@ -555,6 +613,12 @@ typedef struct {
     uint8_t num_received_fragments;
 
     uint8_t accept_response;
+
+#ifdef ENABLE_AVCTP_FRAGMENTATION
+    uint16_t avctp_reassembly_size;
+    uint8_t  avctp_reassembly_buffer[200];
+#endif
+
 } avrcp_connection_t;
 
 typedef struct {

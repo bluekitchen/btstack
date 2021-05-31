@@ -34,6 +34,12 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
+/**
+ * @title Device Information Service Server
+ * 
+ */
+
 #ifndef DEVICE_INFORMATION_SERVICE_SERVER_H
 #define DEVICE_INFORMATION_SERVICE_SERVER_H
 
@@ -46,13 +52,13 @@ extern "C" {
 /* API_START */
 
 /**
- * Implementation of the Device Information Service Server 
+ * @text Th eDevice Information Service allows to query manufacturer and/or 
+ * vendor information about a device.
+ * 
+ * To use with your application, add `#import <device_information_service.gatt>` to your .gatt file. 
  *
- * To use with your application, add '#import <device_information_sevice.gatt' to your .gatt file
- * and call all functions below. All strings and blobs need to stay valid after calling the functions.
- *
- * @note: instead of calling all setters, you can create a local copy of the .gatt file and remove
- * all Characteristics that are not relevant for your application and define all fixed values in the .gatt file
+ * *Note*: instead of calling all setters, you can create a local copy of the .gatt file and remove
+ * all Characteristics that are not relevant for your application and define all fixed values in the .gatt file.
  */
 
 /**

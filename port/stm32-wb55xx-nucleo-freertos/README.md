@@ -1,4 +1,4 @@
-# BTstack port for STM32WB55 Nucleo Boards using FreeRTOS
+# BTstack Port for STM32WB55 Nucleo Boards using FreeRTOS
 
 This port supports the Nucleo68 and the USB dongle of the [P-NUCLEO-WB55 kit](https://www.st.com/en/evaluation-tools/p-nucleo-wb55.html). Both have 1 MB of Flash memory.
 
@@ -74,7 +74,7 @@ All debug output can be either send via SEGGER RTT or via USART1. To get the con
 
 In src/btstack_config.h resp. in example/btstack_config.h of the generated projects, additional debug information can be enabled by uncommenting ENABLE_LOG_INFO.
 
-Also, the full packet log can be enabled in src/btstack_port.c by uncommenting the hci_dump_open(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
+Also, the full packet log can be enabled in src/btstack_port.c by uncommenting the hci_dump_init(..) line. The console output can then be converted into .pklg files for OS X PacketLogger or WireShark by running tool/create_packet_log.py
 
 ## GATT Database
 In BTstack, the GATT Database is defined via the .gatt file in the example folder. During the build, the .gatt file is converted into a .h file with a binary representation of the GATT Database and useful defines for the application.

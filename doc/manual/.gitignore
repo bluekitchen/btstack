@@ -1,6 +1,9 @@
 btstack
 btstack.pdf
-docs_final
-docs_tmp
+docs
+docs-markdown
 latex
+mkdocs-latex.yml
+mkdocs-temp.yml
 mkdocs.yml
+references.p

@@ -40,9 +40,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
-#include "btstack.h"
 #include "classic/avrcp_browsing.h"
 #include "classic/avrcp_browsing_controller.h"
+#include "classic/avrcp_controller.h"
+
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 
 
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -373,11 +377,12 @@ static void avrcp_browsing_controller_emit_failed(btstack_packet_handler_t callb
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_browsing_connection_t * browsing_connection;
     uint8_t transport_header;
-    int pos;
+    uint32_t pos;
     switch (packet_type) {
         case L2CAP_DATA_PACKET:   
             browsing_connection = avrcp_get_browsing_connection_for_l2cap_cid_for_role(AVRCP_CONTROLLER, channel);
             if (!browsing_connection) break;
+            if (size < 6) break;
             pos = 0;
             transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
@@ -420,6 +425,8 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:
                     break;
                 case AVRCP_PDU_ID_SET_BROWSED_PLAYER:
+                    if ((pos + 9) > size) break;
+
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
                     // num_items
@@ -429,9 +436,11 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     folder_depth = packet[pos++];
 
                     for (i = 0; i < folder_depth; i++){
+                        if ((pos + 2) > size) return;
                         uint16_t folder_name_length = big_endian_read_16(packet, pos);
                         pos += 2;
                         // reuse packet and add data type as a header
+                        if ((pos + folder_name_length) > size) return;
                         packet[pos-1] = AVRCP_BROWSING_MEDIA_ROOT_FOLDER;
                         (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, packet+pos-1, folder_name_length+1);
                         pos += folder_name_length;
@@ -442,6 +451,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     switch (avctp_packet_type){
                         case AVRCP_SINGLE_PACKET:
                         case AVRCP_START_PACKET:
+                            if ((pos + 4) > size) return;
                             avrcp_parser_reset(browsing_connection);
                             browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                             pos += 2;
@@ -464,6 +474,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     break;
                 }                
                 case AVRCP_PDU_ID_SEARCH:
+                    if ((pos + 2) > size) return;
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
                     break;

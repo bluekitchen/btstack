@@ -53,6 +53,9 @@
 #include "btstack_run_loop_windows.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_h4.h"
 #include "hal_led.h"
 #include "btstack_tlv_posix.h"
 #include "ble/le_device_db_tlv.h"
@@ -226,7 +229,12 @@ int main(int argc, const char * argv[]){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
 
-    hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    // log into file using HCI_DUMP_PACKETLOGGER format
+    const char * pklg_path = "/tmp/hci_dump.pklg";
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
+    printf("Packet Log: %s\n", pklg_path);
 
     // pick serial port
     config.device_name = "\\\\.\\COM7";

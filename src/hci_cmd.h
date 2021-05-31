@@ -35,10 +35,9 @@
  *
  */
 
-/*
- *  hci_cmd.h
+/**
+ *  HCI Command Builder and official commands
  *
- *  Created by Matthias Ringwald on 7/23/09.
  */
 
 #ifndef HCI_CMDS_H
@@ -128,6 +127,8 @@ typedef enum {
     HCI_OPCODE_HCI_READ_LINK_POLICY_SETTINGS = HCI_OPCODE (OGF_LINK_POLICY, 0x0c),
     HCI_OPCODE_HCI_WRITE_LINK_POLICY_SETTINGS = HCI_OPCODE (OGF_LINK_POLICY, 0x0d),
     HCI_OPCODE_HCI_WRITE_DEFAULT_LINK_POLICY_SETTING = HCI_OPCODE (OGF_LINK_POLICY, 0x0F),
+    HCI_OPCODE_HCI_FLOW_SPECIFICATION = HCI_OPCODE(OGF_LINK_POLICY, 0x10),
+    HCI_OPCODE_HCI_SNIFF_SUBRATING = HCI_OPCODE (OGF_LINK_POLICY, 0x11),
     HCI_OPCODE_HCI_SET_EVENT_MASK = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x01),
     HCI_OPCODE_HCI_RESET = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x03),
     HCI_OPCODE_HCI_FLUSH = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x08),
@@ -155,7 +156,12 @@ typedef enum {
     HCI_OPCODE_HCI_READ_LINK_SUPERVISION_TIMEOUT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x36),
     HCI_OPCODE_HCI_WRITE_LINK_SUPERVISION_TIMEOUT = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x37),
     HCI_OPCODE_HCI_WRITE_CURRENT_IAC_LAP_TWO_IACS = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x3A),
+    HCI_OPCODE_HCI_READ_INQUIRY_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x42),
+    HCI_OPCODE_HCI_WRITE_INQUIRY_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x43),
+    HCI_OPCODE_HCI_READ_INQUIRY_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x44),
     HCI_OPCODE_HCI_WRITE_INQUIRY_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x45),
+    HCI_OPCODE_HCI_READ_PAGE_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x46),
+    HCI_OPCODE_HCI_WRITE_PAGE_SCAN_TYPE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x47),
     HCI_OPCODE_HCI_WRITE_EXTENDED_INQUIRY_RESPONSE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x52),
     HCI_OPCODE_HCI_WRITE_SIMPLE_PAIRING_MODE = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x56),
     HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA = HCI_OPCODE (OGF_CONTROLLER_BASEBAND, 0x57),
@@ -231,6 +237,7 @@ typedef enum {
     HCI_OPCODE_HCI_BCM_ENABLE_WBS = HCI_OPCODE(0x3f, 0x7e),
     HCI_OPCODE_HCI_BCM_WRITE_TX_POWER_TABLE = HCI_OPCODE (0x3f, 0x1C9),
     HCI_OPCODE_HCI_BCM_SET_TX_PWR = HCI_OPCODE (0x3f, 0x1A5),
+    HCI_OPCODE_HCI_TI_VS_CONFIGURE_DDIP = 0xFD55,
 } hci_opcode_t;
 
 // HCI Commands - see hci_cmd.c for info on parameters
@@ -247,6 +254,7 @@ extern const hci_cmd_t hci_enable_device_under_test_mode;
 extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
 extern const hci_cmd_t hci_exit_sniff_mode;
+extern const hci_cmd_t hci_flow_specification;
 extern const hci_cmd_t hci_flush;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
@@ -294,6 +302,7 @@ extern const hci_cmd_t hci_set_controller_to_host_flow_control;
 extern const hci_cmd_t hci_set_event_mask;
 extern const hci_cmd_t hci_setup_synchronous_connection;
 extern const hci_cmd_t hci_sniff_mode;
+extern const hci_cmd_t hci_sniff_subrating;
 extern const hci_cmd_t hci_switch_role_command;
 extern const hci_cmd_t hci_user_confirmation_request_negative_reply;
 extern const hci_cmd_t hci_user_confirmation_request_reply;
@@ -307,6 +316,7 @@ extern const hci_cmd_t hci_write_default_link_policy_setting;
 extern const hci_cmd_t hci_write_extended_inquiry_response;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_inquiry_scan_activity;
+extern const hci_cmd_t hci_write_inquiry_scan_type;
 extern const hci_cmd_t hci_write_le_host_supported;
 extern const hci_cmd_t hci_write_link_policy_settings;
 extern const hci_cmd_t hci_write_link_supervision_timeout;
@@ -316,6 +326,7 @@ extern const hci_cmd_t hci_write_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_write_page_timeout;
 extern const hci_cmd_t hci_write_pin_type;
 extern const hci_cmd_t hci_write_page_scan_activity;
+extern const hci_cmd_t hci_write_page_scan_type;
 extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_secure_connections_host_support;
 extern const hci_cmd_t hci_write_secure_connections_test_mode;
@@ -383,11 +394,15 @@ extern const hci_cmd_t hci_bcm_set_tx_pwr;
 
 // TI specific HCI commands
 extern const hci_cmd_t hci_ti_avrp_enable;
+extern const hci_cmd_t hci_ti_configure_ddip;
+extern const hci_cmd_t hci_ti_drpb_enable_rf_calibration;
+extern const hci_cmd_t hci_ti_drpb_tester_con_rx;
 extern const hci_cmd_t hci_ti_drpb_tester_con_tx;
 extern const hci_cmd_t hci_ti_drpb_tester_packet_tx_rx;
 extern const hci_cmd_t hci_ti_wbs_associate;
 extern const hci_cmd_t hci_ti_wbs_disassociate;
 extern const hci_cmd_t hci_ti_write_codec_config;
+extern const hci_cmd_t hci_ti_write_hardware_register;
 
 /**
  * construct HCI Command based on template
@@ -403,8 +418,8 @@ extern const hci_cmd_t hci_ti_write_codec_config;
  *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
  */
- uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
 
+uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
     
 #if defined __cplusplus
 }

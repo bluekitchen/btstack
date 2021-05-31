@@ -36,6 +36,7 @@ BTSTACK_ROOT ?= ../..
 
 # VPATH to find .gatt files
 VPATH += ${BTSTACK_ROOT}/example
+VPATH += ./example
 
 ######################################
 # source
@@ -48,12 +49,16 @@ ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_embedded_stdout.c \
+${BTSTACK_ROOT}/platform/embedded/hci_dump_segger_rtt_stdout.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/ancs_client.c \
 ${BTSTACK_ROOT}/src/ble/att_db.c \
 ${BTSTACK_ROOT}/src/ble/att_dispatch.c \
 ${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
 ${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
 ${BTSTACK_ROOT}/src/ble/gatt_client.c \
@@ -79,10 +84,10 @@ ${BTSTACK_ROOT}/src/hci_dump.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
-${BTSTACK_ROOT}/chipset/sx128x/controller.c \
-${BTSTACK_ROOT}/chipset/sx128x/hci_event.c \
-${BTSTACK_ROOT}/chipset/sx128x//hopping.c \
-${BTSTACK_ROOT}/chipset/sx128x//ll_sx1280.c \
+${BTSTACK_ROOT}/chipset/cinnamon/controller.c \
+${BTSTACK_ROOT}/chipset/cinnamon/hci_event.c \
+${BTSTACK_ROOT}/chipset/cinnamon/hopping.c \
+${BTSTACK_ROOT}/chipset/sx128x/ll_sx1280.c \
 ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280-hal.c \
 ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/sx1280.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c \
@@ -182,7 +187,7 @@ C_INCLUDES =  \
 -I ${BTSTACK_ROOT}/chipset/sx128x \
 -I ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/ \
 -I ${BTSTACK_ROOT}/chipset/sx128x/SMTC_Drivers/sx1280-driver-c/ \
--I controller \
+-I ${BTSTACK_ROOT}/chipset/cinnamon \
 -I Drivers/CMSIS/Device/ST/STM32L4xx/Include \
 -I Drivers/CMSIS/Include \
 -I Drivers/STM32L4xx_HAL_Driver/Inc \
@@ -220,6 +225,7 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 EXAMPLES = 					\
 	gatt_counter            \
 	gatt_streamer_server    \
+	gatt_rgb          \
 #	hog_keyboard_demo       \
 #	hog_mouse_demo          \
 
@@ -228,6 +234,7 @@ GATT_FILES = \
 	gatt_streamer_server.gatt \
 	hog_keyboard_demo.gatt \
 	hog_mouse_demo.gatt \
+	gatt_rgb.gatt \
 
 # default action: build all
 all: \

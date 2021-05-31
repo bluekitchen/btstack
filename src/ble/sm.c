@@ -301,9 +301,6 @@ typedef struct sm_setup_context {
 
     btstack_timer_source_t sm_timeout;
 
-    // used in all phases
-    uint8_t   sm_pairing_failed_reason;
-
     // user response, (Phase 1 and/or 2)
     uint8_t   sm_user_response;
     uint8_t   sm_keypress_notification; // bitmap: passkey started, digit entered, digit erased, passkey cleared, passkey complete, 3 bit count
@@ -650,6 +647,8 @@ static void sm_pairing_started(sm_connection_t * sm_conn){
 static void sm_pairing_complete(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
 
     if (!sm_conn->sm_pairing_active) return;
+
+    sm_conn->sm_pairing_active = false;
 
     uint8_t event[13];
     sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
@@ -1189,6 +1188,14 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     }
 
     uint8_t auth_req = sm_auth_req & ~SM_AUTHREQ_CT2;
+    uint8_t max_encryptinon_key_size = sm_max_encryption_key_size;
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // enable SC for SC only mode
+    if (sm_sc_only_mode){
+        auth_req |= SM_AUTHREQ_SECURE_CONNECTION;
+        max_encryptinon_key_size = 16;
+    }
+#endif
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
 	// set CT2 if SC + Bonding + CTKD
 	const uint8_t auth_req_for_ct2 = SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING;
@@ -1199,7 +1206,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, setup->sm_have_oob_data);
     sm_pairing_packet_set_auth_req(*local_packet, auth_req);
-    sm_pairing_packet_set_max_encryption_key_size(*local_packet, sm_max_encryption_key_size);
+    sm_pairing_packet_set_max_encryption_key_size(*local_packet, max_encryptinon_key_size);
 }
 
 static int sm_stk_generation_init(sm_connection_t * sm_conn){
@@ -1217,6 +1224,12 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     }
 
     // check key size
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // SC Only mandates 128 bit key size
+    if (sm_sc_only_mode && (sm_pairing_packet_get_max_encryption_key_size(*remote_packet) < 16)) {
+        return SM_REASON_ENCRYPTION_KEY_SIZE;
+    }
+#endif
     sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
     if (sm_conn->sm_actual_encryption_key_size == 0u) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
@@ -1228,7 +1241,7 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     if (!sm_validate_stk_generation_method()) return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    // check LE SC Only mode
+    // Check LE SC Only mode
     if (sm_sc_only_mode && (setup->sm_use_secure_connections == false)){
         log_info("SC Only mode active but SC not possible");
         return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
@@ -1477,6 +1490,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 
             sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
             sm_conn->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
+            sm_conn->sm_le_db_index = le_db_index;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
             // store local CSRK
@@ -1515,13 +1529,10 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     } else {
         log_info("Ignoring received keys, bonding not enabled");
     }
-
-    // keep le_db_index
-    sm_conn->sm_le_db_index = le_db_index;
 }
 
 static void sm_pairing_error(sm_connection_t * sm_conn, uint8_t reason){
-    setup->sm_pairing_failed_reason = reason;
+    sm_conn->sm_pairing_failed_reason = reason;
     sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
@@ -2185,6 +2196,19 @@ static bool sm_run_basic(void){
         hci_connection_t * hci_connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         sm_connection_t  * sm_connection = &hci_connection->sm_connection;
         switch(sm_connection->sm_engine_state){
+
+            // general
+            case SM_GENERAL_SEND_PAIRING_FAILED: {
+                uint8_t buffer[2];
+                buffer[0] = SM_CODE_PAIRING_FAILED;
+                buffer[1] = sm_connection->sm_pairing_failed_reason;
+                sm_connection->sm_engine_state = sm_connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
+                l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_pairing_complete(sm_connection, ERROR_CODE_AUTHENTICATION_FAILURE, sm_connection->sm_pairing_failed_reason);
+                sm_done_for_handle(sm_connection->sm_handle);
+                break;
+            }
+
             // responder side
             case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
                 sm_connection->sm_engine_state = SM_RESPONDER_IDLE;
@@ -2389,6 +2413,57 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
     btstack_assert(false);
 }
 
+static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+    // requirements to derive link key from  LE:
+    // - use secure connections
+    if (setup->sm_use_secure_connections == 0) return false;
+    // - bonding needs to be enabled:
+    bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
+    if (!bonding_enabled) return false;
+    // - need identity address / public addr
+    bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0) || (setup->sm_peer_addr_type == 0);
+    if (!have_identity_address_info) return false;
+    // - there is no stored BR/EDR link key or the derived key has at least the same level of authentication (bail if stored key has higher authentication)
+    //   this requirement is motivated by BLURtooth paper. The paper recommends to not overwrite keys at all.
+    //      If SC is authenticated, we consider it safe to overwrite a stored key.
+    //      If stored link key is not authenticated, it could already be compromised by a MITM attack. Allowing overwrite by unauthenticated derived key does not make it worse.
+    uint8_t link_key[16];
+    link_key_type_t link_key_type;
+    bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
+    bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type) != 0;
+    bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
+    if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
+        return false;
+    }
+    // get started (all of the above are true)
+    return true;
+#else
+    UNUSED(sm_connection);
+	return false;
+#endif
+}
+
+static void sm_key_distribution_complete_responder(sm_connection_t * connection){
+    if (sm_ctkd_from_le(connection)){
+        bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+        connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
+    } else {
+        connection->sm_engine_state = SM_RESPONDER_IDLE;
+        sm_pairing_complete(connection, ERROR_CODE_SUCCESS, 0);
+        sm_done_for_handle(connection->sm_handle);
+    }
+}
+
+static void sm_key_distribution_complete_initiator(sm_connection_t * connection){
+    if (sm_ctkd_from_le(connection)){
+        bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+        connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
+    } else {
+        sm_master_pairing_success(connection);
+    }
+}
+
 static void sm_run(void){
 
     // assert that stack has already bootet
@@ -2470,18 +2545,6 @@ static void sm_run(void){
             log_info("sm_run // cannot send");
         }
         switch (connection->sm_engine_state){
-
-            // general
-            case SM_GENERAL_SEND_PAIRING_FAILED: {
-                uint8_t buffer[2];
-                buffer[0] = SM_CODE_PAIRING_FAILED;
-                buffer[1] = setup->sm_pairing_failed_reason;
-                connection->sm_engine_state = connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                sm_pairing_complete(connection, ERROR_CODE_AUTHENTICATION_FAILURE, setup->sm_pairing_failed_reason);
-                sm_done_for_handle(connection->sm_handle);
-                break;
-            }
 
             // secure connections, initiator + responding states
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -2668,7 +2731,7 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
-                log_info("stk method %u, num bits %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
+                log_info("stk method %u, bit num: %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
                 if (sm_passkey_entry(setup->sm_stk_generation_method) && (setup->sm_passkey_bit < 20u)){
                     log_info("SM_SC_SEND_PAIRING_RANDOM A");
                     if (IS_RESPONDER(connection->sm_role)){
@@ -2785,8 +2848,7 @@ static void sm_run(void){
                     }
 #endif
 				if (err != 0){
-					setup->sm_pairing_failed_reason = err;
-					connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                    sm_pairing_error(connection, err);
 					sm_trigger_run();
 					break;
 				}
@@ -2972,9 +3034,9 @@ static void sm_run(void){
                     // slave -> receive master keys if any
                     if (sm_key_distribution_all_received(connection)){
                         sm_key_distribution_handle_all_received(connection);
-                        connection->sm_engine_state = SM_RESPONDER_IDLE;
-                        sm_pairing_complete(connection, ERROR_CODE_SUCCESS, 0);
-                        sm_done_for_handle(connection->sm_handle);
+                        sm_key_distribution_complete_responder(connection);
+                        // start CTKD right away
+                        continue;
                     } else {
                         connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                     }
@@ -3039,8 +3101,7 @@ static void sm_handle_encryption_result_enc_d(void * arg){
 
     log_info_key("c1!", sm_aes128_ciphertext);
     if (memcmp(setup->sm_peer_confirm, sm_aes128_ciphertext, 16) != 0){
-        setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-        connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+        sm_pairing_error(connection, SM_REASON_CONFIRM_VALUE_FAILED);
         sm_trigger_run();
         return;
     }
@@ -3128,36 +3189,6 @@ static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
     sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, (void *)(uintptr_t) connection->sm_handle);
 }
-static bool sm_ctkd_from_le(sm_connection_t *sm_connection) {
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-	// requirements to derive link key from  LE:
-	// - use secure connections
-	if (setup->sm_use_secure_connections == 0) return false;
-	// - bonding needs to be enabled:
-	bool bonding_enabled = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_BONDING ) != 0u;
-	if (!bonding_enabled) return false;
-	// - need identity address
-	bool have_identity_address_info = ((setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION) != 0);
-	if (!have_identity_address_info) return false;
-	// - there is no stored BR/EDR link key or the derived key has at least the same level of authentication (bail if stored key has higher authentication)
-	//   this requirement is motivated by BLURtooth paper. The paper recommends to not overwrite keys at all.
-	//      If SC is authenticated, we consider it safe to overwrite a stored key.
-	//      If stored link key is not authenticated, it could already be compromised by a MITM attack. Allowing overwrite by unauthenticated derived key does not make it worse.
-	uint8_t link_key[16];
-	link_key_type_t link_key_type;
-	bool have_link_key             = gap_get_link_key_for_bd_addr(setup->sm_peer_address, link_key, &link_key_type);
-	bool link_key_authenticated    = gap_authenticated_for_link_key_type(link_key_type) != 0;
-	bool derived_key_authenticated = sm_connection->sm_connection_authenticated != 0;
-	if (have_link_key && link_key_authenticated && !derived_key_authenticated) {
-		return false;
-	}
-	// get started (all of the above are true)
-	return true;
-#else
-    UNUSED(sm_connection);
-	return false;
-#endif
-}
 
 static void sm_handle_encryption_result_enc_csrk(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
@@ -3173,15 +3204,15 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
     } else {
         // no keys to send, just continue
         if (IS_RESPONDER(connection->sm_role)){
-            // slave -> receive master keys
-            connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
-        } else {
-			if (sm_ctkd_from_le(connection)){
-				bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
-				connection->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
+            if (sm_key_distribution_all_received(connection)){
+                sm_key_distribution_handle_all_received(connection);
+                sm_key_distribution_complete_responder(connection);
             } else {
-                sm_master_pairing_success(connection);
+                // slave -> receive master keys
+                connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
             }
+        } else {
+            sm_key_distribution_complete_initiator(connection);
         }
     }
     sm_trigger_run();
@@ -3819,8 +3850,10 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         return;
     }
 
+#ifdef ENABLE_LE_CENTRAL
     int have_ltk;
     uint8_t ltk[16];
+#endif
 
     switch (sm_conn->sm_engine_state){
 
@@ -3837,6 +3870,16 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 break;
             }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            if (sm_sc_only_mode){
+                uint8_t auth_req = packet[1];
+                if ((auth_req & SM_AUTHREQ_SECURE_CONNECTION) == 0){
+                    sm_pairing_error(sm_conn, SM_REASON_AUTHENTHICATION_REQUIREMENTS);
+                    break;
+                }
+            }
+#endif
+
             // IRK complete?
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
@@ -3846,9 +3889,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 case IRK_LOOKUP_SUCCEEDED:
                     le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
-                    log_info("central: security request - have_ltk %u", have_ltk);
-                    if (have_ltk){
-                        // start re-encrypt
+                    log_info("central: security request - have_ltk %u, encryption %u", have_ltk, sm_conn->sm_connection_encrypted);
+                    if (have_ltk && (sm_conn->sm_connection_encrypted == 0)){
+                        // start re-encrypt if we have LTK and the connection is not already encrypted
                         sm_conn->sm_engine_state = SM_INITIATOR_PH4_HAS_LTK;
                     } else {
                         // start pairing
@@ -3890,8 +3933,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 #endif
 
             if (err != 0){
-                setup->sm_pairing_failed_reason = err;
-                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_pairing_error(sm_conn, err);
                 break;
             }
 
@@ -4186,8 +4228,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // handle user cancel pairing?
             if (setup->sm_user_response == SM_USER_RESPONSE_DECLINE){
-                setup->sm_pairing_failed_reason = SM_REASON_PASSKEY_ENTRY_FAILED;
-                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_pairing_error(sm_conn, SM_REASON_PASSKEY_ENTRY_FAILED);
                 break;
             }
 
@@ -4252,14 +4293,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_key_distribution_handle_all_received(sm_conn);
 
                 if (IS_RESPONDER(sm_conn->sm_role)){
-                    if (sm_ctkd_from_le(sm_conn)){
-                    	bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
-                        sm_conn->sm_engine_state = use_h7 ? SM_SC_W2_CALCULATE_ILK_USING_H7 : SM_SC_W2_CALCULATE_ILK_USING_H6;
-                    } else {
-                        sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
-                        sm_pairing_complete(sm_conn, ERROR_CODE_SUCCESS, 0);
-                        sm_done_for_handle(sm_conn->sm_handle);
-                    }
+                    sm_key_distribution_complete_responder(sm_conn);
                 } else {
                     if (setup->sm_use_secure_connections){
                         sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
@@ -4415,6 +4449,11 @@ void sm_init(void){
 #endif
 
     sm_initialized = true;
+}
+
+void sm_deinit(void){
+    sm_initialized = false;
+    btstack_run_loop_remove_timer(&sm_run_timer);
 }
 
 void sm_use_fixed_passkey_in_display_role(uint32_t passkey){

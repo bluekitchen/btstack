@@ -35,10 +35,15 @@
  *
  */
 
+/**
+ * @title Security Manager
+ * 
+ */
+
 #ifndef SM_H
 #define SM_H
 
- #if defined __cplusplus
+#if defined __cplusplus
 extern "C" {
 #endif
 
@@ -256,6 +261,11 @@ uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, 
 void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random));
 
 /* API_END */
+
+/**
+ * @brief De-Init SM
+ */
+void sm_deinit(void);
 
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);

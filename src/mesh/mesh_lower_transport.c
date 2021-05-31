@@ -40,11 +40,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <btstack.h>
 
 #include "btstack_memory.h"
 #include "btstack_util.h"
 #include "btstack_bool.h"
+#include "btstack_debug.h"
 
 #include "mesh/beacon.h"
 #include "mesh/mesh_iv_index_seq_number.h"

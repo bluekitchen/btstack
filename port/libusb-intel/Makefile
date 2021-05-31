@@ -1,7 +1,7 @@
 # Makefile for libusb based examples
 BTSTACK_ROOT ?= ../..
 
-CORE += main.c btstack_stdin_posix.c btstack_tlv_posix.c
+CORE += main.c btstack_stdin_posix.c btstack_tlv_posix.c hci_dump_posix_fs.c
 
 COMMON  += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_tlv.c btstack_link_key_db_tlv.c wav_util.c btstack_network_posix.c
 COMMON += btstack_audio_portaudio.c btstack_chipset_intel_firmware.c rijndael.c

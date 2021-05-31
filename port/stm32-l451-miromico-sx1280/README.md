@@ -1,4 +1,9 @@
-# Experimental port for Semtech SX1280 2.4 GHz Multi Protocol Controller
+# BTstack Port with Cinnamon for Semtech SX1280 Controller on Miromico FMLR-80
+
+*Cinnamon* is BlueKitchen's minimal, yet robust Controller/Link Layer implementation for use with BTstack.
+
+In contrast to common Link Layer implementations, our focus is on a robust and compact implementation for production use,
+where code size matters (e.g. current code size about 8 kB).
 
 ## Overview
 
@@ -8,7 +13,9 @@ It uses the SX1280 C-Driver from Semtech to communicate with the SX1280. The mai
 
 ## Status
 
-Only tested with the Miromico FMLR-80-P-STL4E module so far. On this module, the 52 Mhz clock for the SX1280 is controlled by the MCU.
+Tested with the [Miromico FMLR-80-P-STL4E module](https://miromico.ch/portfolio/fmlr-8x-x-stlx/) 
+and our [SX1280 Shield](https://github.com/bluekitchen/sx1280-shield) - see (port/stm32-l476rg-nucleo-sx1280).
+On the FMLR-80-P-STL4E module, the 52 Mhz clock for the SX1280 is controlled by the MCU.
 
 SEGGER RTT is used for debug output, so a Segger J-Link programmer is required.
 

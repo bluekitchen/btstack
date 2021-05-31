@@ -35,10 +35,8 @@
  *
  */
 
-/*
- *  hci.h
- *
- *  Created by Matthias Ringwald on 4/29/09.
+/**
+ * @title Host Controler Interface (HCI)
  *
  */
 
@@ -51,14 +49,21 @@
 #include "btstack_control.h"
 #include "btstack_linked_list.h"
 #include "btstack_util.h"
-#include "classic/btstack_link_key_db.h"
 #include "hci_cmd.h"
 #include "gap.h"
 #include "hci_transport.h"
 #include "btstack_run_loop.h"
 
+#ifdef ENABLE_CLASSIC
+#include "classic/btstack_link_key_db.h"
+#endif
+
 #ifdef ENABLE_BLE
 #include "ble/att_db.h"
+#endif
+
+#ifdef HAVE_SCO_TRANSPORT
+#include "btstack_sco_transport.h"
 #endif
 
 #include <stdint.h>
@@ -131,13 +136,19 @@ extern "C" {
     #endif
 #endif
 
-// additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
+// additional pre-buffer space for packets to Bluetooth module
+// - H4 requires 1 byte for the packet type
+// - h5 requires 4 bytes for H5 header
 #ifndef HCI_OUTGOING_PRE_BUFFER_SIZE
-#ifdef HAVE_HOST_CONTROLLER_API
-#define HCI_OUTGOING_PRE_BUFFER_SIZE 0
-#else
-#define HCI_OUTGOING_PRE_BUFFER_SIZE 1
-#endif
+    #ifdef HAVE_HOST_CONTROLLER_API
+        #define HCI_OUTGOING_PRE_BUFFER_SIZE 0
+    #else
+        #ifdef ENABLE_H5
+            #define HCI_OUTGOING_PRE_BUFFER_SIZE 4
+        #else
+            #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
+        #endif
+    #endif
 #endif
 
 // BNEP may uncompress the IP Header by 16 bytes, GATT Client requires two additional bytes for long characteristic reads
@@ -409,6 +420,7 @@ typedef struct sm_connection {
     bd_addr_t                sm_peer_address;
     security_manager_state_t sm_engine_state;
     irk_lookup_state_t       sm_irk_lookup_state;
+    uint8_t                  sm_pairing_failed_reason;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
     uint8_t                  sm_connection_sc;
@@ -519,6 +531,10 @@ typedef struct {
     uint8_t remote_supported_features[1];
 
 #ifdef ENABLE_CLASSIC
+    // IO Capabilities Response
+    uint8_t io_cap_response_auth_req;
+    uint8_t io_cap_response_io;
+
     // connection mode, default ACL_CONNECTION_MODE_ACTIVE
     uint8_t connection_mode;
 
@@ -528,11 +544,24 @@ typedef struct {
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
 
+    // sniff subrating
+    uint16_t sniff_subrating_max_latency;   // 0xffff = not set
+    uint16_t sniff_subrating_min_remote_timeout;
+    uint16_t sniff_subrating_min_local_timeout;
+
+    // QoS
+    hci_service_type_t qos_service_type;
+    uint32_t qos_token_rate;
+    uint32_t qos_peak_bandwidth;
+    uint32_t qos_latency;
+    uint32_t qos_delay_variation;
+
+#ifdef ENABLE_SCO_OVER_HCI
     // track SCO rx event
     uint32_t sco_rx_ms;
     uint8_t  sco_rx_count;
     uint8_t  sco_rx_valid;
-
+#endif
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;
 
@@ -684,9 +713,11 @@ typedef enum hci_init_state{
     HCI_INIT_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
     HCI_INIT_W4_WRITE_DEFAULT_ERRONEOUS_DATA_REPORTING,
 
-    // Broadcom SCO Routing
+    // Broadcom SCO Routing and Configuration
     HCI_INIT_BCM_WRITE_SCO_PCM_INT,
     HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT,
+    HCI_INIT_BCM_WRITE_I2SPCM_INTERFACE_PARAM,
+    HCI_INIT_W4_BCM_WRITE_I2SPCM_INTERFACE_PARAM,
 
 #ifdef ENABLE_BLE
     HCI_INIT_LE_READ_BUFFER_SIZE,
@@ -728,9 +759,12 @@ typedef enum hci_init_state{
 } hci_substate_t;
 
 enum {
+    // Tasks
     LE_ADVERTISEMENT_TASKS_SET_ADV_DATA  = 1 << 0,
     LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS    = 1 << 2,
+    // State
+    LE_ADVERTISEMENT_TASKS_PARAMS_SET    = 1 << 7,
 };
 
 enum {
@@ -770,8 +804,10 @@ typedef struct {
     // hardware power controller
     const btstack_control_t * control;
 
+#ifdef ENABLE_CLASSIC
     /* link key db */
     const btstack_link_key_db_t * link_key_db;
+#endif
 
     // list of existing baseband connections
     btstack_linked_list_t     connections;
@@ -807,11 +843,24 @@ typedef struct {
     bool               secure_connections_enable;
     bool               secure_connections_active;
     inquiry_mode_t     inquiry_mode;
+
 #ifdef ENABLE_CLASSIC
+    /* write page scan activity, 0xffff is no change */
+    uint16_t           new_page_scan_interval;
+    uint16_t           new_page_scan_window;
+
+    /* write page scan type, 0xff is no change */
+    uint8_t            new_page_scan_type;
+
     // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
     uint8_t            gap_required_encyrption_key_size;
     uint16_t           link_supervision_timeout;
     gap_security_level_t gap_security_level;
+    gap_security_mode_t  gap_security_mode;
+
+    uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
+
+    bool                gap_secure_connections_only_mode;
 #endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
@@ -997,6 +1046,10 @@ typedef struct {
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
 	bool                      classic_read_local_oob_data;
 #endif
+
+#ifdef HAVE_SCO_TRANSPORT
+	const btstack_sco_transport_t * sco_transport;
+#endif
 } hci_stack_t;
 
 
@@ -1018,13 +1071,24 @@ void hci_set_chipset(const btstack_chipset_t *chipset_driver);
 
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
+ * @[aram hardware_control implementation
  */
 void hci_set_control(const btstack_control_t *hardware_control);
 
+#ifdef HAVE_SCO_TRANSPORT
+/**
+ * @brief Set SCO Transport implementation for SCO over PCM mode
+ * @param sco_transport that sends SCO over I2S or PCM interface
+ */
+void hci_set_sco_transport(const btstack_sco_transport_t *sco_transport);
+#endif
+
+#ifdef ENABLE_CLASSIC
 /**
  * @brief Configure Bluetooth hardware control. Has to be called before power on.
  */
 void hci_set_link_key_db(btstack_link_key_db_t const * link_key_db);
+#endif
 
 /**
  * @brief Set callback for Bluetooth Hardware Error
@@ -1036,7 +1100,7 @@ void hci_set_hardware_error_callback(void (*fn)(uint8_t error));
  */
 void hci_set_bd_addr(bd_addr_t addr);
 
-/** 
+/**
  * @brief Configure Voice Setting for use with SCO data in HSP/HFP
  */
 void hci_set_sco_voice_setting(uint16_t voice_setting);

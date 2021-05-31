@@ -35,6 +35,11 @@
  *
  */
 
+/**
+ * @title PBAP Client
+ *
+ */
+
 #ifndef PBAP_CLIENT_H
 #define PBAP_CLIENT_H
 

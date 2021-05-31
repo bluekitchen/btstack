@@ -61,6 +61,9 @@
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_usb.h"
 #include "btstack_stdin.h"
 #include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
@@ -196,8 +199,10 @@ int main(int argc, const char * argv[]){
         strcat(pklg_path, usb_path_string);
     }
     strcat(pklg_path, ".pklg");
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // setup USB Transport
     transport = hci_transport_usb_instance();

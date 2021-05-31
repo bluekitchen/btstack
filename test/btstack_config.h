@@ -28,6 +28,7 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_SIGNED_WRITE
 #define ENABLE_SDP_EXTRA_QUERIES
+#define ENABLE_AVCTP_FRAGMENTATION
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1024

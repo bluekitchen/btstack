@@ -206,6 +206,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint16_t cid;
     uint16_t conn_interval;
     hci_con_handle_t handle;
+    uint8_t status;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -262,7 +263,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     psm = l2cap_event_le_channel_opened_get_psm(packet); 
                     cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
                     handle = l2cap_event_le_channel_opened_get_handle(packet);
-                    if (packet[2] == 0) {
+                    status = l2cap_event_le_channel_opened_get_status(packet);
+                    if (status == ERROR_CODE_SUCCESS) {
                         printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         le_data_channel_connection.cid = cid;
@@ -275,7 +277,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
 #endif
                     } else {
-                        printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                        printf("L2CAP: LE Data Channel connection to device %s failed. status code 0x%02x\n", bd_addr_to_str(event_address), status);
                     }
                     break;
 

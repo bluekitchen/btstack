@@ -1,6 +1,6 @@
-# BTstack port for Zephyr Controller with HCI UART Firmware Connectected To POSIX System
+# BTstack Port for POSIX Systems with Zephyr-based Controller
 
-The main difference to the regular posix-h4 port is that that the Zephyr Contoller uses 1000000 as baud rate.
+The main difference to the regular posix-h4 port is that that the Zephyr Controller uses 1000000 as baud rate.
 In addition, the port defaults to use the fixed static address stored during production.
 
 ## Prepare Zephyr Controller

@@ -47,7 +47,6 @@
 #include "btstack_run_loop_qt.h"
 
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_base.h"
 #include "btstack_util.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"

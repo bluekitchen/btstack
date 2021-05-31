@@ -312,7 +312,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     a2dp_source_create_sdp_record(sdp_a2dp_source_service_buffer, 0x10001, AVDTP_SOURCE_FEATURE_MASK_PLAYER, NULL, NULL);
     sdp_register_service(sdp_a2dp_source_service_buffer);
     
-    // Create AVRCP target service record and register it with SDP
+    // Create AVRCP Target service record and register it with SDP. We receive Category 1 commands from the headphone, e.g. play/pause
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
     uint16_t supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
 #ifdef AVRCP_BROWSING_ENABLED
@@ -321,9 +321,9 @@ static int a2dp_source_and_avrcp_services_init(void){
     avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10002, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
-    // Register AVRCP Controller
+    // Create AVRCP Controller service record and register it with SDP. We send Category 2 commands to the headphone, e.g. volume up/down
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_PLAYER_OR_RECORDER;
+    uint16_t controller_supported_features = AVRCP_FEATURE_MASK_CATEGORY_MONITOR_OR_AMPLIFIER;
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10003, controller_supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
@@ -650,7 +650,7 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
-            if (status){
+            if (status != ERROR_CODE_SUCCESS){
                 printf("A2DP Source: Stream failed, status 0x%02x.\n", status);
                 break;
             }
@@ -793,7 +793,11 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
-    
+
+    bool button_pressed;
+    char const * button_state;
+    avrcp_operation_id_t operation_id;
+
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
             media_tracker.volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
@@ -811,28 +815,30 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         // case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
         //     status = avrcp_target_now_playing_info(avrcp_cid);
         //     break;
-        case AVRCP_SUBEVENT_OPERATION:{
-            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
-            switch (operation_id){
+        case AVRCP_SUBEVENT_OPERATION:
+            operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            button_pressed = avrcp_subevent_operation_get_button_pressed(packet) > 0;
+            button_state = button_pressed ? "PRESS" : "RELEASE";
+
+            printf("AVRCP Target: operation %s (%s)\n", avrcp_operation2str(operation_id), button_state);
+
+            if (!button_pressed){
+                break;
+            }
+            switch (operation_id) {
                 case AVRCP_OPERATION_ID_PLAY:
-                    printf("AVRCP Target: PLAY\n");
                     status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_PAUSE:
-                    printf("AVRCP Target: PAUSE\n");
                     status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
                     break;
                 case AVRCP_OPERATION_ID_STOP:
-                    printf("AVRCP Target: STOP\n");
                     status = a2dp_source_disconnect(media_tracker.a2dp_cid);
                     break;
                 default:
-                    printf("AVRCP Target: operation 0x%2x is not handled\n", operation_id);
-                    return;
+                    break;
             }
             break;
-        }
-
         default:
             break;
     }

@@ -62,6 +62,9 @@
 #include "hal_led.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_usb.h"
 #include "btstack_stdin.h"
 #include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
@@ -211,8 +214,7 @@ int main(int argc, const char * argv[]){
         hci_transport_usb_set_path(usb_path_len, usb_path);
     }
 
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-
+    // log into file using HCI_DUMP_PACKETLOGGER format
     char pklg_path[100];
     strcpy(pklg_path, "/tmp/hci_dump");
     if (usb_path_len){
@@ -220,8 +222,10 @@ int main(int argc, const char * argv[]){
         strcat(pklg_path, usb_path_string);
     }
     strcat(pklg_path, ".pklg");
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
 
     // init HCI
 	hci_init(hci_transport_usb_instance(), NULL);

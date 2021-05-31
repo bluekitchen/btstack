@@ -61,8 +61,12 @@
 #include "bluetooth_company_id.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_dump_posix_fs.h"
+#include "hci_transport.h"
+#include "hci_transport_h5.h"
 #include "btstack_stdin.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_uart.h"
 
 #include "btstack_chipset_csr.h"
 #include "btstack_chipset_cc256x.h"
@@ -84,6 +88,7 @@ static hci_transport_config_uart_t config = {
     0,  // main baudrate
     1,  // flow control
     NULL,
+    BTSTACK_UART_PARITY_EVEN, // parity
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -111,8 +116,8 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 static void use_fast_uart(void){
-    // printf("Using 921600 baud.\n");
-    // config.baudrate_main = 921600;
+     printf("Using 921600 baud.\n");
+     config.baudrate_main = 921600;
 }
 
 static void local_version_information_handler(uint8_t * packet){
@@ -199,10 +204,12 @@ int main(int argc, const char * argv[]){
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-	    
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+
+    // log into file using HCI_DUMP_PACKETLOGGER format
     const char * pklg_path = "/tmp/hci_dump.pklg";
-    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
+    hci_dump_init(hci_dump_impl);
     printf("Packet Log: %s\n", pklg_path);
 
     // pick serial port
@@ -220,12 +227,9 @@ int main(int argc, const char * argv[]){
     printf("H5 device: %s\n", config.device_name);
 
     // init HCI
-    const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
+    const btstack_uart_t * uart_driver = (const btstack_uart_t *) btstack_uart_posix_instance();
     const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
 	hci_init(transport, (void*) &config);
-
-    // enable BCSP mode for CSR chipsets - auto detect might not work
-    // hci_transport_h5_enable_bcsp_mode();
 
     // set BD_ADDR for CSR without Flash/unique address
     // bd_addr_t own_address = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};

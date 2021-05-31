@@ -35,8 +35,9 @@
  *
  */
 
-/*
- *  sdp_util.h
+/**
+ * @title SDP Utils
+ *
  */
 
 #ifndef SDP_UTIL_H

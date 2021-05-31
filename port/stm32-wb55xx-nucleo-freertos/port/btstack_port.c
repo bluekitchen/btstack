@@ -49,6 +49,12 @@
 #include "btstack_config.h"
 #include "main.h"
 
+#ifdef ENABLE_SEGGER_RTT
+#include "hci_dump_segger_rtt_stdout.h"
+#else
+#include "hci_dump_embedded_stdout.h"
+#endif
+
 #ifndef ENABLE_SEGGER_RTT
 /********************************************
  *      system calls implementation
@@ -582,8 +588,13 @@ void port_thread(void* args){
 
     // enable packet logger
 #ifdef ENABLE_HCI_DUMP
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+#ifdef ENABLE_SEGGER_RTT
+    // hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
+#else
+    // hci_dump_init(hci_dump_embedded_stdout_get_instance());
 #endif
+#endif
+
     /// GET STARTED with BTstack ///
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_freertos_get_instance());

@@ -35,14 +35,11 @@
  *
  */
 
-/*
- *  btstack_util.h
+/**
+ * @title General Utility Functions
  *
- *  General utility functions
- *
- *  Created by Matthias Ringwald on 7/23/09.
  */
-
+ 
 #ifndef BTSTACK_UTIL_H
 #define BTSTACK_UTIL_H
 

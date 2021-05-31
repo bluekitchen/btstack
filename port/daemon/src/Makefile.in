@@ -6,6 +6,7 @@ CC      = @CC@
 LDFLAGS = @LDFLAGS@
 CFLAGS  = @CFLAGS@ \
     -I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
+    -I ${BTSTACK_ROOT}/3rd-party/rijndael  \
     -I ${BTSTACK_ROOT}/chipset/intel \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
@@ -19,6 +20,7 @@ USB_CFLAGS            = @USB_CFLAGS@
 USB_LDFLAGS           = @USB_LDFLAGS@
 
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
 VPATH += ${BTSTACK_ROOT}/chipset/intel
 VPATH += ${BTSTACK_ROOT}/platform/daemon/src
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
@@ -67,11 +69,14 @@ BTdaemon_SOURCES =      \
     gatt_client.o               \
     hci.o                       \
     hci_dump.o                  \
+    hci_dump_posix_fs.o         \
+    hci_dump_posix_stdout.o     \
     hci_transport_h4.o          \
     l2cap.o                     \
     l2cap_signaling.o           \
     le_device_db_tlv.o          \
     rfcomm.o                    \
+    rijndael.o                  \
     sdp_client.o                \
     sdp_client_rfcomm.o         \
     sdp_server.o                \

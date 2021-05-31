@@ -61,11 +61,6 @@ const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void);
  */
 void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg), void * arg);
 
-/*
- * @brief Execute code on BTstack run loop. Can be used to control BTstack from an ISR
- */
-void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg);
-
 /**
  * @brief Triggers processing of data sources from thread context. 
  * Has to be called after enabling a poll data source to wake-pup run loop.

@@ -471,6 +471,7 @@ static const btstack_uart_block_t btstack_uart_windows = {
     /* int (*get_supported_sleep_modes); */                           NULL,
     /* void (*set_sleep)(btstack_uart_sleep_mode_t sleep_mode); */    NULL,
     /* void (*set_wakeup_handler)(void (*handler)(void)); */          NULL,
+    NULL, NULL, NULL, NULL,
 };
 
 const btstack_uart_block_t * btstack_uart_block_windows_instance(void){

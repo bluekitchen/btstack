@@ -131,11 +131,12 @@ CSRCS += \
 	${BTSTACK_ROOT_CONFIG}/chipset/atwilc3000/btstack_chipset_atwilc3000.c \
 	${BTSTACK_ROOT_CONFIG}/platform/embedded/btstack_run_loop_embedded.c \
 	${BTSTACK_ROOT_CONFIG}/platform/embedded/btstack_uart_block_embedded.c \
+	${BTSTACK_ROOT_CONFIG}/platform/embedded/hci_dump_embedded_stdout.c \
 	${BTSTACK_ROOT_CONFIG}/src/ad_parser.c \
-	${BTSTACK_ROOT_CONFIG}/src/ble/ancs_client.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/att_db.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/att_dispatch.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/att_server.c \
+       ${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/ancs_client.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/battery_service_server.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/device_information_service_server.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/hids_device.c \

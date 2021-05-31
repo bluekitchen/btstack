@@ -350,19 +350,12 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
 
     if (event[0] != HCI_EVENT_HFP_META) return;
-
-    if ((event_size > 3)
-        && (event[3] != 0)
-        && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER)
-        && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG)
-        && (hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_TRANSMIT_DTMF_CODES)){
-        printf("ERROR, status: %u\n", event[3]);
-        return;
-    }
+    const char * dial_string;
+    const char * dtmf_string;
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
+            acl_handle = hfp_subevent_service_level_connection_established_get_acl_handle(event);
             printf("Service level connection established.\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
@@ -381,11 +374,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             printf("\n** Stop Ringing **\n");
             break;
         case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
-            printf("\n** Outgoing call '%s' **\n", &event[3]);
+            dial_string = (const char *) hfp_subevent_place_call_with_number_get_number(event);
+            printf("\n** Outgoing call '%s' **\n", dial_string);
             // validate number
-            if ( strcmp("1234567", (char*) &event[3]) == 0
-              || strcmp("7654321", (char*) &event[3]) == 0
-              || (memory_1_enabled && strcmp(">1",      (char*) &event[3]) == 0)){
+            if ( strcmp("1234567", dial_string) == 0
+              || strcmp("7654321", dial_string) == 0
+              || (memory_1_enabled && strcmp(">1", dial_string) == 0)){
                 printf("Dialstring valid: accept call\n");
                 hfp_ag_outgoing_call_accepted();
             } else {
@@ -398,11 +392,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
             break;
         case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
-            printf("\n** Send DTMF Codes: '%s'\n", &event[3]);
+            dtmf_string = (const char *) hfp_subevent_transmit_dtmf_codes_get_dtmf(event);
+            printf("\n** Send DTMF Codes: '%s'\n",dtmf_string);
             hfp_ag_send_dtmf_code_done(acl_handle);
             break;
         default:
-            printf("Event not handled %u\n", event[2]);
             break;
     }
 

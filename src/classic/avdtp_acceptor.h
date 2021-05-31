@@ -35,9 +35,7 @@
  *
  */
 
-/*
- * avdtp_acp.h
- * 
+/**
  * Audio/Video Distribution Transport Protocol - Acceptor Role
  *
  */

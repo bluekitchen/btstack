@@ -35,10 +35,10 @@
  *
  */
 
-/*
- *  btstack_control.h
+/**
+ * @title Bluetooth Power Control
  *
- *  BTstack Bluetooth Hardware Control API -- allows HCI to manage Bluetooth chipsets via direct hardware controls
+ * The Bluetooth Hardware Control API allows HCI to manage Bluetooth chipsets via direct hardware controls.
  *
  */
 
@@ -57,6 +57,8 @@ typedef enum {
     POWER_WILL_WAKE_UP
 } POWER_NOTIFICATION_t;
 
+/* API_START */
+
 typedef struct {
 	void (*init) (const void *config);
     int  (*on)   (void);  // <-- turn BT module on and configure
@@ -65,6 +67,8 @@ typedef struct {
     int  (*wake) (void);  // <-- wake BT module from sleep - only to be called after SLEEP
     void (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 } btstack_control_t;
+
+/* API_END */
 
 #if defined __cplusplus
 }

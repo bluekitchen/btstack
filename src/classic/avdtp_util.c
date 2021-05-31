@@ -40,9 +40,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+
+#include "btstack_debug.h"
+#include "btstack_util.h"
+#include "l2cap.h"
 
 #define MAX_MEDIA_CODEC_INFORMATION_LENGTH 100
 
@@ -131,7 +134,7 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->media_connect = 0;
     stream_endpoint->start_stream = 0;
     stream_endpoint->close_stream = 0;
-    stream_endpoint->request_can_send_now = 0;
+    stream_endpoint->request_can_send_now = false;
     stream_endpoint->abort_stream = 0;
     stream_endpoint->suspend_stream = 0;
     stream_endpoint->sequence_number = 0;
@@ -251,7 +254,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
         ((category == AVDTP_SERVICE_CATEGORY_INVALID_FF) && (signal_identifier == AVDTP_SI_RECONFIGURE))){
         log_info("    ERROR: BAD SERVICE CATEGORY %d\n", category);
         connection->reject_service_category = category;
-        connection->error_code = BAD_SERV_CATEGORY;
+        connection->error_code = AVDTP_ERROR_CODE_BAD_SERV_CATEGORY;
         return 1;
     }
 
@@ -259,7 +262,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
         if ( (category != AVDTP_CONTENT_PROTECTION) && (category != AVDTP_MEDIA_CODEC)){
             log_info("    ERROR: REJECT CATEGORY, INVALID_CAPABILITIES\n");
             connection->reject_service_category = category;
-            connection->error_code = INVALID_CAPABILITIES;
+            connection->error_code = AVDTP_ERROR_CODE_INVALID_CAPABILITIES;
             return 1;
         }
     }
@@ -269,7 +272,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 0){
                 log_info("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_MEDIA_TRANSPORT_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_MEDIA_TRANSPORT_FORMAT;
                 return 1;
             }
             break;
@@ -278,7 +281,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 0){
                 log_info("    ERROR: REJECT CATEGORY, BAD_LENGTH\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_LENGTH;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
                 return 1;
             }
             break;
@@ -286,7 +289,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 3){
                 log_info("    ERROR: REJECT CATEGORY, BAD_MEDIA_TRANSPORT\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_RECOVERY_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT;
                 return 1;
             }           
             break;
@@ -294,7 +297,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len < 2){
                 log_info("    ERROR: REJECT CATEGORY, BAD_CP_FORMAT\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_CP_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_CP_FORMAT;
                 return 1;
             }
             break;
@@ -303,7 +306,7 @@ static int avdtp_unpack_service_capabilities_has_errors(avdtp_connection_t * con
             if (cap_len != 1){
                 log_info("    ERROR: REJECT CATEGORY, BAD_HEADER_COMPRESSION\n");
                 connection->reject_service_category = category;
-                connection->error_code = BAD_RECOVERY_FORMAT;
+                connection->error_code = AVDTP_ERROR_CODE_BAD_RECOVERY_FORMAT;
                 return 1;
             }           
             break;
@@ -333,7 +336,7 @@ uint16_t avdtp_unpack_service_capabilities(avdtp_connection_t * connection, avdt
 
         if (cap_len > to_process){
             connection->reject_service_category = category;
-            connection->error_code = BAD_LENGTH;
+            connection->error_code = AVDTP_ERROR_CODE_BAD_LENGTH;
             return 0;
         }
 
@@ -675,7 +678,7 @@ static void avdtp_signaling_emit_media_codec_mpeg_aac_capability(uint16_t avdtp_
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = remote_seid;
-    event[pos++] =  media_codec.media_type;
+    event[pos++] = media_codec.media_type;
 
     uint8_t  object_type_bitmap        =   media_codec_information[0];
     uint16_t sampling_frequency_bitmap =  (media_codec_information[1] << 4) | (media_codec_information[2] >> 4);
@@ -690,7 +693,6 @@ static void avdtp_signaling_emit_media_codec_mpeg_aac_capability(uint16_t avdtp_
     little_endian_store_24(event, pos, bit_rate_bitmap);
     pos += 3;
     event[pos++] = vbr;
-
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -699,7 +701,7 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
     uint8_t event[16];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
+    pos++; // set later
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
@@ -720,7 +722,8 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
     little_endian_store_24(event, pos, bit_rate_index_bitmap);
     pos += 3;
     little_endian_store_16(event, pos, maximum_sul);
-
+    pos += 2;
+    event[1] = pos - 2;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -728,7 +731,7 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 11];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
+    pos++; // set later
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
@@ -738,8 +741,10 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    (void)memcpy(event + pos, media_codec.media_codec_information,
-                 btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH));
+    uint32_t media_codec_info_len = btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH);
+    (void)memcpy(event + pos, media_codec.media_codec_information, media_codec_info_len);
+    pos += media_codec_info_len;
+    event[1] = pos - 2;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -774,27 +779,32 @@ static void avdtp_signaling_emit_recovery_capability(uint16_t avdtp_cid, uint8_t
     avdtp_emit_sink_and_source(event, pos);
 }
 
+#define MAX_CONTENT_PROTECTION_VALUE_LEN 32
 static void
 avdtp_signaling_emit_content_protection_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_content_protection_t *content_protection) {
-    uint8_t event[21];
+    uint8_t event[10 + MAX_CONTENT_PROTECTION_VALUE_LEN];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
+    pos++; // set later
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = remote_seid;
-    
+
     little_endian_store_16(event, pos, content_protection->cp_type);
     pos += 2;
-    little_endian_store_16(event, pos, content_protection->cp_type_value_len);
-    pos += 2;
-    
-    //TODO: reserve place for value
-    if (content_protection->cp_type_value_len < 10){
-        (void)memcpy(event + pos, content_protection->cp_type_value,
-                     content_protection->cp_type_value_len);
+
+    // drop cp protection value if longer than expected
+    if (content_protection->cp_type_value_len <= MAX_CONTENT_PROTECTION_VALUE_LEN){
+        little_endian_store_16(event, pos, content_protection->cp_type_value_len);
+        pos += 2;
+        (void)memcpy(event + pos, content_protection->cp_type_value, content_protection->cp_type_value_len);
+        pos += content_protection->cp_type_value_len;
+    } else {
+        little_endian_store_16(event, pos, 0);
+        pos += 2;
     }
+    event[1] = pos - 2;
     avdtp_emit_sink_and_source(event, pos);
 }
 
@@ -1232,7 +1242,7 @@ static void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_en
     uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 13];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = sizeof(event) - 2;
+    pos++;  // set later
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
@@ -1244,11 +1254,11 @@ static void avdtp_signaling_emit_media_codec_other_configuration(avdtp_stream_en
     pos += 2;
     little_endian_store_16(event, pos, media_codec->media_codec_information_len);
     pos += 2;
-
-    int media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec->media_codec_information_len);
+    uint16_t media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec->media_codec_information_len);
     (void)memcpy(event + pos, media_codec->media_codec_information, media_codec_len);
-
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    pos += media_codec_len;
+    event[1] = pos - 2;
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay) {
@@ -1262,7 +1272,7 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     event[pos++] = local_seid;
     little_endian_store_16(event, pos, delay);
     pos += 2;
-    avdtp_emit_source(event, sizeof(event));
+    avdtp_emit_source(event, pos);
 }
 
 void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
@@ -1316,7 +1326,7 @@ void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream
     event[pos++] = status;
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t local_seid) {
@@ -1330,7 +1340,7 @@ void avdtp_streaming_emit_connection_released(avdtp_stream_endpoint_t *stream_en
     event[pos++] = local_seid;
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *stream_endpoint, uint16_t sequence_number) {
@@ -1344,9 +1354,10 @@ void avdtp_streaming_emit_can_send_media_packet_now(avdtp_stream_endpoint_t *str
     event[pos++] = avdtp_local_seid(stream_endpoint);
     little_endian_store_16(event, pos, sequence_number);
     pos += 2;
+    event[1] = pos - 2;
 
     btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
-    (*packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t *connection) {

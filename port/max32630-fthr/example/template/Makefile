@@ -157,6 +157,7 @@ COMMON = \
     hci.o                     \
     hci_cmd.o                 \
     hci_dump.o                \
+    hci_dump_embedded_stdout.o    \
     btstack_uart_block_embedded.o \
     hal_flash_bank_mxc.o      \
     btstack_audio.o           \

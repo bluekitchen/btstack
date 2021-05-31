@@ -35,16 +35,18 @@
  *
  */
 
-/*
- *  btstack_hid_parser.h
+/**
+ * @title HID Parser
  *
- *  Single-pass HID Report Parser: HID Report is directly parsed without preprocessing HID Descriptor to minimize memory
+ * Single-pass HID Report Parser: HID Report is directly parsed without preprocessing HID Descriptor to minimize memory.
+ *
  */
 
 #ifndef BTSTACK_HID_PARSER_H
 #define BTSTACK_HID_PARSER_H
 
 #include <stdint.h>
+#include "btstack_hid.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -107,18 +109,6 @@ typedef enum {
     BTSTACK_HID_PARSER_COMPLETE,
 } btstack_hid_parser_state_t;
 
-typedef enum {
-    HID_REPORT_TYPE_RESERVED = 0,
-    HID_REPORT_TYPE_INPUT,
-    HID_REPORT_TYPE_OUTPUT,
-    HID_REPORT_TYPE_FEATURE
-} hid_report_type_t;
-
-typedef enum {
-    HID_REPORT_ID_UNDECLARED,
-    HID_REPORT_ID_VALID,
-    HID_REPORT_ID_INVALID
-} hid_report_id_status_t;
 
 typedef struct {
 

@@ -36,9 +36,7 @@
  */
 
 /*
- * avrcp_target.h
- * 
- * Audio/Video Remote Control Profile
+ * @title AVRCP Target
  *
  */
 
@@ -102,7 +100,7 @@ void avrcp_target_register_set_addressed_player_handler(bool (*callback)(uint16_
  * @param company_ids_size
  * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
-uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company_ids, uint8_t * company_ids, uint8_t company_ids_size);
+uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company_ids, const uint8_t *company_ids, uint8_t company_ids_size);
 
 /**
  * @brief Send a list of Events supported by target.
@@ -113,7 +111,7 @@ uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t num_company
  * @param event_ids_size
  * @returns status ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection is not found, otherwise ERROR_CODE_SUCCESS
  */
-uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids, uint8_t * event_ids, uint8_t event_ids_size);
+uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t num_event_ids, const uint8_t *event_ids, uint8_t event_ids_size);
 
 /**
  * @brief Send a play status.
