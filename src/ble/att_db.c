@@ -1244,7 +1244,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 }
 
 // returns 1 if service found. only primary service.
-bool gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
+bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
 
@@ -1328,7 +1328,7 @@ uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uui
 }
 
 // returns 1 if service found. only primary service.
-int gatt_server_get_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
+int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
 
