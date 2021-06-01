@@ -76,7 +76,6 @@ No build server | [raspi](https://github.com/bluekitchen/btstack/tree/develop/po
 [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-daemon-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-daemon-develop)     | [daemon](https://github.com/bluekitchen/btstack/tree/develop/port/daemon) | TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/java-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/java-develop)                   | [java](https://github.com/bluekitchen/btstack/tree/develop/platform/daemon/binding/java) | Java wrapper for daemon
 [<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-mtk-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-mtk-develop)           | [mtk](https://github.com/bluekitchen/btstack/tree/develop/port/mtk) | daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
-[<img src="https://buildbot.bluekitchen-gmbh.com/btstack/badges/port-ios-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-ios-develop)           | [ios](https://github.com/bluekitchen/btstack/tree/develop/port/ios) | daemon for iOS jailbreak devices, C client-server API
 No build server | [freertos](https://github.com/bluekitchen/btstack/tree/develop/platform/freertos) | [FreeRTOS](https://www.freertos.org): Run BTstack on a dedicated thread, not thread-safe.
 
 ## Supported Chipsets
