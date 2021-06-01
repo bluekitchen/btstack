@@ -5,20 +5,45 @@ VPATH=${BTSTACK_ROOT}/src
 
 INCLUDES= \
 	-I ${BTSTACK_ROOT}/src \
-	-I ${BTSTACK_ROOT}/3rd-party/micro-ecc/ \
-	-I ${BTSTACK_ROOT}/3rd-party/md5 \
-	-I ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include/ \
-	-I ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include/ \
-	-I ${BTSTACK_ROOT}/3rd-party/yxml \
+	-I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
+	-I ${BTSTACK_ROOT}/3rd-party/rijndael \
+	-I ${BTSTACK_ROOT}/platform/embedded \
+	-I ${BTSTACK_ROOT}/platform/freertos \
 	-I .
 
-SRC_FILES=$(wildcard ${BTSTACK_ROOT}/src/*.c)
-SRC_BLE_FILES=$(wildcard ${BTSTACK_ROOT}/src/ble/*.c)
-SRC_BLE_GATT_FILES_FILES=$(wildcard ${BTSTACK_ROOT}/src/ble/gatt-service/*.c)
-SRC_CLASSIC_FILES=$(wildcard ${BTSTACK_ROOT}/src/classic/*.c)
-SRC_3RD_RIJNDAEL=${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c
-SRC_3RD_UECC=${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
-SRCS = ${SRC_FILES} ${SRC_BLE_FILES} ${SRC_BLE_GATT_SERVICE_FILES} ${SRC_CLASSIC_FILES} ${SRC_3RD_RIJNDAEL} ${SRC_3RD_UECC}
+SRCS = \
+	${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
+	${BTSTACK_ROOT}/3rd-party/rijndael/rijndael.c \
+	${BTSTACK_ROOT}/src/ad_parser.c \
+	${BTSTACK_ROOT}/src/ble/att_db.c \
+	${BTSTACK_ROOT}/src/ble/att_db_util.c \
+	${BTSTACK_ROOT}/src/ble/att_dispatch.c \
+	${BTSTACK_ROOT}/src/ble/att_server.c \
+	${BTSTACK_ROOT}/src/ble/gatt_client.c \
+	${BTSTACK_ROOT}/src/ble/gatt-service/ancs_client.c \
+	${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+	${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_client.c \
+	${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
+	${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_client.c \
+	${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
+	${BTSTACK_ROOT}/src/ble/sm.c \
+	${BTSTACK_ROOT}/src/btstack_crypto.c \
+	${BTSTACK_ROOT}/src/btstack_linked_list.c \
+	${BTSTACK_ROOT}/src/btstack_memory.c \
+	${BTSTACK_ROOT}/src/btstack_memory_pool.c \
+	${BTSTACK_ROOT}/src/btstack_run_loop.c \
+	${BTSTACK_ROOT}/src/btstack_run_loop_base.c \
+	${BTSTACK_ROOT}/src/btstack_tlv.c \
+	${BTSTACK_ROOT}/src/btstack_util.c \
+	${BTSTACK_ROOT}/src/hci.c \
+	${BTSTACK_ROOT}/src/hci_cmd.c \
+	${BTSTACK_ROOT}/src/hci_dump.c \
+	${BTSTACK_ROOT}/src/hci_transport_h4.c \
+	${BTSTACK_ROOT}/src/l2cap.c \
+	${BTSTACK_ROOT}/src/l2cap_signaling.c \
+	${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
+	${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
+	${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
 
 all: metrics.md metrics.html
 
