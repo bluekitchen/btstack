@@ -495,9 +495,11 @@ static void btstack_crypto_log_ec_publickey(const uint8_t * ec_q){
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     if (btstack_crypto_ecc_p256_key_generation_state != ECC_P256_KEY_GENERATION_ACTIVE) return 0;
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, btstack_crypto_ecc_p256_random_offset);
-    while (size) {
-        *buffer++ = btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_offset++];
-        size--;
+    uint16_t remaining_size = size;
+    uint8_t * buffer_ptr = buffer;
+    while (remaining_size) {
+        *buffer_ptr++ = btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_offset++];
+        remaining_size--;
     }
     return 1;
 }

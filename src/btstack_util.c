@@ -38,11 +38,7 @@
 #define BTSTACK_FILE__ "btstack_util.c"
 
 /*
- *  btstack_util.c
- *
  *  General utility functions
- *
- *  Created by Matthias Ringwald on 7/23/09.
  */
 
 #include "btstack_config.h"
@@ -74,58 +70,64 @@ void bd_addr_copy(bd_addr_t dest, const bd_addr_t src){
     (void)memcpy(dest, src, BD_ADDR_LEN);
 }
 
-uint16_t little_endian_read_16(const uint8_t * buffer, int pos){
-    return (uint16_t)(((uint16_t) buffer[pos]) | (((uint16_t)buffer[(pos)+1]) << 8));
+uint16_t little_endian_read_16(const uint8_t * buffer, int position){
+    return (uint16_t)(((uint16_t) buffer[position]) | (((uint16_t)buffer[position+1]) << 8));
 }
-uint32_t little_endian_read_24(const uint8_t * buffer, int pos){
-    return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16);
+uint32_t little_endian_read_24(const uint8_t * buffer, int position){
+    return ((uint32_t) buffer[position]) | (((uint32_t)buffer[position+1]) << 8) | (((uint32_t)buffer[position+2]) << 16);
 }
-uint32_t little_endian_read_32(const uint8_t * buffer, int pos){
-    return ((uint32_t) buffer[pos]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t)buffer[(pos)+2]) << 16) | (((uint32_t) buffer[(pos)+3]) << 24);
+uint32_t little_endian_read_32(const uint8_t * buffer, int position){
+    return ((uint32_t) buffer[position]) | (((uint32_t)buffer[position+1]) << 8) | (((uint32_t)buffer[position+2]) << 16) | (((uint32_t) buffer[position+3]) << 24);
 }
 
-void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
+void little_endian_store_16(uint8_t *buffer, uint16_t position, uint16_t value){
+    uint16_t pos = position;
     buffer[pos++] = (uint8_t)value;
     buffer[pos++] = (uint8_t)(value >> 8);
 }
 
-void little_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value){
+void little_endian_store_24(uint8_t *buffer, uint16_t position, uint32_t value){
+    uint16_t pos = position;
     buffer[pos++] = (uint8_t)(value);
     buffer[pos++] = (uint8_t)(value >> 8);
     buffer[pos++] = (uint8_t)(value >> 16);
 }
 
-void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+void little_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value){
+    uint16_t pos = position;
     buffer[pos++] = (uint8_t)(value);
     buffer[pos++] = (uint8_t)(value >> 8);
     buffer[pos++] = (uint8_t)(value >> 16);
     buffer[pos++] = (uint8_t)(value >> 24);
 }
 
-uint32_t big_endian_read_16( const uint8_t * buffer, int pos) {
-    return (uint16_t)(((uint16_t) buffer[(pos)+1]) | (((uint16_t)buffer[ pos   ]) << 8));
+uint32_t big_endian_read_16( const uint8_t * buffer, int position) {
+    return (uint16_t)(((uint16_t) buffer[position+1]) | (((uint16_t)buffer[position]) << 8));
 }
 
-uint32_t big_endian_read_24( const uint8_t * buffer, int pos) {
-    return ( ((uint32_t)buffer[(pos)+2]) | (((uint32_t)buffer[(pos)+1]) << 8) | (((uint32_t) buffer[pos]) << 16));
+uint32_t big_endian_read_24( const uint8_t * buffer, int position) {
+    return ( ((uint32_t)buffer[position+2]) | (((uint32_t)buffer[position+1]) << 8) | (((uint32_t) buffer[position]) << 16));
 }
 
-uint32_t big_endian_read_32( const uint8_t * buffer, int pos) {
-    return ((uint32_t) buffer[(pos)+3]) | (((uint32_t)buffer[(pos)+2]) << 8) | (((uint32_t)buffer[(pos)+1]) << 16) | (((uint32_t) buffer[pos]) << 24);
+uint32_t big_endian_read_32( const uint8_t * buffer, int position) {
+    return ((uint32_t) buffer[position+3]) | (((uint32_t)buffer[position+2]) << 8) | (((uint32_t)buffer[position+1]) << 16) | (((uint32_t) buffer[position]) << 24);
 }
 
-void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
+void big_endian_store_16(uint8_t *buffer, uint16_t position, uint16_t value){
+    uint16_t pos = position;
     buffer[pos++] = (uint8_t)(value >> 8);
     buffer[pos++] = (uint8_t)(value);
 }
 
-void big_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value){
+void big_endian_store_24(uint8_t *buffer, uint16_t position, uint32_t value){
+    uint16_t pos = position;
     buffer[pos++] = (uint8_t)(value >> 16);
     buffer[pos++] = (uint8_t)(value >> 8);
     buffer[pos++] = (uint8_t)(value);
 }
 
-void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+void big_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value){
+    uint16_t pos = position;
     buffer[pos++] = (uint8_t)(value >> 24);
     buffer[pos++] = (uint8_t)(value >> 16);
     buffer[pos++] = (uint8_t)(value >> 8);
@@ -355,31 +357,32 @@ void btstack_replace_bd_addr_placeholder(uint8_t * buffer, uint16_t size, const 
 }
 
 static int scan_hex_byte(const char * byte_string){
-    int upper_nibble = nibble_for_char(*byte_string++);
+    int upper_nibble = nibble_for_char(byte_string[0]);
     if (upper_nibble < 0) return -1;
-    int lower_nibble = nibble_for_char(*byte_string);
+    int lower_nibble = nibble_for_char(byte_string[1]);
     if (lower_nibble < 0) return -1;
     return (upper_nibble << 4) | lower_nibble;
 }
 
 int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
+    const char * the_string = addr_string;
     uint8_t buffer[BD_ADDR_LEN];
     int result = 0;
     int i;
     for (i = 0; i < BD_ADDR_LEN; i++) {
-        int single_byte = scan_hex_byte(addr_string);
+        int single_byte = scan_hex_byte(the_string);
         if (single_byte < 0) break;
-        addr_string += 2;
+        the_string += 2;
         buffer[i] = (uint8_t)single_byte;
-        // don't check seperator after last byte
+        // don't check separator after last byte
         if (i == (BD_ADDR_LEN - 1)) {
             result = 1;
             break;
         }
         // skip supported separators
-        char next_char = *addr_string;
+        char next_char = *the_string;
         if ((next_char == ':') || (next_char == '-') || (next_char == ' ')) {
-            addr_string++;
+            the_string++;
         }
     }
 
@@ -390,13 +393,13 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
 }
 
 uint32_t btstack_atoi(const char *str){
+    const char * the_string = str;
     uint32_t val = 0;
     while (true){
-        char chr = *str;
+        char chr = *the_string++;
         if (!chr || (chr < '0') || (chr > '9'))
             return val;
         val = (val * 10u) + (uint8_t)(chr - '0');
-        str++;
     }
 }
 
@@ -414,12 +417,13 @@ int string_len_for_uint32(uint32_t i){
 }
 
 int count_set_bits_uint32(uint32_t x){
-    x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
-    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-    x = (x & 0x0F0F0F0F) + ((x >> 4) & 0x0F0F0F0F);
-    x = (x & 0x00FF00FF) + ((x >> 8) & 0x00FF00FF);
-    x = (x & 0x0000FFFF) + ((x >> 16) & 0x0000FFFF);
-    return x;
+    uint32_t v = x;
+    v = (v & 0x55555555) + ((v >> 1)  & 0x55555555U);
+    v = (v & 0x33333333) + ((v >> 2)  & 0x33333333U);
+    v = (v & 0x0F0F0F0F) + ((v >> 4)  & 0x0F0F0F0FU);
+    v = (v & 0x00FF00FF) + ((v >> 8)  & 0x00FF00FFU);
+    v = (v & 0x0000FFFF) + ((v >> 16) & 0x0000FFFFU);
+    return v;
 }
 
 /*  

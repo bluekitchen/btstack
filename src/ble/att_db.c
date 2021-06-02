@@ -202,12 +202,13 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
 void att_set_db(uint8_t const * db){
     // validate db version
     if (db == NULL) return;
-    if (*db++ != ATT_DB_VERSION){
+    if (*db != ATT_DB_VERSION){
         log_error("ATT DB version differs, please regenerate .h from .gatt file or update att_db_util.c");
         return;
     }
     log_info("att_set_db %p", db);
-    att_db = db;
+    // ignore db version
+    att_db = &db[1];
 }
 
 void att_set_read_callback(att_read_callback_t callback){
@@ -1157,10 +1158,8 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
                                      uint16_t value_len, 
                                      uint8_t * response_buffer){
     little_endian_store_16(response_buffer, 1, handle);
-    if (value_len > (att_connection->mtu - 3u)){
-        value_len = att_connection->mtu - 3u;
-    }
-    (void)memcpy(&response_buffer[3], value, value_len);
+    uint16_t bytes_to_copy = btstack_min(value_len, att_connection->mtu - 3u);
+    (void)memcpy(&response_buffer[3], value, bytes_to_copy);
     return value_len + 3u;
 }
 

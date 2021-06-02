@@ -363,13 +363,13 @@ static int hci_transport_h4_can_send_now(uint8_t packet_type){
 static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 
     // store packet type before actual data and increase size
-    size++;
-    packet--;
-    *packet = packet_type;
+    uint8_t * buffer = &packet[-1];
+    uint32_t  buffer_size = size + 1;
+    buffer[0] = packet_type;
 
 #ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
     if ((baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED)
-    && (memcmp(packet, baud_rate_command_prefix, sizeof(baud_rate_command_prefix)) == 0)) {
+    && (memcmp(buffer, baud_rate_command_prefix, sizeof(baud_rate_command_prefix)) == 0)) {
         log_info("Baud rate command detected, expect command complete event next");
         baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_BAUDRATE_COMMAND_SENT;
     }
@@ -377,8 +377,8 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
 
 #ifdef ENABLE_EHCILL
     // store request for later
-    ehcill_tx_len   = size;
-    ehcill_tx_data  = packet;
+    ehcill_tx_len   = buffer_size;
+    ehcill_tx_data  = buffer;
     switch (ehcill_state){
         case EHCILL_STATE_SLEEP:
             hci_transport_h4_ehcill_trigger_wakeup();
@@ -393,7 +393,7 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
 
     // start sending
     tx_state = TX_W4_PACKET_SENT;
-    btstack_uart->send_block(packet, size);
+    btstack_uart->send_block(buffer, buffer_size);
     return 0;
 }
 
