@@ -267,7 +267,7 @@ static uint8_t att_read_by_type_or_group_request_for_uuid16(uint16_t request_typ
 }
 
 // precondition: can_send_packet_now == TRUE
-static uint8_t att_read_by_type_or_group_request_for_uuid128(uint16_t request_type, uint8_t * uuid128, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
+static uint8_t att_read_by_type_or_group_request_for_uuid128(uint16_t request_type, const uint8_t * uuid128, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
@@ -547,7 +547,7 @@ static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_st
     emit_event_new(gatt_client->callback, packet, sizeof(packet));
 }
 
-static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, uint16_t start_group_handle, uint16_t end_group_handle, const uint8_t * uuid128){
     // @format HX
     uint8_t packet[24];
     packet[0] = GATT_EVENT_SERVICE_QUERY_RESULT;
@@ -560,7 +560,7 @@ static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, ui
     emit_event_new(gatt_client->callback, packet, sizeof(packet));
 }
 
-static void emit_gatt_included_service_query_result_event(gatt_client_t * gatt_client, uint16_t include_handle, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+static void emit_gatt_included_service_query_result_event(gatt_client_t * gatt_client, uint16_t include_handle, uint16_t start_group_handle, uint16_t end_group_handle, const uint8_t * uuid128){
     // @format HX
     uint8_t packet[26];
     packet[0] = GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT;
@@ -576,7 +576,7 @@ static void emit_gatt_included_service_query_result_event(gatt_client_t * gatt_c
 }
 
 static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_client, uint16_t start_handle, uint16_t value_handle, uint16_t end_handle,
-                                                        uint16_t properties, uint8_t * uuid128){
+                                                        uint16_t properties, const uint8_t * uuid128){
     // @format HY
     uint8_t packet[28];
     packet[0] = GATT_EVENT_CHARACTERISTIC_QUERY_RESULT;
@@ -592,7 +592,7 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_cli
 }
 
 static void emit_gatt_all_characteristic_descriptors_result_event(
-        gatt_client_t * gatt_client, uint16_t descriptor_handle, uint8_t * uuid128){
+        gatt_client_t * gatt_client, uint16_t descriptor_handle, const uint8_t * uuid128){
     // @format HZ
     uint8_t packet[22];
     packet[0] = GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
@@ -697,7 +697,7 @@ static void report_gatt_included_service_uuid16(gatt_client_t * gatt_client, uin
                                                   gatt_client->query_end_handle, normalized_uuid128);
 }
 
-static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, uint16_t include_handle, uint8_t *uuid128){
+static void report_gatt_included_service_uuid128(gatt_client_t * gatt_client, uint16_t include_handle, const uint8_t * uuid128){
     emit_gatt_included_service_query_result_event(gatt_client, include_handle, gatt_client->query_start_handle,
                                                   gatt_client->query_end_handle, uuid128);
 }
@@ -1918,7 +1918,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
+uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
@@ -1940,7 +1940,7 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packe
     return gatt_client_discover_characteristics_for_handle_range_by_uuid16(callback, handle, service->start_group_handle, service->end_group_handle, uuid16);
 }
 
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, uint16_t handle, gatt_client_service_t *service, uint8_t * uuid128){
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, uint16_t handle, gatt_client_service_t *service, const uint8_t * uuid128){
     return gatt_client_discover_characteristics_for_handle_range_by_uuid128(callback, handle, service->start_group_handle, service->end_group_handle, uuid128);
 }
 
@@ -1991,7 +1991,7 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
+uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
