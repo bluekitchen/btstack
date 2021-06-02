@@ -3335,7 +3335,7 @@ static void sm_handle_random_result_ph2_tk(void * arg){
 
     sm_reset_tk();
     uint32_t tk;
-    if (sm_fixed_passkey_in_display_role == 0xffffffff){
+    if (sm_fixed_passkey_in_display_role == 0xffffffffU){
         // map random to 0-999999 without speding much cycles on a modulus operation
         tk = little_endian_read_32(sm_random_data,0);
         tk = tk & 0xfffff;  // 1048575
@@ -4410,7 +4410,7 @@ void sm_init(void){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
 
-    sm_fixed_passkey_in_display_role = 0xffffffff;
+    sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;
 
 #ifdef USE_CMAC_ENGINE

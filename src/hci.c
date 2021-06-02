@@ -1417,10 +1417,10 @@ static void hci_initializing_run(void){
         case HCI_INIT_SET_EVENT_MASK:
             hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK;
             if (hci_le_supported()){
-                hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
+                hci_send_cmd(&hci_set_event_mask,0xFFFFFFFFU, 0x3FFFFFFFU);
             } else {
                 // Kensington Bluetooth 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
-                hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
+                hci_send_cmd(&hci_set_event_mask,0xFFFFFFFFU, 0x1FFFFFFFU);
             }
             break;
 
