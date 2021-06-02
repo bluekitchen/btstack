@@ -308,7 +308,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered  
  */
-uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t  * uuid128);
+uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t * uuid128);
 
 /** 
  * @brief Finds included services within the specified service. For each found included service, an le_service_event_t with type set to GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery. Information about included service type (primary/secondary) can be retrieved either by sending an ATT find information request for the returned start group handle (returning the handle and the UUID for primary or secondary service) or by comparing the service to the list of all primary services. 
@@ -356,7 +356,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t  * uuid128);
+uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
 
 /** 
  * @brief The following four functions are used to discover all characteristics within the specified service or handle range, and return those that match the given UUID. For each found characteristic, an le_characteristic_event_t with type set to GATT_EVENT_CHARACTERISTIC_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -380,7 +380,7 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packe
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, uint8_t  * uuid128);
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, const uint8_t * uuid128);
 
 /** 
  * @brief Discovers attribute handle and UUID of a characteristic descriptor within the specified characteristic. For each found descriptor, an le_characteristic_descriptor_event_t with type set to GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -439,7 +439,7 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128);
+uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
 
 /** 
  * @brief Reads the long characteristic value using the characteristic's value handle. The value will be returned in several blobs. For each blob, an le_characteristic_value_event_t with type set to GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT and updated value offset will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, mark the end of read.
