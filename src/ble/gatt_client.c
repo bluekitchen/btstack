@@ -511,8 +511,8 @@ static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, 
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
-void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
-    notification->callback = packet_handler;
+void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    notification->callback = callback;
     notification->con_handle = con_handle;
     if (characteristic == NULL){
         notification->attribute_handle = GATT_CLIENT_ANY_VALUE_HANDLE;
@@ -2187,8 +2187,8 @@ uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btst
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * value){
-    return gatt_client_write_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, length, value);
+uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value){
+    return gatt_client_write_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, value_length, value);
 }
 
 uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t value_length, uint8_t * value){

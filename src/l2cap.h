@@ -635,7 +635,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
  * @param local_cid             L2CAP LE Data Channel Identifier
  * @param credits               Number additional credits for peer
  */
-uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits);
+uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
 
 /**
  * @brief Check if packet can be scheduled for transmission

@@ -302,9 +302,9 @@ void log_info_key(const char * name, sm_key_t key){
 const uint8_t bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
     0x80, 0x00, /* - */ 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 
-void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t shortUUID){
+void uuid_add_bluetooth_prefix(uint8_t * uuid128, uint32_t short_uuid){
     (void)memcpy(uuid128, bluetooth_base_uuid, 16);
-    big_endian_store_32(uuid128, 0, shortUUID);
+    big_endian_store_32(uuid128, 0, short_uuid);
 }
 
 int uuid_has_bluetooth_prefix(const uint8_t * uuid128){

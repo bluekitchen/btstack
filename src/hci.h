@@ -1122,7 +1122,7 @@ void hci_set_inquiry_mode(inquiry_mode_t inquriy_mode);
  * @param power_mode
  * @return 0 if success, otherwise error
  */
-int  hci_power_control(HCI_POWER_MODE mode);
+int  hci_power_control(HCI_POWER_MODE power_mode);
 
 /**
  * @brief Shutdown HCI

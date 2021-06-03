@@ -129,7 +129,7 @@ typedef enum {
 
 // UART Driver + Config
 static const btstack_uart_t * btstack_uart;
-static btstack_uart_config_t uart_config;
+static btstack_uart_config_t hci_transport_h4_uart_config;
 
 // write state
 static TX_STATE tx_state;         
@@ -410,17 +410,17 @@ static void hci_transport_h4_init(const void * transport_config){
 
     // extract UART config from transport config
     hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
-    uart_config.baudrate    = hci_transport_config_uart->baudrate_init;
-    uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
-    uart_config.parity      = hci_transport_config_uart->parity;
-    uart_config.device_name = hci_transport_config_uart->device_name;
+    hci_transport_h4_uart_config.baudrate    = hci_transport_config_uart->baudrate_init;
+    hci_transport_h4_uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
+    hci_transport_h4_uart_config.parity      = hci_transport_config_uart->parity;
+    hci_transport_h4_uart_config.device_name = hci_transport_config_uart->device_name;
 
     // set state to off
     tx_state = TX_OFF;
     h4_state = H4_OFF;
 
     // setup UART driver
-    btstack_uart->init(&uart_config);
+    btstack_uart->init(&hci_transport_h4_uart_config);
     btstack_uart->set_block_received(&hci_transport_h4_block_read);
     btstack_uart->set_block_sent(&hci_transport_h4_block_sent);
 }
