@@ -68,46 +68,46 @@ void btstack_run_loop_base_init(void){
     btstack_run_loop_base_data_sources = NULL;
 }
 
-void btstack_run_loop_base_add_data_source(btstack_data_source_t *ds){
-    btstack_linked_list_add(&btstack_run_loop_base_data_sources, (btstack_linked_item_t *) ds);
+void btstack_run_loop_base_add_data_source(btstack_data_source_t * data_source){
+    btstack_linked_list_add(&btstack_run_loop_base_data_sources, (btstack_linked_item_t *) data_source);
 }
 
-bool btstack_run_loop_base_remove_data_source(btstack_data_source_t *ds){
-    return btstack_linked_list_remove(&btstack_run_loop_base_data_sources, (btstack_linked_item_t *) ds);
+bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_source){
+    return btstack_linked_list_remove(&btstack_run_loop_base_data_sources, (btstack_linked_item_t *) data_source);
 }
 
-void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
-    ds->flags |= callback_types;
+void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callback_types){
+    data_source->flags |= callback_types;
 }
 
-void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * ds, uint16_t callback_types){
-    ds->flags &= ~callback_types;
+void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callback_types){
+    data_source->flags &= ~callback_types;
 }
 
-bool btstack_run_loop_base_remove_timer(btstack_timer_source_t *ts){
-    return btstack_linked_list_remove(&btstack_run_loop_base_timers, (btstack_linked_item_t *) ts);
+bool btstack_run_loop_base_remove_timer(btstack_timer_source_t * timer){
+    return btstack_linked_list_remove(&btstack_run_loop_base_timers, (btstack_linked_item_t *) timer);
 }
 
-void btstack_run_loop_base_add_timer(btstack_timer_source_t *ts){
+void btstack_run_loop_base_add_timer(btstack_timer_source_t * timer){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &btstack_run_loop_base_timers; it->next ; it = it->next){
         btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
-        btstack_assert(next != ts);
-        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        btstack_assert(next != timer);
+        int32_t delta = btstack_time_delta(timer->timeout, next->timeout);
         if (delta < 0) break;
     }
-    ts->item.next = it->next;
-    it->next = (btstack_linked_item_t *) ts;
+    timer->item.next = it->next;
+    it->next = (btstack_linked_item_t *) timer;
 }
 
 void btstack_run_loop_base_process_timers(uint32_t now){
     // process timers, exit when timeout is in the future
     while (btstack_run_loop_base_timers) {
-        btstack_timer_source_t * ts = (btstack_timer_source_t *) btstack_run_loop_base_timers;
-        int32_t delta = btstack_time_delta(ts->timeout, now);
+        btstack_timer_source_t * timer = (btstack_timer_source_t *) btstack_run_loop_base_timers;
+        int32_t delta = btstack_time_delta(timer->timeout, now);
         if (delta > 0) break;
-        btstack_run_loop_base_remove_timer(ts);
-        ts->process(ts);
+        btstack_run_loop_base_remove_timer(timer);
+        timer->process(timer);
     }
 }
 
@@ -116,8 +116,8 @@ void btstack_run_loop_base_dump_timer(void){
     btstack_linked_item_t *it;
     uint16_t i = 0;
     for (it = (btstack_linked_item_t *) btstack_run_loop_base_timers; it ; it = it->next){
-        btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, ts, ts->timeout);
+        btstack_timer_source_t * timer = (btstack_timer_source_t*) it;
+        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, timer, timer->timeout);
     }
 #endif
 
@@ -128,8 +128,8 @@ void btstack_run_loop_base_dump_timer(void){
  */
 int32_t btstack_run_loop_base_get_time_until_timeout(uint32_t now){
     if (btstack_run_loop_base_timers == NULL) return -1;
-    btstack_timer_source_t * ts = (btstack_timer_source_t *) btstack_run_loop_base_timers;
-    uint32_t list_timeout  = ts->timeout;
+    btstack_timer_source_t * timer = (btstack_timer_source_t *) btstack_run_loop_base_timers;
+    uint32_t list_timeout  = timer->timeout;
     int32_t delta = btstack_time_delta(list_timeout, now);
     if (delta < 0){
         delta = 0;
@@ -155,96 +155,96 @@ void btstack_run_loop_base_poll_data_sources(void){
 
 // main implementation
 
-void btstack_run_loop_set_timer_handler(btstack_timer_source_t *ts, void (*process)(btstack_timer_source_t *_ts)){
-    ts->process = process;
+void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*process)(btstack_timer_source_t * _timer)){
+    timer->process = process;
 };
 
-void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, void (*process)(btstack_data_source_t *_ds,  btstack_data_source_callback_type_t callback_type)){
-    ds->process = process;
+void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t *_data_source,  btstack_data_source_callback_type_t callback_type)){
+    data_source->process = process;
 };
 
-void btstack_run_loop_set_data_source_fd(btstack_data_source_t *ds, int fd){
-    ds->source.fd = fd;
+void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, int fd){
+    data_source->source.fd = fd;
 }
 
-int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds){
-    return ds->source.fd;
+int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source){
+    return data_source->source.fd;
 }
 
-void btstack_run_loop_set_data_source_handle(btstack_data_source_t *ds, void * handle){
-    ds->source.handle = handle;
+void btstack_run_loop_set_data_source_handle(btstack_data_source_t * data_source, void * handle){
+    data_source->source.handle = handle;
 }
 
-void * btstack_run_loop_get_data_source_handle(btstack_data_source_t *ds){
-    return ds->source.handle;
+void * btstack_run_loop_get_data_source_handle(btstack_data_source_t * data_source){
+    return data_source->source.handle;
 }
 
-void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
+void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks){
     btstack_assert(the_run_loop != NULL);
     btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
-    the_run_loop->enable_data_source_callbacks(ds, callbacks);
+    the_run_loop->enable_data_source_callbacks(data_source, callbacks);
 }
 
-void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
+void btstack_run_loop_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks){
     btstack_assert(the_run_loop != NULL);
     btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
-    the_run_loop->disable_data_source_callbacks(ds, callbacks);
+    the_run_loop->disable_data_source_callbacks(data_source, callbacks);
 }
 
 /**
  * Add data_source to run_loop
  */
-void btstack_run_loop_add_data_source(btstack_data_source_t *ds){
+void btstack_run_loop_add_data_source(btstack_data_source_t * data_source){
     btstack_assert(the_run_loop != NULL);
     btstack_assert(the_run_loop->enable_data_source_callbacks != NULL);
-    btstack_assert(ds->process != NULL);
-    the_run_loop->add_data_source(ds);
+    btstack_assert(data_source->process != NULL);
+    the_run_loop->add_data_source(data_source);
 }
 
 /**
  * Remove data_source from run loop
  */
-int btstack_run_loop_remove_data_source(btstack_data_source_t *ds){
+int btstack_run_loop_remove_data_source(btstack_data_source_t * data_source){
     btstack_assert(the_run_loop != NULL);
     btstack_assert(the_run_loop->disable_data_source_callbacks != NULL);
-    btstack_assert(ds->process != NULL);
-    return the_run_loop->remove_data_source(ds);
+    btstack_assert(data_source->process != NULL);
+    return the_run_loop->remove_data_source(data_source);
 }
 
-void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
+void btstack_run_loop_set_timer(btstack_timer_source_t * timer, uint32_t timeout_in_ms){
     btstack_assert(the_run_loop != NULL);
-    the_run_loop->set_timer(a, timeout_in_ms);
+    the_run_loop->set_timer(timer, timeout_in_ms);
 }
 
 /**
  * @brief Set context for this timer
  */
-void btstack_run_loop_set_timer_context(btstack_timer_source_t *ts, void * context){
-    ts->context = context;
+void btstack_run_loop_set_timer_context(btstack_timer_source_t * timer, void * context){
+    timer->context = context;
 }
 
 /**
  * @brief Get context for this timer
  */
-void * btstack_run_loop_get_timer_context(btstack_timer_source_t *ts){
-    return ts->context;
+void * btstack_run_loop_get_timer_context(btstack_timer_source_t * timer){
+    return timer->context;
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void btstack_run_loop_add_timer(btstack_timer_source_t *ts){
+void btstack_run_loop_add_timer(btstack_timer_source_t * timer){
     btstack_assert(the_run_loop != NULL);
-    btstack_assert(ts->process != NULL);
-    the_run_loop->add_timer(ts);
+    btstack_assert(timer->process != NULL);
+    the_run_loop->add_timer(timer);
 }
 
 /**
  * Remove timer from run loop
  */
-int btstack_run_loop_remove_timer(btstack_timer_source_t *ts){
+int btstack_run_loop_remove_timer(btstack_timer_source_t * timer){
     btstack_assert(the_run_loop != NULL);
-    return the_run_loop->remove_timer(ts);
+    return the_run_loop->remove_timer(timer);
 }
 
 /**

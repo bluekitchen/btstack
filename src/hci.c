@@ -4990,7 +4990,7 @@ void gap_secure_connections_enable(bool enable){
 #endif
 
 // va_list part of hci_send_cmd
-int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
+int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr){
     if (!hci_can_send_command_packet_now()){ 
         log_error("hci_send_cmd called but cannot send packet now");
         return 0;
@@ -5017,7 +5017,7 @@ int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
 /**
  * pre: numcmds >= 0 - it's allowed to send a command to the controller
  */
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
+int hci_send_cmd(const hci_cmd_t * cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
     int res = hci_send_cmd_va_arg(cmd, argptr);
@@ -5810,8 +5810,8 @@ uint8_t gap_request_role(const bd_addr_t addr, hci_role_t role){
 
 #ifdef ENABLE_BLE
 
-uint8_t gap_le_set_phy(hci_con_handle_t connection_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options){
-    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
     if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
     conn->le_phy_update_all_phys    = all_phys;
@@ -6004,8 +6004,8 @@ uint8_t gap_auto_connection_stop_all(void){
     return ERROR_CODE_SUCCESS;
 }
 
-uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle){
-    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+uint16_t gap_le_connection_interval(hci_con_handle_t con_handle){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
     if (!conn) return 0;
     return conn->le_connection_interval;
 }
@@ -6219,8 +6219,8 @@ void gap_ssp_generate_oob_data(void){
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
  * @param inquiry_mode see bluetooth_defines.h
  */
-void hci_set_inquiry_mode(inquiry_mode_t mode){
-    hci_stack->inquiry_mode = mode;
+void hci_set_inquiry_mode(inquiry_mode_t inquiry_mode){
+    hci_stack->inquiry_mode = inquiry_mode;
 }
 
 /** 

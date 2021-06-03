@@ -46,9 +46,9 @@ copyright = """/*
 hfile_header_begin = """
 
 /*
- *  btstack_memory.h
+ * btstack_memory.h
  *
- *  @brief BTstack memory management via configurable memory pools
+ * @brief BTstack memory management using configurable memory pools
  *
  */
 

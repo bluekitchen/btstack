@@ -89,7 +89,7 @@ typedef struct att_iterator {
 
 static void att_persistent_ccc_cache(att_iterator_t * it);
 
-static uint8_t const * att_db = NULL;
+static uint8_t const * att_database = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
 static int      att_prepare_write_error_code   = 0;
@@ -100,7 +100,7 @@ static uint16_t att_persistent_ccc_handle;
 static uint16_t att_persistent_ccc_uuid16;
 
 static void att_iterator_init(att_iterator_t *it){
-    it->att_ptr = att_db;
+    it->att_ptr = att_database;
 }
 
 static bool att_iterator_has_next(att_iterator_t *it){
@@ -208,7 +208,7 @@ void att_set_db(uint8_t const * db){
     }
     log_info("att_set_db %p", db);
     // ignore db version
-    att_db = &db[1];
+    att_database = &db[1];
 }
 
 void att_set_read_callback(att_read_callback_t callback){
@@ -223,7 +223,7 @@ void att_dump_attributes(void){
     att_iterator_t it;
     att_iterator_init(&it);
     uint8_t uuid128[16];
-    log_info("att_dump_attributes, table %p", att_db);
+    log_info("att_dump_attributes, table %p", att_database);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle == 0u) {
@@ -1165,24 +1165,24 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
 
 // MARK: ATT_HANDLE_VALUE_NOTIFICATION 0x1b
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
-                                               uint16_t handle,
+                                               uint16_t attribute_handle,
                                                const uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer){
 
     response_buffer[0] = ATT_HANDLE_VALUE_NOTIFICATION;
-    return prepare_handle_value(att_connection, handle, value, value_len, response_buffer);
+    return prepare_handle_value(att_connection, attribute_handle, value, value_len, response_buffer);
 }
 
 // MARK: ATT_HANDLE_VALUE_INDICATION 0x1d
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
-                                             uint16_t handle,
+                                             uint16_t attribute_handle,
                                              const uint8_t *value,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer){
 
     response_buffer[0] = ATT_HANDLE_VALUE_INDICATION;
-    return prepare_handle_value(att_connection, handle, value, value_len, response_buffer);
+    return prepare_handle_value(att_connection, attribute_handle, value, value_len, response_buffer);
 }
     
 // MARK: Dispatcher
@@ -1522,7 +1522,7 @@ static uint8_t btp_permissions_for_flags(uint16_t flags){
 }
 
 uint16_t btp_att_get_attributes_by_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, uint8_t * response_buffer, uint16_t response_buffer_size){
-    log_info("btp_att_get_attributes_by_uuid16 %04x from 0x%04x to 0x%04x, db %p", uuid16, start_handle, end_handle, att_db);
+    log_info("btp_att_get_attributes_by_uuid16 %04x from 0x%04x to 0x%04x, db %p", uuid16, start_handle, end_handle, att_database);
     att_dump_attributes();
 
     uint8_t num_attributes = 0;

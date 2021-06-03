@@ -557,20 +557,20 @@ uint8_t gap_connect_cancel(void);
 /**
  * @brief Auto Connection Establishment - Start Connecting to device
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
- * @param address_typ
+ * @param address_type
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_start(bd_addr_type_t address_typ, const bd_addr_t address);
+uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop Connecting to device
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
- * @param address_typ
+ * @param address_type
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_stop(bd_addr_type_t address_typ, const bd_addr_t address);
+uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop everything
@@ -592,9 +592,10 @@ uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx
 
 /**
  * @brief Get connection interval
+ * @param con_handle
  * @return connection interval, otherwise 0 if error 
  */
-uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle);
+uint16_t gap_le_connection_interval(hci_con_handle_t con_handle);
 
 /**
  *

@@ -1813,13 +1813,13 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     }
 }
 
-uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message){
+uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t message_len, uint8_t * message){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     gatt_client->callback = callback;
-    gatt_client->attribute_handle = handle;
+    gatt_client->attribute_handle = value_handle;
     gatt_client->attribute_length = message_len;
     gatt_client->attribute_value = message;
     gatt_client->gatt_client_state = P_W4_IDENTITY_RESOLVING;
@@ -1873,7 +1873,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t *service){
+uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
@@ -1888,7 +1888,7 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t *service){
+uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
@@ -1936,15 +1936,15 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack
 }
 
 
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, uint16_t handle, gatt_client_service_t *service, uint16_t  uuid16){
-    return gatt_client_discover_characteristics_for_handle_range_by_uuid16(callback, handle, service->start_group_handle, service->end_group_handle, uuid16);
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, uint16_t uuid16){
+    return gatt_client_discover_characteristics_for_handle_range_by_uuid16(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid16);
 }
 
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, uint16_t handle, gatt_client_service_t *service, const uint8_t * uuid128){
-    return gatt_client_discover_characteristics_for_handle_range_by_uuid128(callback, handle, service->start_group_handle, service->end_group_handle, uuid128);
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, const uint8_t * uuid128){
+    return gatt_client_discover_characteristics_for_handle_range_by_uuid128(callback, con_handle, service->start_group_handle, service->end_group_handle, uuid128);
 }
 
-uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t *characteristic){
+uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
@@ -2009,29 +2009,29 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_hand
 }
 
 
-uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, uint16_t handle, gatt_client_characteristic_t *characteristic){
-    return gatt_client_read_value_of_characteristic_using_value_handle(callback, handle, characteristic->value_handle);
+uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    return gatt_client_read_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
-uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t offset){
+uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     gatt_client->callback = callback;
-    gatt_client->attribute_handle = characteristic_value_handle;
+    gatt_client->attribute_handle = value_handle;
     gatt_client->attribute_offset = offset;
     gatt_client->gatt_client_state = P_W2_SEND_READ_BLOB_QUERY;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle){
-    return gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(callback, con_handle, characteristic_value_handle, 0);
+uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle){
+    return gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(callback, con_handle, value_handle, 0);
 }
 
-uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, uint16_t handle, gatt_client_characteristic_t *characteristic){
-    return gatt_client_read_long_value_of_characteristic_using_value_handle(callback, handle, characteristic->value_handle);
+uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    return gatt_client_read_long_value_of_characteristic_using_value_handle(callback, con_handle, characteristic->value_handle);
 }
 
 uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
@@ -2057,7 +2057,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
     return att_write_request(ATT_WRITE_COMMAND, gatt_client->con_handle, value_handle, value_length, value);
 }
 
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * data){
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
@@ -2065,13 +2065,13 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
     gatt_client->callback = callback;
     gatt_client->attribute_handle = value_handle;
     gatt_client->attribute_length = value_length;
-    gatt_client->attribute_value = data;
+    gatt_client->attribute_value = value;
     gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t  * data){
+uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
@@ -2080,7 +2080,7 @@ uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packe
     gatt_client->attribute_handle = value_handle;
     gatt_client->attribute_length = value_length;
     gatt_client->attribute_offset = offset;
-    gatt_client->attribute_value = data;
+    gatt_client->attribute_value = value;
     gatt_client->gatt_client_state = P_W2_PREPARE_WRITE;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
@@ -2172,16 +2172,16 @@ uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t
     return gatt_client_read_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle);
 }
 
-uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t  * data){
+uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
-    gatt_client->attribute_length = length;
+    gatt_client->attribute_length = value_length;
     gatt_client->attribute_offset = 0;
-    gatt_client->attribute_value = data;
+    gatt_client->attribute_value = value;
     gatt_client->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
@@ -2191,42 +2191,42 @@ uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t cal
     return gatt_client_write_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, length, value);
 }
 
-uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t length, uint8_t  * data){
+uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = descriptor_handle;
-    gatt_client->attribute_length = length;
+    gatt_client->attribute_length = value_length;
     gatt_client->attribute_offset = offset;
-    gatt_client->attribute_value = data;
+    gatt_client->attribute_value = value;
     gatt_client->gatt_client_state = P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t * data){
-    return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(callback, con_handle, descriptor_handle, 0, length, data );
+uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value){
+    return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(callback, con_handle, descriptor_handle, 0, value_length, value);
 }
 
-uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * value){
-    return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, length, value);
+uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value){
+    return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(callback, con_handle, descriptor->handle, value_length, value);
 }
 
 /**
  * @brief -> gatt complete event
  */
-uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data){
+uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t value_length, uint8_t * value){
     gatt_client_t * gatt_client = gatt_client_provide_context_for_handle_and_start_timer(con_handle);
     if (gatt_client == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
     if (is_ready(gatt_client) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     gatt_client->callback = callback;
     gatt_client->attribute_handle = attribute_handle;
-    gatt_client->attribute_length = length;
+    gatt_client->attribute_length = value_length;
     gatt_client->attribute_offset = offset;
-    gatt_client->attribute_value = data;
+    gatt_client->attribute_value = value;
     gatt_client->gatt_client_state = P_W2_PREPARE_WRITE_SINGLE;
     gatt_client_run();
     return ERROR_CODE_SUCCESS;
@@ -2261,7 +2261,7 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
     return ERROR_CODE_SUCCESS;    
 }
 
-void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service){
+void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t * service){
     service->start_group_handle = little_endian_read_16(packet, offset);
     service->end_group_handle = little_endian_read_16(packet, offset + 2);
     reverse_128(&packet[offset + 4], service->uuid128);

@@ -3796,10 +3796,10 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 }
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
-void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, uint16_t channel_id) {
+void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
     l2cap_fixed_channel_t * channel = l2cap_fixed_channel_for_channel_id(channel_id);
     if (!channel) return;
-    channel->packet_handler = the_packet_handler;
+    channel->packet_handler = packet_handler;
 }
 
 #ifdef ENABLE_CLASSIC
@@ -4262,7 +4262,7 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
  * @param data                  data to send
  * @param size                  data size
  */
-uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
+uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -4270,7 +4270,7 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
-    if (len > channel->remote_mtu){
+    if (size > channel->remote_mtu){
         log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
@@ -4281,7 +4281,7 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
     }
 
     channel->send_sdu_buffer = data;
-    channel->send_sdu_len    = len;
+    channel->send_sdu_len    = size;
     channel->send_sdu_pos    = 0;
 
     l2cap_notify_channel_can_send();

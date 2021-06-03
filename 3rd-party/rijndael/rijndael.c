@@ -715,7 +715,7 @@ static const u32 rcon[] =
  *
  * @return the number of rounds for the given cipher key size.
  */
-int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
+int rijndaelSetupEncrypt(uint32_t *rk, const uint8_t *key, int keybits)
 {
   u32 * rk_ = rk;
 
@@ -820,7 +820,7 @@ int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
  *
  * @return the number of rounds for the given cipher key size.
  */
-int rijndaelSetupDecrypt(u32 *rk, const u8 *key, int keybits)
+int rijndaelSetupDecrypt(uint32_t *rk, const uint8_t *key, int keybits)
 {
   u32 * rk_ = rk;
   int nrounds, i, j;
@@ -865,7 +865,7 @@ int rijndaelSetupDecrypt(u32 *rk, const u8 *key, int keybits)
 }
 #endif
 
-void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16], u8 ciphertext[16])
+void rijndaelEncrypt(const uint32_t *rk, int nrounds, const uint8_t plaintext[16], uint8_t ciphertext[16])
 {
 
   const u32 * rk_ = rk;
@@ -1060,7 +1060,7 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16], u8 ciph
 }
 
 #ifdef ENABLE_RIJNDAEL_DECRYPT
-void rijndaelDecrypt(const u32 *rk, int nrounds, const u8 ciphertext[16], u8 plaintext[16])
+void rijndaelDecrypt(const uint32_t *rk, int nrounds, const uint8_t ciphertext[16], uint8_t plaintext[16])
 {
 
   const u32 * rk_ = rk;

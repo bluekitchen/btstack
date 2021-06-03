@@ -1115,10 +1115,12 @@ uint16_t hci_get_sco_voice_setting(void);
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
  * @param inquriy_mode see bluetooth_defines.h
  */
-void hci_set_inquiry_mode(inquiry_mode_t mode);
+void hci_set_inquiry_mode(inquiry_mode_t inquriy_mode);
 
 /**
  * @brief Requests the change of BTstack power mode.
+ * @param power_mode
+ * @return 0 if success, otherwise error
  */
 int  hci_power_control(HCI_POWER_MODE mode);
 
@@ -1157,7 +1159,7 @@ int hci_can_send_command_packet_now(void);
 /**
  * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
  */
-int hci_send_cmd(const hci_cmd_t *cmd, ...);
+int hci_send_cmd(const hci_cmd_t * cmd, ...);
 
 
 // Sending SCO Packets
@@ -1223,7 +1225,7 @@ void hci_set_master_slave_policy(uint8_t policy);
 /**
  * va_list version of hci_send_cmd, call hci_send_cmd_packet
  */
-int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argtr);
+int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr);
 
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c

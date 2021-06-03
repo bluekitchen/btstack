@@ -138,7 +138,7 @@ static uint8_t * ehcill_tx_data;
 static uint16_t  ehcill_tx_len;   // 0 == no outgoing packet
 #endif
 
-static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
+static void (*hci_transport_h4_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
 static  H4_STATE h4_state;
@@ -221,7 +221,7 @@ static void hci_transport_h4_packet_complete(void){
 
     // reset state machine before delivering packet to stack as it might close the transport
     hci_transport_h4_reset_statemachine();
-    packet_handler(hci_packet[0], &hci_packet[1], packet_len);
+    hci_transport_h4_packet_handler(hci_packet[0], &hci_packet[1], packet_len);
 }
 
 static void hci_transport_h4_block_read(void){
@@ -340,7 +340,7 @@ static void hci_transport_h4_block_sent(void){
             hci_transport_h4_ehcill_handle_packet_sent();
 #endif
             // notify upper stack that it can send again
-            packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
+            hci_transport_h4_packet_handler(HCI_EVENT_PACKET, (uint8_t *) &packet_sent_event[0], sizeof(packet_sent_event));
             break;
 
 #ifdef ENABLE_EHCILL        
@@ -453,7 +453,7 @@ static int hci_transport_h4_close(void){
 }
 
 static void hci_transport_h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    packet_handler = handler;
+    hci_transport_h4_packet_handler = handler;
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -478,7 +478,7 @@ static void hci_transport_h4_ehcill_emit_sleep_state(int sleep_active){
     event[0] = HCI_EVENT_TRANSPORT_SLEEP_MODE;
     event[1] = sizeof(event) - 2;
     event[2] = sleep_active;
-    packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
+    hci_transport_h4_packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));        
 }
 
 static void hci_transport_h4_ehcill_wakeup_handler(void){
