@@ -521,7 +521,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 
         default:
-            printf(" event 0x%02x\n", hci_event_packet_get_type(packet));
             break;
     }
 
