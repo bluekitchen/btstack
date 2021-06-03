@@ -46,6 +46,7 @@
 #include "btstack_config.h"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "hci_cmd.h"

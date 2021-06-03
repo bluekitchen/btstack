@@ -47,10 +47,12 @@
 
 #include "classic/btstack_link_key_db.h"
 
-#include "stdint.h"
-#include "string.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 typedef struct {
 	const char * bd_addr;

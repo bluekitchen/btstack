@@ -39,6 +39,7 @@
 
 #include "mesh/mesh_proxy.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "bluetooth_company_id.h"

@@ -49,8 +49,6 @@
 #include "btstack_defines.h"
 #include "hci_dump.h"
 
-#include <stdio.h>
-
 #ifdef __AVR__
 #include <avr/pgmspace.h>
 #endif
