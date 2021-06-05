@@ -42,7 +42,7 @@
  */
 
 #include "btstack.h"
-
+#include <stdio.h>
 
 // uncomment to test start/stop of loopback / audio driver
 // #define TEST_START_STOP_INTERVAL 5000

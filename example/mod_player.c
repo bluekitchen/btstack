@@ -44,6 +44,7 @@
 #include "btstack.h"
 #include "hxcmod.h"
 #include "mods/mod.h"
+#include <stdio.h>
 
 static modcontext mod_context;
 

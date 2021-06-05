@@ -49,6 +49,9 @@
 #include "btstack_run_loop_embedded.h"
 #include "hal_uart_dma.h"
 
+// NULL
+#include <stddef.h>
+
 // uart config
 static const btstack_uart_config_t * btstack_uart_block_configuration;
 

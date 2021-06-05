@@ -43,6 +43,7 @@
  */
 
 #include "btstack.h"
+#include <stdio.h>
 
 #define TABLE_SIZE_441HZ            100
 
