@@ -568,7 +568,6 @@ uint8_t battery_service_client_read_battery_level(uint16_t battery_service_cid, 
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (client->state != BATTERY_SERVICE_CLIENT_STATE_CONNECTED) {
-        printf("client state %d\n", client->state);
         return GATT_CLIENT_IN_WRONG_STATE;
     }
     if (service_index >= client->num_instances) {
