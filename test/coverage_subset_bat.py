@@ -7,48 +7,47 @@
 
 import sys
 
-blacklist = [
-    '/opt/local',
-    '3rd-party/yxml',
-    '3rd-party/tinydir',
-    'chipset/zephyr',
-    'platform/embedded/btstack_audio_embedded.c',
-    'platform/embedded/btstack_em9304_spi_embedded.c',
+whitelist = [
+    '3rd-party/micro-ecc/uECC.c',
+    '3rd-party/rijndael/rijndael.c',
+    'src/ad_parser.c',
+    'src/ble/att_db.c',
+    'src/ble/att_db_util.c',
+    'src/ble/att_dispatch.c',
+    'src/ble/att_server.c',
+    'src/ble/gatt_client.c',
+    'src/ble/gatt-service/ancs_client.c',
+    'src/ble/gatt-service/battery_service_server.c',
+    'src/ble/gatt-service/battery_service_client.c',
+    'src/ble/gatt-service/device_information_service_server.c',
+    'src/ble/gatt-service/device_information_service_client.c',
+    'src/ble/le_device_db_tlv.c',
+    'src/ble/sm.c',
+    'src/btstack_crypto.c',
+    'src/btstack_linked_list.c',
+    'src/btstack_memory.c',
+    'src/btstack_memory_pool.c',
+    'src/btstack_run_loop.c',
+    'src/btstack_run_loop_base.c',
+    'src/btstack_tlv.c',
+    'src/btstack_util.c',
+    'src/hci.c',
+    'src/hci_cmd.c',
+    'src/hci_dump.c',
+    'src/hci_transport_h4.c',
+    'src/l2cap.c',
+    'src/l2cap_signaling.c',
     'platform/embedded/btstack_stdin_embedded.c',
-    'platform/embedded/btstack_tlv_flash_bank.c',
+    'platform/embedded/btstack_run_loop_embedded.c',
     'platform/embedded/btstack_uart_block_embedded.c',
-    'platform/embedded/hal_flash_bank_memory.c',
-    'platform/freertos/btstack_run_loop_freertos.c',
-    'platform/freertos/btstack_uart_block_freertos.c',
-    'platform/libusb',
-    'platform/posix',
-    'port/libusb',
-    'src/ble/ancs_client.c',
-    'src/ble/le_device_db_memory.c',
-    'src/ble/gatt-service/cycling_power_service_server.c',
-    'src/ble/gatt-service/cycling_speed_and_cadence_service_server.c',
-    'src/ble/gatt-service/heart_rate_service_server.c',
-    'src/ble/gatt-service/hids_device.c',
-    'src/ble/gatt-service/nordic_spp_service_server.c',
-    'src/ble/gatt-service/ublox_spp_service_server.c',
-    'src/btstack_audio.c',
-    'src/btstack_base64_decoder.c',
-    'src/btstack_event.h',
-    'src/btstack_hid_parser.c',
-    'src/btstack_resample.c',
-    'src/btstack_slip.c',
-    'src/hci_transport_em9304_spi.c',
-    'src/hci_transport_h5.c',
-    'src/mesh/',
-    'src/classic',
 ]
 
 def include_file(filename):
-    for pattern in blacklist:
+    for pattern in whitelist:
         if pattern in filename:
-            print("Skip " + filename)
-            return False
-    return True
+            print("Add " + filename)
+            return True
+    return False
 
 if len(sys.argv) != 3:
     print ('lcov .info filter')
