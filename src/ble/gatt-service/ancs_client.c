@@ -44,7 +44,6 @@
 
 #include "ble/gatt-service/ancs_client.h"
 
-#include "ble/att_db.h"
 #include "ble/core.h"
 #include "ble/gatt_client.h"
 #include "ble/sm.h"

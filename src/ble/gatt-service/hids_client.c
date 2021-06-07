@@ -49,7 +49,6 @@
 #include "ble/gatt-service/hids_client.h"
 
 #include "btstack_memory.h"
-#include "ble/att_db.h"
 #include "ble/core.h"
 #include "ble/gatt_client.h"
 #include "bluetooth_gatt.h"

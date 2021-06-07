@@ -49,10 +49,8 @@
 #include "scan_parameters_service_client.h"
 
 #include "btstack_memory.h"
-#include "ble/att_db.h"
 #include "ble/core.h"
 #include "ble/gatt_client.h"
-#include "ble/sm.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
