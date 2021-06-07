@@ -12,8 +12,10 @@ SUBDIRS =  \
 	btstack_memory \
 	crypto \
 	des_iterator \
+	embedded \
 	flash_tlv \
 	gap \
+	gatt-service-client \
 	gatt_client \
 	gatt_server \
 	gatt_service \
@@ -30,7 +32,6 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 	tlv_posix \
-	embedded \
 
 # not testing anything in source tree
 #	maths \
@@ -50,15 +51,16 @@ SUBDIRS_BLE = \
 	crypto \
 	embedded \
 	gap \
+	gatt-service-client \
 	gatt_client \
+	gatt_server \
 	gatt_server \
 	gatt_service \
 	hid_parser \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
-    gatt_server \
-    security_manager \
+	security_manager \
 
 # test fails
 
