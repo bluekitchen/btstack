@@ -50,7 +50,7 @@ void mock_gatt_client_reset(void);
 void mock_gatt_client_add_primary_service(uint16_t service_uuid);
 void mock_gatt_client_add_characteristic(uint16_t characteristic_uuid);
 void mock_gatt_client_add_characteristic_descriptor(uint16_t descriptor_uuid);
-
+void mock_gatt_client_run(void);
 
 #if defined __cplusplus
 }
