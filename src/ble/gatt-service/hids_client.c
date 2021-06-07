@@ -1180,13 +1180,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (att_status != ATT_ERROR_SUCCESS){
                         hids_emit_connection_established(client, att_status);  
                         hids_finalize_client(client);
-                        break;  
+                        return;  
                     }
 
                     if (client->num_instances == 0){
                         hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
                         hids_finalize_client(client);
-                        break;   
+                        return;   
                     }
 
                     client->service_index = 0;
@@ -1197,7 +1197,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (att_status != ATT_ERROR_SUCCESS){
                         hids_emit_connection_established(client, att_status);  
                         hids_finalize_client(client);
-                        break;  
+                        return;  
                     }
                     
                     if ((client->service_index + 1) < client->num_instances){
@@ -1237,7 +1237,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (att_status != ATT_ERROR_SUCCESS){
                         hids_emit_connection_established(client, att_status);  
                         hids_finalize_client(client);
-                        break;  
+                        return;  
                     }
                     client->state = HIDS_CLIENT_STATE_W2_REPORT_MAP_DISCOVER_CHARACTERISTIC_DESCRIPTORS;
                     break;
@@ -1262,7 +1262,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                     hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
                     hids_finalize_client(client);
-                    break;
+                    return;
 
                 case HIDS_CLIENT_STATE_W4_REPORT_MAP_EXTERNAL_REPORT_REFERENCE_UUID:
                     // go for next map report
@@ -1283,7 +1283,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
                     hids_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
                     hids_finalize_client(client);
-                    break;
+                    return;
 
                 case HIDS_CLIENT_STATE_W4_REPORT_FOUND:
                     if (client->handle != 0){

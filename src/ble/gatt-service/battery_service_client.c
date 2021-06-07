@@ -302,7 +302,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             if (client->state != BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT) {
                 battery_service_emit_connection_established(client, GATT_CLIENT_IN_WRONG_STATE);  
                 battery_service_finalize_client(client);       
-                break;
+                return;
             }
 
             if (client->num_instances < MAX_NUM_BATTERY_SERVICES){
@@ -416,13 +416,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (status != ATT_ERROR_SUCCESS){
                         battery_service_emit_connection_established(client, status);  
                         battery_service_finalize_client(client);
-                        break;  
+                        return;  
                     }
 
                     if (client->num_instances == 0){
                         battery_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
                         battery_service_finalize_client(client);
-                        break;   
+                        return;   
                     }
 
                     if (client->num_instances > MAX_NUM_BATTERY_SERVICES) {
@@ -438,7 +438,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (status != ATT_ERROR_SUCCESS){
                         battery_service_emit_connection_established(client, status);  
                         battery_service_finalize_client(client);
-                        break;  
+                        return; 
                     }
 
                     // check if there is another service to query

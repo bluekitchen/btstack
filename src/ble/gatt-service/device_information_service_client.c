@@ -339,7 +339,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             if (client->state != DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT) {
                 device_information_service_emit_query_done(client, GATT_CLIENT_IN_WRONG_STATE);  
                 device_information_service_finalize_client(client);      
-                break;
+                return;
             }
 
             gatt_event_service_query_result_get_service(packet, &service);
@@ -388,13 +388,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (att_status != ATT_ERROR_SUCCESS){
                         device_information_service_emit_query_done(client, att_status);  
                         device_information_service_finalize_client(client);
-                        break;  
+                        return;  
                     }
 
                     if (client->num_instances != 1){
                         device_information_service_emit_query_done(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
                         device_information_service_finalize_client(client);
-                        break;   
+                        return;   
                     }
                     client->characteristic_index = 0;
 #ifdef ENABLE_TESTING_SUPPORT   
@@ -434,7 +434,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     // we are done with quering all characteristics
                     device_information_service_emit_query_done(client, ERROR_CODE_SUCCESS);
                     device_information_service_finalize_client(client);  
-                    break;
+                    return;
 
                 default:
                     break;

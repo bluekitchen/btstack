@@ -254,7 +254,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             if (client->state != SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT) {
                 scan_parameters_service_emit_connection_established(client, GATT_CLIENT_IN_WRONG_STATE);  
                 scan_parameters_service_finalize_client(client);      
-                break;
+                return;
             }
 
             gatt_event_service_query_result_get_service(packet, &service);
@@ -332,7 +332,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (att_status != ATT_ERROR_SUCCESS){
                         scan_parameters_service_emit_connection_established(client, att_status);  
                         scan_parameters_service_finalize_client(client);      
-                        break;  
+                        return;  
                     }
                     
                     if (client->start_handle != 0){
@@ -342,7 +342,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     
                     scan_parameters_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
                     scan_parameters_service_finalize_client(client);
-                    break;
+                    return;
 
                 case SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_RESULT:
                     if (att_status != ATT_ERROR_SUCCESS){
@@ -353,7 +353,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     if (client->scan_interval_window_value_handle == 0){
                         scan_parameters_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);  
                         scan_parameters_service_finalize_client(client);
-                        break;   
+                        return;   
                     }
 #ifdef ENABLE_TESTING_SUPPORT
                     client->state = SCAN_PARAMETERS_SERVICE_CLIENT_STATE_W2_QUERY_CCC;
