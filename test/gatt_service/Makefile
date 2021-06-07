@@ -78,8 +78,8 @@ build-asan/device_information_service_test: build-asan/device_information_servic
 	${CC} $(filter-out build-asan/device_information_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
-	build-coverage/battery_service_test
-	build-coverage/device_information_service_test
+	build-asan/battery_service_test
+	build-asan/device_information_service_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda
