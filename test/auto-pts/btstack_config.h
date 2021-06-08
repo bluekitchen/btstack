@@ -15,7 +15,6 @@
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_BTP
-#define ENABLE_GATT_CLIENT_PAIRING
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_CHANNELS
 #define ENABLE_LE_PERIPHERAL
