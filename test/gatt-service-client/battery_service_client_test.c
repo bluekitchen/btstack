@@ -73,12 +73,23 @@ TEST_GROUP(BATTERY_SERVICE_CLIENT){
         battery_service_cid = 1;
         connected = false;
         poll_interval_ms = 2000;
+        
+        mock_gatt_client_reset();
         battery_service_client_init();
     }
 
-    void teardown(){
+    void setup_service(bool add_characteristics, bool add_descriptors){
+        mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+        if (!add_characteristics) return;
+
+        mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+        
+        if (!add_descriptors) return;
+        mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+    }
+
+    void teardown(void){
         battery_service_client_deinit();
-        // mock().clear();
     }
 };
 
@@ -87,9 +98,20 @@ TEST(BATTERY_SERVICE_CLIENT, connect_no_service){
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 
     mock_gatt_client_run();
+    CHECK_EQUAL(false, connected);
+}
+
+
+TEST(BATTERY_SERVICE_CLIENT, connect_with_service){
+    setup_service(true, true);
+    
+    uint8_t status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    mock_gatt_client_run();
 
     CHECK_EQUAL(false, connected);
 }
+
 
 #if 0
 TEST(BATTERY_SERVICE_CLIENT, disconnect){
