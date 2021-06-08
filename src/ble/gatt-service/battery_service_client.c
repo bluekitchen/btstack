@@ -285,6 +285,21 @@ static void battery_service_poll_timer_start(battery_service_client_t * client){
     btstack_run_loop_add_timer(&client->poll_timer);
 }
 
+static void battery_service_client_validate_service(battery_service_client_t * client){
+    // remove all services without characteristic (array in-place)
+    uint8_t src_index  = 0;  // next entry to check
+    uint8_t dest_index = 0;  // to store entry
+    for (src_index = 0; src_index < client->num_instances; src_index++){
+        if (client->services[src_index].value_handle != 0){
+            if (src_index != dest_index) {
+                client->services[dest_index] = client->services[src_index];
+            } 
+            dest_index++;
+        }
+    }
+    client->num_instances = dest_index;
+}
+
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
     UNUSED(channel);     
@@ -446,6 +461,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         client->service_index++;
                         client->state = BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
                         break;
+                    }
+
+                    battery_service_client_validate_service(client);
+
+                    if (client->num_instances == 0){
+                        battery_service_emit_connection_established(client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE); 
+                        battery_service_finalize_client(client);
+                        return;   
                     }
 
                     // we are done with quering all services
