@@ -512,8 +512,18 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     } 
 #ifdef ENABLE_TESTING_SUPPORT
                     client->service_index = 0;
-                    client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
-#else
+
+                    for (client->service_index = 0; client->service_index < client->num_instances; client->service_index++){
+                        if (client->services[client->service_index].ccc_handle != 0) {
+                            client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
+                            break;
+                        }
+                    }
+                    if (client->service_index < client->num_instances){
+                        client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
+                        break;
+                    }
+#endif
                     client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
                     battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS);
                     
@@ -521,7 +531,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         client->need_poll_bitmap = client->poll_bitmap;
                         battery_service_poll_timer_start(client);
                     }
-#endif
                     break;
 
                 case BATTERY_SERVICE_CLIENT_STATE_CONNECTED:
