@@ -9,6 +9,7 @@ CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/test/mock
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
+# CFLAGS += -D ENABLE_TESTING_SUPPORT
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 

@@ -19,6 +19,7 @@
 #include "btstack_util.h"
 #include "bluetooth.h"
 #include "bluetooth_gatt.h"
+#include "btstack_event.h"
 
 #include "ble/gatt-service/battery_service_client.h"
 #include "mock_gatt_client.h"
@@ -61,31 +62,80 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
-    // handle GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED
-    // set flags
+
+    uint8_t status;
+    uint8_t att_status;
+
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
+        return;
+    }
+    
+    switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_CONNECTED:
+            status = gattservice_subevent_battery_service_connected_get_status(packet);
+            switch (status){
+                case ERROR_CODE_SUCCESS:
+                    printf("Battery service client connected, found %d services, poll bitmap 0x%02x\n", 
+                        gattservice_subevent_battery_service_connected_get_num_instances(packet),
+                        gattservice_subevent_battery_service_connected_get_poll_bitmap(packet));
+
+                    connected = true;
+                    break;
+                default:
+                    printf("Battery service client connection failed, err 0x%02x.\n", status);
+                    break;
+            }
+            break;
+
+        case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL:
+            att_status = gattservice_subevent_battery_service_level_get_att_status(packet);
+            if (att_status != ATT_ERROR_SUCCESS){
+                printf("Battery level read failed, ATT Error 0x%02x\n", att_status);
+            } else {
+                printf("Service index: %d, Battery level: %d\n", 
+                    gattservice_subevent_battery_service_level_get_sevice_index(packet), 
+                    gattservice_subevent_battery_service_level_get_level(packet));
+                    
+            }
+            break;
+
+        default:
+            break;
+    }
 }
 
 TEST_GROUP(BATTERY_SERVICE_CLIENT){ 
     uint16_t battery_service_cid;
     uint32_t poll_interval_ms;
-        
+    mock_gatt_client_service_t * service;
+    mock_gatt_client_characteristic_t * characteristic;
+    mock_gatt_client_characteristic_descriptor_t * descriptor;
+
+    uint8_t  value_buffer[3];
+
     void setup(void){
         battery_service_cid = 1;
         connected = false;
         poll_interval_ms = 2000;
         
+        uint16_t i;
+        for (i = 0; i < sizeof(value_buffer); i++){
+            value_buffer[i] = (i+1)*10 + i + 1;
+        }
+
         mock_gatt_client_reset();
         battery_service_client_init();
     }
 
     void setup_service(bool add_characteristics, bool add_descriptors){
-        mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+        service = mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
         if (!add_characteristics) return;
 
-        mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
+        characteristic = mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, ATT_PROPERTY_NOTIFY);
         
         if (!add_descriptors) return;
-        mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+        descriptor = mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+        // mock_gatt_client_dump_services();
     }
 
     void teardown(void){
@@ -102,18 +152,43 @@ TEST(BATTERY_SERVICE_CLIENT, connect_no_service){
 }
 
 
-TEST(BATTERY_SERVICE_CLIENT, connect_with_service){
-    setup_service(true, true);
-    
-    uint8_t status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
+TEST(BATTERY_SERVICE_CLIENT, connect_with_service_no_chr_no_desc){
+    uint8_t status;
+
+    setup_service(false, false);
+    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
     mock_gatt_client_run();
 
     CHECK_EQUAL(false, connected);
 }
 
+TEST(BATTERY_SERVICE_CLIENT, connect_with_service_and_chr_no_desc){
+    uint8_t status;
 
-#if 0
+    setup_service(true, false);
+    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    mock_gatt_client_run();
+
+    CHECK_EQUAL(true, connected);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, connect_with_service_and_chr_and_desc){
+    uint8_t status;
+
+    setup_service(true, true);
+
+    mock_gatt_client_set_characteristic_value(descriptor, value_buffer, sizeof(value_buffer));
+        
+    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    mock_gatt_client_run();
+
+    CHECK_EQUAL(true, connected);
+}
+
+
 TEST(BATTERY_SERVICE_CLIENT, disconnect){
     uint8_t status;
 
@@ -137,7 +212,7 @@ TEST(BATTERY_SERVICE_CLIENT, read_battery_level){
     status = battery_service_client_read_battery_level(battery_service_cid + 1, 0);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 }
-#endif
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

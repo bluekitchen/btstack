@@ -47,8 +47,8 @@ extern "C" {
 
 typedef struct {
     btstack_linked_item_t    item;
-    // uint16_t start_group_handle;
-    // uint16_t end_group_handle;
+    uint16_t start_group_handle;
+    uint16_t end_group_handle;
     uint16_t uuid16;
     // uint8_t  uuid128[16];
     btstack_linked_list_t characteristics;
@@ -56,30 +56,41 @@ typedef struct {
 
 typedef struct {
     btstack_linked_item_t    item;
-    // uint16_t start_handle;
+    uint16_t start_handle;
     uint16_t value_handle;
-    // uint16_t end_handle;
-    // uint16_t properties;
+    uint16_t end_handle;
+    uint16_t properties;
     uint16_t uuid16;
     // uint8_t  uuid128[16];
     btstack_linked_list_t descriptors;
+
+    uint8_t * value_buffer;
+    uint16_t  value_len;
+
+    gatt_client_notification_t * notification;
 } mock_gatt_client_characteristic_t;
 
 typedef struct {
     btstack_linked_item_t    item;
-    // uint16_t handle;
+    uint16_t handle;
     uint16_t uuid16;
     // uint8_t  uuid128[16];
+
+    uint8_t * value_buffer;
+    uint16_t  value_len;
 } mock_gatt_client_characteristic_descriptor_t;
 
 
 void mock_gatt_client_reset(void);
 
-void mock_gatt_client_add_primary_service_uuid16(uint16_t service_uuid);
-void mock_gatt_client_add_characteristic_uuid16(uint16_t characteristic_uuid);
-void mock_gatt_client_add_characteristic_descriptor_uuid16(uint16_t descriptor_uuid);
+mock_gatt_client_service_t * mock_gatt_client_add_primary_service_uuid16(uint16_t service_uuid);
+mock_gatt_client_characteristic_t * mock_gatt_client_add_characteristic_uuid16(uint16_t characteristic_uuid, uint16_t properties);
+mock_gatt_client_characteristic_descriptor_t * mock_gatt_client_add_characteristic_descriptor_uuid16(uint16_t descriptor_uuid);
+
+void mock_gatt_client_set_characteristic_value(mock_gatt_client_characteristic_descriptor_t * descriptor, uint8_t * value_buffer, uint16_t value_len);
 
 void mock_gatt_client_run(void);
+void mock_gatt_client_dump_services(void);
 
 #if defined __cplusplus
 }
