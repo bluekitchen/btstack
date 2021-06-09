@@ -479,3 +479,13 @@ uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len){
     /* Ones complement */
     return 0xFFu - crc8(data, len);
 }
+
+uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid){
+    uint16_t next_cid;
+    if (current_cid == 0xffff) {
+        next_cid = 1;
+    } else {
+        next_cid = current_cid + 1;
+    }
+    return next_cid;
+}

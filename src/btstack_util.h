@@ -279,11 +279,28 @@ int string_len_for_uint32(uint32_t i);
 int count_set_bits_uint32(uint32_t x);
 
 /**
- * CRC8 functions using ETSI TS 101 369 V6.3.0.
- * Only used by RFCOMM
+ * @brief Check CRC8 using ETSI TS 101 369 V6.3.0.
+ * @note Only used by RFCOMM
+ * @param data
+ * @param len
+ * @param check_sum
  */
 uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
+
+/**
+ * @brief Calculate CRC8 using ETSI TS 101 369 V6.3.0. 
+ * @note Only used by RFCOMM
+ * @param data
+ * @param len
+ */
 uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
+
+/**
+ * @brief Get next cid
+ * @param current_cid
+ * @return next cid skiping 0
+ */
+uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
 
 /* API_END */
 

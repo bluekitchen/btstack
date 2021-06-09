@@ -230,6 +230,12 @@ TEST_GROUP(BTstackUtil){
     }
 };
 
+TEST(BTstackUtil, btstack_next_cid_ignoring_zero){
+    CHECK_EQUAL(1, btstack_next_cid_ignoring_zero(0));
+    CHECK_EQUAL(5, btstack_next_cid_ignoring_zero(4));
+    CHECK_EQUAL(1, btstack_next_cid_ignoring_zero(0xFFFF));
+}
+
 TEST(BTstackUtil, bd_addr_cmp){
     bd_addr_t a = {0};
     bd_addr_t b = {0};
@@ -241,7 +247,6 @@ TEST(BTstackUtil, bd_addr_cmp){
 
     bd_addr_t a3 = {0xBC, 0xEC, 0x5D, 0xE6, 0x15, 0x03};
     bd_addr_t b3 = {0xCB, 0xEC, 0x5D, 0xE6, 0x15, 0x03};
-    CHECK(0 != bd_addr_cmp(a3, b3));
 }
 
 TEST(BTstackUtil, bd_addr_copy){
