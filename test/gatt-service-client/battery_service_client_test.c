@@ -26,6 +26,7 @@
 
 static const hci_con_handle_t con_handle = 0x01;
 static bool connected;
+static uint8_t num_instances = 0;
 // temp btstack run loop mock
 
 static btstack_timer_source_t * btstack_timer = NULL;
@@ -79,6 +80,7 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
                         gattservice_subevent_battery_service_connected_get_num_instances(packet),
                         gattservice_subevent_battery_service_connected_get_poll_bitmap(packet));
 
+                    num_instances = gattservice_subevent_battery_service_connected_get_num_instances(packet);
                     connected = true;
                     break;
                 default:
@@ -135,7 +137,15 @@ TEST_GROUP(BATTERY_SERVICE_CLIENT){
         
         if (!add_descriptors) return;
         descriptor = mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+        mock_gatt_client_set_characteristic_value(descriptor, value_buffer, sizeof(value_buffer));
+
         // mock_gatt_client_dump_services();
+    }
+
+    void connect(void){
+        uint8_t status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
+        CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+        mock_gatt_client_run();
     }
 
     void teardown(void){
@@ -153,51 +163,89 @@ TEST(BATTERY_SERVICE_CLIENT, connect_no_service){
 
 
 TEST(BATTERY_SERVICE_CLIENT, connect_with_service_no_chr_no_desc){
-    uint8_t status;
-
     setup_service(false, false);
-    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
-    mock_gatt_client_run();
-
+    connect();
     CHECK_EQUAL(false, connected);
 }
 
+
 TEST(BATTERY_SERVICE_CLIENT, connect_with_service_and_chr_no_desc){
-    uint8_t status;
-
     setup_service(true, false);
-    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
-    mock_gatt_client_run();
-
+    connect();
     CHECK_EQUAL(true, connected);
 }
 
 TEST(BATTERY_SERVICE_CLIENT, connect_with_service_and_chr_and_desc){
-    uint8_t status;
-
     setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+}
 
-    mock_gatt_client_set_characteristic_value(descriptor, value_buffer, sizeof(value_buffer));
-        
-    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
-    mock_gatt_client_run();
-
+TEST(BATTERY_SERVICE_CLIENT, connect_with_one_invalid_and_one_valid_service){
+    setup_service(false, false);
+    setup_service(true, true);
+    mock_gatt_client_dump_services();
+    connect();
     CHECK_EQUAL(true, connected);
 }
 
 
-TEST(BATTERY_SERVICE_CLIENT, disconnect){
+TEST(BATTERY_SERVICE_CLIENT, double_connect){
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+
+    uint8_t status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
+    CHECK_EQUAL(ERROR_CODE_COMMAND_DISALLOWED, status);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, connect_discover_primary_service_error){
+    mock_gatt_client_set_att_error_discover_primary_services();
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(false, connected);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, connect_discover_characteristics_error){
+    mock_gatt_client_set_att_error_discover_characteristics();
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(false, connected);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, connect_discover_characteristic_descriptors_error){
+    mock_gatt_client_set_att_error_discover_characteristic_descriptors();
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, connect_ignore_too_many_service){
+    uint8_t i;
+    for (i = 0; i < MAX_NUM_BATTERY_SERVICES + 2; i++){
+        setup_service(true, true);
+    }
+    setup_service(true, true);
+    connect();
+
+    CHECK_EQUAL(num_instances, MAX_NUM_BATTERY_SERVICES);
+    CHECK_EQUAL(true, connected);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, disconnect_not_connected){
     uint8_t status;
 
     status = battery_service_client_disconnect(battery_service_cid);
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
 
-    status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
-    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
-    
+TEST(BATTERY_SERVICE_CLIENT, double_disconnect){
+    uint8_t status;
+
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+
     status = battery_service_client_disconnect(battery_service_cid);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 
@@ -205,12 +253,38 @@ TEST(BATTERY_SERVICE_CLIENT, disconnect){
     CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
 }
 
-TEST(BATTERY_SERVICE_CLIENT, read_battery_level){
+
+TEST(BATTERY_SERVICE_CLIENT, read_battery_level_wrong_cid){
+    uint8_t status = battery_service_client_read_battery_level(10, 0);
+    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, read_battery_level_wrong_state){
+    // without calling mock_gatt_client_run(), state remains in BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE
     uint8_t status = battery_service_client_connect(con_handle, &gatt_client_event_handler, poll_interval_ms, &battery_service_cid);
     CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
+    CHECK_EQUAL(false, connected);
 
-    status = battery_service_client_read_battery_level(battery_service_cid + 1, 0);
-    CHECK_EQUAL(ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, status);
+    status = battery_service_client_read_battery_level(battery_service_cid, 0);
+    CHECK_EQUAL(GATT_CLIENT_IN_WRONG_STATE, status);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, read_battery_level_wrong_service_index){
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+
+    uint8_t status = battery_service_client_read_battery_level(battery_service_cid, 10);
+    CHECK_EQUAL(ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE, status);
+}
+
+TEST(BATTERY_SERVICE_CLIENT, read_battery_level){
+    setup_service(true, true);
+    connect();
+    CHECK_EQUAL(true, connected);
+
+    uint8_t status = battery_service_client_read_battery_level(battery_service_cid, 0);
+    CHECK_EQUAL(ERROR_CODE_SUCCESS, status);
 }
 
 
