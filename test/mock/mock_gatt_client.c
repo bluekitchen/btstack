@@ -32,11 +32,23 @@ static btstack_linked_list_t mock_gatt_client_services;
 static mock_gatt_client_service_t * mock_gatt_client_last_service;
 static mock_gatt_client_characteristic_t * mock_gatt_client_last_characteristic;
 
+static uint8_t moc_att_error_code_discover_services;
+static uint8_t moc_att_error_code_discover_characteristics;
+static uint8_t moc_att_error_code_discover_characteristic_descriptors;
+
+static void mock_gatt_client_reset_att_errors(void){
+    moc_att_error_code_discover_services = ATT_ERROR_SUCCESS;
+    moc_att_error_code_discover_characteristics = ATT_ERROR_SUCCESS;
+    moc_att_error_code_discover_characteristic_descriptors = ATT_ERROR_SUCCESS;
+}
+
 void mock_gatt_client_reset(void){
     mock_gatt_client_att_error = 0;
     mock_gatt_client_state = MOCK_QUERY_IDLE;
     mock_gatt_client_att_handle_generator = 0;
     mock_gatt_client_last_service = NULL;
+
+    mock_gatt_client_reset_att_errors();
 
     btstack_linked_list_iterator_t service_it;    
     btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
@@ -61,6 +73,16 @@ void mock_gatt_client_reset(void){
         }
         free(service);
     }
+}
+
+void mock_gatt_client_set_att_error_discover_primary_services(void){
+    moc_att_error_code_discover_services = ATT_ERROR_REQUEST_NOT_SUPPORTED;
+}
+void mock_gatt_client_set_att_error_discover_characteristics(void){
+    moc_att_error_code_discover_characteristics = ATT_ERROR_REQUEST_NOT_SUPPORTED;
+}
+void mock_gatt_client_set_att_error_discover_characteristic_descriptors(void){
+    moc_att_error_code_discover_characteristic_descriptors = ATT_ERROR_REQUEST_NOT_SUPPORTED;
 }
 
 void mock_gatt_client_dump_services(void){
@@ -395,6 +417,11 @@ void mock_gatt_client_run(void){
         switch (mock_gatt_client_state){
             case MOCK_QUERY_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
                 // emit GATT_EVENT_SERVICE_QUERY_RESULT for each matching service
+                if (moc_att_error_code_discover_services != ATT_ERROR_SUCCESS){
+                    mock_gatt_client_emit_complete(moc_att_error_code_discover_services);
+                    return;
+                }
+
                 btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
                 while (btstack_linked_list_iterator_has_next(&service_it)){
                     mock_gatt_client_service_t * service = (mock_gatt_client_service_t *) btstack_linked_list_iterator_next(&service_it);
@@ -409,6 +436,11 @@ void mock_gatt_client_run(void){
             
             case MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16:
                 // emit GATT_EVENT_CHARACTERISTIC_QUERY_RESULT for each matching characteristic
+                if (moc_att_error_code_discover_characteristics != ATT_ERROR_SUCCESS){
+                    mock_gatt_client_emit_complete(moc_att_error_code_discover_characteristics);
+                    return;
+                }
+
                 btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
                 while (btstack_linked_list_iterator_has_next(&service_it)){
                     mock_gatt_client_service_t * service = (mock_gatt_client_service_t *) btstack_linked_list_iterator_next(&service_it);
@@ -434,6 +466,11 @@ void mock_gatt_client_run(void){
             case MOCK_QUERY_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
                 characteristic = mock_gatt_client_get_characteristic_for_value_handle(mock_gatt_client_value_handle);
                 btstack_assert(characteristic != NULL);
+
+                if (moc_att_error_code_discover_characteristic_descriptors != ATT_ERROR_SUCCESS){
+                    mock_gatt_client_emit_complete(moc_att_error_code_discover_characteristic_descriptors);
+                    return;
+                }
 
                 btstack_linked_list_iterator_init(&descriptor_it, &characteristic->descriptors);
                 while (btstack_linked_list_iterator_has_next(&descriptor_it)){

@@ -83,6 +83,10 @@ typedef struct {
 
 void mock_gatt_client_reset(void);
 
+void mock_gatt_client_set_att_error_discover_primary_services(void);
+void mock_gatt_client_set_att_error_discover_characteristics(void);
+void mock_gatt_client_set_att_error_discover_characteristic_descriptors(void);
+
 mock_gatt_client_service_t * mock_gatt_client_add_primary_service_uuid16(uint16_t service_uuid);
 mock_gatt_client_characteristic_t * mock_gatt_client_add_characteristic_uuid16(uint16_t characteristic_uuid, uint16_t properties);
 mock_gatt_client_characteristic_descriptor_t * mock_gatt_client_add_characteristic_descriptor_uuid16(uint16_t descriptor_uuid);
