@@ -100,7 +100,7 @@ mock_gatt_client_service_t * mock_gatt_client_add_primary_service_uuid16(uint16_
     mock_gatt_client_last_service->uuid16 = service_uuid;
     mock_gatt_client_last_service->start_group_handle = mock_gatt_client_att_handle_generator++;
     mock_gatt_client_last_service->end_group_handle = 0xffff;
-    btstack_linked_list_add(&mock_gatt_client_services, (btstack_linked_item_t*)mock_gatt_client_last_service);
+    btstack_linked_list_add_tail(&mock_gatt_client_services, (btstack_linked_item_t*)mock_gatt_client_last_service);
     mock_gatt_client_last_characteristic = NULL;
     return mock_gatt_client_last_service;
 }
@@ -114,7 +114,7 @@ mock_gatt_client_characteristic_t * mock_gatt_client_add_characteristic_uuid16(u
     mock_gatt_client_last_characteristic->start_handle = mock_gatt_client_att_handle_generator++;
     mock_gatt_client_last_characteristic->value_handle = mock_gatt_client_att_handle_generator++;
     mock_gatt_client_last_characteristic->end_handle = mock_gatt_client_last_characteristic->value_handle;
-    btstack_linked_list_add(&mock_gatt_client_last_service->characteristics, (btstack_linked_item_t*)mock_gatt_client_last_characteristic);
+    btstack_linked_list_add_tail(&mock_gatt_client_last_service->characteristics, (btstack_linked_item_t*)mock_gatt_client_last_characteristic);
     mock_gatt_client_last_service->end_group_handle = mock_gatt_client_att_handle_generator - 1;
     return mock_gatt_client_last_characteristic;
 }
@@ -125,7 +125,7 @@ mock_gatt_client_characteristic_descriptor_t * mock_gatt_client_add_characterist
     memset(desc, 0, sizeof(mock_gatt_client_characteristic_descriptor_t));
     desc->uuid16 = descriptor_uuid;
     desc->handle = mock_gatt_client_att_handle_generator++;
-    btstack_linked_list_add(&mock_gatt_client_last_characteristic->descriptors, (btstack_linked_item_t*)desc);
+    btstack_linked_list_add_tail(&mock_gatt_client_last_characteristic->descriptors, (btstack_linked_item_t*)desc);
     mock_gatt_client_last_characteristic->end_handle = mock_gatt_client_att_handle_generator - 1;
     mock_gatt_client_last_service->end_group_handle = mock_gatt_client_att_handle_generator - 1;
     return desc;
