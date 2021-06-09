@@ -10,8 +10,8 @@
 
 static enum {
     MOCK_QUERY_IDLE = 0,
-    MOCK_QUERY_DISCOVER_PRIMARY_SERVICES,
-    MOCK_QUERY_DISCOVER_CHARACTERISTICS,
+    MOCK_QUERY_DISCOVER_PRIMARY_SERVICES_BY_UUID16,
+    MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16,
     MOCK_QUERY_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
     MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION,
     MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE
@@ -186,7 +186,7 @@ void mock_gatt_client_simulate_att_error(uint8_t att_error){
 }
 
 uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t uuid16){
-    mock_gatt_client_state = MOCK_QUERY_DISCOVER_PRIMARY_SERVICES;
+    mock_gatt_client_state = MOCK_QUERY_DISCOVER_PRIMARY_SERVICES_BY_UUID16;
     mock_gatt_client_uuid = uuid16;
 
     gatt_client.callback = callback;
@@ -195,7 +195,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t
 }
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
-    mock_gatt_client_state = MOCK_QUERY_DISCOVER_CHARACTERISTICS;
+    mock_gatt_client_state = MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16;
     mock_gatt_client_uuid = uuid16;
     mock_gatt_client_start_handle = start_handle;
     mock_gatt_client_end_handle = end_handle;
@@ -388,7 +388,7 @@ void mock_gatt_client_run(void){
 
     while (mock_gatt_client_state != MOCK_QUERY_IDLE){
         switch (mock_gatt_client_state){
-            case MOCK_QUERY_DISCOVER_PRIMARY_SERVICES:
+            case MOCK_QUERY_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
                 // emit GATT_EVENT_SERVICE_QUERY_RESULT for each matching service
                 btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
                 while (btstack_linked_list_iterator_has_next(&service_it)){
@@ -402,7 +402,7 @@ void mock_gatt_client_run(void){
                 mock_gatt_client_emit_complete(ATT_ERROR_SUCCESS);
                 break;
             
-            case MOCK_QUERY_DISCOVER_CHARACTERISTICS:
+            case MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16:
                 // emit GATT_EVENT_CHARACTERISTIC_QUERY_RESULT for each matching characteristic
                 btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
                 while (btstack_linked_list_iterator_has_next(&service_it)){
@@ -437,7 +437,6 @@ void mock_gatt_client_run(void){
                     uuid_add_bluetooth_prefix(uuid128, desc->uuid16);
                     emit_gatt_all_characteristic_descriptors_result_event(&gatt_client, desc->handle, uuid128);
                 }
-            
 
                 // emit GATT_EVENT_QUERY_COMPLETE
                 mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
