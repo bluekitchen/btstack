@@ -314,12 +314,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = battery_service_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
-            if (client->state != BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT) {
-                battery_service_emit_connection_established(client, GATT_CLIENT_IN_WRONG_STATE);  
-                battery_service_finalize_client(client);       
-                return;
-            }
-
             if (client->num_instances < MAX_NUM_BATTERY_SERVICES){
                 gatt_event_service_query_result_get_service(packet, &service);
                 client->services[client->num_instances].start_handle = service.start_group_handle;
@@ -340,9 +334,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
             if (client->service_index < client->num_instances){
-                if (characteristic.uuid16 != ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL) {
-                    break;
-                }
+                btstack_assert(characteristic.uuid16 == ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL); 
+                
                 client->services[client->service_index].value_handle = characteristic.value_handle;
                 client->services[client->service_index].properties = characteristic.properties;
 
