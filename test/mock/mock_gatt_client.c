@@ -245,12 +245,17 @@ uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_pack
 }
 
 uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
-    btstack_assert(false);
+    btstack_assert(characteristic != NULL);
+    mock_gatt_client_state = MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE;
+    mock_gatt_client_characteristic_t * mock_characteristic = mock_gatt_client_get_characteristic_for_value_handle(characteristic->value_handle);
+
+    btstack_assert(mock_characteristic != NULL);
+
+    mock_gatt_client_value_handle = mock_characteristic->value_handle;
     return ERROR_CODE_SUCCESS;
 }
 
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
-    btstack_assert(false);
 }
 
 /**
