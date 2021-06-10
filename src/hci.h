@@ -522,7 +522,8 @@ typedef struct {
     // requested security level
     gap_security_level_t requested_security_level;
     
-    // 
+    // link key and its type
+    link_key_t      link_key;
     link_key_type_t link_key_type;
 
     // remote supported features

@@ -214,6 +214,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
     conn->request_role = HCI_ROLE_INVALID;
     conn->sniff_subrating_max_latency = 0xffff;
     conn->qos_service_type = HCI_SERVICE_TyPE_INVALID;
+    conn->link_key_type = INVALID_LINK_KEY;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
@@ -2197,6 +2198,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                     key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
                     log_info("Handle %04x key Size: %u", handle, key_size);
                 } else {
+                    key_size = 1;
                     log_info("Read Encryption Key Size failed 0x%02x-> assuming insecure connection with key size of 1", status);
                 }
                 hci_handle_read_encryption_key_size_complete(conn, key_size);
@@ -2652,6 +2654,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (link_key_type != CHANGED_COMBINATION_KEY){
                 conn->link_key_type = link_key_type;
             }
+            // cache link key. link keys stored in little-endian format for legacy reasons
+            memcpy(&conn->link_key, &packet[8], 16);
+
             // only store link key:
             // - if bondable enabled
             if (hci_stack->bondable == false) break;
@@ -2665,7 +2670,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 }
             }
             gap_store_link_key_for_bd_addr(addr, &packet[8], conn->link_key_type);
-            // still forward event to allow dismiss of pairing dialog
             break;
         }
 
@@ -4380,13 +4384,15 @@ static bool hci_run_general_pending_commands(void){
             log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
 
-            link_key_t link_key;
-            link_key_type_t link_key_type;
-            bool have_link_key = hci_stack->link_key_db && hci_stack->link_key_db->get_link_key(connection->address, link_key, &link_key_type);
+            // lookup link key using cached key first
+            bool have_link_key = connection->link_key_type != INVALID_LINK_KEY;
+            if (!have_link_key && (hci_stack->link_key_db != NULL)){
+                have_link_key = hci_stack->link_key_db->get_link_key(connection->address, connection->link_key, &connection->link_key_type);
+            }
 
             const uint16_t sc_enabled_mask = BONDING_REMOTE_SUPPORTS_SC_HOST | BONDING_REMOTE_SUPPORTS_SC_CONTROLLER;
             bool sc_enabled_remote = (connection->bonding_flags & sc_enabled_mask) == sc_enabled_mask;
-            bool sc_downgrade = have_link_key && (gap_secure_connection_for_link_key_type(link_key_type) == 1) && !sc_enabled_remote;
+            bool sc_downgrade = have_link_key && (gap_secure_connection_for_link_key_type(connection->link_key_type) == 1) && !sc_enabled_remote;
             if (sc_downgrade){
                 log_info("Link key based on SC, but remote does not support SC -> disconnect");
                 connection->state = SENT_DISCONNECT;
@@ -4394,10 +4400,9 @@ static bool hci_run_general_pending_commands(void){
                 return true;
             }
 
-            bool security_level_sufficient = have_link_key && (gap_security_level_for_link_key_type(link_key_type) >= connection->requested_security_level);
+            bool security_level_sufficient = have_link_key && (gap_security_level_for_link_key_type(connection->link_key_type) >= connection->requested_security_level);
             if (have_link_key && security_level_sufficient){
-                connection->link_key_type = link_key_type;
-                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
+                hci_send_cmd(&hci_link_key_request_reply, connection->address, &connection->link_key);
             } else {
                 hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }

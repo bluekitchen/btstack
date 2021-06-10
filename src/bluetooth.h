@@ -96,6 +96,7 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
  * @brief link key type
  */
 typedef enum {
+  INVALID_LINK_KEY = 0xffff,
   COMBINATION_KEY = 0,  // standard pairing
   LOCAL_UNIT_KEY,     // ?
   REMOTE_UNIT_KEY,    // ?
