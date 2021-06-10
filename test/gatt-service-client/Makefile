@@ -20,8 +20,6 @@ VPATH += ${BTSTACK_ROOT}/test/mock
 
 COMMON = \
 	btstack_linked_list.c       \
-	btstack_memory.c            \
-	btstack_memory_pool.c       \
 	btstack_util.c              \
 	hci_dump.c                  \
 	mock_gatt_client.c 			\
