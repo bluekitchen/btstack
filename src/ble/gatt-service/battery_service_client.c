@@ -164,6 +164,32 @@ static void battery_service_emit_battery_level(battery_service_client_t * client
     }
 }
 
+static bool battery_service_registered_notification(battery_service_client_t * client, uint16_t service_index){
+    gatt_client_characteristic_t characteristic;
+    // if there are services without notification, register pool timer, 
+    // othervise register for notifications
+    characteristic.value_handle = client->services[service_index].value_handle;
+    characteristic.properties   = client->services[service_index].properties;
+    characteristic.end_handle   = client->services[service_index].end_handle;
+
+    uint8_t status = gatt_client_write_client_characteristic_configuration(
+                &handle_gatt_client_event, 
+                client->con_handle, 
+                &characteristic, 
+                GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+  
+    // notification supported, register for value updates
+    if (status == ERROR_CODE_SUCCESS){
+        gatt_client_listen_for_characteristic_value_updates(
+            &client->services[service_index].notification_listener, 
+            &handle_gatt_client_event, 
+            client->con_handle, &characteristic);
+    } else {
+        client->poll_bitmap |= 1u << client->service_index;
+    }
+    return status;
+}
+
 static void battery_service_run_for_client(battery_service_client_t * client){
     uint8_t status;
     uint8_t i;
@@ -234,28 +260,32 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             
         case BATTERY_SERVICE_CLIENT_STATE_W2_REGISTER_NOTIFICATION:
             client->state = BATTERY_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED;
-            // if there are services without notification, register pool timer, 
-            // othervise register for notifications
-            characteristic.value_handle = client->services[client->service_index].value_handle;
-            characteristic.properties   = client->services[client->service_index].properties;
-            characteristic.end_handle   = client->services[client->service_index].end_handle;
-
-            status = gatt_client_write_client_characteristic_configuration(
-                &handle_gatt_client_event, 
-                client->con_handle, 
-                &characteristic, 
-                GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-  
-            // notification supported, register for value updates
-            if (status == ERROR_CODE_SUCCESS){
-                gatt_client_listen_for_characteristic_value_updates(
-                    &client->services[client->service_index].notification_listener, 
-                    &handle_gatt_client_event, 
-                    client->con_handle, 
-                    &characteristic);
-            } else {
-                client->poll_bitmap |= 1u << client->service_index;
+    
+            for (; client->service_index < client->num_instances; client->service_index++){
+                status = battery_service_registered_notification(client, client->service_index);
+                if (status == ERROR_CODE_SUCCESS) return;
             }
+            
+                
+#ifdef ENABLE_TESTING_SUPPORT
+            client->service_index = 0;
+
+            for (client->service_index = 0; client->service_index < client->num_instances; client->service_index++){
+                bool need_polling = (((client->poll_bitmap >> i) & 0x01) == 1);
+                if ( (client->services[client->service_index].ccc_handle != 0) && !need_polling ){
+                    client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
+                    break;
+                }
+            }
+#endif
+            client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
+            battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS);
+            
+            if (client->poll_interval_ms > 0){
+                client->need_poll_bitmap = client->poll_bitmap;
+                battery_service_poll_timer_start(client);
+            }
+            
             break;
         default:
             break;
@@ -503,14 +533,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     client->service_index = 0;
 
                     for (client->service_index = 0; client->service_index < client->num_instances; client->service_index++){
-                        if (client->services[client->service_index].ccc_handle != 0) {
+                        bool need_polling = (((client->poll_bitmap >> i) & 0x01) == 1);
+                        printf("read CCC 1 0x%02x, polling %d \n", client->services[client->service_index].ccc_handle);
+                        if ( (client->services[client->service_index].ccc_handle != 0) && !need_polling ) {
                             client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
                             break;
                         }
-                    }
-                    if (client->service_index < client->num_instances){
-                        client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
-                        break;
                     }
 #endif
                     client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
