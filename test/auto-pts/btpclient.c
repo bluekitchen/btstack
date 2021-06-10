@@ -786,6 +786,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 if (powered){
                     hci_power_control(HCI_POWER_ON);
                 } else {
+                    gap_advertisements_enable(0);
                     hci_power_control(HCI_POWER_OFF);
                 }
             }
