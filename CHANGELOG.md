@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 ### Fixed
 - GAP: store link key in hci connection struct to allow authenticate after pairing without bonding
+- GAP: avoid requesting authentication twice
 - ATT DB: fix spelling `gatt_server_get_handle_range_for_service_with_uuid128`, `gatt_server_get_handle_range_for_service_with_uuid16`
 
 ### Changed

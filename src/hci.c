@@ -2790,6 +2790,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
 
+            // clear authentication active flag
+            conn->bonding_flags &= ~BONDING_SENT_AUTHENTICATE_REQUEST;
+
             // authenticated only if auth status == 0
             if (hci_event_authentication_complete_get_status(packet) == 0){
                 // authenticated
@@ -5411,8 +5414,9 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
         requested_level, connection->requested_security_level, current_level);
 
-    // authentication already active if planned level > 0
-    if (connection->requested_security_level > LEVEL_0){
+    // authentication active if authentication request was sent or planned level > 0
+    bool authentication_active = ((connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0) || (connection->requested_security_level > LEVEL_0);
+    if (authentication_active){
         // authentication already active
         if (connection->requested_security_level < requested_level){
             // increase requested level as new level is higher
