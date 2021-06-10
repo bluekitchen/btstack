@@ -51,6 +51,7 @@ typedef struct {
     uint16_t end_group_handle;
     uint16_t uuid16;
     // uint8_t  uuid128[16];
+   
     btstack_linked_list_t characteristics;
 } mock_gatt_client_service_t;
 
@@ -67,6 +68,7 @@ typedef struct {
     uint8_t * value_buffer;
     uint16_t  value_len;
 
+    uint8_t notification_status_code;
     gatt_client_notification_t * notification;
 } mock_gatt_client_characteristic_t;
 
@@ -83,17 +85,32 @@ typedef struct {
 
 void mock_gatt_client_reset(void);
 
+void mock_gatt_client_emit_dummy_event(void);
+void mock_gatt_client_emit_complete(uint8_t status);
+
 void mock_gatt_client_set_att_error_discover_primary_services(void);
 void mock_gatt_client_set_att_error_discover_characteristics(void);
 void mock_gatt_client_set_att_error_discover_characteristic_descriptors(void);
+
+void mock_gatt_client_simulate_invalid_con_handle(void);
+void mock_gatt_client_simulate_invalid_value_handle(void);
+
+void mock_gatt_client_enable_notification(mock_gatt_client_characteristic_t * characteristic, bool command_allowed);
+void mock_gatt_client_send_notification(mock_gatt_client_characteristic_t * characteristic, uint8_t * value_buffer, uint16_t value_len);
+void mock_gatt_client_send_notification_with_handle(mock_gatt_client_characteristic_t * characteristic, uint16_t value_handle, uint8_t * value_buffer, uint16_t value_len);
+
 
 mock_gatt_client_service_t * mock_gatt_client_add_primary_service_uuid16(uint16_t service_uuid);
 mock_gatt_client_characteristic_t * mock_gatt_client_add_characteristic_uuid16(uint16_t characteristic_uuid, uint16_t properties);
 mock_gatt_client_characteristic_descriptor_t * mock_gatt_client_add_characteristic_descriptor_uuid16(uint16_t descriptor_uuid);
 
-void mock_gatt_client_set_characteristic_value(mock_gatt_client_characteristic_descriptor_t * descriptor, uint8_t * value_buffer, uint16_t value_len);
+void mock_gatt_client_set_descriptor_characteristic_value(mock_gatt_client_characteristic_descriptor_t * descriptor, uint8_t * value_buffer, uint16_t value_len);
+void mock_gatt_client_set_characteristic_value(mock_gatt_client_characteristic_t * characteristic, uint8_t * value_buffer, uint16_t value_len);
 
 void mock_gatt_client_run(void);
+void mock_gatt_client_run_once(void);
+
+
 void mock_gatt_client_dump_services(void);
 
 #if defined __cplusplus

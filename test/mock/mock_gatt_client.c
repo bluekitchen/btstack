@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "btstack_debug.h"
+#include "bluetooth_gatt.h"
 #include "mock_gatt_client.h"
 
 #include "CppUTest/TestHarness.h"
@@ -14,7 +15,8 @@ static enum {
     MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16,
     MOCK_QUERY_DISCOVER_CHARACTERISTIC_DESCRIPTORS,
     MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION,
-    MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE
+    MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE,
+    MOCK_READ_VALUE_OF_CHARACTERISTIC_DESCRIPTOR_USING_VALUE_HANDLE
 } mock_gatt_client_state;
 
 static uint16_t mock_gatt_client_att_handle_generator;
@@ -35,11 +37,16 @@ static mock_gatt_client_characteristic_t * mock_gatt_client_last_characteristic;
 static uint8_t moc_att_error_code_discover_services;
 static uint8_t moc_att_error_code_discover_characteristics;
 static uint8_t moc_att_error_code_discover_characteristic_descriptors;
+static bool mock_gatt_client_wrong_con_handle;
+static bool mock_gatt_client_wrong_value_handle;
 
-static void mock_gatt_client_reset_att_errors(void){
+static void mock_gatt_client_reset_errors(void){
     moc_att_error_code_discover_services = ATT_ERROR_SUCCESS;
     moc_att_error_code_discover_characteristics = ATT_ERROR_SUCCESS;
     moc_att_error_code_discover_characteristic_descriptors = ATT_ERROR_SUCCESS;
+
+    mock_gatt_client_wrong_con_handle = false;
+    mock_gatt_client_wrong_value_handle = false;
 }
 
 void mock_gatt_client_reset(void){
@@ -48,7 +55,7 @@ void mock_gatt_client_reset(void){
     mock_gatt_client_att_handle_generator = 0;
     mock_gatt_client_last_service = NULL;
 
-    mock_gatt_client_reset_att_errors();
+    mock_gatt_client_reset_errors();
 
     btstack_linked_list_iterator_t service_it;    
     btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
@@ -83,6 +90,21 @@ void mock_gatt_client_set_att_error_discover_characteristics(void){
 }
 void mock_gatt_client_set_att_error_discover_characteristic_descriptors(void){
     moc_att_error_code_discover_characteristic_descriptors = ATT_ERROR_REQUEST_NOT_SUPPORTED;
+}
+
+void mock_gatt_client_simulate_invalid_con_handle(void){
+    mock_gatt_client_wrong_con_handle = true;
+}
+void mock_gatt_client_simulate_invalid_value_handle(void){
+    mock_gatt_client_wrong_value_handle = true;
+}
+
+void mock_gatt_client_enable_notification(mock_gatt_client_characteristic_t * characteristic, bool command_allowed){
+    if (command_allowed){
+        characteristic->notification_status_code = ERROR_CODE_SUCCESS;
+    } else {
+        characteristic->notification_status_code = ERROR_CODE_COMMAND_DISALLOWED;
+    }    
 }
 
 void mock_gatt_client_dump_services(void){
@@ -196,13 +218,19 @@ static mock_gatt_client_characteristic_descriptor_t * mock_gatt_client_get_chara
 }
 
 
-void mock_gatt_client_set_characteristic_value(mock_gatt_client_characteristic_descriptor_t * descriptor, uint8_t * value_buffer, uint16_t value_len){
+void mock_gatt_client_set_descriptor_characteristic_value(mock_gatt_client_characteristic_descriptor_t * descriptor, uint8_t * value_buffer, uint16_t value_len){
     btstack_assert(descriptor != NULL);
     descriptor->value_buffer = value_buffer;
     descriptor->value_len = value_len;
 }
 
-// simulate erro
+void mock_gatt_client_set_characteristic_value(mock_gatt_client_characteristic_t * characteristic, uint8_t * value_buffer, uint16_t value_len){
+    btstack_assert(characteristic != NULL);
+    characteristic->value_buffer = value_buffer;
+    characteristic->value_len = value_len;
+}
+
+// simulate error
 void mock_gatt_client_simulate_att_error(uint8_t att_error){
     mock_gatt_client_att_error = att_error;
 }
@@ -236,7 +264,34 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
     return ERROR_CODE_SUCCESS;
 }
 
+void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
+    btstack_assert(notification != NULL);
+    btstack_assert(&callback != NULL);
+
+    notification->callback = callback;
+    notification->con_handle = con_handle;
+    
+
+    if (characteristic == NULL){
+        // 'all characteristics': not used yet
+        btstack_assert(false);
+    } else {
+        mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(characteristic->value_handle);
+        btstack_assert(mock_characteristic != NULL);
+
+        notification->attribute_handle = characteristic->value_handle;
+        mock_characteristic->notification = notification;
+    }
+}
+
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
+    mock_gatt_client_characteristic_t * mock_characteristic  = mock_gatt_client_get_characteristic_for_value_handle(characteristic->value_handle);
+    btstack_assert(mock_characteristic != NULL);
+
+    if (mock_characteristic->notification_status_code != ERROR_CODE_SUCCESS){
+        return mock_characteristic->notification_status_code;
+    }
+
     mock_gatt_client_state = MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
     mock_gatt_client_uuid = characteristic->uuid16;
 
@@ -245,35 +300,34 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     return ERROR_CODE_SUCCESS;
 }
 
-void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
-    notification->callback = callback;
-    notification->con_handle = con_handle;
-    
-    if (characteristic == NULL){
-        // 'all characteristics': not used yet
-        btstack_assert(false);
-    } else {
-        notification->attribute_handle = characteristic->value_handle;
-    }
-
-    // finc our characteristic and set point to notification
-}
-
-
 uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle){
     mock_gatt_client_state = MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE;
-    mock_gatt_client_value_handle = value_handle;
+    
+    mock_gatt_client_characteristic_t * mock_characteristic = mock_gatt_client_get_characteristic_for_value_handle(value_handle);
+    btstack_assert(mock_characteristic != NULL);
+    
+    mock_gatt_client_value_handle = mock_characteristic->value_handle;
+    gatt_client.callback = callback;
+    gatt_client.con_handle = con_handle;
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic){
     btstack_assert(characteristic != NULL);
     mock_gatt_client_state = MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE;
+    
     mock_gatt_client_characteristic_t * mock_characteristic = mock_gatt_client_get_characteristic_for_value_handle(characteristic->value_handle);
-
     btstack_assert(mock_characteristic != NULL);
 
+    gatt_client.callback = callback;
+    gatt_client.con_handle = con_handle;
     mock_gatt_client_value_handle = mock_characteristic->value_handle;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle){
+    mock_gatt_client_state = MOCK_READ_VALUE_OF_CHARACTERISTIC_DESCRIPTOR_USING_VALUE_HANDLE;
+    mock_gatt_client_value_handle = descriptor_handle;
     return ERROR_CODE_SUCCESS;
 }
 
@@ -317,8 +371,11 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
     }
 }
 
-static void emit_event_new(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
+static void emit_event(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
+    if (mock_gatt_client_wrong_con_handle){
+        little_endian_store_16(packet, 2, 0xFFFF);
+    }
     (*callback)(HCI_EVENT_PACKET, 0, packet, size);
 }
 
@@ -329,7 +386,7 @@ static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_st
     packet[1] = 3;
     little_endian_store_16(packet, 2, gatt_client->con_handle);
     packet[4] = att_status;
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    emit_event(gatt_client->callback, packet, sizeof(packet));
 }
 
 static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, uint16_t start_group_handle, uint16_t end_group_handle, const uint8_t * uuid128){
@@ -342,7 +399,7 @@ static void emit_gatt_service_query_result_event(gatt_client_t * gatt_client, ui
     little_endian_store_16(packet, 4, start_group_handle);
     little_endian_store_16(packet, 6, end_group_handle);
     reverse_128(uuid128, &packet[8]);
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    emit_event(gatt_client->callback, packet, sizeof(packet));
 }
 
 static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_client, uint16_t start_handle, uint16_t value_handle, uint16_t end_handle,
@@ -358,11 +415,11 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * gatt_cli
     little_endian_store_16(packet, 8,  end_handle);
     little_endian_store_16(packet, 10, properties);
     reverse_128(uuid128, &packet[12]);
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    emit_event(gatt_client->callback, packet, sizeof(packet));
 }
 
 static void emit_gatt_all_characteristic_descriptors_result_event(
-        gatt_client_t * gatt_client, uint16_t descriptor_handle, const uint8_t * uuid128){
+    gatt_client_t * gatt_client, uint16_t descriptor_handle, const uint8_t * uuid128){
     // @format HZ
     uint8_t packet[22];
     packet[0] = GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
@@ -371,38 +428,48 @@ static void emit_gatt_all_characteristic_descriptors_result_event(
     ///
     little_endian_store_16(packet, 4,  descriptor_handle);
     reverse_128(uuid128, &packet[6]);
-    emit_event_new(gatt_client->callback, packet, sizeof(packet));
+    emit_event(gatt_client->callback, packet, sizeof(packet));
 }
 
-
-static const int characteristic_value_event_header_size = 8;
+static uint8_t event_packet[255];
 static uint8_t * setup_characteristic_value_packet(uint8_t type, hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
     // before the value inside the ATT PDU
-    uint8_t * packet = value - characteristic_value_event_header_size;
-    packet[0] = type;
-    packet[1] = characteristic_value_event_header_size - 2 + length;
-    little_endian_store_16(packet, 2, con_handle);
-    little_endian_store_16(packet, 4, attribute_handle);
-    little_endian_store_16(packet, 6, length);
-    return packet;
+    event_packet[0] = type;
+    event_packet[1] = 6 + length;
+    little_endian_store_16(event_packet, 2, con_handle);
+    little_endian_store_16(event_packet, 4, attribute_handle);
+    little_endian_store_16(event_packet, 6, length);
+    memcpy(&event_packet[8], value, length);
+    return &event_packet[0];
 }
 
-// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
-static void report_gatt_characteristic_value(gatt_client_t * gatt_client, uint16_t attribute_handle, uint8_t * value, uint16_t length){
-    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, attribute_handle, value, length);
-    emit_event_new(gatt_client->callback, packet, characteristic_value_event_header_size + length);
+void mock_gatt_client_send_notification_with_handle(mock_gatt_client_characteristic_t * characteristic, uint16_t value_handle, uint8_t * value_buffer, uint16_t value_len){
+    btstack_assert(characteristic != NULL);
+    btstack_assert(characteristic->notification != NULL);
+    btstack_assert(characteristic->notification->callback != NULL);
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_NOTIFICATION, gatt_client.con_handle, value_handle, value_buffer, value_len);
+    emit_event(characteristic->notification->callback, packet, 2 + packet[1]);
+}
+
+void mock_gatt_client_send_notification(mock_gatt_client_characteristic_t * characteristic, uint8_t * value_buffer, uint16_t value_len){
+    mock_gatt_client_send_notification_with_handle(characteristic, characteristic->value_handle, value_buffer, value_len);
+}
+
+static void mock_gatt_client_send_characteristic_value(gatt_client_t * gatt_client, mock_gatt_client_characteristic_t * characteristic){
+    uint8_t * packet = setup_characteristic_value_packet(GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT, gatt_client->con_handle, characteristic->value_handle, characteristic->value_buffer, characteristic->value_len);
+    emit_event(gatt_client->callback, packet, 2 + packet[1]);
 }
 
 /**
  * copied from gatt_client.c - END
  */
 
-static void mock_gatt_client_emit_complete(uint8_t status){
+void mock_gatt_client_emit_complete(uint8_t status){
     mock_gatt_client_state = MOCK_QUERY_IDLE;
     emit_gatt_complete_event(&gatt_client, status);
 }
 
-void mock_gatt_client_run(void){
+void mock_gatt_client_run_once(void){
     btstack_assert(mock_gatt_client_state != MOCK_QUERY_IDLE);
     mock_gatt_client_characteristic_t * characteristic;
     mock_gatt_client_characteristic_descriptor_t * descriptor;
@@ -413,95 +480,115 @@ void mock_gatt_client_run(void){
         
     uint8_t uuid128[16];
 
-    while (mock_gatt_client_state != MOCK_QUERY_IDLE){
-        switch (mock_gatt_client_state){
-            case MOCK_QUERY_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
-                // emit GATT_EVENT_SERVICE_QUERY_RESULT for each matching service
-                if (moc_att_error_code_discover_services != ATT_ERROR_SUCCESS){
-                    mock_gatt_client_emit_complete(moc_att_error_code_discover_services);
-                    return;
-                }
+    switch (mock_gatt_client_state){
+        case MOCK_QUERY_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
+            // emit GATT_EVENT_SERVICE_QUERY_RESULT for each matching service
+            if (moc_att_error_code_discover_services != ATT_ERROR_SUCCESS){
+                mock_gatt_client_emit_complete(moc_att_error_code_discover_services);
+                return;
+            }
 
-                btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
-                while (btstack_linked_list_iterator_has_next(&service_it)){
-                    mock_gatt_client_service_t * service = (mock_gatt_client_service_t *) btstack_linked_list_iterator_next(&service_it);
-                    if (service->uuid16 != mock_gatt_client_uuid) continue;
-                    mock_gatt_client_last_service = service;
-                    uuid_add_bluetooth_prefix(uuid128, service->uuid16);
-                    emit_gatt_service_query_result_event(&gatt_client, service->start_group_handle, service->end_group_handle, uuid128);
-                }
-                // emit GATT_EVENT_QUERY_COMPLETE
-                mock_gatt_client_emit_complete(ATT_ERROR_SUCCESS);
-                break;
-            
-            case MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16:
-                // emit GATT_EVENT_CHARACTERISTIC_QUERY_RESULT for each matching characteristic
-                if (moc_att_error_code_discover_characteristics != ATT_ERROR_SUCCESS){
-                    mock_gatt_client_emit_complete(moc_att_error_code_discover_characteristics);
-                    return;
-                }
+            btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
+            while (btstack_linked_list_iterator_has_next(&service_it)){
+                mock_gatt_client_service_t * service = (mock_gatt_client_service_t *) btstack_linked_list_iterator_next(&service_it);
+                if (service->uuid16 != mock_gatt_client_uuid) continue;
+                mock_gatt_client_last_service = service;
+                uuid_add_bluetooth_prefix(uuid128, service->uuid16);
+                emit_gatt_service_query_result_event(&gatt_client, service->start_group_handle, service->end_group_handle, uuid128);
+            }
+            // emit GATT_EVENT_QUERY_COMPLETE
+            mock_gatt_client_emit_complete(ATT_ERROR_SUCCESS);
+            break;
+        
+        case MOCK_QUERY_DISCOVER_CHARACTERISTICS_BY_UUID16:
+            // emit GATT_EVENT_CHARACTERISTIC_QUERY_RESULT for each matching characteristic
+            if (moc_att_error_code_discover_characteristics != ATT_ERROR_SUCCESS){
+                mock_gatt_client_emit_complete(moc_att_error_code_discover_characteristics);
+                return;
+            }
 
-                btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
-                while (btstack_linked_list_iterator_has_next(&service_it)){
-                    mock_gatt_client_service_t * service = (mock_gatt_client_service_t *) btstack_linked_list_iterator_next(&service_it);
-                    
-                    btstack_linked_list_iterator_init(&characteristic_it, &service->characteristics);
-                    while (btstack_linked_list_iterator_has_next(&characteristic_it)){
-                        mock_gatt_client_characteristic_t * characteristic = (mock_gatt_client_characteristic_t *) btstack_linked_list_iterator_next(&characteristic_it);
-                        if (characteristic->uuid16 != mock_gatt_client_uuid) continue;
-                        if (characteristic->start_handle < mock_gatt_client_start_handle) continue;
-                        if (characteristic->end_handle > mock_gatt_client_end_handle) continue;
-
-                        uuid_add_bluetooth_prefix(uuid128, characteristic->uuid16);
-                        emit_gatt_characteristic_query_result_event(&gatt_client, 
-                            characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, 
-                            characteristic->properties, uuid128);
-                    }
-                }
-
-                // emit GATT_EVENT_QUERY_COMPLETE
-                mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
-                break;
-
-            case MOCK_QUERY_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
-                characteristic = mock_gatt_client_get_characteristic_for_value_handle(mock_gatt_client_value_handle);
-                btstack_assert(characteristic != NULL);
-
-                if (moc_att_error_code_discover_characteristic_descriptors != ATT_ERROR_SUCCESS){
-                    mock_gatt_client_emit_complete(moc_att_error_code_discover_characteristic_descriptors);
-                    return;
-                }
-
-                btstack_linked_list_iterator_init(&descriptor_it, &characteristic->descriptors);
-                while (btstack_linked_list_iterator_has_next(&descriptor_it)){
-                    mock_gatt_client_characteristic_descriptor_t * desc = (mock_gatt_client_characteristic_descriptor_t *) btstack_linked_list_iterator_next(&descriptor_it);
-                    
-                    uuid_add_bluetooth_prefix(uuid128, desc->uuid16);
-                    emit_gatt_all_characteristic_descriptors_result_event(&gatt_client, desc->handle, uuid128);
-                }
-
-                // emit GATT_EVENT_QUERY_COMPLETE
-                mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
-                break;
-
-            case MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
-                mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
-                break;
-            
-            case MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE:
-                descriptor = mock_gatt_client_get_characteristic_descriptor_for_handle(mock_gatt_client_value_handle);
-                btstack_assert(descriptor != NULL);
-                btstack_assert(descriptor->value_buffer != NULL);
+            btstack_linked_list_iterator_init(&service_it, &mock_gatt_client_services);
+            while (btstack_linked_list_iterator_has_next(&service_it)){
+                mock_gatt_client_service_t * service = (mock_gatt_client_service_t *) btstack_linked_list_iterator_next(&service_it);
                 
-                report_gatt_characteristic_value(&gatt_client, descriptor->handle, descriptor->value_buffer, descriptor->value_len);
-                mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
-                break;
+                btstack_linked_list_iterator_init(&characteristic_it, &service->characteristics);
+                while (btstack_linked_list_iterator_has_next(&characteristic_it)){
+                    mock_gatt_client_characteristic_t * characteristic = (mock_gatt_client_characteristic_t *) btstack_linked_list_iterator_next(&characteristic_it);
+                    if (characteristic->uuid16 != mock_gatt_client_uuid) continue;
+                    if (characteristic->start_handle < mock_gatt_client_start_handle) continue;
+                    if (characteristic->end_handle > mock_gatt_client_end_handle) continue;
+
+                    uuid_add_bluetooth_prefix(uuid128, characteristic->uuid16);
+                    emit_gatt_characteristic_query_result_event(&gatt_client, 
+                        characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, 
+                        characteristic->properties, uuid128);
+                }
+            }
+
+            // emit GATT_EVENT_QUERY_COMPLETE
+            mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
+            break;
+
+        case MOCK_QUERY_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
+            characteristic = mock_gatt_client_get_characteristic_for_value_handle(mock_gatt_client_value_handle);
+            btstack_assert(characteristic != NULL);
+
+            if (moc_att_error_code_discover_characteristic_descriptors != ATT_ERROR_SUCCESS){
+                mock_gatt_client_emit_complete(moc_att_error_code_discover_characteristic_descriptors);
+                return;
+            }
+
+            btstack_linked_list_iterator_init(&descriptor_it, &characteristic->descriptors);
+            while (btstack_linked_list_iterator_has_next(&descriptor_it)){
+                mock_gatt_client_characteristic_descriptor_t * desc = (mock_gatt_client_characteristic_descriptor_t *) btstack_linked_list_iterator_next(&descriptor_it);
+                
+                uuid_add_bluetooth_prefix(uuid128, desc->uuid16);
+                emit_gatt_all_characteristic_descriptors_result_event(&gatt_client, desc->handle, uuid128);
+            }
+
+            // emit GATT_EVENT_QUERY_COMPLETE
+            mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
+            break;
+
+        case MOCK_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
+            mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
+            break;
+        
+        case MOCK_READ_VALUE_OF_CHARACTERISTIC_USING_VALUE_HANDLE:  
+            characteristic = mock_gatt_client_get_characteristic_for_value_handle(mock_gatt_client_value_handle);
+            btstack_assert(characteristic != NULL);
+
+            mock_gatt_client_send_characteristic_value(&gatt_client, characteristic);
+            mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
+            break;
+
+        case MOCK_READ_VALUE_OF_CHARACTERISTIC_DESCRIPTOR_USING_VALUE_HANDLE:
+            descriptor = mock_gatt_client_get_characteristic_descriptor_for_handle(mock_gatt_client_value_handle);
+            btstack_assert(descriptor != NULL);
+            btstack_assert(descriptor->value_buffer != NULL);
             
-            default:
-                btstack_assert(false);
-                break;
-        }
+            mock_gatt_client_emit_complete(ERROR_CODE_SUCCESS);
+            break;
+        
+        default:
+            btstack_assert(false);
+            break;
+    }
+}
+
+void mock_gatt_client_run(void){
+    btstack_assert(mock_gatt_client_state != MOCK_QUERY_IDLE);
+    while (mock_gatt_client_state != MOCK_QUERY_IDLE){
+        mock_gatt_client_run_once();
     }
     mock_gatt_client_att_error = ERROR_CODE_SUCCESS;
     mock_gatt_client_state = MOCK_QUERY_IDLE;
+}
+
+void mock_gatt_client_emit_dummy_event(void){
+        // @format H1
+    uint8_t packet[2];
+    packet[0] = 0;
+    packet[1] = 0;
+    emit_event(gatt_client.callback, packet, sizeof(packet));
 }
