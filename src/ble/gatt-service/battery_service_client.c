@@ -225,7 +225,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             client->state = BATTERY_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT;
 
             // result in GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT
-            (void) gatt_client_read_value_of_characteristic_using_value_handle(
+            (void) gatt_client_read_characteristic_descriptor_using_descriptor_handle(
                 &handle_gatt_client_event,
                 client->con_handle, 
                 client->services[client->service_index].ccc_handle);
