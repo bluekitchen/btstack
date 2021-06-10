@@ -68,11 +68,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 static void battery_service_poll_timer_start(battery_service_client_t * client);
 
 static uint16_t battery_service_get_next_cid(void){
-    if (battery_service_cid_counter == 0xffff) {
-        battery_service_cid_counter = 1;
-    } else {
-        battery_service_cid_counter++;
-    }
+    battery_service_cid_counter = btstack_next_cid_ignoring_zero(battery_service_cid_counter);
     return battery_service_cid_counter;
 }
 
