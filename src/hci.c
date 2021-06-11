@@ -6355,7 +6355,6 @@ uint16_t hci_get_manufacturer(void){
 }
 
 #ifdef ENABLE_BLE
-
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_con = hci_connection_for_handle(con_handle);
     if (!hci_con) return NULL;
@@ -6364,23 +6363,25 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
 
 // extracted from sm.c to allow enabling of l2cap le data channels without adding sm.c to the build
 // without sm.c default values from create_connection_for_bd_addr_and_type() resulg in non-encrypted, not-authenticated
+#endif
 
 int gap_encryption_key_size(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL) return 0;
     if (hci_is_le_connection(hci_connection)){
+#ifdef ENABLE_BLE
         sm_connection_t * sm_conn = &hci_connection->sm_connection;
         if (sm_conn->sm_connection_encrypted) {
             return sm_conn->sm_actual_encryption_key_size;
         }
-    }
+#endif
+    } else {
 #ifdef ENABLE_CLASSIC
-    else {
         if ((hci_connection->authentication_flags & CONNECTION_ENCRYPTED)){
             return hci_connection->encryption_key_size;
         }
-    }
 #endif
+    }
     return 0;
 }
 
@@ -6389,10 +6390,12 @@ int gap_authenticated(hci_con_handle_t con_handle){
     if (hci_connection == NULL) return 0;
 
     switch (hci_connection->address_type){
+#ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
             return hci_connection->sm_connection.sm_connection_authenticated;
+#endif
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
@@ -6408,10 +6411,12 @@ int gap_secure_connection(hci_con_handle_t con_handle){
     if (hci_connection == NULL) return 0;
 
     switch (hci_connection->address_type){
+#ifdef ENABLE_BLE
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
             if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
             return hci_connection->sm_connection.sm_connection_sc;
+#endif
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_ACL:
@@ -6431,9 +6436,11 @@ bool gap_bonded(hci_con_handle_t con_handle){
 	link_key_type_t link_key_type;
 #endif
 	switch (hci_connection->address_type){
+#ifdef ENABLE_BLE
 		case BD_ADDR_TYPE_LE_PUBLIC:
 		case BD_ADDR_TYPE_LE_RANDOM:
 			return hci_connection->sm_connection.sm_le_db_index >= 0;
+#endif
 #ifdef ENABLE_CLASSIC
 		case BD_ADDR_TYPE_SCO:
 		case BD_ADDR_TYPE_ACL:
@@ -6444,7 +6451,7 @@ bool gap_bonded(hci_con_handle_t con_handle){
 	}
 }
 
-
+#ifdef ENABLE_BLE
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
