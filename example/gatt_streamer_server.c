@@ -77,9 +77,16 @@ static void  att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t 
 static int   att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  streamer(void);
 
+// Flags general discoverable, BR/EDR supported (== not supported flag not set) when ENABLE_GATT_OVER_CLASSIC is enabled
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static const uint8_t ad_flags = 0x02;
+#else
+static const uint8_t ad_flags = 0x06;
+#endif
+
 const uint8_t adv_data[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // Flags general discoverable
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, ad_flags,
     // Name
     0x0c, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'L', 'E', ' ', 'S', 't', 'r', 'e', 'a', 'm', 'e', 'r', 
     // Incomplete List of 16-bit Service Class UUIDs -- FF10 - only valid for testing!
