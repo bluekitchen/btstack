@@ -459,11 +459,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         return;   
                     }
 
-                    if (client->num_instances > MAX_NUM_BATTERY_SERVICES) {
-                        log_info("%d battery services found, only first %d can be stored, increase MAX_NUM_BATTERY_SERVICES", client->num_instances, MAX_NUM_BATTERY_SERVICES);
-                        client->num_instances = MAX_NUM_BATTERY_SERVICES;
-                    }
-
                     client->service_index = 0;
                     client->state = BATTERY_SERVICE_CLIENT_STATE_W2_QUERY_CHARACTERISTICS;
                     break;
