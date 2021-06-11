@@ -152,11 +152,17 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
     btstack_linked_list_iterator_init(it, &connections);
 }
 
-// get addr type and address used in advertisement packets
+// get addr type and address used in different contexts
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
+    static uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     *addr_type = 0;
-    uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     memcpy(addr, dummy, 6);
+}
+void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr){
+    gap_le_get_own_address(addr_type, addr);
+}
+void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
+    gap_le_get_own_address(addr_type, addr);
 }
 
 void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,

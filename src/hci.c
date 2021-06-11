@@ -1100,7 +1100,7 @@ static int hci_le_supported(void){
 
 #ifdef ENABLE_BLE
 
-static void hci_get_own_address_for_addr_type(bd_addr_type_t own_addr_type, bd_addr_t own_addr){
+static void hci_get_own_address_for_addr_type(uint8_t own_addr_type, bd_addr_t own_addr){
     if (own_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
         (void)memcpy(own_addr, hci_stack->local_bd_addr, 6);
     } else {
