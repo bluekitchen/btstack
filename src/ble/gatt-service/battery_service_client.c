@@ -190,6 +190,13 @@ static bool battery_service_registered_notification(battery_service_client_t * c
     return status;
 }
 
+static void battery_service_start_polling_if_needed(battery_service_client_t * client){
+    if (client->poll_interval_ms > 0){
+        client->need_poll_bitmap = client->poll_bitmap;
+        battery_service_poll_timer_start(client);
+    }
+}
+
 static void battery_service_run_for_client(battery_service_client_t * client){
     uint8_t status;
     uint8_t i;
@@ -280,12 +287,7 @@ static void battery_service_run_for_client(battery_service_client_t * client){
 #endif
             client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
             battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS);
-            
-            if (client->poll_interval_ms > 0){
-                client->need_poll_bitmap = client->poll_bitmap;
-                battery_service_poll_timer_start(client);
-            }
-            
+            battery_service_start_polling_if_needed(client);
             break;
         default:
             break;
@@ -359,21 +361,20 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             btstack_assert(client != NULL);
 
             gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
-            if (client->service_index < client->num_instances){
-                btstack_assert(characteristic.uuid16 == ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL); 
+            btstack_assert(client->service_index < client->num_instances);
+            btstack_assert(characteristic.uuid16 == ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL); 
                 
-                client->services[client->service_index].value_handle = characteristic.value_handle;
-                client->services[client->service_index].properties = characteristic.properties;
+            client->services[client->service_index].value_handle = characteristic.value_handle;
+            client->services[client->service_index].properties = characteristic.properties;
 
 #ifdef ENABLE_TESTING_SUPPORT
-                printf("Battery Level Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, service %d\n", 
-                    // hid_characteristic_name(characteristic.uuid16),
-                    characteristic.start_handle, 
-                    characteristic.properties, 
-                    characteristic.value_handle, characteristic.uuid16,
-                    client->service_index);
+            printf("Battery Level Characteristic:\n    Attribute Handle 0x%04X, Properties 0x%02X, Handle 0x%04X, UUID 0x%04X, service %d\n", 
+                // hid_characteristic_name(characteristic.uuid16),
+                characteristic.start_handle, 
+                characteristic.properties, 
+                characteristic.value_handle, characteristic.uuid16,
+                client->service_index);
 #endif               
-            }
             break;
 
         case GATT_EVENT_NOTIFICATION:
@@ -392,25 +393,20 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = battery_service_get_client_for_con_handle(gatt_event_characteristic_value_query_result_get_handle(packet));
             btstack_assert(client != NULL);                
 
-            switch (client->state){
 #ifdef ENABLE_TESTING_SUPPORT
-                case BATTERY_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
-                    printf("    Received CCC value: ");
-                    printf_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),  gatt_event_characteristic_value_query_result_get_value_length(packet));
-                    break;
-#endif  
-                case BATTERY_SERVICE_CLIENT_STATE_CONNECTED:
-                    if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 1) break;
-                    
-                    battery_service_emit_battery_level(client, 
-                        gatt_event_characteristic_value_query_result_get_value_handle(packet), 
-                        ATT_ERROR_SUCCESS,
-                        gatt_event_characteristic_value_query_result_get_value(packet)[0]);
-                    break;
-
-                default:
-                    break;
+            if (client->state == BATTERY_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT){
+                printf("    Received CCC value: ");
+                printf_hexdump(gatt_event_characteristic_value_query_result_get_value(packet),  gatt_event_characteristic_value_query_result_get_value_length(packet));
+                break;
             }
+#endif  
+            if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 1) break;
+                
+            battery_service_emit_battery_level(client, 
+                gatt_event_characteristic_value_query_result_get_value_handle(packet), 
+                ATT_ERROR_SUCCESS,
+                gatt_event_characteristic_value_query_result_get_value(packet)[0]);
+            break;
 
             // call run for client function to trigger next poll
             break;
@@ -506,11 +502,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 case BATTERY_SERVICE_CLIENT_W4_CHARACTERISTIC_CONFIGURATION_RESULT:
                     client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
                     battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS);
-                    
-                    if (client->poll_interval_ms > 0){
-                        client->need_poll_bitmap = client->poll_bitmap;
-                        battery_service_poll_timer_start(client);
-                    }
+                    battery_service_start_polling_if_needed(client);
                     break;
 #endif
                 case BATTERY_SERVICE_CLIENT_STATE_W4_NOTIFICATION_REGISTERED:
@@ -533,11 +525,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 #endif
                     client->state = BATTERY_SERVICE_CLIENT_STATE_CONNECTED;
                     battery_service_emit_connection_established(client, ERROR_CODE_SUCCESS);
-                    
-                    if (client->poll_interval_ms > 0){
-                        client->need_poll_bitmap = client->poll_bitmap;
-                        battery_service_poll_timer_start(client);
-                    }
+                    battery_service_start_polling_if_needed(client);
                     break;
 
                 case BATTERY_SERVICE_CLIENT_STATE_CONNECTED:
