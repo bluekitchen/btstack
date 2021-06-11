@@ -993,6 +993,8 @@ typedef struct {
     uint16_t le_maximum_ce_length;
     uint16_t le_connection_scan_interval;
     uint16_t le_connection_scan_window;
+    bd_addr_type_t  le_connection_own_addr_type;
+    bd_addr_t       le_connection_own_address;
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
@@ -1016,6 +1018,8 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+    bd_addr_type_t  le_advertisements_own_addr_type;
+    bd_addr_t       le_advertisements_own_address;
 
     uint8_t le_max_number_peripheral_connections;
 #endif

@@ -1100,19 +1100,36 @@ static int hci_le_supported(void){
 
 #ifdef ENABLE_BLE
 
-/**
- * @brief Get addr type and address used for LE in Advertisements, Scan Responses, 
- */
-void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
-    *addr_type = hci_stack->le_own_addr_type;
-    if (hci_stack->le_own_addr_type){
-        (void)memcpy(addr, hci_stack->le_random_address, 6);
+static void hci_get_own_address_for_addr_type(bd_addr_type_t own_addr_type, bd_addr_t own_addr){
+    if (own_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+        (void)memcpy(own_addr, hci_stack->local_bd_addr, 6);
     } else {
-        (void)memcpy(addr, hci_stack->local_bd_addr, 6);
+        (void)memcpy(own_addr, hci_stack->le_random_address, 6);
     }
 }
 
+void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
+    *addr_type = hci_stack->le_own_addr_type;
+    hci_get_own_address_for_addr_type(hci_stack->le_own_addr_type, addr);
+}
+
+#ifdef ENABLE_LE_PERIPHERAL
+void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr){
+    *addr_type = hci_stack->le_advertisements_own_addr_type;
+    hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, addr);
+};
+#endif
+
 #ifdef ENABLE_LE_CENTRAL
+
+/**
+ * @brief Get own addr type and address used for LE connections (Central)
+ */
+void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
+    *addr_type = hci_stack->le_connection_own_addr_type;
+    hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, addr);
+}
+
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
     int offset = 3;
@@ -4102,11 +4119,12 @@ static bool hci_run_general_gap_le(void){
 #ifdef ENABLE_LE_PERIPHERAL
     if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS){
         hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+        hci_stack->le_advertisements_own_addr_type = hci_stack->le_own_addr_type;
         hci_send_cmd(&hci_le_set_advertising_parameters,
                      hci_stack->le_advertisements_interval_min,
                      hci_stack->le_advertisements_interval_max,
                      hci_stack->le_advertisements_type,
-                     hci_stack->le_own_addr_type,
+                     hci_stack->le_advertisements_own_addr_type,
                      hci_stack->le_advertisements_direct_address_type,
                      hci_stack->le_advertisements_direct_address,
                      hci_stack->le_advertisements_channel_map,
@@ -4266,13 +4284,15 @@ static bool hci_run_general_gap_le(void){
     if ( (hci_stack->le_connecting_state == LE_CONNECTING_IDLE) && (hci_stack->le_connecting_request == LE_CONNECTING_WHITELIST)){
         bd_addr_t null_addr;
         memset(null_addr, 0, 6);
+        hci_stack->le_connection_own_addr_type =  hci_stack->le_own_addr_type;
+        hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_connection_own_address);
         hci_send_cmd(&hci_le_create_connection,
                      hci_stack->le_connection_scan_interval,    // scan interval: 60 ms
                      hci_stack->le_connection_scan_window,    // scan interval: 30 ms
                      1,         // use whitelist
                      0,         // peer address type
                      null_addr, // peer bd addr
-                     hci_stack->le_own_addr_type, // our addr type:
+                     hci_stack->le_connection_own_addr_type,   // our addr type:
                      hci_stack->le_connection_interval_min,    // conn interval min
                      hci_stack->le_connection_interval_max,    // conn interval max
                      hci_stack->le_connection_latency,         // conn latency
@@ -4289,6 +4309,7 @@ static bool hci_run_general_gap_le(void){
     if (hci_stack->le_advertisements_enabled_for_current_roles && !hci_stack->le_advertisements_active){
         // check if advertisements should be enabled given
         hci_stack->le_advertisements_active = true;
+        hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_advertisements_own_address);
         hci_send_cmd(&hci_le_set_advertise_enable, 1);
         return true;
     }
@@ -4316,13 +4337,15 @@ static bool hci_run_general_pending_commands(void){
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
                         log_info("sending hci_le_create_connection");
+                        hci_stack->le_connection_own_addr_type =  hci_stack->le_own_addr_type;
+                        hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_connection_own_address);
                         hci_send_cmd(&hci_le_create_connection,
                                      hci_stack->le_connection_scan_interval,    // conn scan interval
                                      hci_stack->le_connection_scan_window,      // conn scan windows
                                      0,         // don't use whitelist
                                      connection->address_type, // peer address type
                                      connection->address,      // peer bd addr
-                                     hci_stack->le_own_addr_type, // our addr type:
+                                     hci_stack->le_connection_own_addr_type,   // our addr type:
                                      hci_stack->le_connection_interval_min,    // conn interval min
                                      hci_stack->le_connection_interval_max,    // conn interval max
                                      hci_stack->le_connection_latency,         // conn latency

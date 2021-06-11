@@ -884,10 +884,19 @@ uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type
 // LE
 
 /**
- * @brief Get own addr type and address used for LE
+ * @brief Get own addr type and address used for LE for next scan/advertisement/connect operation
  */
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 
+/**
+ * @brief Get own addr type and address used for LE advertisements (Peripheral)
+ */
+void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr);
+
+/**
+ * @brief Get own addr type and address used for LE connections (Central)
+ */
+void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr);
 
 /**
  * @brief Get state of connection re-encryption for bonded devices when in central role
