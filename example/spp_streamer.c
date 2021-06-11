@@ -234,7 +234,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					break;
 
                 case RFCOMM_EVENT_CAN_SEND_NOW:
-                    // spp_send_packet();
+                    spp_send_packet();
                     break;
 
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
@@ -307,7 +307,6 @@ int btstack_main(int argc, const char * argv[])
 
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_local_name("SPP Streamer 00:00:00:00:00:00");
-    gap_set_bondable_mode(0);
     gap_discoverable_control(1);
 
     spp_create_test_data();

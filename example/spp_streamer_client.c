@@ -339,7 +339,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 #if (TEST_MODE & TEST_MODE_SEND)
                 case RFCOMM_EVENT_CAN_SEND_NOW:
-                    // spp_send_packet();
+                    spp_send_packet();
                     break;
 #endif
 
@@ -405,7 +405,6 @@ int btstack_main(int argc, const char * argv[]){
 
     // init SDP
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_set_bondable_mode(0);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
