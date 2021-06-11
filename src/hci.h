@@ -418,6 +418,8 @@ typedef struct sm_connection {
     uint8_t                  sm_pairing_requested;
     uint8_t                  sm_peer_addr_type;
     bd_addr_t                sm_peer_address;
+    uint8_t                  sm_own_addr_type;
+    bd_addr_t                sm_own_address;
     security_manager_state_t sm_engine_state;
     irk_lookup_state_t       sm_irk_lookup_state;
     uint8_t                  sm_pairing_failed_reason;

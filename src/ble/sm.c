@@ -1172,15 +1172,17 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     if (IS_RESPONDER(sm_conn->sm_role)){
         // slave
         local_packet = &setup->sm_s_pres;
-        gap_le_get_own_address(&setup->sm_s_addr_type, setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
+        setup->sm_s_addr_type = sm_conn->sm_own_addr_type;
         (void)memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
+        (void)memcpy(setup->sm_s_address, sm_conn->sm_own_address, 6);
     } else {
         // master
         local_packet = &setup->sm_m_preq;
-        gap_le_get_own_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
+        setup->sm_m_addr_type = sm_conn->sm_own_addr_type;
         (void)memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
+        (void)memcpy(setup->sm_m_address, sm_conn->sm_own_address, 6);
 
         int key_distribution_flags = sm_key_distribution_flags_for_auth_req();
         sm_pairing_packet_set_initiator_key_distribution(setup->sm_m_preq, key_distribution_flags);
@@ -3508,6 +3510,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_role = packet[6];
                             sm_conn->sm_peer_addr_type = packet[7];
                             reverse_bd_addr(&packet[8], sm_conn->sm_peer_address);
+                            gap_le_get_own_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
 
                             log_info("New sm_conn, role %s", sm_conn->sm_role ? "slave" : "master");
 
