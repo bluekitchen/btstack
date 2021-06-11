@@ -275,10 +275,8 @@ static void battery_service_run_for_client(battery_service_client_t * client){
             
                 
 #ifdef ENABLE_TESTING_SUPPORT
-            client->service_index = 0;
-
             for (client->service_index = 0; client->service_index < client->num_instances; client->service_index++){
-                bool need_polling = (((client->poll_bitmap >> i) & 0x01) == 1);
+                bool need_polling = (client->poll_bitmap & (1 << client->service_index)) != 0;
                 if ( (client->services[client->service_index].ccc_handle != 0) && !need_polling ){
                     client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
                     break;
@@ -330,7 +328,8 @@ static void battery_service_client_validate_service(battery_service_client_t * c
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type); 
-    UNUSED(channel);     
+    UNUSED(channel);
+    UNUSED(size);
 
     battery_service_client_t * client = NULL;
     gatt_client_service_t service;
@@ -509,11 +508,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;
                     } 
 #ifdef ENABLE_TESTING_SUPPORT
-                    client->service_index = 0;
-
                     for (client->service_index = 0; client->service_index < client->num_instances; client->service_index++){
-                        bool need_polling = (((client->poll_bitmap >> i) & 0x01) == 1);
-                        printf("read CCC 1 0x%02x, polling %d \n", client->services[client->service_index].ccc_handle);
+                        bool need_polling = (client->poll_bitmap & (1 << client->service_index)) != 0;
+                        printf("read CCC 1 0x%02x, polling %d \n", client->services[client->service_index].ccc_handle, (int) need_polling);
                         if ( (client->services[client->service_index].ccc_handle != 0) && !need_polling ) {
                             client->state = BATTERY_SERVICE_CLIENT_W2_READ_CHARACTERISTIC_CONFIGURATION;
                             break;
