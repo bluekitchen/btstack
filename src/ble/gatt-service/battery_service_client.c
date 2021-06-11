@@ -377,13 +377,10 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             break;
 
         case GATT_EVENT_NOTIFICATION:
-            // ignore if wrong (event type 1, length 1, handle 2, value handle 2, value length 2, value 1)
-            if (size != 9) break;
+            if (gatt_event_notification_get_value_length(packet) != 1) break;
             
             client = battery_service_get_client_for_con_handle(gatt_event_notification_get_handle(packet));
             btstack_assert(client != NULL);
-
-            if (gatt_event_notification_get_value_length(packet) != 1) break;
 
             battery_service_emit_battery_level(client, 
                 gatt_event_notification_get_value_handle(packet), 
@@ -403,8 +400,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
 #endif  
                 case BATTERY_SERVICE_CLIENT_STATE_CONNECTED:
-                    // ignore if wrong (event type 1, length 1, handle 2, value handle 2, value length 2, value 1)
-                    if (size != 9) break;
                     if (gatt_event_characteristic_value_query_result_get_value_length(packet) != 1) break;
                     
                     battery_service_emit_battery_level(client, 
