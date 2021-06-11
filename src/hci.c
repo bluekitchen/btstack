@@ -2431,6 +2431,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_LE_CENTRAL
                     if (hci_is_le_connection_type(addr_type)){
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                        hci_stack->le_connecting_request = LE_CONNECTING_IDLE;
                     }
 #endif
                     // error => outgoing connection failed
