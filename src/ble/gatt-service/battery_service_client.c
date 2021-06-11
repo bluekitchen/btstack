@@ -408,9 +408,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                 gatt_event_characteristic_value_query_result_get_value(packet)[0]);
             break;
 
-            // call run for client function to trigger next poll
-            break;
-
 #ifdef ENABLE_TESTING_SUPPORT
         case GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:{
             gatt_client_characteristic_descriptor_t characteristic_descriptor;
