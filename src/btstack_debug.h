@@ -78,6 +78,13 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #endif
 #endif
 
+// mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
+#ifdef UNIT_TEST
+#define btstack_unreachable()
+#else
+#define btstack_unreachable() btstack_assert(false)
+#endif
+
 // allow to provide port specific printf
 #ifndef BTSTACK_PRINTF
 #ifdef __AVR__
