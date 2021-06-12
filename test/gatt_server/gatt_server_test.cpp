@@ -27,7 +27,7 @@ static uint8_t battery_level = 100;
 static const uint8_t uuid128_with_bluetooth_base[] = { 0x00, 0x00, 0xBB, 0xBB, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 static const uint8_t uuid128_no_bluetooth_base[] =   { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xAA, 0xAA, 0x00, 0x00 };
 
-void l2cap_can_send_fixed_channel_packet_now_set_status(uint8_t status);
+extern "C" void l2cap_can_send_fixed_channel_packet_now_set_status(uint8_t status);
 
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(connection_handle);

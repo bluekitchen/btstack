@@ -109,16 +109,18 @@ bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
 
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-void mock_init(void);
-void mock_simulate_hci_state_working(void);
-void mock_simulate_hci_event(uint8_t * packet, uint16_t size);
-void aes128_report_result(void);
-void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t size);
-void mock_simulate_command_complete(const hci_cmd_t *cmd);
-void mock_simulate_connected(void);
-uint8_t * mock_packet_buffer(void);
-uint16_t mock_packet_buffer_len(void);
-void mock_clear_packet_buffer(void);
+extern "C" {
+    void mock_init(void);
+    void mock_simulate_hci_state_working(void);
+    void mock_simulate_hci_event(uint8_t * packet, uint16_t size);
+    void aes128_report_result(void);
+    void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t size);
+    void mock_simulate_command_complete(const hci_cmd_t *cmd);
+    void mock_simulate_connected(void);
+    uint8_t * mock_packet_buffer(void);
+    uint16_t mock_packet_buffer_len(void);
+    void mock_clear_packet_buffer(void);
+}
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t aHandle;

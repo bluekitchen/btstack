@@ -24,7 +24,7 @@ static btstack_linked_list_t     event_packet_handlers;
 
 void mock_init(void){
 	the_connection.item.next = NULL;
-	connections = (btstack_linked_item*) &the_connection;
+	connections = (btstack_linked_item_t*) &the_connection;
 }
 
 uint8_t * mock_packet_buffer(void){
@@ -142,7 +142,7 @@ int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
 	return 1;
 }
 
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
 	return &the_connection;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
@@ -176,7 +176,7 @@ uint16_t hci_get_manufacturer(void){
 void hci_le_set_own_address_type(uint8_t own_address){
 }
 
-extern "C" void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
+void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
     little_endian_store_16(event, 2, cid);

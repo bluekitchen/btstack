@@ -17,17 +17,11 @@ VPATH = \
 	${BTSTACK_ROOT}/platform/embedded \
 	${BTSTACK_ROOT}/platform/posix \
 
-CFLAGS  = \
-    -DBTSTACK_TEST \
-    -g \
-    -Wall \
-    -Wmissing-prototypes \
-    -Wnarrowing \
-    -I. \
-    -I.. \
-    -I${BTSTACK_ROOT}/src \
-    -I${BTSTACK_ROOT}/platform/embedded \
-    -I${BTSTACK_ROOT}/platform/posix \
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I..
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT

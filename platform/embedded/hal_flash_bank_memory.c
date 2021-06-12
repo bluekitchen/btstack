@@ -43,11 +43,6 @@
 #include "stdint.h"
 #include "string.h"
 
-#ifdef BTSTACK_TEST
-#include "stdio.h"
-#include <stdlib.h>	// exit(..)
-#endif
-
 static uint32_t hal_flash_bank_memory_get_size(void * context){
 	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
 	return self->bank_size;

@@ -1,13 +1,14 @@
-CC = g++
-
 # Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -g -Wall -Wnarrowing -Wconversion-null -I. -I../ 
-CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS  = -DUNIT_TEST  -g -Wall -Wnarrowing -Wconversion-null
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I.
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
@@ -49,8 +50,8 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
 LDFLAGS_ASAN     = ${LDFLAGS} -fsanitize=address
 
-COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o)) build-coverage/uECC.c.o
-COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o)) build-asan/uECC.c.o
+COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o)) build-coverage/uECC.o
+COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o)) build-asan/uECC.o
 
 
 all: build-coverage/gatt_server_test build-asan/gatt_server_test
@@ -63,23 +64,22 @@ build-%/profile.h: profile.gatt | build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
-	${CC} -c $(CFLAGS_COVERAGE) $< -o $@
-
-build-coverage/%.c.o: %.c | build-coverage
 	gcc -c $(CFLAGS_COVERAGE) $< -o $@
 
-build-asan/%.o: %.c | build-asan
-	${CC} -c $(CFLAGS_ASAN) $< -o $@
+build-coverage/%.o: %.cpp | build-coverage
+	g++ -c $(CFLAGS_COVERAGE) $< -o $@
 
-build-asan/%.c.o: %.c | build-asan
+build-asan/%.o: %.c | build-asan
 	gcc -c $(CFLAGS_ASAN) $< -o $@
 
+build-asan/%.o: %.cpp | build-asan
+	g++ -c $(CFLAGS_ASAN) $< -o $@
 
 build-coverage/gatt_server_test: ${COMMON_OBJ_COVERAGE} build-coverage/profile.h build-coverage/gatt_server_test.o | build-coverage
-	${CC} $(filter-out build-coverage/profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+	g++ $(filter-out build-coverage/profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
 
 build-asan/gatt_server_test: ${COMMON_OBJ_ASAN} build-asan/profile.h build-asan/gatt_server_test.o | build-asan
-	${CC} $(filter-out build-asan/profile.h,$^) ${LDFLAGS_ASAN} -o $@
+	g++ $(filter-out build-asan/profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/gatt_server_test

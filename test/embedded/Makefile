@@ -4,10 +4,10 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -g -Wall \
-		  -I. \
-		  -I${BTSTACK_ROOT}/src \
-		  -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/platform/embedded
+CFLAGS += -I.
 		  
 CFLAGS += -DHAVE_HAL_AUDIO
 

@@ -4,9 +4,9 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -g -Wall \
-		  -I.. \
-		  -I${BTSTACK_ROOT}/src \
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I..
 
 LDFLAGS += -lCppUTest -lCppUTestExt 
 

@@ -5,12 +5,11 @@ CC=g++
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall \
-		  -I. \
-		  -I.. \
-		  -I${BTSTACK_ROOT}/src \
-		  -I${BTSTACK_ROOT}/platform/posix \
-		  -I${BTSTACK_ROOT}/3rd-party/tinydir
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
+CFLAGS += -I.
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT

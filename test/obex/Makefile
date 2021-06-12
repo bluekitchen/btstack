@@ -5,7 +5,10 @@ CC=g++
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src 
+CFLAGS += -I../ 
+
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
