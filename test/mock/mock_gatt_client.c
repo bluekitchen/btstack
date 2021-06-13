@@ -334,6 +334,21 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
 }
 
+uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service){
+    btstack_assert(false);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t * uuid128){
+    btstack_assert(false);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+    btstack_assert(false);
+    return ERROR_CODE_SUCCESS;
+}
+
 /**
  * copied from gatt_client.c - START
  */

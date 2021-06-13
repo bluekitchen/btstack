@@ -23,7 +23,6 @@ COMMON = \
 	btstack_util.c              \
 	hci_dump.c                  \
 	mock_gatt_client.c 			\
-	battery_service_client.c 	\
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
 CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
@@ -36,7 +35,9 @@ COMMON_OBJ_COVERAGE = $(addprefix build-coverage/,$(COMMON:.c=.o))
 COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 
 
-all: build-coverage/battery_service_client_test build-asan/battery_service_client_test 
+all: \
+	build-coverage/battery_service_client_test build-asan/battery_service_client_test \
+	build-coverage/ancs_client_test build-asan/ancs_client_test \
 
 build-%:
 	mkdir -p $@
@@ -51,19 +52,26 @@ build-coverage/%.o: %.c | build-coverage
 build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
-build-coverage/battery_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_client_test.o  | build-coverage
+build-coverage/battery_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/battery_service_client_test.o  build-coverage/battery_service_client.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-asan/battery_service_client_test: ${COMMON_OBJ_ASAN} build-asan/battery_service_client_test.o  | build-asan
+build-asan/battery_service_client_test: ${COMMON_OBJ_ASAN} build-asan/battery_service_client_test.o build-asan/battery_service_client.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
+build-coverage/ancs_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/ancs_client_test.o build-coverage/ancs_client.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/ancs_client_test: ${COMMON_OBJ_ASAN} build-asan/ancs_client_test.o build-asan/ancs_client.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all
 	build-asan/battery_service_client_test
+	build-asan/ancs_client_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/battery_service_client_test
+	build-coverage/ancs_client_test
 
 clean:
 	rm -rf build-coverage build-asan
