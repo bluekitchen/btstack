@@ -23,3 +23,6 @@ initscripts_TIInit_6.7.16_bt_spec_4.1.c
 *.jdebug
 *.jdebug.user
 cmake-build-*
+build
+build-asan
+build-coverage
