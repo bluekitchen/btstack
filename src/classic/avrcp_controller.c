@@ -1032,10 +1032,17 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint8_t operation_id = packet[pos++];
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
-                    if (connection->press_and_hold_cmd_active){
-                        connection->state = AVCTP_W4_STOP;
-                    } else {
+                    // trigger release for simple command:
+                    if (!connection->press_and_hold_cmd_active){
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                        break;
+                    }
+                    // for press and hold, send release if it just has been requested, otherwise, wait for next repeat
+                    if (connection->press_and_hold_cmd_release){
+                        connection->press_and_hold_cmd_release = false;
+                        connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                    } else {
+                        connection->state = AVCTP_W4_STOP;
                     }
                     break;
                 case AVCTP_W2_RECEIVE_RESPONSE:
@@ -1240,8 +1247,28 @@ uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
         log_error("avrcp_stop_play: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AVCTP_W4_STOP) return ERROR_CODE_COMMAND_DISALLOWED;
-    return avrcp_controller_request_pass_through_release_control_cmd(connection);
+
+    switch (connection->state){
+        // respond when we receive response for (repeated) press command
+        case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
+            connection->press_and_hold_cmd_release = true;
+            break;
+        
+        // release already sent or on the way, nothing to do
+        case AVCTP_W2_RECEIVE_RESPONSE:
+        case AVCTP_W2_SEND_RELEASE_COMMAND:
+            break;
+        
+        // about to send next repeated press command or wait for it -> release right away
+        case AVCTP_W2_SEND_PRESS_COMMAND:
+        case AVCTP_W4_STOP:
+            return avrcp_controller_request_pass_through_release_control_cmd(connection);
+
+        // otherwise reject request
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_controller_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id){
