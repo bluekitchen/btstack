@@ -49,7 +49,6 @@
 #include "ble/sm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_run_loop.h"
 #include "gap.h"
 
 // ancs_client.h Start
@@ -121,6 +120,7 @@ static void notify_client_simple(int event_type){
 }
 
 static void ancs_chunk_parser_init(void){
+    // skip comand id and notification uid
     chunk_parser_state = W4_ATTRIBUTE_ID;
     ancs_bytes_received = 0;
     ancs_bytes_needed = 6;
@@ -136,9 +136,9 @@ const char * ancs_client_attribute_name_for_id(int id){
             "IDDate"
     };
 
-    static const uint16_t ANCS_ATTRBUTE_NAMES_COUNT = sizeof(ancs_attribute_names) / sizeof(char *);
+    static const uint16_t ANCS_ATTRIBUTE_NAMES_COUNT = sizeof(ancs_attribute_names) / sizeof(char *);
 
-    if (id >= ANCS_ATTRBUTE_NAMES_COUNT) return NULL;
+    if (id >= ANCS_ATTRIBUTE_NAMES_COUNT) return NULL;
     return ancs_attribute_names[id];
 }
 
@@ -171,7 +171,7 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
             chunk_parser_state  = W4_ATTRIBUTE_ID;
             break;
         default:
-            btstack_assert(false);
+            btstack_unreachable();
             break;
     }
 }
@@ -200,6 +200,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 
                     // we need to be paired to enable notifications
                     tc_state = TC_W4_ENCRYPTED_CONNECTION;
+                    ancs_service_found = false;
                     sm_request_pairing(gc_handle);
                     break;
                 default:
@@ -319,32 +320,37 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             }
             break;
         case TC_SUBSCRIBED:
-            if ((hci_event_packet_get_type(packet) != GATT_EVENT_NOTIFICATION) && (hci_event_packet_get_type(packet) != GATT_EVENT_INDICATION) ) break;
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_NOTIFICATION:
+                case GATT_EVENT_INDICATION:
+                    value_handle = little_endian_read_16(packet, 4);
+                    value_length = little_endian_read_16(packet, 6);
+                    value = &packet[8];
 
-            value_handle = little_endian_read_16(packet, 4);
-            value_length = little_endian_read_16(packet, 6);
-            value = &packet[8];
+                    log_info("ANCS Notification, value handle %u", value_handle);
 
-            log_info("ANCS Notification, value handle %u", value_handle);
-
-            if (value_handle == ancs_data_source_characteristic.value_handle){
-                int i;
-                for (i=0;i<value_length;i++) {
-                    ancs_chunk_parser_handle_byte(value[i]);
-                }
-            } else if (value_handle == ancs_notification_source_characteristic.value_handle){
-                ancs_notification_uid = little_endian_read_32(value, 4);
-                log_info("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x",
-                    value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
-                static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
-                little_endian_store_32(get_notification_attributes, 1, ancs_notification_uid);
-                ancs_notification_uid = 0;
-                ancs_chunk_parser_init();
-                gatt_client_write_value_of_characteristic(handle_hci_event, gc_handle, ancs_control_point_characteristic.value_handle, 
-                    sizeof(get_notification_attributes), get_notification_attributes);
-            } else {
-                log_info("Unknown Source: ");
-                log_info_hexdump(value , value_length);
+                    if (value_handle == ancs_data_source_characteristic.value_handle){
+                        int i;
+                        for (i=0;i<value_length;i++) {
+                            ancs_chunk_parser_handle_byte(value[i]);
+                        }
+                    } else if (value_handle == ancs_notification_source_characteristic.value_handle){
+                        ancs_notification_uid = little_endian_read_32(value, 4);
+                        log_info("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x",
+                                 value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
+                        static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
+                        little_endian_store_32(get_notification_attributes, 1, ancs_notification_uid);
+                        ancs_notification_uid = 0;
+                        ancs_chunk_parser_init();
+                        gatt_client_write_value_of_characteristic(handle_hci_event, gc_handle, ancs_control_point_characteristic.value_handle,
+                                                                  sizeof(get_notification_attributes), get_notification_attributes);
+                    } else {
+                        log_info("Unknown Source: ");
+                        log_info_hexdump(value , value_length);
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
         default:
@@ -356,4 +362,13 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 void ancs_client_init(void){
     hci_event_callback_registration.callback = &handle_hci_event;
     hci_add_event_handler(&hci_event_callback_registration);
+}
+
+// unit test only
+#if defined __cplusplus
+extern "C"
+#endif
+void ancs_client_set_invalid_parser_state(void);
+void ancs_client_set_invalid_parser_state(void){
+    chunk_parser_state = (ancs_chunk_parser_state_t) 0x17;
 }
