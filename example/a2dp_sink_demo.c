@@ -830,18 +830,22 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             
             allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
-            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             
             // Adapt Bluetooth spec definition to SBC Encoder expected input
             sbc_configuration.allocation_method = (btstack_sbc_allocation_method_t)(allocation_method - 1);
-            sbc_configuration.num_channels = SBC_CHANNEL_MODE_STEREO;
-            switch (sbc_configuration.channel_mode){
-                case SBC_CHANNEL_MODE_JOINT_STEREO:
-                case SBC_CHANNEL_MODE_STEREO:
-                case SBC_CHANNEL_MODE_DUAL_CHANNEL:
+           
+            switch (a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet)){
+                case AVDTP_CHANNEL_MODE_JOINT_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_JOINT_STEREO;
                     break;
-                case SBC_CHANNEL_MODE_MONO:
-                    sbc_configuration.num_channels = 1;
+                case AVDTP_CHANNEL_MODE_STEREO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_STEREO;
+                    break;
+                case AVDTP_CHANNEL_MODE_DUAL_CHANNEL:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_DUAL_CHANNEL;
+                    break;
+                case AVDTP_CHANNEL_MODE_MONO:
+                    sbc_configuration.channel_mode = SBC_CHANNEL_MODE_MONO;
                     break;
                 default:
                     btstack_assert(false);
