@@ -549,7 +549,8 @@ typedef struct {
 
     btstack_timer_source_t retry_timer;
     btstack_timer_source_t press_and_hold_cmd_timer;
-    bool     press_and_hold_cmd;
+    bool     press_and_hold_cmd_active;
+
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 

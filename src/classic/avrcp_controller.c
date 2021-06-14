@@ -544,14 +544,14 @@ static void avrcp_press_and_hold_timer_start(avrcp_connection_t * connection){
 }
 
 static void avrcp_press_and_hold_timer_stop(avrcp_connection_t * connection){
-    connection->press_and_hold_cmd = 0;
+    connection->press_and_hold_cmd_active = false;
     btstack_run_loop_remove_timer(&connection->press_and_hold_cmd_timer);
 } 
 
 
 static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_connection_t * connection){
     connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-    if (connection->press_and_hold_cmd){
+    if (connection->press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_stop(connection);
     }
     connection->cmd_operands[0] = 0x80 | connection->cmd_operands[0];
@@ -560,7 +560,7 @@ static uint8_t avrcp_controller_request_pass_through_release_control_cmd(avrcp_c
     return ERROR_CODE_SUCCESS;
 }
 
-static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, bool continuous_fast_forward_cmd){
+static uint8_t avrcp_controller_request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, bool continuous_cmd){
     log_info("Send command %d", opid);
     avrcp_connection_t * connection = avrcp_get_connection_for_avrcp_cid_for_role(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
@@ -579,7 +579,7 @@ static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(ui
     connection->subunit_id =   AVRCP_SUBUNIT_ID;
     connection->cmd_operands_length = 0;
 
-    connection->press_and_hold_cmd = continuous_fast_forward_cmd;
+    connection->press_and_hold_cmd_active = continuous_cmd;
     connection->cmd_operands_length = 2;
     connection->cmd_operands[0] = opid;
     if (playback_speed > 0){
@@ -588,7 +588,7 @@ static inline uint8_t avrcp_controller_request_pass_through_press_control_cmd(ui
     }
     connection->cmd_operands[1] = connection->cmd_operands_length - 2;
     
-    if (connection->press_and_hold_cmd){
+    if (connection->press_and_hold_cmd_active){
         avrcp_press_and_hold_timer_start(connection);
     }
 
@@ -1032,7 +1032,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint8_t operation_id = packet[pos++];
             switch (connection->state){
                 case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
-                    if (connection->press_and_hold_cmd){
+                    if (connection->press_and_hold_cmd_active){
                         connection->state = AVCTP_W4_STOP;
                     } else {
                         connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
