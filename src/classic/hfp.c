@@ -1634,7 +1634,6 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 5:
-                    printf("text%s\n", hfp_connection->line_buffer);
                     hfp_emit_enhanced_voice_recognition_text(hfp_connection, hfp_connection->line_size, &hfp_connection->line_buffer[0]);
                     break;
                 default:
