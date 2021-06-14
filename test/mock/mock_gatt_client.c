@@ -6,8 +6,8 @@
 #include "bluetooth_gatt.h"
 #include "mock_gatt_client.h"
 
-#include "CppUTest/TestHarness.h"
-#include "CppUTestExt/MockSupport.h"
+//#include "CppUTest/TestHarness.h"
+//#include "CppUTestExt/MockSupport.h"
 
 static enum {
     MOCK_QUERY_IDLE = 0,
