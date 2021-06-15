@@ -1592,6 +1592,8 @@ typedef uint8_t sm_key_t[16];
  */
 #define HSP_SUBEVENT_BUTTON_PRESSED                        0x0au
 
+#define HSP_SUBEVENT_HS_CALL_HANGUP                         0x10
+#define HSP_SUBEVENT_HS_CALL_ANSWER                         0x11
 /** HFP Subevent */
 
 /**

@@ -137,6 +137,7 @@ static void hsp_run(void);
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+
 void hsp_ag_register_packet_handler(btstack_packet_handler_t callback){
     btstack_assert(callback != NULL);
     hsp_ag_callback = callback;

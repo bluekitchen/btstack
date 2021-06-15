@@ -49,6 +49,7 @@
 #include "btstack_defines.h"
 #include "hci_dump.h"
 
+
 #ifdef __AVR__
 #include <avr/pgmspace.h>
 #endif
@@ -97,7 +98,8 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 #ifdef __AVR__
 #define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%S.%u: " format), PSTR(BTSTACK_FILE__), __LINE__, ## __VA_ARGS__)
 #else
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+void bt_log_custom(const char* file, int line, const char* foo, const char* fmt, ...);
+#define HCI_DUMP_LOG(log_level, format, ...) bt_log_custom(BTSTACK_FILE__, __LINE__,__func__, "[%d] " format, log_level, ##__VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_DEBUG
