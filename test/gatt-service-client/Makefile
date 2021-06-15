@@ -38,6 +38,7 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 all: \
 	build-coverage/battery_service_client_test build-asan/battery_service_client_test \
 	build-coverage/ancs_client_test build-asan/ancs_client_test \
+	build-coverage/device_information_service_client_test build-asan/device_information_service_client_test \
 
 build-%:
 	mkdir -p $@
@@ -64,14 +65,23 @@ build-coverage/ancs_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/ancs_clie
 build-asan/ancs_client_test: ${COMMON_OBJ_ASAN} build-asan/ancs_client_test.o build-asan/ancs_client.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
+build-coverage/device_information_service_client_test: ${COMMON_OBJ_COVERAGE} build-coverage/device_information_service_client_test.o build-coverage/device_information_service_client.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/device_information_service_client_test: ${COMMON_OBJ_ASAN} build-asan/device_information_service_client_test.o build-asan/device_information_service_client.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+
 test: all
 	build-asan/battery_service_client_test
 	build-asan/ancs_client_test
+	build-asan/device_information_service_client_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/battery_service_client_test
 	build-coverage/ancs_client_test
+	build-coverage/device_information_service_client_test
 
 clean:
 	rm -rf build-coverage build-asan
