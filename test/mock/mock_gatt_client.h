@@ -90,10 +90,8 @@ void mock_gatt_client_emit_complete(uint8_t status);
 
 void mock_gatt_client_set_att_error_discover_primary_services(void);
 void mock_gatt_client_set_att_error_discover_characteristics(void);
+void mock_gatt_client_set_att_error_read_value_characteristics(void);
 void mock_gatt_client_set_att_error_discover_characteristic_descriptors(void);
-
-void mock_gatt_client_simulate_invalid_con_handle(void);
-void mock_gatt_client_simulate_invalid_value_handle(void);
 
 void mock_gatt_client_enable_notification(mock_gatt_client_characteristic_t * characteristic, bool command_allowed);
 void mock_gatt_client_send_notification(mock_gatt_client_characteristic_t * characteristic, const uint8_t * value_buffer, uint16_t value_len);
