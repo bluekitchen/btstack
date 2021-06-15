@@ -345,20 +345,17 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client = device_information_service_get_client_for_con_handle(gatt_event_service_query_result_get_handle(packet));
             btstack_assert(client != NULL);
 
-            if (client->state != DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT) {
-                device_information_service_emit_query_done(client, GATT_CLIENT_IN_WRONG_STATE);  
-                device_information_service_finalize_client(client);      
-                return;
-            }
-
             gatt_event_service_query_result_get_service(packet, &service);
             client->start_handle = service.start_group_handle;
             client->end_handle = service.end_group_handle;
+
+            client->characteristic_index = 0;
+            if (client->start_handle < client->end_handle){
+                client->num_instances++;
+            }
 #ifdef ENABLE_TESTING_SUPPORT
             printf("Device Information Service: start handle 0x%04X, end handle 0x%04X, num_instances %d\n", client->start_handle, client->end_handle, client->num_instances);
 #endif
-            client->num_instances++;
-            client->characteristic_index = 0;
             break;
 
 #ifdef ENABLE_TESTING_SUPPORT
