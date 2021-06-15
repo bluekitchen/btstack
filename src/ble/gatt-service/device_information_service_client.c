@@ -101,11 +101,11 @@ static const struct device_information_characteristic {
     {ORG_BLUETOOTH_CHARACTERISTIC_MANUFACTURER_NAME_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MANUFACTURER_NAME, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_MODEL_NUMBER_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_MODEL_NUMBER, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_SERIAL_NUMBER_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SERIAL_NUMBER, device_information_service_emit_string_value},
-    {ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION, device_information_service_emit_system_id},
+    {ORG_BLUETOOTH_CHARACTERISTIC_HARDWARE_REVISION_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_HARDWARE_REVISION, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_FIRMWARE_REVISION_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_FIRMWARE_REVISION, device_information_service_emit_string_value},
     {ORG_BLUETOOTH_CHARACTERISTIC_SOFTWARE_REVISION_STRING, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SOFTWARE_REVISION, device_information_service_emit_string_value},
 
-    {ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID, device_information_service_emit_string_value},
+    {ORG_BLUETOOTH_CHARACTERISTIC_SYSTEM_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_SYSTEM_ID, device_information_service_emit_system_id},
     {ORG_BLUETOOTH_CHARACTERISTIC_IEEE_11073_20601_REGULATORY_CERTIFICATION_DATA_LIST, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_IEEE_REGULATORY_CERTIFICATION, device_information_service_emit_certification_data_list},
     {ORG_BLUETOOTH_CHARACTERISTIC_PNP_ID, GATTSERVICE_SUBEVENT_DEVICE_INFORMATION_PNP_ID, device_information_service_emit_pnp_id}
 };
@@ -188,6 +188,10 @@ static device_information_service_client_t * device_information_service_get_clie
 static void device_information_service_finalize_client(device_information_service_client_t * client){
     client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_IDLE;
     client->con_handle = HCI_CON_HANDLE_INVALID;
+    client->client_handler = NULL;
+    client->num_instances = 0;
+    client->start_handle = 0;
+    client->end_handle = 0;
 }
 
 static void device_information_service_emit_query_done(device_information_service_client_t * client, uint8_t att_status){
@@ -297,12 +301,12 @@ static void device_information_service_run_for_client(device_information_service
         case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_READ_VALUE_OF_CHARACTERISTIC:
             client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE;
  
- #ifdef ENABLE_TESTING_SUPPORT  
+#ifdef ENABLE_TESTING_SUPPORT  
             att_status = gatt_client_read_value_of_characteristic_using_value_handle(
                 handle_gatt_client_event, 
                 client->con_handle, 
                 device_information_characteristic_handles[client->characteristic_index].value_handle);
- #else            
+#else            
             att_status = gatt_client_read_value_of_characteristics_by_uuid16(
                 handle_gatt_client_event, 
                 client->con_handle, client->start_handle, client->end_handle, 
@@ -346,7 +350,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             client->start_handle = service.start_group_handle;
             client->end_handle = service.end_group_handle;
 #ifdef ENABLE_TESTING_SUPPORT
-            printf("Device Information Service: start handle 0x%04X, end handle 0x%04X\n", client->start_handle, client->end_handle);
+            printf("Device Information Service: start handle 0x%04X, end handle 0x%04X, num_instances %d\n", client->start_handle, client->end_handle, client->num_instances);
 #endif
             client->num_instances++;
             client->characteristic_index = 0;
@@ -466,7 +470,10 @@ uint8_t device_information_service_client_query(hci_con_handle_t con_handle, bts
 }
 
 
-void device_information_service_client_init(void){}
+void device_information_service_client_init(void){
+    device_information_service_client_t * client = device_information_service_client_get_client();
+    device_information_service_finalize_client(client);
+}
 
 void device_information_service_client_deinit(void){}
 
