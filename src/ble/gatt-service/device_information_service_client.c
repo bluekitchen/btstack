@@ -456,15 +456,18 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 uint8_t device_information_service_client_query(hci_con_handle_t con_handle, btstack_packet_handler_t packet_handler){
     btstack_assert(packet_handler != NULL);
-    device_information_service_client_t * client = device_information_service_client_get_client();
+    device_information_service_client_t * client = device_information_service_get_client_for_con_handle(con_handle);
 
-    if (client->state != DEVICE_INFORMATION_SERVICE_CLIENT_STATE_IDLE){
-        return GATT_CLIENT_IN_WRONG_STATE;
-    }
+    if (client != NULL){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
 
+    client = device_information_service_client_get_client();
+    
     client->con_handle = con_handle;
     client->client_handler = packet_handler; 
     client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W2_QUERY_SERVICE;
+
     device_information_service_run_for_client(client);
     return ERROR_CODE_SUCCESS;
 }
