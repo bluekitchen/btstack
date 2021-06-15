@@ -129,11 +129,11 @@ static void gatt_client_event_handler(uint8_t packet_type, uint16_t channel, uin
         case GATTSERVICE_SUBEVENT_BATTERY_SERVICE_LEVEL:
             att_status = gattservice_subevent_battery_service_level_get_att_status(packet);
             if (att_status != ATT_ERROR_SUCCESS){
-                printf("Battery level read failed, ATT Error 0x%02x\n", att_status);
+                // printf("Battery level read failed, ATT Error 0x%02x\n", att_status);
                 break;
             } 
             
-            printf("Battery level 0x%02x\n", gattservice_subevent_battery_service_level_get_level(packet));
+            // printf("Battery level 0x%02x\n", gattservice_subevent_battery_service_level_get_level(packet));
             CHECK_EQUAL(battery_level[0], gattservice_subevent_battery_service_level_get_level(packet));
             CHECK_EQUAL(0, gattservice_subevent_battery_service_level_get_sevice_index(packet));
             break;
@@ -251,13 +251,6 @@ TEST(BATTERY_SERVICE_CLIENT, connect_with_service_no_chr_no_desc){
     setup_service(false, false);
     connect();
     CHECK_EQUAL(false, connected);
-}
-
-TEST(BATTERY_SERVICE_CLIENT, connect_invalid_handle){
-    setup_service(true, true);
-    // mock_gatt_client_simulate_invalid_con_handle();
-    // connect();
-    // CHECK_EQUAL(false, connected);
 }
 
 TEST(BATTERY_SERVICE_CLIENT, connect_with_service_and_chr_no_desc){
