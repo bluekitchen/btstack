@@ -113,14 +113,11 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     uint8_t * ptr;
     while (*format) {
         switch(*format) {
-            case '1': //  8 bit value
             case '2': // 16 bit value
                 word = va_arg(argptr, int);
                 // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 acl_buffer[pos++] = word & 0xffu;
-                if (*format == '2') {
-                    acl_buffer[pos++] = word >> 8;
-                }
+                acl_buffer[pos++] = word >> 8;
                 break;
 #ifdef ENABLE_CLASSIC
             case 'D': // variable data. passed: len, ptr
