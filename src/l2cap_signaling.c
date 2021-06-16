@@ -119,15 +119,14 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
                 acl_buffer[pos++] = word & 0xffu;
                 acl_buffer[pos++] = word >> 8;
                 break;
-#ifdef ENABLE_CLASSIC
             case 'D': // variable data. passed: len, ptr
                 word = va_arg(argptr, int);
                 ptr  = va_arg(argptr, uint8_t *);
                 (void)memcpy(&acl_buffer[pos], ptr, word);
                 pos += word;
                 break;
-#endif
             default:
+                btstack_unreachable();
                 break;
         }
         format++;
