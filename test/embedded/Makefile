@@ -30,6 +30,7 @@ COMMON = \
 	btstack_run_loop_embedded.c \
     btstack_util.c		  \
     hci_dump.c    \
+    l2cap_signaling.c \
 
 # not used yet
 #	btstack_em9304_spi_embedded.c \
