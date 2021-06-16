@@ -1,7 +1,6 @@
-
 // *****************************************************************************
 //
-// test Battery Service Client
+// test ANCS Client
 //
 // *****************************************************************************
 
@@ -26,10 +25,18 @@
 #include "ble/gatt-service/ancs_client.h"
 #include "mock_gatt_client.h"
 
+extern "C" void ancs_client_set_invalid_parser_state(void);
+
 // mock hci
+
+static const uint8_t ancs_service_uuid[] =             {0x79,0x05,0xF4,0x31,0xB5,0xCE,0x4E,0x99,0xA4,0x0F,0x4B,0x1E,0x12,0x2D,0x00,0xD0};
+static const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0x42,0xD9,0x8C,0x58,0x25,0xE6,0x99,0xA2,0x1D,0xBD};
+static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
+static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
 
 static btstack_packet_callback_registration_t * ancs_callback_registration;
 static const hci_con_handle_t ancs_con_handle = 0x001;
+static bool ancs_connected;
 
 void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
     ancs_callback_registration = callback_handler;
@@ -37,7 +44,7 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 
 static void hci_emit_event(uint8_t * event, uint16_t size, int dump){
     btstack_assert(ancs_callback_registration != NULL);
-    (*ancs_callback_registration->callback)(HCI_EVENT_PACKET, 0, event, size);    
+    (*ancs_callback_registration->callback)(HCI_EVENT_PACKET, 0, event, size);
 }
 
 static void hci_emit_le_connection_complete(uint8_t address_type, const bd_addr_t address, hci_con_handle_t con_handle, uint8_t status){
@@ -84,7 +91,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
 static btstack_timer_source_t * btstack_timer = NULL;
 
 void btstack_run_lopo_deinit(void){
-        btstack_timer = NULL;
+    btstack_timer = NULL;
 }
 
 void btstack_run_loop_add_timer(btstack_timer_source_t * timer){
@@ -121,24 +128,26 @@ static void ancs_client_event_handler(uint8_t packet_type, uint16_t channel, uin
     UNUSED(channel);
     UNUSED(size);
 
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_GATTSERVICE_META){
-        return;
-    }
-    
     switch (hci_event_gattservice_meta_get_subevent_code(packet)){
+        case ANCS_SUBEVENT_CLIENT_CONNECTED:
+            ancs_connected = true;
+            break;
         default:
             break;
     }
 }
 
-TEST_GROUP(ANCS_CLIENT){ 
+TEST_GROUP(ANCS_CLIENT){
     mock_gatt_client_service_t * service;
-    mock_gatt_client_characteristic_t * characteristic;
+    mock_gatt_client_characteristic_t * ancs_data_source_characteristic;
+    mock_gatt_client_characteristic_t * ancs_notification_source_characteristic;
+    mock_gatt_client_characteristic_t * ancs_control_point_characteristic;
     mock_gatt_client_characteristic_descriptor_t * descriptor;
 
     uint8_t  value_buffer[3];
 
     void setup(void){
+        ancs_connected = false;
         mock_gatt_client_reset();
         ancs_client_init();
         ancs_client_register_callback(&ancs_client_event_handler);
@@ -146,18 +155,23 @@ TEST_GROUP(ANCS_CLIENT){
 
     void setup_service(bool add_characteristics, bool add_descriptors){
         // TODO: setup ANCS Service
-#if 0
-        service = mock_gatt_client_add_primary_service_uuid16(ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE);
+        service = mock_gatt_client_add_primary_service_uuid128(ancs_service_uuid);
+
         if (!add_characteristics) return;
-
-        characteristic = mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, ATT_PROPERTY_NOTIFY);
-        
-        if (!add_descriptors) return;
-        descriptor = mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
-        mock_gatt_client_set_descriptor_characteristic_value(descriptor, value_buffer, sizeof(value_buffer));
-
+        ancs_control_point_characteristic = mock_gatt_client_add_characteristic_uuid128(ancs_control_point_uuid, ATT_PROPERTY_NOTIFY);
+        if (add_descriptors) {
+            descriptor = mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+        }
+        ancs_data_source_characteristic = mock_gatt_client_add_characteristic_uuid128(ancs_data_source_uuid, ATT_PROPERTY_NOTIFY);
+        if (add_descriptors) {
+            descriptor = mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+        }
+        ancs_notification_source_characteristic = mock_gatt_client_add_characteristic_uuid128(ancs_notification_source_uuid, ATT_PROPERTY_NOTIFY);
+        if (add_descriptors) {
+            descriptor = mock_gatt_client_add_characteristic_descriptor_uuid16(ORG_BLUETOOTH_DESCRIPTOR_GATT_CLIENT_CHARACTERISTIC_CONFIGURATION);
+        }
         // mock_gatt_client_dump_services();
-#endif
+
     }
 
     void connect(void){
@@ -199,8 +213,116 @@ TEST(ANCS_CLIENT, ignored_events){
     hci_emit_disconnection_complete(ancs_con_handle,0);
 }
 
-TEST(ANCS_CLIENT, connect){
+TEST(ANCS_CLIENT, connect_no_service){
     connect();
+    mock_gatt_client_run();
+}
+
+TEST(ANCS_CLIENT, connect_unexpected_event_during_service_disc){
+    connect();
+    mock_gatt_client_emit_dummy_event();
+}
+
+TEST(ANCS_CLIENT, connect_unexpected_events){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+    mock_gatt_client_run_once();
+    mock_gatt_client_emit_dummy_event();
+}
+
+TEST(ANCS_CLIENT, connect){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    CHECK_TRUE(ancs_connected);
+}
+
+TEST(ANCS_CLIENT, connect_extra_characteristic){
+    setup_service(true, true);
+    mock_gatt_client_add_characteristic_uuid16(ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, 0);
+    connect();
+    mock_gatt_client_run();
+}
+
+TEST(ANCS_CLIENT, disconnect){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    hci_emit_disconnection_complete(ancs_con_handle,0);
+}
+
+TEST(ANCS_CLIENT, notification_characteristic){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    const uint8_t data[] = {};
+    mock_gatt_client_send_notification(ancs_notification_source_characteristic, data, sizeof(data));
+}
+
+TEST(ANCS_CLIENT, data_source_characteristic){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    // simulate notification
+    const uint8_t notification_data[] = {0,0,0,0,0,0,0,0};
+    mock_gatt_client_send_notification(ancs_notification_source_characteristic, notification_data, sizeof(notification_data));
+    // command id = 0 / CommandIDGetNotificationAttributes
+    // notification uid 0x1111
+    // attribute id 1
+    // len 1
+    // attribute id 2
+    // len 0
+    const uint8_t data[] = { 0, 0,0,0,0, 1, 1, 0, 'a', 2, 0, 0};
+    mock_gatt_client_send_notification(ancs_data_source_characteristic, data, sizeof(data));
+}
+
+TEST(ANCS_CLIENT, data_source_characteristic_no_handler){
+    ancs_client_register_callback(NULL);
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    // simulate notification
+    const uint8_t notification_data[] = {0,0,0,0,0,0,0,0};
+    mock_gatt_client_send_notification(ancs_notification_source_characteristic, notification_data, sizeof(notification_data));
+    // command id = 0 / CommandIDGetNotificationAttributes
+    // notification uid 0x1111
+    // attribute id 1
+    // len 1
+    // attribute id 2
+    // len 0
+    const uint8_t data[] = { 0, 0,0,0,0, 1, 1, 0, 'a', 2, 0, 0};
+    mock_gatt_client_send_notification(ancs_data_source_characteristic, data, sizeof(data));
+}
+
+TEST(ANCS_CLIENT, notifications_other){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    const uint8_t data[] = {};
+    mock_gatt_client_send_notification_with_handle(ancs_notification_source_characteristic, 0x0001, data, sizeof(data));
+}
+
+TEST(ANCS_CLIENT, indications_other){
+    setup_service(true, true);
+    connect();
+    mock_gatt_client_run();
+    const uint8_t data[] = {};
+    mock_gatt_client_send_indication_with_handle(ancs_notification_source_characteristic, 0x0001, data, sizeof(data));
+}
+
+TEST(ANCS_CLIENT, notifications_invalid_parser){
+    setup_service(true, true);
+    ancs_client_set_invalid_parser_state();
+    connect();
+    mock_gatt_client_run();
+    const uint8_t data[] = {1,2,3,4,5,6};
+    mock_gatt_client_send_notification(ancs_data_source_characteristic, data, sizeof(data));
 }
 
 int main (int argc, const char * argv[]){
