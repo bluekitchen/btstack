@@ -422,14 +422,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;
 #endif                
                 case DEVICE_INFORMATION_SERVICE_CLIENT_STATE_W4_CHARACTERISTIC_VALUE:
-                    if (att_status != ATT_ERROR_SUCCESS){
-                        (device_information_characteristics[client->characteristic_index].handle_value(
-                            client, device_information_characteristics[client->characteristic_index].subevent, 
-                            att_status,
-                            gatt_event_characteristic_value_query_result_get_value(packet), 
-                            gatt_event_characteristic_value_query_result_get_value_length(packet)));
-                    }
-                    
                     // check if there is another characteristic to query
                     if ((client->characteristic_index + 1) < num_information_fields){
                         client->characteristic_index++;
