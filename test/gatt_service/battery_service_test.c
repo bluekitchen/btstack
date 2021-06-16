@@ -46,14 +46,29 @@ TEST_GROUP(BATTERY_SERVICE_SERVER){
     }
 
     void teardown(){
-        mock().clear();
+        mock_deinit();
     }
 };
+
+TEST(BATTERY_SERVICE_SERVER, set_battery_value_trigger_can_send_now){
+    // enable notifications
+    const uint8_t enable_notify[]= { 0x1, 0x0 };
+    mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
+
+    // set battery to trigger notification
+    mock().expectOneCall("att_server_register_can_send_now_callback");
+    battery_service_server_set_battery_value(60);
+    mock().checkExpectations();
+    mock().expectOneCall("att_server_notify");
+    mock_att_service_trigger_can_send_now();
+    mock().checkExpectations();
+}
 
 TEST(BATTERY_SERVICE_SERVER, lookup_attribute_handles){
     CHECK(battery_value_handle_value != 0);
     CHECK(battery_value_handle_client_configuration != 0);
 }
+
 
 TEST(BATTERY_SERVICE_SERVER, set_battery_value){
     // battery_value_handle_client_configuration not set
@@ -69,6 +84,21 @@ TEST(BATTERY_SERVICE_SERVER, set_battery_value){
     mock().checkExpectations();
 }
 
+TEST(BATTERY_SERVICE_SERVER, set_wrong_handle_battery_value){
+    // battery_value_handle_client_configuration not set
+    mock().expectNCalls(con_handle, "att_server_register_can_send_now_callback");
+    battery_service_server_set_battery_value(60);
+    mock().checkExpectations();
+
+    // // battery_value_handle_client_configuration set
+    mock().expectNoCall("att_server_register_can_send_now_callback");
+    const uint8_t enable_notify[]= { 0x1, 0x0 };
+    mock_att_service_write_callback(con_handle, battery_value_handle_client_configuration + 10, ATT_TRANSACTION_MODE_NONE, 0, enable_notify, sizeof(enable_notify));
+    battery_service_server_set_battery_value(60);
+    mock().checkExpectations();
+}
+
+
 TEST(BATTERY_SERVICE_SERVER, read_battery_value){
     uint8_t response[2];
     uint16_t response_len;
@@ -83,6 +113,7 @@ TEST(BATTERY_SERVICE_SERVER, read_battery_value){
     response_len = mock_att_service_read_callback(con_handle, battery_value_handle_client_configuration, 0, response, sizeof(response));
     CHECK_EQUAL(2, response_len);
 }
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
