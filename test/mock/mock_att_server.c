@@ -16,9 +16,16 @@
 #include "CppUTestExt/MockSupport.h"
 
 static att_service_handler_t * service;
+static btstack_context_callback_registration_t * mock_callback_registration;
 
 att_service_handler_t * mock_att_server_get_service(void){
     return service;
+}
+
+void mock_deinit(void){
+    mock().clear();
+    mock_callback_registration = NULL;
+    service = NULL;
 }
 
 uint16_t mock_att_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
@@ -35,6 +42,11 @@ uint16_t mock_att_service_write_callback(hci_con_handle_t con_handle, uint16_t a
 
 void att_server_register_service_handler(att_service_handler_t * handler){
     service = handler;
+}
+
+void mock_att_service_trigger_can_send_now(void){
+    btstack_assert(mock_callback_registration != NULL);
+    (*mock_callback_registration->callback)(mock_callback_registration->context);
 }
 
 uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
@@ -64,6 +76,8 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, co
 int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     UNUSED(callback_registration);
     UNUSED(con_handle);
+    mock_callback_registration = callback_registration;
+
     mock().actualCall("att_server_register_can_send_now_callback");
     return ERROR_CODE_SUCCESS;
 }
