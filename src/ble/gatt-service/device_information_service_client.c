@@ -472,3 +472,12 @@ void device_information_service_client_init(void){
 
 void device_information_service_client_deinit(void){}
 
+// unit test only
+#if defined __cplusplus
+extern "C"
+#endif
+void device_information_service_client_set_invalid_state(void);
+void device_information_service_client_set_invalid_state(void){
+    device_information_service_client_t * client =  device_information_service_client_get_client();
+    client->state = DEVICE_INFORMATION_SERVICE_CLIENT_STATE_IDLE;
+}
