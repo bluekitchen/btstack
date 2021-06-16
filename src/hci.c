@@ -2709,6 +2709,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_event_io_capability_response_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_RESPONSE);
             conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
             conn->io_cap_response_io       = hci_event_io_capability_response_get_io_capability(packet);
             break;
@@ -4447,7 +4448,9 @@ static bool hci_run_general_pending_commands(void){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
             // set authentication requirements:
             // - MITM = ssp_authentication_requirement (USER) | requested_security_level (dynamic)
-            // - BONDING MODE: Dedicated if requested, otherwise bondable flag
+            // - BONDING MODE:
+            //   - initiator: dedicated if requested, bondable otherwise
+            //   - responder: local & remote bondable
             uint8_t authreq = hci_stack->ssp_authentication_requirement & 1;
             if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
                 authreq |= 1;
