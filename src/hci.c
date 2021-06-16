@@ -3412,9 +3412,13 @@ void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
     hci_stack->gap_required_encyrption_key_size = encryption_key_size;
 }
 
-void gap_set_security_mode(gap_security_mode_t security_mode){
-    btstack_assert((security_mode == GAP_SECURITY_MODE_4) || (security_mode == GAP_SECURITY_MODE_2));
-    hci_stack->gap_security_mode = security_mode;
+uint8_t gap_set_security_mode(gap_security_mode_t security_mode){
+    if ((security_mode == GAP_SECURITY_MODE_4) || (security_mode == GAP_SECURITY_MODE_2)){
+        hci_stack->gap_security_mode = security_mode;
+        return ERROR_CODE_SUCCESS;
+    } else {
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
 }
 
 gap_security_mode_t gap_get_security_mode(void){

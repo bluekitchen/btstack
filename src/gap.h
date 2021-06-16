@@ -243,8 +243,9 @@ int gap_get_bondable_mode(void);
 /**
  * @brief Set security mode for all outgoing and incoming connections. Default: GAP_SECURITY_MODE_4
  * @param security_mode is GAP_SECURITY_MODE_2 or GAP_SECURITY_MODE_4
+ * @return status ERROR_CODE_SUCCESS or ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE
  */
-void gap_set_security_mode(gap_security_mode_t security_mode);
+uint8_t gap_set_security_mode(gap_security_mode_t security_mode);
 
 /**
  * @brief Get security mode

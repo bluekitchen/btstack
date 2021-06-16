@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GAP: Drop local bonding flag in IO Capability Reply if remote does not indicate bonding
+- GAP: return status for `gap_set_security_mode`
 
 ## Release v1.4
 
