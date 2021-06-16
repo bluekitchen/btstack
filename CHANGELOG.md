@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+
 ### Fixed
 - GAP: store link key in hci connection struct to allow authenticate after pairing without bonding
 - GAP: avoid requesting authentication twice
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT DB: fix spelling `gatt_server_get_handle_range_for_service_with_uuid128`, `gatt_server_get_handle_range_for_service_with_uuid16`
 
 ### Changed
+- GAP: Drop local bonding flag in IO Capability Reply if remote does not indicate bonding
 
 ## Release v1.4
 

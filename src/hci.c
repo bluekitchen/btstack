@@ -2682,8 +2682,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (gap_security_level_for_link_key_type(link_key_type) < conn->requested_security_level) break;
             // - for SSP, also check if remote side requested bonding as well
             if (conn->link_key_type != COMBINATION_KEY){
-                uint8_t auth_req_ignoring_mitm = conn->io_cap_response_auth_req & 0xfe;
-                if (auth_req_ignoring_mitm == SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_NO_BONDING){
+                bool remote_bonding = conn->io_cap_response_auth_req >= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+                if (!remote_bonding){
                     break;
                 }
             }
@@ -4448,17 +4448,26 @@ static bool hci_run_general_pending_commands(void){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
             // set authentication requirements:
             // - MITM = ssp_authentication_requirement (USER) | requested_security_level (dynamic)
-            // - BONDING MODE:
-            //   - initiator: dedicated if requested, bondable otherwise
-            //   - responder: local & remote bondable
+            // - BONDING MODE: dedicated if requested, bondable otherwise. Drop bondable if not set for remote
             uint8_t authreq = hci_stack->ssp_authentication_requirement & 1;
             if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
                 authreq |= 1;
             }
-            if (connection->bonding_flags & BONDING_DEDICATED){
-                authreq |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
-            } else if (hci_stack->bondable){
-                authreq |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
+            bool bonding = hci_stack->bondable;
+            if (connection->authentication_flags & RECV_IO_CAPABILITIES_RESPONSE){
+                // if we have received IO Cap Response, we're in responder role
+                bool remote_bonding = connection->io_cap_response_auth_req >= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+                if (bonding && !remote_bonding){
+                    log_info("Remote not bonding, dropping local flag");
+                    bonding = false;
+                }
+            }
+            if (bonding){
+                if (connection->bonding_flags & BONDING_DEDICATED){
+                    authreq |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+                } else {
+                    authreq |= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
+                }
             }
             uint8_t have_oob_data = 0;
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
