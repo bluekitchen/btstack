@@ -77,6 +77,9 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
             "22222", // 0x15 le credit based connection respone: dest cid, mtu, mps, initial credits, result
             "22",    // 0x16 le flow control credit: source cid, credits
 #endif
+#ifdef UNIT_TEST
+            "M",     // invalid format for unit testing
+#endif           
     };
     static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
