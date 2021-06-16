@@ -83,7 +83,6 @@ static void emit_event(btstack_packet_handler_t callback, uint8_t * packet, uint
 }
 
 static void emit_gatt_complete_event(gatt_client_t * gatt_client, uint8_t att_status){
-    printf("emit complete handle %02x\n", gatt_client->con_handle);
     // @format H1
     uint8_t packet[5];
     packet[0] = GATT_EVENT_QUERY_COMPLETE;
