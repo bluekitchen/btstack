@@ -27,7 +27,6 @@ COMMON = \
     btstack_linked_list.c  \
 	btstack_memory.c \
 	btstack_run_loop.c \
-	btstack_run_loop_embedded.c \
     btstack_util.c		  \
     hci_dump.c    \
     l2cap_signaling.c \
@@ -57,7 +56,12 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 FREERTOS_OBJ_COVERAGE = $(addprefix build-coverage/,$(FREERTOS:.c=.o))
 FREERTOS_OBJ_ASAN     = $(addprefix build-asan/,    $(FREERTOS:.c=.o))
 
-all: build-coverage/embedded_test build-coverage/freertos_test build-asan/embedded_test build-asan/freertos_test
+all: build-coverage/embedded_test build-asan/embedded_test \
+	 build-coverage/run_loop_base_test build-asan/run_loop_base_test \
+	 build-coverage/btstack_util_test build-asan/btstack_util_test \
+	 build-coverage/l2cap_le_signaling_test build-asan/l2cap_le_signaling_test \
+	 build-coverage/hci_cmd_test build-asan/hci_cmd_test \
+	 build-coverage/freertos_test build-asan/freertos_test \
 
 build-%:
 	mkdir -p $@
@@ -69,26 +73,64 @@ build-asan/%.o: %.c | build-asan
 	${CC} -c $(CFLAGS_ASAN) $< -o $@
 
 
-build-coverage/embedded_test: ${COMMON_OBJ_COVERAGE} build-coverage/embedded_test.o | build-coverage
+build-coverage/embedded_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_run_loop_embedded.o build-coverage/embedded_test.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/embedded_test: ${COMMON_OBJ_ASAN} build-asan/embedded_test.o build-asan/btstack_run_loop_embedded.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 
 build-coverage/freertos_test: ${COMMON_OBJ_COVERAGE} ${FREERTOS_OBJS} build-coverage/freertos_test.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-asan/embedded_test: ${COMMON_OBJ_ASAN} build-asan/embedded_test.o | build-asan
-	${CC} $^ ${LDFLAGS_ASAN} -o $@
-
 build-asan/freertos_test: ${COMMON_OBJ_ASAN} ${FREERTOS_OBJS} build-asan/freertos_test.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+
+build-coverage/run_loop_base_test: ${COMMON_OBJ_COVERAGE} build-coverage/run_loop_base_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/run_loop_base_test: ${COMMON_OBJ_ASAN} build-asan/run_loop_base_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+
+build-coverage/btstack_util_test: ${COMMON_OBJ_COVERAGE} build-coverage/btstack_util_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/btstack_util_test: ${COMMON_OBJ_ASAN} build-asan/btstack_util_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+
+build-coverage/l2cap_le_signaling_test: ${COMMON_OBJ_COVERAGE} build-coverage/l2cap_le_signaling_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/l2cap_le_signaling_test: ${COMMON_OBJ_ASAN} build-asan/l2cap_le_signaling_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
+
+build-coverage/hci_cmd_test: ${COMMON_OBJ_COVERAGE} build-coverage/hci_cmd_test.o | build-coverage
+	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/hci_cmd_test: ${COMMON_OBJ_ASAN} build-asan/hci_cmd_test.o | build-asan
+	${CC} $^ ${LDFLAGS_ASAN} -o $@
+
 
 test: all
 	build-asan/embedded_test
 	build-asan/freertos_test
+	build-asan/run_loop_base_test
+	build-asan/btstack_util_test
+	build-asan/l2cap_le_signaling_test
+	build-asan/hci_cmd_test
 
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/embedded_test
 	build-coverage/freertos_test
+	build-coverage/run_loop_base_test
+	build-coverage/btstack_util_test
+	build-coverage/l2cap_le_signaling_test
+	build-coverage/hci_cmd_test
 
 clean:
-	rm -rf build-coverage build-asan
+	rm -rf build-coverage build-asan *.dSYM
