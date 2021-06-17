@@ -4074,7 +4074,7 @@ static bool hci_run_general_gap_le(void){
         // - whitelist change required but used for advertisement filter policy
         // - resolving list modified
         bool advertising_uses_whitelist = hci_stack->le_advertisements_filter_policy != 0;
-        bool advertising_change = (hci_stack->le_advertisements_todo & (LE_ADVERTISEMENT_TASKS_SET_PARAMS | LE_ADVERTISEMENT_TASKS_SET_ADV_DATA)) != 0;
+        bool advertising_change = (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS) != 0;
         if (advertising_change ||
             (hci_stack->le_advertisements_enabled_for_current_roles == 0) ||
             (advertising_uses_whitelist & whitelist_modification_pending) ||
