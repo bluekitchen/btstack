@@ -213,7 +213,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
 #ifdef ENABLE_CLASSIC
     conn->request_role = HCI_ROLE_INVALID;
     conn->sniff_subrating_max_latency = 0xffff;
-    conn->qos_service_type = HCI_SERVICE_TyPE_INVALID;
+    conn->qos_service_type = HCI_SERVICE_TYPE_INVALID;
     conn->link_key_type = INVALID_LINK_KEY;
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
@@ -4615,9 +4615,9 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
-        if (connection->qos_service_type != HCI_SERVICE_TyPE_INVALID){
+        if (connection->qos_service_type != HCI_SERVICE_TYPE_INVALID){
             uint8_t service_type = (uint8_t) connection->qos_service_type;
-            connection->qos_service_type = HCI_SERVICE_TyPE_INVALID;
+            connection->qos_service_type = HCI_SERVICE_TYPE_INVALID;
             hci_send_cmd(&hci_qos_setup, connection->con_handle, 0, service_type, connection->qos_token_rate, connection->qos_peak_bandwidth, connection->qos_latency, connection->qos_delay_variation);
             return true;
         }
