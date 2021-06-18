@@ -25,12 +25,13 @@ VPATH += ${BTSTACK_ROOT}/platform/freertos
 
 COMMON = \
     btstack_linked_list.c  \
-	btstack_memory.c \
-	btstack_run_loop.c \
-    btstack_util.c		  \
-    hci_dump.c    \
-    l2cap_signaling.c \
-
+	btstack_memory.c 	\
+	btstack_run_loop.c 	\
+    btstack_util.c		\
+    hci_dump.c    		\
+    l2cap_signaling.c   \
+    hci_cmd.c 			\
+    
 # not used yet
 #	btstack_em9304_spi_embedded.c \
 #	btstack_stdin_embedded.c \
