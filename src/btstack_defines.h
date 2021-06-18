@@ -1415,6 +1415,23 @@ typedef uint8_t sm_key_t[16];
 #define GAP_EVENT_LOCAL_OOB_DATA                                 0xDE
 
 
+/**
+ * @format HB11
+ * @param con_handle
+ * @param bd_addr
+ * @param ssp
+ * @param initiator
+ */
+#define GAP_EVENT_PAIRING_STARTED                                0xDF
+
+/**
+ * @format HB1
+ * @param con_handle
+ * @param bd_addr
+ * @param status
+ */
+#define GAP_EVENT_PAIRING_COMPLETE                               0xE0
+
 // Meta Events, see below for sub events
 #define HCI_EVENT_HSP_META                                       0xE8
 #define HCI_EVENT_HFP_META                                       0xE9
