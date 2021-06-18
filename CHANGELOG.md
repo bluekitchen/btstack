@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 
 ### Added
+- GAP: emit GAP_EVENT_PAIRING_STARTED and GAP_EVENT_PAIRING_COMPLETE
 
 ### Fixed
 - GAP: store link key in hci connection struct to allow authenticate after pairing without bonding
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: Drop local bonding flag in IO Capability Reply if remote does not indicate bonding
 - GAP: return status for `gap_set_security_mode`
 - HCI: update advertising data without stopping advertising first
+
 
 ## Release v1.4
 

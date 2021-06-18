@@ -406,12 +406,29 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     bool initiator = (hci_connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0;
 
     log_info("pairing started, ssp %u, initiator %u", (int) ssp, (int) initiator);
+
+    uint8_t event[12];
+    event[0] = GAP_EVENT_PAIRING_STARTED;
+    event[1] = 10;
+    reverse_bd_addr(hci_connection->address, &event[2]);
+    little_endian_store_16(event, 8, (uint16_t) hci_connection->con_handle);
+    event[10] = (uint8_t) ssp;
+    event[11] = (uint8_t) initiator;
+    hci_emit_event(event, sizeof(event), 1);
 }
 
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
     if (!hci_pairing_active(hci_connection)) return;
     hci_connection->authentication_flags &= ~PAIRING_ACTIVE_MASK;
     log_info("pairing complete, status %02x", status);
+
+    uint8_t event[12];
+    event[0] = GAP_EVENT_PAIRING_COMPLETE;
+    event[1] = 9;
+    reverse_bd_addr(hci_connection->address, &event[2]);
+    little_endian_store_16(event, 8, (uint16_t) hci_connection->con_handle);
+    event[10] = status;
+    hci_emit_event(event, sizeof(event), 1);
 }
 
 int  hci_authentication_active_for_handle(hci_con_handle_t handle){
