@@ -207,7 +207,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
     conn->role = HCI_ROLE_INVALID;
     conn->address_type = addr_type;
     conn->con_handle = 0xffff;
-    conn->authentication_flags = AUTH_FLAGS_NONE;
+    conn->authentication_flags = AUTH_FLAG_NONE;
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
 #ifdef ENABLE_CLASSIC
@@ -392,15 +392,15 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
 }
 
 static bool hci_pairing_active(hci_connection_t * hci_connection){
-    return (hci_connection->authentication_flags & PAIRING_ACTIVE_MASK) != 0;
+    return (hci_connection->authentication_flags & AUTH_FLAG_PAIRING_ACTIVE_MASK) != 0;
 }
 
 static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     if (hci_pairing_active(hci_connection)) return;
     if (ssp){
-        hci_connection->authentication_flags |= SSP_PAIRING_ACTIVE;
+        hci_connection->authentication_flags |= AUTH_FLAG_SSP_PAIRING_ACTIVE;
     } else {
-        hci_connection->authentication_flags |= LEGACY_PAIRING_ACTIVE;
+        hci_connection->authentication_flags |= AUTH_FLAG_LEGACY_PAIRING_ACTIVE;
     }
     // if we are initiator, we have sent an HCI Authenticate Request
     bool initiator = (hci_connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0;
@@ -419,7 +419,7 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
 
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
     if (!hci_pairing_active(hci_connection)) return;
-    hci_connection->authentication_flags &= ~PAIRING_ACTIVE_MASK;
+    hci_connection->authentication_flags &= ~AUTH_FLAG_PAIRING_ACTIVE_MASK;
     log_info("pairing complete, status %02x", status);
 
     uint8_t event[12];
@@ -2091,10 +2091,10 @@ static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_
 
 #ifdef ENABLE_CLASSIC
 static void hci_handle_read_encryption_key_size_complete(hci_connection_t * conn, uint8_t encryption_key_size) {
-    conn->authentication_flags |= CONNECTION_ENCRYPTED;
+    conn->authentication_flags |= AUTH_FLAG_CONNECTION_ENCRYPTED;
     conn->encryption_key_size = encryption_key_size;
 
-    if ((conn->authentication_flags & CONNECTION_AUTHENTICATED) != 0) {
+    if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) != 0) {
         conn->requested_security_level = LEVEL_0;
         hci_emit_security_level(conn->con_handle, gap_security_level_for_connection(conn));
         return;
@@ -2586,7 +2586,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
                     // queue set supervision timeout if we're master
                     if ((hci_stack->link_supervision_timeout != HCI_LINK_SUPERVISION_TIMEOUT_DEFAULT) && (conn->role == HCI_ROLE_MASTER)){
-                        connectionSetAuthenticationFlags(conn, WRITE_SUPERVISION_TIMEOUT);
+                        connectionSetAuthenticationFlags(conn, AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT);
                     }
 
                     // restart timer
@@ -2693,9 +2693,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_LINK_KEY_REQUEST);
             // request handled by hci_run()
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
             break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
@@ -2705,7 +2705,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             hci_pairing_complete(conn, ERROR_CODE_SUCCESS);
 
-            conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
+            conn->authentication_flags |= AUTH_FLAG_RECV_LINK_KEY_NOTIFICATION;
             link_key_type_t link_key_type = (link_key_type_t)packet[24];
             // Change Connection Encryption keeps link key type
             if (link_key_type != CHANGED_COMBINATION_KEY){
@@ -2738,7 +2738,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_pairing_started(conn, false);
             // non-bondable mode: pin code negative reply will be sent (event is not forwarded to app)
             if (!hci_stack->bondable){
-                conn->authentication_flags |= DENY_PIN_CODE_REQUEST;
+                conn->authentication_flags |= AUTH_FLAG_DENY_PIN_CODE_REQUEST;
                 hci_pairing_complete(conn, ERROR_CODE_PAIRING_NOT_ALLOWED);
                 hci_run();
                 return;
@@ -2750,7 +2750,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_RESPONSE);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE);
             hci_pairing_started(conn, true);
             conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
             conn->io_cap_response_io       = hci_event_io_capability_response_get_io_capability(packet);
@@ -2761,13 +2761,13 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
             hci_pairing_started(conn, true);
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
             if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
             } else {
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             }
 #endif
             break;
@@ -2783,14 +2783,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_event_user_confirmation_request_get_bd_addr(packet, addr);
             if (hci_ssp_validate_possible_security_level(addr) == false) break;
             if (!hci_stack->ssp_auto_accept) break;
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_CONFIRM_REPLY);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
             break;
 
         case HCI_EVENT_USER_PASSKEY_REQUEST:
             hci_event_user_passkey_request_get_bd_addr(packet, addr);
             if (hci_ssp_validate_possible_security_level(addr) == false) break;
             if (!hci_stack->ssp_auto_accept) break;
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
             break;
 
         case HCI_EVENT_MODE_CHANGE:
@@ -2811,7 +2811,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                 if (encryption_enabled){
                     if (hci_is_le_connection(conn)){
                         // For LE, we accept connection as encrypted
-                        conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                        conn->authentication_flags |= AUTH_FLAG_CONNECTION_ENCRYPTED;
                     }
 #ifdef ENABLE_CLASSIC
                     else {
@@ -2843,7 +2843,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
                     }
 #endif
                 } else {
-                    conn->authentication_flags &= ~CONNECTION_ENCRYPTED;
+                    conn->authentication_flags &= ~AUTH_FLAG_CONNECTION_ENCRYPTED;
                 }
             }
 
@@ -2862,10 +2862,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // authenticated only if auth status == 0
             if (hci_event_authentication_complete_get_status(packet) == 0){
                 // authenticated
-                conn->authentication_flags |= CONNECTION_AUTHENTICATED;
+                conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
 
                 // If not already encrypted, start encryption
-                if ((conn->authentication_flags & CONNECTION_ENCRYPTED) == 0){
+                if ((conn->authentication_flags & AUTH_FLAG_CONNECTION_ENCRYPTED) == 0){
                     conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
                     break;
                 }
@@ -4456,24 +4456,24 @@ static bool hci_run_general_pending_commands(void){
         // no further commands if connection is about to get shut down
         if (connection->state == SENT_DISCONNECT) continue;
 
-        if (connection->authentication_flags & READ_RSSI){
-            connectionClearAuthenticationFlags(connection, READ_RSSI);
+        if (connection->authentication_flags & AUTH_FLAG_READ_RSSI){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_READ_RSSI);
             hci_send_cmd(&hci_read_rssi, connection->con_handle);
             return true;
         }
 
 #ifdef ENABLE_CLASSIC
 
-        if (connection->authentication_flags & WRITE_SUPERVISION_TIMEOUT){
-            connectionClearAuthenticationFlags(connection, WRITE_SUPERVISION_TIMEOUT);
+        if (connection->authentication_flags & AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT);
             hci_send_cmd(&hci_write_link_supervision_timeout, connection->con_handle, hci_stack->link_supervision_timeout);
             return true;
         }
 
         // Handling link key request requires remote supported features
-        if ( ((connection->authentication_flags & HANDLE_LINK_KEY_REQUEST) != 0) && ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0)){
+        if (((connection->authentication_flags & AUTH_FLAG_HANDLE_LINK_KEY_REQUEST) != 0) && ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0)){
             log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
-            connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
 
             // lookup link key using cached key first
             bool have_link_key = connection->link_key_type != INVALID_LINK_KEY;
@@ -4500,15 +4500,15 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
-        if (connection->authentication_flags & DENY_PIN_CODE_REQUEST){
+        if (connection->authentication_flags & AUTH_FLAG_DENY_PIN_CODE_REQUEST){
             log_info("denying to pin request");
-            connectionClearAuthenticationFlags(connection, DENY_PIN_CODE_REQUEST);
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_DENY_PIN_CODE_REQUEST);
             hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             return true;
         }
 
-        if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
-            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
+        if (connection->authentication_flags & AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
             // set authentication requirements:
             // - MITM = ssp_authentication_requirement (USER) | requested_security_level (dynamic)
             // - BONDING MODE: dedicated if requested, bondable otherwise. Drop bondable if not set for remote
@@ -4517,7 +4517,7 @@ static bool hci_run_general_pending_commands(void){
                 authreq |= 1;
             }
             bool bonding = hci_stack->bondable;
-            if (connection->authentication_flags & RECV_IO_CAPABILITIES_RESPONSE){
+            if (connection->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
                 // if we have received IO Cap Response, we're in responder role
                 bool remote_bonding = connection->io_cap_response_auth_req >= SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
                 if (bonding && !remote_bonding){
@@ -4545,8 +4545,8 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
-        if (connection->authentication_flags & SEND_IO_CAPABILITIES_NEGATIVE_REPLY) {
-            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+        if (connection->authentication_flags & AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY) {
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
             return true;
         }
@@ -4585,14 +4585,14 @@ static bool hci_run_general_pending_commands(void){
         }
 #endif
 
-        if (connection->authentication_flags & SEND_USER_CONFIRM_REPLY){
-            connectionClearAuthenticationFlags(connection, SEND_USER_CONFIRM_REPLY);
+        if (connection->authentication_flags & AUTH_FLAG_SEND_USER_CONFIRM_REPLY){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
             hci_send_cmd(&hci_user_confirmation_request_reply, &connection->address);
             return true;
         }
 
-        if (connection->authentication_flags & SEND_USER_PASSKEY_REPLY){
-            connectionClearAuthenticationFlags(connection, SEND_USER_PASSKEY_REPLY);
+        if (connection->authentication_flags & AUTH_FLAG_SEND_USER_PASSKEY_REPLY){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
             hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
             return true;
         }
@@ -4970,10 +4970,10 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             (void) memcpy(hci_stack->outgoing_addr, addr, 6);
             break;
         case HCI_OPCODE_HCI_LINK_KEY_REQUEST_REPLY:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_REPLY);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], AUTH_FLAG_SENT_LINK_KEY_REPLY);
             break;
         case HCI_OPCODE_HCI_LINK_KEY_REQUEST_NEGATIVE_REPLY:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], AUTH_FLAG_SENT_LINK_KEY_NEGATIVE_REQUEST);
             break;
         case HCI_OPCODE_HCI_DELETE_STORED_LINK_KEY:
             if (hci_stack->link_key_db) {
@@ -5366,9 +5366,9 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
     if (!connection) return LEVEL_0;
-    if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
+    if ((connection->authentication_flags & AUTH_FLAG_CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
     // BIAS: we only consider Authenticated if the connection is already encrypted, which requires that both sides have link key
-    if ((connection->authentication_flags & CONNECTION_AUTHENTICATED) == 0) return LEVEL_0;
+    if ((connection->authentication_flags & AUTH_FLAG_CONNECTION_AUTHENTICATED) == 0) return LEVEL_0;
     if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
     gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
     // LEVEL 4 always requires 128 bit encrytion key size
@@ -5858,7 +5858,7 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
 int gap_read_rssi(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
     if (hci_connection == NULL) return 0;
-    connectionSetAuthenticationFlags(hci_connection, READ_RSSI);
+    connectionSetAuthenticationFlags(hci_connection, AUTH_FLAG_READ_RSSI);
     hci_run();
     return 1;
 }
@@ -6437,7 +6437,7 @@ int gap_encryption_key_size(hci_con_handle_t con_handle){
 #endif
     } else {
 #ifdef ENABLE_CLASSIC
-        if ((hci_connection->authentication_flags & CONNECTION_ENCRYPTED)){
+        if ((hci_connection->authentication_flags & AUTH_FLAG_CONNECTION_ENCRYPTED)){
             return hci_connection->encryption_key_size;
         }
 #endif
