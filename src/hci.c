@@ -391,12 +391,33 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
     }
 }
 
+static bool hci_pairing_active(hci_connection_t * hci_connection){
+    return (hci_connection->authentication_flags & PAIRING_ACTIVE_MASK) != 0;
+}
+
+static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
+    if (hci_pairing_active(hci_connection)) return;
+    if (ssp){
+        hci_connection->authentication_flags |= SSP_PAIRING_ACTIVE;
+    } else {
+        hci_connection->authentication_flags |= LEGACY_PAIRING_ACTIVE;
+    }
+    // if we are initiator, we have sent an HCI Authenticate Request
+    bool initiator = (hci_connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0;
+
+    log_info("pairing started, ssp %u, initiator %u", (int) ssp, (int) initiator);
+}
+
+static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
+    if (!hci_pairing_active(hci_connection)) return;
+    hci_connection->authentication_flags &= ~PAIRING_ACTIVE_MASK;
+    log_info("pairing complete, status %02x", status);
+}
+
 int  hci_authentication_active_for_handle(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn) return 0;
-    if (conn->authentication_flags & LEGACY_PAIRING_ACTIVE) return 1;
-    if (conn->authentication_flags & SSP_PAIRING_ACTIVE) return 1;
-    return 0;
+    return (int) hci_pairing_active(conn);
 }
 
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
@@ -2359,7 +2380,6 @@ static bool hci_ssp_validate_possible_security_level(bd_addr_t addr){
     // abort pairing, if requested security level cannot be met
     if (hci_ssp_security_level_possible_for_io_cap(conn->requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io)) {
         // inlined hci_add_connection_flags_for_flipped_bd_addr
-        connectionSetAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         hci_connection_timestamp(conn);
         return true;
     } else {
@@ -2656,16 +2676,18 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
-            log_info("HCI_EVENT_LINK_KEY_REQUEST");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             // request handled by hci_run()
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
             break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
-            reverse_bd_addr(&packet[2], addr);
+            hci_event_link_key_request_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
+
+            hci_pairing_complete(conn, ERROR_CODE_SUCCESS);
+
             conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
             link_key_type_t link_key_type = (link_key_type_t)packet[24];
             // Change Connection Encryption keeps link key type
@@ -2692,31 +2714,38 @@ static void event_handler(uint8_t *packet, uint16_t size){
         }
 
         case HCI_EVENT_PIN_CODE_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], LEGACY_PAIRING_ACTIVE);
-            // non-bondable mode: pin code negative reply will be sent
+            hci_event_pin_code_request_get_bd_addr(packet, addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+
+            hci_pairing_started(conn, false);
+            // non-bondable mode: pin code negative reply will be sent (event is not forwarded to app)
             if (!hci_stack->bondable){
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], DENY_PIN_CODE_REQUEST);
+                conn->authentication_flags |= DENY_PIN_CODE_REQUEST;
+                hci_pairing_complete(conn, ERROR_CODE_PAIRING_NOT_ALLOWED);
                 hci_run();
                 return;
             }
-            // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
-            if (!hci_stack->link_key_db) break;
-            hci_event_pin_code_request_get_bd_addr(packet, addr);
-            hci_stack->link_key_db->delete_link_key(addr);
             break;
 
         case HCI_EVENT_IO_CAPABILITY_RESPONSE:
             hci_event_io_capability_response_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
+
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_RESPONSE);
+            hci_pairing_started(conn, true);
             conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
             conn->io_cap_response_io       = hci_event_io_capability_response_get_io_capability(packet);
             break;
 
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
+            hci_event_io_capability_response_get_bd_addr(packet, addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
-            log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
+            hci_pairing_started(conn, true);
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
             if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
@@ -2811,6 +2840,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             // clear authentication active flag
             conn->bonding_flags &= ~BONDING_SENT_AUTHENTICATE_REQUEST;
+            hci_pairing_complete(conn, hci_event_authentication_complete_get_status(packet));
 
             // authenticated only if auth status == 0
             if (hci_event_authentication_complete_get_status(packet) == 0){
@@ -2827,6 +2857,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // emit updated security level
             conn->requested_security_level = LEVEL_0;
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+            break;
+
+        case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
+            hci_event_simple_pairing_complete_get_bd_addr(packet, addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+
+            hci_pairing_complete(conn, hci_event_simple_pairing_complete_get_status(packet));
             break;
 #endif
 
@@ -2851,6 +2889,10 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
+#ifdef ENABLE_CLASSIC
+            // pairing failed if it was ongoing
+            hci_pairing_complete(conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
+#endif
             // mark connection for shutdown
             conn->state = RECEIVED_DISCONNECTION_COMPLETE;
 
@@ -4585,6 +4627,9 @@ static bool hci_run_general_pending_commands(void){
 
         if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
             connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
+#ifdef ENABLE_CLASSIC
+            hci_pairing_complete(connection, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS);
+#endif
             if (connection->state != SENT_DISCONNECT){
                 connection->state = SENT_DISCONNECT;
                 hci_send_cmd(&hci_disconnect, connection->con_handle, ERROR_CODE_AUTHENTICATION_FAILURE);
@@ -4917,24 +4962,6 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             if (hci_stack->link_key_db) {
                 reverse_bd_addr(&packet[3], addr);
                 hci_stack->link_key_db->delete_link_key(addr);
-            }
-            break;
-        case HCI_OPCODE_HCI_PIN_CODE_REQUEST_NEGATIVE_REPLY:
-        case HCI_OPCODE_HCI_PIN_CODE_REQUEST_REPLY:
-            reverse_bd_addr(&packet[3], addr);
-            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-            if (conn) {
-                connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
-            }
-            break;
-        case HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY:
-        case HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_REPLY:
-        case HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_NEGATIVE_REPLY:
-        case HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_REPLY:
-            reverse_bd_addr(&packet[3], addr);
-            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-            if (conn) {
-                connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
             }
             break;
 

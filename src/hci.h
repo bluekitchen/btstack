@@ -218,6 +218,7 @@ typedef enum {
     // pairing status
     LEGACY_PAIRING_ACTIVE          = 0x4000,
     SSP_PAIRING_ACTIVE             = 0x8000,
+    PAIRING_ACTIVE_MASK            = (LEGACY_PAIRING_ACTIVE | SSP_PAIRING_ACTIVE),
 
     // connection status
     CONNECTION_AUTHENTICATED       = 0x10000,
