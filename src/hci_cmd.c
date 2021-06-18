@@ -51,6 +51,7 @@
 
 #include <string.h>
 
+
 #ifdef ENABLE_SDP
 #include "classic/sdp_util.h"
 #endif
@@ -86,31 +87,37 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
     while (*format) {
         switch(*format) {
             case '1': //  8 bit value
-            case '2': // 16 bit value
-            case 'H': // hci_handle
-                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = word & 0xffu;
-                if (*format == '2') {
-                    hci_cmd_buffer[pos++] = word >> 8;
-                } else if (*format == 'H') {
-                    // TODO implement opaque client connection handles
-                    //      pass module handle for now
-                    hci_cmd_buffer[pos++] = word >> 8;
-                } 
+                break;
+            case '2': // 16 bit value
+                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                hci_cmd_buffer[pos++] = word & 0xffu;
+                hci_cmd_buffer[pos++] = word >> 8;
+                break;
+            case 'H': // hci_handle
+                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                hci_cmd_buffer[pos++] = word & 0xffu;
+                hci_cmd_buffer[pos++] = word >> 8;
                 break;
             case '3':
-            case '4':
-                longword = va_arg(argptr, uint32_t);
-                // longword = va_arg(argptr, int);
+                longword = va_arg(argptr, uint32_t); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = longword;
                 hci_cmd_buffer[pos++] = longword >> 8;
                 hci_cmd_buffer[pos++] = longword >> 16;
-                if (*format == '4'){
-                    hci_cmd_buffer[pos++] = longword >> 24;
-                }
+                break;
+            case '4':
+                longword = va_arg(argptr, uint32_t); // LCOV_EXCL_BR_LINE
+                hci_cmd_buffer[pos++] = longword;
+                hci_cmd_buffer[pos++] = longword >> 8;
+                hci_cmd_buffer[pos++] = longword >> 16;
+                hci_cmd_buffer[pos++] = longword >> 24;
                 break;
             case 'B': // bt-addr
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = ptr[5];
                 hci_cmd_buffer[pos++] = ptr[4];
                 hci_cmd_buffer[pos++] = ptr[3];
@@ -119,17 +126,17 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 hci_cmd_buffer[pos++] = ptr[0];
                 break;
             case 'D': // 8 byte data block
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 8);
                 pos += 8;
                 break;
             case 'E': // Extended Inquiry Information 240 octets
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 240);
                 pos += 240;
                 break;
             case 'N': { // UTF-8 string, null terminated
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 uint16_t len = strlen((const char*) ptr);
                 if (len > 248u) {
                     len = 248;
@@ -143,20 +150,20 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 break;
             }
             case 'P': // 16 byte PIN code or link key in little endian
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
 #ifdef ENABLE_BLE
             case 'A': // 31 bytes advertising data
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
                 break;
 #endif
 #ifdef ENABLE_SDP
             case 'S': { // Service Record (Data Element Sequence)
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 uint16_t len = de_get_len(ptr);
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
                 pos += len;
@@ -165,13 +172,13 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
 #endif
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
             case 'Q':
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 reverse_bytes(ptr, &hci_cmd_buffer[pos], 32);
                 pos += 32;
                 break;
 #endif
             case 'K':   // 16 byte OOB Data or Link Key in big endian
-                ptr = va_arg(argptr, uint8_t *);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 reverse_bytes(ptr, &hci_cmd_buffer[pos], 16);
                 pos += 16;
                 break;
