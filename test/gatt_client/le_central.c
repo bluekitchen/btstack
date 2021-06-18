@@ -47,12 +47,6 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     bd_addr_t address;
     uint8_t event = packet[0];
     switch (event) {
-        case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            gap_set_scan_parameters(0,0x0030, 0x0030);
-            gap_start_scan();
-            break;
-            
         case GAP_EVENT_ADVERTISING_REPORT:{
             advertisement_received = 1;
             memcpy(advertisement_packet, packet, size);
@@ -98,7 +92,6 @@ TEST_GROUP(LECentral){
 TEST(LECentral, TestScanningAndConnect){
     uint8_t expected_bt_addr[] = {0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B};
     
-    mock_simulate_command_complete(&hci_le_set_scan_enable);
     mock_simulate_scan_response();
 	
     CHECK(advertisement_received);
