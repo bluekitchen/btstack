@@ -2693,7 +2693,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_LINK_KEY_REQUEST);
             // request handled by hci_run()
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_HANDLE_LINK_KEY_REQUEST);
             break;
@@ -2705,7 +2704,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             hci_pairing_complete(conn, ERROR_CODE_SUCCESS);
 
-            conn->authentication_flags |= AUTH_FLAG_RECV_LINK_KEY_NOTIFICATION;
             link_key_type_t link_key_type = (link_key_type_t)packet[24];
             // Change Connection Encryption keeps link key type
             if (link_key_type != CHANGED_COMBINATION_KEY){
@@ -2761,7 +2759,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
             hci_pairing_started(conn, true);
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
             if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
@@ -4968,12 +4965,6 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             // track outgoing connection
             hci_stack->outgoing_addr_type = BD_ADDR_TYPE_ACL;
             (void) memcpy(hci_stack->outgoing_addr, addr, 6);
-            break;
-        case HCI_OPCODE_HCI_LINK_KEY_REQUEST_REPLY:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], AUTH_FLAG_SENT_LINK_KEY_REPLY);
-            break;
-        case HCI_OPCODE_HCI_LINK_KEY_REQUEST_NEGATIVE_REPLY:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[3], AUTH_FLAG_SENT_LINK_KEY_NEGATIVE_REQUEST);
             break;
         case HCI_OPCODE_HCI_DELETE_STORED_LINK_KEY:
             if (hci_stack->link_key_db) {
