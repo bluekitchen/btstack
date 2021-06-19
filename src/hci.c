@@ -2395,22 +2395,6 @@ static bool hci_ssp_security_level_possible_for_io_cap(gap_security_level_t leve
     // LEVEL 2 requires SSP, which is a given
     return true;
 }
-
-static bool hci_ssp_validate_possible_security_level(bd_addr_t addr){
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
-    if (!conn) return false;
-    // abort pairing, if requested security level cannot be met
-    if (hci_ssp_security_level_possible_for_io_cap(conn->requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io)) {
-        // inlined hci_add_connection_flags_for_flipped_bd_addr
-        hci_connection_timestamp(conn);
-        return true;
-    } else {
-        log_info("Level %u cannot be reached", conn->requested_security_level);
-        conn->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
-        return false;
-    };
-}
-
 #endif
 
 static void event_handler(uint8_t *packet, uint16_t size){
@@ -2801,16 +2785,26 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
             hci_event_user_confirmation_request_get_bd_addr(packet, addr);
-            if (hci_ssp_validate_possible_security_level(addr) == false) break;
-            if (!hci_stack->ssp_auto_accept) break;
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+            if (hci_ssp_security_level_possible_for_io_cap(conn->requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io)) {
+                if (hci_stack->ssp_auto_accept){
+                    hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
+                };
+            } else {
+                hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY);
+                // don't forward event to app
+                hci_run();
+                return;
+            }
             break;
 
         case HCI_EVENT_USER_PASSKEY_REQUEST:
-            hci_event_user_passkey_request_get_bd_addr(packet, addr);
-            if (hci_ssp_validate_possible_security_level(addr) == false) break;
-            if (!hci_stack->ssp_auto_accept) break;
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
+            // Pairing using Passkey results in MITM protection. If Level 4 is required, support for SC is validated on IO Cap Request
+            if (hci_stack->ssp_auto_accept){
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
+            };
             break;
 
         case HCI_EVENT_MODE_CHANGE:
@@ -4607,6 +4601,12 @@ static bool hci_run_general_pending_commands(void){
         if (connection->authentication_flags & AUTH_FLAG_SEND_USER_CONFIRM_REPLY){
             connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_CONFIRM_REPLY);
             hci_send_cmd(&hci_user_confirmation_request_reply, &connection->address);
+            return true;
+        }
+
+        if (connection->authentication_flags & AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY);
+            hci_send_cmd(&hci_user_confirmation_request_negative_reply, &connection->address);
             return true;
         }
 
