@@ -2073,6 +2073,11 @@ static void hci_handle_remote_features_received(hci_connection_t * conn){
         conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     }
 }
+static bool hci_remote_sc_enabled(hci_connection_t * connection){
+    const uint16_t sc_enabled_mask = BONDING_REMOTE_SUPPORTS_SC_HOST | BONDING_REMOTE_SUPPORTS_SC_CONTROLLER;
+    return (connection->bonding_flags & sc_enabled_mask) == sc_enabled_mask;
+}
+
 #endif
 
 static void handle_event_for_current_stack_state(const uint8_t * packet, uint16_t size) {
@@ -4485,8 +4490,7 @@ static bool hci_run_general_pending_commands(void){
                 have_link_key = hci_stack->link_key_db->get_link_key(connection->address, connection->link_key, &connection->link_key_type);
             }
 
-            const uint16_t sc_enabled_mask = BONDING_REMOTE_SUPPORTS_SC_HOST | BONDING_REMOTE_SUPPORTS_SC_CONTROLLER;
-            bool sc_enabled_remote = (connection->bonding_flags & sc_enabled_mask) == sc_enabled_mask;
+            bool sc_enabled_remote = hci_remote_sc_enabled(connection);
             bool sc_downgrade = have_link_key && (gap_secure_connection_for_link_key_type(connection->link_key_type) == 1) && !sc_enabled_remote;
             if (sc_downgrade){
                 log_info("Link key based on SC, but remote does not support SC -> disconnect");
