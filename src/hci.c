@@ -2734,10 +2734,17 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (!conn) break;
 
             hci_pairing_started(conn, false);
-            // non-bondable mode: pin code negative reply will be sent (event is not forwarded to app)
-            if (!hci_stack->bondable){
+            // abort pairing if: non-bondable mode (event is not forwarded to app)
+            if (!hci_stack->bondable ){
                 conn->authentication_flags |= AUTH_FLAG_DENY_PIN_CODE_REQUEST;
                 hci_pairing_complete(conn, ERROR_CODE_PAIRING_NOT_ALLOWED);
+                hci_run();
+                return;
+            }
+            // abort pairing if: Secure Connections Only mode (event is not forwarded to app)
+            if (hci_stack->gap_secure_connections_only_mode){
+                conn->authentication_flags |= AUTH_FLAG_DENY_PIN_CODE_REQUEST;
+                hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
                 hci_run();
                 return;
             }
