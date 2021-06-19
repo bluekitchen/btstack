@@ -20,10 +20,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT DB: fix spelling `gatt_server_get_handle_range_for_service_with_uuid128`, `gatt_server_get_handle_range_for_service_with_uuid16`
 
 ### Changed
+- HCI: update advertising data without stopping advertising first
 - GAP: Drop local bonding flag in IO Capability Reply if remote does not indicate bonding
 - GAP: return status for `gap_set_security_mode`
-- HCI: update advertising data without stopping advertising first
-
+- GAP: abort legacy pairing if Level 4 is required
+- GAP: abort SSP on IO Capabilities Request event if Level 4 is required but SC not supported by remote
+- GAP: abort SSP on User Confirmation Request event if Level 3 is required but MITM protection not possible
 
 ## Release v1.4
 
