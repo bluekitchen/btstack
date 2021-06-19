@@ -2771,12 +2771,23 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
+            hci_connection_timestamp(conn);
+
             hci_pairing_started(conn, true);
+
+            // assess security
+            if ((hci_stack->gap_secure_connections_only_mode || (conn->requested_security_level == LEVEL_4)) && !hci_remote_sc_enabled(conn)){
+                log_info("Level 4 required, but SC not supported -> abort");
+                hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+                connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                break;
+            }
+
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
             if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
+                connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
             } else {
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             }
 #endif
             break;
