@@ -3503,6 +3503,9 @@ void gap_set_security_level(gap_security_level_t security_level){
 }
 
 gap_security_level_t gap_get_security_level(void){
+    if (hci_stack->gap_secure_connections_only_mode){
+        return LEVEL_4;
+    }
     return hci_stack->gap_security_level;
 }
 

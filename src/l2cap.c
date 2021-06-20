@@ -2360,8 +2360,7 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
 
         switch (channel->state){
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
-                if ((actual_level >= required_level) &&
-                        ((gap_get_secure_connections_only_mode() == false) || gap_secure_connection(channel->con_handle))){
+                if (actual_level >= required_level){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                     // we need to know if ERTM is supported before sending a config response
                     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
@@ -2601,9 +2600,12 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
 
     // alloc structure
-    // log_info("l2cap_handle_connection_request register channel");
+    gap_security_level_t required_level = service->required_security_level;
+    if (gap_get_secure_connections_only_mode() && (required_level != LEVEL_0)){
+        required_level = LEVEL_4;
+    }
     l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL, 
-    psm, service->mtu, service->required_security_level);
+    psm, service->mtu, required_level);
     if (!channel){
         // 0x0004 No resources available
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, source_cid, 0x0004);
