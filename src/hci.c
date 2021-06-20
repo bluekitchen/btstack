@@ -405,7 +405,12 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     // if we are initiator, we have sent an HCI Authenticate Request
     bool initiator = (hci_connection->bonding_flags & BONDING_SENT_AUTHENTICATE_REQUEST) != 0;
 
-    log_info("pairing started, ssp %u, initiator %u", (int) ssp, (int) initiator);
+    // if we are responder, use minimal service security level as required level
+    if (!initiator){
+        hci_connection->requested_security_level = btstack_max(hci_connection->requested_security_level, hci_stack->gap_minimal_service_security_level);
+    }
+
+    log_info("pairing started, ssp %u, initiator %u, requested level %u", (int) ssp, (int) initiator, hci_connection->requested_security_level);
 
     uint8_t event[12];
     event[0] = GAP_EVENT_PAIRING_STARTED;
