@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: abort legacy pairing if Level 4 is required
 - GAP: abort SSP on IO Capabilities Request event if Level 4 is required but SC not supported by remote
 - GAP: abort SSP on User Confirmation Request event if Level 3 is required but MITM protection not possible
+- L2CAP: don't trigger hci disconnect if l2cap security requirements are insufficient
 
 ## Release v1.4
 

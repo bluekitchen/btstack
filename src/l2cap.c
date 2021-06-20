@@ -1704,10 +1704,6 @@ static void l2cap_run_signaling_response(void) {
 #ifdef ENABLE_CLASSIC
             case CONNECTION_REQUEST:
                 l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, source_cid, 0, result, 0);
-                // also disconnect if result is 0x0003 - security blocked
-                if (result == 0x0003){
-                    hci_disconnect_security_block(handle);
-                }
                 break;
             case ECHO_REQUEST:
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
@@ -2382,8 +2378,10 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
                 if (actual_level >= required_level){
                     l2cap_ready_to_connect(channel);
                 } else {
-                    // disconnnect, authentication not good enough
-                    hci_disconnect_security_block(handle);
+                    // security level insufficient, report error and free channel
+                    l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
+                    btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
+                    l2cap_free_channel_entry(channel);
                 }
                 break;
 
