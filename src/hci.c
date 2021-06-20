@@ -5507,6 +5507,12 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
     btstack_assert(hci_is_le_connection(connection) == false);
 
+    // Core Spec 5.2, GAP 5.2.2: "When in Secure Connections Only mode, all services (except those allowed to have Security Mode 4, Level 0)
+    // available on the BR/EDR physical transport require Security Mode 4, Level 4 "
+    if (hci_stack->gap_secure_connections_only_mode && (requested_level != LEVEL_0)){
+        requested_level = LEVEL_4;
+    }
+
     gap_security_level_t current_level = gap_security_level(con_handle);
     log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
         requested_level, connection->requested_security_level, current_level);
