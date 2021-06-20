@@ -3832,6 +3832,20 @@ static inline l2cap_service_t * l2cap_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_services, psm);
 }
 
+static void l2cap_update_minimal_security_level(void){
+    // update minimal service security level
+    gap_security_level_t minimal_level = LEVEL_1;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &l2cap_services);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_service_t * service = (l2cap_service_t *) btstack_linked_list_iterator_next(&it);
+        if (service->required_security_level > minimal_level){
+            minimal_level = service->required_security_level;
+        };
+    }
+    gap_set_minimal_service_security_level(minimal_level);
+}
+
 uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
     log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u", psm, mtu);
@@ -3858,11 +3872,14 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
 
     // add to services list
     btstack_linked_list_add(&l2cap_services, (btstack_linked_item_t *) service);
-    
+
+    l2cap_update_minimal_security_level();
+
 #ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
     // enable page scan
     gap_connectable_control(1);
 #endif
+
 
     return ERROR_CODE_SUCCESS;
 }
@@ -3875,6 +3892,8 @@ uint8_t l2cap_unregister_service(uint16_t psm){
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
     btstack_linked_list_remove(&l2cap_services, (btstack_linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
+
+    l2cap_update_minimal_security_level();
 
 #ifndef ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL
     // disable page scan when no services registered

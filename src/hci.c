@@ -3509,6 +3509,10 @@ gap_security_level_t gap_get_security_level(void){
     return hci_stack->gap_security_level;
 }
 
+void gap_set_minimal_service_security_level(gap_security_level_t security_level){
+    hci_stack->gap_minimal_service_security_level = security_level;
+}
+
 void gap_set_secure_connections_only_mode(bool enable){
     hci_stack->gap_secure_connections_only_mode = enable;
 }

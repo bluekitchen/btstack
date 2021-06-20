@@ -279,6 +279,13 @@ void gap_set_secure_connections_only_mode(bool enable);
 bool gap_get_secure_connections_only_mode(void);
 
 /**
+ * @brief Set minimal security level for registered services
+ * @param security_level
+ * @note Called by L2CAP based on registered services
+ */
+void gap_set_minimal_service_security_level(gap_security_level_t security_level);
+
+/**
  * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
  */
 void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr, hci_link_type_t link_type));

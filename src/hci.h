@@ -857,6 +857,7 @@ typedef struct {
     uint8_t            gap_required_encyrption_key_size;
     uint16_t           link_supervision_timeout;
     gap_security_level_t gap_security_level;
+    gap_security_level_t gap_minimal_service_security_level;
     gap_security_mode_t  gap_security_mode;
 
     uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
