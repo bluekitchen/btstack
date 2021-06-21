@@ -91,6 +91,8 @@ static uint16_t ancs_attribute_len;
 static btstack_packet_handler_t client_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 void ancs_client_register_callback(btstack_packet_handler_t handler){
     client_handler = handler; 
 }
@@ -176,6 +178,137 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
     }
 }
 
+static void ancs_client_handle_notification(uint8_t * packet, uint16_t size){
+    uint16_t  value_handle = little_endian_read_16(packet, 4);
+    uint16_t  value_length = little_endian_read_16(packet, 6);
+    uint8_t * value = &packet[8];
+
+    log_info("ANCS Notification, value handle %u", value_handle);
+
+    if (value_handle == ancs_data_source_characteristic.value_handle){
+        int i;
+        for (i=0;i<value_length;i++) {
+            ancs_chunk_parser_handle_byte(value[i]);
+        }
+    } else if (value_handle == ancs_notification_source_characteristic.value_handle){
+        ancs_notification_uid = little_endian_read_32(value, 4);
+        log_info("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x",
+                 value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
+        static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
+        little_endian_store_32(get_notification_attributes, 1, ancs_notification_uid);
+        ancs_notification_uid = 0;
+        ancs_chunk_parser_init();
+        gatt_client_write_value_of_characteristic(ancs_client_handle_gatt_client_event, gc_handle, ancs_control_point_characteristic.value_handle,
+                                                  sizeof(get_notification_attributes), get_notification_attributes);
+    } else {
+        log_info("Unknown Source: ");
+        log_info_hexdump(value , value_length);
+    }
+}
+
+static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    static const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0x42,0xD9,0x8C,0x58,0x25,0xE6,0x99,0xA2,0x1D,0xBD};
+    static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
+    static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
+
+    gatt_client_characteristic_t characteristic;
+
+    switch(tc_state){
+        case TC_W4_SERVICE_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_SERVICE_QUERY_RESULT:
+                    gatt_event_service_query_result_get_service(packet, &ancs_service);
+                    ancs_service_found = 1;
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    if (!ancs_service_found){
+                        log_info("ANCS Service not found");
+                        tc_state = TC_IDLE;
+                        break;
+                    }
+                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                    log_info("ANCS Client - Discover characteristics for ANCS SERVICE ");
+                    gatt_client_discover_characteristics_for_service(ancs_client_handle_gatt_client_event, gc_handle, &ancs_service);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case TC_W4_CHARACTERISTIC_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+                    gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
+                    if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
+                        log_info("ANCS Notification Source found, attribute handle %u", characteristic.value_handle);
+                        ancs_notification_source_characteristic = characteristic;
+                        ancs_characteristcs++;
+                        break;
+                    }
+                    if (memcmp(characteristic.uuid128, ancs_control_point_uuid, 16) == 0){
+                        log_info("ANCS Control Point found, attribute handle %u", characteristic.value_handle);
+                        ancs_control_point_characteristic = characteristic;
+                        ancs_characteristcs++;
+                        break;
+                    }
+                    if (memcmp(characteristic.uuid128, ancs_data_source_uuid, 16) == 0){
+                        log_info("ANCS Data Source found, attribute handle %u", characteristic.value_handle);
+                        ancs_data_source_characteristic = characteristic;
+                        ancs_characteristcs++;
+                        break;
+                    }
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    log_info("ANCS Characteristcs count %u", ancs_characteristcs);
+                    tc_state = TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED;
+                    gatt_client_listen_for_characteristic_value_updates(&ancs_notification_source_notification, &ancs_client_handle_gatt_client_event, gc_handle, &ancs_notification_source_characteristic);
+                    gatt_client_write_client_characteristic_configuration(ancs_client_handle_gatt_client_event, gc_handle, &ancs_notification_source_characteristic,
+                                                                          GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_QUERY_COMPLETE:
+                    log_info("ANCS Notification Source subscribed");
+                    tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
+                    gatt_client_listen_for_characteristic_value_updates(&ancs_data_source_notification, &ancs_client_handle_gatt_client_event, gc_handle, &ancs_data_source_characteristic);
+                    gatt_client_write_client_characteristic_configuration(ancs_client_handle_gatt_client_event, gc_handle, &ancs_data_source_characteristic,
+                                                                          GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case TC_W4_DATA_SOURCE_SUBSCRIBED:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_QUERY_COMPLETE:
+                    log_info("ANCS Data Source subscribed");
+                    tc_state = TC_SUBSCRIBED;
+                    notify_client_simple(ANCS_SUBEVENT_CLIENT_CONNECTED);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case TC_SUBSCRIBED:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_NOTIFICATION:
+                case GATT_EVENT_INDICATION:
+                    ancs_client_handle_notification(packet, size);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(packet_type); // ok: only hci events
@@ -183,10 +316,6 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
     UNUSED(size);        // ok: fixed format events read from HCI buffer
 
     static const uint8_t ancs_service_uuid[] =             {0x79,0x05,0xF4,0x31,0xB5,0xCE,0x4E,0x99,0xA4,0x0F,0x4B,0x1E,0x12,0x2D,0x00,0xD0};
-    static const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0x42,0xD9,0x8C,0x58,0x25,0xE6,0x99,0xA2,0x1D,0xBD};
-    static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
-    static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
-
 
     int connection_encrypted;
 
@@ -218,7 +347,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             // let's start
             log_info("\nANCS Client - CONNECTED, discover ANCS service");
             tc_state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid128(handle_hci_event, gc_handle, ancs_service_uuid);
+            gatt_client_discover_primary_services_by_uuid128(ancs_client_handle_gatt_client_event, gc_handle, ancs_service_uuid);
             return;
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -233,130 +362,6 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         default:
             break;
     }
-
-    gatt_client_characteristic_t characteristic;
-    uint8_t *           value;
-    uint16_t            value_handle;
-    uint16_t            value_length;
-
-    switch(tc_state){
-        case TC_W4_SERVICE_RESULT:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_SERVICE_QUERY_RESULT:
-                    gatt_event_service_query_result_get_service(packet, &ancs_service);
-                    ancs_service_found = 1;
-                    break;
-                case GATT_EVENT_QUERY_COMPLETE:
-                    if (!ancs_service_found){
-                        log_info("ANCS Service not found");
-                        tc_state = TC_IDLE;
-                        break;
-                    }
-                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
-                    log_info("ANCS Client - Discover characteristics for ANCS SERVICE ");
-                    gatt_client_discover_characteristics_for_service(handle_hci_event, gc_handle, &ancs_service);
-                    break;
-                default:
-                    break;
-            }
-            break;
-            
-        case TC_W4_CHARACTERISTIC_RESULT:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-                    gatt_event_characteristic_query_result_get_characteristic(packet, &characteristic);
-                    if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
-                        log_info("ANCS Notification Source found, attribute handle %u", characteristic.value_handle);
-                        ancs_notification_source_characteristic = characteristic;
-                        ancs_characteristcs++;
-                        break;                        
-                    }
-                    if (memcmp(characteristic.uuid128, ancs_control_point_uuid, 16) == 0){
-                        log_info("ANCS Control Point found, attribute handle %u", characteristic.value_handle);
-                        ancs_control_point_characteristic = characteristic;
-                        ancs_characteristcs++;
-                        break;                        
-                    }
-                    if (memcmp(characteristic.uuid128, ancs_data_source_uuid, 16) == 0){
-                        log_info("ANCS Data Source found, attribute handle %u", characteristic.value_handle);
-                        ancs_data_source_characteristic = characteristic;
-                        ancs_characteristcs++;
-                        break;                        
-                    }
-                    break;
-                case GATT_EVENT_QUERY_COMPLETE:
-                    log_info("ANCS Characteristcs count %u", ancs_characteristcs);
-                    tc_state = TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED;
-                    gatt_client_listen_for_characteristic_value_updates(&ancs_notification_source_notification, &handle_hci_event, gc_handle, &ancs_notification_source_characteristic);
-                    gatt_client_write_client_characteristic_configuration(handle_hci_event, gc_handle, &ancs_notification_source_characteristic,
-                        GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_QUERY_COMPLETE:
-                    log_info("ANCS Notification Source subscribed");
-                    tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
-                    gatt_client_listen_for_characteristic_value_updates(&ancs_data_source_notification, &handle_hci_event, gc_handle, &ancs_data_source_characteristic);
-                    gatt_client_write_client_characteristic_configuration(handle_hci_event, gc_handle, &ancs_data_source_characteristic,
-                        GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case TC_W4_DATA_SOURCE_SUBSCRIBED:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_QUERY_COMPLETE:
-                    log_info("ANCS Data Source subscribed");
-                    tc_state = TC_SUBSCRIBED;
-                    notify_client_simple(ANCS_SUBEVENT_CLIENT_CONNECTED);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case TC_SUBSCRIBED:
-            switch(hci_event_packet_get_type(packet)){
-                case GATT_EVENT_NOTIFICATION:
-                case GATT_EVENT_INDICATION:
-                    value_handle = little_endian_read_16(packet, 4);
-                    value_length = little_endian_read_16(packet, 6);
-                    value = &packet[8];
-
-                    log_info("ANCS Notification, value handle %u", value_handle);
-
-                    if (value_handle == ancs_data_source_characteristic.value_handle){
-                        int i;
-                        for (i=0;i<value_length;i++) {
-                            ancs_chunk_parser_handle_byte(value[i]);
-                        }
-                    } else if (value_handle == ancs_notification_source_characteristic.value_handle){
-                        ancs_notification_uid = little_endian_read_32(value, 4);
-                        log_info("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x",
-                                 value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
-                        static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
-                        little_endian_store_32(get_notification_attributes, 1, ancs_notification_uid);
-                        ancs_notification_uid = 0;
-                        ancs_chunk_parser_init();
-                        gatt_client_write_value_of_characteristic(handle_hci_event, gc_handle, ancs_control_point_characteristic.value_handle,
-                                                                  sizeof(get_notification_attributes), get_notification_attributes);
-                    } else {
-                        log_info("Unknown Source: ");
-                        log_info_hexdump(value , value_length);
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        default:
-            break;
-    }    
-    // app_run();
 }
 
 void ancs_client_init(void){
