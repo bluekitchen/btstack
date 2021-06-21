@@ -573,10 +573,8 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         
         if ((it.handle == 0u ) || (it.handle > end_handle)) break;
 
-        if (it.handle < start_handle) continue;
-
         // does current attribute match
-        if (!att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
+        if ((it.handle < start_handle) || !att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
         
         // skip handles that cannot be read but remember that there has been at least one
         if ((it.flags & ATT_PROPERTY_READ) == 0u) {
