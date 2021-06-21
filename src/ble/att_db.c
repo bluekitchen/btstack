@@ -294,36 +294,46 @@ static inline uint16_t setup_error_invalid_pdu(uint8_t *response_buffer, uint16_
     return setup_error(response_buffer, request, 0, ATT_ERROR_INVALID_PDU);
 }
 
-static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
-    int required_security_level = 0;
-    bool requires_secure_connection = false;
+struct att_security_settings {
+    uint8_t required_security_level;
+    bool    requires_secure_connection;
+};
+
+static void att_validate_security_get_settings(struct att_security_settings * security_settings, att_operation_t operation, att_iterator_t *it){
+    security_settings->required_security_level = 0;
+    security_settings->requires_secure_connection = false;
     switch (operation){
         case ATT_READ:
             if ((it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_0) != 0u){
-                required_security_level |= 1;
+                security_settings->required_security_level |= 1;
             }
             if ((it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_1) != 0u){
-                required_security_level |= 2;
+                security_settings->required_security_level |= 2;
             }
             if ((it->flags & ATT_PROPERTY_READ_PERMISSION_SC) != 0u){
-                requires_secure_connection = true;
+                security_settings->requires_secure_connection = true;
             }
             break;
         case ATT_WRITE:
             if ((it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_0) != 0u){
-                required_security_level |= 1;
+                security_settings->required_security_level |= 1;
             }
             if ((it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_1) != 0u){
-                required_security_level |= 2;
+                security_settings->required_security_level |= 2;
             }
             if ((it->flags & ATT_PROPERTY_WRITE_PERMISSION_SC) != 0u){
-                requires_secure_connection = true;
+                security_settings->requires_secure_connection = true;
             }
             break;
         default:
             btstack_assert(false);
             break;
     }
+}
+
+static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
+    struct att_security_settings security_settings;
+    att_validate_security_get_settings(&security_settings, operation, it);
 
     uint8_t required_encryption_size = it->flags >> 12;
     if (required_encryption_size != 0) required_encryption_size++;   // store -1 to fit into 4 bit
@@ -331,8 +341,8 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
     log_debug("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u, secure connection %u",
         it->flags, required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size, att_connection->secure_connection);
 
-    bool sc_missing = requires_secure_connection && (att_connection->secure_connection == 0u);
-    switch (required_security_level){
+    bool sc_missing = security_settings.requires_secure_connection && (att_connection->secure_connection == 0u);
+    switch (security_settings.required_security_level){
         case ATT_SECURITY_AUTHORIZED:
             if ((att_connection->authorized == 0u) || sc_missing){
                 return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
