@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
+
 ### Added
+- HCI Dump: Support BTSnoop format in hci_dump_posix_fs.c for format = HCI_DUMP_BTSNOOP
+
 ### Fixed
 ### Changed
 

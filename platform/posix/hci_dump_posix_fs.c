@@ -82,10 +82,12 @@ static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_
     static union {
         uint8_t header_bluez[HCI_DUMP_HEADER_SIZE_BLUEZ];
         uint8_t header_packetlogger[HCI_DUMP_HEADER_SIZE_PACKETLOGGER];
+        uint8_t header_btsnoop[HCI_DUMP_HEADER_SIZE_BTSNOOP];
     } header;
 
     uint32_t tv_sec = 0;
     uint32_t tv_us  = 0;
+    uint64_t ts_usec;
 
     // get time
     struct timeval curr_time;
@@ -103,7 +105,15 @@ static void hci_dump_posix_fs_log_packet(uint8_t packet_type, uint8_t in, uint8_
             hci_dump_setup_header_packetlogger(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
             header_len = HCI_DUMP_HEADER_SIZE_PACKETLOGGER;
             break;
+        case HCI_DUMP_BTSNOOP:
+            // log messages not supported
+            if (packet_type == LOG_MESSAGE_PACKET) return;
+            ts_usec = ((uint64_t)  curr_time.tv_sec) * 1000000 + curr_time.tv_usec;
+            hci_dump_setup_header_btsnoop(header.header_btsnoop, ts_usec >> 32, ts_usec & 0xFFFFFFFF, 0, packet_type, in, len);
+            header_len = HCI_DUMP_HEADER_SIZE_BTSNOOP;
+            break;
         default:
+            btstack_unreachable();
             return;
     }
 
@@ -119,7 +129,7 @@ static void hci_dump_posix_fs_log_message(const char * format, va_list argptr){
 
 // returns system errno
 int hci_dump_posix_fs_open(const char *filename, hci_dump_format_t format){
-    btstack_assert(format == HCI_DUMP_BLUEZ || format == HCI_DUMP_PACKETLOGGER);
+    btstack_assert(format == HCI_DUMP_BLUEZ || format == HCI_DUMP_PACKETLOGGER || format == HCI_DUMP_BTSNOOP);
 
     dump_format = format;
     int oflags = O_WRONLY | O_CREAT | O_TRUNC;
@@ -130,6 +140,19 @@ int hci_dump_posix_fs_open(const char *filename, hci_dump_format_t format){
     if (dump_file < 0){
         printf("failed to open file %s, errno = %d\n", filename, errno);
         return errno;
+    }
+
+    if (format == HCI_DUMP_BTSNOOP){
+        // write BTSnoop file header
+        const uint8_t file_header[] = {
+            // Identification Pattern: "btsnoop\0"
+            0x62, 0x74, 0x73, 0x6E, 0x6F, 0x6F, 0x70, 0x00,
+            // Version: 1
+            0x00, 0x00, 0x00, 0x01,
+            // Datalink Type: 1001 - Un-encapsulated HCI
+            0x00, 0x00, 0x03, 0xE9,
+        };
+        (void) write(dump_file, &file_header, sizeof(file_header));
     }
     return 0;
 }
