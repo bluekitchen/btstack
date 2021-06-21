@@ -63,6 +63,7 @@ extern "C" {
 
 #define HCI_DUMP_HEADER_SIZE_PACKETLOGGER 13
 #define HCI_DUMP_HEADER_SIZE_BLUEZ        13
+#define HCI_DUMP_HEADER_SIZE_BTSNOOP      24
 
 /* API_START */
 
@@ -70,6 +71,7 @@ typedef enum {
     HCI_DUMP_INVALID = 0,
     HCI_DUMP_BLUEZ,
     HCI_DUMP_PACKETLOGGER,
+    HCI_DUMP_BTSNOOP,
 } hci_dump_format_t;
 
 typedef struct {
@@ -150,6 +152,7 @@ __attribute__ ((format (__printf__, 2, 3)))
  * @param len
  */
 void hci_dump_setup_header_packetlogger(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len);
+
 /**
  * @brief Setup header for BLUEZ (hcidump) format
  * @param buffer
@@ -160,6 +163,18 @@ void hci_dump_setup_header_packetlogger(uint8_t * buffer, uint32_t tv_sec, uint3
  * @param len
  */
 void hci_dump_setup_header_bluez(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len);
+
+/**
+ * @brief Setup header for BT Snoop format
+ * @param buffer
+ * @param ts_usec_high upper 32-bit of 64-bit microsecond timestamp
+ * @param ts_usec_low  lower 2-bit of 64-bit microsecond timestamp
+ * @param cumulative_drops since last packet was recorded
+ * @param packet_type
+ * @param in
+ * @param len
+ */
+void hci_dump_setup_header_btsnoop(uint8_t * buffer, uint32_t ts_usec_high, uint32_t ts_usec_low, uint32_t cumulative_drops, uint8_t packet_type, uint8_t in, uint16_t len);
 
 /* API_END */
 
