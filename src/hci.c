@@ -407,7 +407,7 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
 
     // if we are responder, use minimal service security level as required level
     if (!initiator){
-        hci_connection->requested_security_level = btstack_max((uint32_t) hci_connection->requested_security_level, (uint32_t) hci_stack->gap_minimal_service_security_level);
+        hci_connection->requested_security_level = (gap_security_level_t) btstack_max((uint32_t) hci_connection->requested_security_level, (uint32_t) hci_stack->gap_minimal_service_security_level);
     }
 
     log_info("pairing started, ssp %u, initiator %u, requested level %u", (int) ssp, (int) initiator, hci_connection->requested_security_level);
