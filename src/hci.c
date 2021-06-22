@@ -4976,7 +4976,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 
             // CVE-2020-26555: reject outgoing connection to device with same BD ADDR
             if (memcmp(hci_stack->local_bd_addr, addr, 6) == 0) {
-                hci_emit_connection_complete(addr, conn->con_handle, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR);
+                hci_emit_connection_complete(addr, 0, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR);
                 return -1;
             }
 
