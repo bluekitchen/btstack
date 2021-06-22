@@ -26,8 +26,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: abort legacy pairing if Level 4 is required
 - GAP: abort SSP on IO Capabilities Request event if Level 4 is required but SC not supported by remote
 - GAP: abort SSP on User Confirmation Request event if Level 3 is required but MITM protection not possible
-- GAP: check if minimal service security level can be reached in responder role
+- GAP: validate minimal service security level can be reached during pairing in responder role
 - L2CAP: don't trigger hci disconnect if l2cap security requirements are insufficient
+- CVE-2020-26558: abort LE Secure Connection pairing if remote uses the same public key
 
 ## Release v1.4
 
@@ -106,6 +107,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: provide acl_handle in events to identify connection
 - HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 - Example: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
+
 
 ## Release v1.3.2
 

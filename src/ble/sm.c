@@ -4046,10 +4046,17 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[01], &setup->sm_peer_q[0]);
             reverse_256(&packet[33], &setup->sm_peer_q[32]);
 
+            // CVE-2020-26558: abort pairing if remote uses the same public key
+            if (memcmp(&setup->sm_peer_q, ec_q, 64) == 0){
+                log_info("Remote PK matches ours");
+                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+                break;
+            }
+
             // validate public key
             err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
             if (err != 0){
-                log_error("sm: peer public key invalid %x", err);
+                log_info("sm: peer public key invalid %x", err);
                 sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
