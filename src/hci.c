@@ -2534,6 +2534,14 @@ static void event_handler(uint8_t *packet, uint16_t size){
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
             link_type = (hci_link_type_t) packet[11];
+
+            // CVE-2020-26555: reject incoming connection from device with same BD ADDR
+            if (memcmp(hci_stack->local_bd_addr, addr, 6) == 0){
+                hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
+                bd_addr_copy(hci_stack->decline_addr, addr);
+                break;
+            }
+
             if (hci_stack->gap_classic_accept_callback != NULL){
                 if ((*hci_stack->gap_classic_accept_callback)(addr, link_type) == 0){
                     hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
@@ -4966,6 +4974,12 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             reverse_bd_addr(&packet[3], addr);
             log_info("Create_connection to %s", bd_addr_to_str(addr));
 
+            // CVE-2020-26555: reject outgoing connection to device with same BD ADDR
+            if (memcmp(hci_stack->local_bd_addr, addr, 6) == 0) {
+                hci_emit_connection_complete(addr, conn->con_handle, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR);
+                return -1;
+            }
+
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
@@ -4982,7 +4996,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 // if connection active exists
                 case OPEN:
                     // and OPEN, emit connection complete command
-                    hci_emit_connection_complete(addr, conn->con_handle, 0);
+                    hci_emit_connection_complete(addr, conn->con_handle, ERROR_CODE_SUCCESS);
                     return -1; // packet not sent to controller
                 case RECEIVED_DISCONNECTION_COMPLETE:
                     // create connection triggered in disconnect complete event, let's do it now

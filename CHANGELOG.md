@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: abort SSP on User Confirmation Request event if Level 3 is required but MITM protection not possible
 - GAP: validate minimal service security level can be reached during pairing in responder role
 - L2CAP: don't trigger hci disconnect if l2cap security requirements are insufficient
+- CVE-2020-26555: reject connections to and from devices with same BD ADDR
 - CVE-2020-26558: abort LE Secure Connection pairing if remote uses the same public key
 
 ## Release v1.4
