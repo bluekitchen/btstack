@@ -2400,6 +2400,17 @@ static bool hci_ssp_security_level_possible_for_io_cap(gap_security_level_t leve
     // LEVEL 2 requires SSP, which is a given
     return true;
 }
+
+static bool btstack_is_null(uint8_t * data, uint16_t size){
+    uint16_t i;
+    for (i=0; i < size ; i++){
+        if (data[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 #endif
 
 static void event_handler(uint8_t *packet, uint16_t size){
@@ -2706,11 +2717,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             hci_pairing_complete(conn, ERROR_CODE_SUCCESS);
 
+            // CVE-2020-26555: ignore NULL link key
+            // default link_key_type = INVALID_LINK_KEY asserts that NULL key won't be used for encryption
+            if (btstack_is_null(&packet[8], 16)) break;
+
             link_key_type_t link_key_type = (link_key_type_t)packet[24];
             // Change Connection Encryption keeps link key type
             if (link_key_type != CHANGED_COMBINATION_KEY){
                 conn->link_key_type = link_key_type;
             }
+
             // cache link key. link keys stored in little-endian format for legacy reasons
             memcpy(&conn->link_key, &packet[8], 16);
 
