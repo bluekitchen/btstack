@@ -311,6 +311,7 @@ void rfcomm_disconnect(uint16_t rfcomm_cid);
  * @param packet handler for all channels of this service
  * @param channel 
  * @param max_frame_size
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size);
 
@@ -321,6 +322,7 @@ uint8_t rfcomm_register_service(btstack_packet_handler_t packet_handler, uint8_t
  * @param channel 
  * @param max_frame_size
  * @param initial_credits
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t rfcomm_register_service_with_initial_credits(btstack_packet_handler_t packet_handler, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
 
