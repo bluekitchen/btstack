@@ -1279,11 +1279,8 @@ void hfp_hf_deinit(void){
 }
 
 void hfp_hf_init_codecs(int codecs_nr, const uint8_t * codecs){
-    if (codecs_nr > HFP_MAX_NUM_CODECS){
-        log_error("hfp_hf_init_codecs: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
-        return;
-    }
-
+    btstack_assert(codecs_nr < HFP_MAX_NUM_CODECS);
+    
     hfp_codecs_nr = codecs_nr;
     int i;
     for (i=0; i<codecs_nr; i++){
@@ -1296,6 +1293,8 @@ void hfp_hf_init_supported_features(uint32_t supported_features){
 }
 
 void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
+    btstack_assert(hfp_indicators_nr < HFP_MAX_NUM_INDICATORS);
+
     hfp_indicators_nr = indicators_nr;
     int i;
     for (i = 0; i < hfp_indicators_nr ; i++){
@@ -1968,10 +1967,8 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
 }
 
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
-	if (callback == NULL){
-		log_error("hfp_hf_register_packet_handler called with NULL callback");
-		return;
-	}
+	btstack_assert(callback != NULL);
+    
 	hfp_hf_callback = callback;
 	hfp_set_hf_callback(callback);
 }
