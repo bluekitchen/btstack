@@ -2029,7 +2029,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
 	// determine security level based on psm
 	const gap_security_level_t security_level = l2cap_security_level_0_allowed_for_PSM(psm) ? LEVEL_0 : gap_get_security_level();
-	log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u, sec level %u", bd_addr_to_str(address), psm, mtu, local_mtu, (int) security_level);
+	log_info("create channel addr %s psm 0x%x mtu %u -> local mtu %u, sec level %u", bd_addr_to_str(address), psm, mtu, local_mtu, (int) security_level);
 
     l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, security_level);
     if (!channel) {
@@ -2071,7 +2071,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 }
 
 void l2cap_disconnect(uint16_t local_cid, uint8_t reason){
-    log_info("L2CAP_DISCONNECT local_cid 0x%x reason 0x%x", local_cid, reason);
+    log_info("disconnect local_cid 0x%x reason 0x%x", local_cid, reason);
     // find channel for local_cid
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
@@ -2342,7 +2342,7 @@ static void l2cap_handle_features_complete(hci_con_handle_t handle){
     }
 }
 static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_level_t actual_level){
-    log_info("l2cap - security level update for handle 0x%04x", handle);
+    log_info("security level update for handle 0x%04x", handle);
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -2634,7 +2634,7 @@ void l2cap_accept_connection(uint16_t local_cid){
     log_info("L2CAP_ACCEPT_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
+        log_error("accept called but local_cid 0x%x not found", local_cid);
         return;
     }
 
@@ -2650,7 +2650,7 @@ void l2cap_accept_connection(uint16_t local_cid){
 }
 
 void l2cap_decline_connection(uint16_t local_cid){
-    log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x", local_cid);
+    log_info("decline local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
@@ -3157,7 +3157,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint16_t len   = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
-    log_info("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u, len %u", code, sig_id, len);
+    log_info("le dispatch: command 0x%02x, sig id %u, len %u", code, sig_id, len);
 
     switch (code){
 
@@ -3380,7 +3380,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
             channel = l2cap_get_channel_for_local_cid_and_handle(local_cid, handle);
             if (!channel) {
-                log_error("l2cap: no channel for cid 0x%02x", local_cid);
+                log_error("credit: no channel for cid 0x%02x", local_cid);
                 break;
             }
             new_credits = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 2);
@@ -3388,11 +3388,11 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             channel->credits_outgoing += new_credits;
             // check for credit overrun
             if (credits_before > channel->credits_outgoing){
-                log_error("l2cap: new credits caused overrrun for cid 0x%02x, disconnecting", local_cid);
+                log_error("credit: new credits caused overrrun for cid 0x%02x, disconnecting", local_cid);
                 channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
                 break;
             }            
-            log_info("l2cap: %u credits for 0x%02x, now %u", new_credits, local_cid, channel->credits_outgoing);
+            log_info("credit: %u credits for 0x%02x, now %u", new_credits, local_cid, channel->credits_outgoing);
             break;
 
         case DISCONNECTION_REQUEST:
@@ -3404,7 +3404,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
             channel = l2cap_get_channel_for_local_cid_and_handle(local_cid, handle);
             if (!channel) {
-                log_error("l2cap: no channel for cid 0x%02x", local_cid);
+                log_error("credit: no channel for cid 0x%02x", local_cid);
                 break;
             }
             channel->remote_sig_id = sig_id;
@@ -3853,14 +3853,14 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
     // check for alread registered psm 
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) {
-        log_error("l2cap_register_service: PSM %u already registered", psm);
+        log_error("register: PSM %u already registered", psm);
         return L2CAP_SERVICE_ALREADY_REGISTERED;
     }
     
     // alloc structure
     service = btstack_memory_l2cap_service_get();
     if (!service) {
-        log_error("l2cap_register_service: no memory for l2cap_service_t");
+        log_error("register: no memory for l2cap_service_t");
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
@@ -3886,7 +3886,7 @@ uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, 
 
 uint8_t l2cap_unregister_service(uint16_t psm){
     
-    log_info("L2CAP_UNREGISTER_SERVICE psm 0x%x", psm);
+    log_info("unregister psm 0x%x", psm);
 
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) return L2CAP_SERVICE_DOES_NOT_EXIST;
@@ -3913,13 +3913,13 @@ static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel){
     if (!channel->waiting_for_can_send_now) return;
     if (channel->send_sdu_buffer) return;
     channel->waiting_for_can_send_now = 0;
-    log_debug("L2CAP_EVENT_CHANNEL_LE_CAN_SEND_NOW local_cid 0x%x", channel->local_cid);
+    log_debug("le can send now, local_cid 0x%x", channel->local_cid);
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_CAN_SEND_NOW);
 }
 
 // 1BH2222
 static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel) {
-    log_info("L2CAP_EVENT_LE_INCOMING_CONNECTION addr_type %u, addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x, remote_mtu %u",
+    log_info("le incoming addr_type %u, addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x, remote_mtu %u",
              channel->address_type, bd_addr_to_str(channel->address), channel->con_handle,  channel->psm, channel->local_cid, channel->remote_cid, channel->remote_mtu);
     uint8_t event[19];
     event[0] = L2CAP_EVENT_LE_INCOMING_CONNECTION;
@@ -3936,7 +3936,7 @@ static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel) {
 }
 // 11BH22222
 static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t status) {
-    log_info("L2CAP_EVENT_LE_CHANNEL_OPENED status 0x%x addr_type %u addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u",
+    log_info("opened le channel status 0x%x addr_type %u addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u",
              status, channel->address_type, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
              channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu);
     uint8_t event[23];
@@ -3957,7 +3957,7 @@ static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t statu
 }
 // 2
 static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel){
-    log_info("L2CAP_EVENT_LE_CHANNEL_CLOSED local_cid 0x%x", channel->local_cid);
+    log_info("closed local_cid 0x%x", channel->local_cid);
     uint8_t event[4];
     event[0] = L2CAP_EVENT_LE_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2u;
@@ -4030,7 +4030,7 @@ uint8_t l2cap_le_register_service(btstack_packet_handler_t packet_handler, uint1
     // alloc structure
     service = btstack_memory_l2cap_service_get();
     if (!service) {
-        log_error("l2cap_register_service_internal: no memory for l2cap_service_t");
+        log_error("register: no memory for l2cap_service_t");
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
@@ -4152,7 +4152,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
     static btstack_packet_callback_registration_t sm_event_callback_registration;
     static bool sm_callback_registered = false;
 
-    log_info("L2CAP_LE_CREATE_CHANNEL handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
+    log_info("create, handle 0x%04x psm 0x%x mtu %u", con_handle, psm, mtu);
 
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) {
@@ -4164,7 +4164,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    log_info("l2cap_le_create_channel %p", channel);
+    log_info("created %p", channel);
 
     // store local_cid
     if (out_local_cid){
@@ -4210,13 +4210,13 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_le_provide_credits no channel for cid 0x%02x", local_cid);
+        log_error("le credits no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
     // check state
     if (channel->state != L2CAP_STATE_OPEN){
-        log_error("l2cap_le_provide_credits but channel 0x%02x not open yet", local_cid);
+        log_error("le credits but channel 0x%02x not open yet", local_cid);
     }
 
     // assert incoming credits + credits <= 0xffff
@@ -4224,7 +4224,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
     total_credits += channel->new_credits_incoming;
     total_credits += credits;
     if (total_credits > 0xffffu){
-        log_error("l2cap_le_provide_credits overrun: current %u, scheduled %u, additional %u", channel->credits_incoming,
+        log_error("le credits overrun: current %u, scheduled %u, additional %u", channel->credits_incoming,
             channel->new_credits_incoming, credits);
     }
 
@@ -4243,7 +4243,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
 int l2cap_le_can_send_now(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_le_provide_credits no channel for cid 0x%02x", local_cid);
+        log_error("le can send now, no channel for cid 0x%02x", local_cid);
         return 0;
     }
 
@@ -4266,7 +4266,7 @@ int l2cap_le_can_send_now(uint16_t local_cid){
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_le_request_can_send_now_event no channel for cid 0x%02x", local_cid);
+        log_error("can send now, no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
     channel->waiting_for_can_send_now = 1;
@@ -4285,17 +4285,17 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size){
 
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
+        log_error("l2cap send, no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 
     if (size > channel->remote_mtu){
-        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
+        log_error("l2cap send, cid 0x%02x, data length exceeds remote MTU.", local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
 
     if (channel->send_sdu_buffer){
-        log_info("l2cap_send cid 0x%02x, cannot send", local_cid);
+        log_info("l2cap send, cid 0x%02x, cannot send", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
@@ -4315,7 +4315,7 @@ uint8_t l2cap_le_disconnect(uint16_t local_cid)
 {
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_send no channel for cid 0x%02x", local_cid);
+        log_error("l2cap send, no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
 

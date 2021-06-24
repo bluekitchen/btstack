@@ -510,7 +510,12 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
 
 /** 
- * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler.
+ * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. 
+ * @param packet_handler
+ * @param psm
+ * @param mtu
+ * @param security_level
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise L2CAP_SERVICE_ALREADY_REGISTERED or BTSTACK_MEMORY_ALLOC_FAILED
  */
 uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
