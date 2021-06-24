@@ -2533,7 +2533,11 @@ static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_
     
     // register with l2cap if not registered before, max MTU
     if (btstack_linked_list_empty(&rfcomm_services)){
-        l2cap_register_service(rfcomm_packet_handler, BLUETOOTH_PROTOCOL_RFCOMM, 0xffff, rfcomm_security_level);
+        uint8_t status = l2cap_register_service(rfcomm_packet_handler, BLUETOOTH_PROTOCOL_RFCOMM, 0xffff, rfcomm_security_level);
+        if (status != ERROR_CODE_SUCCESS){
+            btstack_memory_rfcomm_service_free(service);
+            return status;
+        }
     }
     
     // fill in 
@@ -2546,7 +2550,7 @@ static uint8_t rfcomm_register_service_internal(btstack_packet_handler_t packet_
     // add to services list
     btstack_linked_list_add(&rfcomm_services, (btstack_linked_item_t *) service);
     
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t rfcomm_register_service_with_initial_credits(btstack_packet_handler_t packet_handler, 
