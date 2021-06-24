@@ -39,6 +39,8 @@
 
 #include <stdint.h>
 #include <string.h>
+// snprintf
+#include <stdio.h>
 
 #include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"

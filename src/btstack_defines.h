@@ -1144,7 +1144,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param service_uuid
  */
- #define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
+ #define BNEP_EVENT_SERVICE_REGISTERED                           0xC0
 
 /**
  * @format 12222BH
@@ -1156,7 +1156,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_address
  * @param con_handle
  */
- #define BNEP_EVENT_CHANNEL_OPENED                   0xC1
+ #define BNEP_EVENT_CHANNEL_OPENED                               0xC1
 
 /**
  * @format 222B
@@ -1165,7 +1165,7 @@ typedef uint8_t sm_key_t[16];
  * @param destination_uuid
  * @param remote_address
  */
- #define BNEP_EVENT_CHANNEL_CLOSED                          0xC2
+ #define BNEP_EVENT_CHANNEL_CLOSED                               0xC2
 
 /**
  * @format 222B1
@@ -1175,7 +1175,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_address
  * @param channel_state
  */
-#define BNEP_EVENT_CHANNEL_TIMEOUT                         0xC3    
+#define BNEP_EVENT_CHANNEL_TIMEOUT                               0xC3    
     
 /**
  * @format 222B
@@ -1184,7 +1184,7 @@ typedef uint8_t sm_key_t[16];
  * @param destination_uuid
  * @param remote_address
  */
- #define BNEP_EVENT_CAN_SEND_NOW                           0xC4
+ #define BNEP_EVENT_CAN_SEND_NOW                                 0xC4
 
  /**
   * @format H1B
@@ -1192,7 +1192,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_JUST_WORKS_REQUEST                              0xD0
+#define SM_EVENT_JUST_WORKS_REQUEST                              0xC8
 
  /**
   * @format H1B4
@@ -1201,7 +1201,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param passkey
   */
-#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xD1
+#define SM_EVENT_PASSKEY_DISPLAY_NUMBER                          0xC9
 
  /**
   * @format H1B
@@ -1209,7 +1209,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xD2
+#define SM_EVENT_PASSKEY_DISPLAY_CANCEL                          0xCA
 
  /**
   * @format H1B
@@ -1217,7 +1217,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xD3
+#define SM_EVENT_PASSKEY_INPUT_NUMBER                            0xCB
 
  /**
   * @format H1B4
@@ -1226,7 +1226,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param passkey
   */
-#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xD4
+#define SM_EVENT_NUMERIC_COMPARISON_REQUEST                      0xCC
 
  /**
   * @format H1B
@@ -1234,7 +1234,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xD5
+#define SM_EVENT_IDENTITY_RESOLVING_STARTED                      0xCD
 
  /**
   * @format H1B
@@ -1242,7 +1242,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xD6
+#define SM_EVENT_IDENTITY_RESOLVING_FAILED                       0xCE
 
  /**
   * @brief Identify resolving succeeded
@@ -1256,7 +1256,7 @@ typedef uint8_t sm_key_t[16];
   * @param index
   *
   */
-#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xD7
+#define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xCF
 
  /**
   * @format H1B
@@ -1264,7 +1264,7 @@ typedef uint8_t sm_key_t[16];
   * @param addr_type
   * @param address
   */
-#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD8
+#define SM_EVENT_AUTHORIZATION_REQUEST                           0xD0
 
  /**
   * @format H1B1
@@ -1273,14 +1273,14 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param authorization_result
   */
-#define SM_EVENT_AUTHORIZATION_RESULT                            0xD9
+#define SM_EVENT_AUTHORIZATION_RESULT                            0xD1
 
  /**
   * @format H1
   * @param handle
   * @param action see SM_KEYPRESS_*
   */
-#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xDA
+#define SM_EVENT_KEYPRESS_NOTIFICATION                           0xD2
 
  /**
   * @brief Emitted during pairing to inform app about address used as identity
@@ -1293,7 +1293,7 @@ typedef uint8_t sm_key_t[16];
   * @param identity_address
   * @param index
   */
-#define SM_EVENT_IDENTITY_CREATED                                0xDB
+#define SM_EVENT_IDENTITY_CREATED                                0xD3
 
 /**
  * @brief Emitted to inform app that pairing has started.
@@ -1302,7 +1302,7 @@ typedef uint8_t sm_key_t[16];
  * @param addr_type
  * @param address
  */
-#define SM_EVENT_PAIRING_STARTED                                 0xDC
+#define SM_EVENT_PAIRING_STARTED                                 0xD4
 
 /**
   * @brief Emitted to inform app that pairing is complete. Possible status values:
@@ -1318,7 +1318,7 @@ typedef uint8_t sm_key_t[16];
   * @param status
   * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
   */
-#define SM_EVENT_PAIRING_COMPLETE                                0xDD
+#define SM_EVENT_PAIRING_COMPLETE                                0xD5
 
 
 /**
@@ -1328,7 +1328,7 @@ typedef uint8_t sm_key_t[16];
  * @param addr_type
  * @param address
  */
-#define SM_EVENT_REENCRYPTION_STARTED                            0xDE
+#define SM_EVENT_REENCRYPTION_STARTED                            0xD6
 
 /**
  * @brief Proactive Authentication for bonded devices complete. Possible status values:
@@ -1341,7 +1341,7 @@ typedef uint8_t sm_key_t[16];
  * @param address
  * @param status
  */
-#define SM_EVENT_REENCRYPTION_COMPLETE                           0xDF
+#define SM_EVENT_REENCRYPTION_COMPLETE                           0xD7
 
 // GAP
 
@@ -1350,14 +1350,14 @@ typedef uint8_t sm_key_t[16];
  * @param handle
  * @param security_level
  */
-#define GAP_EVENT_SECURITY_LEVEL                                 0xE0
+#define GAP_EVENT_SECURITY_LEVEL                                 0xD8
 
 /**
  * @format 1B
  * @param status
  * @param address
  */
-#define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xE1
+#define GAP_EVENT_DEDICATED_BONDING_COMPLETED                    0xD9
 
 /**
  * @format 11B1JV
@@ -1368,7 +1368,7 @@ typedef uint8_t sm_key_t[16];
  * @param data_length
  * @param data
  */
-#define GAP_EVENT_ADVERTISING_REPORT                          0xE2
+#define GAP_EVENT_ADVERTISING_REPORT                             0xDA
 
  /**
  * @format B13211122221JV
@@ -1387,13 +1387,13 @@ typedef uint8_t sm_key_t[16];
  * @param name_len
  * @param name
  */
-#define GAP_EVENT_INQUIRY_RESULT                              0xE3
+#define GAP_EVENT_INQUIRY_RESULT                                 0xDB
 
 /**
  * @format 1
  * @param status
  */
-#define GAP_EVENT_INQUIRY_COMPLETE                            0xE4
+#define GAP_EVENT_INQUIRY_COMPLETE                               0xDC
 
 /**
  * @format H1
@@ -1402,7 +1402,7 @@ typedef uint8_t sm_key_t[16];
  * @note Classic: rssi is in dB relative to Golden Receive Power Range
  * @note LE: rssi is absolute dBm
  */
-#define GAP_EVENT_RSSI_MEASUREMENT                            0xE5
+#define GAP_EVENT_RSSI_MEASUREMENT                               0xDD
 
 /**
  * @format 1KKKK
@@ -1412,23 +1412,41 @@ typedef uint8_t sm_key_t[16];
  * @param c_256 Simple Pairing Hash C derived from P-256 public key
  * @param r_256 Simple Pairing Randomizer derived from P-256 public key
  */
-#define GAP_EVENT_LOCAL_OOB_DATA                              0xE6
+#define GAP_EVENT_LOCAL_OOB_DATA                                 0xDE
+
+
+/**
+ * @format HB11
+ * @param con_handle
+ * @param bd_addr
+ * @param ssp
+ * @param initiator
+ */
+#define GAP_EVENT_PAIRING_STARTED                                0xDF
+
+/**
+ * @format HB1
+ * @param con_handle
+ * @param bd_addr
+ * @param status
+ */
+#define GAP_EVENT_PAIRING_COMPLETE                               0xE0
 
 // Meta Events, see below for sub events
-#define HCI_EVENT_HSP_META                                 0xE8
-#define HCI_EVENT_HFP_META                                 0xE9
-#define HCI_EVENT_ANCS_META                                0xEA
-#define HCI_EVENT_AVDTP_META                               0xEB
-#define HCI_EVENT_AVRCP_META                               0xEC
-#define HCI_EVENT_GOEP_META                                0xED
-#define HCI_EVENT_PBAP_META                                0xEE
-#define HCI_EVENT_HID_META                                 0xEF
-#define HCI_EVENT_A2DP_META                                0xF0
-#define HCI_EVENT_HIDS_META                                0xF1
-#define HCI_EVENT_GATTSERVICE_META                         0xF2
-#define HCI_EVENT_BIP_META                                 0xF3
-#define HCI_EVENT_MAP_META                                 0xF4
-#define HCI_EVENT_MESH_META                                0xF5
+#define HCI_EVENT_HSP_META                                       0xE8
+#define HCI_EVENT_HFP_META                                       0xE9
+#define HCI_EVENT_ANCS_META                                      0xEA
+#define HCI_EVENT_AVDTP_META                                     0xEB
+#define HCI_EVENT_AVRCP_META                                     0xEC
+#define HCI_EVENT_GOEP_META                                      0xED
+#define HCI_EVENT_PBAP_META                                      0xEE
+#define HCI_EVENT_HID_META                                       0xEF
+#define HCI_EVENT_A2DP_META                                      0xF0
+#define HCI_EVENT_HIDS_META                                      0xF1
+#define HCI_EVENT_GATTSERVICE_META                               0xF2
+#define HCI_EVENT_BIP_META                                       0xF3
+#define HCI_EVENT_MAP_META                                       0xF4
+#define HCI_EVENT_MESH_META                                      0xF5
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx

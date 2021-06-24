@@ -46,6 +46,8 @@
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 
+#include <stddef.h>
+
 /**
  * tests if list is empty
  */
@@ -140,10 +142,10 @@ btstack_linked_item_t * btstack_linked_list_pop(btstack_linked_list_t * list){
 // Linked List Iterator implementation
 //
 
-void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_linked_list_t * head){
+void btstack_linked_list_iterator_init(btstack_linked_list_iterator_t * it, btstack_linked_list_t * list){
     it->advance_on_next = 0;
-    it->prev = (btstack_linked_item_t*) head;
-    it->curr = * head;
+    it->prev = (btstack_linked_item_t*) list;
+    it->curr = * list;
 }
 
 bool btstack_linked_list_iterator_has_next(btstack_linked_list_iterator_t * it){

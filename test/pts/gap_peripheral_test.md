@@ -119,14 +119,14 @@ Set TSPX_iut_private_address_interval to 60000 (default 5 seconds, but GAP/BROB/
 - GAP/SEC/SEM/BV-23-C -> GAP Central
 - GAP/SEC/SEM/BV-24-C -> GAP Central
 - GAP/SEC/SEM/BV-25-C -> GAP Central
-- GAP/SEC/SEM/BI-01-C: u, C, D (PTS says "send Connection Response" although we did, just wait)
-- GAP/SEC/SEM/BI-11-C: C, D
-- GAP/SEC/SEM/BI-02-C: C, D
-- GAP/SEC/SEM/BI-03-C: C, D
-- GAP/SEC/SEM/BI-04-C: C, D
-- GAP/SEC/SEM/BI-14-C: C, D
-- GAP/SEC/SEM/BI-15-C: C, D
-- GAP/SEC/SEM/BI-16-C: C, D
+- GAP/SEC/SEM/BI-01-C: u, C, D (PTS says "send Connection Response" although we did, just wait), ca 3 minnutes
+- GAP/SEC/SEM/BI-11-C: Set L2CAP Service Level to 1 - C, D
+- GAP/SEC/SEM/BI-02-C: Set L2CAP Service Level to 2 - C, D
+- GAP/SEC/SEM/BI-03-C: Set L2CAP Service Level to 2 - C, D
+- GAP/SEC/SEM/BI-04-C: Set L2CAP Service Level to 2 - C, D
+- GAP/SEC/SEM/BI-14-C: Set L2CAP Service Level to 2 - C, D
+- GAP/SEC/SEM/BI-15-C: Set L2CAP Service Level to 2 - C, D
+- GAP/SEC/SEM/BI-16-C: Set L2CAP Service Level to 2 - C, D
 - GAP/SEC/SEM/BI-05-C -> GAP Central
 - GAP/SEC/SEM/BI-12-C -> GAP Central
 - GAP/SEC/SEM/BI-06-C -> GAP Central

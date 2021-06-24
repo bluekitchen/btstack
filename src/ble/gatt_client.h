@@ -308,7 +308,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered  
  */
-uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t  * uuid128);
+uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t * uuid128);
 
 /** 
  * @brief Finds included services within the specified service. For each found included service, an le_service_event_t with type set to GATT_EVENT_INCLUDED_SERVICE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery. Information about included service type (primary/secondary) can be retrieved either by sending an ATT find information request for the returned start group handle (returning the handle and the UUID for primary or secondary service) or by comparing the service to the list of all primary services. 
@@ -319,7 +319,7 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered  
  */
-uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service);
+uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service);
 
 /** 
  * @brief Discovers all characteristics within the specified service. For each found characteristic, an le_characteristics_event_t with type set to GATT_EVENT_CHARACTERISTIC_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -330,7 +330,7 @@ uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service);
+uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service);
 
 /** 
  * @brief The following four functions are used to discover all characteristics within the specified service or handle range, and return those that match the given UUID. For each found characteristic, an le_characteristic_event_t with type set to GATT_EVENT_CHARACTERISTIC_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -356,7 +356,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t  * uuid128);
+uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
 
 /** 
  * @brief The following four functions are used to discover all characteristics within the specified service or handle range, and return those that match the given UUID. For each found characteristic, an le_characteristic_event_t with type set to GATT_EVENT_CHARACTERISTIC_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -368,7 +368,7 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, uint16_t  uuid16);
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, uint16_t uuid16);
 
 /** 
  * @brief The following four functions are used to discover all characteristics within the specified service or handle range, and return those that match the given UUID. For each found characteristic, an le_characteristic_event_t with type set to GATT_EVENT_CHARACTERISTIC_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -380,7 +380,7 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid16(btstack_packe
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t  *service, uint8_t  * uuid128);
+uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t * service, const uint8_t * uuid128);
 
 /** 
  * @brief Discovers attribute handle and UUID of a characteristic descriptor within the specified characteristic. For each found descriptor, an le_characteristic_descriptor_event_t with type set to GATT_EVENT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of discovery.
@@ -391,7 +391,7 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_pack
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t  *characteristic);
+uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
 
 /** 
  * @brief Reads the characteristic value using the characteristic's value handle. If the characteristic value is found, an le_characteristic_value_event_t with type set to GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
@@ -402,18 +402,18 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t  *characteristic);
+uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
 
 /** 
  * @brief Reads the characteristic value using the characteristic's value handle. If the characteristic value is found, an le_characteristic_value_event_t with type set to GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle 
+ * @param  value_handle 
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle);
+uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle);
 
 /**
  * @brief Reads the characteric value of all characteristics with the uuid. For each found, an le_characteristic_value_event_t with type set to GATT_EVENT_CHARACTERISTIC_VALUE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
@@ -439,7 +439,7 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128);
+uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
 
 /** 
  * @brief Reads the long characteristic value using the characteristic's value handle. The value will be returned in several blobs. For each blob, an le_characteristic_value_event_t with type set to GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT and updated value offset will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, mark the end of read.
@@ -450,30 +450,30 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_hand
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t  *characteristic);
+uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
 
 /** 
  * @brief Reads the long characteristic value using the characteristic's value handle. The value will be returned in several blobs. For each blob, an le_characteristic_value_event_t with type set to GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT and updated value offset will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, mark the end of read.
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle 
+ * @param  value_handle 
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle);
+uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle);
 
 /** 
  * @brief Reads the long characteristic value using the characteristic's value handle. The value will be returned in several blobs. For each blob, an le_characteristic_value_event_t with type set to GATT_EVENT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT and updated value offset will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, mark the end of read.
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle
+ * @param  value_handle
  * @param  offset 
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t offset);
+uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset);
 
 /*
  * @brief Read multiple characteristic values
@@ -487,15 +487,15 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
  * @param  con_handle   
- * @param  characteristic_value_handle
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done
+ * @param  value_handle
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                BTSTACK_ACL_BUFFERS_FULL   , if L2CAP cannot send, there are no free ACL slots
  *                ERROR_CODE_SUCCESS         , if query is successfully registered 
  */
-uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the authenticated characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
@@ -509,60 +509,60 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t message_len, uint8_t  * message);
+uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t message_len, uint8_t * message);
 
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_handle
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_handle
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle
+ * @param  value_handle
  * @param  offset of value
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t offset, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes of the long characteristic value using the characteristic's value handle. It uses server response to validate that the write was correctly received. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes). 
  * @param  callback   
  * @param  con_handle
- * @param  characteristic_value_handle
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_handle
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Reads the characteristic descriptor using its handle. If the characteristic descriptor is found, an le_characteristic_descriptor_event_t with type set to GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
@@ -573,7 +573,7 @@ uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_h
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t  * descriptor);
+uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor);
 
 /** 
  * @brief Reads the characteristic descriptor using its handle. If the characteristic descriptor is found, an le_characteristic_descriptor_event_t with type set to GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
@@ -590,12 +590,12 @@ uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btsta
  * @brief Reads the long characteristic descriptor using its handle. It will be returned in several blobs. For each blob, an le_characteristic_descriptor_event_t with type set to GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
  * @param  callback   
  * @param  con_handle
- * @param  descriptor_handle
+ * @param  descriptor
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t  * descriptor);
+uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor);
 
 /** 
  * @brief Reads the long characteristic descriptor using its handle. It will be returned in several blobs. For each blob, an le_characteristic_descriptor_event_t with type set to GATT_EVENT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of read.
@@ -625,52 +625,52 @@ uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t  * descriptor, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor_handle
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t  * descriptor, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_descriptor_t * descriptor, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
  * @param  callback   
  * @param  con_handle
  * @param  descriptor_handle
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_EVENT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's att_status field is set to ATT_ERROR_SUCCESS (see bluetooth.h for ATT_ERROR codes).
@@ -678,13 +678,13 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
  * @param  con_handle
  * @param  descriptor_handle
  * @param  offset of value
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  * @return status BTSTACK_MEMORY_ALLOC_FAILED                               if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
-uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t length, uint8_t  * data);
+uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t value_length, uint8_t * value);
 
 /** 
  * @brief Writes the client characteristic configuration of the specified characteristic. It is used to subscribe for notifications or indications of the characteristic value. 
@@ -733,10 +733,10 @@ uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_hand
  * @param  con_handle
  * @param  attribute_handle
  * @param  offset of value
- * @param  length of data
- * @param  data is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
+ * @param  value_length
+ * @param  value is not copied, make sure memory is accessible until write is done, i.e. GATT_EVENT_QUERY_COMPLETE is received
  */
-uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data);
+uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t value_length, uint8_t * value);
 
 /**
  * @brief Commit transactional write. GATT_EVENT_QUERY_COMPLETE is received.
@@ -756,7 +756,7 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
 
 // used by generated btstack_event.c
 
-void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service);
+void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t * service);
 void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic);
 void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor);
 

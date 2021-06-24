@@ -39,6 +39,7 @@
 
 #include "mesh/beacon.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "ble/core.h"

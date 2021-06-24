@@ -36,10 +36,10 @@ build-coverage/%.o: %.c | build-coverage
 build-asan/%.o: %.c | build-asan
 	gcc -c ${CFLAGS_ASAN} $< -o $@
 
-build-coverage/%.cpp.o: %.c | build-coverage
+build-coverage/%.o: %.cpp | build-coverage
 	${CC} -c ${CFLAGS_COVERAGE} $< -o $@
 
-build-asan/%.cpp.o: %.c | build-asan
+build-asan/%.o: %.cpp | build-asan
 	${CC} -c ${CFLAGS_ASAN} $< -o $@
 
 
@@ -55,7 +55,7 @@ build-coverage/ecc_micro_ecc: build-coverage/ecc_micro_ecc.o build-coverage/uECC
 build-coverage/aes_cmac_test: build-coverage/aes_cmac_test.o build-coverage/aes_cmac.o build-coverage/rijndael.o | build-coverage
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
 
-build-coverage/aes_cmac_test2: build-coverage/aes_cmac_test2.cpp.o build-coverage/btstack_crypto.o  build-coverage/btstack_linked_list.o  build-coverage/hci_cmd.o  build-coverage/btstack_util.o  build-coverage/hci_dump.o  build-coverage/rijndael.o | build-asan
+build-coverage/aes_cmac_test2: build-coverage/aes_cmac_test2.o build-coverage/btstack_crypto.o  build-coverage/btstack_linked_list.o  build-coverage/hci_cmd.o  build-coverage/btstack_util.o  build-coverage/hci_dump.o  build-coverage/rijndael.o | build-asan
 	${CC} $^ ${LDFLAGS_COVERAGE} -o $@
 
 
@@ -71,7 +71,7 @@ build-asan/ecc_micro_ecc: build-asan/ecc_micro_ecc.o build-asan/uECC.o | build-a
 build-asan/aes_cmac_test: build-asan/aes_cmac_test.o build-asan/aes_cmac.o build-asan/rijndael.o | build-asan
 	${CC} $^  ${LDFLAGS_ASAN} -o $@
 
-build-asan/aes_cmac_test2: build-asan/aes_cmac_test2.cpp.o build-asan/btstack_crypto.o  build-asan/btstack_linked_list.o  build-asan/hci_cmd.o  build-asan/btstack_util.o  build-asan/hci_dump.o  build-asan/rijndael.o | build-asan
+build-asan/aes_cmac_test2: build-asan/aes_cmac_test2.o build-asan/btstack_crypto.o  build-asan/btstack_linked_list.o  build-asan/hci_cmd.o  build-asan/btstack_util.o  build-asan/hci_dump.o  build-asan/rijndael.o | build-asan
 	${CC} $^ ${LDFLAGS_ASAN} -o $@
 
 test: all

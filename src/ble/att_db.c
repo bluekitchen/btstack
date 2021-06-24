@@ -89,7 +89,7 @@ typedef struct att_iterator {
 
 static void att_persistent_ccc_cache(att_iterator_t * it);
 
-static uint8_t const * att_db = NULL;
+static uint8_t const * att_database = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
 static int      att_prepare_write_error_code   = 0;
@@ -100,7 +100,7 @@ static uint16_t att_persistent_ccc_handle;
 static uint16_t att_persistent_ccc_uuid16;
 
 static void att_iterator_init(att_iterator_t *it){
-    it->att_ptr = att_db;
+    it->att_ptr = att_database;
 }
 
 static bool att_iterator_has_next(att_iterator_t *it){
@@ -202,12 +202,13 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
 void att_set_db(uint8_t const * db){
     // validate db version
     if (db == NULL) return;
-    if (*db++ != ATT_DB_VERSION){
+    if (*db != ATT_DB_VERSION){
         log_error("ATT DB version differs, please regenerate .h from .gatt file or update att_db_util.c");
         return;
     }
     log_info("att_set_db %p", db);
-    att_db = db;
+    // ignore db version
+    att_database = &db[1];
 }
 
 void att_set_read_callback(att_read_callback_t callback){
@@ -222,7 +223,7 @@ void att_dump_attributes(void){
     att_iterator_t it;
     att_iterator_init(&it);
     uint8_t uuid128[16];
-    log_info("att_dump_attributes, table %p", att_db);
+    log_info("att_dump_attributes, table %p", att_database);
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle == 0u) {
@@ -293,36 +294,46 @@ static inline uint16_t setup_error_invalid_pdu(uint8_t *response_buffer, uint16_
     return setup_error(response_buffer, request, 0, ATT_ERROR_INVALID_PDU);
 }
 
-static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
-    int required_security_level = 0;
-    bool requires_secure_connection = false;
+struct att_security_settings {
+    uint8_t required_security_level;
+    bool    requires_secure_connection;
+};
+
+static void att_validate_security_get_settings(struct att_security_settings * security_settings, att_operation_t operation, att_iterator_t *it){
+    security_settings->required_security_level = 0;
+    security_settings->requires_secure_connection = false;
     switch (operation){
         case ATT_READ:
             if ((it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_0) != 0u){
-                required_security_level |= 1;
+                security_settings->required_security_level |= 1;
             }
             if ((it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_1) != 0u){
-                required_security_level |= 2;
+                security_settings->required_security_level |= 2;
             }
             if ((it->flags & ATT_PROPERTY_READ_PERMISSION_SC) != 0u){
-                requires_secure_connection = true;
+                security_settings->requires_secure_connection = true;
             }
             break;
         case ATT_WRITE:
             if ((it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_0) != 0u){
-                required_security_level |= 1;
+                security_settings->required_security_level |= 1;
             }
             if ((it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_1) != 0u){
-                required_security_level |= 2;
+                security_settings->required_security_level |= 2;
             }
             if ((it->flags & ATT_PROPERTY_WRITE_PERMISSION_SC) != 0u){
-                requires_secure_connection = true;
+                security_settings->requires_secure_connection = true;
             }
             break;
         default:
             btstack_assert(false);
             break;
     }
+}
+
+static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
+    struct att_security_settings security_settings;
+    att_validate_security_get_settings(&security_settings, operation, it);
 
     uint8_t required_encryption_size = it->flags >> 12;
     if (required_encryption_size != 0) required_encryption_size++;   // store -1 to fit into 4 bit
@@ -330,8 +341,8 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
     log_debug("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u, secure connection %u",
         it->flags, required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size, att_connection->secure_connection);
 
-    bool sc_missing = requires_secure_connection && (att_connection->secure_connection == 0u);
-    switch (required_security_level){
+    bool sc_missing = security_settings.requires_secure_connection && (att_connection->secure_connection == 0u);
+    switch (security_settings.required_security_level){
         case ATT_SECURITY_AUTHORIZED:
             if ((att_connection->authorized == 0u) || sc_missing){
                 return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
@@ -562,10 +573,8 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         
         if ((it.handle == 0u ) || (it.handle > end_handle)) break;
 
-        if (it.handle < start_handle) continue;
-
         // does current attribute match
-        if (!att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
+        if ((it.handle < start_handle) || !att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
         
         // skip handles that cannot be read but remember that there has been at least one
         if ((it.flags & ATT_PROPERTY_READ) == 0u) {
@@ -1157,33 +1166,31 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
                                      uint16_t value_len, 
                                      uint8_t * response_buffer){
     little_endian_store_16(response_buffer, 1, handle);
-    if (value_len > (att_connection->mtu - 3u)){
-        value_len = att_connection->mtu - 3u;
-    }
-    (void)memcpy(&response_buffer[3], value, value_len);
+    uint16_t bytes_to_copy = btstack_min(value_len, att_connection->mtu - 3u);
+    (void)memcpy(&response_buffer[3], value, bytes_to_copy);
     return value_len + 3u;
 }
 
 // MARK: ATT_HANDLE_VALUE_NOTIFICATION 0x1b
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
-                                               uint16_t handle,
+                                               uint16_t attribute_handle,
                                                const uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer){
 
     response_buffer[0] = ATT_HANDLE_VALUE_NOTIFICATION;
-    return prepare_handle_value(att_connection, handle, value, value_len, response_buffer);
+    return prepare_handle_value(att_connection, attribute_handle, value, value_len, response_buffer);
 }
 
 // MARK: ATT_HANDLE_VALUE_INDICATION 0x1d
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
-                                             uint16_t handle,
+                                             uint16_t attribute_handle,
                                              const uint8_t *value,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer){
 
     response_buffer[0] = ATT_HANDLE_VALUE_INDICATION;
-    return prepare_handle_value(att_connection, handle, value, value_len, response_buffer);
+    return prepare_handle_value(att_connection, attribute_handle, value, value_len, response_buffer);
 }
     
 // MARK: Dispatcher
@@ -1245,7 +1252,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 }
 
 // returns 1 if service found. only primary service.
-bool gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
+bool gatt_server_get_handle_range_for_service_with_uuid16(uint16_t uuid16, uint16_t * start_handle, uint16_t * end_handle){
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
 
@@ -1329,7 +1336,7 @@ uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uui
 }
 
 // returns 1 if service found. only primary service.
-int gatt_server_get_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
+int gatt_server_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle){
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
 
@@ -1523,7 +1530,7 @@ static uint8_t btp_permissions_for_flags(uint16_t flags){
 }
 
 uint16_t btp_att_get_attributes_by_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16, uint8_t * response_buffer, uint16_t response_buffer_size){
-    log_info("btp_att_get_attributes_by_uuid16 %04x from 0x%04x to 0x%04x, db %p", uuid16, start_handle, end_handle, att_db);
+    log_info("btp_att_get_attributes_by_uuid16 %04x from 0x%04x to 0x%04x, db %p", uuid16, start_handle, end_handle, att_database);
     att_dump_attributes();
 
     uint8_t num_attributes = 0;

@@ -24,12 +24,15 @@ api_header = """
 # API_TITLE API {#sec:API_LABEL_api}
 
 """
+
 api_subheader = """
 ## API_TITLE API {#sec:API_LABEL_api}
 
 """
 
-api_ending = """
+api_description = """
+**FILENAME** DESCRIPTION
+
 """
 
 code_ref = """GITHUBFPATH#LLINENR"""
@@ -254,12 +257,20 @@ def main(argv):
             else:
                 print("No @title flag found. Skip %s" % header_filepath)
     
-    
+    # create an >md file, for each header file in header_files dictionary
     for header_filepath in sorted(header_files.keys()):
-        header_label = filename_stem(header_filepath) # file name without 
-        header_description = header_files[header_filepath][1]
-        header_title = api_header.replace("API_TITLE", header_files[header_filepath][0]).replace("API_LABEL", header_label)
-        markdown_filepath = markdownfolder + "appendix/" + header_label + ".md"
+        filename = os.path.basename(header_filepath)
+        filename_without_extension = filename_stem(header_filepath) # file name without .h
+        filetitle = header_files[header_filepath][0]
+        description = header_files[header_filepath][1]
+
+        if len(description) > 1:
+            description = ": " + description
+
+        header_description = api_description.replace("FILENAME", filename).replace("DESCRIPTION", description)
+        
+        header_title = api_header.replace("API_TITLE", filetitle).replace("API_LABEL", filename_without_extension)
+        markdown_filepath = markdownfolder + "appendix/" + filename_without_extension + ".md"
 
         with open(header_filepath, 'rt') as fin:
             with open(markdown_filepath, 'wt') as fout:
@@ -272,7 +283,7 @@ def main(argv):
             typedefFound = 0
             multiline_function_def = 0
             state = State.SearchStartAPI
-            createIndex(fin, markdown_filepath, header_title, header_label, githuburl)
+            createIndex(fin, markdown_filepath, header_title, filename_without_extension, githuburl)
      
     # add API list to the navigation menu           
     with open("mkdocs-temp.yml", 'rt') as fin:
@@ -286,13 +297,13 @@ def main(argv):
                 identation = getSecondLevelIdentation(line)
                
                 for header_filepath in sorted(header_files.keys()):
-                    header_title = header_files[header_filepath][0]
+                    header_title = os.path.basename(header_filepath)
                     markdown_reference = "appendix/" + filename_stem(header_filepath) + ".md"
                     
                     fout.write(identation + "'" + header_title + "': " + markdown_reference + "\n")
 
     
-    # create singe appendix/apis.md for latex
+    # create mkdocs-latex.yml with single appendix/apis.md reference for pdf generation
     with open("mkdocs-temp.yml", 'rt') as fin:
         with open("mkdocs-latex.yml", 'wt') as fout:
             for line in fin:
@@ -302,15 +313,23 @@ def main(argv):
 
                 fout.write("  - 'APIs': appendix/apis.md\n")
     
-
+    # create single appendix/apis.md file for pdf generation
     markdown_filepath = markdownfolder + "appendix/apis.md"
     with open(markdown_filepath, 'wt') as fout:
         fout.write("\n# APIs\n\n")
         for header_filepath in sorted(header_files.keys()):
-            header_label = filename_stem(header_filepath) # file name without 
-            header_description = header_files[header_filepath][1]
-            subheader_title = api_subheader.replace("API_TITLE", header_files[header_filepath][0]).replace("API_LABEL", header_label)
-            
+            filename = os.path.basename(header_filepath)
+            filename_without_extension = filename_stem(header_filepath) # file name without 
+            filetitle = header_files[header_filepath][0]
+
+            description = header_files[header_filepath][1]
+
+            if len(description) > 1:
+                description = ": " + description
+
+            header_description = api_description.replace("FILENAME", filename).replace("DESCRIPTION", description)
+
+            subheader_title = api_subheader.replace("API_TITLE", filetitle).replace("API_LABEL", filename_without_extension)            
             with open(header_filepath, 'rt') as fin:
                     fout.write(subheader_title)
                     fout.write(header_description)

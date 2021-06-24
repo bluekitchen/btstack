@@ -623,6 +623,15 @@ static void gatt_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
             btp_socket_send_packet(BTP_SERVICE_ID_GATT, BTP_GATT_EV_NOTIFICATION, 0, response_len, response_buffer);
             break;
         case GATT_EVENT_INDICATION:
+            // In GATT/CL/GAD/BV-01-C, PTS sends an GATT Indication for the "Service Changed" Characteristic on connection complete.
+            // This unexpected event breaks the autoptsclient logic that expects a Command response.
+            // Workaround: ignore this particular indication
+            if (gatt_event_indication_get_value_length(packet) == 4){
+                const uint8_t * value = gatt_event_indication_get_value(packet);
+                uint16_t start_handle = little_endian_read_16(value, 0);
+                uint16_t end_handle   = little_endian_read_16(value, 2);
+                if ((start_handle == 0x0001) && (end_handle == 0xffff)) break;
+            }
             response_len = 0;
             btp_append_remote_address();
             btp_append_uint8(2);    // Indication
@@ -777,6 +786,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 if (powered){
                     hci_power_control(HCI_POWER_ON);
                 } else {
+                    gap_advertisements_enable(0);
                     hci_power_control(HCI_POWER_OFF);
                 }
             }

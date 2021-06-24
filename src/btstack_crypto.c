@@ -495,9 +495,11 @@ static void btstack_crypto_log_ec_publickey(const uint8_t * ec_q){
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     if (btstack_crypto_ecc_p256_key_generation_state != ECC_P256_KEY_GENERATION_ACTIVE) return 0;
     log_info("sm_generate_f_rng: size %u - offset %u", (int) size, btstack_crypto_ecc_p256_random_offset);
-    while (size) {
-        *buffer++ = btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_offset++];
-        size--;
+    uint16_t remaining_size = size;
+    uint8_t * buffer_ptr = buffer;
+    while (remaining_size) {
+        *buffer_ptr++ = btstack_crypto_ecc_p256_random[btstack_crypto_ecc_p256_random_offset++];
+        remaining_size--;
     }
     return 1;
 }
@@ -1220,12 +1222,12 @@ void btstack_crypto_aes128_cmac_message(btstack_crypto_aes128_cmac_t * request, 
 	btstack_crypto_run();
 }
 
-void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uint16_t len, const uint8_t * message,  uint8_t * hash, void (* callback)(void * arg), void * callback_arg){
+void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uint16_t size, const uint8_t * message,  uint8_t * hash, void (* callback)(void * arg), void * callback_arg){
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CMAC_MESSAGE;
     request->key                                       = zero;
-    request->size                                      = len;
+    request->size                                      = size;
     request->data.message                              = message;
     request->hash                                      = hash;
     btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
@@ -1315,14 +1317,14 @@ void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request,
     (void)memcpy(authentication_value, request->x_i, request->auth_len);
 }
 
-void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t block_len, const uint8_t * plaintext, uint8_t * ciphertext, void (* callback)(void * arg), void * callback_arg){
+void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * plaintext, uint8_t * ciphertext, void (* callback)(void * arg), void * callback_arg){
 #ifdef DEBUG_CCM
-    printf("\nbtstack_crypto_ccm_encrypt_block, len %u\n", block_len);
+    printf("\nbtstack_crypto_ccm_encrypt_block, len %u\n", len);
 #endif
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK;
-    request->block_len                                 = block_len;
+    request->block_len                                 = len;
     request->input                                     = plaintext;
     request->output                                    = ciphertext;
     if (request->state != CCM_CALCULATE_X1){
@@ -1332,11 +1334,11 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t b
     btstack_crypto_run();
 }
 
-void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t block_len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg){
+void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg){
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK;
-    request->block_len                                 = block_len;
+    request->block_len                                 = len;
     request->input                                     = ciphertext;
     request->output                                    = plaintext;
     if (request->state != CCM_CALCULATE_X1){

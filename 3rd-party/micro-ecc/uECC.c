@@ -599,11 +599,12 @@ static cmpresult_t vli_equal(const uECC_word_t *left, const uECC_word_t *right) 
 static void vli_rshift1(uECC_word_t *vli) {
     uECC_word_t *end = vli;
     uECC_word_t carry = 0;
+    uECC_word_t *vli_ = vli;
 
-    vli += uECC_WORDS;
-    while (vli-- > end) {
-        uECC_word_t temp = *vli;
-        *vli = (temp >> 1) | carry;
+    vli_ += uECC_WORDS;
+    while (vli_-- > end) {
+        uECC_word_t temp = *vli_;
+        *vli_ = (temp >> 1) | carry;
         carry = temp << (uECC_WORD_BITS - 1);
     }
 }

@@ -40,9 +40,11 @@ MOCK = \
     hci_dump.c     				\
     sdp_util.c	                \
 
-CFLAGS   = -g -Wall -Wmissing-prototypes -Wnarrowing 
-# CFLAGS += -Werror
-CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS  += -I. -I../
+CFLAGS  += -I${BTSTACK_ROOT}/src
+CFLAGS  += -I${BTSTACK_ROOT}/src/classic
+CFLAGS  += -I${BTSTACK_ROOT}/platform/posix
 # CFLAGS  += -D OCTAVE_OUTPUT
 
 CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage

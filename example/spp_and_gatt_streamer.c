@@ -75,18 +75,14 @@ int btstack_main(int argc, const char * argv[]);
 /*
  * @section Advertisements 
  *
- * @text The Flags attribute in the Advertisement Data indicates if a device is in dual-mode or not.
- * Flag 0x06 indicates LE General Discoverable, BR/EDR not supported although we're actually using BR/EDR.
- * In the past, there have been problems with Anrdoid devices when the flag was not set.
- * Setting it should prevent the remote implementation to try to use GATT over LE/EDR, which is not 
- * implemented by BTstack. So, setting the flag seems like the safer choice (while it's technically incorrect).
+ * @text The Flags attribute in the Advertisement Data indicates if a device is dual-mode or le-only.
  */
-/* LISTING_START(advertisements): Advertisement data: Flag 0x06 indicates LE-only device */
+/* LISTING_START(advertisements): Advertisement data: Flag 0x02 indicates dual-mode device */
 const uint8_t adv_data[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, 0x01, 0x06, 
+    // Flags general discoverable
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x02,
     // Name
-    0x0c, 0x09, 'L', 'E', ' ', 'S', 't', 'r', 'e', 'a', 'm', 'e', 'r', 
+    0x0c, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'L', 'E', ' ', 'S', 't', 'r', 'e', 'a', 'm', 'e', 'r',
 };
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;

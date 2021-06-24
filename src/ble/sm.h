@@ -68,18 +68,18 @@ void sm_init(void);
 /**
  * @brief Set secret ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2
  * @note If not set and btstack_tlv is configured, ER key is generated and stored in TLV by SM
- * @param er
+ * @param er key
  */
 void sm_set_er(sm_key_t er);
 
 /**
  * @brief Set secret IR key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2
  * @note If not set and btstack_tlv is configured, IR key is generated and stored in TLV by SM
+ * @param ir key
  */
 void sm_set_ir(sm_key_t ir);
 
 /**
- *
  * @brief Registers OOB Data Callback. The callback should set the oob_data and return 1 if OOB data is availble
  * @param get_oob_data_callback
  */
@@ -87,6 +87,7 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address
 
 /**
  * @brief Add event packet handler. 
+ * @param callback_handler
  */
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler);
 
@@ -203,12 +204,14 @@ int sm_cmac_ready(void);
  */
 void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, const uint8_t * message, uint32_t sign_counter, void (*done_callback)(uint8_t * hash));
 
-/*
+/**
  * @brief Match address against bonded devices
+ * @param address_type
+ * @param address
  * @return 0 if successfully added to lookup queue
  * @note Triggers SM_IDENTITY_RESOLVING_* events
  */
-int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
+int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address);
 
 /**
  * @brief Get Identity Resolving state
@@ -220,10 +223,10 @@ irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle);
 
 /**
  * @brief Identify device in LE Device DB.
- * @param handle
+ * @param con_handle
  * @return index from le_device_db or -1 if not found/identified
  */
-int sm_le_device_index(hci_con_handle_t con_handle );
+int sm_le_device_index(hci_con_handle_t con_handle);
 
 /**
  * @brief Use fixec passkey for Legacy and SC instead of generating a random number

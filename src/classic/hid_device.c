@@ -885,7 +885,6 @@ void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message
     if (!hid_device || !hid_device->interrupt_cid) return;
     l2cap_send(hid_device->interrupt_cid, (uint8_t*) message, message_len);
     if (hid_device->user_request_can_send_now){
-        printf("request user can send now because pending\n");
         l2cap_request_can_send_now_event((hid_device->interrupt_cid));
     }
 }

@@ -77,6 +77,9 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
             "22222", // 0x15 le credit based connection respone: dest cid, mtu, mps, initial credits, result
             "22",    // 0x16 le flow control credit: source cid, credits
 #endif
+#ifdef UNIT_TEST
+            "M",     // invalid format for unit testing
+#endif           
     };
     static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
@@ -113,22 +116,20 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     uint8_t * ptr;
     while (*format) {
         switch(*format) {
-            case '1': //  8 bit value
             case '2': // 16 bit value
-                word = va_arg(argptr, int);
+                word = va_arg(argptr, int);         // LCOV_EXCL_BR_LINE
                 // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 acl_buffer[pos++] = word & 0xffu;
-                if (*format == '2') {
-                    acl_buffer[pos++] = word >> 8;
-                }
+                acl_buffer[pos++] = word >> 8;
                 break;
             case 'D': // variable data. passed: len, ptr
-                word = va_arg(argptr, int);
-                ptr  = va_arg(argptr, uint8_t *);
+                word = va_arg(argptr, int);         // LCOV_EXCL_BR_LINE
+                ptr  = va_arg(argptr, uint8_t *);   // LCOV_EXCL_BR_LINE
                 (void)memcpy(&acl_buffer[pos], ptr, word);
                 pos += word;
                 break;
             default:
+                btstack_unreachable();
                 break;
         }
         format++;
@@ -148,9 +149,11 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     return pos;
 }
 
+#ifdef ENABLE_CLASSIC
 uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     return l2cap_create_signaling_internal(acl_buffer, handle, true, 1, cmd, identifier, argptr);
 }
+#endif
 
 #ifdef ENABLE_BLE
 uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){

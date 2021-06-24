@@ -51,6 +51,10 @@ uint16_t mock_att_service_read_callback(hci_con_handle_t con_handle, uint16_t at
 
 uint16_t mock_att_service_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, const uint8_t *buffer, uint16_t buffer_size);
 
+void mock_att_service_trigger_can_send_now(void);
+
+void mock_deinit(void);
+
 #if defined __cplusplus
 }
 #endif

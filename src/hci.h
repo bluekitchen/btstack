@@ -198,33 +198,31 @@ typedef enum {
 
 // Authentication flags
 typedef enum {
-    AUTH_FLAGS_NONE                = 0x0000,
-    RECV_LINK_KEY_REQUEST          = 0x0001,
-    HANDLE_LINK_KEY_REQUEST        = 0x0002,
-    SENT_LINK_KEY_REPLY            = 0x0004,
-    SENT_LINK_KEY_NEGATIVE_REQUEST = 0x0008,
-    RECV_LINK_KEY_NOTIFICATION     = 0x0010,
-    DENY_PIN_CODE_REQUEST          = 0x0040,
-    RECV_IO_CAPABILITIES_REQUEST   = 0x0080,
-    SEND_IO_CAPABILITIES_REPLY     = 0x0100,
-    SEND_IO_CAPABILITIES_NEGATIVE_REPLY = 0x0200,
-    SEND_USER_CONFIRM_REPLY        = 0x0400,
-    SEND_USER_PASSKEY_REPLY        = 0x0800,
+    AUTH_FLAG_NONE                                = 0x0000,
+    AUTH_FLAG_HANDLE_LINK_KEY_REQUEST             = 0x0001,
+    AUTH_FLAG_DENY_PIN_CODE_REQUEST               = 0x0002,
+    AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE       = 0x0004,
+    AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY          = 0x0008,
+    AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY = 0x0010,
+    AUTH_FLAG_SEND_USER_CONFIRM_REPLY             = 0x0020,
+    AUTH_FLAG_SEND_USER_CONFIRM_NEGATIVE_REPLY    = 0x0040,
+    AUTH_FLAG_SEND_USER_PASSKEY_REPLY             = 0x0080,
 
     // Classic OOB
-    SEND_REMOTE_OOB_DATA_REPLY     = 0x1800,
+    AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY          = 0x0100,
 
     // pairing status
-    LEGACY_PAIRING_ACTIVE          = 0x2000,
-    SSP_PAIRING_ACTIVE             = 0x4000,
+    AUTH_FLAG_LEGACY_PAIRING_ACTIVE               = 0x0200,
+    AUTH_FLAG_SSP_PAIRING_ACTIVE                  = 0x0400,
+    AUTH_FLAG_PAIRING_ACTIVE_MASK                 = (AUTH_FLAG_LEGACY_PAIRING_ACTIVE | AUTH_FLAG_SSP_PAIRING_ACTIVE),
 
     // connection status
-    CONNECTION_AUTHENTICATED       = 0x8000,
-    CONNECTION_ENCRYPTED           = 0x10000,
+    AUTH_FLAG_CONNECTION_AUTHENTICATED            = 0x0800,
+    AUTH_FLAG_CONNECTION_ENCRYPTED                = 0x1000,
 
     // errands
-    READ_RSSI                      = 0x20000,
-    WRITE_SUPERVISION_TIMEOUT      = 0x40000,
+    AUTH_FLAG_READ_RSSI                           = 0x2000,
+    AUTH_FLAG_WRITE_SUPERVISION_TIMEOUT           = 0x4000,
 
 } hci_authentication_flags_t;
 
@@ -418,6 +416,8 @@ typedef struct sm_connection {
     uint8_t                  sm_pairing_requested;
     uint8_t                  sm_peer_addr_type;
     bd_addr_t                sm_peer_address;
+    uint8_t                  sm_own_addr_type;
+    bd_addr_t                sm_own_address;
     security_manager_state_t sm_engine_state;
     irk_lookup_state_t       sm_irk_lookup_state;
     uint8_t                  sm_pairing_failed_reason;
@@ -522,7 +522,8 @@ typedef struct {
     // requested security level
     gap_security_level_t requested_security_level;
     
-    // 
+    // link key and its type
+    link_key_t      link_key;
     link_key_type_t link_key_type;
 
     // remote supported features
@@ -856,6 +857,7 @@ typedef struct {
     uint8_t            gap_required_encyrption_key_size;
     uint16_t           link_supervision_timeout;
     gap_security_level_t gap_security_level;
+    gap_security_level_t gap_minimal_service_security_level;
     gap_security_mode_t  gap_security_mode;
 
     uint32_t            inquiry_lap;      // GAP_IAC_GENERAL_INQUIRY or GAP_IAC_LIMITED_INQUIRY
@@ -990,6 +992,8 @@ typedef struct {
     uint16_t le_maximum_ce_length;
     uint16_t le_connection_scan_interval;
     uint16_t le_connection_scan_window;
+    uint8_t  le_connection_own_addr_type;
+    bd_addr_t le_connection_own_address;
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
@@ -1013,6 +1017,8 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+    uint8_t   le_advertisements_own_addr_type;
+    bd_addr_t le_advertisements_own_address;
 
     uint8_t le_max_number_peripheral_connections;
 #endif
@@ -1115,12 +1121,14 @@ uint16_t hci_get_sco_voice_setting(void);
  * @brief Set inquiry mode: standard, with RSSI, with RSSI + Extended Inquiry Results. Has to be called before power on.
  * @param inquriy_mode see bluetooth_defines.h
  */
-void hci_set_inquiry_mode(inquiry_mode_t mode);
+void hci_set_inquiry_mode(inquiry_mode_t inquriy_mode);
 
 /**
  * @brief Requests the change of BTstack power mode.
+ * @param power_mode
+ * @return 0 if success, otherwise error
  */
-int  hci_power_control(HCI_POWER_MODE mode);
+int  hci_power_control(HCI_POWER_MODE power_mode);
 
 /**
  * @brief Shutdown HCI
@@ -1157,7 +1165,7 @@ int hci_can_send_command_packet_now(void);
 /**
  * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
  */
-int hci_send_cmd(const hci_cmd_t *cmd, ...);
+int hci_send_cmd(const hci_cmd_t * cmd, ...);
 
 
 // Sending SCO Packets
@@ -1223,7 +1231,7 @@ void hci_set_master_slave_policy(uint8_t policy);
 /**
  * va_list version of hci_send_cmd, call hci_send_cmd_packet
  */
-int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argtr);
+int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr);
 
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c

@@ -57,9 +57,9 @@ extern "C" {
 typedef btstack_uart_t btstack_uart_block_t;
 
 // existing block-only implementations
-const btstack_uart_t * btstack_uart_block_windows_instance(void);
-const btstack_uart_t * btstack_uart_block_embedded_instance(void);
-const btstack_uart_t * btstack_uart_block_freertos_instance(void);
+const btstack_uart_block_t * btstack_uart_block_windows_instance(void);
+const btstack_uart_block_t * btstack_uart_block_embedded_instance(void);
+const btstack_uart_block_t * btstack_uart_block_freertos_instance(void);
 
 // mapper for extended implementation
 static inline const btstack_uart_block_t * btstack_uart_block_posix_instance(void){

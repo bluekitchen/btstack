@@ -4,7 +4,9 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -Ibuild-coverage -I../
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null 
+CFLAGS += -I../
+
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/test/mock
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/rijndael
@@ -35,8 +37,8 @@ COMMON = \
 	ublox_spp_service_server.c \
 
 
-CFLAGS_COVERAGE = ${CFLAGS} -fprofile-arcs -ftest-coverage
-CFLAGS_ASAN     = ${CFLAGS} -fsanitize=address -DHAVE_ASSERT
+CFLAGS_COVERAGE = ${CFLAGS} -Ibuild-coverage -fprofile-arcs -ftest-coverage 
+CFLAGS_ASAN     = ${CFLAGS} -Ibuild-asan     -fsanitize=address -DHAVE_ASSERT
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 LDFLAGS_COVERAGE = ${LDFLAGS} -fprofile-arcs -ftest-coverage
@@ -78,8 +80,8 @@ build-asan/device_information_service_test: build-asan/device_information_servic
 	${CC} $(filter-out build-asan/device_information_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
 test: all
-	build-coverage/battery_service_test
-	build-coverage/device_information_service_test
+	build-asan/battery_service_test
+	build-asan/device_information_service_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda

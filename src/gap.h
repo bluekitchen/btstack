@@ -243,8 +243,9 @@ int gap_get_bondable_mode(void);
 /**
  * @brief Set security mode for all outgoing and incoming connections. Default: GAP_SECURITY_MODE_4
  * @param security_mode is GAP_SECURITY_MODE_2 or GAP_SECURITY_MODE_4
+ * @return status ERROR_CODE_SUCCESS or ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE
  */
-void gap_set_security_mode(gap_security_mode_t security_mode);
+uint8_t gap_set_security_mode(gap_security_mode_t security_mode);
 
 /**
  * @brief Get security mode
@@ -276,6 +277,13 @@ void gap_set_secure_connections_only_mode(bool enable);
  * @param enabled
  */
 bool gap_get_secure_connections_only_mode(void);
+
+/**
+ * @brief Set minimal security level for registered services
+ * @param security_level
+ * @note Called by L2CAP based on registered services
+ */
+void gap_set_minimal_service_security_level(gap_security_level_t security_level);
 
 /**
  * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
@@ -557,20 +565,20 @@ uint8_t gap_connect_cancel(void);
 /**
  * @brief Auto Connection Establishment - Start Connecting to device
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
- * @param address_typ
+ * @param address_type
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_start(bd_addr_type_t address_typ, const bd_addr_t address);
+uint8_t gap_auto_connection_start(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop Connecting to device
  * @deprecated Please setup Whitelist with gap_whitelist_* and start connecting with gap_connect_with_whitelist
- * @param address_typ
+ * @param address_type
  * @param address
  * @returns 0 if ok
  */
-uint8_t gap_auto_connection_stop(bd_addr_type_t address_typ, const bd_addr_t address);
+uint8_t gap_auto_connection_stop(bd_addr_type_t address_type, const bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop everything
@@ -592,9 +600,10 @@ uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx
 
 /**
  * @brief Get connection interval
+ * @param con_handle
  * @return connection interval, otherwise 0 if error 
  */
-uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle);
+uint16_t gap_le_connection_interval(hci_con_handle_t con_handle);
 
 /**
  *
@@ -883,10 +892,19 @@ uint8_t gap_qos_set(hci_con_handle_t con_handle, hci_service_type_t service_type
 // LE
 
 /**
- * @brief Get own addr type and address used for LE
+ * @brief Get own addr type and address used for LE for next scan/advertisement/connect operation
  */
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 
+/**
+ * @brief Get own addr type and address used for LE advertisements (Peripheral)
+ */
+void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr);
+
+/**
+ * @brief Get own addr type and address used for LE connections (Central)
+ */
+void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr);
 
 /**
  * @brief Get state of connection re-encryption for bonded devices when in central role

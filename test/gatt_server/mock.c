@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "hci.h"
+#include "gap.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 
@@ -50,7 +51,7 @@ void gap_start_scan(void){
 }
 void gap_stop_scan(void){
 }
-uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
+uint8_t gap_connect(const bd_addr_t addr, bd_addr_type_t addr_type){
 	return 0;
 }
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
@@ -191,7 +192,7 @@ void * btstack_run_loop_get_timer_context(btstack_timer_source_t *ts){
 }
 
 // todo:
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
 	printf("hci_connection_for_bd_addr_and_type not implemented in mock backend\n");
 	return NULL;
 }

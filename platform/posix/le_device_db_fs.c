@@ -111,7 +111,7 @@ static char * bd_addr_to_dash_str(bd_addr_t addr){
 }
 
 static inline void write_delimiter(FILE * wFile){
-    fwrite(", ", 1, 1, wFile);
+    fwrite(",", 1, 1, wFile);
 }
 static inline void write_hex_byte(FILE * wFile, uint8_t value){
     char buffer[2];
@@ -240,10 +240,13 @@ static void le_device_db_read(void){
         le_devices[i].local_counter = read_value(wFile, 2);
 #endif
         // read next character and secure connection field if hex nibble follows
+        // (if not, we just read the newline)
         int c = fgetc(wFile);
         if (nibble_for_char(c) >= 0){
             int d = fgetc(wFile);
             le_devices[i].secure_connection = nibble_for_char(c) << 4 | nibble_for_char(d);
+            // read delimiter
+            read_delimiter(wFile);
             // read newline
             fgetc(wFile);
         }

@@ -123,8 +123,7 @@ static bool att_db_util_hash_include_without_value(uint16_t uuid16){
  * @returns TRUE if space is available
  */
 static int att_db_util_assert_space(uint16_t size){
-	size += 2u; // for end tag
-	uint16_t required_size = att_db_size + size;
+	uint16_t required_size = att_db_size + size + 2;
 	if (required_size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
     uint16_t new_size = att_db_max_size;
@@ -176,10 +175,10 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
 	int size = 2u + 2u + 2u + 16u + data_len;
 	if (!att_db_util_assert_space(size)) return;
-	flags |= ATT_PROPERTY_UUID128;
+	uint16_t flags_to_store = flags | ATT_PROPERTY_UUID128;
 	little_endian_store_16(att_db, att_db_size, size);
 	att_db_size += 2u;
-	little_endian_store_16(att_db, att_db_size, flags);
+	little_endian_store_16(att_db, att_db_size, flags_to_store);
 	att_db_size += 2u;
 	little_endian_store_16(att_db, att_db_size, att_db_next_handle);
 	att_db_size += 2u;
@@ -236,9 +235,9 @@ uint16_t att_db_util_add_included_service_uuid16(uint16_t start_group_handle, ui
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0091)
-	flags = (flags & 0x1f391u) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
+	uint16_t flags_to_store = (flags & 0x1f391u) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
-	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags, buffer, 2);
+	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags_to_store, buffer, 2);
 }
 
 static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read_permission, uint8_t write_permission){
@@ -249,25 +248,31 @@ static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read
     	flags |= 0xf000u;
     }
     // map SC requirement
+    uint8_t final_read_permission;
     if (read_permission == ATT_SECURITY_AUTHENTICATED_SC){
-        read_permission =  ATT_SECURITY_AUTHENTICATED;
+        final_read_permission =  ATT_SECURITY_AUTHENTICATED;
         flags |= ATT_PROPERTY_READ_PERMISSION_SC;
+    } else {
+        final_read_permission = read_permission;
     }
+    uint8_t final_write_permission;
     if (write_permission == ATT_SECURITY_AUTHENTICATED_SC){
-        write_permission =  ATT_SECURITY_AUTHENTICATED;
+        final_write_permission =  ATT_SECURITY_AUTHENTICATED;
         flags |= ATT_PROPERTY_WRITE_PERMISSION_SC;
+    } else {
+        final_write_permission = write_permission;
     }
     // encode read/write security levels
-    if (read_permission & 1u){
+    if (final_read_permission & 1u){
     	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_0;
     }
-    if (read_permission & 2u){
+    if (final_read_permission & 2u){
     	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_1;
     }
-    if (write_permission & 1u){
+    if (final_write_permission & 1u){
     	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_0;
     }
-    if (write_permission & 2u){
+    if (final_write_permission & 2u){
     	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_1;
     }
 	return flags;

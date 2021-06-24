@@ -48,7 +48,7 @@ failures = [
 # tester config
 debug      = False
 regenerate = False
-usb_paths = ['07', '02-03']
+usb_paths = ['02-04', '02-03']
 
 class Node:
 

@@ -167,16 +167,16 @@ bool btstack_run_loop_base_remove_data_source(btstack_data_source_t * data_sourc
 /**
  * @brief Enable callbacks for a data source
  * @param data_source to remove
- * @param callback types to enable
+ * @param callback_types to enable
  */
-void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
+void btstack_run_loop_base_enable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callback_types);
 
 /**
  * @brief Enable callbacks for a data source
  * @param data_source to remove
- * @param callback types to disable
+ * @param callback_types to disable
  */
-void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callbacks);
+void btstack_run_loop_base_disable_data_source_callbacks(btstack_data_source_t * data_source, uint16_t callback_types);
 
 /**
  * @brief Poll data sources. It calls the procss function for all data sources where DATA_SOURCE_CALLBACK_POLL is set
@@ -196,22 +196,22 @@ void btstack_run_loop_init(const btstack_run_loop_t * run_loop);
 /**
  * @brief Set timer based on current time in milliseconds.
  */
-void btstack_run_loop_set_timer(btstack_timer_source_t * ts, uint32_t timeout_in_ms);
+void btstack_run_loop_set_timer(btstack_timer_source_t * timer, uint32_t timeout_in_ms);
 
 /**
  * @brief Set callback that will be executed when timer expires.
  */
-void btstack_run_loop_set_timer_handler(btstack_timer_source_t * ts, void (*process)(btstack_timer_source_t *_ts));
+void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*process)(btstack_timer_source_t * _timer));
 
 /**
  * @brief Set context for this timer
  */
-void btstack_run_loop_set_timer_context(btstack_timer_source_t * ts, void * context);
+void btstack_run_loop_set_timer_context(btstack_timer_source_t * timer, void * context);
 
 /**
  * @brief Get context for this timer
  */
-void * btstack_run_loop_get_timer_context(btstack_timer_source_t * ts);
+void * btstack_run_loop_get_timer_context(btstack_timer_source_t * timer);
 
 /**
  * @brief Add timer source.
@@ -238,7 +238,7 @@ void btstack_run_loop_timer_dump(void);
 /**
  * @brief Set data source callback.
  */
-void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t *_ds, btstack_data_source_callback_type_t callback_type));
+void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t * _data_source, btstack_data_source_callback_type_t callback_type));
 
 /**
  * @brief Set data source file descriptor. 

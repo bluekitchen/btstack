@@ -96,6 +96,7 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
  * @brief link key type
  */
 typedef enum {
+  INVALID_LINK_KEY = 0xffff,
   COMBINATION_KEY = 0,  // standard pairing
   LOCAL_UNIT_KEY,     // ?
   REMOTE_UNIT_KEY,    // ?
@@ -149,7 +150,7 @@ typedef enum {
     HCI_SERVICE_TYPE_NO_TRAFFIC = 0,
     HCI_SERVICE_TYPE_BEST_EFFORT,
     HCI_SERVICE_TYPE_GUARANTEED,
-    HCI_SERVICE_TyPE_INVALID,
+    HCI_SERVICE_TYPE_INVALID,
 } hci_service_type_t;
 
 /**

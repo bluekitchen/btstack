@@ -199,7 +199,7 @@ void le_device_db_remove(int index){
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 
     uint32_t highest_seq_nr = 0;
-    uint32_t lowest_seq_nr  = 0xFFFFFFFF;
+    uint32_t lowest_seq_nr  = 0xFFFFFFFFU;
     int index_for_lowest_seq_nr = -1;
     int index_for_addr  = -1;
     int index_for_empty = -1;

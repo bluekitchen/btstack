@@ -109,9 +109,9 @@ uint32_t little_endian_read_32(const uint8_t * buffer, int position);
  * @param position in buffer
  * @param value
  */
-void little_endian_store_16(uint8_t *buffer, uint16_t position, uint16_t value);
-void little_endian_store_24(uint8_t *buffer, uint16_t position, uint32_t value);
-void little_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value);
+void little_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value);
+void little_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
+void little_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 
 /** 
  * @brief Read 16/24/32 bit big endian value from buffer
@@ -119,9 +119,9 @@ void little_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value);
  * @param position in buffer
  * @return value
  */
-uint32_t big_endian_read_16( const uint8_t * buffer, int pos);
-uint32_t big_endian_read_24( const uint8_t * buffer, int pos);
-uint32_t big_endian_read_32( const uint8_t * buffer, int pos);
+uint32_t big_endian_read_16(const uint8_t * buffer, int position);
+uint32_t big_endian_read_24(const uint8_t * buffer, int position);
+uint32_t big_endian_read_32(const uint8_t * buffer, int position);
 
 /** 
  * @brief Write 16/32 bit big endian value into buffer
@@ -129,9 +129,9 @@ uint32_t big_endian_read_32( const uint8_t * buffer, int pos);
  * @param position in buffer
  * @param value
  */
-void big_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
-void big_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value);
-void big_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
+void big_endian_store_16(uint8_t * buffer, uint16_t position, uint16_t value);
+void big_endian_store_24(uint8_t * buffer, uint16_t position, uint32_t value);
+void big_endian_store_32(uint8_t * buffer, uint16_t position, uint32_t value);
 
 
 /**
@@ -165,19 +165,19 @@ static inline int btstack_is_little_endian(void){
  * @param dest
  * @param len
  */
-void reverse_bytes  (const uint8_t *src, uint8_t * dest, int len);
+void reverse_bytes(const uint8_t * src, uint8_t * dest, int len);
 
 /**
  * @brief Wrapper around reverse_bytes for common buffer sizes
  * @param src
  * @param dest
  */
-void reverse_24 (const uint8_t *src, uint8_t * dest);
-void reverse_48 (const uint8_t *src, uint8_t * dest);
-void reverse_56 (const uint8_t *src, uint8_t * dest);
-void reverse_64 (const uint8_t *src, uint8_t * dest);
-void reverse_128(const uint8_t *src, uint8_t * dest);
-void reverse_256(const uint8_t *src, uint8_t * dest);
+void reverse_24 (const uint8_t * src, uint8_t * dest);
+void reverse_48 (const uint8_t * src, uint8_t * dest);
+void reverse_56 (const uint8_t * src, uint8_t * dest);
+void reverse_64 (const uint8_t * src, uint8_t * dest);
+void reverse_128(const uint8_t * src, uint8_t * dest);
+void reverse_256(const uint8_t * src, uint8_t * dest);
 
 void reverse_bd_addr(const bd_addr_t src, bd_addr_t dest);
 
@@ -211,7 +211,7 @@ void bd_addr_copy(bd_addr_t dest, const bd_addr_t src);
 /**
  * @brief Use printf to write hexdump as single line of data
  */
-void printf_hexdump(const void *data, int size);
+void printf_hexdump(const void * data, int size);
 
 /**
  * @brief Create human readable representation for UUID128
@@ -262,7 +262,7 @@ int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
  * @param str to parse
  * @return value
  */
-uint32_t btstack_atoi(const char *str);
+uint32_t btstack_atoi(const char * str);
 
 /**
  * @brief Return number of digits of a uint32 number
@@ -279,11 +279,28 @@ int string_len_for_uint32(uint32_t i);
 int count_set_bits_uint32(uint32_t x);
 
 /**
- * CRC8 functions using ETSI TS 101 369 V6.3.0.
- * Only used by RFCOMM
+ * @brief Check CRC8 using ETSI TS 101 369 V6.3.0.
+ * @note Only used by RFCOMM
+ * @param data
+ * @param len
+ * @param check_sum
  */
-uint8_t btstack_crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
-uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len);
+uint8_t btstack_crc8_check(uint8_t * data, uint16_t len, uint8_t check_sum);
+
+/**
+ * @brief Calculate CRC8 using ETSI TS 101 369 V6.3.0. 
+ * @note Only used by RFCOMM
+ * @param data
+ * @param len
+ */
+uint8_t btstack_crc8_calc(uint8_t * data, uint16_t len);
+
+/**
+ * @brief Get next cid
+ * @param current_cid
+ * @return next cid skiping 0
+ */
+uint16_t btstack_next_cid_ignoring_zero(uint16_t current_cid);
 
 /* API_END */
 

@@ -109,6 +109,7 @@ void btstack_memory_deinit(void){
         btstack_memory_buffer_t * buffer = btstack_memory_malloc_buffers;
         btstack_memory_malloc_buffers = buffer->next;
         free(buffer);
+        btstack_memory_malloc_counter--;
     }
     btstack_assert(btstack_memory_malloc_counter == 0);
 #endif

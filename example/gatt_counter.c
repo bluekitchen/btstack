@@ -87,9 +87,16 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 static void  heartbeat_handler(struct btstack_timer_source *ts);
 static void beat(void);
 
+// Flags general discoverable, BR/EDR supported (== not supported flag not set) when ENABLE_GATT_OVER_CLASSIC is enabled
+#ifdef ENABLE_GATT_OVER_CLASSIC
+#define APP_AD_FLAGS 0x02
+#else
+#define APP_AD_FLAGS 0x06
+#endif
+
 const uint8_t adv_data[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // Flags general discoverable
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, APP_AD_FLAGS,
     // Name
     0x0b, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
     // Incomplete List of 16-bit Service Class UUIDs -- FF10 - only valid for testing!

@@ -38,6 +38,7 @@
 #define BTSTACK_FILE__ "avrcp_target.c"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 

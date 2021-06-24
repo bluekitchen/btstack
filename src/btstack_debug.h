@@ -49,8 +49,6 @@
 #include "btstack_defines.h"
 #include "hci_dump.h"
 
-#include <stdio.h>
-
 #ifdef __AVR__
 #include <avr/pgmspace.h>
 #endif
@@ -78,6 +76,13 @@ void btstack_assert_failed(const char * file, uint16_t line_nr);
 // asserts off
 #define btstack_assert(condition)         {}
 #endif
+#endif
+
+// mark code that should not be reached. Similar to assert, but mapped to NOP for coverage
+#ifdef UNIT_TEST
+#define btstack_unreachable()
+#else
+#define btstack_unreachable() btstack_assert(false)
 #endif
 
 // allow to provide port specific printf

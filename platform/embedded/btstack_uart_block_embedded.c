@@ -49,8 +49,11 @@
 #include "btstack_run_loop_embedded.h"
 #include "hal_uart_dma.h"
 
+// NULL
+#include <stddef.h>
+
 // uart config
-static const btstack_uart_config_t * uart_config;
+static const btstack_uart_config_t * btstack_uart_block_configuration;
 
 // data source for integration with BTstack Runloop
 static btstack_data_source_t transport_data_source;
@@ -81,7 +84,7 @@ static void btstack_uart_cts_pulse(void){
 }
 
 static int btstack_uart_embedded_init(const btstack_uart_config_t * config){
-    uart_config = config;
+    btstack_uart_block_configuration = config;
     hal_uart_dma_set_block_received(&btstack_uart_block_received);
     hal_uart_dma_set_block_sent(&btstack_uart_block_sent);
     return 0;
@@ -116,7 +119,7 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
 
 static int btstack_uart_embedded_open(void){
     hal_uart_dma_init();
-    hal_uart_dma_set_baud(uart_config->baudrate);
+    hal_uart_dma_set_baud(btstack_uart_block_configuration->baudrate);
 
     // set up polling data_source
     btstack_run_loop_set_data_source_handler(&transport_data_source, &btstack_uart_embedded_process);

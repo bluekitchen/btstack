@@ -1172,15 +1172,17 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     if (IS_RESPONDER(sm_conn->sm_role)){
         // slave
         local_packet = &setup->sm_s_pres;
-        gap_le_get_own_address(&setup->sm_s_addr_type, setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
+        setup->sm_s_addr_type = sm_conn->sm_own_addr_type;
         (void)memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
+        (void)memcpy(setup->sm_s_address, sm_conn->sm_own_address, 6);
     } else {
         // master
         local_packet = &setup->sm_m_preq;
-        gap_le_get_own_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
+        setup->sm_m_addr_type = sm_conn->sm_own_addr_type;
         (void)memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
+        (void)memcpy(setup->sm_m_address, sm_conn->sm_own_address, 6);
 
         int key_distribution_flags = sm_key_distribution_flags_for_auth_req();
         sm_pairing_packet_set_initiator_key_distribution(setup->sm_m_preq, key_distribution_flags);
@@ -3335,7 +3337,7 @@ static void sm_handle_random_result_ph2_tk(void * arg){
 
     sm_reset_tk();
     uint32_t tk;
-    if (sm_fixed_passkey_in_display_role == 0xffffffff){
+    if (sm_fixed_passkey_in_display_role == 0xffffffffU){
         // map random to 0-999999 without speding much cycles on a modulus operation
         tk = little_endian_read_32(sm_random_data,0);
         tk = tk & 0xfffff;  // 1048575
@@ -3508,8 +3510,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_role = packet[6];
                             sm_conn->sm_peer_addr_type = packet[7];
                             reverse_bd_addr(&packet[8], sm_conn->sm_peer_address);
-
-                            log_info("New sm_conn, role %s", sm_conn->sm_role ? "slave" : "master");
+                            if (sm_conn->sm_role){
+                                // responder - use own address from advertisements
+                                gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+                            } else {
+                                // initiator - use own address from create connection
+                                gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+                            }
 
                             // reset security properties
                             sm_conn->sm_connection_encrypted = 0;
@@ -4039,10 +4046,17 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[01], &setup->sm_peer_q[0]);
             reverse_256(&packet[33], &setup->sm_peer_q[32]);
 
+            // CVE-2020-26558: abort pairing if remote uses the same public key
+            if (memcmp(&setup->sm_peer_q, ec_q, 64) == 0){
+                log_info("Remote PK matches ours");
+                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
+                break;
+            }
+
             // validate public key
             err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
             if (err != 0){
-                log_error("sm: peer public key invalid %x", err);
+                log_info("sm: peer public key invalid %x", err);
                 sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
@@ -4410,7 +4424,7 @@ void sm_init(void){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
 
-    sm_fixed_passkey_in_display_role = 0xffffffff;
+    sm_fixed_passkey_in_display_role = 0xffffffffU;
     sm_reconstruct_ltk_without_le_device_db_entry = true;
 
 #ifdef USE_CMAC_ENGINE

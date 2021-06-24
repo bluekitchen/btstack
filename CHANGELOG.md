@@ -7,10 +7,36 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ---
 
 ## Unreleased
-
 ### Added
 ### Fixed
 ### Changed
+
+
+## Release v1.4.1
+
+### Added
+- GAP: emit GAP_EVENT_PAIRING_STARTED and GAP_EVENT_PAIRING_COMPLETE
+
+### Fixed
+- GAP: store link key in hci connection struct to allow authenticate after pairing without bonding
+- GAP: avoid requesting authentication twice
+- GAP: cache own address on start advertising and connecting, provide getters
+- GAP: stop LE connecting if create connection fails (e.g. connectable adv active and multiple roles not supported)
+- SM: fix race condition between local address changes and pairing procedure
+- ATT DB: fix spelling `gatt_server_get_handle_range_for_service_with_uuid128`, `gatt_server_get_handle_range_for_service_with_uuid16`
+
+### Changed
+- HCI: update advertising data without stopping advertising first
+- GAP: Drop local bonding flag in IO Capability Reply if remote does not indicate bonding
+- GAP: return status for `gap_set_security_mode`
+- GAP: abort legacy pairing if Level 4 is required
+- GAP: abort SSP on IO Capabilities Request event if Level 4 is required but SC not supported by remote
+- GAP: abort SSP on User Confirmation Request event if Level 3 is required but MITM protection not possible
+- GAP: validate minimal service security level can be reached during pairing in responder role
+- L2CAP: don't trigger hci disconnect if l2cap security requirements are insufficient
+- CVE-2020-26555: reject connections to and from devices with same BD ADDR
+- CVE-2020-26555: ignore NULL link key
+- CVE-2020-26558: abort LE Secure Connection pairing if remote uses the same public key
 
 ## Release v1.4
 
@@ -89,6 +115,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: provide acl_handle in events to identify connection
 - HSP AG: emit HSP_SUBEVENT_BUTTON_PRESSED instead of audio connection setup/release
 - Example: use `btstack_event.h` getters instead of direct array access, use enum to compare status codes
+
 
 ## Release v1.3.2
 

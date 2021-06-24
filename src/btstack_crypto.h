@@ -174,24 +174,24 @@ void btstack_crypto_aes128_cmac_generator(btstack_crypto_aes128_cmac_t * request
  * Calculate Cipher-based Message Authentication Code (CMAC) using AES128 and complete message
  * @param request
  * @param key (16 bytes)
- * @param len of message
+ * @param size of message
  * @param message
  * @param hash result
  * @param callback
  * @param callback_arg
  */
-void btstack_crypto_aes128_cmac_message(btstack_crypto_aes128_cmac_t * request, const uint8_t * key, uint16_t len, const uint8_t * message,  uint8_t * hash, void (* callback)(void * arg), void * callback_arg);
+void btstack_crypto_aes128_cmac_message(btstack_crypto_aes128_cmac_t * request, const uint8_t * key, uint16_t size, const uint8_t * message,  uint8_t * hash, void (* callback)(void * arg), void * callback_arg);
 
 /**
  * Calculate AES128-CMAC with key ZERO and complete message
  * @param request
- * @param len of message
+ * @param size of message
  * @param message
  * @param hash
  * @param callback
  * @param callback_arg
  */
-void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uint16_t len, const uint8_t * message,  uint8_t * hash, void (* callback)(void * arg), void * callback_arg);
+void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uint16_t size, const uint8_t * message, uint8_t * hash, void (* callback)(void * arg), void * callback_arg);
 
 /**
  * Generate Elliptic Curve Public/Private Key Pair (FIPS P-256)

@@ -635,13 +635,13 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
  * @param local_cid             L2CAP LE Data Channel Identifier
  * @param credits               Number additional credits for peer
  */
-uint8_t l2cap_le_provide_credits(uint16_t cid, uint16_t credits);
+uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits);
 
 /**
  * @brief Check if packet can be scheduled for transmission
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-int l2cap_le_can_send_now(uint16_t cid);
+int l2cap_le_can_send_now(uint16_t local_cid);
 
 /**
  * @brief Request emission of L2CAP_EVENT_LE_CAN_SEND_NOW as soon as possible
@@ -649,7 +649,7 @@ int l2cap_le_can_send_now(uint16_t cid);
  *       so packet handler should be ready to handle it
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-uint8_t l2cap_le_request_can_send_now_event(uint16_t cid);
+uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid);
 
 /**
  * @brief Send data via LE Data Channel
@@ -658,13 +658,13 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t cid);
  * @param data                  data to send
  * @param size                  data size
  */
-uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size);
+uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t size);
 
 /**
  * @brief Disconnect from LE Data Channel
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-uint8_t l2cap_le_disconnect(uint16_t cid);
+uint8_t l2cap_le_disconnect(uint16_t local_cid);
 
 /**
  * @brief ERTM Set channel as busy.

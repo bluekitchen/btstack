@@ -48,7 +48,7 @@
 #include "btstack_bool.h"
 #include "btstack_util.h"
 
-static const hci_dump_t * hci_dump_impl;
+static const hci_dump_t * hci_dump_implementation;
 static int  max_nr_packets;
 static int  nr_packets;
 static bool packet_log_enabled;
@@ -57,16 +57,16 @@ static bool packet_log_enabled;
 static bool log_level_enabled[3] = { 1, 1, 1};
 
 static bool hci_dump_log_level_active(int log_level){
-    if (hci_dump_impl == NULL) return false;
+    if (hci_dump_implementation == NULL) return false;
     if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG) return false;
     if (log_level > HCI_DUMP_LOG_LEVEL_ERROR) return false;
     return log_level_enabled[log_level];
 }
 
-void hci_dump_init(const hci_dump_t * impl){
+void hci_dump_init(const hci_dump_t * hci_dump_impl){
     max_nr_packets = -1;
     nr_packets = 0;
-    hci_dump_impl = impl;
+    hci_dump_implementation = hci_dump_impl;
     packet_log_enabled = true;
 }
 
@@ -79,7 +79,7 @@ void hci_dump_enable_packet_log(bool enabled){
 }
 
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
-    if (hci_dump_impl == NULL) {
+    if (hci_dump_implementation == NULL) {
         return;
     }
     if (packet_log_enabled == false) {
@@ -87,13 +87,13 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     }
 
     if (max_nr_packets > 0){
-        if ((nr_packets >= max_nr_packets) && (hci_dump_impl->reset != NULL)) {
+        if ((nr_packets >= max_nr_packets) && (hci_dump_implementation->reset != NULL)) {
             nr_packets = 0;
-            (*hci_dump_impl->reset)();
+            (*hci_dump_implementation->reset)();
         }
         nr_packets++;
     }
-    (*hci_dump_impl->log_packet)(packet_type, in, packet, len);
+    (*hci_dump_implementation->log_packet)(packet_type, in, packet, len);
 }
 
 void hci_dump_log(int log_level, const char * format, ...){
@@ -101,7 +101,7 @@ void hci_dump_log(int log_level, const char * format, ...){
 
     va_list argptr;
     va_start(argptr, format);
-    (*hci_dump_impl->log_message)(format, argptr);
+    (*hci_dump_implementation->log_message)(format, argptr);
     va_end(argptr);
 }
 
@@ -111,7 +111,7 @@ void hci_dump_log_P(int log_level, PGM_P format, ...){
 
     va_list argptr;
     va_start(argptr, format);
-    (*hci_dump_impl->log_message_P)(format, argptr);
+    (*hci_dump_implementation->log_message_P)(format, argptr);
     va_end(argptr);
 }
 #endif

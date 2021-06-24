@@ -24,7 +24,7 @@ static btstack_linked_list_t     event_packet_handlers;
 
 void mock_init(void){
 	the_connection.item.next = NULL;
-	connections = (btstack_linked_item*) &the_connection;
+	connections = (btstack_linked_item_t*) &the_connection;
 }
 
 uint8_t * mock_packet_buffer(void){
@@ -142,7 +142,7 @@ int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
 	return 1;
 }
 
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
 	return &the_connection;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
@@ -152,11 +152,17 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
     btstack_linked_list_iterator_init(it, &connections);
 }
 
-// get addr type and address used in advertisement packets
+// get addr type and address used in different contexts
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
+    static uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     *addr_type = 0;
-    uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     memcpy(addr, dummy, 6);
+}
+void gap_le_get_own_advertisements_address(uint8_t * addr_type, bd_addr_t addr){
+    gap_le_get_own_address(addr_type, addr);
+}
+void gap_le_get_own_connection_address(uint8_t * addr_type, bd_addr_t addr){
+    gap_le_get_own_address(addr_type, addr);
 }
 
 void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
@@ -170,7 +176,7 @@ uint16_t hci_get_manufacturer(void){
 void hci_le_set_own_address_type(uint8_t own_address){
 }
 
-extern "C" void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
+void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t cid){
 	if (packet_buffer_len) return;
     uint8_t event[] = { L2CAP_EVENT_CAN_SEND_NOW, 2, 0, 0};
     little_endian_store_16(event, 2, cid);

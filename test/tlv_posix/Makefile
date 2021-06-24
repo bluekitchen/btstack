@@ -16,15 +16,11 @@ VPATH = \
 	${BTSTACK_ROOT}/src/ble \
 	${BTSTACK_ROOT}/platform/posix \
 
-CFLAGS  = \
-    -DBTSTACK_TEST \
-    -g \
-    -Wall \
-    -Wnarrowing \
-    -I. \
-    -I.. \
-    -I${BTSTACK_ROOT}/src \
-    -I${BTSTACK_ROOT}/platform/posix \
+
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I..
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 

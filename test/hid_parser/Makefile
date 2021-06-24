@@ -4,10 +4,12 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CPPFLAGS =  -x c++ -Wall -Wno-unused
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null
 
-CFLAGS  = -DUNIT_TEST -g
-CFLAGS += -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
+CFLAGS += -I.
+CFLAGS += -I ${BTSTACK_ROOT}/src
+CFLAGS += -I ${BTSTACK_ROOT}/platform/posix
+
 VPATH += ${BTSTACK_ROOT}/src ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
