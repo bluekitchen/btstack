@@ -1250,7 +1250,12 @@ static void hfp_hf_hci_event_packet_handler(uint8_t packet_type, uint16_t channe
     hfp_hf_run();
 }
 
-void hfp_hf_init(uint16_t rfcomm_channel_nr){
+uint8_t hfp_hf_init(uint16_t rfcomm_channel_nr){
+    uint8_t status = rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
+
     hfp_init();
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_call_status = HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS;
@@ -1264,11 +1269,10 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
 
     hfp_hf_hci_event_callback_registration.callback = &hfp_hf_hci_event_packet_handler;
     hci_add_event_handler(&hfp_hf_hci_event_callback_registration);
-
-    rfcomm_register_service(hfp_hf_rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);
-
+    
     // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_hf_rfcomm_packet_handler(&hfp_hf_rfcomm_packet_handler);
+    return ERROR_CODE_SUCCESS;
 }
 
 void hfp_hf_deinit(void){
