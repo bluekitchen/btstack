@@ -113,8 +113,11 @@ void hfp_hf_register_packet_handler(btstack_packet_handler_t callback);
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
  *
  * @param bd_addr Bluetooth address of the AG
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists or connection in wrong state, or
+ *                  - BTSTACK_MEMORY_ALLOC_FAILED 
  */
-void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
+uint8_t hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 

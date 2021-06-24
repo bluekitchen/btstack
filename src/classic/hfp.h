@@ -742,8 +742,16 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hf
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
+/**
+ * @brief Establish RFCOMM connection, and perform service level connection agreement:
+ * @param bd_addr
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists, or
+ *                  - BTSTACK_MEMORY_ALLOC_FAILED 
+ */
+uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
+
 void hfp_reset_context_flags(hfp_connection_t * connection);
 
 void hfp_release_audio_connection(hfp_connection_t * connection);

@@ -1306,8 +1306,8 @@ void hfp_hf_init_hf_indicators(int indicators_nr, const uint16_t * indicators){
     }
 }
 
-void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
-    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, HFP_ROLE_HF);
+uint8_t hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
+    return hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, HFP_ROLE_HF);
 }
 
 void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){

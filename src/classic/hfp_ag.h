@@ -137,8 +137,12 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
  *
  * @param bd_addr Bluetooth address of the HF
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists or connection in wrong state, or
+ *                  - BTSTACK_MEMORY_ALLOC_FAILED 
+ *
  */
-void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
+uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
 
 /**
  * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 

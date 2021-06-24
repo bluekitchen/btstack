@@ -2284,8 +2284,8 @@ void hfp_ag_deinit(void){
     (void) memset(&hfp_ag_response_and_hold_state, 0, sizeof(hfp_response_and_hold_state_t));
 }
 
-void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
-    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE, HFP_ROLE_AG);
+uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
+    return hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE, HFP_ROLE_AG);
 }
 
 void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){

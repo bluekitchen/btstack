@@ -554,7 +554,7 @@ void hfp_finalize_connection_context(hfp_connection_t * hfp_connection){
     btstack_memory_hfp_connection_free(hfp_connection);
 }
 
-static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t local_role){
+static hfp_connection_t * hfp_create_connection(bd_addr_t bd_addr, hfp_role_t local_role){
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
@@ -919,7 +919,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
-            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr, local_role);
+            hfp_connection = hfp_create_connection(event_addr, local_role);
             if (!hfp_connection){
                 log_info("hfp: no memory to accept incoming connection - decline");
                 rfcomm_decline_connection(rfcomm_event_incoming_connection_get_rfcomm_cid(packet));
@@ -1663,33 +1663,26 @@ static void hfp_handle_start_sdp_client_query(void * context){
     }
 }
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
-    hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr, local_role);
-    log_info("hfp_connect %s, hfp_connection %p", bd_addr_to_str(bd_addr), hfp_connection);
-    
-    if (!hfp_connection) {
-        log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
-        return;
+uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
+    if (connection){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    switch (hfp_connection->state){
-        case HFP_W2_DISCONNECT_RFCOMM:
-            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            return;
-        case HFP_W4_RFCOMM_DISCONNECTED:
-            hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART;
-            return;
-        case HFP_IDLE:
-            (void)memcpy(hfp_connection->remote_addr, bd_addr, 6);
-            hfp_connection->state = HFP_W2_SEND_SDP_QUERY;
-            hfp_connection->service_uuid = service_uuid;
 
-            hfp_handle_sdp_client_query_request.callback = &hfp_handle_start_sdp_client_query;
-            // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
-            break;
-        default:
-            break;
+    connection = hfp_create_connection(bd_addr, local_role);
+    if (!connection){
+        return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+
+    connection->state = HFP_W2_SEND_SDP_QUERY;
+    
+    bd_addr_copy(connection->remote_addr, bd_addr);
+    connection->service_uuid = service_uuid;
+
+    hfp_handle_sdp_client_query_request.callback = &hfp_handle_start_sdp_client_query;
+    // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
+    (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
+    return ERROR_CODE_SUCCESS;
 }
 
 void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
