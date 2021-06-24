@@ -745,18 +745,27 @@ void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 /**
  * @brief Establish RFCOMM connection, and perform service level connection agreement:
  * @param bd_addr
+ * @param service_uuid
+ * @param local_role
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists, or
  *                  - BTSTACK_MEMORY_ALLOC_FAILED 
  */
 uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
 
-
+/**
+ * @brief Prepare connection for audio and SLC connections release
+ * @param hfp_connection
+ */
 void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connection);
+
+/**
+ * @brief Prepare connection for audio connection release
+ * @param hfp_connection
+ */
 void hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection);
 
 void hfp_reset_context_flags(hfp_connection_t * hfp_connection);
-
 
 void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection);
 void hfp_accept_synchronous_connection(hfp_connection_t * hfp_connection, bool incoming_eSCO);
