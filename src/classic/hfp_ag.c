@@ -2288,14 +2288,14 @@ uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
     return hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE, HFP_ROLE_AG);
 }
 
-void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_trigger_release_service_level_connection(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error){

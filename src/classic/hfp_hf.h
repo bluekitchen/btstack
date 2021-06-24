@@ -114,7 +114,7 @@ void hfp_hf_register_packet_handler(btstack_packet_handler_t callback);
  *
  * @param bd_addr Bluetooth address of the AG
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists or connection in wrong state, or
+ *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists, or
  *                  - BTSTACK_MEMORY_ALLOC_FAILED 
  */
 uint8_t hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
@@ -125,8 +125,9 @@ uint8_t hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
  *
  * @param acl_handle of the AG
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Enable status update for all indicators in the AG.

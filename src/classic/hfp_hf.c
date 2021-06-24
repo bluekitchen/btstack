@@ -1310,14 +1310,14 @@ uint8_t hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
     return hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, HFP_ROLE_HF);
 }
 
-void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
-    if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+    if (!hfp_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_trigger_release_service_level_connection(hfp_connection);
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 static void hfp_hf_set_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle, uint8_t enable){

@@ -151,8 +151,9 @@ uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
  *
  * @param bd_addr Bluetooth address of the HF
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Establish audio connection.
