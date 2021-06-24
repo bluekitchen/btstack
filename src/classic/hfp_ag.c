@@ -70,7 +70,7 @@
 // private prototypes
 static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
-static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
+static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 
 // public prototypes
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
@@ -2293,29 +2293,35 @@ uint8_t hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     hfp_trigger_release_service_level_connection(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error){
+uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     hfp_connection->extended_audio_gateway_error = 0;
     if (!hfp_connection->enable_extended_audio_gateway_error_report){
-        return;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
     hfp_connection->extended_audio_gateway_error = error;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
-    log_info("hfp_ag_setup_audio_connection state %u", hfp_connection->state);
-    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
+static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
         
     hfp_connection->establish_audio_connection = 1;
     if (!has_codec_negotiation_feature(hfp_connection)){
@@ -2327,7 +2333,7 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
 #ifdef ENABLE_CC256X_ASSISTED_HFP
         hfp_cc256x_prepare_for_sco(hfp_connection);
 #endif
-        return;
+        return ERROR_CODE_SUCCESS;
     } 
 
     uint8_t i;
@@ -2346,28 +2352,32 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         hfp_connection->trigger_codec_exchange = 1;
         hfp_connection->codecs_state = HFP_CODECS_IDLE;
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    hfp_connection->establish_audio_connection = 0;
-    hfp_ag_setup_audio_connection(hfp_connection);
+    uint8_t status = hfp_ag_setup_audio_connection(hfp_connection);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
+    }
     hfp_ag_run_for_context(hfp_connection);
-}
+    return ERROR_CODE_SUCCESS;
+}  
 
-void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     hfp_trigger_release_audio_connection(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 /**
@@ -2377,6 +2387,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
     if (get_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE) == use_in_band_ring_tone){
         return;
     } 
+
     hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_IN_BAND_RING_TONE, use_in_band_ring_tone);
         
     btstack_linked_list_iterator_t it;    
@@ -2473,8 +2484,12 @@ static void hfp_ag_set_ag_indicator(const char * name, int value){
     }    
 }
 
-void hfp_ag_set_registration_status(int status){
-    if ( (status == 0) && (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
+uint8_t hfp_ag_set_registration_status(int registration_status){
+    if ((registration_status < 0) || (registration_status > 1)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if ( (registration_status == 0) && (hfp_gsm_call_status() == HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT)){
 
         // if network goes away wihle a call is active:
         // - the  call gets dropped
@@ -2490,167 +2505,219 @@ void hfp_ag_set_registration_status(int status){
             hfp_connection->ag_send_no_carrier = true;
         } 
     }
-    hfp_ag_set_ag_indicator("service", status);
+    hfp_ag_set_ag_indicator("service", registration_status);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_set_signal_strength(int strength){
-    hfp_ag_set_ag_indicator("signal", strength);
+uint8_t hfp_ag_set_signal_strength(int signal_strength){
+    if ((signal_strength < 0) || (signal_strength > 5)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    hfp_ag_set_ag_indicator("signal", signal_strength);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_set_roaming_status(int status){
-    hfp_ag_set_ag_indicator("roam", status);
+uint8_t hfp_ag_set_roaming_status(int roaming_status){
+    if ((roaming_status < 0) || (roaming_status > 1)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    hfp_ag_set_ag_indicator("roam", roaming_status);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_set_battery_level(int level){
-    hfp_ag_set_ag_indicator("battchg", level);
+uint8_t hfp_ag_set_battery_level(int battery_level){
+    if ((battery_level < 0) || (battery_level > 5)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hfp_ag_set_ag_indicator("battchg", battery_level);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate){
-    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
+uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate){
+    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+
     if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) {
-        log_info("AG cannot acivate voice recognition - not supported by HF");
-        return;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
     hfp_connection->ag_activate_voice_recognition = activate;
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle){
-    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
-    
+uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle){
+    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) return;
+
+    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION;
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
     hfp_connection->ag_vra_status = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle){
-    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
+uint8_t hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle){
+    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) return;
+
+    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION;
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
     hfp_connection->ag_vra_status = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_enhanced_voice_recognition_status(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state){
-    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
+uint8_t hfp_ag_enhanced_voice_recognition_state(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state){
+    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) return;
+
+    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION;
     hfp_connection->ag_vra_state = state;
     hfp_connection->ag_vra_status = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle){
-    hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF);
+uint8_t hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle){
+    return hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF);
 }
-void hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle){
-    hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT);
+uint8_t hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle){
+    return hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT);
 }
-void hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle){
-    hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT);
+uint8_t hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle){
+    return hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT);
 }
 
-void hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg){
-    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
-
+uint8_t hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg){
+    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) return;
+
+    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION;
     hfp_connection->ag_vra_state = state;
     hfp_connection->ag_vra_status = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_MSG;
     hfp_connection->ag_msg = msg;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
+uint8_t hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    
+    if ((gain < 0) || (gain > 15)){
+        log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     if (hfp_connection->microphone_gain != gain){
         hfp_connection->command = HFP_CMD_SET_MICROPHONE_GAIN;
         hfp_connection->microphone_gain = gain;
         hfp_connection->send_microphone_gain = 1;
     } 
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
+uint8_t hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
+    if ((gain < 0) || (gain > 15)){
+        log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     if (hfp_connection->speaker_gain != gain){
         hfp_connection->speaker_gain = gain;
         hfp_connection->send_speaker_gain = 1;
     } 
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * number){
+uint8_t hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * number){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     hfp_ag_set_clip(0, number);
     hfp_connection->send_phone_number_for_voice_tag = 1;
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     hfp_connection->send_error = 1;
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     hfp_connection->ok_pending = 1;
+    return ERROR_CODE_SUCCESS;
 }
 
 void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int numbers_count){
@@ -2666,16 +2733,19 @@ void hfp_ag_set_last_dialed_number(const char * number){
     hfp_gsm_set_last_dialed_number(number);
 }
 
-void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
-        log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (!hfp_connection->call_waiting_notification_enabled) return;
+
+    if (!hfp_connection->call_waiting_notification_enabled){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
     
     hfp_connection->ag_notify_incoming_call_waiting = 1;
     hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features, int wide_band_speech){

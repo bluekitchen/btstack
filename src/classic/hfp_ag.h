@@ -117,10 +117,11 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Enable in-band ring tone.
+ * @brief Enable/Disable in-band ring tone.
+ *
  * @param use_in_band_ring_tone
  */
-void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
+uint8_t hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
 
 
 // actions used by local device / user
@@ -136,7 +137,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
  * The status of SLC connection establishment is reported via
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED.
  *
- * @param bd_addr Bluetooth address of the HF
+ * @param  bd_addr of HF
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *                  - ERROR_CODE_COMMAND_DISALLOWED if connection already exists or connection in wrong state, or
  *                  - BTSTACK_MEMORY_ALLOC_FAILED 
@@ -150,26 +151,28 @@ uint8_t hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
  * The status of releasing the SLC connection is reported via
  * HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED.
  *
- * @param bd_addr Bluetooth address of the HF
+ * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
 uint8_t hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Establish audio connection.
- * The status of Audio connection establishment is reported via is reported via
- * HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
- * @param bd_addr Bluetooth address of the HF
+ * The status of Audio connection establishment is reported via is reported via HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
+ *
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Release audio connection.
- * The status of releasing the Audio connection is reported via is reported via
- * HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
- * @param bd_addr Bluetooth address of the HF
+ * The status of releasing the Audio connection is reported via is reported via HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
+ * 
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_release_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Put the current call on hold, if it exists, and accept incoming call. 
@@ -203,23 +206,35 @@ void hfp_ag_reject_held_incoming_call(void);
 
 /*
  * @brief Set microphone gain. 
- * @param bd_addr Bluetooth address of the HF
+ *
+ * @param acl_handle
  * @param gain Valid range: [0,15]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if invalid gain range
  */
-void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
+uint8_t hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain);
 
 /*
  * @brief Set speaker gain.
- * @param bd_addr Bluetooth address of the HF
+ *
+ * @param acl_handle
  * @param gain Valid range: [0,15]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if invalid gain range
  */
-void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
+uint8_t hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain);
 
 /*
  * @brief Set battery level.
- * @param level Valid range: [0,5]
+ *
+ * @param battery_level Valid range: [0,5]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if invalid battery level range
  */
-void hfp_ag_set_battery_level(int level);
+uint8_t hfp_ag_set_battery_level(int battery_level);
 
 /*
  * @brief Clear last dialed number.
@@ -235,41 +250,120 @@ void hfp_ag_set_last_dialed_number(const char * number);
  * @brief Notify the HF that an incoming call is waiting 
  * during an ongoing call. The notification will be sent only if the HF has
  * has previously enabled the "Call Waiting notification" in the AG. 
- * @param bd_addr Bluetooth address of the HF
+ *
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if call waiting notification is not enabled
  */
-void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 
 // Voice Recognition
 
 /*
  * @brief Activate voice recognition.
- * @param bd_addr Bluetooth address of the HF
+ *
+ * @param acl_handle
  * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition
  */
-void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate);
+uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate);
 
-void hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
+/*
+ * @brief Activate enhanced voice recognition.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
 
-void hfp_ag_enhanced_voice_recognition_status(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state);
-void hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle);
-void hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle);
-void hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle);
+/*
+ * @brief Send enhanced voice recognition state.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_state(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state);
 
-void hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
-void hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
+/*
+ * @brief Notify HF that sound will be played.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle);
+
+/*
+ * @brief Notify HF that AG is ready for input.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle);
+
+/*
+ * @brief Notify that AG is processing input.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle);
+
+/*
+ * @brief Send enhanced audio recognition message.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
+
+/*
+ * @brief Deactivate enhanced voice recognition.
+ *
+ * @param acl_handle
+ * @param activate
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
+ */
+uint8_t hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
 
 /*
  * @brief Send a phone number back to the HF.
- * @param bd_addr Bluetooth address of the HF
+ *
+ * @param acl_handle
  * @param phone_number
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * phone_number);
+uint8_t hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * phone_number);
 
 /*
  * @brief Reject sending a phone number to the HF.
- * @param bd_addr Bluetooth address of the HF
+ *
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle);
 
 /**
  * @brief Store phone number with initiated call.
@@ -319,20 +413,31 @@ void hfp_ag_call_dropped(void);
 /*
  * @brief Set network registration status.  
  * @param status 0 - not registered, 1 - registered 
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if invalid registration status
  */
-void hfp_ag_set_registration_status(int status);
+uint8_t hfp_ag_set_registration_status(int registration_status);
 
 /*
  * @brief Set network signal strength.
- * @param strength [0-5]
+ *
+ * @param signal_strength [0-5]
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if invalid signal strength range
  */
-void hfp_ag_set_signal_strength(int strength);
+uint8_t hfp_ag_set_signal_strength(int signal_strength);
 
 /*
  * @brief Set roaming status.
- * @param status 0 - no roaming, 1 - roaming active
+ *
+ * @param roaming_status 0 - no roaming, 1 - roaming active
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if invalid roaming status
  */
-void hfp_ag_set_roaming_status(int status);
+uint8_t hfp_ag_set_roaming_status(int roaming_status);
 
 /*
  * @brief Set subcriber number information, e.g. the phone number 
@@ -343,9 +448,11 @@ void hfp_ag_set_subcriber_number_information(hfp_phone_number_t * numbers, int n
 
 /*
  * @brief Called by cellular unit after a DTMF code was transmitted, so that the next one can be emitted.
- * @param bd_addr Bluetooth address of the HF 
+ *
+ * @param acl_handle 
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
  */
-void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
 
 /**
  * @brief Report Extended Audio Gateway Error result codes in the AG.
@@ -375,10 +482,13 @@ void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle);
  * - +CME ERROR: 31 - network Timeout.
  * - +CME ERROR: 32 - network not allowed – Emergency calls only
  *
- * @param bd_addr Bluetooth address of the HF
+ * @param acl_handle
  * @param error
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if extended audio gateway error report is disabled
  */
-void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error);
+uint8_t hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error);
 
 /**
  * @brief De-Init HFP AG
