@@ -1320,42 +1320,42 @@ uint8_t hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){
     return ERROR_CODE_SUCCESS;
 }
 
-static void hfp_hf_set_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle, uint8_t enable){
+static uint8_t hfp_hf_set_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle, uint8_t enable){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->enable_status_update_for_ag_indicators = enable;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_enable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle){
-    hfp_hf_set_status_update_for_all_ag_indicators(acl_handle, 1);
+uint8_t hfp_hf_enable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle){
+    return hfp_hf_set_status_update_for_all_ag_indicators(acl_handle, 1);
 }
 
-void hfp_hf_disable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle){
-    hfp_hf_set_status_update_for_all_ag_indicators(acl_handle, 0);
+uint8_t hfp_hf_disable_status_update_for_all_ag_indicators(hci_con_handle_t acl_handle){
+    return hfp_hf_set_status_update_for_all_ag_indicators(acl_handle, 0);
 }
 
 // TODO: returned ERROR - wrong format
-void hfp_hf_set_status_update_for_individual_ag_indicators(hci_con_handle_t acl_handle, uint32_t indicators_status_bitmap){
+uint8_t hfp_hf_set_status_update_for_individual_ag_indicators(hci_con_handle_t acl_handle, uint32_t indicators_status_bitmap){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->change_status_update_for_individual_ag_indicators = 1;
     hfp_connection->ag_indicators_status_update_bitmap = indicators_status_bitmap;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_query_operator_selection(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_query_operator_selection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
     switch (hfp_connection->hf_query_operator_state){
         case HFP_HF_QUERY_OPERATOR_FORMAT_NOT_SET:
             hfp_connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SET_FORMAT;
@@ -1364,43 +1364,48 @@ void hfp_hf_query_operator_selection(hci_con_handle_t acl_handle){
             hfp_connection->hf_query_operator_state = HFP_HF_QUERY_OPERATOR_SEND_QUERY;
             break;
         default:
-            break;
+            return ERROR_CODE_COMMAND_DISALLOWED;
     }
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-static void hfp_hf_set_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, uint8_t enable){
+static uint8_t hfp_hf_set_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, uint8_t enable){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->enable_extended_audio_gateway_error_report = enable;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 
-void hfp_hf_enable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle){
-    hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 1);
+uint8_t hfp_hf_enable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle){
+    return hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 1);
 }
 
-void hfp_hf_disable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle){
-    hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 0);
+uint8_t hfp_hf_disable_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle){
+    return hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 0);
 }
 
 static uint8_t hfp_hf_esco_s4_supported(hfp_connection_t * hfp_connection){
     return (hfp_connection->remote_supported_features & (1<<HFP_AGSF_ESCO_S4)) &&  (hfp_supported_features  & (1<<HFP_HFSF_ESCO_S4));
 }
 
-void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     if (has_codec_negotiation_feature(hfp_connection)) {
         switch (hfp_connection->codecs_state) {
@@ -1429,23 +1434,23 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
     }
 
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_release_audio_connection(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_release_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_trigger_release_audio_connection(hfp_connection);
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_answer_incoming_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_answer_incoming_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
@@ -1453,50 +1458,51 @@ void hfp_hf_answer_incoming_call(hci_con_handle_t acl_handle){
         hfp_hf_run_for_context(hfp_connection);
     } else {
         log_error("HFP HF: answering incoming call with wrong callsetup status %u", hfp_callsetup_status);
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_terminate_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_terminate_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_chup = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_reject_incoming_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_reject_incoming_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_connection->hf_send_chup = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_user_busy(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_user_busy(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if (hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS){
         hfp_connection->hf_send_chld_0 = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
@@ -1504,13 +1510,13 @@ void hfp_hf_end_active_and_accept_other(hci_con_handle_t acl_handle){
         hfp_connection->hf_send_chld_1 = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_swap_calls(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_swap_calls(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
@@ -1518,13 +1524,13 @@ void hfp_hf_swap_calls(hci_con_handle_t acl_handle){
         hfp_connection->hf_send_chld_2 = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_join_held_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_join_held_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
@@ -1532,13 +1538,13 @@ void hfp_hf_join_held_call(hci_con_handle_t acl_handle){
         hfp_connection->hf_send_chld_3 = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_connect_calls(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_connect_calls(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
@@ -1546,13 +1552,13 @@ void hfp_hf_connect_calls(hci_con_handle_t acl_handle){
         hfp_connection->hf_send_chld_4 = 1;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index){
+uint8_t hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
@@ -1561,13 +1567,13 @@ void hfp_hf_release_call_with_index(hci_con_handle_t acl_handle, int index){
         hfp_connection->hf_send_chld_x_index = 10 + index;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int index){
+uint8_t hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int index){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     if ((hfp_callsetup_status == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS) ||
@@ -1576,111 +1582,112 @@ void hfp_hf_private_consultation_with_call(hci_con_handle_t acl_handle, int inde
         hfp_connection->hf_send_chld_x_index = 20 + index;
         hfp_hf_run_for_context(hfp_connection);
     }
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_dial_number(hci_con_handle_t acl_handle, char * number){
+uint8_t hfp_hf_dial_number(hci_con_handle_t acl_handle, char * number){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_initiate_outgoing_call = 1;
     snprintf(phone_number, sizeof(phone_number), "%s", number);
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_dial_memory(hci_con_handle_t acl_handle, int memory_id){
+uint8_t hfp_hf_dial_memory(hci_con_handle_t acl_handle, int memory_id){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_initiate_memory_dialing = 1;
     hfp_connection->memory_id = memory_id;
 
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_redial_last_number(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_redial_last_number(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_initiate_redial_last_number = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_activate_call_waiting_notification(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_activate_call_waiting_notification(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_activate_call_waiting_notification = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 
-void hfp_hf_deactivate_call_waiting_notification(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_deactivate_call_waiting_notification(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_deactivate_call_waiting_notification = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 
-void hfp_hf_activate_calling_line_notification(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_activate_calling_line_notification(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_activate_calling_line_notification = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_deactivate_calling_line_notification = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 
-void hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_activate_echo_canceling_and_noise_reduction = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
     hfp_connection->hf_deactivate_echo_canceling_and_noise_reduction = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 static bool hfp_hf_enhanced_voice_recognition_supported(hfp_connection_t * hfp_connection){
@@ -1698,7 +1705,6 @@ static bool hfp_hf_voice_recognition_supported(hfp_connection_t * hfp_connection
 uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!hfp_hf_voice_recognition_supported(hfp_connection)){
@@ -1723,7 +1729,6 @@ uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_hand
 uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
@@ -1766,7 +1771,6 @@ static uint8_t hfp_hf_deactivate_voice_recognition(hfp_connection_t * hfp_connec
 uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!hfp_hf_voice_recognition_supported(hfp_connection)){
@@ -1779,7 +1783,6 @@ uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_ha
 uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!hfp_hf_enhanced_voice_recognition_supported(hfp_connection)){
@@ -1788,131 +1791,137 @@ uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_hand
     return hfp_hf_deactivate_voice_recognition(hfp_connection);
 }
 
-void hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
+uint8_t hfp_hf_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
-    if (hfp_connection->microphone_gain == gain) return;
+    if (hfp_connection->microphone_gain == gain) {
+        return ERROR_CODE_SUCCESS;
+    }
+
     if ((gain < 0) || (gain > 15)){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
-        return;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
     hfp_connection->microphone_gain = gain;
     hfp_connection->send_microphone_gain = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
+uint8_t hfp_hf_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     
-    if (hfp_connection->speaker_gain == gain) return;
+    if (hfp_connection->speaker_gain == gain){
+        return ERROR_CODE_SUCCESS;
+    }
+
     if ((gain < 0) || (gain > 15)){
         log_info("Valid range for a gain is [0..15]. Currently sent: %d", gain);
-        return;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+
     hfp_connection->speaker_gain = gain;
     hfp_connection->send_speaker_gain = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_send_dtmf_code(hci_con_handle_t acl_handle, char code){
+uint8_t hfp_hf_send_dtmf_code(hci_con_handle_t acl_handle, char code){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-
     hfp_connection->hf_send_dtmf_code = code;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_request_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_request_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_binp = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_query_current_call_status(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_query_current_call_status(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_clcc = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 
-void hfp_hf_rrh_query_status(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_rrh_query_status(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '?';
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_rrh_hold_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_rrh_hold_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '0';
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_rrh_accept_held_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_rrh_accept_held_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '1';
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_rrh_reject_held_call(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_rrh = 1;
     hfp_connection->hf_send_rrh_command = '2';
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     hfp_connection->hf_send_cnum = 1;
     hfp_hf_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
-void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value){
+uint8_t hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
-        return;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // find index for assigned number
     int i;
@@ -1926,15 +1935,15 @@ void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, i
                 // send update
                 hfp_hf_run_for_context(hfp_connection);
             }
-            return;
+            return ERROR_CODE_SUCCESS;
         }
     }
+    return ERROR_CODE_SUCCESS;
 }
 
 int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
-        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return 0;
     }
     return get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
