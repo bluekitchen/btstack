@@ -1685,38 +1685,43 @@ uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t servi
     return ERROR_CODE_SUCCESS;
 }
 
-void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
-    if (!hfp_connection) return;
-    hfp_release_audio_connection(hfp_connection);
+void hfp_trigger_release_service_level_connection(hfp_connection_t * connection){
+    // called internally, NULL check already performed
+    btstack_assert(connection != NULL);
 
-    if (hfp_connection->state < HFP_W4_RFCOMM_CONNECTED){
-        hfp_connection->state = HFP_IDLE;
+    hfp_trigger_release_audio_connection(connection);
+
+    if (connection->state < HFP_W4_RFCOMM_CONNECTED){
+        connection->state = HFP_IDLE;
         return;
     }
     
-    if (hfp_connection->state == HFP_W4_RFCOMM_CONNECTED){
-        hfp_connection->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
+    if (connection->state == HFP_W4_RFCOMM_CONNECTED){
+        connection->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
         return;
     }
 
-    if (hfp_connection->state < HFP_W4_SCO_CONNECTED){
-        hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+    if (connection->state < HFP_W4_SCO_CONNECTED){
+        connection->state = HFP_W2_DISCONNECT_RFCOMM;
         return;
     }
 
-    if (hfp_connection->state < HFP_W4_SCO_DISCONNECTED){
-        hfp_connection->state = HFP_W2_DISCONNECT_SCO;
+    if (connection->state < HFP_W4_SCO_DISCONNECTED){
+        connection->state = HFP_W2_DISCONNECT_SCO;
         return;
     }
 
     // HFP_W4_SCO_DISCONNECTED or later 
-    hfp_connection->release_slc_connection = 1;
+    connection->release_slc_connection = 1;
 }
 
-void hfp_release_audio_connection(hfp_connection_t * hfp_connection){
-    if (!hfp_connection) return;
-    if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
-    hfp_connection->release_audio_connection = 1; 
+void hfp_trigger_release_audio_connection(hfp_connection_t * connection){
+    // called internally, NULL check already performed
+    btstack_assert(connection != NULL);
+
+    if (connection->state < HFP_W2_DISCONNECT_SCO){
+        connection->release_audio_connection = 1; 
+    }
 }
 
 static const struct link_settings {

@@ -1316,7 +1316,7 @@ void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){
         log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return;
     }
-    hfp_release_service_level_connection(hfp_connection);
+    hfp_trigger_release_service_level_connection(hfp_connection);
     hfp_hf_run_for_context(hfp_connection);
 }
 
@@ -1437,7 +1437,7 @@ void hfp_hf_release_audio_connection(hci_con_handle_t acl_handle){
         log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
         return;
     }
-    hfp_release_audio_connection(hfp_connection);
+    hfp_trigger_release_audio_connection(hfp_connection);
     hfp_hf_run_for_context(hfp_connection);
 }
 

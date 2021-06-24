@@ -756,7 +756,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
             if (hfp_connection->ag_activate_voice_recognition > 0){
                 hfp_ag_setup_audio_connection(hfp_connection);
             } else {
-                hfp_release_audio_connection(hfp_connection);
+                hfp_trigger_release_audio_connection(hfp_connection);
             }
             return 1;
 
@@ -774,7 +774,7 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
                 case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF:
                     hfp_connection->ag_vra_status = HFP_VRA_VOICE_RECOGNITION_OFF;
                     hfp_ag_send_enhanced_voice_recognition_cmd(hfp_connection->rfcomm_cid, 0, hfp_connection->ag_vra_state);
-                    hfp_release_audio_connection(hfp_connection);
+                    hfp_trigger_release_audio_connection(hfp_connection);
                     break;
                 case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_MSG:
                     hfp_connection->ag_vra_status = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
@@ -2005,7 +2005,7 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
         switch(hfp_connection->command){
             case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
                 if (hfp_connection->ag_activate_voice_recognition == 0){
-                    hfp_release_audio_connection(hfp_connection);
+                    hfp_trigger_release_audio_connection(hfp_connection);
                 }
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
@@ -2294,7 +2294,7 @@ void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
     }
-    hfp_release_service_level_connection(hfp_connection);
+    hfp_trigger_release_service_level_connection(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
 }
 
@@ -2366,7 +2366,7 @@ void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
     }
-    hfp_release_audio_connection(hfp_connection);
+    hfp_trigger_release_audio_connection(hfp_connection);
     hfp_ag_run_for_context(hfp_connection);
 }
 
