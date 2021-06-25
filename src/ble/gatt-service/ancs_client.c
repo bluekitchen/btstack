@@ -179,6 +179,8 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
 }
 
 static void ancs_client_handle_notification(uint8_t * packet, uint16_t size){
+    UNUSED(size);
+
     uint16_t  value_handle = little_endian_read_16(packet, 4);
     uint16_t  value_length = little_endian_read_16(packet, 6);
     uint8_t * value = &packet[8];
@@ -207,6 +209,9 @@ static void ancs_client_handle_notification(uint8_t * packet, uint16_t size){
 }
 
 static void ancs_client_handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(packet_type);
+    UNUSED(channel);
 
     static const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0x42,0xD9,0x8C,0x58,0x25,0xE6,0x99,0xA2,0x1D,0xBD};
     static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
