@@ -65,6 +65,9 @@ extern "C" {
 #define HCI_DUMP_HEADER_SIZE_BLUEZ        13
 #define HCI_DUMP_HEADER_SIZE_BTSNOOP      24
 
+// we expect that there's no log_x call that creates a longer message string without the time header
+#define HCI_DUMP_MAX_MESSAGE_LEN        256
+
 /* API_START */
 
 typedef enum {

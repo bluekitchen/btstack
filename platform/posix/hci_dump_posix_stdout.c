@@ -54,7 +54,7 @@
 #endif
 
 static char time_string[40];
-static char log_message_buffer[256];
+static char log_message_buffer[HCI_DUMP_MAX_MESSAGE_LEN];
 
 static void hci_dump_posix_stdout_timestamp(void){
     struct tm* ptm;
