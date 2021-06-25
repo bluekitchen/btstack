@@ -327,8 +327,7 @@ static void battery_service_client_validate_service(battery_service_client_t * c
 }
 
 // @return true if client valid / run function should be called
-static bool battery_service_client_handle_query_complete(battery_service_client_t * client, uint8_t * packet, uint16_t size){
-    uint8_t status = gatt_event_query_complete_get_att_status(packet);
+static bool battery_service_client_handle_query_complete(battery_service_client_t * client, uint8_t status){
     switch (client->state){
         case BATTERY_SERVICE_CLIENT_STATE_W4_SERVICE_RESULT:
             if (status != ATT_ERROR_SUCCESS){
@@ -539,7 +538,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case GATT_EVENT_QUERY_COMPLETE:
             client = battery_service_get_client_for_con_handle(gatt_event_query_complete_get_handle(packet));
             btstack_assert(client != NULL);
-            call_run = battery_service_client_handle_query_complete(client, packet, size);
+            call_run = battery_service_client_handle_query_complete(client, gatt_event_query_complete_get_att_status(packet));
             break;
 
         default:
