@@ -719,6 +719,8 @@ void de_dump_data_element(const uint8_t * record){
     de_type_t type = de_get_element_type(record);
     de_size_t size = de_get_size_type(record);
     de_traversal_dump_data((uint8_t *) record, type, size, (void*) &indent);
+#else
+UNUSED(record);
 #endif
 }
 
