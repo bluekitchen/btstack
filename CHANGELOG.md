@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Changed
-
+- HFP: API functions return status code if appropriate 
 
 ## Release v1.4.1
 
@@ -220,7 +220,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - SM: Cross-Transport Key Derivation requires `ENABLE_CROSS_TRANSPORT_KEY_DERIVATION` now
 - SM: block connection if encryption fails for bonded devices as Central
-- SM: support pairing as Central after failed re-ecnryption
+- SM: support pairing as Central after failed re-encryption
 
 
 ## Release v1.1
@@ -271,7 +271,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - GAP: treat AES-CCM encrypted connection as mutually authenticated (BIAS)
-- GAP: 'gap_auto_connect_x' API deprecated. Please direclty manage LE Whitelist with `gap_le_whitelist_*` functions and call `gap_connect_with_whitelist` instead
+- GAP: 'gap_auto_connect_x' API deprecated. Please directly manage LE Whitelist with `gap_le_whitelist_*` functions and call `gap_connect_with_whitelist` instead
 - example/hid_host_demo: try to become master for incoming connections
 - btstack_run_loop: use btstack_assert instead of local while(true)
 - att_db_util: allow to reset att_db via `att_db_util_init`
