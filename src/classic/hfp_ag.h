@@ -121,7 +121,7 @@ void hfp_ag_register_packet_handler(btstack_packet_handler_t callback);
  *
  * @param use_in_band_ring_tone
  */
-uint8_t hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
+void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone);
 
 
 // actions used by local device / user

@@ -2619,13 +2619,13 @@ uint8_t hfp_ag_enhanced_voice_recognition_state(hci_con_handle_t acl_handle, hfp
 }
 
 uint8_t hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle){
-    return hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF);
+    return hfp_ag_enhanced_voice_recognition_state(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF);
 }
 uint8_t hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle){
-    return hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT);
+    return hfp_ag_enhanced_voice_recognition_state(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT);
 }
 uint8_t hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle){
-    return hfp_ag_enhanced_voice_recognition_status(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT);
+    return hfp_ag_enhanced_voice_recognition_state(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT);
 }
 
 uint8_t hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg){
