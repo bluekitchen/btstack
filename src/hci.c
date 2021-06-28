@@ -2807,8 +2807,15 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
         case HCI_EVENT_REMOTE_OOB_DATA_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_REMOTE_OOB_DATA_REPLY);
+            hci_event_remote_oob_data_request_get_bd_addr(packet, addr);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+            if (!conn) break;
+
+            hci_connection_timestamp(conn);
+
+            hci_pairing_started(conn, true);
+
+            connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY);
             break;
 #endif
 
@@ -4601,8 +4608,8 @@ static bool hci_run_general_pending_commands(void){
         }
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
-        if (connection->authentication_flags & SEND_REMOTE_OOB_DATA_REPLY){
-            connectionClearAuthenticationFlags(connection, SEND_REMOTE_OOB_DATA_REPLY);
+        if (connection->authentication_flags & AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_REMOTE_OOB_DATA_REPLY);
             const uint8_t zero[16] = { 0 };
             const uint8_t * r_192 = zero;
             const uint8_t * c_192 = zero;
@@ -4622,6 +4629,18 @@ static bool hci_run_general_pending_commands(void){
                     r_192 = connection->classic_oob_r_192;
                 }
             }
+
+            // assess security
+            bool need_level_4 = hci_stack->gap_secure_connections_only_mode || (connection->requested_security_level == LEVEL_4);
+            bool can_reach_level_4 = hci_remote_sc_enabled(connection) && (c_256 != NULL);
+            if (need_level_4 && !can_reach_level_4){
+                log_info("Level 4 required, but not possible -> abort");
+                hci_pairing_complete(connection, ERROR_CODE_INSUFFICIENT_SECURITY);
+                // send oob negative reply
+                c_256 = NULL;
+                c_192 = NULL;
+            }
+
             // Reply
             if (c_256 != zero) {
                 hci_send_cmd(&hci_remote_oob_extended_data_request_reply, &connection->address, c_192, r_192, c_256, r_256);
@@ -6330,11 +6349,11 @@ static uint8_t gap_set_auth_flag_and_run(const bd_addr_t addr, hci_authenticatio
 }
 
 uint8_t gap_ssp_io_capabilities_response(const bd_addr_t addr){
-    return gap_set_auth_flag_and_run(addr, SEND_IO_CAPABILITIES_REPLY);
+    return gap_set_auth_flag_and_run(addr, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
 }
 
 uint8_t gap_ssp_io_capabilities_negative(const bd_addr_t addr){
-    return gap_set_auth_flag_and_run(addr, SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+    return gap_set_auth_flag_and_run(addr, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
 }
 #endif
 
