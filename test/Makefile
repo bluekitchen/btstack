@@ -10,6 +10,7 @@ SUBDIRS =  \
 	ble_client \
 	btstack_link_key_db \
 	btstack_memory \
+	classic-oob-pairing \
 	crypto \
 	des_iterator \
 	embedded \
