@@ -350,6 +350,18 @@ void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, ui
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status, uint8_t state){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    uint8_t event[7];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_STATUS;
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = status; // 0:success
+    event[6] = state;  // 0:deactivated, 1:activate
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     btstack_assert(hfp_connection != NULL);
     uint8_t event[12];
