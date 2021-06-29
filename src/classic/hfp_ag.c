@@ -746,19 +746,41 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
     return 0;
 }
 
+static bool hfp_ag_voice_recognition_supported(hfp_connection_t * hfp_connection){
+    int ag = get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION);
+    int hf = get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION);
+    return hf && ag;
+}
+
+static uint8_t hfp_ag_activate_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
+    if (!hfp_ag_voice_recognition_supported(hfp_connection)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (hfp_connection->vra_status != HFP_VRA_VOICE_RECOGNITION_OFF){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
+    hfp_connection->vra_status = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
+    return ERROR_CODE_SUCCESS;
+}
+
+static uint8_t hfp_ag_deactivate_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
+    if (!hfp_ag_voice_recognition_supported(hfp_connection)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (hfp_connection->vra_status != HFP_VRA_VOICE_RECOGNITION_ACTIVATED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
+    hfp_connection->vra_status = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
+    return ERROR_CODE_SUCCESS;
+}
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
     int sent = codecs_exchange_state_machine(hfp_connection);
     if (sent) return 1;
    
     switch(hfp_connection->command){
-        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
-            hfp_ag_send_activate_voice_recognition_cmd(hfp_connection->rfcomm_cid, hfp_connection->ag_activate_voice_recognition);
-            if (hfp_connection->ag_activate_voice_recognition > 0){
-                hfp_ag_setup_audio_connection(hfp_connection);
-            } else {
-                hfp_trigger_release_audio_connection(hfp_connection);
-            }
-            return 1;
 
         case HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION:
             switch (hfp_connection->ag_vra_status){
@@ -1940,6 +1962,10 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     } 
 
     if (!cmd_sent){
+        cmd_sent = hfp_ag_voice_recognition_state_machine(hfp_connection);
+    } 
+
+    if (!cmd_sent){
         cmd_sent = call_setup_state_machine(hfp_connection);
     }
 
@@ -2535,25 +2561,30 @@ uint8_t hfp_ag_set_battery_level(int battery_level){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate){
-    if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
+uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-
-    if (!get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION)) {
-        return ERROR_CODE_COMMAND_DISALLOWED;
+    uint8_t status = hfp_ag_activate_voice_recognition_for_connection(hfp_connection);
+    if (status == ERROR_CODE_SUCCESS){
+        hfp_ag_run_for_context(hfp_connection);
     }
-
-    hfp_connection->ag_activate_voice_recognition = activate;
-    hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
-    hfp_ag_run_for_context(hfp_connection);
-    return ERROR_CODE_SUCCESS;
+    return status;
 }
+
+uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection){
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    uint8_t status = hfp_ag_deactivate_voice_recognition_for_connection(hfp_connection);
+    if (status == ERROR_CODE_SUCCESS){
+        hfp_ag_run_for_context(hfp_connection);
+    }
+    return status;
+}
+
 
 uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle){
     if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){

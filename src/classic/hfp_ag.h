@@ -261,15 +261,26 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 // Voice Recognition
 
 /*
- * @brief Activate voice recognition.
+ * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is set to 1.
  *
  * @param acl_handle
- * @param activate
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
- *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition, or already activated
  */
-uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate);
+uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
+
+/*
+ * @brief Deactivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is set to 0. 
+ *
+ * @param acl_handle
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition, or already deactivated
+ */
+uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Activate enhanced voice recognition.
