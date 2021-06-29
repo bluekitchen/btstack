@@ -579,33 +579,6 @@ static void usb_process_ts(btstack_timer_source_t *timer) {
     return;
 }
 
-#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
-
-// list of known devices, using VendorID/ProductID tuples
-static const uint16_t known_bluetooth_devices[] = {
-    // BCM20702A0 - DeLOCK Bluetooth 4.0
-    0x0a5c, 0x21e8,
-    // BCM20702A0 - Asus BT400
-    0x0b05, 0x17cb,
-    // BCM20702B0 - Generic USB Detuned Class 1 @ 20 MHz
-    0x0a5c, 0x22be,
-    // nRF5x Zephyr USB HCI, e.g nRF52840-PCA10056
-    0x2fe3, 0x0100,
-    0x2fe3, 0x000b,
-};
-
-static int num_known_devices = sizeof(known_bluetooth_devices) / sizeof(uint16_t) / 2;
-
-static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
-    int i;
-    for (i=0; i<num_known_devices; i++){
-        if (known_bluetooth_devices[i*2] == vendor_id && known_bluetooth_devices[i*2+1] == product_id){
-            return 1;
-        }
-    }
-    return 0;
-}
-
 static int scan_for_bt_endpoints(libusb_device *dev) {
     int r;
 
@@ -668,6 +641,33 @@ static int scan_for_bt_endpoints(libusb_device *dev) {
         }
     }
     libusb_free_config_descriptor(config_descriptor);
+    return 0;
+}
+
+#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
+
+// list of known devices, using VendorID/ProductID tuples
+static const uint16_t known_bluetooth_devices[] = {
+    // BCM20702A0 - DeLOCK Bluetooth 4.0
+    0x0a5c, 0x21e8,
+    // BCM20702A0 - Asus BT400
+    0x0b05, 0x17cb,
+    // BCM20702B0 - Generic USB Detuned Class 1 @ 20 MHz
+    0x0a5c, 0x22be,
+    // nRF5x Zephyr USB HCI, e.g nRF52840-PCA10056
+    0x2fe3, 0x0100,
+    0x2fe3, 0x000b,
+};
+
+static int num_known_devices = sizeof(known_bluetooth_devices) / sizeof(uint16_t) / 2;
+
+static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
+    int i;
+    for (i=0; i<num_known_devices; i++){
+        if (known_bluetooth_devices[i*2] == vendor_id && known_bluetooth_devices[i*2+1] == product_id){
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -1022,7 +1022,7 @@ static int usb_open(void){
         return -1;
     }
 
-    dev = libusb_get_device(aHandle);
+    dev = libusb_get_device(handle);
     r = scan_for_bt_endpoints(dev);
     if (r < 0){
         usb_close();
