@@ -146,6 +146,12 @@ typedef struct pbap_client {
     /* xml parser */
     yxml_t  xml_parser;
     uint8_t xml_buffer[50];
+    /* vcard listing parser */
+    bool parser_card_found;
+    bool parser_name_found;
+    bool parser_handle_found;
+    char parser_name[PBAP_MAX_NAME_LEN];
+    char parser_handle[PBAP_MAX_HANDLE_LEN];
     /* flow control mode */
     uint8_t flow_control_enabled;
     uint8_t flow_next_triggered;
@@ -593,56 +599,54 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
             const uint8_t  * data =  obex_iterator_get_data(&it);
             // now try parsing it
             yxml_init(&pbap_client->xml_parser, pbap_client->xml_buffer, sizeof(pbap_client->xml_buffer));
-            int card_found = 0;
-            int name_found = 0;
-            int handle_found = 0;
-            char name[PBAP_MAX_NAME_LEN];
-            char handle[PBAP_MAX_HANDLE_LEN];
+            pbap_client->parser_card_found = false;
+            pbap_client->parser_name_found = false;
+            pbap_client->parser_handle_found = false;
             uint16_t char_len;
             while (data_len--){
                 yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
                 switch (r){
                     case YXML_ELEMSTART:
-                        card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
+                        pbap_client->parser_card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
                         break;
                     case YXML_ELEMEND:
-                        if (card_found){
-                            pbap_client_emit_card_result_event(pbap_client, name, handle);
+                        if (pbap_client->parser_card_found){
+                            pbap_client_emit_card_result_event(pbap_client, pbap_client->parser_name, pbap_client->parser_handle);
                         }
-                        card_found = 0;
+                        pbap_client->parser_card_found = false;
                         break;
                     case YXML_ATTRSTART:
-                        if (!card_found) break;
+                        if (!pbap_client->parser_card_found) break;
                         if (strcmp("name", pbap_client->xml_parser.attr) == 0){
-                            name_found = 1;
-                            name[0]    = 0;
+                            pbap_client->parser_name_found = true;
+                            pbap_client->parser_name[0]    = 0;
                             break;
                         }
                         if (strcmp("handle", pbap_client->xml_parser.attr) == 0){
-                            handle_found = 1;
-                            handle[0]    = 0;
+                            pbap_client->parser_handle_found = true;
+                            pbap_client->parser_handle[0]    = 0;
                             break;
                         }
                         break;
                     case YXML_ATTRVAL:
-                        if (name_found) {
+                        if (pbap_client->parser_name_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
                             char_len = strlen(pbap_client->xml_parser.data);
-                            if ((strlen(name) + char_len + 1) >= sizeof(name)) break;
-                            strcat(name, pbap_client->xml_parser.data);
+                            if ((strlen(pbap_client->parser_name) + char_len + 1) >= sizeof(pbap_client->parser_name)) break;
+                            strcat(pbap_client->parser_name, pbap_client->xml_parser.data);
                             break;
                         }
-                        if (handle_found) {
+                        if (pbap_client->parser_handle_found) {
                             // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
                             char_len = strlen(pbap_client->xml_parser.data);
-                            if ((strlen(handle) + char_len + 1) >= sizeof(handle)) break;
-                            strcat(handle, pbap_client->xml_parser.data);
+                            if ((strlen(pbap_client->parser_handle) + char_len + 1) >= sizeof(pbap_client->parser_handle)) break;
+                            strcat(pbap_client->parser_handle, pbap_client->xml_parser.data);
                             break;
                         }
                         break;
                     case YXML_ATTREND:
-                        name_found = 0;
-                        handle_found = 0;
+                        pbap_client->parser_name_found = false;
+                        pbap_client->parser_handle_found = false;
                         break;
                     default:
                         break;
