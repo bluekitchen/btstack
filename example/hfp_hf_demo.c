@@ -307,12 +307,12 @@ static void stdin_process(char c){
         case 'n':
             log_info("USER:\'%c\'", cmd);
             printf("Deactivate voice recognition\n");
-            status = hfp_hf_deactivate_voice_recognition_notification(acl_handle);
+            status = hfp_hf_deactivate_voice_recognition(acl_handle);
             break;
         case 'N':
             log_info("USER:\'%c\'", cmd);
             printf("Activate voice recognition %s\n", bd_addr_to_str(device_addr));
-            status = hfp_hf_activate_voice_recognition_notification(acl_handle);
+            status = hfp_hf_activate_voice_recognition(acl_handle);
             break;
         case 'o':
             log_info("USER:\'%c\'", cmd);

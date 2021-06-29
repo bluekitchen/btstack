@@ -363,21 +363,27 @@ uint8_t hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_
  */
 uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
 
-/*
- * @brief Activate voice recognition function.
+/**
+ * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is set to 1.
  *
  * @param acl_handle
- * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition, or already activated
  */
-uint8_t hfp_hf_activate_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
 
-/*
- * @brief Dectivate voice recognition function.
+/**
+ * @brief Dectivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is set to 0.
  *
  * @param acl_handle
- * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
+ *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition, or already activated
  */
-uint8_t hfp_hf_deactivate_voice_recognition_notification(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Start enhanced voice recognition session.

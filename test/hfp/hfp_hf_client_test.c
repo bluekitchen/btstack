@@ -201,11 +201,11 @@ static void user_command(char cmd){
             break;
         case 'n':
             printf("Deactivate voice recognition\n");
-            hfp_hf_deactivate_voice_recognition_notification(acl_handle);
+            hfp_hf_deactivate_voice_recognition(acl_handle);
             break;
         case 'N':
             printf("Activate voice recognition\n");
-            hfp_hf_activate_voice_recognition_notification(acl_handle);
+            hfp_hf_activate_voice_recognition(acl_handle);
             break;
         case 'o':
             printf("Set speaker gain to 0 (minimum)\n");
