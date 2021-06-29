@@ -262,6 +262,13 @@ static void pbap_client_emit_card_result_event(pbap_client_t * context, const ch
 
 static const uint8_t collon = (uint8_t) ':';
 
+static void pbap_client_vcard_listing_init_parser(pbap_client_t * client){
+    yxml_init(&client->xml_parser, client->xml_buffer, sizeof(client->xml_buffer));
+    client->parser_card_found = false;
+    client->parser_name_found = false;
+    client->parser_handle_found = false;
+}
+
 static void pbap_handle_can_send_now(void){
     uint8_t  path_element[20];
     uint16_t path_element_start;
@@ -595,13 +602,10 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
         uint8_t hi = obex_iterator_get_hi(&it);
         if ((hi == OBEX_HEADER_END_OF_BODY) ||
             (hi == OBEX_HEADER_BODY)){
+            pbap_client_vcard_listing_init_parser(pbap_client);
             uint16_t     data_len = obex_iterator_get_data_len(&it);
             const uint8_t  * data =  obex_iterator_get_data(&it);
             // now try parsing it
-            yxml_init(&pbap_client->xml_parser, pbap_client->xml_buffer, sizeof(pbap_client->xml_buffer));
-            pbap_client->parser_card_found = false;
-            pbap_client->parser_name_found = false;
-            pbap_client->parser_handle_found = false;
             uint16_t char_len;
             while (data_len--){
                 yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
