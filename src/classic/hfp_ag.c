@@ -776,6 +776,65 @@ static uint8_t hfp_ag_deactivate_voice_recognition_for_connection(hfp_connection
     hfp_connection->vra_status = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
     return ERROR_CODE_SUCCESS;
 }
+
+static int hfp_ag_voice_recognition_send(hfp_connection_t * hfp_connection, int value){
+    int done = 0;
+    switch(hfp_connection->command){
+        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+            done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+            break;
+        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+            done = hfp_ag_send_activate_voice_recognition_cmd(hfp_connection->rfcomm_cid, value);
+            break;
+        default:
+            btstack_unreachable();
+            break;
+    }
+    return done;
+}
+
+static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
+    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
+        return 0;
+    }
+    int done = 0;
+    uint8_t status;
+            
+    switch (hfp_connection->vra_status){
+        case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
+            done = hfp_ag_voice_recognition_send(hfp_connection, 0);
+            if (!done){
+                return 0;
+            }
+
+            hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_OFF;
+            hfp_trigger_release_audio_connection(hfp_connection);
+            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS, 0);
+            break;
+        
+        case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
+            done = hfp_ag_voice_recognition_send(hfp_connection, 1);
+            
+            if (!done){
+                hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
+            }
+
+            status = hfp_ag_setup_audio_connection(hfp_connection);
+            if (status != ERROR_CODE_SUCCESS){
+                hfp_connection->vra_status = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
+            }
+            hfp_emit_voice_recognition_state_event(hfp_connection, status, 1);
+            break;
+        
+        default:
+            if (hfp_connection->command == HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION){
+                done = hfp_ag_send_error(hfp_connection->rfcomm_cid);
+            }
+            break;
+    }
+    return done;
+}
+
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
     int sent = codecs_exchange_state_machine(hfp_connection);
     if (sent) return 1;
@@ -807,21 +866,6 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
             }
             return 1;
 
-        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
-            
-            if (get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
-                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-            } else {
-                switch (hfp_connection->ag_vra_status){
-                    case HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
-                        hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                        break;
-                    default:
-                        hfp_ag_send_error(hfp_connection->rfcomm_cid);
-                        break;
-                } 
-            }
-            return 1;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
             hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection->rfcomm_cid);
             return 1;
@@ -2031,7 +2075,9 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
         switch(hfp_connection->command){
             case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
                 if (hfp_connection->ag_activate_voice_recognition == 0){
-                    hfp_trigger_release_audio_connection(hfp_connection);
+                    hfp_ag_deactivate_voice_recognition_for_connection(hfp_connection);
+                } else {
+                    hfp_ag_activate_voice_recognition_for_connection(hfp_connection);
                 }
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
