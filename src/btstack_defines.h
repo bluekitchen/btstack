@@ -1772,10 +1772,11 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_IN_BAND_RING_TONE                        0x1D
 
 /**
- * @format 1H1
+ * @format 1H11
  * @param subevent_code
  * @param acl_handle
- * @param activated
+ * @param status
+ * @param state
  */
 #define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                 0x1E
 

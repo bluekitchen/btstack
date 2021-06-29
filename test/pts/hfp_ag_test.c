@@ -623,6 +623,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HFP_SUBEVENT_MICROPHONE_VOLUME:
                     printf("Set microphone volume to %d\n", hfp_subevent_microphone_volume_get_gain(event));
                     break;
+                case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
+                    status = hfp_subevent_voice_recognition_status_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Voice Recognition command failed with status 0x%02x\n", status);
+                        break;
+                    }
+                    switch(hfp_subevent_voice_recognition_status_get_state(event)){
+                        case 0:
+                            printf("Voice recognition status deactivated\n");
+                            break;
+                        case 1:
+                            printf("Voice recognition status activated\n");
+                            break;
+                        default:
+                            btstack_assert(false);
+                            break;
+                    }
+                    break;
                 default:
                     break;
             }

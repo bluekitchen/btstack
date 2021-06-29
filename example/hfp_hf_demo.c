@@ -562,10 +562,21 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
-                            if (hfp_subevent_voice_recognition_status_get_activated(event) > 0){
-                                printf("Voice recognition status activated\n");
-                            } else {
-                                printf("Voice recognition status disabled\n");
+                            status = hfp_subevent_voice_recognition_status_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("Voice Recognition command failed with status 0x%02x\n", status);
+                                break;
+                            }
+                            switch(hfp_subevent_voice_recognition_status_get_state(event)){
+                                case 0:
+                                    printf("Voice recognition status deactivated\n");
+                                    break;
+                                case 1:
+                                    printf("Voice recognition status activated\n");
+                                    break;
+                                default:
+                                    btstack_assert(false);
+                                    break;
                             }
                             break;
                         default:

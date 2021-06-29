@@ -4727,13 +4727,22 @@ static inline hci_con_handle_t hfp_subevent_voice_recognition_status_get_acl_han
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field activated from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @brief Get field status from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
  * @param event packet
- * @return activated
+ * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_voice_recognition_status_get_activated(const uint8_t * event){
+static inline uint8_t hfp_subevent_voice_recognition_status_get_status(const uint8_t * event){
     return event[5];
+}
+/**
+ * @brief Get field state from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @param event packet
+ * @return state
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_voice_recognition_status_get_state(const uint8_t * event){
+    return event[6];
 }
 
 /**
