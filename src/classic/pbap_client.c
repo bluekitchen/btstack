@@ -423,6 +423,7 @@ static void pbap_handle_can_send_now(void){
                     goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], i);
                 }
             }
+
             // send packet
             pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
             pbap_client->request_number++;
@@ -602,7 +603,6 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
         uint8_t hi = obex_iterator_get_hi(&it);
         if ((hi == OBEX_HEADER_END_OF_BODY) ||
             (hi == OBEX_HEADER_BODY)){
-            pbap_client_vcard_listing_init_parser(pbap_client);
             uint16_t     data_len = obex_iterator_get_data_len(&it);
             const uint8_t  * data =  obex_iterator_get_data(&it);
             // now try parsing it
@@ -992,6 +992,7 @@ uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
     pbap_client->phonebook_path = path;
     pbap_client->phone_number = NULL;
     pbap_client->request_number = 0;
+    pbap_client_vcard_listing_init_parser(pbap_client);
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
@@ -1015,6 +1016,7 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     pbap_client->phonebook_path = pbap_vcard_listing_name;
     pbap_client->phone_number   = phone_number;
     pbap_client->request_number = 0;
+    pbap_client_vcard_listing_init_parser(pbap_client);
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }

@@ -14,9 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - A2DP Source: fix reconfigure
+- PBAP Client: handle chunked vCard Listing
 
 ### Changed
 - HFP: API functions return status code if appropriate 
+
 
 ## Release v1.4.1
 
