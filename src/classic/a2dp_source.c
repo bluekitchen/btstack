@@ -267,7 +267,7 @@ static void a2dp_source_ready_for_sep_discovery(avdtp_connection_t * connection)
 
 static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t local_seid) {
     uint16_t cid = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
-    avdtp_connection_t * avdtp_connection = avdtp_get_connection_for_avdtp_cid(cid);
+    avdtp_connection_t *avdtp_connection = avdtp_get_connection_for_avdtp_cid(cid);
     btstack_assert(avdtp_connection != NULL);
     avdtp_connection->a2dp_source_local_stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
     // bail out if local seid invalid
@@ -281,13 +281,18 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
 
     avdtp_connection->a2dp_source_stream_endpoint_configured = true;
 
-    // outgoing active?
-    if (avdtp_connection->a2dp_source_state == A2DP_W4_SET_CONFIGURATION){
-        // outgoing: discovery and config of remote sink sep successful, trigger stream open
-        avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
-    } else {
-        // incoming: wait for stream open
-        avdtp_connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
+    switch (avdtp_connection->a2dp_source_state) {
+        case A2DP_W4_SET_CONFIGURATION:
+            // outgoing: discovery and config of remote sink sep successful, trigger stream open
+            avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
+            break;
+        case A2DP_W4_GET_CONFIGURATION:
+            // incoming: wait for stream open
+            avdtp_connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
+            break;
+        default:
+            // wait for configuration after sending reconfigure - keep state
+            break;
     }
 }
 

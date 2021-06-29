@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI Dump RTT STDOUT: drop messages if RTT buffer is full and RTT is configured for non-blocking
 
 ### Fixed
+- A2DP Source: fix reconfigure
 
 ### Changed
 - HFP: API functions return status code if appropriate 
