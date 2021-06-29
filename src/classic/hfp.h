@@ -677,7 +677,8 @@ typedef struct hfp_connection {
     uint8_t hf_activate_echo_canceling_and_noise_reduction;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
 
-    hfp_voice_recognition_activation_status_t vra_status;
+    hfp_voice_recognition_activation_status_t vra_state;
+    hfp_voice_recognition_activation_status_t vra_state_requested;
 
     hfp_voice_recognition_activation_status_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
