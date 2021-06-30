@@ -30,7 +30,6 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
-# CFLAGS += -Werror
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/platform/windows \

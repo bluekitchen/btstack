@@ -10,8 +10,7 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 include ${BTSTACK_ROOT}/chipset/intel/Makefile.inc
 
 # CC = gcc-fsf-4.9
-CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wpedantic
-# CFLAGS += -Werror
+CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/windows \
 		  -I${BTSTACK_ROOT}/platform/posix \
