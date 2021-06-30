@@ -581,11 +581,10 @@ typedef uint8_t sm_key_t[16];
  #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
 
 /**
- * @format 1HD2
+ * @format 1HD
  * @param subevent_code
  * @param connection_handle
- * @param random_number
- * @param encryption_diversifier
+ * @param le_features
  */
 #define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
 
