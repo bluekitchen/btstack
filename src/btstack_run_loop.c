@@ -117,7 +117,7 @@ void btstack_run_loop_base_dump_timer(void){
     uint16_t i = 0;
     for (it = (btstack_linked_item_t *) btstack_run_loop_base_timers; it ; it = it->next){
         btstack_timer_source_t * timer = (btstack_timer_source_t*) it;
-        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, timer, timer->timeout);
+        log_info("timer %u (%p): timeout %" PRIu32 "u\n", i, (void *) timer, timer->timeout);
     }
 #endif
 
@@ -157,11 +157,11 @@ void btstack_run_loop_base_poll_data_sources(void){
 
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t * timer, void (*process)(btstack_timer_source_t * _timer)){
     timer->process = process;
-};
+}
 
 void btstack_run_loop_set_data_source_handler(btstack_data_source_t * data_source, void (*process)(btstack_data_source_t *_data_source,  btstack_data_source_callback_type_t callback_type)){
     data_source->process = process;
-};
+}
 
 void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, int fd){
     data_source->source.fd = fd;
