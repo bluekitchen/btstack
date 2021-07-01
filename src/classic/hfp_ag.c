@@ -2057,15 +2057,11 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
     return (byte == '\n') || (byte == '\r');
 }
 
-static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
-
+static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
+    if (!hfp_connection) return;
     if (size < 1) return;
 
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
-    if (!hfp_connection) return;
-    
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
     hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
@@ -2273,10 +2269,14 @@ static void hfp_ag_run(void){
 }
 
 static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hfp_connection_t * hfp_connection = NULL;
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            hfp_ag_handle_rfcomm_data(packet_type, channel, packet, size);
-            break;
+            hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
+
+            hfp_ag_handle_rfcomm_data(hfp_connection, packet, size);
+            hfp_ag_run_for_context(hfp_connection);
+            return;
         case HCI_EVENT_PACKET:
             if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
                 uint16_t rfcomm_cid = rfcomm_event_can_send_now_get_rfcomm_cid(packet);
