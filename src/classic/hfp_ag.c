@@ -815,7 +815,18 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             break;
         
         case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
-            done = hfp_ag_voice_recognition_send(hfp_connection, 1);
+            switch(hfp_connection->command){
+                case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+                    done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                    break;
+                case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+                    done = hfp_ag_voice_recognition_send(hfp_connection, 1);
+                    break;
+                default:
+                    btstack_assert(false);
+                    break;
+            }
+            
             if (done == 0){
                 hfp_connection->vra_state_requested = hfp_connection->vra_state;
                 hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, 0);
