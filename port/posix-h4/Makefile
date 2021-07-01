@@ -21,6 +21,7 @@ CORE += \
 	rijndael.c \
 	main.c \
 	btstack_stdin_posix.c \
+	btstack_signal.c \
 	wav_util.c 					\
 	0000000_META_hci_patches_v7.c \
 	# bluetooth_init_cc2564_2.14.c \
@@ -59,6 +60,9 @@ VPATH += ${BTSTACK_ROOT}/chipset/csr
 VPATH += ${BTSTACK_ROOT}/chipset/em9301
 VPATH += ${BTSTACK_ROOT}/chipset/stlc2500d
 VPATH += ${BTSTACK_ROOT}/chipset/tc3566x
+
+# add pthread for ctrl-c signal handler
+LDFLAGS += -lpthread
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
 EXAMPLES += pan_lwip_http_server
