@@ -57,6 +57,10 @@ static ULARGE_INTEGER start_time;
 
 static bool run_loop_exit_requested;
 
+// to trigger run loop from other thread
+static HANDLE run_loop_pipe_mutex;
+static btstack_data_source_t run_loop_pipe_ds;
+
 /**
  * @brief Queries the current time in ms since start
  */
@@ -151,6 +155,40 @@ static void btstack_run_loop_windows_set_timer(btstack_timer_source_t *a, uint32
     log_debug("btstack_run_loop_windows_set_timer to %u ms (now %u, timeout %u)", a->timeout, time_ms, timeout_in_ms);
 }
 
+static void btstack_run_loop_windwos_pipe_process(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
+    UNUSED(callback_type);
+
+    // execute callbacks
+    while (1){
+        // protect list with mutex (Win32 style)
+        DWORD dwWaitResult = WaitForSingleObject( run_loop_pipe_mutex, INFINITE); 
+        if (dwWaitResult != WAIT_OBJECT_0) return;
+
+        btstack_context_callback_registration_t * callback_registration = (btstack_context_callback_registration_t *) btstack_linked_list_pop(&btstack_run_loop_base_callbacks);
+        ReleaseMutex(run_loop_pipe_mutex);
+
+        if (callback_registration == NULL){
+            break;
+        }
+        (*callback_registration->callback)(callback_registration->context);
+    }
+}
+
+static void btstack_run_loop_windows_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
+    if (run_loop_pipe_ds.source.handle == NULL) return;
+
+    // protect list with mutex (Win32 style)
+    DWORD dwWaitResult = WaitForSingleObject( run_loop_pipe_mutex, INFINITE); 
+    if (dwWaitResult != WAIT_OBJECT_0) return;
+
+     // We own mutex now, add callback to list
+    btstack_run_loop_base_add_callback(callback_registration);
+    ReleaseMutex(run_loop_pipe_mutex);
+    // trigger run loop
+    SetEvent(run_loop_pipe_ds.source.handle);
+}
+
+
 static void btstack_run_loop_windows_init(void){
     btstack_run_loop_base_init();
 
@@ -162,9 +200,22 @@ static void btstack_run_loop_windows_init(void){
     start_time.LowPart =  file_time.dwLowDateTime;
     start_time.HighPart = file_time.dwHighDateTime;
 
-    log_debug("btstack_run_loop_windows_init");
-}
+    // Create mutex with no initial owner
+    run_loop_pipe_mutex = CreateMutex( 
+        NULL,              // default security attributes
+        FALSE,             // initially not owned
+        NULL);             // unnamed mutex
+    if (run_loop_pipe_mutex == NULL){
+       log_info("CreateMutex error: %ld\n", GetLastError());
+       return;
+    }
 
+    // create Event that can be notified from other thread. bManualReset is fALSE => Object is auto-reset
+    run_loop_pipe_ds.source.handle  = CreateEvent(NULL, FALSE, FALSE, NULL);
+    btstack_run_loop_enable_data_source_callbacks(&run_loop_pipe_ds, DATA_SOURCE_CALLBACK_READ);
+    btstack_run_loop_set_data_source_handler(&run_loop_pipe_ds, &btstack_run_loop_windwos_pipe_process);
+    btstack_run_loop_add_data_source(&run_loop_pipe_ds);
+}
 
 static const btstack_run_loop_t btstack_run_loop_windows = {
     &btstack_run_loop_windows_init,
@@ -179,7 +230,7 @@ static const btstack_run_loop_t btstack_run_loop_windows = {
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_windows_get_time_ms,
     NULL, /* poll data sources from irq */
-    NULL,
+    btstack_run_loop_windows_execute_on_main_thread,
     btstack_run_loop_windows_trigger_exit
 };
 
