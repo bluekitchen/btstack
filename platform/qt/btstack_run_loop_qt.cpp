@@ -238,8 +238,9 @@ static void btstack_run_loop_qt_add_timer(btstack_timer_source_t *ts){
 
 // BTstackRunLoopQt class implementation
 BTstackRunLoopQt::BTstackRunLoopQt(void) : QObject() {
-    // allow to trigger processCallbacks both from main thread as well as other threads later
+    // enforce slot callback on receiver (main thread) via Qt::QueuedConnection
     connect(this, &BTstackRunLoopQt::callbackAdded, this, &BTstackRunLoopQt::processCallbacks, Qt::QueuedConnection);
+    connect(this, &BTstackRunLoopQt::dataSourcesPollRequested, this, &BTstackRunLoopQt::pollDataSources, Qt::QueuedConnection);
 }
 
 void BTstackRunLoopQt::processTimers(){
@@ -286,12 +287,20 @@ void BTstackRunLoopQt::processCallbacks(void) {
     }
 }
 
+void BTstackRunLoopQt::pollDataSources(void) {
+    btstack_run_loop_base_poll_data_sources();
+}
+
 static void btstack_run_loop_qt_execute_on_main_thread(btstack_context_callback_registration_t * callback_registration){
     // protect list with mutex
     run_loop_callback_mutex.lock();
     btstack_run_loop_base_add_callback(callback_registration);
     run_loop_callback_mutex.unlock();
     btstack_run_loop_object->emit callbackAdded();
+}
+
+static void btstack_run_loop_qt_poll_data_sources_from_irq(void){
+    btstack_run_loop_object->emit dataSourcesPollRequested();
 }
 
 static void btstack_run_loop_qt_process_data_source(int fd, uint16_t callback_types){
@@ -363,7 +372,7 @@ static const btstack_run_loop_t btstack_run_loop_qt = {
     &btstack_run_loop_qt_execute,
     &btstack_run_loop_qt_dump_timer,
     &btstack_run_loop_qt_get_time_ms,
-    NULL, /* poll data sources from irq */
+    &btstack_run_loop_qt_poll_data_sources_from_irq,
     &btstack_run_loop_qt_execute_on_main_thread,
     NULL
 };

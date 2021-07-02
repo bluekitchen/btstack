@@ -62,6 +62,7 @@ public:
 public slots:
     void processTimers(void);
     void processCallbacks(void);
+    void pollDataSources(void);
 #ifdef Q_OS_WIN
     void processDataSource(HANDLE handle);
 #else
@@ -70,6 +71,7 @@ public slots:
 #endif
 signals:
     void callbackAdded(void);
+    void dataSourcesPollRequested(void);
 };
 #endif
 
