@@ -753,6 +753,9 @@ static bool hfp_ag_voice_recognition_supported(hfp_connection_t * hfp_connection
 }
 
 static uint8_t hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
+    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
     if (!hfp_ag_voice_recognition_supported(hfp_connection)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -763,6 +766,9 @@ static uint8_t hfp_ag_can_activate_voice_recognition_for_connection(hfp_connecti
 }
 
 static uint8_t hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
+    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
     if (!hfp_ag_voice_recognition_supported(hfp_connection)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -851,9 +857,6 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             break;
 
         default:
-            if (hfp_connection->command == HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION){
-                done = hfp_ag_send_error(hfp_connection->rfcomm_cid);
-            }
             break;
     }
     return done;
