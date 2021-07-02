@@ -78,7 +78,15 @@ static void btstack_run_loop_wiced_set_timer(btstack_timer_source_t *ts, uint32_
     ts->timeout = btstack_run_loop_wiced_get_time_ms() + timeout_in_ms + 1;
 }
 
-// schedules execution similar to wiced_rtos_send_asynchronous_event for worker threads
+// TODO: use wiced mutex to protect list of callbacks in run_loop_base
+static void btstack_run_loop_wiced_execute_on_main_thread_new(btstack_context_callback_registration_t * callback_registration){
+    function_call_t message;
+    message.fn  = callback_registration->callback;
+    message.arg = callback_registration->context;
+    wiced_rtos_push_to_queue(&btstack_run_loop_queue, &message, WICED_NEVER_TIMEOUT);
+}
+
+// @deprecated use btstack_run_loop_execute_on_main_thread instead
 void btstack_run_loop_wiced_execute_code_on_main_thread(wiced_result_t (*fn)(void *arg), void * arg){
     function_call_t message;
     message.fn  = fn;
@@ -113,7 +121,6 @@ static void btstack_run_loop_wiced_execute(void) {
     }
 }
 
-
 static void btstack_run_loop_wiced_trigger_exit(void){
     run_loop_exit_requested = true;
 }
@@ -126,7 +133,7 @@ static void btstack_run_loop_wiced_btstack_run_loop_init(void){
 }
 
 /**
- * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
+ * @brief Provide btstack_run_loop_wiced instance for use with btstack_run_loop_init
  */
 const btstack_run_loop_t * btstack_run_loop_wiced_get_instance(void){
     return &btstack_run_loop_wiced;
@@ -144,7 +151,7 @@ static const btstack_run_loop_t btstack_run_loop_wiced = {
     &btstack_run_loop_wiced_execute,
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_wiced_get_time_ms,
-    NULL, /* poll data sources from irq */
     NULL,
-    btstack_run_loop_wiced_trigger_exit
+    &btstack_run_loop_wiced_execute_on_main_thread_new,
+    &btstack_run_loop_wiced_trigger_exit
 };
