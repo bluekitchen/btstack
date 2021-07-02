@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - HFP: API functions return status code if appropriate 
+- Run Loop: new functionality for HCI transport drivers and inter-process communication
+  - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
+  - *btstack_run_loop_execute_on_main_thread*: schedule code exection on main thread from other thread
+  - *btstack_run_loop_trigger_exit*: trigger run loop exit
 
 
 ## Release v1.4.1
