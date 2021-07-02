@@ -259,7 +259,7 @@ embedded system with a Bluetooth chipset connected via UART.
     
 ~~~~ 
 
-First, BTstack’s memory pools are setup up. Then, the standard run loop
+First, BTstack’s memory pools are set up. Then, the standard run loop
 implementation for embedded systems is selected.
 
 The call to *hci_dump_init* configures BTstack to output all Bluetooth
@@ -315,14 +315,18 @@ The run loop handles events from two different types of sources: data
 sources and timers. Data sources represent communication interfaces like
 an UART or an USB driver. Timers are used by BTstack to implement
 various Bluetooth-related timeouts. They can also be used to handle
-periodic events.
+periodic events. In addition, most implementations also allow to trigger a poll
+of the data sources from interrupt context, or, execute a function from a different
+thread.
 
 Data sources and timers are represented by the *btstack_data_source_t* and
 *btstack_timer_source_t* structs respectively. Each of these structs contain
 at least a linked list node and a pointer to a callback function. All active timers
 and data sources are kept in link lists. While the list of data sources
 is unsorted, the timers are sorted by expiration timeout for efficient
-processing.
+processing. Data sources need to be configured upon what event they are called back.
+They can be configured to be polled (*DATA_SOURCE_CALLBACK_POLL*), on read ready (*DATA_SOURCE_CALLBACK_READ*),
+or on write ready (*DATA_SOURCE_CALLBACK_WRITE*).
 
 Timers are single shot: a timer will be removed from the timer list
 before its event handler callback is executed. If you need a periodic
@@ -334,17 +338,18 @@ tick hardware abstraction.
 
 BTstack provides different run loop implementations that implement the *btstack_run_loop_t* interface:
 
+- CoreFoundation: implementation for iOS and OS X applications
 - Embedded: the main implementation for embedded systems, especially without an RTOS.
 - FreeRTOS: implementation to run BTstack on a dedicated FreeRTOS thread
 - POSIX: implementation for POSIX systems based on the select() call.
-- CoreFoundation: implementation for iOS and OS X applications
+- Qt: implementation for the Qt applications
 - WICED: implementation for the Broadcom WICED SDK RTOS abstraction that wraps FreeRTOS or ThreadX.
 - Windows: implementation for Windows based on Event objects and WaitForMultipleObjects() call.
 
 Depending on the platform, data sources are either polled (embedded, FreeRTOS), or the platform provides a way
-to wait for a data source to become ready for read or write (POSIX, CoreFoundation, Windows), or,
+to wait for a data source to become ready for read or write (CoreFoundation, POSIX, Qt, Windows), or,
 are not used as the HCI transport driver and the run loop is implemented in a different way (WICED).
-In any case, the callbacks must be to explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
+In any case, the callbacks must be explicitly enabled with the *btstack_run_loop_enable_data_source_callbacks(..)* function.
 
 In your code, you'll have to configure the run loop before you start it
 as shown in Listing [listing:btstackInit]. The application can register
@@ -358,9 +363,16 @@ an instance of the actual run loop. E.g. for the embedded platform, it is:
 
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
+If the run loop allows to trigger polling of data sources from interrupt context,
+*btstack_run_loop_poll_data_sources_from_irq*.
+
+On multi-threaded environments, e.g., FreeRTOS, POSIX, WINDOWS, 
+*btstack_run_loop_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
+
 The complete Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix).
 
-### Run loop embedded
+
+### Run Loop Embedded
 
 In the embedded run loop implementation, data sources are constantly polled and
 the system is put to sleep if no IRQ happens during the poll of all data sources.
@@ -376,15 +388,18 @@ Incoming data over the UART, USB, or timer ticks will generate an
 interrupt and wake up the microcontroller. In order to avoid the
 situation where a data source becomes ready just before the run loop
 enters sleep mode, an interrupt-driven data source has to call the
-*btstack_run_loop_embedded_trigger* function. The call to
-*btstack_run_loop_embedded_trigger* sets an
+*btstack_run_loop_poll_data_sources_from_irq* function. The call to
+*btstack_run_loop_poll_data_sources_from_irq* sets an
 internal flag that is checked in the critical section just before
 entering sleep mode causing another run loop cycle.
 
 To enable the use of timers, make sure that you defined HAVE_EMBEDDED_TICK or HAVE_EMBEDDED_TIME_MS in the
 config file.
 
-### Run loop FreeRTOS
+While there is no threading, *btstack_run_loop_poll_data_sources_from_irq* allows to reduce stack size by
+scheduling a continuation.
+
+### Run Loop FreeRTOS
 
 The FreeRTOS run loop is used on a dedicated FreeRTOS thread and it uses a FreeRTOS queue to schedule callbacks on the run loop.
 In each iteration:
@@ -394,19 +409,19 @@ In each iteration:
 - all expired timers are called
 - finally, it gets the next timeout. It then waits for a 'trigger' or the next timeout, if set.
 
-To trigger the run loop, *btstack_run_loop_freertos_trigger* and *btstack_run_loop_freertos_trigger_from_isr* can be called.
-This causes the data sources to get polled.
+It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
 
-Alternatively. *btstack_run_loop_freertos_execute_code_on_main_thread* can be used to schedule a callback on the main loop.
-Please note that the queue is finite (see *RUN_LOOP_QUEUE_LENGTH* in btstack_run_loop_embedded).
 
-### Run loop POSIX
+### Run Loop POSIX
 
 The data sources are standard File Descriptors. In the run loop execute implementation,
 select() call is used to wait for file descriptors to become ready to read or write,
 while waiting for the next timeout.
 
 To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
+
+It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
+
 
 ### Run loop CoreFoundation (OS X/iOS)
 
@@ -416,10 +431,25 @@ It supports ready to read and write similar to the POSIX implementation. The cal
 
 To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
 
+It currently only supports *btstack_run_loop_execute_code_on_main_thread*.
+
+
+### Run Lop Qt
+
+This run loop directly maps BTstack's data source and timer source with Qt Core objects.
+It supports ready to read and write similar to the POSIX implementation. 
+
+To enable the use of timers, make sure that you defined HAVE_POSIX_TIME in the config file.
+
+It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
+
+
 ### Run loop Windows
 
 The data sources are Event objects. In the run loop implementation WaitForMultipleObjects() call
 is all is used to wait for the Event object to become ready while waiting for the next timeout.
+
+It supports both *btstack_run_loop_poll_data_sources_from_irq* as well as *btstack_run_loop_execute_code_on_main_thread*.
 
 
 ### Run loop WICED
@@ -432,6 +462,8 @@ Instead, the run loop provides a message queue that allows to schedule functions
 The HCI transport H4 implementation then uses two lightweight threads to do the
 blocking read and write operations. When a read or write is complete on
 the helper threads, a callback to BTstack is scheduled.
+
+It currently only supports *btstack_run_loop_execute_code_on_main_thread*.
 
 
 ## HCI Transport configuration
