@@ -802,17 +802,18 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     
     switch (hfp_connection->command){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
-            done = hfp_ag_voice_recognition_send(hfp_connection, hfp_connection->ag_activate_voice_recognition);
+            done = hfp_ag_voice_recognition_send(hfp_connection, hfp_connection->ag_activate_voice_recognition_value);
             
             if (done == 0){
                 hfp_connection->vra_state_requested = hfp_connection->vra_state;
-                hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, 1 - hfp_connection->ag_activate_voice_recognition);
+                hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED, 1 - hfp_connection->ag_activate_voice_recognition_value);
                 return 0;
             }
             break;
 
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
-            if (hfp_connection->ag_activate_voice_recognition == 0){
+            // HF initiatied voice recognition, parser extracted activation value
+            if (hfp_connection->ag_activate_voice_recognition_value == 0){
                 if (hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection) == ERROR_CODE_SUCCESS){
                     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
                     done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
@@ -2637,7 +2638,7 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
     }
     uint8_t status = hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection);
     if (status == ERROR_CODE_SUCCESS){
-        hfp_connection->ag_activate_voice_recognition = 1;
+        hfp_connection->ag_activate_voice_recognition_value = 1;
         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
         hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
         hfp_ag_run_for_context(hfp_connection);
@@ -2652,7 +2653,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     }
     uint8_t status = hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection);
     if (status == ERROR_CODE_SUCCESS){
-        hfp_connection->ag_activate_voice_recognition = 0;
+        hfp_connection->ag_activate_voice_recognition_value = 0;
         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
         hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
         hfp_ag_run_for_context(hfp_connection);
