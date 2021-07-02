@@ -542,17 +542,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         printf("Voice Recognition command failed with status 0x%02x\n", status);
                         break;
                     }
+                    printf("\n");
                     switch(hfp_subevent_voice_recognition_status_get_state(event)){
-                        case 0:
-                            printf("Voice recognition status deactivated\n");
+                        case HFP_VRA_VOICE_RECOGNITION_OFF:
+                            printf("Voice recognition status DEACTIVATED\n");
                             break;
-                        case 1:
-                            printf("Voice recognition status activated\n");
+                        case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+                            printf("Voice recognition status ACTIVATED\n");
                             break;
                         default:
                             btstack_assert(false);
                             break;
                     }
+                    printf("\n");
                     break;
                 default:
                     break;

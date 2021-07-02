@@ -869,6 +869,14 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+            switch (hfp_connection->vra_state){
+                case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+                    hfp_connection->ag_audio_connection_opened_after_vra = false;
+                    break;
+                default:
+                    hfp_connection->ag_audio_connection_opened_after_vra = true;
+                    break;
+            }
             hfp_emit_sco_event(hfp_connection, status, sco_handle, event_addr, hfp_connection->negotiated_codec);
             break;                
         }
@@ -899,6 +907,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            hfp_connection->ag_audio_connection_opened_after_vra = false;
             hfp_emit_audio_connection_released(hfp_connection, handle);
 
             if (hfp_connection->release_slc_connection){
@@ -1480,11 +1489,6 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->speaker_gain = value;
             log_info("hfp parse HFP_CMD_SET_SPEAKER_GAIN %d\n", value);
             break;
-        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
-            value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-            hfp_connection->ag_activate_voice_recognition_value = value;
-            log_info("hfp parse HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION %d\n", value);
-            break;
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             hfp_connection->ag_echo_and_noise_reduction = value;
@@ -1624,10 +1628,15 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_ENABLE_CALL_WAITING_NOTIFICATION:
             hfp_connection->call_waiting_notification_enabled = hfp_connection->line_buffer[0] != '0';
             break;
+        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
+            value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+            hfp_connection->ag_activate_voice_recognition_value = value;
+            log_info("hfp parse HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION %d\n", value);
+            break;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             switch(hfp_connection->parser_item_index){
                 case 0:
-                    hfp_connection->ag_vra_status = (hfp_voice_recognition_activation_status_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_vra_status = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 1:
                     hfp_connection->ag_vra_state = (hfp_voice_recognition_state_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
@@ -1727,13 +1736,24 @@ void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connect
     hfp_connection->release_slc_connection = 1;
 }
 
-void hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection){
+uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection){
     // called internally, NULL check already performed
     btstack_assert(hfp_connection != NULL);
-
-    if (hfp_connection->state < HFP_W2_DISCONNECT_SCO){
-        hfp_connection->release_audio_connection = 1; 
+    if (hfp_connection->state <= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
+    switch (hfp_connection->state) {
+        case HFP_W2_CONNECT_SCO:
+            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            break;
+        case HFP_W4_SCO_CONNECTED:
+        case HFP_AUDIO_CONNECTION_ESTABLISHED:
+            hfp_connection->release_audio_connection = 1;
+            break;
+        default:
+            return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 static const struct link_settings {

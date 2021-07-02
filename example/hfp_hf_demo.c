@@ -507,7 +507,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Audio connection released\n");
                             sco_demo_close();
                             break;
-                        case HFP_SUBEVENT_COMPLETE:
+                        case  HFP_SUBEVENT_COMPLETE:
                             status = hfp_subevent_complete_get_status(event);
                             if (status == ERROR_CODE_SUCCESS){
                                 printf("Cmd \'%c\' succeeded\n", cmd);
@@ -546,7 +546,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                         case HFP_SUBEVENT_MICROPHONE_VOLUME:
                             printf("Microphone volume: gain %u\n",
-                                hfp_subevent_microphone_volume_get_gain(event));
+                            hfp_subevent_microphone_volume_get_gain(event));
                             break;
                         case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
                             printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
@@ -567,17 +567,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 printf("Voice Recognition command failed with status 0x%02x\n", status);
                                 break;
                             }
+                            printf("\n");
                             switch(hfp_subevent_voice_recognition_status_get_state(event)){
-                                case 0:
-                                    printf("Voice recognition status deactivated\n");
+                                case HFP_VRA_VOICE_RECOGNITION_OFF:
+                                    printf("Voice recognition status DEACTIVATED\n");
                                     break;
-                                case 1:
-                                    printf("Voice recognition status activated\n");
+                                case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+                                    printf("Voice recognition status ACTIVATED\n");
                                     break;
                                 default:
+                                    printf("Voice recognition status unexpected state %d\n", hfp_subevent_voice_recognition_status_get_state(event));
                                     btstack_assert(false);
                                     break;
                             }
+                            printf("\n");
                             break;
                         default:
                             break;
