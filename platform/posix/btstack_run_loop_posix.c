@@ -63,6 +63,8 @@
 // the run loop
 static int data_sources_modified;
 
+static bool run_loop_exit_requested;
+
 // start time. tv_usec/tv_nsec = 0
 #ifdef _POSIX_MONOTONIC_CLOCK
 // use monotonic clock if available
@@ -159,7 +161,7 @@ static void btstack_run_loop_posix_execute(void) {
     log_info("POSIX run loop using ettimeofday fallback.");
 #endif
 
-    while (true) {
+    while (run_loop_exit_requested == false) {
         // collect FDs
         FD_ZERO(&descriptors_read);
         FD_ZERO(&descriptors_write);
@@ -222,6 +224,10 @@ static void btstack_run_loop_posix_execute(void) {
     }
 }
 
+static void btstack_run_loop_posix_trigger_exit(void){
+    run_loop_exit_requested = true;
+}
+
 // set timer
 static void btstack_run_loop_posix_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
     uint32_t time_ms = btstack_run_loop_posix_get_time_ms();
@@ -255,6 +261,9 @@ static const btstack_run_loop_t btstack_run_loop_posix = {
     &btstack_run_loop_posix_execute,
     &btstack_run_loop_base_dump_timer,
     &btstack_run_loop_posix_get_time_ms,
+    NULL, /* poll data sources from irq */
+    NULL,
+    &btstack_run_loop_posix_trigger_exit,
 };
 
 /**
