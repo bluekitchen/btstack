@@ -57,14 +57,19 @@
 #endif
 class BTstackRunLoopQt : public QObject {
     Q_OBJECT
+public:
+    BTstackRunLoopQt(void);
 public slots:
     void processTimers(void);
+    void processCallbacks(void);
 #ifdef Q_OS_WIN
     void processDataSource(HANDLE handle);
 #else
     void processDataSourceRead(int fd);
     void processDataSourceWrite(int fd);
 #endif
+signals:
+    void callbackAdded(void);
 };
 #endif
 
