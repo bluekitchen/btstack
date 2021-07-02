@@ -54,6 +54,7 @@
 
 static struct timeval init_tv;
 static CFAbsoluteTime init_cf;
+static CFRunLoopRef current_runloop;
 
 static const btstack_run_loop_t btstack_run_loop_corefoundation;
 
@@ -220,11 +221,17 @@ static void btstack_run_loop_corefoundation_init(void){
     init_cf = ((double)init_tv.tv_sec) + (((double)init_tv.tv_usec)/1000000.0) - kCFAbsoluteTimeIntervalSince1970; // unix time - since Jan 1st 1970
 }
 
-static void btstack_run_loop_corefoundation_execute(void)
-{
+static void btstack_run_loop_corefoundation_execute(void) {
+    current_runloop = CFRunLoopGetCurrent();
     CFRunLoopRun();
 }
 
+static void btstack_run_loop_corefoundation_trigger_exit(void){
+    if (current_runloop != NULL){
+        CFRunLoopStop(current_runloop);
+        current_runloop = NULL;
+    }
+}
 static void btstack_run_loop_corefoundation_dump_timer(void){
     log_error("WARNING: btstack_run_loop_dump_timer not implemented!");
 	return;
@@ -249,5 +256,8 @@ static const btstack_run_loop_t btstack_run_loop_corefoundation = {
     &btstack_run_loop_corefoundation_execute,
     &btstack_run_loop_corefoundation_dump_timer,
     &btstack_run_loop_corefoundation_get_time_ms,
+    NULL, /* poll data sources from irq */
+    NULL, /* execute on main thread */
+    &btstack_run_loop_corefoundation_trigger_exit,
 };
 
