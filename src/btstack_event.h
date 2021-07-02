@@ -3481,21 +3481,21 @@ static inline void gap_event_pairing_started_get_bd_addr(const uint8_t * event, 
     reverse_bytes(&event[4], bd_addr, 6);
 }
 /**
- * @brief Get field initiator from event GAP_EVENT_PAIRING_STARTED
- * @param event packet
- * @return initiator
- * @note: btstack_type 1
- */
-static inline uint8_t gap_event_pairing_started_get_initiator(const uint8_t * event){
-    return event[10];
-}
-/**
  * @brief Get field ssp from event GAP_EVENT_PAIRING_STARTED
  * @param event packet
  * @return ssp
  * @note: btstack_type 1
  */
 static inline uint8_t gap_event_pairing_started_get_ssp(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field initiator from event GAP_EVENT_PAIRING_STARTED
+ * @param event packet
+ * @return initiator
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_pairing_started_get_initiator(const uint8_t * event){
     return event[11];
 }
 
@@ -3656,31 +3656,22 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
 }
 
 /**
- * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
+ * @brief Get field connection_handle from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
  * @param event packet
  * @return connection_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hci_subevent_le_read_remote_used_features_complete_get_connection_handle(const uint8_t * event){
+static inline hci_con_handle_t hci_subevent_le_read_remote_features_complete_get_connection_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field random_number from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
+ * @brief Get field le_features from event HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE
  * @param event packet
- * @return random_number
+ * @return le_features
  * @note: btstack_type D
  */
-static inline const uint8_t * hci_subevent_le_read_remote_used_features_complete_get_random_number(const uint8_t * event){
+static inline const uint8_t * hci_subevent_le_read_remote_features_complete_get_le_features(const uint8_t * event){
     return (const uint8_t *) &event[5];
-}
-/**
- * @brief Get field encryption_diversifier from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
- * @param event packet
- * @return encryption_diversifier
- * @note: btstack_type 2
- */
-static inline uint16_t hci_subevent_le_read_remote_used_features_complete_get_encryption_diversifier(const uint8_t * event){
-    return little_endian_read_16(event, 13);
 }
 
 /**
@@ -7120,13 +7111,22 @@ static inline uint8_t a2dp_subevent_command_rejected_get_local_seid(const uint8_
     return event[5];
 }
 /**
+ * @brief Get field is_initiator from event A2DP_SUBEVENT_COMMAND_REJECTED
+ * @param event packet
+ * @return is_initiator
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_command_rejected_get_is_initiator(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field signal_identifier from event A2DP_SUBEVENT_COMMAND_REJECTED
  * @param event packet
  * @return signal_identifier
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_command_rejected_get_signal_identifier(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 
 /**

@@ -581,13 +581,12 @@ typedef uint8_t sm_key_t[16];
  #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
 
 /**
- * @format 1HD2
+ * @format 1HD
  * @param subevent_code
  * @param connection_handle
- * @param random_number
- * @param encryption_diversifier
+ * @param le_features
  */
-#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
+#define HCI_SUBEVENT_LE_READ_REMOTE_FEATURES_COMPLETE 0x04
 
 /**
  * @format 1HD2
@@ -2342,11 +2341,12 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x0C
 
 /**
- * @format 1211
+ * @format 12111
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
- * @param signal_identifier 
+ * @param is_initiator
+ * @param signal_identifier
  */
 #define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0D
 
