@@ -131,7 +131,7 @@ static wiced_result_t btstack_uart_block_wiced_tx_worker_send_block(void * arg){
 
     // let transport know
     block_send_callback_registration.callback = &btstack_uart_block_wiced_main_notify_block_send;
-    btstack_run_loop_execute_code_on_main_thread(&block_send_callback_registration);
+    btstack_run_loop_execute_on_main_thread(&block_send_callback_registration);
     return WICED_SUCCESS;
 }
 
@@ -159,7 +159,7 @@ static wiced_result_t btstack_uart_block_wiced_rx_worker_receive_block(void * ar
 
     // let transport know
     block_received_callback_registration.callback = &btstack_uart_block_wiced_main_notify_block_read;
-    btstack_run_loop_execute_code_on_main_thread(&block_received_callback_registration);
+    btstack_run_loop_execute_on_main_thread(&block_received_callback_registration);
     return WICED_SUCCESS;
 }
 
