@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "btstack_stdin.h"
+#include "btstack_stdin_windows.h"
 
 // From MSDN:
 // __WIN32 Defined as 1 when the compilation target is 32-bit ARM, 64-bit ARM, x86, or x64.
@@ -61,38 +62,38 @@ static HANDLE stdin_reader_thread_handle;
 static char   key_read_buffer;
 static HANDLE key_processed_handle;
 static void (*stdin_handler)(char c);
+static void (*ctrl_c_handler)(void);
 
 static WINAPI DWORD stdin_reader_thread_process(void * p){
     while (true){
         key_read_buffer = getch();
-        SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);        
+        SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);
     }
     return 0;
 }
 
 static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
 
-    // raise SIGINT for CTRL-c on main thread
+    // handle CTRL-C
     if (key_read_buffer == 0x03){
-        raise(SIGINT);
-        return;
+        if (ctrl_c_handler != NULL){
+            (*ctrl_c_handler)();
+        } else {
+            printf("Ignore CTRL-c\n");
+        }
+    } else {
+        if (stdin_handler){
+            (*stdin_handler)(key_read_buffer);
+        }
     }
 
     SetEvent(key_processed_handle);
-
-    if (stdin_handler){
-        (*stdin_handler)(key_read_buffer);
-    }
 }
 
-void btstack_stdin_setup(void (*handler)(char c)){
-
+void btstack_stdin_windows_init(void){
     if (activated) return;
 
-
-    stdin_handler = handler;
-
-    // asynchronous io on stdin via OVERLAPPED seems to be problematic. 
+    // asynchronous io on stdin via OVERLAPPED seems to be problematic.
 
     // Use separate thread and event objects instead
     stdin_source.source.handle  = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -107,12 +108,21 @@ void btstack_stdin_setup(void (*handler)(char c)){
     activated = 1;
 }
 
+void btstack_stdin_window_register_ctrl_c_callback(void (*callback)(void)){
+    ctrl_c_handler = callback;
+}
+
+void btstack_stdin_setup(void (*handler)(char c)){
+    btstack_stdin_windows_init();
+    stdin_handler = handler;
+}
+
 void btstack_stdin_reset(void){
     if (!activated) return;
     activated = 0;
     stdin_handler = NULL;
-    
-    btstack_run_loop_remove_data_source(&stdin_source);    
+
+    btstack_run_loop_remove_data_source(&stdin_source);
 
     // shutdown thread
     TerminateThread(stdin_reader_thread_handle, 0);
