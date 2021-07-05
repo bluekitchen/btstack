@@ -65,6 +65,7 @@
 #include "btstack_memory.h"
 #include "btstack_memory_pool.h"
 #include "btstack_network.h"
+#include "btstack_ring_buffer.h"
 #include "btstack_run_loop.h"
 #include "btstack_stdin.h"
 #include "btstack_util.h"
