@@ -50,7 +50,6 @@
 
 
 #include <stddef.h>   /* NULL */
-#include <stdio.h> 
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
@@ -76,8 +75,8 @@ static const btstack_uart_block_t * the_uart_driver;
 static int     download_count;
 static uint8_t response_buffer[1];
 static uint8_t command_buffer[3];
-static const uint8_t * fw_data;
-static uint16_t  fw_size;
+static const uint8_t * chipset_fw_data;
+static uint16_t        chipset_fw_size;
 
 static void da14581_start(void){
     // start to read
@@ -93,8 +92,8 @@ static void da14581_w4_stx(void){
             log_info("da14581_w4_stx: send download command");
             // setup download config message
             command_buffer[0] = SOH;
-            little_endian_store_16(command_buffer, 1, fw_size);
-            the_uart_driver->set_block_sent(da14581_w4_command_sent);        
+            little_endian_store_16(command_buffer, 1, chipset_fw_size);
+            the_uart_driver->set_block_sent(da14581_w4_command_sent);
             the_uart_driver->send_block(command_buffer, 3);
             break;
         default:
@@ -118,8 +117,8 @@ static void da14581_w4_ack(void){
             // calc crc
             // send file
             log_info("da14581_w4_ack: ACK received, send firmware");
-            the_uart_driver->set_block_sent(da14581_w4_fw_sent);        
-            the_uart_driver->send_block(fw_data, fw_size);
+            the_uart_driver->set_block_sent(da14581_w4_fw_sent);
+            the_uart_driver->send_block(chipset_fw_data, chipset_fw_size);
             break;
         case NACK:
             // denied
@@ -153,8 +152,8 @@ static void da14581_w4_crc(void){
     // calculate crc
     int i;
     uint8_t fcrc = CRC_INIT;
-    for (i = 0; i < fw_size; i++){
-        fcrc ^= fw_data[i];
+    for (i = 0; i < chipset_fw_size; i++){
+        fcrc ^= chipset_fw_data[i];
     }
 
     // check crc
@@ -174,18 +173,18 @@ static void da14581_w4_final_ack_sent(void){
     download_complete(0);
 }
 
-void btstack_chipset_da14581_download_firmware_with_uart(const btstack_uart_t * uart_driver, const uint8_t * da_fw_data, uint16_t da_fw_size, void (*done)(int result)){
+void btstack_chipset_da14581_download_firmware_with_uart(const btstack_uart_t * uart_driver, const uint8_t * fw_data, uint16_t fw_size, void (*done)(int result)){
 
-	the_uart_driver   = uart_driver;
+    the_uart_driver   = uart_driver;
     download_complete = done;
-    fw_data = da_fw_data;
-    fw_size = da_fw_size;
+    chipset_fw_data = fw_data;
+    chipset_fw_size = fw_size;
 
     int res = the_uart_driver->open();
 
     if (res) {
-    	log_error("uart_block init failed %u", res);
-    	download_complete(res);
+        log_error("uart_block init failed %u", res);
+        download_complete(res);
     }
 
     download_count = 0;
