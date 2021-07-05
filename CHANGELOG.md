@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - HCI Dump: Support BTSnoop format in hci_dump_posix_fs.c for format = HCI_DUMP_BTSNOOP
 - HCI Dump RTT STDOUT: drop messages if RTT buffer is full and RTT is configured for non-blocking
+- POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
+- Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
 
 ### Fixed
 - A2DP Source: fix reconfigure
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
   - *btstack_run_loop_execute_on_main_thread*: schedule code exection on main thread from other thread
   - *btstack_run_loop_trigger_exit*: trigger run loop exit
+- POSIX / Windows / Raspi / Qt: use updated ctrl-c handling
 
 
 ## Release v1.4.1
