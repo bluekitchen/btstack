@@ -283,7 +283,78 @@ The HFP defines two roles:
 
 - Hands-Free Unit (HF) – a device that acts as the AG's remote audio input and output control.
 
-%TODO: audio paths
+### Supported Features
+
+The supported features define the HFP capabilities of the device. The enumeration unfortunately differs between HF and AG sides.
+
+The AG supported features are set by combining the flags that start with HFP_AGSF_xx and calling hfp_ag_init_supported_features, followed by creating SDP record for the service using the same feature set.
+
+Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and are configured by calling hfp_hf_init_supported_features, as well as creating an SDP record.
+
+| Define for AG Supported Feature         |  Description  |
+| --------------------------------------- |  ----------------------------  |
+| HFP_AGSF_THREE_WAY_CALLING              |  Three-way calling             |
+| HFP_AGSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_AGSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_AGSF_IN_BAND_RING_TONE              |  In-band ring tone capability |
+| HFP_AGSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_AGSF_ABILITY_TO_REJECT_A_CALL       |  Ability to reject a call |
+| HFP_AGSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_AGSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_AGSF_EXTENDED_ERROR_RESULT_CODES    |  Extended Error Result Codes |
+| HFP_AGSF_CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_AGSF_HF_INDICATORS                  |  HF Indicators |
+| HFP_AGSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_AGSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+
+
+| Define for HF Supported Feature         |  Description  |
+| --------------------------------------- |  ----------------------------  |
+| HFP_HFSF_THREE_WAY_CALLING              |  Three-way calling  |
+| HFP_HFSF_EC_NR_FUNCTION                 |  Echo Canceling and/or Noise Reduction function |
+| HFP_HFSF_CLI_PRESENTATION_CAPABILITY    |  CLI presentation capability |
+| HFP_HFSF_VOICE_RECOGNITION_FUNCTION     |  Voice recognition function |
+| HFP_HFSF_REMOTE_VOLUME_CONTROL          |  Remote volume control |
+| HFP_HFSF_ATTACH_A_NUMBER_TO_A_VOICE_TAG |  Attach a number to a voice tag |
+| HFP_HFSF_ENHANCED_CALL_STATUS           |  Enhanced call status |
+| HFP_HFSF_ENHANCED_CALL_CONTROL          |  Enhanced call control |
+| HFP_HFSF_CODEC_NEGOTIATION              |  Codec negotiation |
+| HFP_HFSF_HF_INDICATORS                  |  HF Indicators |
+| HFP_HFSF_ESCO_S4                        |  eSCO S4 (and T2) Settings Supported |
+| HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS |  Enhanced voice recognition status |
+| HFP_HFSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
+
+
+### Audio Voice Recognition Activation
+
+Audio voice recognition (AVR) requires that HF and AG have following supported features enabled respectively: 
+- HF: HFP_HFSF_VOICE_RECOGNITION_FUNCTION and
+- AG: HFP_AGSF_VOICE_RECOGNITION_FUNCTION. 
+ 
+It can be activated or deactivated on both sides by calling:
+
+    // AG
+    uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
+    uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
+
+    // HF
+    uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
+    uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
+
+On either activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event will be emitted with status field set to ERROR_CODE_SUCCESS on success. The state field of this event indicates the current voice recognition state : 0 - if deactivated, 1 - if activated. 
+
+Voice recognition will stay active until either the deactivation command is called, or until the current Service Level Connection between the AG and the HF is dropped for any reason.
+
+| Use cases                                              |  Expected behavior  |
+|--------------------------------------------------------|---------------------|
+| No previous audio connection, AVR activated then deactivated | Audio connection will be opened by AG upon AVR activation, and upon AVR deactivation closed|
+| AVR activated and deactivated during existing audio connection | Audio remains active upon AVR deactivation |
+| Call to close audio connection during active VRA session       | The audio connection shut down will be refused |
+
+Beyond the audio routing and voice recognition activation capabilities, the rest of the voice recognition functionality is implementation dependent - the stack only provides the signaling for this.
+
+### Enhanced Audio Voice Recognition
 
 ## HID - Human-Interface Device Profile
 
