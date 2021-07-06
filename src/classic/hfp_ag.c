@@ -2678,7 +2678,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
 }
 
 
-uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle){
     if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -2699,7 +2699,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle){
     if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }

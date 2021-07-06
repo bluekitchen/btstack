@@ -392,7 +392,7 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_COMMAND_DISALLOWED if HF does not support it, or wrong VRA status
  */
-uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Stop enhanced voice recognition session.
@@ -401,7 +401,7 @@ uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_han
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_COMMAND_DISALLOWED if HF does not support it, or wrong VRA status
  */
-uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set microphone gain. 

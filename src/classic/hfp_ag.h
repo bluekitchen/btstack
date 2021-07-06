@@ -291,7 +291,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
  */
-uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Send enhanced voice recognition state.
@@ -357,7 +357,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, h
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
  */
-uint8_t hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Send a phone number back to the HF.

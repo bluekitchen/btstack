@@ -1779,7 +1779,7 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
@@ -1803,7 +1803,7 @@ uint8_t hfp_hf_start_enhanced_voice_recognition_session(hci_con_handle_t acl_han
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t hfp_hf_stop_enhanced_voice_recognition_session(hci_con_handle_t acl_handle){
+uint8_t hfp_hf_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
