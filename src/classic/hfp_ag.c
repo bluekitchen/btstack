@@ -746,17 +746,25 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
     return 0;
 }
 
-static bool hfp_ag_voice_recognition_supported(hfp_connection_t * hfp_connection){
-    int ag = get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION);
-    int hf = get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION);
+static bool hfp_ag_voice_recognition_supported(hfp_connection_t * hfp_connection, bool enhanced){
+    uint8_t ag_vra_flag = HFP_AGSF_VOICE_RECOGNITION_FUNCTION;
+    uint8_t hf_vra_flag = HFP_HFSF_VOICE_RECOGNITION_FUNCTION;
+
+    if (enhanced){
+        ag_vra_flag = HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS;
+        hf_vra_flag = HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS;
+    } 
+
+    int ag = get_bit(hfp_supported_features, ag_vra_flag);
+    int hf = get_bit(hfp_connection->remote_supported_features, hf_vra_flag);
     return hf && ag;
 }
 
-static uint8_t hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
+static uint8_t hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection_t * hfp_connection, bool enhanced){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    if (!hfp_ag_voice_recognition_supported(hfp_connection)){
+    if (!hfp_ag_voice_recognition_supported(hfp_connection, enhanced)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_OFF){
@@ -765,14 +773,14 @@ static uint8_t hfp_ag_can_activate_voice_recognition_for_connection(hfp_connecti
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
+static uint8_t hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection_t * hfp_connection, bool enhanced){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (hfp_connection->enhanced_voice_recognition_enabled){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    if (!hfp_ag_voice_recognition_supported(hfp_connection)){
+    if (!hfp_ag_voice_recognition_supported(hfp_connection, enhanced)){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_ACTIVATED){
@@ -781,40 +789,6 @@ static uint8_t hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connec
     return ERROR_CODE_SUCCESS;
 }
 
-static bool hfp_ag_enhanced_voice_recognition_supported(hfp_connection_t * hfp_connection){
-    int ag = get_bit(hfp_supported_features, HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS);
-    int hf = get_bit(hfp_connection->remote_supported_features, HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS);
-    return hf && ag;
-}
-
-static uint8_t hfp_ag_can_activate_enhanced_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
-    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (!hfp_ag_enhanced_voice_recognition_supported(hfp_connection)){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_OFF){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    return ERROR_CODE_SUCCESS;
-}
-
-static uint8_t hfp_ag_can_deactivate_enhanced_voice_recognition_for_connection(hfp_connection_t * hfp_connection){
-    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (!hfp_connection->enhanced_voice_recognition_enabled){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (!hfp_ag_enhanced_voice_recognition_supported(hfp_connection)){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    if (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_ACTIVATED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-    return ERROR_CODE_SUCCESS;
-}
 
 static bool hfp_ag_is_audio_connection_active(hfp_connection_t * hfp_connection){
     switch (hfp_connection->state){
@@ -834,6 +808,7 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     int done = 0;
     uint8_t status;
     
+
     switch (hfp_connection->command){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             done = hfp_ag_send_activate_voice_recognition_cmd(hfp_connection->rfcomm_cid, hfp_connection->ag_activate_voice_recognition_value);
@@ -847,12 +822,12 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             // HF initiatied voice recognition, parser extracted activation value
             if (hfp_connection->ag_activate_voice_recognition_value == 0){
-                if (hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection) == ERROR_CODE_SUCCESS){
+                if (hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
                     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
                     done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 }
             } else {
-                if (hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection) == ERROR_CODE_SUCCESS){
+                if (hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
                     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
                     done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 }
@@ -911,11 +886,6 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
 
         case HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION:
             switch (hfp_connection->ag_vra_status){
-                case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_ACTIVATED:
-                    hfp_connection->ag_vra_status = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
-                    hfp_ag_send_enhanced_voice_recognition_cmd(hfp_connection->rfcomm_cid, 1, hfp_connection->ag_vra_state);
-                    hfp_ag_setup_audio_connection(hfp_connection);
-                    break;
                 case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS:
                     hfp_connection->ag_vra_status = HFP_VRA_ENHANCED_VOICE_RECOGNITION_ACTIVATED;
                     hfp_ag_send_enhanced_voice_recognition_cmd(hfp_connection->rfcomm_cid, 1, hfp_connection->ag_vra_state);
@@ -2689,7 +2659,7 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    uint8_t status = hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection);
+    uint8_t status = hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection, false);
     if (status == ERROR_CODE_SUCCESS){
         hfp_connection->ag_activate_voice_recognition_value = 1;
         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
@@ -2706,7 +2676,7 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    uint8_t status = hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection);
+    uint8_t status = hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection, false);
     if (status == ERROR_CODE_SUCCESS){
         hfp_connection->ag_activate_voice_recognition_value = 0;
         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
@@ -2722,7 +2692,7 @@ uint8_t hfp_ag_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle){
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    uint8_t status = hfp_ag_can_activate_enhanced_voice_recognition_for_connection(hfp_connection);
+    uint8_t status = hfp_ag_can_activate_voice_recognition_for_connection(hfp_connection, true);
     if (status == ERROR_CODE_SUCCESS){
         hfp_connection->ag_activate_voice_recognition_value = 1;
         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
@@ -2741,7 +2711,7 @@ uint8_t hfp_ag_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    uint8_t status = hfp_ag_can_deactivate_enhanced_voice_recognition_for_connection(hfp_connection);
+    uint8_t status = hfp_ag_can_deactivate_voice_recognition_for_connection(hfp_connection, true);
     if (status == ERROR_CODE_SUCCESS){
         hfp_connection->ag_activate_voice_recognition_value = 0;
         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
