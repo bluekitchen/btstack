@@ -262,7 +262,8 @@ uint8_t hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle);
 
 /*
  * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
- * if successful. The state field of this event is set to current voice recognition status (1 for activated, 0 otherwise).
+ * if successful. The state field of this event is set to current voice recognition state: 1 for activated, 0 otherwise.
+ * Prerequisite is established SLC.
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
@@ -273,7 +274,8 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Deactivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
- * if successful. The state field of this event is set to current voice recognition status (1 for activated, 0 otherwise).
+ * if successful. The state field of this event is set to current voice recognition state: 1 for activated, 0 otherwise.
+ * Prerequisite is established SLC.
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
