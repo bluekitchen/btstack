@@ -59,6 +59,8 @@
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
 
+#define INVALID_VAR_LEN 0xffffu
+
 /**
  * construct HCI Command based on template
  *
@@ -73,6 +75,8 @@
  *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
  *   Q: 32 byte data block, e.g. for X and Y coordinates of P-256 public key
+ *   J: 8-bit length of variable size element
+ *   V: variable size element, len was given with param 'J'
  */
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
     
@@ -84,12 +88,20 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
     uint16_t word;
     uint32_t longword;
     uint8_t * ptr;
+    uint16_t var_len = INVALID_VAR_LEN;
+
     while (*format) {
         switch(*format) {
             case '1': //  8 bit value
                 // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = word & 0xffu;
+                break;
+            case 'J': //  8 bit variable length indicator
+                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                var_len = word & 0xffu;
+                hci_cmd_buffer[pos++] = var_len;
                 break;
             case '2': // 16 bit value
                 // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
@@ -182,7 +194,15 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 reverse_bytes(ptr, &hci_cmd_buffer[pos], 16);
                 pos += 16;
                 break;
+            case 'V':
+                btstack_assert(var_len != INVALID_VAR_LEN);
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, var_len);
+                pos += var_len;
+                var_len = INVALID_VAR_LEN;
+                break;
             default:
+                btstack_unreachable();
                 break;
         }
         format++;
