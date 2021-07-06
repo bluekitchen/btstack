@@ -29,7 +29,8 @@ const hci_cmd_t cmd_N = {0x1234, "N"};
 const hci_cmd_t cmd_P = {0x1234, "P"};
 const hci_cmd_t cmd_Q = {0x1234, "Q"};
 const hci_cmd_t cmd_JV = {0x1234, "JV"};
-
+const hci_cmd_t cmd_number_12 = {0x1234, "a[12]"};
+const hci_cmd_t cmd_bits_12 = {0x1234, "b[12]"};
 const hci_cmd_t cmd_INVALID = {0x1234, "!"};
 
 TEST_GROUP(HCI_Command){
@@ -179,6 +180,7 @@ TEST(HCI_Command, format_Q){
     CHECK_EQUAL(expected_size, size);
     MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
 }
+
 TEST(HCI_Command, format_JV){
     uint8_t expected_buffer[4];
     uint16_t expected_size = 4;
@@ -188,7 +190,38 @@ TEST(HCI_Command, format_JV){
     memcpy(&expected_buffer[1], input_buffer, var_len_arg);
 
     uint16_t size = create_hci_cmd(&cmd_JV, var_len_arg, input_buffer);
-    printf_hexdump(hci_cmd_buffer, size + 3);
+    CHECK_EQUAL(expected_size, size);
+    MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
+}
+
+TEST(HCI_Command, format_number_12){
+    uint8_t num_elements = 2;
+    uint8_t expected_buffer[7];
+    uint16_t expected_size = 7;
+    uint8_t  input_a[2] = { 1, 2};
+    uint16_t input_b[2] = { 3, 4};
+    expected_buffer[0] = num_elements;
+    expected_buffer[1] = 1;
+    little_endian_store_16(expected_buffer, 2, 3);
+    expected_buffer[4] = 2;
+    little_endian_store_16(expected_buffer, 5, 4);
+    uint16_t size = create_hci_cmd(&cmd_number_12, num_elements, input_a, input_b);
+    CHECK_EQUAL(expected_size, size);
+    MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
+}
+
+TEST(HCI_Command, format_bits_12){
+    uint8_t bits_elements = 3;
+    uint8_t expected_buffer[7];
+    uint16_t expected_size = 7;
+    uint8_t  input_a[2] = { 1, 2};
+    uint16_t input_b[2] = { 3, 4};
+    expected_buffer[0] = bits_elements;
+    expected_buffer[1] = 1;
+    little_endian_store_16(expected_buffer, 2, 3);
+    expected_buffer[4] = 2;
+    little_endian_store_16(expected_buffer, 5, 4);
+    uint16_t size = create_hci_cmd(&cmd_bits_12, bits_elements, input_a, input_b);
     CHECK_EQUAL(expected_size, size);
     MEMCMP_EQUAL(expected_buffer, &hci_cmd_buffer[3], expected_size);
 }

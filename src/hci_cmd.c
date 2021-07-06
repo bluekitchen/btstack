@@ -60,6 +60,9 @@
 #define OPCODE(ogf, ocf) ((ocf) | ((ogf) << 10))
 
 #define INVALID_VAR_LEN 0xffffu
+// hci_le_set_cig_parameters_test has 10 arrayed parameters
+#define MAX_NR_ARRAY_FIELDS 10
+#define INVALID_ARRAY_LEN 0xff
 
 /**
  * construct HCI Command based on template
@@ -77,12 +80,16 @@
  *   Q: 32 byte data block, e.g. for X and Y coordinates of P-256 public key
  *   J: 8-bit length of variable size element
  *   V: variable size element, len was given with param 'J'
+ *   a: number of elements in following arrayed parameters(s), specified as '[...]'
+ *   b: bit field indicating number of arrayed parameters(s), specified as '[...]'
+ *   [: start of arrayed param sequence
+ *   ]: end of arrayed param sequence
  */
 uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
     
     hci_cmd_buffer[0] = cmd->opcode & 0xffu;
     hci_cmd_buffer[1] = cmd->opcode >> 8;
-    int pos = 3;
+    uint16_t pos = 3;
     
     const char *format = cmd->format;
     uint16_t word;
@@ -90,27 +97,29 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
     uint8_t * ptr;
     uint16_t var_len = INVALID_VAR_LEN;
 
-    while (*format) {
+    const char * array_format = NULL;
+    void *  array_data[MAX_NR_ARRAY_FIELDS];
+    uint8_t array_num_elements = INVALID_ARRAY_LEN;
+    uint8_t array_num_fields;
+    uint8_t array_element_index;
+
+    bool done_format = false;
+    while (!done_format) {
+        bool done_array;
         switch(*format) {
+            case 0:
+                done_format = true;
+                break;
             case '1': //  8 bit value
-                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = word & 0xffu;
                 break;
-            case 'J': //  8 bit variable length indicator
-                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
-                var_len = word & 0xffu;
-                hci_cmd_buffer[pos++] = var_len;
-                break;
             case '2': // 16 bit value
-                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = word & 0xffu;
                 hci_cmd_buffer[pos++] = word >> 8;
                 break;
             case 'H': // hci_handle
-                // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
                 hci_cmd_buffer[pos++] = word & 0xffu;
                 hci_cmd_buffer[pos++] = word >> 8;
@@ -166,33 +175,21 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
+            case 'K':   // 16 byte OOB Data or Link Key in big endian
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                reverse_bytes(ptr, &hci_cmd_buffer[pos], 16);
+                pos += 16;
+                break;
 #ifdef ENABLE_BLE
             case 'A': // 31 bytes advertising data
                 ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
                 (void)memcpy(&hci_cmd_buffer[pos], ptr, 31);
                 pos += 31;
                 break;
-#endif
-#ifdef ENABLE_SDP
-            case 'S': { // Service Record (Data Element Sequence)
-                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
-                uint16_t len = de_get_len(ptr);
-                (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
-                pos += len;
-                break;
-            }
-#endif
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-            case 'Q':
-                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
-                reverse_bytes(ptr, &hci_cmd_buffer[pos], 32);
-                pos += 32;
-                break;
-#endif
-            case 'K':   // 16 byte OOB Data or Link Key in big endian
-                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
-                reverse_bytes(ptr, &hci_cmd_buffer[pos], 16);
-                pos += 16;
+            case 'J': //  8 bit variable length indicator for 'V'
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                var_len = word & 0xffu;
+                hci_cmd_buffer[pos++] = var_len;
                 break;
             case 'V':
                 btstack_assert(var_len != INVALID_VAR_LEN);
@@ -201,6 +198,82 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 pos += var_len;
                 var_len = INVALID_VAR_LEN;
                 break;
+            case 'a':
+                btstack_assert(array_num_elements == INVALID_ARRAY_LEN);
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                hci_cmd_buffer[pos++] = word & 0xff;
+                array_num_elements = word & 0xffu;
+                break;
+            case 'b':
+                btstack_assert(array_num_elements == INVALID_ARRAY_LEN);
+                word = va_arg(argptr, int); // LCOV_EXCL_BR_LINE
+                hci_cmd_buffer[pos++] = word & 0xff;
+                array_num_elements = count_set_bits_uint32(word & 0xffu);
+                break;
+            case '[':
+                btstack_assert(array_num_elements != INVALID_ARRAY_LEN);
+                // process array
+                format++;
+                array_format = format;
+                array_num_fields = 0;
+                done_array = false;
+                while (!done_array){
+                    switch (*format){
+                        case 0:
+                            done_array = true;
+                            done_format = true;
+                            break;
+                        case ']':
+                            done_array = true;
+                            break;
+                        case '1':
+                        case '2':
+                            // all arrayed parameters are passed in as arrays
+                            ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                            array_data[array_num_fields++] = ptr;
+                            format++;
+                            break;
+                        default:
+                            btstack_unreachable();
+                            break;
+                    }
+                }
+                for (array_element_index = 0; array_element_index < array_num_elements ; array_element_index++){
+                    uint8_t array_field_index;
+                    for (array_field_index = 0; array_field_index < array_num_fields ; array_field_index++){
+                        switch (array_format[array_field_index]){
+                            case '1':
+                                hci_cmd_buffer[pos++] = ((const uint8_t *) array_data[array_field_index])[array_element_index];
+                                break;
+                            case '2':
+                                little_endian_store_16(hci_cmd_buffer, pos, ((const uint16_t *) array_data[array_field_index])[array_element_index]);
+                                pos += 2;
+                                break;
+                            default:
+                                btstack_unreachable();
+                                break;
+                        }
+                    }
+                }
+                break;
+#endif
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            case 'Q':
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                reverse_bytes(ptr, &hci_cmd_buffer[pos], 32);
+                pos += 32;
+                break;
+#endif
+#ifdef ENABLE_SDP
+            // used by daemon
+            case 'S': { // Service Record (Data Element Sequence)
+                ptr = va_arg(argptr, uint8_t *); // LCOV_EXCL_BR_LINE
+                uint16_t len = de_get_len(ptr);
+                (void)memcpy(&hci_cmd_buffer[pos], ptr, len);
+                pos += len;
+                break;
+            }
+#endif
             default:
                 btstack_unreachable();
                 break;
