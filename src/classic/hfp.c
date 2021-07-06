@@ -893,8 +893,23 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #ifdef ENABLE_BCM_PCM_WBS
             hfp_connection->bcm_send_disable_wbs = true;
 #endif
-            hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
-            hfp_connection->release_audio_connection = 0;
+            if (hfp_connection->sco_handle == handle){
+                hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+                hfp_connection->release_audio_connection = 0;
+                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_emit_audio_connection_released(hfp_connection, handle);
+
+                hfp_connection->ag_audio_connection_opened_after_vra = false;
+
+                if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
+                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    hfp_finalize_connection_context(hfp_connection);
+                } else if (hfp_connection->release_slc_connection == 1){
+                    hfp_connection->release_slc_connection = 0;
+                    hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+                    rfcomm_disconnect(hfp_connection->acl_handle);
+                }
+            } 
 
             if (hfp_connection->state == HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN){
                 // RFCOMM already closed -> remote power off
@@ -905,16 +920,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 #endif
                 break;
             }
-
-            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            hfp_connection->ag_audio_connection_opened_after_vra = false;
-            hfp_emit_audio_connection_released(hfp_connection, handle);
-
-            if (hfp_connection->release_slc_connection){
-                hfp_connection->release_slc_connection = 0;
-                log_info("SCO disconnected, w2 disconnect RFCOMM\n");
-                hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-            }   
             break;
 
         default:
@@ -992,23 +997,26 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             rfcomm_cid = little_endian_read_16(packet,2);
             hfp_connection = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
             if (!hfp_connection) break;
-            if (hfp_connection->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
-                hfp_connection->state = HFP_IDLE;
-                hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
-                break;
-            }
-            if ( hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
-                // service connection was released, this implicitly releases audio connection as well
-                hfp_connection->release_audio_connection = 0;
-                hci_con_handle_t sco_handle = hfp_connection->sco_handle;
-                gap_disconnect(hfp_connection->sco_handle);
-                hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
-                hfp_emit_audio_connection_released(hfp_connection, sco_handle);
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
-            } else {
-                // regular case
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
-                hfp_finalize_connection_context(hfp_connection);
+            switch (hfp_connection->state){
+                case HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART:
+                    hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
+                    hfp_connection->state = HFP_IDLE;
+                    hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
+                    break;
+                
+                case HFP_AUDIO_CONNECTION_ESTABLISHED:
+                    // service connection was released, this implicitly releases audio connection as well
+                    hfp_connection->release_audio_connection = 0;
+                    hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
+                    hfp_connection->state = HFP_W4_SCO_DISCONNECTED_TO_SHUTDOWN;
+                    gap_disconnect(hfp_connection->sco_handle);
+                    break;
+                
+                default:
+                    // regular case
+                    hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    hfp_finalize_connection_context(hfp_connection);
+                    break;
             }
             break;
 
@@ -1711,7 +1719,6 @@ void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connect
     btstack_assert(hfp_connection != NULL);
 
     hfp_trigger_release_audio_connection(hfp_connection);
-
     if (hfp_connection->state < HFP_W4_RFCOMM_CONNECTED){
         hfp_connection->state = HFP_IDLE;
         return;
@@ -1721,19 +1728,17 @@ void hfp_trigger_release_service_level_connection(hfp_connection_t * hfp_connect
         hfp_connection->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
         return;
     }
-
+    hfp_connection->release_slc_connection = 1;
     if (hfp_connection->state < HFP_W4_SCO_CONNECTED){
         hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
         return;
     }
-
+    
     if (hfp_connection->state < HFP_W4_SCO_DISCONNECTED){
         hfp_connection->state = HFP_W2_DISCONNECT_SCO;
+        hfp_connection->release_audio_connection = 1;
         return;
     }
-
-    // HFP_W4_SCO_DISCONNECTED or later 
-    hfp_connection->release_slc_connection = 1;
 }
 
 uint8_t hfp_trigger_release_audio_connection(hfp_connection_t * hfp_connection){

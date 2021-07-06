@@ -933,6 +933,13 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
         (hfp_connection->state > HFP_W2_DISCONNECT_SCO)) return 0;
 
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+    
+    if (hfp_connection->release_audio_connection){
+        hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
+        hfp_connection->release_audio_connection = 0;
+        gap_disconnect(hfp_connection->sco_handle);
+        return 1;
+    }
 
     // accept incoming audio connection (codec negotiation is not used)
     if (hfp_connection->accept_sco){
