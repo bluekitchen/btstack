@@ -758,6 +758,14 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     return 1;
 }
 
+static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
+    btstack_assert(hfp_connection != NULL);
+
+    hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
+    hfp_connection->vra_state_requested = HFP_VRA_VOICE_RECOGNITION_OFF;
+    hfp_connection->ag_vra_status = 0;
+    hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
+}
 
 void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(packet_type);
@@ -902,6 +910,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->ag_audio_connection_opened_after_vra = false;
 
                 if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
+                    hfp_reset_voice_recognition(hfp_connection);
                     hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
                     hfp_finalize_connection_context(hfp_connection);
                 } else if (hfp_connection->release_slc_connection == 1){
@@ -1014,6 +1023,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 
                 default:
                     // regular case
+                    hfp_reset_voice_recognition(hfp_connection);
                     hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
                     hfp_finalize_connection_context(hfp_connection);
                     break;
