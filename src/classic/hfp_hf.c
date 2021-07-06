@@ -490,7 +490,6 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         switch(hfp_connection->vra_state_requested){
             case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
             case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
-            case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_OFF:
                 // ignore AG command, continue to wait for OK
                 return 0;
             default:
@@ -542,14 +541,6 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
             hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS, hfp_connection->vra_state);
             break;
-
-        case HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            done = hfp_hf_set_voice_recognition_notification_cmd(hfp_connection->rfcomm_cid, 2);
-            if (done != 0){
-                hfp_connection->vra_state_requested = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
-                hfp_connection->ok_pending = 1;
-            }
-            return 1;
         
         case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
             hfp_connection->vra_state = HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
