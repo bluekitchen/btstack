@@ -284,6 +284,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_IDLE;
                     log_info("Received reject for set configuration, role changed from initiator to acceptor. TODO: implement retry.");
                     break;
+                case AVDTP_SI_RECONFIGURE:
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                    log_info("Received reject for reconfigure, state = opened");
+                    break;
                 default:
                     break;
             }

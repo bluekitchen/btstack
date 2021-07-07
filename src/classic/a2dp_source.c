@@ -662,7 +662,17 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
 
             if (avdtp_subevent_signaling_reject_get_is_initiator(packet) == 0) break;
 
-            connection->a2dp_source_state = A2DP_CONNECTED;
+            switch (connection->a2dp_source_state) {
+                case A2DP_W2_RECONFIGURE_WITH_SEID:
+                    log_info("A2DP reconfigure failed ... local seid 0x%02x, active remote seid 0x%02x", avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), connection->a2dp_source_local_stream_endpoint->remote_sep.seid);
+                    a2dp_signaling_emit_reconfigured(cid, avdtp_stream_endpoint_seid(connection->a2dp_source_local_stream_endpoint), ERROR_CODE_UNSPECIFIED_ERROR);
+                    connection->a2dp_source_state = A2DP_STREAMING_OPENED;
+                    break;
+                default:
+                    connection->a2dp_source_state = A2DP_CONNECTED;
+                    break;
+            }
+
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_source_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
