@@ -640,7 +640,7 @@ typedef struct hfp_connection {
     uint8_t ag_echo_and_noise_reduction;
     // used by AG: HFP parser stores here the activation value issued by HF
     uint8_t ag_activate_voice_recognition_value;
-    bool    ag_audio_connection_opened_after_vra;
+    bool    ag_audio_connection_opened_before_vra;
 
     uint8_t ag_notify_incoming_call_waiting;
     uint8_t send_subscriber_number;
@@ -753,7 +753,7 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
  * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
  * @param state  0 if deactivated, 1 if activated
  */
-void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status, uint8_t state);
+void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);

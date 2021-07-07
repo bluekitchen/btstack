@@ -350,7 +350,7 @@ void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, ui
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status, uint8_t state){
+void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     uint8_t event[7];
     event[0] = HCI_EVENT_HFP_META;
@@ -362,21 +362,15 @@ void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, u
     }
     little_endian_store_16(event, 3, acl_handle);
     event[5] = status; // 0:success
-    event[6] = state;  // 0:deactivated, 1:activate
-    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
-}
-
-void hfp_emit_enhanced_voice_recognition_state(hfp_connection_t * hfp_connection,  uint8_t status, uint8_t state){
-    btstack_assert(hfp_connection != NULL);
-    uint8_t event[7];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_HFP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS;
-    little_endian_store_16(event, pos, hfp_connection->acl_handle);
-    pos += 2;
-    event[pos++] = status;
-    event[pos++] = state;
+    
+    switch (hfp_connection->vra_state){
+        case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+            event[6] = 1;
+            break;
+        default:
+            event[6] = 0;
+            break;
+    }
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
@@ -882,12 +876,13 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+            
             switch (hfp_connection->vra_state){
                 case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
-                    hfp_connection->ag_audio_connection_opened_after_vra = false;
+                    hfp_connection->ag_audio_connection_opened_before_vra = false;
                     break;
                 default:
-                    hfp_connection->ag_audio_connection_opened_after_vra = true;
+                    hfp_connection->ag_audio_connection_opened_before_vra = true;
                     break;
             }
             hfp_emit_sco_event(hfp_connection, status, sco_handle, event_addr, hfp_connection->negotiated_codec);
@@ -912,7 +907,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_audio_connection_released(hfp_connection, handle);
 
-                hfp_connection->ag_audio_connection_opened_after_vra = false;
+                hfp_connection->ag_audio_connection_opened_before_vra = false;
 
                 if (hfp_connection->acl_handle == HCI_CON_HANDLE_INVALID){
                     hfp_reset_voice_recognition(hfp_connection);

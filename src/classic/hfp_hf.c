@@ -524,7 +524,7 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         case HFP_VRA_W4_VOICE_RECOGNITION_OFF:
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
-            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS, hfp_connection->vra_state);
+            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
             break;
 
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED:
@@ -539,13 +539,13 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         case HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED:
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
-            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS, hfp_connection->vra_state);
+            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
             break;
         
         case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
             hfp_connection->vra_state = HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
-            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS, hfp_connection->vra_state);
+            hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
             break;
 
         default:
@@ -1173,7 +1173,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                     break;
                 default:
                     hfp_connection->vra_state_requested = hfp_connection->vra_state;
-                    hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR, hfp_connection->vra_state);
+                    hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
                     hfp_reset_context_flags(hfp_connection);
                     return;
             }
@@ -1462,9 +1462,7 @@ uint8_t hfp_hf_release_audio_connection(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (hfp_connection->vra_state == HFP_VRA_VOICE_RECOGNITION_ACTIVATED){
-        if (!hfp_connection->ag_audio_connection_opened_after_vra){
-            return ERROR_CODE_COMMAND_DISALLOWED;
-        }
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
     uint8_t status = hfp_trigger_release_audio_connection(hfp_connection);
     if (status == ERROR_CODE_SUCCESS){
