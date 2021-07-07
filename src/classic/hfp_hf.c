@@ -1744,7 +1744,7 @@ static uint8_t activate_voice_recognition(hci_con_handle_t acl_handle, bool enha
         case HFP_VRA_VOICE_RECOGNITION_OFF:
             hfp_connection->command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
             hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
-            hfp_connection->enhanced_voice_recognition_enabled = false;
+            hfp_connection->enhanced_voice_recognition_enabled = enhanced;
             break;
         default:
             return ERROR_CODE_COMMAND_DISALLOWED;
