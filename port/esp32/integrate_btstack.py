@@ -53,5 +53,8 @@ for dir in dirs_to_copy:
 	print('- %s' % dir)
 	shutil.copytree(local_dir + '/../../' + dir, IDF_BTSTACK + '/' + dir)
 
+# add hci dump stdout
+shutil.copy(local_dir+'/../../platform/embedded/hci_dump_embedded_stdout.c', IDF_BTSTACK)
+
 # create example/btstack
 create_examples.create_examples(local_dir, '')
