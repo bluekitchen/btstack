@@ -405,7 +405,6 @@ void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_conn
         default:
             btstack_unreachable();
             break;
-
     }
 
     little_endian_store_16(event, 3, acl_handle);
@@ -475,30 +474,6 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
     strncpy((char*)&event[5], value, size);
     event[5 + size] = 0;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
-}
-
-static void hfp_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_connection, uint16_t value_length, uint8_t * value){
-    btstack_assert(hfp_connection != NULL);
-    uint8_t event[HFP_MAX_VR_TEXT_SIZE];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_HFP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT;
-    little_endian_store_16(event, pos, hfp_connection->acl_handle);
-    pos += 2;
-    little_endian_store_16(event, pos, hfp_connection->ag_msg.text_id);
-    pos += 2;
-    event[pos++] = hfp_connection->ag_msg.text_operation;
-    event[pos++] = hfp_connection->ag_msg.text_type;
-    
-    // length, zero ending
-    uint16_t size = btstack_min(value_length, sizeof(event) - pos - 2 - 1);
-    little_endian_store_16(event, pos, size+1);
-    pos += 2; 
-    memcpy(&event[pos], value, size);
-    event[pos + size] = 0;
-    pos += size + 1; 
-    hfp_emit_event_for_context(hfp_connection, event, pos);
 }
 
 btstack_linked_list_t * hfp_get_connections(void){
@@ -1712,7 +1687,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 5:
-                    hfp_emit_enhanced_voice_recognition_text(hfp_connection, hfp_connection->line_size, &hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_vra_msg_length = hfp_connection->line_size;
                     break;
                 default:
                     break;

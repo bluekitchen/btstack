@@ -106,6 +106,10 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
+static hfp_voice_recognition_message_t msg = {
+    0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "test message"
+};
+
 #define INQUIRY_INTERVAL 5
 
 enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
@@ -168,7 +172,7 @@ static void show_usage(void){
     printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
     printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
     printf("1 - EVR report starting sound           | 2 - EVR report ready for input\n");
-    printf("3 - EVR report processing input         | 4 - EVR report message\n");
+    printf("3 - EVR report processing input         | 4 - EVR send message\n");
     
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
@@ -353,8 +357,8 @@ static void stdin_process(char cmd){
             break;
         case '4':
             log_info("USER:\'%c\'", cmd);
-            printf("Enhanced_Voice Recognition: report message\n");
-            // status = hfp_ag_enhanced_voice_recognition_report_message(acl_handle);
+            printf("Enhanced_Voice Recognition: send message\n");
+            status = hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
 
         case 'o':
@@ -592,37 +596,46 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
                     status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Enhanced Voice recognition READY FOR AUDIO cmd failed\n");
+                        printf("Enhanced Voice recognition: READY FOR AUDIO cmd failed\n");
                         break;
                     }
-                    printf("\nEnhanced Voice recognition status READY FOR AUDIO\n\n");
+                    printf("\nEnhanced Voice recognition: READY FOR AUDIO\n\n");
                     break;
 
                 case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
-                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    status = hfp_subevent_enhanced_voice_recognition_ag_ready_to_accept_audio_input_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Enhanced Voice recognition AG READY TO ACCEPT AUDIO INPU cmd failed\n");
+                        printf("Enhanced Voice recognition: AG READY TO ACCEPT AUDIO INPU cmd failed\n");
                         break;
                     }
-                    printf("\nEnhanced Voice recognition AG status: AG READY TO ACCEPT AUDIO INPUT\n\n");                            
+                    printf("\nEnhanced Voice recognition: AG READY TO ACCEPT AUDIO INPUT\n\n");                            
                     break;
 
                 case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND:
-                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    status = hfp_subevent_enhanced_voice_recognition_ag_is_starting_sound_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Enhanced Voice recognition AG IS STARTING SOUND cmd failed\n");
+                        printf("Enhanced Voice recognition: AG IS STARTING SOUND cmd failed\n");
                         break;
                     }
-                    printf("\nEnhanced Voice recognition AG status: AG IS STARTING SOUND\n\n");                            
+                    printf("\nEnhanced Voice recognition: AG IS STARTING SOUND\n\n");                            
                     break;
 
                 case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT:
-                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    status = hfp_subevent_enhanced_voice_recognition_ag_is_processing_audio_input_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Enhanced Voice recognition AG IS PROCESSING AUDIO INPUT cmd failed\n");
+                        printf("Enhanced Voice recognition: AG IS PROCESSING AUDIO INPUT cmd failed\n");
                         break;
                     }
-                    printf("\nEnhanced Voice recognition AG status: AG IS PROCESSING AUDIO INPUT\n\n");                            
+                    printf("\nEnhanced Voice recognition: AG IS PROCESSING AUDIO INPUT\n\n");                            
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT:
+                    status = hfp_subevent_enhanced_voice_recognition_ag_message_sent_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Enhanced Voice recognition: AG SEND MSG cmd failed\n");
+                        break;
+                    }
+                    printf("\nEnhanced Voice recognition: AG SEND MSG \'%s\'\n\n", msg.text);   
                     break;
 
                 default:

@@ -212,6 +212,33 @@ static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connect
 	(*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
+static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_connection){
+    btstack_assert(hfp_connection != NULL);
+    uint8_t event[HFP_MAX_VR_TEXT_SIZE];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
+    little_endian_store_16(event, pos, hfp_connection->ag_msg.text_id);
+    pos += 2;
+    event[pos++] = hfp_connection->ag_msg.text_operation;
+    event[pos++] = hfp_connection->ag_msg.text_type;
+    
+    // length, zero ending
+    uint16_t value_length = hfp_connection->ag_vra_msg_length;
+    uint8_t * value = &hfp_connection->line_buffer[0];
+    uint16_t size = btstack_min(value_length, sizeof(event) - pos - 2 - 1);
+    little_endian_store_16(event, pos, size+1);
+    pos += 2; 
+    memcpy(&event[pos], value, size);
+    event[pos + size] = 0;
+    pos += size + 1; 
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
 /* send commands */
 
 static inline int hfp_hf_send_cmd(uint16_t cid, const char * cmd){
@@ -495,7 +522,11 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
                 return 0;
             
             default:
-                printf("status %d state %d\n", hfp_connection->ag_vra_status, hfp_connection->ag_vra_state);
+                if (hfp_connection->ag_vra_msg_length > 0){
+                    hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection);
+                    hfp_connection->ag_vra_msg_length = 0;
+                    break;
+                }
                 switch(hfp_connection->ag_vra_state){
                     case HFP_VOICE_RECOGNITION_STATE_AG_READY:
                         switch (hfp_connection->ag_vra_status){

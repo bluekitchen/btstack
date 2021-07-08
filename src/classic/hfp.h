@@ -402,17 +402,14 @@ typedef enum {
     HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
 
     HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS,
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS,
-
-    // TODO delete
-    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG,
+    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG
 } hfp_voice_recognition_activation_status_t;
 
 typedef struct {
     uint16_t text_id;
     hfp_text_type_t text_type;
     hfp_text_operation_t text_operation;
-    uint8_t * text;
+    const char * text;
 } hfp_voice_recognition_message_t;
 
 typedef enum {
@@ -695,6 +692,7 @@ typedef struct hfp_connection {
     uint8_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
     hfp_voice_recognition_message_t ag_msg;
+    uint16_t ag_vra_msg_length;
 
     uint8_t clcc_idx;
     uint8_t clcc_dir;
