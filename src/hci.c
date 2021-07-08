@@ -3162,6 +3162,7 @@ static void sco_schedule_tx(hci_connection_t * conn){
     btstack_timer_source_t * timer = (conn->sco_rx_count & 1) ? &conn->timeout : &conn->timeout_sco;
 
     // log_error("SCO TX at %u in %u", (int) sco_tx_ms, time_delta_ms);
+    btstack_run_loop_remove_timer(timer);
     btstack_run_loop_set_timer(timer, time_delta_ms);
     btstack_run_loop_set_timer_context(timer, (void *) (uintptr_t) conn->con_handle);
     btstack_run_loop_set_timer_handler(timer, &sco_tx_timeout_handler);
