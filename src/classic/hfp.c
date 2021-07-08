@@ -1649,7 +1649,6 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
             hfp_connection->ag_activate_voice_recognition_value = value;
-            log_info("hfp parse HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION %d\n", value);
             break;
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             switch(hfp_connection->parser_item_index){
@@ -1677,6 +1676,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
+            hfp_connection->parser_item_index++;
             break;
         default:
             break;
