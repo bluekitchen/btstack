@@ -62,6 +62,7 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #else
 #include "FreeRTOS.h"
 #include "task.h"
@@ -218,7 +219,7 @@ static void btstack_run_loop_freertos_init(void){
 
 #ifdef USE_STATIC_ALLOC
     btstack_run_loop_queue = xQueueCreateStatic(RUN_LOOP_QUEUE_LENGTH, RUN_LOOP_QUEUE_ITEM_SIZE, btstack_run_loop_queue_storage, &btstack_run_loop_queue_object);
-    btstack_run_loop_mutex = xSemaphoreCreateMutexStatic(&btstack_run_loop_callback_mutex_object);
+    btstack_run_loop_callbacks_mutex = xSemaphoreCreateMutexStatic(&btstack_run_loop_callback_mutex_object);
 #else
     btstack_run_loop_queue = xQueueCreate(RUN_LOOP_QUEUE_LENGTH, RUN_LOOP_QUEUE_ITEM_SIZE);
     btstack_run_loop_callbacks_mutex = xSemaphoreCreateMutex();
