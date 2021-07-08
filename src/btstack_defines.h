@@ -1778,7 +1778,7 @@ typedef uint8_t sm_key_t[16];
  * @param status
  * @param state
  */
-#define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                 0x1E
+#define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                       0x1E
 
 /**
  * @format 1H1
@@ -1786,7 +1786,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO 0x1F
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO  0x1F
 
 
 /**
@@ -1814,6 +1814,15 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT 0x22
 
 /**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x23
+
+
+/**
  * @format 1H211LV
  * @param subevent_code
  * @param acl_handle
@@ -1823,7 +1832,7 @@ typedef uint8_t sm_key_t[16];
  * @param text_length
  * @param text
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_TEXT           0x20
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x24
 
 
 
