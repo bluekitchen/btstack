@@ -67,7 +67,7 @@ Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.         
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | da14581        | Official HCI firmware included in BTstack
 Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | Official HCI firmware included in BTstack
 Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | n.a.           |       Yes          | da14581        | HCI Firmware part of DA1469x SDK
-Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Not yet          | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
+Espressif ESP32      | Dual mode + Wifi | VHCI    | Yes          | Yes              | Yes    |        Yes           | Yes            |    Don't know      |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | n.a.           |    Don't know      | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 3165, 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | Don't know     |    Don't know      | intel          | Firmware size: 400 kB 
@@ -171,7 +171,8 @@ The newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmwa
 
 ## Espressif ESP32
 
-The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. SCO isn't supported currently, but [Espressif is working on it](https://github.com/espressif/esp-idf/issues/1118).
+The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface.
+It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. Since ESP-IDF v4.3, SCO-over-HCI is usable for HSP/HFP.
 
 
 ## EM Microelectronic Marin
