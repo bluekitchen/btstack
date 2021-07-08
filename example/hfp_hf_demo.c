@@ -149,6 +149,7 @@ static void show_usage(void){
     printf("l/L - deactivate/activate calling line notification\n");
     printf("m/M - deactivate/activate echo canceling and noise reduction\n");
     printf("n/N - deactivate/activate voice recognition\n");
+    printf("z/Z - deactivate/activate enhanced voice recognition\n");
     printf("0123456789#*-+ - send DTMF dial tones\n");
     printf("x - request phone number for voice tag     | X - current call status (ECS)\n");
     printf("y - release call with index 2 (ECC)        | Y - private consultation with call 2(ECC)\n");
@@ -313,6 +314,16 @@ static void stdin_process(char c){
             log_info("USER:\'%c\'", cmd);
             printf("Activate voice recognition %s\n", bd_addr_to_str(device_addr));
             status = hfp_hf_activate_voice_recognition(acl_handle);
+            break;
+        case 'z':
+            log_info("USER:\'%c\'", cmd);
+            printf("Deactivate enhanced voice recognition\n");
+            status = hfp_hf_deactivate_enhanced_voice_recognition(acl_handle);
+            break;
+        case 'Z':
+            log_info("USER:\'%c\'", cmd);
+            printf("Activate enhanced voice recognition %s\n", bd_addr_to_str(device_addr));
+            status = hfp_hf_activate_enhanced_voice_recognition(acl_handle);
             break;
         case 'o':
             log_info("USER:\'%c\'", cmd);
@@ -561,6 +572,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - type      : %d \n", hfp_subevent_enhanced_call_status_get_bnip_type(event));
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
+                        
                         case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
                             status = hfp_subevent_voice_recognition_status_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
@@ -569,19 +581,40 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             printf("\n");
                             switch(hfp_subevent_voice_recognition_status_get_state(event)){
-                                case HFP_VRA_VOICE_RECOGNITION_OFF:
+                                case 0:
                                     printf("Voice recognition status DEACTIVATED\n");
                                     break;
-                                case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
+                                case 1:
                                     printf("Voice recognition status ACTIVATED\n");
                                     break;
                                 default:
-                                    printf("Voice recognition status unexpected state %d\n", hfp_subevent_voice_recognition_status_get_state(event));
                                     btstack_assert(false);
                                     break;
                             }
                             printf("\n");
                             break;
+
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS:
+                            status = hfp_subevent_voice_recognition_status_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("Enhanced Voice Recognition command failed with status 0x%02x\n", status);
+                                break;
+                            }
+                            printf("\n");
+                            switch(hfp_subevent_voice_recognition_status_get_state(event)){
+                                case 0:
+                                    printf("Enhanced Voice recognition status DEACTIVATED\n");
+                                    break;
+                                case 1:
+                                    printf("Enhanced Voice recognition status ACTIVATED\n");
+                                    break;
+                                default:
+                                    btstack_assert(false);
+                                    break;
+                            }
+                            printf("\n");
+                            break;
+
                         default:
                             break;
                     }
@@ -629,6 +662,7 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
         (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION)  |
+        (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;
 
