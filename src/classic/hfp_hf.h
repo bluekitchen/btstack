@@ -408,7 +408,7 @@ uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_COMMAND_DISALLOWED if HF does not support it, or wrong VRA status
  */
-uint8_t hfp_hf_enhanced_voice_recognition_ready_to_accept_audio(hci_con_handle_t acl_handle);
+uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
 /**
  * @brief Deactivate enhanced voice recognition (EVR) and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 

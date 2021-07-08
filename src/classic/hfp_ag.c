@@ -781,6 +781,9 @@ static uint8_t hfp_ag_voice_recognition_session_active(hfp_connection_t * hfp_co
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (hfp_connection->vra_state != HFP_VRA_VOICE_RECOGNITION_ACTIVATED){
+        if (hfp_connection->vra_state == HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
+            return ERROR_CODE_SUCCESS;
+        }
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     return ERROR_CODE_SUCCESS;
@@ -826,16 +829,29 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
 
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             // HF initiatied voice recognition, parser extracted activation value
-            if (hfp_connection->ag_activate_voice_recognition_value == 0){
-                if (hfp_ag_voice_recognition_session_active(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
-                    hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
-                    done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                }
-            } else {
-                if (hfp_ag_can_activate_voice_recognition(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
-                    hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
-                    done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                }
+            switch (hfp_connection->ag_activate_voice_recognition_value){
+                case 0:
+                    if (hfp_ag_voice_recognition_session_active(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
+                        hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
+                        done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                    }
+                    break;
+                
+                case 1:
+                    if (hfp_ag_can_activate_voice_recognition(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
+                        hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
+                        done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                    }
+                    break;
+                
+                case 2:
+                    if (hfp_ag_voice_recognition_session_active(hfp_connection, hfp_connection->enhanced_voice_recognition_enabled) == ERROR_CODE_SUCCESS){
+                        hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+                        done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                    }
+                    break;
+                default:
+                    break;
             }
             if (done == 0){
                 hfp_connection->vra_state_requested = hfp_connection->vra_state;
@@ -849,6 +865,22 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     }
 
     switch (hfp_connection->vra_state_requested){
+        case HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
+
+            if (!hfp_ag_is_audio_connection_active(hfp_connection)){
+                status = hfp_ag_setup_audio_connection(hfp_connection);
+                if (status != ERROR_CODE_SUCCESS){
+                    hfp_connection->vra_state_requested = hfp_connection->vra_state;
+                    hfp_emit_voice_recognition_state_event(hfp_connection, status);
+                    return 0;
+                }
+            } 
+            hfp_connection->enhanced_voice_recognition_enabled = true;
+            hfp_connection->vra_state = HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+            hfp_connection->vra_state_requested = hfp_connection->vra_state;
+            hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection, ERROR_CODE_SUCCESS);
+            break;
+        
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;

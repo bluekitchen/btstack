@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:02:72:DC:31:C1";
+static const char * device_addr_string = "00:1A:7D:DA:71:13";
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -549,43 +549,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
                     status = hfp_subevent_voice_recognition_status_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Voice Recognition command failed with status 0x%02x\n", status);
+                        printf("Voice Recognition command failed\n");
                         break;
                     }
-                    printf("\n");
                     switch(hfp_subevent_voice_recognition_status_get_state(event)){
                         case 0:
-                            printf("Voice recognition status DEACTIVATED\n");
+                            printf("\nVoice recognition status DEACTIVATED\n\n");
                             break;
                         case 1:
-                            printf("Voice recognition status ACTIVATED\n");
+                            printf("\nVoice recognition status ACTIVATED\n\n");
                             break;
                         default:
                             btstack_assert(false);
                             break;
                     }
-                    printf("\n");
                     break;
 
-                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS:
-                    status = hfp_subevent_voice_recognition_status_get_status(event);
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
+                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("Enhanced Voice Recognition command failed with status 0x%02x\n", status);
+                        printf("Enhanced Voice recognition READY FOR AUDIO cmd failed\n");
                         break;
                     }
-                    printf("\n");
-                    switch(hfp_subevent_voice_recognition_status_get_state(event)){
-                        case 0:
-                            printf("Enhanced Voice recognition status DEACTIVATED\n");
-                            break;
-                        case 1:
-                            printf("Enhanced Voice recognition status ACTIVATED\n");
-                            break;
-                        default:
-                            btstack_assert(false);
-                            break;
-                    }
-                    printf("\n");
+                    printf("\nEnhanced Voice recognition status READY FOR AUDIO\n\n");
                     break;
                 default:
                     break;

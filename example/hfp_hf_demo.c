@@ -68,7 +68,7 @@ const char hfp_hf_service_name[] = "HFP HF Demo";
 
 #ifdef HAVE_BTSTACK_STDIN
 // static const char * device_addr_string = "6C:72:E7:10:22:EE";
-static const char * device_addr_string = "00:1A:7D:DA:71:13";
+static const char * device_addr_string = "00:02:72:DC:31:C1";
 #endif
 
 static bd_addr_t device_addr;
@@ -150,6 +150,8 @@ static void show_usage(void){
     printf("m/M - deactivate/activate echo canceling and noise reduction\n");
     printf("n/N - deactivate/activate voice recognition\n");
     printf("z/Z - deactivate/activate enhanced voice recognition\n");
+    printf("h   - start new audio enhanced voice recognition session\n");
+    
     printf("0123456789#*-+ - send DTMF dial tones\n");
     printf("x - request phone number for voice tag     | X - current call status (ECS)\n");
     printf("y - release call with index 2 (ECC)        | Y - private consultation with call 2(ECC)\n");
@@ -324,6 +326,11 @@ static void stdin_process(char c){
             log_info("USER:\'%c\'", cmd);
             printf("Activate enhanced voice recognition %s\n", bd_addr_to_str(device_addr));
             status = hfp_hf_activate_enhanced_voice_recognition(acl_handle);
+            break;
+        case 'h':
+            log_info("USER:\'%c\'", cmd);
+            printf("Start new audio enhanced voice recognition session %s\n", bd_addr_to_str(device_addr));
+            status = hfp_hf_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
             break;
         case 'o':
             log_info("USER:\'%c\'", cmd);
@@ -576,43 +583,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
                             status = hfp_subevent_voice_recognition_status_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition command failed with status 0x%02x\n", status);
+                                printf("Voice Recognition command failed\n");
                                 break;
                             }
-                            printf("\n");
                             switch(hfp_subevent_voice_recognition_status_get_state(event)){
                                 case 0:
-                                    printf("Voice recognition status DEACTIVATED\n");
+                                    printf("\nVoice recognition status DEACTIVATED\n\n");
                                     break;
                                 case 1:
-                                    printf("Voice recognition status ACTIVATED\n");
+                                    printf("\nVoice recognition status ACTIVATED\n\n");
                                     break;
                                 default:
                                     btstack_assert(false);
                                     break;
                             }
-                            printf("\n");
                             break;
 
-                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS:
-                            status = hfp_subevent_voice_recognition_status_get_status(event);
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
+                            status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Enhanced Voice Recognition command failed with status 0x%02x\n", status);
+                                printf("Enhanced Voice recognition READY FOR AUDIO cmd failed\n");
                                 break;
                             }
-                            printf("\n");
-                            switch(hfp_subevent_voice_recognition_status_get_state(event)){
-                                case 0:
-                                    printf("Enhanced Voice recognition status DEACTIVATED\n");
-                                    break;
-                                case 1:
-                                    printf("Enhanced Voice recognition status ACTIVATED\n");
-                                    break;
-                                default:
-                                    btstack_assert(false);
-                                    break;
-                            }
-                            printf("\n");
+                            printf("\nEnhanced Voice recognition status READY FOR AUDIO\n\n");
                             break;
 
                         default:
