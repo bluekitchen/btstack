@@ -608,6 +608,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("\nEnhanced Voice recognition status READY FOR AUDIO\n\n");
                             break;
 
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+                            printf("\nEnhanced Voice recognition AG status: AG READY TO ACCEPT AUDIO INPUT\n\n");                            
+                            break;
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND:
+                            printf("\nEnhanced Voice recognition AG status: AG IS STARTING SOUND\n\n");                            
+                            break;
+                        case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT:
+                            printf("\nEnhanced Voice recognition AG status: AG IS PROCESSING AUDIO INPUT\n\n");                            
+                            break;
+    
                         default:
                             break;
                     }

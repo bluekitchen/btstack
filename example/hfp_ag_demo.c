@@ -166,7 +166,10 @@ static void show_usage(void){
     printf("m - simulate incoming call from 7654321\n");
     // printf("M - simulate call from 7654321 dropped\n");
     printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
-    printf("z - Disable Enhanced Voice Recognition  | Z - Enable Ehnaced Voice Recognition\n");
+    printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
+    printf("1 - EVR report starting sound           | 2 - EVR report ready for input\n");
+    printf("3 - EVR report processing input         | 4 - EVR report message\n");
+    
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
     printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
@@ -331,6 +334,27 @@ static void stdin_process(char cmd){
             log_info("USER:\'%c\'", cmd);
             printf("Enable Enhanced_Voice Recognition\n");
             status = hfp_ag_activate_enhanced_voice_recognition(acl_handle);
+            break;
+
+        case '1':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: report starting sound\n");
+            status = hfp_ag_enhanced_voice_recognition_report_starting_sound(acl_handle);
+            break;
+        case '2':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: report ready for input\n");
+            status = hfp_ag_enhanced_voice_recognition_report_ready_for_input(acl_handle);
+            break;
+        case '3':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: report processing input\n");
+            status = hfp_ag_enhanced_voice_recognition_report_processing_input(acl_handle);
+            break;
+        case '4':
+            log_info("USER:\'%c\'", cmd);
+            printf("Enhanced_Voice Recognition: report message\n");
+            // status = hfp_ag_enhanced_voice_recognition_report_message(acl_handle);
             break;
 
         case 'o':
@@ -573,6 +597,34 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     }
                     printf("\nEnhanced Voice recognition status READY FOR AUDIO\n\n");
                     break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Enhanced Voice recognition AG READY TO ACCEPT AUDIO INPU cmd failed\n");
+                        break;
+                    }
+                    printf("\nEnhanced Voice recognition AG status: AG READY TO ACCEPT AUDIO INPUT\n\n");                            
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND:
+                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Enhanced Voice recognition AG IS STARTING SOUND cmd failed\n");
+                        break;
+                    }
+                    printf("\nEnhanced Voice recognition AG status: AG IS STARTING SOUND\n\n");                            
+                    break;
+
+                case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT:
+                    status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("Enhanced Voice recognition AG IS PROCESSING AUDIO INPUT cmd failed\n");
+                        break;
+                    }
+                    printf("\nEnhanced Voice recognition AG status: AG IS PROCESSING AUDIO INPUT\n\n");                            
+                    break;
+
                 default:
                     break;
             }

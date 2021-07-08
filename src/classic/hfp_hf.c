@@ -493,18 +493,28 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             case HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
                 // ignore AG command, continue to wait for OK
                 return 0;
+            
             default:
-                switch (hfp_connection->ag_vra_status){
-                    case 0:
-                        hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
-                        break;
-                    case 1:
-                        hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
-                        break;
-                    case 2:
-                        hfp_connection->vra_state_requested = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+                printf("status %d state %d\n", hfp_connection->ag_vra_status, hfp_connection->ag_vra_state);
+                switch(hfp_connection->ag_vra_state){
+                    case HFP_VOICE_RECOGNITION_STATE_AG_READY:
+                        switch (hfp_connection->ag_vra_status){
+                            case 0:
+                                hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_OFF;
+                                break;
+                            case 1:
+                                hfp_connection->vra_state_requested = HFP_VRA_W4_VOICE_RECOGNITION_ACTIVATED;
+                                break;
+                            case 2:
+                                hfp_connection->vra_state_requested = HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+                                break;
+                            default:
+                                break;
+                        }
                         break;
                     default:
+                        // state messages from AG
+                        hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
                         break;
                 }
                 break;

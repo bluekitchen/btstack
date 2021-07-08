@@ -298,17 +298,6 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
- * @brief Send enhanced voice recognition state.
- *
- * @param acl_handle
- * @param activate
- * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
- *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
- */
-uint8_t hfp_ag_enhanced_voice_recognition_state(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state);
-
-/*
  * @brief Notify HF that sound will be played.
  *
  * @param acl_handle
@@ -317,7 +306,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_state(hci_con_handle_t acl_handle, hfp
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
  */
-uint8_t hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_enhanced_voice_recognition_report_starting_sound(hci_con_handle_t acl_handle);
 
 /*
  * @brief Notify HF that AG is ready for input.
@@ -328,7 +317,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_starting_sound(hci_con_handle_t acl_ha
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
  */
-uint8_t hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_input(hci_con_handle_t acl_handle);
 
 /*
  * @brief Notify that AG is processing input.
@@ -339,7 +328,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_ready_for_input(hci_con_handle_t acl_h
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
  */
-uint8_t hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_handle);
+uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle_t acl_handle);
 
 /*
  * @brief Send enhanced audio recognition message.
@@ -350,7 +339,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_processing_input(hci_con_handle_t acl_
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
  *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support enhanced voice recognition
  */
-uint8_t hfp_ag_enhanced_voice_recognition_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
+uint8_t hfp_ag_enhanced_voice_recognition_report_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
 
 /**
  * @brief Deactivate enhanced voice recognition (EVR) and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 

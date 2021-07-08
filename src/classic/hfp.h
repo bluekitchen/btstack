@@ -205,7 +205,6 @@ typedef enum {
     HFP_CMD_TURN_OFF_EC_AND_NR,     
     HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION,                  // 37
     HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION,
-    HFP_CMD_AG_ACTIVATE_ENHANCED_VOICE_RECOGNITION,
     HFP_CMD_HF_REQUEST_PHONE_NUMBER,
     HFP_CMD_AG_SENT_PHONE_NUMBER,
     HFP_CMD_TRANSMIT_DTMF_CODES,
@@ -316,7 +315,7 @@ typedef enum {
 typedef enum {
     HFP_VOICE_RECOGNITION_STATE_AG_READY = 0,
     HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT = 1,
-    HFP_VOICE_RECOGNITION_STATE_AG_IS_SENDING_AUDIO_TO_HF = 2,
+    HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND = 2,
     HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT = 4
 } hfp_voice_recognition_state_t;
 
@@ -402,12 +401,11 @@ typedef enum {
     HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
     HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO,
 
+    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS,
+    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS,
+
     // TODO delete
     HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG,
-
-    HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS,
-    HFP_VRA_W4_ENHANCED_VOICE_RECOGNITION_STATUS
-
 } hfp_voice_recognition_activation_status_t;
 
 typedef struct {
@@ -691,10 +689,11 @@ typedef struct hfp_connection {
     hfp_voice_recognition_activation_status_t vra_state_requested;
     bool deactivate_voice_recognition;
     bool activate_voice_recognition;
+    bool enhanced_voice_recognition_enabled;
     
+    // ih HF, used by parser, in AG used for commands
     uint8_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
-    bool enhanced_voice_recognition_enabled;
     hfp_voice_recognition_message_t ag_msg;
 
     uint8_t clcc_idx;
@@ -756,6 +755,7 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
  */
 void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
 void hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection_t * hfp_connection, uint8_t status);
+void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);

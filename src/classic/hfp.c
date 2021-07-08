@@ -386,6 +386,33 @@ void hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
+void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    switch (hfp_connection->ag_vra_state){
+        case HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT:
+            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT;
+            break;
+        case HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND:
+            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND;
+            break;
+        case HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT:
+            event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT;
+            break;
+        default:
+            btstack_unreachable();
+            break;
+
+    }
+
+    little_endian_store_16(event, 3, acl_handle);
+    event[5] = status;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     btstack_assert(hfp_connection != NULL);
     uint8_t event[12];
