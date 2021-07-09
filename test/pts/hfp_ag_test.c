@@ -166,7 +166,20 @@ static void show_usage(void){
     printf("M - simulate outgoing call to 1234567\n");
     printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
     printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
-    
+
+    printf("1 - Activate Enhanced Voice Recognition\n");
+    printf("2 - eAVR Status ready for audio input\n");
+    printf("3 - eAVR Play sound\n");
+    printf("4 - eAVR Processing Input\n");
+    printf("5 - Deactivate Enhanced Voice Recognition\n");
+    printf("6 - aAVR Msg, Status ready_for_input\n");
+    printf("7 - aAVR Msg Processing Input\n");
+    printf("8 - aAVR Msg Processing Input\n");
+    printf("9 - eAVR Msg Processing Input\n");
+    printf("* - eAVR Msg, Status ready_for_input\n");
+    printf("@ - eAVR Msg, Status ready_for_input\n");
+        
+
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
     printf("p - Set speaker volume to 12 (higher)   | P - Set speaker volume to 15 (maximum)\n");
     printf("q - Set microphone gain to 0  (minimum) | Q - Set microphone gain to 9  (default)\n");
@@ -335,15 +348,15 @@ static void stdin_process(char cmd){
             hfp_ag_activate_enhanced_voice_recognition(acl_handle);
             break;
         case '2':
-            printf("EVR Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_ready_for_input(acl_handle);
+            printf("aAVR Status ready for audio input\n");
+            hfp_ag_enhanced_voice_recognition_ready_for_audio(acl_handle);
             break;
         case '3':
-            printf("EVR Send audio outputt\n");
-            hfp_ag_enhanced_voice_recognition_starting_sound(acl_handle);
+            printf("aAVR Play sound\n");
+            hfp_ag_enhanced_voice_recognition_play_sound(acl_handle);
             break;
         case '4':
-            printf("EVR Processing Input\n");
+            printf("aAVR Processing Input\n");
             hfp_ag_enhanced_voice_recognition_processing_input(acl_handle);
             break;
         
@@ -356,7 +369,7 @@ static void stdin_process(char cmd){
             hfp_voice_recognition_message_t msg = {
                     0xAB13, 0, 1, (uint8_t *) "test"
             };
-            printf("EVR Msg, Status ready_for_input\n");
+            printf("aAVR Msg, Status ready_for_input\n");
             hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
@@ -366,7 +379,7 @@ static void stdin_process(char cmd){
             hfp_voice_recognition_message_t msg = {
                     0xAB14, 1, 1, (uint8_t *) "test"
             };
-            printf("EVR Msg Processing Input\n");
+            printf("aAVR Msg Processing Input\n");
             hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
@@ -376,7 +389,7 @@ static void stdin_process(char cmd){
             hfp_voice_recognition_message_t msg = {
                     0xAB13, 0, 2, (uint8_t *) "test"
             };
-            printf("EVR Msg Processing Input\n");
+            printf("aAVR Msg Processing Input\n");
             hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
@@ -386,7 +399,7 @@ static void stdin_process(char cmd){
             hfp_voice_recognition_message_t msg = {
                     0xAB13, 0, 3, (uint8_t *) "test"
             };
-            printf("EVR Msg Processing Input\n");
+            printf("aAVR Msg Processing Input\n");
             hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
@@ -395,7 +408,7 @@ static void stdin_process(char cmd){
             hfp_voice_recognition_message_t msg = {
                     0xAB13, 2, 1, (uint8_t *) "test"
             };
-            printf("EVR Msg, Status ready_for_input\n");
+            printf("aAVR Msg, Status ready_for_input\n");
             hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
@@ -404,7 +417,7 @@ static void stdin_process(char cmd){
             hfp_voice_recognition_message_t msg = {
                     0xAB13, 3, 1, (uint8_t *) "test"
             };
-            printf("EVR Msg, Status ready_for_input\n");
+            printf("aAVR Msg, Status ready_for_input\n");
             hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }

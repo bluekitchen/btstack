@@ -2776,10 +2776,10 @@ static uint8_t hfp_ag_enhanced_voice_recognition_send_state(hci_con_handle_t acl
     return status;
 }
 
-uint8_t hfp_ag_enhanced_voice_recognition_report_starting_sound(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t acl_handle){
     return hfp_ag_enhanced_voice_recognition_send_state(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_STARTING_SOUND);
 }
-uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_input(hci_con_handle_t acl_handle){
+uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle){
     return hfp_ag_enhanced_voice_recognition_send_state(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT);
 }
 uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle_t acl_handle){

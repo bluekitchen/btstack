@@ -171,7 +171,7 @@ static void show_usage(void){
     // printf("M - simulate call from 7654321 dropped\n");
     printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
     printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
-    printf("1 - EVR report starting sound           | 2 - EVR report ready for input\n");
+    printf("1 - EVR play sound                      | 2 - EVR report ready for audio input\n");
     printf("3 - EVR report processing input         | 4 - EVR send message\n");
     
     printf("o - Set speaker volume to 0  (minimum)  | O - Set speaker volume to 9  (default)\n");
@@ -342,13 +342,13 @@ static void stdin_process(char cmd){
 
         case '1':
             log_info("USER:\'%c\'", cmd);
-            printf("Enhanced_Voice Recognition: report starting sound\n");
-            status = hfp_ag_enhanced_voice_recognition_report_starting_sound(acl_handle);
+            printf("Enhanced_Voice Recognition: play sound\n");
+            status = hfp_ag_enhanced_voice_recognition_report_sending_audio(acl_handle);
             break;
         case '2':
             log_info("USER:\'%c\'", cmd);
-            printf("Enhanced_Voice Recognition: report ready for input\n");
-            status = hfp_ag_enhanced_voice_recognition_report_ready_for_input(acl_handle);
+            printf("Enhanced_Voice Recognition: report ready for audio input\n");
+            status = hfp_ag_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
             break;
         case '3':
             log_info("USER:\'%c\'", cmd);
