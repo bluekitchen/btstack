@@ -62,6 +62,10 @@
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
+// When not set to 0xffff, sniff and sniff subrating are enabled
+static uint16_t host_max_latency = 1600;
+static uint16_t host_min_timeout = 3200;
+
 // from USB HID Specification 1.1, Appendix B.1
 const uint8_t hid_descriptor_keyboard_boot_mode[] = {
 
@@ -165,7 +169,7 @@ static const uint8_t keytable_us_shift[] = {
 
 // STATE
 
-static uint8_t hid_service_buffer[250];
+static uint8_t hid_service_buffer[300];
 static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -411,8 +415,9 @@ int btstack_main(int argc, const char * argv[]){
         0x2540, 33, 
         hid_virtual_cable, hid_remote_wake, 
         hid_reconnect_initiate, hid_normally_connectable,
-        hid_boot_device, 
-        0xFFFF, 0xFFFF, 3200,
+        hid_boot_device,
+        host_max_latency, host_min_timeout,
+        3200,
         hid_descriptor_keyboard_boot_mode,
         sizeof(hid_descriptor_keyboard_boot_mode), 
         hid_device_name
