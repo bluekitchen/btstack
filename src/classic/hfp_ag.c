@@ -821,7 +821,7 @@ static void hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_TEXT_SENT;
+    event[2] = HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT;
     little_endian_store_16(event, 3, acl_handle);
     event[5] = status;
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -2108,10 +2108,6 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     } 
 
     if (!cmd_sent){
-        cmd_sent = hfp_ag_voice_recognition_state_machine(hfp_connection);
-    } 
-
-    if (!cmd_sent){
         cmd_sent = call_setup_state_machine(hfp_connection);
     }
 
@@ -2134,6 +2130,9 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
     }
 
+    if (!cmd_sent){
+        cmd_sent = hfp_ag_voice_recognition_state_machine(hfp_connection);
+    } 
 
     // disconnect
     if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && (hfp_connection->state == HFP_W2_DISCONNECT_RFCOMM)){

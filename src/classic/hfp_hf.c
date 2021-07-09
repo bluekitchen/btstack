@@ -771,10 +771,10 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
         done = hfp_hf_run_for_context_service_level_connection_queries(hfp_connection);
     }
     if (!done){
-        done = hfp_hf_voice_recognition_state_machine(hfp_connection);
+        done = hfp_hf_run_for_audio_connection(hfp_connection);
     }
     if (!done){
-        done = hfp_hf_run_for_audio_connection(hfp_connection);
+        done = hfp_hf_voice_recognition_state_machine(hfp_connection);
     }
     if (!done){
         done = call_setup_state_machine(hfp_connection);
@@ -1831,7 +1831,7 @@ static uint8_t deactivate_voice_recognition(hci_con_handle_t acl_handle, bool en
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
+    if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || hfp_connection->state > HFP_AUDIO_CONNECTION_ESTABLISHED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     if (!hfp_hf_voice_recognition_supported(hfp_connection, enhanced)){
