@@ -11,6 +11,7 @@ CORE += \
 	btstack_audio_portaudio.c   \
 	main.c 						\
 	btstack_stdin_posix.c       \
+	btstack_signal.c            \
 	btstack_tlv.c 		\
 	btstack_tlv_posix.c 		\
 	rijndael.c \
@@ -277,5 +278,5 @@ clean: myclean
 
 test:
 	echo "No unit tests in PTS"
-coverage: all
+coverage:
 	echo "No coverage tests in PTS"
