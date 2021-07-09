@@ -328,7 +328,7 @@ Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and 
 
 ### Audio Voice Recognition Activation
 
-Audio voice recognition (AVR) requires that HF and AG have following supported features enabled respectively: 
+Audio voice recognition (AVR) requires that HF and AG have the following  features enabled: 
 - HF: HFP_HFSF_VOICE_RECOGNITION_FUNCTION and
 - AG: HFP_AGSF_VOICE_RECOGNITION_FUNCTION. 
  
@@ -350,11 +350,41 @@ Voice recognition will stay active until either the deactivation command is call
 |--------------------------------------------------------|---------------------|
 | No previous audio connection, AVR activated then deactivated | Audio connection will be opened by AG upon AVR activation, and upon AVR deactivation closed|
 | AVR activated and deactivated during existing audio connection | Audio remains active upon AVR deactivation |
-| Call to close audio connection during active VRA session       | The audio connection shut down will be refused |
+| Call to close audio connection during active AVR session       | The audio connection shut down will be refused |
+| AVR activated, but audio connection failed to be established   | AVR will stay activated |
 
 Beyond the audio routing and voice recognition activation capabilities, the rest of the voice recognition functionality is implementation dependent - the stack only provides the signaling for this.
 
 ### Enhanced Audio Voice Recognition
+
+Similarly to AVR, Enhanced Audio voice recognition (eAVR) requires that HF and AG have the following features enabled: 
+- HF: HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS and
+- AG: HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS.
+
+In addition, to allow textual representation of audio that is parsed by eAVR (note that parsing is not part of Bluetooth specification), both devices must enable:
+- HF: HFP_HFSF_VOICE_RECOGNITION_TEXT and
+- AG: HFP_AGSF_VOICE_RECOGNITION_TEXT. 
+
+eAVR implements the same use cases as AVR (see previous section). It can be activated or deactivated on both sides by calling:
+
+    // AG
+    uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
+    uint8_t hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
+
+    // HF
+    uint8_t hfp_hf_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
+    uint8_t hfp_hf_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
+
+When eAVR and audio channel are established there are several additional commands that can be sent:
+
+| HFP Role | eVRA API | Description |
+-----------|----------|-------------|
+|HF | hfp_hf_enhanced_voice_recognition_report_ready_for_audio| Ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_report_ready_for_audio | Voice recognition engine is ready to accept audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_report_sending_audio | The voice recognition engine will play a sound, e.g. starting sound. |
+|AG | hfp_ag_enhanced_voice_recognition_report_processing_input | Voice recognition engine is processing the audio input. |
+|AG | hfp_ag_enhanced_voice_recognition_send_message | Report textual representation from the voice recognition engine. |
+
 
 ## HID - Human-Interface Device Profile
 
