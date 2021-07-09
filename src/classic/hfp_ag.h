@@ -298,7 +298,8 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
- * @brief Notify HF that sound will be played.
+ * @brief Notify HF that sound will be played and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
  * @param activate
@@ -309,7 +310,8 @@ uint8_t hfp_ag_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t acl_handle);
 
 /*
- * @brief Notify HF that AG is ready for input.
+ * @brief Notify HF that AG is ready for input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
  * @param activate
@@ -320,7 +322,8 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t 
 uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
 /*
- * @brief Notify that AG is processing input.
+ * @brief Notify that AG is processing input and emit HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
  * @param activate
@@ -331,7 +334,8 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
 uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle_t acl_handle);
 
 /*
- * @brief Send enhanced audio recognition message.
+ * @brief Send enhanced audio recognition message and HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED.
  *
  * @param acl_handle
  * @param activate
