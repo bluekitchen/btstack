@@ -349,15 +349,15 @@ static void stdin_process(char cmd){
             break;
         case '2':
             printf("aAVR Status ready for audio input\n");
-            hfp_ag_enhanced_voice_recognition_ready_for_audio(acl_handle);
+            hfp_ag_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
             break;
         case '3':
             printf("aAVR Play sound\n");
-            hfp_ag_enhanced_voice_recognition_play_sound(acl_handle);
+            hfp_ag_enhanced_voice_recognition_report_sending_audio(acl_handle);
             break;
         case '4':
             printf("aAVR Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_processing_input(acl_handle);
+            hfp_ag_enhanced_voice_recognition_report_processing_input(acl_handle);
             break;
         
         case '5':
@@ -367,58 +367,58 @@ static void stdin_process(char cmd){
         
         case '6':{
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 0, 1, (uint8_t *) "test"
+                    0xAB13, 0, 1, "test"
             };
             printf("aAVR Msg, Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
 
         case '7':{
             // changed type, change iD
             hfp_voice_recognition_message_t msg = {
-                    0xAB14, 1, 1, (uint8_t *) "test"
+                    0xAB14, 1, 1, "test"
             };
             printf("aAVR Msg Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
 
         case '8':{
             // replace op, leave id and type
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 0, 2, (uint8_t *) "test"
+                    0xAB13, 0, 2, "test"
             };
             printf("aAVR Msg Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
         
         case '9':{
             // replace op, leave id and type
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 0, 3, (uint8_t *) "test"
+                    0xAB13, 0, 3, "test"
             };
             printf("aAVR Msg Processing Input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_IS_PROCESSING_AUDIO_INPUT, msg);
             break;
         }
 
         case '*':{
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 2, 1, (uint8_t *) "test"
+                    0xAB13, 2, 1, "test"
             };
             printf("aAVR Msg, Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
 
         case '@':{
             hfp_voice_recognition_message_t msg = {
-                    0xAB13, 3, 1, (uint8_t *) "test"
+                    0xAB13, 3, 1, "test"
             };
             printf("aAVR Msg, Status ready_for_input\n");
-            hfp_ag_enhanced_voice_recognition_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
+            hfp_ag_enhanced_voice_recognition_send_message(acl_handle, HFP_VOICE_RECOGNITION_STATE_AG_READY_TO_ACCEPT_AUDIO_INPUT, msg);
             break;
         }
 
