@@ -855,7 +855,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             
             status = hci_event_synchronous_connection_complete_get_status(packet);
-            status = ERROR_CODE_COMMAND_DISALLOWED;
             if (status != ERROR_CODE_SUCCESS){
                 hfp_connection->accept_sco = 0;
                 if (hfp_handle_failed_sco_connection(status)) break;
