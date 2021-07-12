@@ -225,7 +225,7 @@ static void send_key(int modifier, int keycode){
 }
 
 static void send_report(int modifier, int keycode){
-    uint8_t report[] = { 0xa1, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+    uint8_t report[] = { 0xa1, modifier, 0, keycode, 0, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
