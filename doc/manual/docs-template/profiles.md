@@ -271,7 +271,7 @@ There are following restrictions:
 %TODO: audio paths
 
 
-## HFP - Hands-Free Profile
+## HFP - Hands-Free Profile  {#sec:hfp}
 
 The HFP profile defines how a Bluetooth-enabled device, e.g. a car kit or a headset, can be used to place and receive calls via a audio gateway device, typically a mobile phone.
 It relies on SCO for audio encoded in 64 kbit/s CVSD and a bigger subset of AT commands from GSM 07.07 then HSP for
@@ -283,7 +283,7 @@ The HFP defines two roles:
 
 - Hands-Free Unit (HF) – a device that acts as the AG's remote audio input and output control.
 
-### Supported Features
+### Supported Features {#sec:hfpSupportedFeatures}
 
 The supported features define the HFP capabilities of the device. The enumeration unfortunately differs between HF and AG sides.
 
@@ -326,7 +326,7 @@ Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and 
 | HFP_HFSF_VOICE_RECOGNITION_TEXT         |  Voice recognition text |
 
 
-### Audio Voice Recognition Activation
+### Audio Voice Recognition Activation {#sec:hfpAVRActivation}
 
 Audio voice recognition (AVR) requires that HF and AG have the following  features enabled: 
 
@@ -357,7 +357,7 @@ Voice recognition will stay active until either the deactivation command is call
 
 Beyond the audio routing and voice recognition activation capabilities, the rest of the voice recognition functionality is implementation dependent - the stack only provides the signaling for this.
 
-### Enhanced Audio Voice Recognition
+### Enhanced Audio Voice Recognition {#sec:hfpeAVRActivation}
 
 Similarly to AVR, Enhanced Audio voice recognition (eAVR) requires that HF and AG have the following features enabled: 
 
