@@ -4697,7 +4697,7 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
-        if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
+        if ((connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST) && ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0)){
             connection->bonding_flags &= ~BONDING_SEND_AUTHENTICATE_REQUEST;
             connection->bonding_flags |= BONDING_SENT_AUTHENTICATE_REQUEST;
             hci_send_cmd(&hci_authentication_requested, connection->con_handle);
