@@ -2618,7 +2618,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 
     channel->con_handle = handle;
     channel->remote_cid = source_cid;
-    channel->remote_sig_id = sig_id; 
+    channel->remote_sig_id = sig_id;
 
     // limit local mtu to max acl packet length - l2cap header
     if (channel->local_mtu > l2cap_max_mtu()) {
@@ -2627,13 +2627,18 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     
     // set initial state
     channel->state =      L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
-    channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING);
-    
+
     // add to connections list
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // assert security requirements
-    gap_request_security_level(handle, channel->required_security_level);
+    if (channel->required_security_level <= gap_security_level(handle)){
+        channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_INCOMING);
+        l2cap_handle_security_level_incoming_sufficient(channel);
+    } else {
+        channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING);
+        gap_request_security_level(handle, channel->required_security_level);
+    }
 }
 
 void l2cap_accept_connection(uint16_t local_cid){
