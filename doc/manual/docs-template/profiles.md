@@ -329,7 +329,9 @@ Similarly, the HF supported features are a combination of HFP_HFSF_xx flags and 
 ### Audio Voice Recognition Activation
 
 Audio voice recognition (AVR) requires that HF and AG have the following  features enabled: 
+
 - HF: HFP_HFSF_VOICE_RECOGNITION_FUNCTION and
+
 - AG: HFP_AGSF_VOICE_RECOGNITION_FUNCTION. 
  
 It can be activated or deactivated on both sides by calling:
@@ -358,11 +360,15 @@ Beyond the audio routing and voice recognition activation capabilities, the rest
 ### Enhanced Audio Voice Recognition
 
 Similarly to AVR, Enhanced Audio voice recognition (eAVR) requires that HF and AG have the following features enabled: 
+
 - HF: HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS and
+
 - AG: HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS.
 
 In addition, to allow textual representation of audio that is parsed by eAVR (note that parsing is not part of Bluetooth specification), both devices must enable:
+
 - HF: HFP_HFSF_VOICE_RECOGNITION_TEXT and
+
 - AG: HFP_AGSF_VOICE_RECOGNITION_TEXT. 
 
 eAVR implements the same use cases as AVR (see previous section). It can be activated or deactivated on both sides by calling:
