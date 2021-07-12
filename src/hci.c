@@ -425,6 +425,7 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
 static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t status){
     if (!hci_pairing_active(hci_connection)) return;
     hci_connection->authentication_flags &= ~AUTH_FLAG_PAIRING_ACTIVE_MASK;
+    hci_connection->requested_security_level = LEVEL_0;
     log_info("pairing complete, status %02x", status);
 
     uint8_t event[12];
@@ -2922,7 +2923,6 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
 
             // emit updated security level
-            conn->requested_security_level = LEVEL_0;
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 
