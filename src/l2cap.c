@@ -2342,6 +2342,21 @@ static void l2cap_handle_features_complete(hci_con_handle_t handle){
         l2cap_handle_remote_supported_features_received(channel);
     }
 }
+
+static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * channel){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // we need to know if ERTM is supported before sending a config response
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_DONE){
+        connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
+        channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+        return;
+    }
+#endif
+    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+    l2cap_emit_incoming_connection(channel);
+}
+
 static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_level_t actual_level){
     log_info("security level update for handle 0x%04x", handle);
     btstack_linked_list_iterator_t it;
@@ -2351,24 +2366,14 @@ static void l2cap_handle_security_level(hci_con_handle_t handle, gap_security_le
         if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
         if (channel->con_handle != handle) continue;
 
-         gap_security_level_t required_level = channel->required_security_level;
+        gap_security_level_t required_level = channel->required_security_level;
 
         log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
 
         switch (channel->state){
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
                 if (actual_level >= required_level){
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-                    // we need to know if ERTM is supported before sending a config response
-                    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-                    if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_DONE){
-                        connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;
-                        channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
-                        break;
-                    }
-#endif
-                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                    l2cap_emit_incoming_connection(channel);
+                    l2cap_handle_security_level_incoming_sufficient(channel);
                 } else {
                     channel->reason = 0x0003; // security block
                     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
