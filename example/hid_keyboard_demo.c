@@ -66,15 +66,22 @@
 static uint16_t host_max_latency = 1600;
 static uint16_t host_min_timeout = 3200;
 
-// from USB HID Specification 1.1, Appendix B.1
-const uint8_t hid_descriptor_keyboard_boot_mode[] = {
+#define REPORT_ID 0x01
+
+// close to USB HID Specification 1.1, Appendix B.1
+const uint8_t hid_descriptor_keyboard[] = {
 
     0x05, 0x01,                    // Usage Page (Generic Desktop)
     0x09, 0x06,                    // Usage (Keyboard)
     0xa1, 0x01,                    // Collection (Application)
 
-    // Modifier byte
+    // Report ID
 
+    0x85, REPORT_ID,               // Report ID
+
+    // Modifier byte (input)
+
+    0x05, 0x07,                    //   Usage Page (Key Codes)
     0x75, 0x01,                    //   Report Size (1)
     0x95, 0x08,                    //   Report Count (8)
     0x05, 0x07,                    //   Usage Page (Key codes)
@@ -84,13 +91,13 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x25, 0x01,                    //   Logical Maximum (1)
     0x81, 0x02,                    //   Input (Data, Variable, Absolute)
 
-    // Reserved byte
+    // Reserved byte (input)
 
     0x75, 0x01,                    //   Report Size (1)
     0x95, 0x08,                    //   Report Count (8)
     0x81, 0x03,                    //   Input (Constant, Variable, Absolute)
 
-    // LED report + padding
+    // LED report + padding (output)
 
     0x95, 0x05,                    //   Report Count (5)
     0x75, 0x01,                    //   Report Size (1)
@@ -103,7 +110,7 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x75, 0x03,                    //   Report Size (3)
     0x91, 0x03,                    //   Output (Constant, Variable, Absolute)
 
-    // Keycodes
+    // Keycodes (input)
 
     0x95, 0x06,                    //   Report Count (6)
     0x75, 0x08,                    //   Report Size (8)
@@ -225,7 +232,7 @@ static void send_key(int modifier, int keycode){
 }
 
 static void send_report(int modifier, int keycode){
-    uint8_t report[] = { 0xa1, modifier, 0, keycode, 0, 0, 0, 0, 0};
+    uint8_t report[] = { 0xa1, REPORT_ID, modifier, 0, keycode, 0, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
@@ -418,8 +425,8 @@ int btstack_main(int argc, const char * argv[]){
         hid_boot_device,
         host_max_latency, host_min_timeout,
         3200,
-        hid_descriptor_keyboard_boot_mode,
-        sizeof(hid_descriptor_keyboard_boot_mode), 
+        hid_descriptor_keyboard,
+        sizeof(hid_descriptor_keyboard),
         hid_device_name
     };
     
@@ -435,7 +442,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(device_id_sdp_service_buffer);
 
     // HID Device
-    hid_device_init(hid_boot_device, sizeof(hid_descriptor_keyboard_boot_mode), hid_descriptor_keyboard_boot_mode);
+    hid_device_init(hid_boot_device, sizeof(hid_descriptor_keyboard), hid_descriptor_keyboard);
        
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
