@@ -648,6 +648,8 @@ typedef struct hfp_connection {
     int next_call_index;
 
     // HF only
+    hfp_command_t hf_ok_pending_for_command;
+
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_initiate_outgoing_call;
@@ -679,7 +681,6 @@ typedef struct hfp_connection {
     
     uint8_t hf_activate_calling_line_notification;
     uint8_t hf_deactivate_calling_line_notification;
-    uint8_t hf_activate_echo_canceling_and_noise_reduction;
     uint8_t hf_deactivate_echo_canceling_and_noise_reduction;
 
     hfp_voice_recognition_activation_status_t vra_state;
