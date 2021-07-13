@@ -286,6 +286,10 @@ static void a2dp_handle_received_configuration(const uint8_t *packet, uint8_t lo
             // outgoing: discovery and config of remote sink sep successful, trigger stream open
             avdtp_connection->a2dp_source_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             break;
+        case A2DP_DISCOVER_SEPS:
+        case A2DP_GET_CAPABILITIES:
+        case A2DP_W2_GET_ALL_CAPABILITIES:
+        case A2DP_DISCOVERY_DONE:
         case A2DP_W4_GET_CONFIGURATION:
             // incoming: wait for stream open
             avdtp_connection->a2dp_source_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
