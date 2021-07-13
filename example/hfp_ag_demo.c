@@ -446,6 +446,14 @@ static void stdin_process(char cmd){
 }
 #endif
 
+static void report_status(uint8_t status, const char * message){
+    if (status != ERROR_CODE_SUCCESS){
+        printf("%s command failed, status 0x%02x\n", message, status);
+    } else {
+        printf("%s command successful\n", message);
+    }
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
     bd_addr_t addr;
@@ -636,6 +644,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         break;
                     }
                     printf("\nEnhanced Voice recognition: AG SEND MSG \'%s\'\n\n", msg.text);   
+
+                case HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE:
+                    status = hfp_subevent_echo_canceling_and_noise_reduction_deactivate_get_status(event);
+                    report_status(status, "Echo Canceling and Noise Reduction Deactivate");
                     break;
 
                 default:
@@ -690,6 +702,7 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_AGSF_IN_BAND_RING_TONE)           |
         (1<<HFP_AGSF_VOICE_RECOGNITION_FUNCTION)  |
         (1<<HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_AGSF_EC_NR_FUNCTION) |
         (1<<HFP_AGSF_THREE_WAY_CALLING);
     int wide_band_speech = 1;
 

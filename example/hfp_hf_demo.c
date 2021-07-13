@@ -162,6 +162,14 @@ static void show_usage(void){
     printf("\n");
 }
 
+static void report_status(uint8_t status, const char * message){
+    if (status != ERROR_CODE_SUCCESS){
+        printf("%s command failed, status 0x%02x\n", message, status);
+    } else {
+        printf("%s command successful\n", message);
+    }
+}
+
 static void stdin_process(char c){
     uint8_t status = ERROR_CODE_SUCCESS;
 
@@ -618,6 +626,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             
                             break;
 
+                        case HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE:
+                            status = hfp_subevent_echo_canceling_and_noise_reduction_deactivate_get_status(event);
+                            report_status(status, "Echo Canceling and Noise Reduction Deactivate");
+                            break;
                         default:
                             break;
                     }
@@ -666,6 +678,7 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
         (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION)  |
         (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_HFSF_EC_NR_FUNCTION) |
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;
 
