@@ -2154,6 +2154,8 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
     if (!hfp_connection) return;
     if (size < 1) return;
+    
+    uint8_t status = ERROR_CODE_SUCCESS;
 
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
@@ -2264,7 +2266,9 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                     log_info("AG: EC/NR = %u", hfp_connection->ag_echo_and_noise_reduction);
                 } else {
                     hfp_connection->send_error = 1;
+                    status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 }
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
                 break;
             case HFP_CMD_CALL_ANSWERED:
                 hfp_connection->command = HFP_CMD_NONE;
