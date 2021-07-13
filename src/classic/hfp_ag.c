@@ -80,6 +80,7 @@ void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
+#define HFP_SUBEVENT_INVALID 0xFFFF
 
 // const
 static const char default_hfp_ag_service_name[] = "Voice gateway";
@@ -1892,10 +1893,20 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
+static void hfp_emit_event_for_command(hfp_connection_t * hfp_connection, uint8_t status){
+    switch(hfp_connection->response_pending_for_command){
+        case HFP_CMD_TURN_OFF_EC_AND_NR:
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
+            break;
+        default:
+            break;
+    }
+}
 
 // sends pending command, returns if command was sent
 static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
-    
+    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
+
     if (hfp_connection->send_status_of_current_calls){
         hfp_connection->ok_pending = 0; 
         if (hfp_connection->next_call_index < hfp_gsm_get_number_of_calls()){
@@ -1927,6 +1938,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->send_error){
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
+        hfp_emit_event_for_command(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED);
         hfp_ag_send_error(hfp_connection->rfcomm_cid); 
         return 1;
     }
@@ -1942,6 +1954,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->ok_pending){
         hfp_connection->ok_pending = 0;
         hfp_connection->command = HFP_CMD_NONE;
+        hfp_emit_event_for_command(hfp_connection, ERROR_CODE_SUCCESS);
         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
         return 1;
     }
@@ -2152,11 +2165,8 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
-    if (!hfp_connection) return;
     if (size < 1) return;
     
-    uint8_t status = ERROR_CODE_SUCCESS;
-
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
     hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
@@ -2266,9 +2276,8 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                     log_info("AG: EC/NR = %u", hfp_connection->ag_echo_and_noise_reduction);
                 } else {
                     hfp_connection->send_error = 1;
-                    status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 }
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
+                hfp_connection->response_pending_for_command = HFP_CMD_TURN_OFF_EC_AND_NR;
                 break;
             case HFP_CMD_CALL_ANSWERED:
                 hfp_connection->command = HFP_CMD_NONE;

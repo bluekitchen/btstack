@@ -588,8 +588,11 @@ typedef struct hfp_connection {
     // TODO: put these bit flags in a bitmap
     uint8_t ok_pending;
     uint8_t send_error;
+
     // track command
-    hfp_command_t ok_pending_for_command;
+    // in AG: track command for which ok/error response need to be sent
+    // in HF: track command for which ok/error response need to be received
+    hfp_command_t response_pending_for_command;
 
     bool found_equal_sign;
     uint8_t ignore_value;
