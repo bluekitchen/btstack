@@ -141,11 +141,11 @@ static void show_usage(void){
     printf("U - end active call and accept other call' (TWC 1)\n");
     printf("v - Swap active call call (TWC 2)          | V - Join held call (TWC 3)\n");
     printf("w - Connect calls (TWC 4)                  | W - redial\n");
+    printf("m - deactivate echo canceling and noise reduction\n");
     printf("c/C - disable/enable registration status update for all AG indicators\n");
     printf("e/E - disable/enable reporting of the extended AG error result code\n");
     printf("k/K - deactivate/activate call waiting notification\n");
     printf("l/L - deactivate/activate calling line notification\n");
-    printf("m/M - deactivate/activate echo canceling and noise reduction\n");
     printf("n/N - deactivate/activate voice recognition\n");
     printf("r/R - deactivate/activate enhanced voice recognition\n");
     printf("0123456789#*-+ - send DTMF dial tones\n");
@@ -295,11 +295,6 @@ static void stdin_process(char c){
             log_info("USER:\'%c\'", cmd);
             printf("Deactivate echo canceling and noise reduction\n");
             hfp_hf_deactivate_echo_canceling_and_noise_reduction(acl_handle);
-            break;
-        case 'M':
-            log_info("USER:\'%c\'", cmd);
-            printf("Activate echo canceling and noise reduction\n");
-            hfp_hf_activate_echo_canceling_and_noise_reduction(acl_handle);
             break;
         case 'n':
             log_info("USER:\'%c\'", cmd);

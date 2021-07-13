@@ -344,22 +344,15 @@ uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle)
 
 
 /*
- * @brief Activate echo canceling and noise reduction in the AG. By default, 
- * if the AG supports its own embedded echo canceling and/or noise reduction 
- * functions, it shall have them activated until this function is called.
- * If the AG does not support any echo canceling and noise reduction functions, 
- * it shall respond with the ERROR indicator (TODO)
+ * @brief Deactivate echo canceling (EC) and noise reduction (NR) in the AG and emit 
+ * HFP_SUBEVENT_ECHO_CANCELING_NOISE_REDUCTION_DEACTIVATE with status ERROR_CODE_SUCCESS if AG supports EC and AG.
+ * If the AG supports its own embedded echo canceling and/or noise reduction function, 
+ * it shall have EC and NR activated until this function is called.
  *
  * @param acl_handle
- * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
- */
-uint8_t hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
-
-/*
- * @brief Deactivate echo canceling and noise reduction in the AG.
- *
- * @param acl_handle
- * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
+ * @return status ERROR_CODE_SUCCESS if successful, otherwise:
+ *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or 
+ *              - ERROR_CODE_COMMAND_DISALLOWED if HFP_(HF/AG)SF_EC_NR_FUNCTION feature is not supported by AG and HF
  */
 uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
 
@@ -371,7 +364,7 @@ uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t ac
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
- *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition, or already activated
+ *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_VOICE_RECOGNITION_FUNCTION is not supported by HF and AG, or already activated
  */
 uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
 
@@ -383,7 +376,7 @@ uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, or
- *              - ERROR_CODE_COMMAND_DISALLOWED if AG or HF does not support voice recognition, or already activated
+ *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_VOICE_RECOGNITION_FUNCTION is not supported by HF and AG, or already activated
  */
 uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
@@ -394,7 +387,7 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_COMMAND_DISALLOWED if HF does not support it, or wrong VRA status
+ *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS is not supported by HF and AG, or wrong VRA status
  */
 uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
@@ -406,7 +399,7 @@ uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_COMMAND_DISALLOWED if HF does not support it, or wrong VRA status
+ *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS is not supported by HF and AG, or wrong VRA status
  */
 uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
@@ -417,7 +410,7 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_COMMAND_DISALLOWED if HF does not support it, or wrong VRA status
+ *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS is not supported by HF and AG, or wrong VRA status
  */
 uint8_t hfp_hf_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 

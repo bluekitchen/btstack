@@ -1758,16 +1758,10 @@ uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle)
     return ERROR_CODE_SUCCESS;
 }
 
-
-uint8_t hfp_hf_activate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
-    if (!hfp_connection) {
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    
-    hfp_connection->hf_activate_echo_canceling_and_noise_reduction = 1;
-    hfp_hf_run_for_context(hfp_connection);
-    return ERROR_CODE_SUCCESS;
+static bool hfp_hf_echo_canceling_and_noise_reduction_supported(hfp_connection_t * hfp_connection){
+    int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_EC_NR_FUNCTION);
+    int hf = get_bit(hfp_supported_features, HFP_HFSF_EC_NR_FUNCTION);
+    return hf && ag;
 }
 
 uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle){
@@ -1775,7 +1769,10 @@ uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t ac
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    
+    if (!hfp_hf_echo_canceling_and_noise_reduction_supported(hfp_connection)){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     hfp_connection->hf_deactivate_echo_canceling_and_noise_reduction = 1;
     hfp_hf_run_for_context(hfp_connection);
     return ERROR_CODE_SUCCESS;

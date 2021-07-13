@@ -195,10 +195,6 @@ static void user_command(char cmd){
             printf("Deactivate echo canceling and noise reduction\n");
             hfp_hf_deactivate_echo_canceling_and_noise_reduction(acl_handle);
             break;
-        case 'M':
-            printf("Activate echo canceling and noise reduction\n");
-            hfp_hf_activate_echo_canceling_and_noise_reduction(acl_handle);
-            break;
         case 'n':
             printf("Deactivate voice recognition\n");
             hfp_hf_deactivate_voice_recognition(acl_handle);
