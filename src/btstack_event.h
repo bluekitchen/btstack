@@ -4895,6 +4895,25 @@ static inline const uint8_t * hfp_subevent_enhanced_voice_recognition_ag_message
     return &event[11];
 }
 
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_echo_canceling_and_noise_reduction_deactivate_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_echo_canceling_and_noise_reduction_deactivate_get_status(const uint8_t * event){
+    return event[5];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED

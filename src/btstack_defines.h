@@ -1834,6 +1834,13 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x24
 
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status
+ */
+#define HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE   0x25
 
 
 // ANCS Client
