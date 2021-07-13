@@ -829,7 +829,7 @@ static void hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection
 }
 
 
-static void hfp_ag_emit_hf_indicator_value_changed(hfp_connection_t * hfp_connection, uint16_t uuid, uint8_t value){
+static void hfp_ag_emit_hf_indicator_value(hfp_connection_t * hfp_connection, uint16_t uuid, uint8_t value){
     hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
     
     uint8_t event[8];
@@ -2220,7 +2220,7 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                                 break;
                             }
                             hfp_connection->ok_pending = 1;
-                            hfp_ag_emit_hf_indicator_value_changed(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
+                            hfp_ag_emit_hf_indicator_value(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
                             break;
                         case HFP_HF_INDICATOR_UUID_BATTERY_LEVEL: 
                             if (hfp_connection->parser_indicator_value > 100){
@@ -2228,11 +2228,10 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                                 break;
                             }
                             hfp_connection->ok_pending = 1;
-                            hfp_ag_emit_hf_indicator_value_changed(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
+                            hfp_ag_emit_hf_indicator_value(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
                             break;
                         default:
-                            hfp_connection->ok_pending = 1;
-                            hfp_ag_emit_hf_indicator_value_changed(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
+                            hfp_connection->send_error = 1;
                             break;
                     }
                 } else {
