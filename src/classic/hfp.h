@@ -119,6 +119,8 @@ extern "C" {
 #define HFP_MAX_VR_TEXT_SIZE        100
 #define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
 
+#define HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY   0x0001  // 0 - disabled, 1 - enabled
+#define HFP_HF_INDICATOR_UUID_BATTERY_LEVEL     0X0002  // 0-100 remaining level of battery
     
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
@@ -589,11 +591,6 @@ typedef struct hfp_connection {
     uint8_t ok_pending;
     uint8_t send_error;
 
-    // track command
-    // in AG: track command for which ok/error response need to be sent
-    // in HF: track command for which ok/error response need to be received
-    hfp_command_t response_pending_for_command;
-
     bool found_equal_sign;
     uint8_t ignore_value;
 
@@ -652,6 +649,9 @@ typedef struct hfp_connection {
     int next_call_index;
 
     // HF only
+    // HF: track command for which ok/error response need to be received
+    hfp_command_t response_pending_for_command;
+
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_initiate_outgoing_call;

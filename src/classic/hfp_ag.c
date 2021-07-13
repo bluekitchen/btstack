@@ -828,6 +828,20 @@ static void hfp_ag_emit_enhanced_voice_recognition_msg_sent_event(hfp_connection
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
+static void hfp_ag_emit_hf_indicator_value_changed(hfp_connection_t * hfp_connection, uint16_t uuid, uint8_t value){
+    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+    
+    uint8_t event[8];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_HF_INDICATOR;
+    little_endian_store_16(event, 3, acl_handle);
+    little_endian_store_16(event, 5, uuid);
+    event[7] = value;
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
         return 0;
@@ -1893,20 +1907,8 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
-static void hfp_emit_event_for_command(hfp_connection_t * hfp_connection, uint8_t status){
-    switch(hfp_connection->response_pending_for_command){
-        case HFP_CMD_TURN_OFF_EC_AND_NR:
-            hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
-            break;
-        default:
-            break;
-    }
-}
-
 // sends pending command, returns if command was sent
 static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
-    hfp_connection->response_pending_for_command = HFP_CMD_NONE;
-
     if (hfp_connection->send_status_of_current_calls){
         hfp_connection->ok_pending = 0; 
         if (hfp_connection->next_call_index < hfp_gsm_get_number_of_calls()){
@@ -1938,7 +1940,6 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->send_error){
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_emit_event_for_command(hfp_connection, ERROR_CODE_COMMAND_DISALLOWED);
         hfp_ag_send_error(hfp_connection->rfcomm_cid); 
         return 1;
     }
@@ -1954,7 +1955,6 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->ok_pending){
         hfp_connection->ok_pending = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_emit_event_for_command(hfp_connection, ERROR_CODE_SUCCESS);
         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
         return 1;
     }
@@ -2166,7 +2166,8 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t *packet, uint16_t size){
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
     if (size < 1) return;
-    
+    uint8_t status = ERROR_CODE_SUCCESS;
+
     hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
 #ifdef ENABLE_HFP_AT_MESSAGES
     hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_AT_MESSAGE_RECEIVED, (char *) packet);
@@ -2209,32 +2210,34 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 break;
             case HFP_CMD_HF_INDICATOR_STATUS:
                 hfp_connection->command = HFP_CMD_NONE;
+                
                 if (hfp_connection->parser_indicator_index < hfp_generic_status_indicators_nr){
                     indicator = &hfp_generic_status_indicators[hfp_connection->parser_indicator_index];
+                    switch (indicator->uuid){
+                        case HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY: 
+                            if (hfp_connection->parser_indicator_value > 1) {
+                                hfp_connection->send_error = 1;
+                                break;
+                            }
+                            hfp_connection->ok_pending = 1;
+                            hfp_ag_emit_hf_indicator_value_changed(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
+                            break;
+                        case HFP_HF_INDICATOR_UUID_BATTERY_LEVEL: 
+                            if (hfp_connection->parser_indicator_value > 100){
+                                hfp_connection->send_error = 1;
+                                break;
+                            }
+                            hfp_connection->ok_pending = 1;
+                            hfp_ag_emit_hf_indicator_value_changed(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
+                            break;
+                        default:
+                            hfp_connection->ok_pending = 1;
+                            hfp_ag_emit_hf_indicator_value_changed(hfp_connection, indicator->uuid, hfp_connection->parser_indicator_value);
+                            break;
+                    }
                 } else {
                     hfp_connection->send_error = 1;
-                    break;
                 }
-                switch (indicator->uuid){
-                    case 1: // enhanced security
-                        if (hfp_connection->parser_indicator_value > 1) {
-                            hfp_connection->send_error = 1;
-                            return;
-                        }
-                        log_info("HF Indicator 'enhanced security' set to %u", (unsigned int) hfp_connection->parser_indicator_value);
-                        break;
-                    case 2: // battery level
-                        if (hfp_connection->parser_indicator_value > 100){
-                            hfp_connection->send_error = 1;
-                            return;
-                        }
-                        log_info("HF Indicator 'battery' set to %u", (unsigned int) hfp_connection->parser_indicator_value);
-                        break;
-                    default:
-                        log_info("HF Indicator unknown set to %u", (unsigned int) hfp_connection->parser_indicator_value);
-                        break;
-                }
-                hfp_connection->ok_pending = 1;
                 break;
             case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
                 // expected by SLC state machine
@@ -2270,14 +2273,16 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 break;
             case HFP_CMD_TURN_OFF_EC_AND_NR:
                 hfp_connection->command = HFP_CMD_NONE;
+                
                 if (get_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION)){
                     hfp_connection->ok_pending = 1;
                     hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_EC_NR_FUNCTION, hfp_connection->ag_echo_and_noise_reduction);
-                    log_info("AG: EC/NR = %u", hfp_connection->ag_echo_and_noise_reduction);
+                    status = ERROR_CODE_SUCCESS;
                 } else {
                     hfp_connection->send_error = 1;
+                    status = ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
                 }
-                hfp_connection->response_pending_for_command = HFP_CMD_TURN_OFF_EC_AND_NR;
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
                 break;
             case HFP_CMD_CALL_ANSWERED:
                 hfp_connection->command = HFP_CMD_NONE;

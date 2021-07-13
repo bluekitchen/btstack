@@ -627,6 +627,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     report_status(status, "Echo Canceling and Noise Reduction Deactivate");
                     break;
 
+                case HFP_SUBEVENT_HF_INDICATOR:
+                    switch (hfp_subevent_hf_indicator_get_uuid(event)){
+                        case HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY:
+                            printf("Received ENHANCED SAFETY indicator, value %d\n", hfp_subevent_hf_indicator_get_value(event));
+                            break;
+                        case HFP_HF_INDICATOR_UUID_BATTERY_LEVEL:
+                            printf("Received BATTERY LEVEL indicator, value %d\n", hfp_subevent_hf_indicator_get_value(event));
+                            break;
+                        default:
+                            printf("Received HF INDICATOR indicator, UUID 0x%4X, value %d\n", hfp_subevent_hf_indicator_get_uuid(event), hfp_subevent_hf_indicator_get_value(event));
+                            break;
+                    }
+                    break;
                 default:
                     break;
             }

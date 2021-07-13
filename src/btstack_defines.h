@@ -1842,6 +1842,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE   0x25
 
+/**
+ * @format 1H21
+ * @param subevent_code
+ * @param acl_handle
+ * @param uuid
+ * @param value
+ */
+#define HFP_SUBEVENT_HF_INDICATOR                                    0x26
+
 
 // ANCS Client
 

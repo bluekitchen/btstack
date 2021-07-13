@@ -4914,6 +4914,34 @@ static inline uint8_t hfp_subevent_echo_canceling_and_noise_reduction_deactivate
     return event[5];
 }
 
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_HF_INDICATOR
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_hf_indicator_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field uuid from event HFP_SUBEVENT_HF_INDICATOR
+ * @param event packet
+ * @return uuid
+ * @note: btstack_type 2
+ */
+static inline uint16_t hfp_subevent_hf_indicator_get_uuid(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field value from event HFP_SUBEVENT_HF_INDICATOR
+ * @param event packet
+ * @return value
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_hf_indicator_get_value(const uint8_t * event){
+    return event[7];
+}
+
 #ifdef ENABLE_BLE
 /**
  * @brief Get field handle from event ANCS_SUBEVENT_CLIENT_CONNECTED

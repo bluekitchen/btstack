@@ -589,17 +589,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 printf("Voice Recognition command failed\n");
                                 break;
                             }
-                            switch(hfp_subevent_voice_recognition_status_get_state(event)){
-                                case 0:
-                                    printf("\nVoice recognition status DEACTIVATED\n\n");
-                                    break;
-                                case 1:
-                                    printf("\nVoice recognition status ACTIVATED\n\n");
-                                    break;
-                                default:
-                                    btstack_assert(false);
-                                    break;
-                            }
+                            
+                            if (hfp_subevent_voice_recognition_status_get_state(event) > 0){
+                                printf("\nVoice recognition status ACTIVATED\n\n");
+                            } else {
+                                printf("\nVoice recognition status DEACTIVATED\n\n");
+                            }  
                             break;
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
