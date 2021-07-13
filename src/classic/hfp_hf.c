@@ -811,7 +811,7 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 
     if (hfp_connection->hf_deactivate_echo_canceling_and_noise_reduction){
         hfp_connection->hf_deactivate_echo_canceling_and_noise_reduction = 0;
-        hfp_connection->hf_ok_pending_for_command = HFP_CMD_TURN_OFF_EC_AND_NR;
+        hfp_connection->ok_pending_for_command = HFP_CMD_TURN_OFF_EC_AND_NR;
         hfp_connection->ok_pending = 1;
         hfp_hf_send_cmd_with_int(hfp_connection->rfcomm_cid, HFP_TURN_OFF_EC_AND_NR, 0);
         return;
@@ -1037,7 +1037,7 @@ static void hfp_hf_handle_suggested_codec(hfp_connection_t * hfp_connection){
 static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_t status){
     bool event_emited = true;
 
-    switch (hfp_connection->hf_ok_pending_for_command){
+    switch (hfp_connection->ok_pending_for_command){
         case HFP_CMD_TURN_OFF_EC_AND_NR:
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE, status);
             break;
@@ -1148,7 +1148,7 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
     }
 
     // done
-    hfp_connection->hf_ok_pending_for_command = HFP_CMD_NONE;
+    hfp_connection->ok_pending_for_command = HFP_CMD_NONE;
     hfp_connection->ok_pending = 0;
     hfp_connection->command = HFP_CMD_NONE;
     return event_emited;

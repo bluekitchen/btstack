@@ -587,8 +587,9 @@ typedef struct hfp_connection {
 
     // TODO: put these bit flags in a bitmap
     uint8_t ok_pending;
-    // uint8_t send_ok;
     uint8_t send_error;
+    // track command
+    hfp_command_t ok_pending_for_command;
 
     bool found_equal_sign;
     uint8_t ignore_value;
@@ -648,8 +649,6 @@ typedef struct hfp_connection {
     int next_call_index;
 
     // HF only
-    hfp_command_t hf_ok_pending_for_command;
-
     hfp_hf_query_operator_state_t hf_query_operator_state;
     uint8_t hf_answer_incoming_call;
     uint8_t hf_initiate_outgoing_call;
