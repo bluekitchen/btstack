@@ -419,9 +419,9 @@ void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t st
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-    event[pos++] = status; // status 0 == OK
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
+    event[pos++] = status; // status 0 == OK
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
