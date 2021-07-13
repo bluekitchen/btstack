@@ -2366,6 +2366,7 @@ static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
             hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
+            btstack_assert(hfp_connection != NULL);
 
             hfp_ag_handle_rfcomm_data(hfp_connection, packet, size);
             hfp_ag_run_for_context(hfp_connection);
@@ -2373,7 +2374,10 @@ static void hfp_ag_rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, 
         case HCI_EVENT_PACKET:
             if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
                 uint16_t rfcomm_cid = rfcomm_event_can_send_now_get_rfcomm_cid(packet);
-                hfp_ag_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
+                hfp_connection = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
+                btstack_assert(hfp_connection != NULL);
+
+                hfp_ag_run_for_context(hfp_connection);
                 return;
             }
             hfp_handle_rfcomm_event(packet_type, channel, packet, size, HFP_ROLE_AG);
