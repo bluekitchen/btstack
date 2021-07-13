@@ -22,11 +22,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - HFP: API functions return status code if appropriate 
 - HFP: removed one parameter from hfp_ag/hf_activate_voice_recognition function, instead introduced hfp_ag/hf_deactivate_voice_recognition 
-- HFP: event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS emitted on (enhanced) voice recognition status change. Field "activated" replaced with "state". Added additional "status" field that indicates if the command was succesful.
+- HFP: event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS emitted on (enhanced) voice recognition status change. Field "activated" replaced with "state". Added additional "status" field that indicates if the command was successful.
 - HFP: streamlined enhanced voice recognition function names
 - Run Loop: new functionality for HCI transport drivers and inter-process communication
   - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
-  - *btstack_run_loop_execute_on_main_thread*: schedule code exection on main thread from other thread
+  - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread
   - *btstack_run_loop_trigger_exit*: trigger run loop exit
 - POSIX / Windows / Raspi / Qt: use updated ctrl-c handling
 
