@@ -1351,7 +1351,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             err = l2cap_send(channel, data, length);
             break;
         case RFCOMM_DATA_PACKET:
-            // process l2cap packet...
+            // process rfcomm packet...
             err = rfcomm_send(channel, data, length);
             break;
         case DAEMON_EVENT_PACKET:
@@ -1648,7 +1648,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
             if (!connection) return;
             break;
         case RFCOMM_DATA_PACKET:        
-            connection = connection_for_l2cap_cid(channel);
+            connection = connection_for_rfcomm_cid(channel);
             if (!connection) return;
             break;
         default:
