@@ -604,11 +604,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
                             status = hfp_subevent_enhanced_voice_recognition_hf_ready_for_audio_get_status(event);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("Enhanced Voice recognition READY FOR AUDIO cmd failed\n");
-                                break;
-                            }
-                            printf("\nEnhanced Voice recognition status READY FOR AUDIO\n\n");
+                            report_status(status, "Enhanced Voice recognition: READY FOR AUDIO");
                             break;
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT:
@@ -623,7 +619,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE:
                             printf("\nEnhanced Voice recognition AG message: \'%s\'\n", hfp_subevent_enhanced_voice_recognition_ag_message_get_text(event));                            
-                            
                             break;
 
                         case HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE:
