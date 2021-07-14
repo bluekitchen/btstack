@@ -140,6 +140,7 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
             }
             connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
             stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_CATEGORY_WITH_ERROR_CODE;
+            return;
         } else {
             stream_endpoint->remote_sep = sep;
             log_info("update remote seid %d", stream_endpoint->remote_sep.seid);
