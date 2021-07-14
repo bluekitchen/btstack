@@ -1083,10 +1083,10 @@ static void hfp_timeout_handler(btstack_timer_source_t * timer){
 }
 
 static void hfp_timeout_start(hfp_connection_t * hfp_connection){
-    btstack_run_loop_remove_timer(& hfp_connection->hfp_timeout);
-    btstack_run_loop_set_timer_handler(& hfp_connection->hfp_timeout, hfp_timeout_handler);
-    btstack_run_loop_set_timer(& hfp_connection->hfp_timeout, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(& hfp_connection->hfp_timeout);
+    btstack_run_loop_remove_timer(&hfp_connection->hfp_timeout);
+    btstack_run_loop_set_timer_handler(&hfp_connection->hfp_timeout, hfp_timeout_handler);
+    btstack_run_loop_set_timer(&hfp_connection->hfp_timeout, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(&hfp_connection->hfp_timeout);
 }
 
 static void hfp_timeout_stop(hfp_connection_t * hfp_connection){
@@ -1990,6 +1990,7 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
     if (hfp_connection->ag_ring){
         hfp_connection->ag_ring = 0;
         hfp_connection->command = HFP_CMD_NONE;
+        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_RING);
         hfp_ag_send_ring(hfp_connection->rfcomm_cid);
         return 1;
     }

@@ -551,10 +551,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     sco_demo_close();
                     break;
                 case HFP_SUBEVENT_START_RINGINIG:
-                    printf("Start Ringing\n");
-                    break;        
+                    printf("** START Ringing **\n");
+                    break;
+                case HFP_SUBEVENT_RING:
+                    printf("** Ring **\n");
+                    break;
                 case HFP_SUBEVENT_STOP_RINGINIG:
-                    printf("Stop Ringing\n");
+                    printf("** STOP Ringing **\n");
                     break;
                 case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:
                     printf("Outgoing call '%s'\n", hfp_subevent_place_call_with_number_get_number(event));
