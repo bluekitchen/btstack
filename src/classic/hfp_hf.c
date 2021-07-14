@@ -1157,13 +1157,33 @@ static bool hfp_hf_switch_on_ok_pending(hfp_connection_t *hfp_connection, uint8_
     return event_emited;
 }   
 
+static bool hfp_is_ringing(hfp_callsetup_status_t callsetup_status){
+    switch (callsetup_status){
+        case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+        case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
+            return true;
+        default:
+            return false;
+   }
+}
 
 static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_connection) {
     uint16_t i;
+
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         if (hfp_connection->ag_indicators[i].status_changed) {
             if (strcmp(hfp_connection->ag_indicators[i].name, "callsetup") == 0){
-                hfp_hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
+                hfp_callsetup_status_t new_hf_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
+                bool ringing_old = hfp_is_ringing(hfp_hf_callsetup_status);
+                bool ringing_new = hfp_is_ringing(new_hf_callsetup_status);
+                if (ringing_old != ringing_new){
+                    if (ringing_new){
+                        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
+                    } else {
+                        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
+                    } 
+                }                
+                hfp_hf_callsetup_status = new_hf_callsetup_status;
             } else if (strcmp(hfp_connection->ag_indicators[i].name, "callheld") == 0){
                 hfp_hf_callheld_status = (hfp_callheld_status_t) hfp_connection->ag_indicators[i].status;
                 // avoid set but not used warning
