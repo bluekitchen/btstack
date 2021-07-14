@@ -891,7 +891,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos++];
-                    uint8_t capability_count = packet[pos++];
+                    uint8_t capability_count = 0;
+                    if (param_length > 1){
+                        capability_count = packet[pos++];
+                    }
                     uint16_t i;
                     uint16_t offset = 0;
                     uint8_t event[10];
@@ -899,6 +902,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     switch (capability_id){
 
                         case AVRCP_CAPABILITY_ID_COMPANY:
+                            // TODO: avoid out of bounds read
                             for (i = 0; i < capability_count; i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
@@ -930,6 +934,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
 
                         case AVRCP_CAPABILITY_ID_EVENT:
+                            // TODO: avoid out of bounds read
                             for (i = 0; i < capability_count; i++){
                                 uint8_t event_id = packet[pos++];
                                 log_info("  0x%02x %s", event_id, avrcp_event2str(event_id));
@@ -958,7 +963,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
 
                         default:
-                            btstack_assert(false);
+                            // ignore
                             break;
                     }
                     break;
