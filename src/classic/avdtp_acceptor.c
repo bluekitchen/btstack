@@ -101,6 +101,13 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, connection->acceptor_signaling_packet.signal_identifier, &sep.configuration, connection->acceptor_signaling_packet.command+offset, packet_size-offset);
     sep.in_use = 1;
 
+    // test if sep already in use
+    if (stream_endpoint->sep.in_use != 0){
+        log_info("stream endpoint already in use");
+        connection->error_code = AVDTP_ERROR_CODE_SEP_IN_USE;
+        connection->reject_service_category = 0;
+    }
+
     // let application validate media configuration as well
     if (connection->error_code == 0){
         if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){
@@ -150,6 +157,9 @@ avdtp_acceptor_handle_configuration_command(avdtp_connection_t *connection, int 
         stream_endpoint->remote_sep = sep;
         log_info("add remote seid %d", stream_endpoint->remote_sep.seid);
     }
+    
+    // mark as in_use
+    stream_endpoint->sep.in_use = 1;
 
 	// if media codec configuration set, copy configuration and emit event
 	if ((sep.configured_service_categories & (1 << AVDTP_MEDIA_CODEC)) != 0){

@@ -171,6 +171,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t *connection, uint8_t
                     sep.in_use = 1;
                     
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+                    stream_endpoint->sep.in_use = 1;
                     stream_endpoint->remote_sep = sep;
                     stream_endpoint->connection = connection;
                     connection->configuration_state = AVDTP_CONFIGURATION_STATE_LOCAL_CONFIGURED;

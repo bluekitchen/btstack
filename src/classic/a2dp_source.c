@@ -422,7 +422,6 @@ static void a2dp_source_packet_handler_internal(uint8_t packet_type, uint16_t ch
                     configuration.min_bitpool_value  = avdtp_choose_sbc_min_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
                     // and pre-select this endpoint
-                    stream_endpoint->sep.in_use = 1;
                     local_seid = avdtp_stream_endpoint_seid(stream_endpoint);
                     remote_seid = avdtp_subevent_signaling_media_codec_sbc_capability_get_remote_seid(packet);
                     a2dp_source_set_config_sbc(cid, local_seid, remote_seid, &configuration);
