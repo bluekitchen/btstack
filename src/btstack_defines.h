@@ -1620,7 +1620,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_START_RINGINIG                           0x0A
+#define HFP_SUBEVENT_START_RINGING                            0x0A
 
 /**
  * @format 1H
@@ -1634,7 +1634,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_STOP_RINGINIG                            0x0C
+#define HFP_SUBEVENT_STOP_RINGING                             0x0C
 
 /**
  * @format 1HT

@@ -554,8 +554,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : 0x%02x\n",
                                 hfp_subevent_extended_audio_gateway_error_get_error(event));
                             break;
+                        case HFP_SUBEVENT_START_RINGING:
+                            printf("** START Ringing **\n");
+                            break;
                         case HFP_SUBEVENT_RING:
                             printf("** Ring **\n");
+                            break;
+                        case HFP_SUBEVENT_STOP_RINGING:
+                            printf("** STOP Ringing **\n");
                             break;
                         case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
                             printf("Phone number for voice tag: %s\n", 

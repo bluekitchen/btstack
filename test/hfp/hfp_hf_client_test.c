@@ -409,11 +409,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             printf("\n** AC released **\n\n");
             audio_connection_established = 0;
             break;
-        case HFP_SUBEVENT_START_RINGINIG:
+        case HFP_SUBEVENT_START_RINGING:
             printf("\n** Start ringing **\n\n"); 
             start_ringing = 1;
             break;
-        case HFP_SUBEVENT_STOP_RINGINIG:
+        case HFP_SUBEVENT_STOP_RINGING:
             printf("\n** Stop ringing **\n\n"); 
             stop_ringing = 1;
             start_ringing = 0;

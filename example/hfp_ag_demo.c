@@ -550,13 +550,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     sco_handle = HCI_CON_HANDLE_INVALID;
                     sco_demo_close();
                     break;
-                case HFP_SUBEVENT_START_RINGINIG:
+                case HFP_SUBEVENT_START_RINGING:
                     printf("** START Ringing **\n");
                     break;
                 case HFP_SUBEVENT_RING:
                     printf("** Ring **\n");
                     break;
-                case HFP_SUBEVENT_STOP_RINGINIG:
+                case HFP_SUBEVENT_STOP_RINGING:
                     printf("** STOP Ringing **\n");
                     break;
                 case HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER:

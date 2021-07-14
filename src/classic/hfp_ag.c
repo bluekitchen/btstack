@@ -1125,7 +1125,7 @@ static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection){
         hfp_connection->ag_ring = 1;
         hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
         hfp_connection->call_state = HFP_CALL_RINGING;
-        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGINIG);
+        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
     }
 }
 
@@ -1133,7 +1133,7 @@ static void hfp_ag_hf_stop_ringing(hfp_connection_t * hfp_connection){
     hfp_connection->ag_ring = 0;
     hfp_connection->ag_send_clip = 0;
     hfp_timeout_stop(hfp_connection);
-    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGINIG);
+    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
 }
 
 static void hfp_ag_trigger_incoming_call(void){
@@ -1364,7 +1364,7 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
             hfp_connection->ag_ring = 1;
             hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
             hfp_connection->call_state = HFP_CALL_RINGING;
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGINIG);
+            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
             break;        
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
             if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;

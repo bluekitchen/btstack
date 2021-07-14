@@ -4311,12 +4311,12 @@ static inline uint8_t hfp_subevent_extended_audio_gateway_error_get_error(const 
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_START_RINGINIG
+ * @brief Get field acl_handle from event HFP_SUBEVENT_START_RINGING
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_start_ringinig_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_start_ringing_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
@@ -4331,12 +4331,12 @@ static inline hci_con_handle_t hfp_subevent_ring_get_acl_handle(const uint8_t * 
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_STOP_RINGINIG
+ * @brief Get field acl_handle from event HFP_SUBEVENT_STOP_RINGING
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_stop_ringinig_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_stop_ringing_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
