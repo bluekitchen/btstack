@@ -82,6 +82,6 @@ public class GAPInquiry implements PacketHandler {
 	}
 	
 	public static void main(String args[]){
-		new Inquiry().test();
+		new GAPInquiry().test();
 	}
 }
