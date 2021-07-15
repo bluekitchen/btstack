@@ -202,6 +202,10 @@ static inline int get_active_call_index(void){
     return get_call_index_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_ACTIVE);
 }
 
+static inline int get_dialing_call_index(void){
+    return get_call_index_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_OUTGOING_DIALING);
+}
+
 static inline int get_held_call_index(void){
     return get_call_index_with_enhanced_status(HFP_ENHANCED_CALL_STATUS_HELD);
 }
@@ -408,6 +412,7 @@ void hfp_gsm_handler(hfp_ag_call_event_t event, uint8_t index, uint8_t type, con
             break;
         
         case HFP_AG_OUTGOING_CALL_RINGING:
+            current_call_index = get_dialing_call_index();
             if (current_call_index == -1){
                 log_error("gsm: no active call");
                 return;
