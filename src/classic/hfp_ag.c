@@ -644,10 +644,16 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE;
     }
     // if AG is ringing, also start ringing on the HF
-    if ((hfp_gsm_call_status() == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS) &&
-        (hfp_gsm_callsetup_status() == HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS)){
-        hfp_ag_hf_start_ringing(hfp_connection);
-    }
+    if (hfp_gsm_call_status() == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
+        switch (hfp_gsm_callsetup_status()){
+            case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
+            case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
+                hfp_ag_hf_start_ringing(hfp_connection);
+                break;
+            default:
+                break;
+        }
+    }    
 }
 
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){
