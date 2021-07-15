@@ -208,9 +208,14 @@ typedef uint8_t sm_key_t[16];
 #define RFCOMM_GRANT_CREDITS                 0x49
     
 // GAP Classic 0x50
-#define GAP_DISCONNECT              0x50
+#define GAP_DISCONNECT                0x50
+#define GAP_INQUIRY_START             0x51
+#define GAP_INQUIRY_STOP              0x52
+#define GAP_REMOTE_NAME_REQUEST       0x53
+#define GAP_DROP_LINK_KEY_FOR_BD_ADDR 0x54
+#define GAP_DELETE_ALL_LINK_KEYS      0x55
 
-// GAP LE      0x60  
+// GAP LE      0x60
 #define GAP_LE_SCAN_START           0x60
 #define GAP_LE_SCAN_STOP            0x61
 #define GAP_LE_CONNECT              0x62

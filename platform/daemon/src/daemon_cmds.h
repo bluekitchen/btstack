@@ -85,6 +85,11 @@ typedef enum {
     DAEMON_OPCODE_RFCOMM_DECLINE_CONNECTION = DAEMON_OPCODE(RFCOMM_DECLINE_CONNECTION),
     DAEMON_OPCODE_RFCOMM_PERSISTENT_CHANNEL_FOR_SERVICE = DAEMON_OPCODE(RFCOMM_PERSISTENT_CHANNEL),
     DAEMON_OPCODE_GAP_DISCONNECT = DAEMON_OPCODE(GAP_DISCONNECT),
+    DAEMON_OPCODE_GAP_INQUIRY_START = DAEMON_OPCODE(GAP_INQUIRY_START),
+    DAEMON_OPCODE_GAP_INQUIRY_STOP = DAEMON_OPCODE(GAP_INQUIRY_STOP),
+    DAEMON_OPCODE_GAP_REMOTE_NAME_REQUEST = DAEMON_OPCODE(GAP_REMOTE_NAME_REQUEST),
+    DAEMON_OPCODE_GAP_DROP_LINK_KEY_FOR_BD_ADDR = DAEMON_OPCODE(GAP_DROP_LINK_KEY_FOR_BD_ADDR),
+    DAEMON_OPCODE_GAP_DELETE_ALL_LINK_KEYS = DAEMON_OPCODE(GAP_DELETE_ALL_LINK_KEYS),
     DAEMON_OPCODE_GAP_LE_SCAN_START = DAEMON_OPCODE(GAP_LE_SCAN_START),
     DAEMON_OPCODE_GAP_LE_SCAN_STOP = DAEMON_OPCODE(GAP_LE_SCAN_STOP),
     DAEMON_OPCODE_GAP_LE_SET_SCAN_PARAMETERS = DAEMON_OPCODE(GAP_LE_SET_SCAN_PARAMETERS),
@@ -159,7 +164,13 @@ extern const hci_cmd_t rfcomm_unregister_service_cmd;
 extern const hci_cmd_t rfcomm_persistent_channel_for_service_cmd;
 extern const hci_cmd_t rfcomm_grants_credits_cmd;
 
+extern const hci_cmd_t gap_delete_all_link_keys_cmd;
 extern const hci_cmd_t gap_disconnect_cmd;
+extern const hci_cmd_t gap_drop_link_key_for_bd_addr_cmd;
+extern const hci_cmd_t gap_inquiry_start_cmd;
+extern const hci_cmd_t gap_inquiry_stop_cmd;
+extern const hci_cmd_t gap_remote_name_request_cmd;
+
 extern const hci_cmd_t gap_le_scan_start;
 extern const hci_cmd_t gap_le_scan_stop;
 extern const hci_cmd_t gap_le_set_scan_parameters;

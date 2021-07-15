@@ -976,6 +976,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
                 hci_power_control(HCI_POWER_OFF);
             }
             break;
+#ifdef ENABLE_CLASSIC
         case L2CAP_CREATE_CHANNEL_MTU:
             reverse_bd_addr(&packet[3], addr);
             psm = little_endian_read_16(packet, 9);
@@ -1138,6 +1139,30 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             
             sdp_client_query(&handle_sdp_client_query_result, addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
             break;
+#endif
+        case GAP_DISCONNECT:
+            handle = little_endian_read_16(packet, 3);
+            gap_disconnect(handle);
+            break;
+#ifdef ENABLE_CLASSIC
+        case GAP_INQUIRY_START:
+            gap_inquiry_start(packet[3]);
+            break;
+        case GAP_INQUIRY_STOP:
+            gap_inquiry_stop();
+            break;
+        case GAP_REMOTE_NAME_REQUEST:
+            reverse_bd_addr(&packet[3], addr);
+            gap_remote_name_request(addr, packet[9], little_endian_read_16(packet, 10));
+            break;
+        case GAP_DROP_LINK_KEY_FOR_BD_ADDR:
+            reverse_bd_addr(&packet[3], addr);
+            gap_drop_link_key_for_bd_addr(addr);
+            break;
+        case GAP_DELETE_ALL_LINK_KEYS:
+            gap_delete_all_link_keys();
+            break;
+#endif
 #ifdef ENABLE_BLE
         case GAP_LE_SCAN_START:
             gap_start_scan();
@@ -1155,10 +1180,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case GAP_LE_CONNECT_CANCEL:
             gap_connect_cancel();
-            break;
-        case GAP_DISCONNECT:
-            handle = little_endian_read_16(packet, 3);
-            gap_disconnect(handle);
             break;
 #endif
 #if defined(HAVE_MALLOC) && defined(ENABLE_BLE)
@@ -1965,6 +1986,9 @@ static void btstack_server_configure_stack(void){
     // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
     gap_ssp_set_enable(0);
 #endif
+
+    // enabled EIR
+    hci_set_inquiry_mode(INQUIRY_MODE_RSSI_AND_EIR);
 
     // register for HCI events
     hci_event_callback_registration.callback = &stack_packet_handler;

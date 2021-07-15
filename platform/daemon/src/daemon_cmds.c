@@ -275,6 +275,41 @@ const hci_cmd_t gap_disconnect_cmd = {
 };
 
 /**
+ * @param duration in 1.28s units
+ */
+const hci_cmd_t gap_inquiry_start_cmd = {
+    DAEMON_OPCODE_GAP_INQUIRY_START, "1"
+};
+
+/**
+ */
+const hci_cmd_t gap_inquiry_stop_cmd = {
+    DAEMON_OPCODE_GAP_INQUIRY_STOP, ""
+};
+
+/**
+* @param addr
+* @param page_scan_repetition_mode
+* @param clock_offset only used when bit 15 is set - pass 0 if not known
+ */
+const hci_cmd_t gap_remote_name_request_cmd = {
+    DAEMON_OPCODE_GAP_REMOTE_NAME_REQUEST, "B12"
+};
+
+/**
+* @param addr
+ */
+const hci_cmd_t gap_drop_link_key_cmd = {
+    DAEMON_OPCODE_GAP_DROP_LINK_KEY_FOR_BD_ADDR, "B"
+};
+
+/**
+ */
+const hci_cmd_t gap_delete_all_link_keys_cmd = {
+        DAEMON_OPCODE_GAP_DELETE_ALL_LINK_KEYS, ""
+};
+
+/**
  */
 const hci_cmd_t gap_le_scan_start = {
     DAEMON_OPCODE_GAP_LE_SCAN_START, ""
