@@ -11,7 +11,7 @@ import com.bluekitchen.btstack.event.GAPEventInquiryComplete;
 
 import java.nio.charset.StandardCharsets;
 
-public class Inquiry implements PacketHandler {
+public class GAPInquiry implements PacketHandler {
 
 	private enum STATE {
 		w4_btstack_working, w4_query_result,
