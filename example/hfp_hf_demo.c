@@ -492,6 +492,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                 case HCI_EVENT_HFP_META:
                     switch (hci_event_hfp_meta_get_subevent_code(event)) {
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                            status = hfp_subevent_service_level_connection_established_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("Connection failed, status 0x%02x\n", status);
+                                break;
+                            }
                             acl_handle = hfp_subevent_service_level_connection_established_get_acl_handle(event);
                             hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
                             printf("Service level connection established %s.\n\n", bd_addr_to_str(device_addr));
