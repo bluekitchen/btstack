@@ -1781,6 +1781,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             hfp_connection->call_state = HFP_CALL_OUTGOING_RINGING;
             hfp_ag_set_callsetup_indicator();
             hfp_ag_transfer_callsetup_state();
+            hfp_ag_hf_start_ringing(hfp_connection);
             break;
 
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:{
