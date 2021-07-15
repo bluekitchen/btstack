@@ -5260,7 +5260,7 @@ static void gap_inquiry_explode(uint8_t *packet, uint16_t size) {
     for (i=0; i<num_responses;i++){
         memset(event, 0, sizeof(event));
         event[0] = GAP_EVENT_INQUIRY_RESULT;
-        uint8_t event_size = 18;    // if name is not set by EIR
+        uint8_t event_size = 27;    // if name is not set by EIR
 
         (void)memcpy(&event[2], &packet[3 + (i * 6)], 6); // bd_addr
         event[8] =          packet[3 + (num_responses*(6))                         + (i*1)];     // page_scan_repetition_mode
