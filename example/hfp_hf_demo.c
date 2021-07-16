@@ -528,6 +528,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 hci_request_sco_can_send_now_event();
                             }
                             break;
+                        case HFP_SUBEVENT_CALL_TERMINATED:
+                            printf("Call terminated\n");
+                            break;
+
                         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
                             sco_handle = HCI_CON_HANDLE_INVALID;
                             printf("Audio connection released\n");
