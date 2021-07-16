@@ -85,6 +85,8 @@ static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 static int memory_1_enabled = 1;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static btstack_timer_source_t hfp_outgoing_call_ringing_timer;
+
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
     // index, name, min range, max range, status, mandatory, enabled, status changed
@@ -454,6 +456,18 @@ static void report_status(uint8_t status, const char * message){
     }
 }
 
+static void hfp_outgoing_call_ringing_handler(btstack_timer_source_t * timer){
+    UNUSED(timer);
+    printf("Simulate call connected -> start ringing\n");
+    hfp_ag_outgoing_call_ringing();
+}
+
+static void hfp_outgoing_call_ringing_start(void){
+    btstack_run_loop_set_timer_handler(&hfp_outgoing_call_ringing_timer, hfp_outgoing_call_ringing_handler);
+    btstack_run_loop_set_timer(&hfp_outgoing_call_ringing_timer, 1000); // 1 second timeout
+    btstack_run_loop_add_timer(&hfp_outgoing_call_ringing_timer);
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
     bd_addr_t addr;
@@ -567,6 +581,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                       || (memory_1_enabled && strcmp(">1", hfp_subevent_place_call_with_number_get_number(event)) == 0)){
                         printf("Dial string valid: accept call\n");
                         hfp_ag_outgoing_call_accepted();
+                        hfp_outgoing_call_ringing_start();
                     } else {
                         printf("Dial string invalid: reject call\n");
                         hfp_ag_outgoing_call_rejected();
