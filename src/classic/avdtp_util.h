@@ -103,7 +103,7 @@ void
 avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
                                    avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
 
-uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, avdtp_stream_endpoint_t *stream_endpoint,
+uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
                                               uint16_t avdtp_cid, uint8_t reconfigure,
                                               const avdtp_capabilities_t *configuration);
 
@@ -120,8 +120,8 @@ uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t *connection);
 void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 // uint16_t avdtp_cid(avdtp_stream_endpoint_t * stream_endpoint);
-uint8_t  avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint);
-uint8_t  avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint);
+uint8_t  avdtp_local_seid(const avdtp_stream_endpoint_t * stream_endpoint);
+uint8_t  avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint);
 const char * avdtp_si2str(uint16_t index);
 
 void a2dp_replace_subevent_id_and_emit_cmd(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size, uint8_t subevent_id);

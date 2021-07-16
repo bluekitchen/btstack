@@ -914,7 +914,7 @@ void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, 
 
 static uint16_t
 avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size,
-                                                   avdtp_stream_endpoint_t *stream_endpoint,
+                                                   const avdtp_stream_endpoint_t *stream_endpoint,
                                                    uint16_t avdtp_cid, uint8_t reconfigure,
                                                    const uint8_t *media_codec_information) {
 
@@ -1004,7 +1004,7 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
 
 static uint16_t
 avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16_t size,
-                                                          avdtp_stream_endpoint_t *stream_endpoint,
+                                                          const avdtp_stream_endpoint_t *stream_endpoint,
                                                           uint16_t avdtp_cid, uint8_t reconfigure,
                                                           const uint8_t *media_codec_information) {
 
@@ -1098,7 +1098,7 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
 
 static uint16_t
 avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t size,
-                                                        avdtp_stream_endpoint_t *stream_endpoint,
+                                                        const avdtp_stream_endpoint_t *stream_endpoint,
                                                         uint16_t avdtp_cid, uint8_t reconfigure,
                                                         const uint8_t *media_codec_information) {
 
@@ -1168,7 +1168,7 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
 }
 
 static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *event, uint16_t size,
-                                                                     avdtp_stream_endpoint_t *stream_endpoint,
+                                                                     const avdtp_stream_endpoint_t *stream_endpoint,
                                                                      uint16_t avdtp_cid, uint8_t reconfigure,
                                                                      const uint8_t *media_codec_information) {
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
@@ -1239,7 +1239,7 @@ static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *ev
 }
 
 static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *event, uint16_t size,
-                                                                     avdtp_stream_endpoint_t *stream_endpoint,
+                                                                     const avdtp_stream_endpoint_t *stream_endpoint,
                                                                      uint16_t avdtp_cid, uint8_t reconfigure,
                                                                      const adtvp_media_codec_capabilities_t *media_codec) {
     btstack_assert(size >= AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN);
@@ -1285,7 +1285,7 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     avdtp_emit_source(event, pos);
 }
 
-uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, avdtp_stream_endpoint_t *stream_endpoint,
+uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
                                               uint16_t avdtp_cid, uint8_t reconfigure,
                                               const avdtp_capabilities_t *configuration) {
     switch (configuration->media_codec.media_codec_type){
@@ -1384,13 +1384,13 @@ uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t *connection) {
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint){
+uint8_t avdtp_local_seid(const avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
     return stream_endpoint->sep.seid;
 
 }
 
-uint8_t avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint){
+uint8_t avdtp_remote_seid(const avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return AVDTP_INVALID_SEP_SEID;
     return stream_endpoint->remote_sep.seid;
 }
