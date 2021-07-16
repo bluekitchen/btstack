@@ -1328,6 +1328,7 @@ static void hfp_ag_trigger_terminate_call(void){
         }
         hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
         hfp_ag_run_for_context(hfp_connection);
+        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
     }
 }
 
