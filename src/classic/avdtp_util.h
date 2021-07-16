@@ -105,7 +105,7 @@ avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uin
 
 uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, const avdtp_stream_endpoint_t *stream_endpoint,
                                               uint16_t avdtp_cid, uint8_t reconfigure,
-                                              const avdtp_capabilities_t *configuration);
+                                              const adtvp_media_codec_capabilities_t * media_codec);
 
 void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status);
 
