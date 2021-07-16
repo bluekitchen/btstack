@@ -1073,7 +1073,7 @@ static uint8_t a2dp_source_media_config_validator_callback(const avdtp_stream_en
     return error;
 }
 
-void a2dp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
+void a2dp_source_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
     a2dp_source_media_config_validator = callback;
     avdtp_source_register_media_config_validator(&a2dp_source_media_config_validator_callback);
 }
