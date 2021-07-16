@@ -121,7 +121,7 @@ def create_examples(script_path, suffix):
         shutil.copyfile(script_path + '/template/main/main.c', apps_folder + "/main/main.c")
 
         # copy example file
-        main_files = '"mainc." "' + example + '.c"'
+        main_files = '"main.c" "' + example + '.c"'
         shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 
         # add sco_demo_util.c for audio examples
@@ -137,7 +137,7 @@ def create_examples(script_path, suffix):
         # create CMakeLists.txt file
         main_cmake_file = apps_folder + "/main/CMakeLists.txt"
         with open(main_cmake_file, "wt") as fout:
-            fout.write(main_cmake_template.replace("EXAMPLE_FILES", main_files))
+            fout.write(main_cmake_template.replace("MAIN_FILES", main_files))
 
         # add rules to compile gatt db if .gatt file is present
         gatt_path = examples_embedded + example + ".gatt"
