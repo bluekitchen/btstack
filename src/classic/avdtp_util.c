@@ -47,9 +47,6 @@
 #include "btstack_util.h"
 #include "l2cap.h"
 
-#define MAX_MEDIA_CODEC_INFORMATION_LENGTH 30
-
-
 /*
 
  List of AVDTP_SUBEVENTs sorted by packet handler
@@ -728,7 +725,7 @@ static void avdtp_signaling_emit_media_codec_atrac_capability(uint16_t avdtp_cid
 }
 
 static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec) {
-    uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 11];
+    uint8_t event[AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH + 11];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     pos++; // set later
@@ -741,7 +738,7 @@ static void avdtp_signaling_emit_media_codec_other_capability(uint16_t avdtp_cid
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    uint32_t media_codec_info_len = btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH);
+    uint32_t media_codec_info_len = btstack_min(media_codec.media_codec_information_len, AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH);
     (void)memcpy(event + pos, media_codec.media_codec_information, media_codec_info_len);
     pos += media_codec_info_len;
     event[1] = pos - 2;
@@ -915,22 +912,20 @@ void avdtp_signaling_emit_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, 
 	avdtp_signaling_emit_capability_done(avdtp_cid, remote_seid);
 }
 
-#define MEDIA_CONFIG_SBC_EVENT_LEN 18
-
 static uint16_t
 avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size,
                                                    avdtp_stream_endpoint_t *stream_endpoint,
                                                    uint16_t avdtp_cid, uint8_t reconfigure,
                                                    const uint8_t *media_codec_information) {
 
-    btstack_assert(size >= MEDIA_CONFIG_SBC_EVENT_LEN);
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
 
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = MEDIA_CONFIG_SBC_EVENT_LEN - 2;
+    event[pos++] = AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN - 2;
 
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -1002,12 +997,10 @@ avdtp_signaling_setup_media_codec_sbc_config_event(uint8_t *event, uint16_t size
     event[pos++] = media_codec_information[2];
     event[pos++] = media_codec_information[3];
 
-    btstack_assert(pos == MEDIA_CONFIG_SBC_EVENT_LEN);
+    btstack_assert(pos == AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN);
 
     return pos;
 }
-
-#define MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN 18
 
 static uint16_t
 avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16_t size,
@@ -1015,14 +1008,14 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
                                                           uint16_t avdtp_cid, uint8_t reconfigure,
                                                           const uint8_t *media_codec_information) {
 
-    btstack_assert(size >= MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
 
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN - 2;
+    event[pos++] = AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN - 2;
 
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AUDIO_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -1098,12 +1091,10 @@ avdtp_signaling_setup_media_codec_mpeg_audio_config_event(uint8_t *event, uint16
     event[pos++] = vbr;
     event[pos++] = bitrate_index;
 
-    btstack_assert(pos == MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
+    btstack_assert(pos == AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
 
     return pos;
 }
-
-#define MEDIA_CONFIG_MPEG_AAC_EVENT_LEN 18
 
 static uint16_t
 avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t size,
@@ -1111,14 +1102,14 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
                                                         uint16_t avdtp_cid, uint8_t reconfigure,
                                                         const uint8_t *media_codec_information) {
 
-    btstack_assert(size >= MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
 
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = MEDIA_CONFIG_MPEG_AAC_EVENT_LEN - 2;
+    event[pos++] = AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN - 2;
 
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_MPEG_AAC_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -1171,25 +1162,23 @@ avdtp_signaling_setup_media_codec_mpec_aac_config_event(uint8_t *event, uint16_t
     pos += 3;
     event[pos++] = vbr;
 
-    btstack_assert(MEDIA_CONFIG_MPEG_AAC_EVENT_LEN == pos);
+    btstack_assert(AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN == pos);
 
     return pos;
 }
-
-#define MEDIA_CONFIG_ATRAC_EVENT_LEN 18
 
 static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *event, uint16_t size,
                                                                      avdtp_stream_endpoint_t *stream_endpoint,
                                                                      uint16_t avdtp_cid, uint8_t reconfigure,
                                                                      const uint8_t *media_codec_information) {
-    btstack_assert(size >= MEDIA_CONFIG_ATRAC_EVENT_LEN);
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
 
     uint16_t pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
-    event[pos++] = MEDIA_CONFIG_ATRAC_EVENT_LEN - 2;
+    event[pos++] = AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN - 2;
 
     event[pos++] = AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_ATRAC_CONFIGURATION;
     little_endian_store_16(event, pos, avdtp_cid);
@@ -1245,17 +1234,15 @@ static uint16_t avdtp_signaling_setup_media_codec_atrac_config_event(uint8_t *ev
     little_endian_store_16(event, pos, maximum_sul);
     pos += 2;
 
-    btstack_assert(pos == MEDIA_CONFIG_ATRAC_EVENT_LEN);
+    btstack_assert(pos == AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN);
     return pos;
 }
-
-#define MEDIA_CONFIG_OTHER_EVENT_LEN (13 + MAX_MEDIA_CODEC_INFORMATION_LENGTH)
 
 static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *event, uint16_t size,
                                                                      avdtp_stream_endpoint_t *stream_endpoint,
                                                                      uint16_t avdtp_cid, uint8_t reconfigure,
                                                                      const adtvp_media_codec_capabilities_t *media_codec) {
-    btstack_assert(size >= MEDIA_CONFIG_OTHER_EVENT_LEN);
+    btstack_assert(size >= AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN);
 
     uint8_t local_seid = avdtp_local_seid(stream_endpoint);
     uint8_t remote_seid = avdtp_remote_seid(stream_endpoint);
@@ -1277,7 +1264,7 @@ static uint16_t avdtp_signaling_setup_media_codec_other_config_event(uint8_t *ev
 
     btstack_assert(pos == 13);
 
-    uint16_t media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec->media_codec_information_len);
+    uint16_t media_codec_len = btstack_min(AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec->media_codec_information_len);
     (void)memcpy(event + pos, media_codec->media_codec_information, media_codec_len);
     pos += media_codec_len;
     event[1] = pos - 2;
@@ -1298,44 +1285,37 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
     avdtp_emit_source(event, pos);
 }
 
+uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, avdtp_stream_endpoint_t *stream_endpoint,
+                                              uint16_t avdtp_cid, uint8_t reconfigure,
+                                              const avdtp_capabilities_t *configuration) {
+    switch (configuration->media_codec.media_codec_type){
+        case AVDTP_CODEC_SBC:
+            return avdtp_signaling_setup_media_codec_sbc_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                     configuration->media_codec.media_codec_information);
+        case AVDTP_CODEC_MPEG_1_2_AUDIO:
+            return avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                            configuration->media_codec.media_codec_information);
+        case AVDTP_CODEC_MPEG_2_4_AAC:
+            return avdtp_signaling_setup_media_codec_mpec_aac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                          configuration->media_codec.media_codec_information);
+        case AVDTP_CODEC_ATRAC_FAMILY:
+            return avdtp_signaling_setup_media_codec_atrac_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                       configuration->media_codec.media_codec_information);
+        default:
+            return avdtp_signaling_setup_media_codec_other_config_event(event, size, stream_endpoint, avdtp_cid, reconfigure,
+                                                                        &configuration->media_codec);
+    }
+}
+
 void avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
-                                   avdtp_capabilities_t *configuration, uint16_t configured_service_categories) {
+                                        avdtp_capabilities_t *configuration, uint16_t configured_service_categories) {
     
     if (get_bit16(configured_service_categories, AVDTP_MEDIA_CODEC)){
         uint16_t pos = 0;
         // assume MEDIA_CONFIG_OTHER_EVENT_LEN is larger than all other events
-        uint8_t event[MEDIA_CONFIG_OTHER_EVENT_LEN];
-        switch (configuration->media_codec.media_codec_type){
-            case AVDTP_CODEC_SBC:
-                pos = avdtp_signaling_setup_media_codec_sbc_config_event(event, sizeof(event), stream_endpoint,
-                                                                         avdtp_cid, reconfigure,
-                                                                         configuration->media_codec.media_codec_information);
-                break;
-            case AVDTP_CODEC_MPEG_1_2_AUDIO:
-                pos = avdtp_signaling_setup_media_codec_mpeg_audio_config_event(event, sizeof(event), stream_endpoint,
-                                                                                avdtp_cid, reconfigure,
-                                                                                configuration->media_codec.media_codec_information);
-                break;
-            case AVDTP_CODEC_MPEG_2_4_AAC:
-                pos = avdtp_signaling_setup_media_codec_mpec_aac_config_event(event,
-                                                                              sizeof(event),
-                                                                              stream_endpoint, avdtp_cid,
-                                                                              reconfigure,
-                                                                              configuration->media_codec.media_codec_information);
-                break;
-            case AVDTP_CODEC_ATRAC_FAMILY:
-                pos = avdtp_signaling_setup_media_codec_atrac_config_event(event, sizeof(event), stream_endpoint,
-                                                                           avdtp_cid,
-                                                                           reconfigure,
-                                                                           configuration->media_codec.media_codec_information);
-                break;
-            default:
-                pos = avdtp_signaling_setup_media_codec_other_config_event(event, sizeof(event), stream_endpoint,
-                                                                            avdtp_cid,
-                                                                            reconfigure,
-                                                                            &configuration->media_codec);
-                break;
-        }
+        uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
+        pos = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure,
+                                                   configuration);
         btstack_packet_handler_t packet_handler = avdtp_packet_handler_for_stream_endpoint(stream_endpoint);
         (*packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
     }

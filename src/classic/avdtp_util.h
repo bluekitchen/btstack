@@ -50,6 +50,15 @@
 extern "C" {
 #endif
 
+#define AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH 30
+
+    // assume AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN greater or equal to all others
+#define AVDTP_MEDIA_CONFIG_SBC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_MPEG_AUDIO_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_MPEG_AAC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_ATRAC_EVENT_LEN 18
+#define AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN (13 + AVDTP_MAX_MEDIA_CODEC_INFORMATION_LENGTH)
+
 static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type){
     return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
 }
@@ -93,6 +102,10 @@ void avdtp_signaling_emit_delay(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
 void
 avdtp_signaling_emit_configuration(avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid, uint8_t reconfigure,
                                    avdtp_capabilities_t *configuration, uint16_t configured_service_categories);
+
+uint16_t avdtp_setup_media_codec_config_event(uint8_t *event, uint16_t size, avdtp_stream_endpoint_t *stream_endpoint,
+                                              uint16_t avdtp_cid, uint8_t reconfigure,
+                                              const avdtp_capabilities_t *configuration);
 
 void avdtp_streaming_emit_connection_established(avdtp_stream_endpoint_t *stream_endpoint, uint8_t status);
 
