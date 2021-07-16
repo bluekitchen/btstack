@@ -881,7 +881,7 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
                     }
                     break;
             }
-            
+            break;
 
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             // HF initiatied voice recognition, parser extracted activation value
