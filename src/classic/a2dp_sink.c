@@ -57,6 +57,7 @@ static uint16_t a2dp_sink_cid;
 static bool stream_endpoint_configured = false;
 
 static btstack_packet_handler_t a2dp_sink_packet_handler_user;
+static uint8_t (*a2dp_sink_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 
 static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -333,3 +334,21 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
 
 }
 
+static uint8_t a2dp_sink_media_config_validator_callback(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size){
+    uint8_t error = 0;
+    if (a2dp_sink_media_config_validator == NULL) {
+        // update subevent id and call validator
+        uint8_t avdtp_subevent_id = event[2];
+        uint8_t a2dp_subevent_id = a2dp_subevent_id_for_avdtp_subevent_id(avdtp_subevent_id);
+        uint8_t * subevent_field = (uint8_t *) &event[2];
+        *subevent_field = a2dp_subevent_id;
+        error = (*a2dp_sink_media_config_validator)(stream_endpoint, event, size);
+        *subevent_field = avdtp_subevent_id;
+    }
+    return error;
+}
+
+void a2dp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
+    a2dp_sink_media_config_validator = callback;
+    avdtp_sink_register_media_config_validator(&a2dp_sink_media_config_validator_callback);
+}

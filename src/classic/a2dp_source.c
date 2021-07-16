@@ -70,6 +70,7 @@ static const char * default_a2dp_source_service_name = "BTstack A2DP Source Serv
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 
 static btstack_packet_handler_t a2dp_source_packet_handler_user;
+static uint8_t (*a2dp_source_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 
 // config process - singletons using sep_discovery_cid is used as mutex
 static uint16_t                 sep_discovery_cid;
@@ -1057,3 +1058,23 @@ uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t avdtp_cid, ui
             new_configuration
     );
 }
+
+static uint8_t a2dp_source_media_config_validator_callback(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size){
+    uint8_t error = 0;
+    if (a2dp_source_media_config_validator == NULL) {
+        // update subevent id and call validator
+        uint8_t avdtp_subevent_id = event[2];
+        uint8_t a2dp_subevent_id = a2dp_subevent_id_for_avdtp_subevent_id(avdtp_subevent_id);
+        uint8_t * subevent_field = (uint8_t *) &event[2];
+        *subevent_field = a2dp_subevent_id;
+        error = (*a2dp_source_media_config_validator)(stream_endpoint, event, size);
+        *subevent_field = avdtp_subevent_id;
+    }
+    return error;
+}
+
+void a2dp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
+    a2dp_source_media_config_validator = callback;
+    avdtp_source_register_media_config_validator(&a2dp_source_media_config_validator_callback);
+}
+

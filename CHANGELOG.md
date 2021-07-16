@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - hci_cmd: support variable length fields and arrayed parameters
 - POSIX: btstack_signal allows to register for callback on signal, e.g. ctrl-c
 - Windows: btstack_stdin_window_register_ctrl_c_callback allows to register for ctrl-c
+- A2DP: allow to register media codec validator for sink and source with:
+  - `a2dp_sink_register_media_config_validator`
+  - `a2dp_source_register_media_config_validator`
 
 ### Fixed
 - A2DP Source: fix reconfigure
