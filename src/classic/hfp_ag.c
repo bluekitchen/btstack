@@ -70,6 +70,7 @@
 // private prototypes
 static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection);
+static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection);
 static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 
 // public prototypes
@@ -647,8 +648,10 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     if (hfp_gsm_call_status() == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
         switch (hfp_gsm_callsetup_status()){
             case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
-            case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
                 hfp_ag_hf_start_ringing_incoming(hfp_connection);
+                break;
+            case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
+                hfp_ag_hf_start_ringing_outgoing(hfp_connection);
                 break;
             default:
                 break;
@@ -1119,7 +1122,7 @@ static void hfp_ag_set_callheld_indicator(void){
 }
 
 //
-// transitition implementations for hfp_ag_call_state_machine
+// transition implementations for hfp_ag_call_state_machine
 //
 
 static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection){
@@ -1133,6 +1136,14 @@ static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection){
         hfp_connection->call_state = HFP_CALL_INCOMING_RINGING;
         hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
     }
+}
+
+static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection){
+    hfp_timeout_start(hfp_connection);
+    hfp_connection->ag_ring = 1;
+    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
+    hfp_connection->call_state = HFP_CALL_OUTGOING_RINGING;
+    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
 }
 
 static void hfp_ag_hf_stop_ringing(hfp_connection_t * hfp_connection){
@@ -1781,7 +1792,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             hfp_connection->call_state = HFP_CALL_OUTGOING_RINGING;
             hfp_ag_set_callsetup_indicator();
             hfp_ag_transfer_callsetup_state();
-            hfp_ag_hf_start_ringing_incoming(hfp_connection);
+            hfp_ag_hf_start_ringing_outgoing(hfp_connection);
             break;
 
         case HFP_AG_OUTGOING_CALL_ESTABLISHED:{
