@@ -1634,7 +1634,6 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 default:
                     break;
             }
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
@@ -1823,6 +1822,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 hfp_ag_transfer_callheld_state();
             }
             hfp_ag_hf_stop_ringing(hfp_connection);
+            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
             break;
         }
 

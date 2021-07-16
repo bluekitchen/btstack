@@ -416,7 +416,7 @@ void hfp_ag_outgoing_call_ringing(void);
 void hfp_ag_outgoing_call_established(void);
 
 /**
- * @brief Pass the call droped event to the AG.
+ * @brief Pass the call dropped event to the AG.
  */
 void hfp_ag_call_dropped(void);
 

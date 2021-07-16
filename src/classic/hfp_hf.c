@@ -1189,7 +1189,15 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                 // avoid set but not used warning
                 (void) hfp_hf_callheld_status;
             } else if (strcmp(hfp_connection->ag_indicators[i].name, "call") == 0){
-                hfp_hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
+                hfp_call_status_t new_hf_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
+                if (hfp_hf_call_status != new_hf_call_status){
+                    if (new_hf_call_status == HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS){
+                        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
+                    } else {
+                        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_ANSWERED);
+                    }
+                }
+                hfp_hf_call_status = new_hf_call_status; 
             }
             hfp_connection->ag_indicators[i].status_changed = 0;
             hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);

@@ -160,7 +160,7 @@ static void show_usage(void){
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
     printf("d - report AG failure\n");
     printf("D - delete all link keys\n");
-    printf("e - answer call on AG                   | E - reject call on AG\n");
+    printf("e - answer call on AG                   | E - terminate call on AG\n");
     printf("r - disable in-band ring tone           | R - enable in-band ring tone\n");
     printf("f - Disable cellular network            | F - Enable cellular network\n");
     printf("g - Set signal strength to 0            | G - Set signal strength to 5\n");
@@ -247,7 +247,7 @@ static void stdin_process(char cmd){
             break;
         case 'E':
             log_info("USER:\'%c\'", cmd);
-            printf("Reject call on AG\n");
+            printf("Terminate call on AG\n");
             hfp_ag_terminate_call();
             break;
         case 'f':
@@ -559,9 +559,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         hci_request_sco_can_send_now_event();
                     }
                     break;
+          
+                case HFP_SUBEVENT_CALL_ANSWERED:
+                    printf("Call answered\n");
+                    break;
+          
                 case HFP_SUBEVENT_CALL_TERMINATED:
                     printf("Call terminated\n");
                     break;
+          
                 case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
                     printf("Audio connection released\n");
                     sco_handle = HCI_CON_HANDLE_INVALID;
@@ -595,14 +601,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Attach number to voice tag. Sending '1234567\n");
                     hfp_ag_send_phone_number_for_voice_tag(acl_handle, "1234567");
                     break;
+               
                 case HFP_SUBEVENT_TRANSMIT_DTMF_CODES:
                     printf("Send DTMF Codes: '%s'\n", hfp_subevent_transmit_dtmf_codes_get_dtmf(event));
                     hfp_ag_send_dtmf_code_done(acl_handle);
                     break;
-                case HFP_SUBEVENT_CALL_ANSWERED:
-                    printf("Call answered by HF\n");
-                    break;
-                
+               
                 case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
                     status = hfp_subevent_voice_recognition_status_get_status(event);
                     if (status != ERROR_CODE_SUCCESS){
