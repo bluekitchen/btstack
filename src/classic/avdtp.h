@@ -625,15 +625,6 @@ void avdtp_register_multiplexing_category(avdtp_stream_endpoint_t * stream_endpo
 // sink only
 void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
 
-/**
- * @brief Register media configuration validator. Can reject insuitable configuration or report stream endpoint as currently busy
- * @note validator has to return AVDTP error codes like: AVDTP_ERROR_CODE_SEP_IN_USE or AVDTP_ERROR_CODE_UNSUPPORTED_CONFIGURATION
- *       the callback receives the media configuration in the same format as the existing AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
- *       and similar
- * @param callback
- */
-void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size));
-
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 void avdtp_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);

@@ -60,9 +60,10 @@ static bool l2cap_registered;
 
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
-static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
-static uint8_t (*avdtp_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
+static uint8_t (*avdtp_sink_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
+static uint8_t (*avdtp_source_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 
+static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
 static uint16_t sdp_query_context_avdtp_cid = 0;
 
 static uint16_t stream_endpoints_id_counter = 0;
@@ -433,18 +434,29 @@ void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *
     avdtp_sink_handle_media_data = callback;
 }
 
-void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
-    avdtp_media_config_validator = callback;
+void avdtp_sink_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
+    avdtp_sink_media_config_validator = callback;
+}
+
+void avdtp_source_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
+    avdtp_source_media_config_validator = callback;
 }
 
 uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
                                            uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec) {
-    if (avdtp_media_config_validator == NULL) {
+    uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
+    if (stream_endpoint->sep.type == AVDTP_SOURCE){
+        callback = avdtp_source_media_config_validator;
+    } else {
+        callback = avdtp_sink_media_config_validator;
+    }
+    if (callback == NULL) {
+        // config valid
         return 0;
     }
     uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
     uint16_t size = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec);
-    return (*avdtp_media_config_validator)(stream_endpoint, event, size);
+    return (*callback)(stream_endpoint, event, size);
 }
 
 /* START: tracking can send now requests per l2cap cid */
@@ -1550,7 +1562,8 @@ void avdtp_deinit(void){
     stream_endpoints = NULL;
     connections = NULL;
     avdtp_sink_handle_media_data = NULL;
-    avdtp_media_config_validator = NULL;
+    avdtp_sink_media_config_validator = NULL;
+    avdtp_source_media_config_validator = NULL;
 
     sdp_query_context_avdtp_cid = 0;
     stream_endpoints_id_counter = 0;

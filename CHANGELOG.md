@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HFP: removed one parameter from hfp_ag/hf_activate_voice_recognition function, instead introduced hfp_ag/hf_deactivate_voice_recognition 
 - HFP: event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS emitted on (enhanced) voice recognition status change. Field "activated" replaced with "state". Added additional "status" field that indicates if the command was successful.
 - HFP: streamlined enhanced voice recognition function names
-- AVDTP: media config validator is called with preview of media codec configuration event
+- AVDTP: media config validator is called with preview of media codec configuration event and configured separately for sink/source
 - Run Loop: new functionality for HCI transport drivers and inter-process communication
   - *btstack_run_loop_poll_data_sources_from_irq*: used to transfer control from IRQ handler to main thread/run loop
   - *btstack_run_loop_execute_on_main_thread*: schedule code execution on main thread from other thread
