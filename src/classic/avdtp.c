@@ -47,6 +47,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
 #include "classic/avdtp_acceptor.h"
 #include "classic/avdtp_initiator.h"
 #include "classic/avdtp_util.h"
@@ -60,7 +61,7 @@ static bool l2cap_registered;
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
 static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
-static uint8_t (*avdtp_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len);
+static uint8_t (*avdtp_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 
 static uint16_t sdp_query_context_avdtp_cid = 0;
 
@@ -432,15 +433,18 @@ void avdtp_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *
     avdtp_sink_handle_media_data = callback;
 }
 
-void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len)){
+void avdtp_register_media_config_validator(uint8_t (*callback)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size)){
     avdtp_media_config_validator = callback;
 }
 
-uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t * stream_endpoint, avdtp_media_codec_type_t media_codec_type, const uint8_t * media_codec_info, uint16_t media_codec_info_len){
+uint8_t avdtp_validate_media_configuration(const avdtp_stream_endpoint_t *stream_endpoint, uint16_t avdtp_cid,
+                                           uint8_t reconfigure, const adtvp_media_codec_capabilities_t *media_codec) {
     if (avdtp_media_config_validator == NULL) {
         return 0;
     }
-    return (*avdtp_media_config_validator)(stream_endpoint, media_codec_type, media_codec_info, media_codec_info_len);
+    uint8_t event[AVDTP_MEDIA_CONFIG_OTHER_EVENT_LEN];
+    uint16_t size = avdtp_setup_media_codec_config_event(event, sizeof(event), stream_endpoint, avdtp_cid, reconfigure, media_codec);
+    return (*avdtp_media_config_validator)(stream_endpoint, event, size);
 }
 
 /* START: tracking can send now requests per l2cap cid */
