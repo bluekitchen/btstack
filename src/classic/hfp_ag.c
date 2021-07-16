@@ -1806,17 +1806,18 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 break;
             }
 
-            int CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS = hfp_gsm_callheld_status() == HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS;
+            bool callheld_status_call_on_hold_and_no_active_calls = hfp_gsm_callheld_status() == HFP_CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS;
             hfp_gsm_handler(HFP_AG_OUTGOING_CALL_ESTABLISHED, 0, 0, NULL);
             hfp_connection->call_state = HFP_CALL_ACTIVE;
             hfp_ag_set_callsetup_indicator();
             hfp_ag_set_call_indicator();
             hfp_ag_transfer_call_state();
             hfp_ag_transfer_callsetup_state();
-            if (CALLHELD_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS){
+            if (callheld_status_call_on_hold_and_no_active_calls){
                 hfp_ag_set_callheld_indicator();
                 hfp_ag_transfer_callheld_state();
             }
+            hfp_ag_hf_stop_ringing(hfp_connection);
             break;
         }
 
