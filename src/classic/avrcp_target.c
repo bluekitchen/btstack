@@ -516,7 +516,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
 
 static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_t offset){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
-    if ((offset - 4) > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
+    if (offset >= 32) return AVRCP_STATUS_INVALID_PARAMETER;
             
     connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
     connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
@@ -528,9 +528,13 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->cmd_operands_length = 5;
     connection->cmd_operands[0] = (page << 4) | extension_code;
 
-    (void)memcpy(connection->cmd_operands + 1,
-                 connection->subunit_info_data + offset, 4);
-    
+    // mark non-existant entry with 0xff
+    memset(&connection->cmd_operands[1], 0xff, 4);
+    if ((connection->subunit_info_data != NULL) && (offset < connection->subunit_info_data_size)){
+        uint8_t bytes_to_copy = btstack_min(connection->subunit_info_data_size - offset, 4);
+        memcpy(&connection->cmd_operands[1], &connection->subunit_info_data[offset], bytes_to_copy);
+    }
+
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
