@@ -32,11 +32,11 @@
 // LE Device DB using TLV on top of Flash Sector interface
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
 
-// GPIO debugging
-#define DEBUG_PIN_HF_CLOCK 19
-#define DEBUG_PIN_ADDRESS  20
-#define DEBUG_PIN_RX       22
-#define DEBUG_PIN_TX       23
-#define DEBUG_PIN_RADIO_IRQ 24
+// GPIO debugging on nRF52832 DK, P6: 17-20 are LEDs 1-4, 13-16 Butttons 1-4
+#define DEBUG_PIN_HF_CLOCK  0
+#define DEBUG_PIN_ADDRESS   1
+#define DEBUG_PIN_RX       21
+#define DEBUG_PIN_TX        5
+#define DEBUG_PIN_RADIO_IRQ 6
 
 #endif
