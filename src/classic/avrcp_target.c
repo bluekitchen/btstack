@@ -528,7 +528,7 @@ static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_
     connection->cmd_operands_length = 5;
     connection->cmd_operands[0] = (page << 4) | extension_code;
 
-    // mark non-existant entry with 0xff
+    // mark non-existent entries with 0xff
     memset(&connection->cmd_operands[1], 0xff, 4);
     if ((connection->subunit_info_data != NULL) && (offset < connection->subunit_info_data_size)){
         uint8_t bytes_to_copy = btstack_min(connection->subunit_info_data_size - offset, 4);

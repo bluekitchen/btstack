@@ -234,18 +234,6 @@ typedef struct {
 
 static uint8_t ertm_buffer[10000];
 
-static const uint8_t subunit_info[] = {
-    0,0,0,0,
-    1,1,1,1,
-    2,2,2,2,
-    3,3,3,3,
-    4,4,4,4,
-    5,5,5,5,
-    6,6,6,6,
-    7,7,7,7
-};
-
-
 static uint8_t media_player_list[] = { 
     // num players (2B) 
     0x00, 0x02, 
@@ -317,7 +305,6 @@ static uint8_t virtual_filesystem_list[] ={ 0x00, 0x07, 0x02, 0x00, 0x14, 0x00, 
 static uint8_t search_list[] = {};
 static uint8_t now_playing_list[] = {};
 
-static uint32_t company_id = 0x112233;
 static uint8_t companies_num = 1;
 static uint8_t companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
@@ -625,8 +612,6 @@ static void avrcp_connection_establishment_packet_handler(uint8_t packet_type, u
             printf("AVRCP connection established: avrcp_cid 0x%02x.\n", avrcp_cid);
             
             avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
-            avrcp_target_set_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
-            avrcp_target_set_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, (uint8_t *)subunit_info, sizeof(subunit_info));
 
             // Set PTS default TSPX_max_avc_fragments = 10
             avrcp_controller_set_max_num_fragments(avrcp_cid, 10);

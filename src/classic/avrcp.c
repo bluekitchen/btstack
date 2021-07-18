@@ -71,6 +71,9 @@ static const char * default_avrcp_controller_service_provider_name = "BTstack AV
 static const char * default_avrcp_target_service_name = "BTstack AVRCP Target Service";
 static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP Target Service Provider";
 
+// default subunit info: single PANEL subunit
+static const uint8_t avrcp_default_subunit_info[] = { AVRCP_SUBUNIT_TYPE_PANEL << 3};
+
 static uint16_t  avrcp_cid_counter;
 
 static btstack_context_callback_registration_t avrcp_handle_sdp_client_query_request;
@@ -415,7 +418,6 @@ uint16_t avrcp_get_next_cid(avrcp_role_t role){
     return avrcp_cid_counter;
 }
 
-
 static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t remote_addr){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
     if (!connection){
@@ -430,6 +432,13 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->transaction_id_counter = 0;
 
     connection->max_num_fragments = 0xFF;
+
+    // setup default unit / subunit info
+    connection->company_id = 0xffffff;
+    connection->unit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_info_data_size = sizeof(avrcp_default_subunit_info);
+    connection->subunit_info_data = avrcp_default_subunit_info;
+
     log_info("avrcp_create_connection, role %d", role);
     (void)memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
