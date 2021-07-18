@@ -176,7 +176,7 @@ int main(int argc, const char * argv[]){
     btstack_run_loop_init(btstack_run_loop_windows_get_instance());
 
     // log into file using HCI_DUMP_PACKETLOGGER format
-    const char * pklg_path = "/tmp/hci_dump.pklg";
+    const char * pklg_path = "hci_dump.pklg";
     hci_dump_posix_fs_open(pklg_path, HCI_DUMP_PACKETLOGGER);
     const hci_dump_t * hci_dump_impl = hci_dump_posix_fs_get_instance();
     hci_dump_init(hci_dump_impl);
