@@ -51,6 +51,12 @@ static void signal_callback(void * arg){
 }
 
 static void * signal_thread(void *arg) {
+    // prepare registration
+    btstack_context_callback_registration_t registration;
+    memset(&registration, 0, sizeof(btstack_context_callback_registration_t));
+    registration.callback = &signal_callback;
+    registration.context  = arg;
+
     while (1){
         // wait for signal
         sigset_t sigset;
@@ -60,10 +66,6 @@ static void * signal_thread(void *arg) {
         (void) sigwait(&sigset, &sig);
 
         // execute callback on main thread
-        btstack_context_callback_registration_t registration;
-        memset(&registration, 0, sizeof(btstack_context_callback_registration_t));
-        registration.callback = &signal_callback;
-        registration.context  = arg;
         btstack_run_loop_execute_on_main_thread(&registration);
     }
     return NULL;
