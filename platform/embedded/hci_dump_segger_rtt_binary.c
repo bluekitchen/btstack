@@ -49,6 +49,8 @@
 
 #include "SEGGER_RTT.h"
 
+#include <stdio.h>  // vsnprintf
+
 // allow to configure mode, channel, up buffer size in btstack_config.h
 #ifndef SEGGER_RTT_PACKETLOG_MODE
 #define SEGGER_RTT_PACKETLOG_MODE SEGGER_RTT_MODE_DEFAULT

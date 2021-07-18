@@ -43,6 +43,8 @@
  *  @note Only uses one of multiple RTCs and only a single Capture-Compare unit
  */
 
+#include <stddef.h>
+
 #include "hal_timer.h"
 #include "btstack_debug.h"
 
