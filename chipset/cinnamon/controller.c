@@ -83,12 +83,14 @@ static void send_command_complete(uint16_t opcode, uint8_t status, const uint8_t
     hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
             /* num commands */ 1, opcode, status, len, result);
     hci_outgoing_event_ready = true;
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void fake_command_complete(uint16_t opcode){
     hci_event_create_from_template_and_arguments(hci_outgoing_event, &hci_event_command_complete,
             /* num commands */ 1, opcode, ERROR_CODE_SUCCESS, 0, NULL);
     hci_outgoing_event_ready = true;
+    btstack_run_loop_poll_data_sources_from_irq();
 }
 
 static void controller_handle_hci_command(uint8_t * packet, uint16_t size){
