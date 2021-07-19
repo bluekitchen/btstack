@@ -2943,7 +2943,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             // treat successfully paired connection as authenticated
             if (hci_event_simple_pairing_complete_get_status(packet) == ERROR_CODE_SUCCESS){
-                conn->authentication_flags |= conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+                conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
             }
 
             hci_pairing_complete(conn, hci_event_simple_pairing_complete_get_status(packet));
