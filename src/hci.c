@@ -2884,6 +2884,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
                             break;
                         }
 
+                        // if AES-CCM is used, authentication used SC -> authentication was mutual and we can skip explicit authentication
+                        if (connected_uses_aes_ccm){
+                            conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+                        }
+
+#ifdef ENABLE_TESTING_SUPPORT
+                        // work around for issue with PTS dongle
+                        conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+#endif
+
                         if ((hci_stack->local_supported_commands[0] & 0x80) != 0){
                             // For Classic, we need to validate encryption key size first, if possible (== supported by Controller)
                             conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
@@ -2930,6 +2940,11 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_event_simple_pairing_complete_get_bd_addr(packet, addr);
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
+
+            // treat successfully paired connection as authenticated
+            if (hci_event_simple_pairing_complete_get_status(packet) == ERROR_CODE_SUCCESS){
+                conn->authentication_flags |= conn->authentication_flags |= AUTH_FLAG_CONNECTION_AUTHENTICATED;
+            }
 
             hci_pairing_complete(conn, hci_event_simple_pairing_complete_get_status(packet));
             break;
