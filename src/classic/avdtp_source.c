@@ -181,7 +181,7 @@ static void avdtp_source_setup_media_header(uint8_t * media_packet, uint8_t mark
     // rtp header (min size 12B)
     uint16_t pos = 0;
     media_packet[pos++] = (rtp_version << 6) | (padding << 5) | (extension << 4) | csrc_count;
-    media_packet[pos++] = (marker << 1) | payload_type;
+    media_packet[pos++] = (marker << 7) | payload_type;
     big_endian_store_16(media_packet, pos, sequence_number);
     pos += 2;
     big_endian_store_32(media_packet, pos, timestamp);
