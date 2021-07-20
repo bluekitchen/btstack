@@ -57,15 +57,18 @@ typedef struct {
 
 static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static btstack_packet_handler_t avrcp_browsing_callback;
-static avrcp_browsing_sdp_query_context_t sdp_query_context;
-
-static bool l2cap_browsing_service_registered;
+// higher layer callbacks
+static btstack_packet_handler_t           avrcp_browsing_callback;
 static btstack_packet_handler_t avrcp_browsing_controller_packet_handler;
 static btstack_packet_handler_t avrcp_browsing_target_packet_handler;
-static btstack_context_callback_registration_t avrcp_browsing_handle_sdp_client_query_request;
 
+// sdp query
 static bd_addr_t avrcp_browsing_sdp_addr;
+static btstack_context_callback_registration_t avrcp_browsing_handle_sdp_client_query_request;
+static avrcp_browsing_sdp_query_context_t avrcp_browsing_sdp_query_context;
+
+static bool avrcp_browsing_l2cap_service_registered;
+
 
 void avrcp_browsing_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid){
     connection->wait_to_send = true;
@@ -382,20 +385,23 @@ static void avrcp_browsing_packet_handler(uint8_t packet_type, uint16_t channel,
 }
 
 void avrcp_browsing_init(void){
-    if (l2cap_browsing_service_registered) return;
+    if (avrcp_browsing_l2cap_service_registered) return;
     int status = l2cap_register_service(&avrcp_browsing_packet_handler, PSM_AVCTP_BROWSING, 0xffff, LEVEL_2);
 
     if (status != ERROR_CODE_SUCCESS) return;
-    l2cap_browsing_service_registered = true;
+    avrcp_browsing_l2cap_service_registered = true;
 }
 
 void avrcp_browsing_deinit(void){
     avrcp_browsing_callback = NULL;
-    l2cap_browsing_service_registered = false;
     avrcp_browsing_controller_packet_handler = NULL;
     avrcp_browsing_target_packet_handler = NULL;
-    (void) memset(&sdp_query_context, 0, sizeof(avrcp_browsing_sdp_query_context_t));
+
     (void) memset(avrcp_browsing_sdp_addr, 0, 6);
+    (void) memset(&avrcp_browsing_handle_sdp_client_query_request, 0, sizeof(avrcp_browsing_handle_sdp_client_query_request));
+    (void) memset(&avrcp_browsing_sdp_query_context, 0, sizeof(avrcp_browsing_sdp_query_context_t));
+
+    avrcp_browsing_l2cap_service_registered = false;
 }
 
 static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -403,8 +409,8 @@ static void avrcp_browsing_handle_sdp_client_query_result(uint8_t packet_type, u
     UNUSED(channel);
     UNUSED(size);
 
-    avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, sdp_query_context.browsing_cid);
-    avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, sdp_query_context.browsing_cid);
+    avrcp_connection_t * avrcp_target_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_TARGET, avrcp_browsing_sdp_query_context.browsing_cid);
+    avrcp_connection_t * avrcp_controller_connection = avrcp_get_connection_for_browsing_cid_for_role(AVRCP_CONTROLLER, avrcp_browsing_sdp_query_context.browsing_cid);
 
     if ((avrcp_target_connection == NULL) || (avrcp_target_connection->browsing_connection == NULL)) return;
     if (avrcp_target_connection->browsing_connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return;
@@ -482,10 +488,10 @@ static void avrcp_browsing_handle_start_sdp_client_query(void * context){
         if (connection->browsing_connection != NULL){
             connection_with_opposite_role->browsing_connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
         }
-        
-        sdp_query_context.browsing_l2cap_psm = 0;
-        sdp_query_context.browsing_version = 0;
-        sdp_query_context.browsing_cid = connection->avrcp_browsing_cid;
+
+        avrcp_browsing_sdp_query_context.browsing_l2cap_psm = 0;
+        avrcp_browsing_sdp_query_context.browsing_version = 0;
+        avrcp_browsing_sdp_query_context.browsing_cid = connection->avrcp_browsing_cid;
         
         sdp_client_query_uuid16(&avrcp_browsing_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
         return;
