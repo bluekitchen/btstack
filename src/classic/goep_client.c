@@ -93,11 +93,11 @@ typedef struct {
     btstack_packet_handler_t client_handler;
 } goep_client_t;
 
-static goep_client_t _goep_client;
-static goep_client_t * goep_client = &_goep_client;
+static goep_client_t   goep_client_singleton;
+static goep_client_t * goep_client = &goep_client_singleton;
 
-static uint8_t            attribute_value[30];
-static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
+static uint8_t            goep_client_sdp_query_attribute_value[30];
+static const unsigned int goep_client_sdp_query_attribute_value_buffer_size = sizeof(goep_client_sdp_query_attribute_value);
 
 static uint8_t goep_packet_buffer[100];
 
@@ -246,13 +246,13 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             }
 
             // warn if attribute too large to fit in our buffer
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) > attribute_value_buffer_size) {
-                log_error("SDP attribute value size exceeded for attribute %x: available %d, required %d", sdp_event_query_attribute_byte_get_attribute_id(packet), attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+            if (sdp_event_query_attribute_byte_get_attribute_length(packet) > goep_client_sdp_query_attribute_value_buffer_size) {
+                log_error("SDP attribute value size exceeded for attribute %x: available %d, required %d", sdp_event_query_attribute_byte_get_attribute_id(packet), goep_client_sdp_query_attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
                 break;
             }
 
             // store single byte
-            attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+            goep_client_sdp_query_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
             // wait until value fully received
             if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) != sdp_event_query_attribute_byte_get_attribute_length(packet)) break;
@@ -260,7 +260,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             // process attributes
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    for (des_iterator_init(&des_list_it, goep_client_sdp_query_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -305,9 +305,9 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     break;
 #endif
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
-                    if (de_get_element_type(attribute_value) != DE_UINT) break;
-                    if (de_get_size_type(attribute_value)    != DE_SIZE_32) break;
-                    context->pbap_supported_features  = big_endian_read_32(attribute_value, de_get_header_size(attribute_value));
+                    if (de_get_element_type(goep_client_sdp_query_attribute_value) != DE_UINT) break;
+                    if (de_get_size_type(goep_client_sdp_query_attribute_value) != DE_SIZE_32) break;
+                    context->pbap_supported_features  = big_endian_read_32(goep_client_sdp_query_attribute_value, de_get_header_size(goep_client_sdp_query_attribute_value));
                     log_info("pbap_supported_features 0x%x", (unsigned int) context->pbap_supported_features);
                     break;
                 default:
@@ -381,6 +381,9 @@ void goep_client_init(void){
 }
 
 void goep_client_deinit(void){
+    memset(goep_client, 0, sizeof(goep_client_t));
+    memset(goep_client_sdp_query_attribute_value, 0, sizeof(goep_client_sdp_query_attribute_value));
+    memset(goep_packet_buffer, 0, sizeof(goep_packet_buffer));
 }
 
 uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t uuid, uint16_t * out_cid){
