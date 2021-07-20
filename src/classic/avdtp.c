@@ -54,28 +54,31 @@
 #include "classic/sdp_client.h"
 #include "classic/sdp_util.h"
 
-btstack_linked_list_t stream_endpoints;
-
-static bool l2cap_registered;
-
+// higher layer callbacks
 static btstack_packet_handler_t avdtp_source_callback;
 static btstack_packet_handler_t avdtp_sink_callback;
+
+static void (*avdtp_sink_handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
+
 static uint8_t (*avdtp_sink_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 static uint8_t (*avdtp_source_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
 
+// sdp query
 static btstack_context_callback_registration_t avdtp_handle_sdp_client_query_request;
-static uint16_t sdp_query_context_avdtp_cid = 0;
+static uint16_t avdtp_sdp_query_context_avdtp_cid = 0;
 
-static uint16_t stream_endpoints_id_counter = 0;
+// registered stream endpoints
+static btstack_linked_list_t avdtp_stream_endpoints;
+static uint16_t avdtp_stream_endpoints_id_counter = 0;
 
-static btstack_linked_list_t connections;
-static uint16_t transaction_id_counter = 0;
+static bool avdtp_l2cap_registered;
 
-static int record_id;
-static uint8_t attribute_value[45];
-static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
+static btstack_linked_list_t avdtp_connections;
+static uint16_t avdtp_transaction_id_counter = 0;
 
-static void (*avdtp_sink_handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
+static int avdtp_record_id;
+static uint8_t avdtp_attribute_value[45];
+static const unsigned int avdtp_attribute_value_buffer_size = sizeof(avdtp_attribute_value);
 
 static uint16_t avdtp_cid_counter = 0;
 
@@ -102,16 +105,16 @@ void avdtp_emit_source(uint8_t * packet, uint16_t size){
 }
 
 btstack_linked_list_t * avdtp_get_stream_endpoints(void){
-    return &stream_endpoints;
+    return &avdtp_stream_endpoints;
 }
 
 btstack_linked_list_t * avdtp_get_connections(void){
-    return &connections;
+    return &avdtp_connections;
 }
 
 avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &avdtp_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (memcmp(addr, connection->remote_addr, 6) != 0) continue;
@@ -122,7 +125,7 @@ avdtp_connection_t * avdtp_get_connection_for_bd_addr(bd_addr_t addr){
 
  avdtp_connection_t * avdtp_get_connection_for_avdtp_cid(uint16_t avdtp_cid){
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &avdtp_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->avdtp_cid != avdtp_cid) continue;
@@ -178,7 +181,7 @@ avdtp_stream_endpoint_t * avdtp_get_source_stream_endpoint_for_media_codec_other
 
 avdtp_connection_t * avdtp_get_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &avdtp_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->l2cap_signaling_cid != l2cap_cid) continue;
@@ -220,11 +223,11 @@ static avdtp_stream_endpoint_t * avdtp_get_stream_endpoint_for_signaling_cid(uin
 }
 
 uint16_t avdtp_get_next_transaction_label(void){
-    transaction_id_counter++;
-    if (transaction_id_counter == 16){
-        transaction_id_counter = 1;
+    avdtp_transaction_id_counter++;
+    if (avdtp_transaction_id_counter == 16){
+        avdtp_transaction_id_counter = 1;
     }
-    return transaction_id_counter;
+    return avdtp_transaction_id_counter;
 }
 
 static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint16_t cid){
@@ -240,7 +243,7 @@ static avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, uint1
     connection->avdtp_cid = cid;
     (void)memcpy(connection->remote_addr, remote_addr, 6);
    
-    btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
+    btstack_linked_list_add(&avdtp_connections, (btstack_linked_item_t *) connection);
     return connection;
 }
 
@@ -254,19 +257,19 @@ static uint16_t avdtp_get_next_cid(void){
 }
 
 static uint16_t avdtp_get_next_local_seid(void){
-    if (stream_endpoints_id_counter == 0xffff) {
-        stream_endpoints_id_counter = 1;
+    if (avdtp_stream_endpoints_id_counter == 0xffff) {
+        avdtp_stream_endpoints_id_counter = 1;
     } else {
-        stream_endpoints_id_counter++;
+        avdtp_stream_endpoints_id_counter++;
     }
-    return stream_endpoints_id_counter;
+    return avdtp_stream_endpoints_id_counter;
 }
 
 static void avdtp_handle_start_sdp_client_query(void * context){
     UNUSED(context);
 
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &avdtp_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
         
@@ -284,8 +287,8 @@ static void avdtp_handle_start_sdp_client_query(void * context){
             default:
                 continue;
         }
-        sdp_query_context_avdtp_cid = connection->avdtp_cid;
-        record_id = -1;
+        avdtp_sdp_query_context_avdtp_cid = connection->avdtp_cid;
+        avdtp_record_id = -1;
         sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP);
         return;
     }
@@ -541,21 +544,21 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
     des_iterator_t prot_it;
 
     // Handle new SDP record
-    if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
-        record_id = sdp_event_query_attribute_byte_get_record_id(packet);
+    if (sdp_event_query_attribute_byte_get_record_id(packet) != avdtp_record_id) {
+        avdtp_record_id = sdp_event_query_attribute_byte_get_record_id(packet);
         // log_info("SDP Record: Nr: %d", record_id);
     }
 
-    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
-        attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+    if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= avdtp_attribute_value_buffer_size) {
+        avdtp_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
         if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
 
             switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
 
                 case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
-                    if (de_get_element_type(attribute_value) != DE_DES) break;
-                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    if (de_get_element_type(avdtp_attribute_value) != DE_DES) break;
+                    for (des_iterator_init(&des_list_it, avdtp_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t * element = des_iterator_get_element(&des_list_it);
                         if (de_get_element_type(element) != DE_UUID) continue;
                         uint32_t uuid = de_get_uuid32(element);
@@ -576,7 +579,7 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
 
                 case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: 
                     // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                    for (des_iterator_init(&des_list_it, avdtp_attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                         uint8_t       *des_element;
                         uint8_t       *element;
                         uint32_t       uuid;
@@ -613,14 +616,14 @@ static void avdtp_handle_sdp_client_query_attribute_value(avdtp_connection_t * c
             }
         }
     } else {
-        log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+        log_error("SDP attribute value buffer size exceeded: available %d, required %d", avdtp_attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
     }
 
 }
 
 static void avdtp_finalize_connection(avdtp_connection_t * connection){
     btstack_run_loop_remove_timer(&connection->retry_timer);
-    btstack_linked_list_remove(&connections, (btstack_linked_item_t*) connection); 
+    btstack_linked_list_remove(&avdtp_connections, (btstack_linked_item_t*) connection);
     btstack_memory_avdtp_connection_free(connection);
 }
 
@@ -642,7 +645,7 @@ static void avdtp_handle_sdp_query_failed(avdtp_connection_t * connection, uint8
             break;
     }
     avdtp_finalize_connection(connection);
-    sdp_query_context_avdtp_cid = 0;
+    avdtp_sdp_query_context_avdtp_cid = 0;
     log_info("SDP query failed with status 0x%02x.", status);
 }
 
@@ -670,9 +673,9 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     UNUSED(channel);
     UNUSED(size);
 
-    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(sdp_query_context_avdtp_cid);
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_sdp_query_context_avdtp_cid);
     if (!connection) {
-        log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context_avdtp_cid);
+        log_error("SDP query, connection with 0x%02x cid not found", avdtp_sdp_query_context_avdtp_cid);
         return;
     }
     
@@ -1551,22 +1554,29 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
 }
 
 void avdtp_init(void){
-    if (!l2cap_registered){
-        l2cap_registered = true;
+    if (!avdtp_l2cap_registered){
+        avdtp_l2cap_registered = true;
         l2cap_register_service(&avdtp_packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, gap_get_security_level());
     }
 }
 
 void avdtp_deinit(void){
-    l2cap_registered = false;
-    stream_endpoints = NULL;
-    connections = NULL;
     avdtp_sink_handle_media_data = NULL;
     avdtp_sink_media_config_validator = NULL;
     avdtp_source_media_config_validator = NULL;
+    avdtp_source_callback = NULL;
+    avdtp_sink_callback = NULL;
 
-    sdp_query_context_avdtp_cid = 0;
-    stream_endpoints_id_counter = 0;
-    transaction_id_counter = 0;
+    avdtp_sdp_query_context_avdtp_cid = 0;
+
+    avdtp_stream_endpoints = NULL;
+    avdtp_stream_endpoints_id_counter = 0;
+
+    avdtp_l2cap_registered = false;
+
+    avdtp_connections = NULL;
+    avdtp_transaction_id_counter = 0;
+
+    avdtp_record_id = 0;
     avdtp_cid_counter = 0;
 }

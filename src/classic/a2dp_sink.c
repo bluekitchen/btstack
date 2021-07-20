@@ -49,12 +49,12 @@
 #include "classic/avdtp_util.h"
 #include "classic/sdp_util.h"
 
-static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service";
-static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
+static const char * a2dp_sink_default_service_name = "BTstack A2DP Sink Service";
+static const char * a2dp_sink_default_service_provider_name = "BTstack A2DP Sink Service Provider";
 
-static bool outgoing_active = false;
 static uint16_t a2dp_sink_cid;
-static bool stream_endpoint_configured = false;
+static bool a2dp_sink_outgoing_active = false;
+static bool a2dp_sink_stream_endpoint_configured = false;
 
 static btstack_packet_handler_t a2dp_sink_packet_handler_user;
 static uint8_t (*a2dp_sink_media_config_validator)(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size);
@@ -124,7 +124,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     if (service_name){
         de_add_data(service,  DE_STRING, strlen(service_name), (uint8_t *) service_name);
     } else {
-        de_add_data(service,  DE_STRING, strlen(default_a2dp_sink_service_name), (uint8_t *) default_a2dp_sink_service_name);
+        de_add_data(service, DE_STRING, strlen(a2dp_sink_default_service_name), (uint8_t *) a2dp_sink_default_service_name);
     }
 
     // 0x0100 "Provider Name"
@@ -132,7 +132,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     if (service_provider_name){
         de_add_data(service,  DE_STRING, strlen(service_provider_name), (uint8_t *) service_provider_name);
     } else {
-        de_add_data(service,  DE_STRING, strlen(default_a2dp_sink_service_provider_name), (uint8_t *) default_a2dp_sink_service_provider_name);
+        de_add_data(service, DE_STRING, strlen(a2dp_sink_default_service_provider_name), (uint8_t *) a2dp_sink_default_service_provider_name);
     }
 
     // 0x0311 "Supported Features"
@@ -166,9 +166,11 @@ void a2dp_sink_init(void){
 void a2dp_sink_deinit(void){
     avdtp_sink_deinit();
 
-    outgoing_active = false;
     a2dp_sink_cid = 0;
-    stream_endpoint_configured = false;
+    a2dp_sink_packet_handler_user = NULL;
+    a2dp_sink_media_config_validator = NULL;
+    a2dp_sink_outgoing_active = false;
+    a2dp_sink_stream_endpoint_configured = false;
 }
 
 avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type,
@@ -201,7 +203,7 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     // remember to tell client
-    outgoing_active = true;
+    a2dp_sink_outgoing_active = true;
     return avdtp_sink_connect(bd_addr, avdtp_cid);
 }
 
@@ -224,13 +226,13 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
 
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-            if (stream_endpoint_configured) return;
+            if (a2dp_sink_stream_endpoint_configured) return;
 
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 // only care for outgoing connections
-                if (!outgoing_active) break;
-                outgoing_active = false;
+                if (!a2dp_sink_outgoing_active) break;
+                a2dp_sink_outgoing_active = false;
                 a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED);
                 log_info("A2DP sink signaling connection failed status %d", status);
                 break;
@@ -247,19 +249,19 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
             reconfigure = avdtp_subevent_signaling_media_codec_other_configuration_get_reconfigure(packet) != 0;
             // accept configure if not configured and reconfigure if already configured
-            if (stream_endpoint_configured != reconfigure) break;
-            stream_endpoint_configured = true;
+            if (a2dp_sink_stream_endpoint_configured != reconfigure) break;
+            a2dp_sink_stream_endpoint_configured = true;
             a2dp_sink_cid = avdtp_subevent_signaling_media_codec_other_capability_get_avdtp_cid(packet);
             subevent_id = a2dp_subevent_id_for_avdtp_subevent_id(packet[2]);
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, subevent_id);
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
-            if (stream_endpoint_configured == false) break;
+            if (a2dp_sink_stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet)) break;
             
             // about to notify client
-            outgoing_active = false;
+            a2dp_sink_outgoing_active = false;
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 log_info("A2DP sink streaming connection could not be established, avdtp_cid 0x%02x, status 0x%02x ---", a2dp_sink_cid, status);
@@ -275,7 +277,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
-            if (stream_endpoint_configured == false) break;
+            if (a2dp_sink_stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_signaling_accept_get_avdtp_cid(packet)) break;
 
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
@@ -298,24 +300,24 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
-            if (stream_endpoint_configured == false) break;
+            if (a2dp_sink_stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_signaling_reject_get_avdtp_cid(packet)) break;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
-            if (stream_endpoint_configured == false) break;
+            if (a2dp_sink_stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_signaling_general_reject_get_avdtp_cid(packet)) break;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_COMMAND_REJECTED);
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
-            if (stream_endpoint_configured == false) break;
+            if (a2dp_sink_stream_endpoint_configured == false) break;
             if (a2dp_sink_cid != avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet)) break;
 
-            stream_endpoint_configured = false;
+            a2dp_sink_stream_endpoint_configured = false;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_STREAM_RELEASED);
             break;
@@ -323,8 +325,8 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             if (a2dp_sink_cid != avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet)) break;
 
-            stream_endpoint_configured = false;
-            outgoing_active = false;
+            a2dp_sink_stream_endpoint_configured = false;
+            a2dp_sink_outgoing_active = false;
 
             a2dp_replace_subevent_id_and_emit_cmd(a2dp_sink_packet_handler_user, packet, size, A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED);
             break;
