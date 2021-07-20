@@ -234,7 +234,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
 
     uint16_t buffer_size = l2cap_get_remote_mtu_for_local_cid(stream_endpoint->l2cap_media_cid);
     uint16_t packet_size = AVDTP_MEDIA_PAYLOAD_HEADER_SIZE + payload_size;
-    if (packet_size >= buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    if (packet_size > buffer_size) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     l2cap_reserve_packet_buffer();
     uint8_t * media_packet = l2cap_get_outgoing_buffer();
     avdtp_source_setup_media_header(media_packet, marker, stream_endpoint->sequence_number);
