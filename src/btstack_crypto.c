@@ -1170,7 +1170,12 @@ void btstack_crypto_init(void){
 	// register with HCI
     hci_event_callback_registration.callback = &btstack_crypto_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
+#ifndef USE_BTSTACK_AES128
+    btstack_crypto_cmac_state = CMAC_IDLE;
+#endif
+#ifdef ENABLE_ECC_P256
+    btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_IDLE;
+#endif
 #ifdef USE_MBEDTLS_ECC_P256
 	mbedtls_ecp_group_init(&mbedtls_ec_group);
 	mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
