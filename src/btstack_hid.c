@@ -39,7 +39,7 @@
 
 
 // from USB HID Specification 1.1, Appendix B.1
-const uint8_t hid_descriptor_boot_mode[] = {
+const uint8_t btstack_hid_descriptor_boot_mode[] = {
     // Keyboard
 
     0x05, 0x01,                    // Usage Page (Generic Desktop)
@@ -131,11 +131,11 @@ const uint8_t hid_descriptor_boot_mode[] = {
     0xc0                           // END_COLLECTION
 };
 
-const uint8_t * hid_get_boot_descriptor_data(void){
-    return &hid_descriptor_boot_mode[0];
+const uint8_t * btstack_hid_get_boot_descriptor_data(void){
+    return &btstack_hid_descriptor_boot_mode[0];
 }
 
-uint16_t hid_get_boot_descriptor_len(void){
-    return sizeof(hid_descriptor_boot_mode);
+uint16_t btstack_hid_get_boot_descriptor_len(void){
+    return sizeof(btstack_hid_descriptor_boot_mode);
 }
 

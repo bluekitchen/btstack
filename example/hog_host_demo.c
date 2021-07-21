@@ -155,10 +155,10 @@ static void hid_handle_input_report(uint8_t service_index, const uint8_t * repor
     
     switch (protocol_mode){
         case HID_PROTOCOL_MODE_BOOT:
-            btstack_hid_parser_init(&parser, 
-                hid_get_boot_descriptor_data(), 
-                hid_get_boot_descriptor_len(), 
-                HID_REPORT_TYPE_INPUT, report, report_len);
+            btstack_hid_parser_init(&parser,
+                                    btstack_hid_get_boot_descriptor_data(),
+                                    btstack_hid_get_boot_descriptor_len(),
+                                    HID_REPORT_TYPE_INPUT, report, report_len);
             break;
 
         default:

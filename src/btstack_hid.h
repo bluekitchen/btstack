@@ -117,13 +117,13 @@ typedef enum {
  * @brief Get boot descriptor data
  * @result data
  */
-const uint8_t * hid_get_boot_descriptor_data(void);
+const uint8_t * btstack_hid_get_boot_descriptor_data(void);
 
 /*
  * @brief Get boot descriptor length
  * @result length
  */
-uint16_t hid_get_boot_descriptor_len(void);
+uint16_t btstack_hid_get_boot_descriptor_len(void);
 
 /* API_END */
 
