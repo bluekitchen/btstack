@@ -189,7 +189,7 @@ static l2cap_fixed_channel_t l2cap_fixed_channel_connectionless;
 
 #ifdef ENABLE_CLASSIC
 static btstack_linked_list_t l2cap_services;
-static uint8_t require_security_level2_for_outgoing_sdp;
+static uint8_t l2cap_require_security_level2_for_outgoing_sdp;
 static bd_addr_t l2cap_outgoing_classic_addr;
 #endif
 
@@ -201,15 +201,15 @@ static btstack_linked_list_t l2cap_le_services;
 static btstack_linked_list_t l2cap_channels;
 #ifdef L2CAP_USES_CHANNELS
 // next channel id for new connections
-static uint16_t  local_source_cid;
+static uint16_t  l2cap_local_source_cid;
 #endif
 // next signaling sequence number
-static uint8_t   sig_seq_nr;
+static uint8_t   l2cap_sig_seq_nr;
 
 // used to cache l2cap rejects, echo, and informational requests
-static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
-static int signaling_responses_pending;
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+static l2cap_signaling_response_t l2cap_signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
+static int l2cap_signaling_responses_pending;
+static btstack_packet_callback_registration_t l2cap_hci_event_callback_registration;
 
 #ifdef ENABLE_BLE
 // only used for connection parameter update events
@@ -856,51 +856,39 @@ static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel)
 #ifdef L2CAP_USES_CHANNELS
 static uint16_t l2cap_next_local_cid(void){
     do {
-        if (local_source_cid == 0xffffu) {
-            local_source_cid = 0x40;
+        if (l2cap_local_source_cid == 0xffffu) {
+            l2cap_local_source_cid = 0x40;
         } else {
-            local_source_cid++;
+            l2cap_local_source_cid++;
         }
-    } while (l2cap_get_channel_for_local_cid(local_source_cid) != NULL);
-    return local_source_cid;
+    } while (l2cap_get_channel_for_local_cid(l2cap_local_source_cid) != NULL);
+    return l2cap_local_source_cid;
 }
 #endif
 
 static uint8_t l2cap_next_sig_id(void){
-    if (sig_seq_nr == 0xffu) {
-        sig_seq_nr = 1;
+    if (l2cap_sig_seq_nr == 0xffu) {
+        l2cap_sig_seq_nr = 1;
     } else {
-        sig_seq_nr++;
+        l2cap_sig_seq_nr++;
     }
-    return sig_seq_nr;
+    return l2cap_sig_seq_nr;
 }
 
 void l2cap_init(void){
-    signaling_responses_pending = 0;
 #ifdef L2CAP_USES_CHANNELS
-    local_source_cid  = 0x40;
+    l2cap_local_source_cid  = 0x40;
 #endif
-    sig_seq_nr  = 0xff;
-    l2cap_channels = NULL;
+    l2cap_sig_seq_nr  = 0xff;
 
 #ifdef ENABLE_CLASSIC
-    l2cap_services = NULL;
-    require_security_level2_for_outgoing_sdp = 0;
-
     // Setup Connectionless Channel
     l2cap_fixed_channel_connectionless.local_cid     = L2CAP_CID_CONNECTIONLESS_CHANNEL;
     l2cap_fixed_channel_connectionless.channel_type  = L2CAP_CHANNEL_TYPE_CONNECTIONLESS;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_connectionless);
 #endif
 
-#ifdef ENABLE_LE_DATA_CHANNELS
-    l2cap_le_services = NULL;
-#endif
-
 #ifdef ENABLE_BLE
-    l2cap_event_packet_handler = NULL;
-    l2cap_le_custom_max_mtu = 0;
-
     // Setup fixed ATT Channel
     l2cap_fixed_channel_att.local_cid    = L2CAP_CID_ATTRIBUTE_PROTOCOL;
     l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_LE_FIXED;
@@ -915,8 +903,8 @@ void l2cap_init(void){
     // 
     // register callback with HCI
     //
-    hci_event_callback_registration.callback = &l2cap_hci_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    l2cap_hci_event_callback_registration.callback = &l2cap_hci_event_handler;
+    hci_add_event_handler(&l2cap_hci_event_callback_registration);
 
     hci_register_acl_packet_handler(&l2cap_acl_handler);
 
@@ -931,10 +919,24 @@ void l2cap_init(void){
  * @brief De-Init L2CAP
  */
 void l2cap_deinit(void){
+    l2cap_channels = NULL;
+    l2cap_signaling_responses_pending = 0;
 #ifdef ENABLE_CLASSIC
-    memset(l2cap_outgoing_classic_addr, 0, 6);
+    l2cap_require_security_level2_for_outgoing_sdp = 0;
+    (void)memset(&l2cap_fixed_channel_connectionless, 0, sizeof(l2cap_fixed_channel_connectionless));
+    l2cap_services = NULL;
+    (void)memset(l2cap_outgoing_classic_addr, 0, 6);
 #endif
-    signaling_responses_pending = 0;
+#ifdef ENABLE_BLE
+    l2cap_event_packet_handler = NULL;
+    l2cap_le_custom_max_mtu = 0;
+    (void)memset(&l2cap_fixed_channel_att, 0, sizeof(l2cap_fixed_channel_att));
+    (void)memset(&l2cap_fixed_channel_sm, 0, sizeof(l2cap_fixed_channel_sm));
+#endif
+#ifdef ENABLE_LE_DATA_CHANNELS
+    l2cap_le_services = NULL;
+#endif
+    l2cap_signaling_responses_pending = 0;
 }
 
 void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
@@ -1267,11 +1269,11 @@ static void l2cap_start_ertx(l2cap_channel_t * channel){
 }
 
 void l2cap_require_security_level_2_for_outgoing_sdp(void){
-    require_security_level2_for_outgoing_sdp = 1;
+    l2cap_require_security_level2_for_outgoing_sdp = 1;
 }
 
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
-    return (psm == BLUETOOTH_PSM_SDP) && (!require_security_level2_for_outgoing_sdp);
+    return (psm == BLUETOOTH_PSM_SDP) && (!l2cap_require_security_level2_for_outgoing_sdp);
 }
 
 static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
@@ -1677,26 +1679,26 @@ static void l2cap_run_for_classic_channel_ertm(l2cap_channel_t * channel){
 static void l2cap_run_signaling_response(void) {
 
     // check pending signaling responses
-    while (signaling_responses_pending){
+    while (l2cap_signaling_responses_pending){
 
-        hci_con_handle_t handle = signaling_responses[0].handle;
+        hci_con_handle_t handle = l2cap_signaling_responses[0].handle;
 
         if (!hci_can_send_acl_packet_now(handle)) break;
 
-        uint8_t  sig_id        = signaling_responses[0].sig_id;
-        uint8_t  response_code = signaling_responses[0].code;
-        uint16_t result        = signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
+        uint8_t  sig_id        = l2cap_signaling_responses[0].sig_id;
+        uint8_t  response_code = l2cap_signaling_responses[0].code;
+        uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
 #ifdef ENABLE_CLASSIC
-        uint16_t info_type     = signaling_responses[0].data;  // INFORMATION_REQUEST
-        uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
+        uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
+        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST
 #endif
 
         // remove first item before sending (to avoid sending response mutliple times)
-        signaling_responses_pending--;
+        l2cap_signaling_responses_pending--;
         int i;
-        for (i=0; i < signaling_responses_pending; i++){
-            (void)memcpy(&signaling_responses[i],
-                         &signaling_responses[i + 1],
+        for (i=0; i < l2cap_signaling_responses_pending; i++){
+            (void)memcpy(&l2cap_signaling_responses[i],
+                         &l2cap_signaling_responses[i + 1],
                          sizeof(l2cap_signaling_response_t));
         }
 
@@ -2536,13 +2538,13 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 
 static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t code, uint8_t sig_id, uint16_t cid, uint16_t data){
     // Vol 3, Part A, 4.3: "The DCID and SCID fields shall be ignored when the result field indi- cates the connection was refused."
-    if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
-        signaling_responses[signaling_responses_pending].handle = handle;
-        signaling_responses[signaling_responses_pending].code = code;
-        signaling_responses[signaling_responses_pending].sig_id = sig_id;
-        signaling_responses[signaling_responses_pending].cid = cid;
-        signaling_responses[signaling_responses_pending].data = data;
-        signaling_responses_pending++;
+    if (l2cap_signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
+        l2cap_signaling_responses[l2cap_signaling_responses_pending].handle = handle;
+        l2cap_signaling_responses[l2cap_signaling_responses_pending].code = code;
+        l2cap_signaling_responses[l2cap_signaling_responses_pending].sig_id = sig_id;
+        l2cap_signaling_responses[l2cap_signaling_responses_pending].cid = cid;
+        l2cap_signaling_responses[l2cap_signaling_responses_pending].data = data;
+        l2cap_signaling_responses_pending++;
         l2cap_run();
     }
 }
