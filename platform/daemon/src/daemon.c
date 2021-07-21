@@ -255,6 +255,11 @@ static int loggingEnabled;
 
 static const char * btstack_server_storage_path;
 
+// GAP command buffer
+#ifdef ENABLE_CLASSIC
+static uint8_t daemon_gap_pin_code[16];
+#endif
+
 // TLV
 static int                   tlv_setup_done;
 static const btstack_tlv_t * tlv_impl;
@@ -1161,6 +1166,15 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case GAP_DELETE_ALL_LINK_KEYS:
             gap_delete_all_link_keys();
+            break;
+        case GAP_PIN_CODE_RESPONSE:
+            reverse_bd_addr(&packet[3], addr);
+            memcpy(daemon_gap_pin_code, &packet[10], 16);
+            gap_pin_code_response_binary(addr, daemon_gap_pin_code, packet[9]);
+            break;
+        case GAP_PIN_CODE_NEGATIVE:
+            reverse_bd_addr(&packet[3], addr);
+            gap_pin_code_negative(addr);
             break;
 #endif
 #ifdef ENABLE_BLE

@@ -306,8 +306,25 @@ const hci_cmd_t gap_drop_link_key_cmd = {
 /**
  */
 const hci_cmd_t gap_delete_all_link_keys_cmd = {
-        DAEMON_OPCODE_GAP_DELETE_ALL_LINK_KEYS, ""
+    DAEMON_OPCODE_GAP_DELETE_ALL_LINK_KEYS, ""
 };
+
+/**
+ * @param bd_addr
+ * @param pin_length
+ * @param pin (c-string)
+ */
+const hci_cmd_t gap_pin_code_response_cmd = {
+    DAEMON_OPCODE_GAP_PIN_CODE_RESPONSE, "B1P"
+};
+
+/**
+ * @param bd_addr
+ */
+const hci_cmd_t gap_pin_code_negative_cmd = {
+    DAEMON_OPCODE_GAP_PIN_CODE_NEGATIVE, "B"
+};
+
 
 /**
  */

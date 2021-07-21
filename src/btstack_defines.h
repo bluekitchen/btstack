@@ -214,6 +214,8 @@ typedef uint8_t sm_key_t[16];
 #define GAP_REMOTE_NAME_REQUEST       0x53
 #define GAP_DROP_LINK_KEY_FOR_BD_ADDR 0x54
 #define GAP_DELETE_ALL_LINK_KEYS      0x55
+#define GAP_PIN_CODE_RESPONSE         0x56
+#define GAP_PIN_CODE_NEGATIVE         0x57
 
 // GAP LE      0x60
 #define GAP_LE_SCAN_START           0x60
