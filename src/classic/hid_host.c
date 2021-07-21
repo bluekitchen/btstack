@@ -59,20 +59,29 @@
 #define CONTROL_MESSAGE_BITMASK_EXIT_SUSPEND        2
 #define CONTROL_MESSAGE_BITMASK_VIRTUAL_CABLE_UNPLUG 4
 
+// globals
 
+// higher-layer callbacks
+static btstack_packet_handler_t hid_host_callback;
+
+// descriptor storage
 static uint8_t * hid_host_descriptor_storage;
-static uint16_t hid_host_descriptor_storage_len;
+static uint16_t  hid_host_descriptor_storage_len;
 
 // SDP
-static uint8_t            attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
-static const unsigned int attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
-static uint16_t           sdp_query_context_hid_host_control_cid = 0;
+static uint8_t            hid_host_sdp_attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
+static const unsigned int hid_host_sdp_attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
+static uint16_t           hid_host_sdp_context_control_cid = 0;
 
-static btstack_linked_list_t connections;
-static uint16_t hid_host_cid_counter = 0;
+// connections
+static btstack_linked_list_t hid_host_connections;
+static uint16_t              hid_host_cid_counter = 0;
 
-static btstack_packet_handler_t hid_callback;
+// lower layer callbacks
 static btstack_context_callback_registration_t hid_host_handle_sdp_client_query_request;
+
+// prototypes
+
 static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hid_host_handle_start_sdp_client_query(void * context);
 
@@ -81,7 +90,7 @@ static uint16_t hid_descriptor_storage_get_available_space(void){
     uint16_t free_space = hid_host_descriptor_storage_len;
 
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &hid_host_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * connection = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
         free_space -= connection->hid_descriptor_len;
@@ -91,7 +100,7 @@ static uint16_t hid_descriptor_storage_get_available_space(void){
 
 static hid_host_connection_t * hid_host_get_connection_for_hid_cid(uint16_t hid_cid){
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &hid_host_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * connection = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
         if (connection->hid_cid != hid_cid) continue;
@@ -102,7 +111,7 @@ static hid_host_connection_t * hid_host_get_connection_for_hid_cid(uint16_t hid_
 
 static hid_host_connection_t * hid_host_get_connection_for_l2cap_cid(uint16_t l2cap_cid){
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &hid_host_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * connection = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
         if ((connection->interrupt_cid != l2cap_cid) && (connection->control_cid != l2cap_cid)) continue;
@@ -136,7 +145,7 @@ static void hid_descriptor_storage_delete(hid_host_connection_t * connection){
     connection->hid_descriptor_offset = 0;
 
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &hid_host_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * conn = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
         if (conn->hid_descriptor_offset >= next_offset){
@@ -179,7 +188,7 @@ static void hid_emit_connected_event(hid_host_connection_t * connection, uint8_t
     pos += 2;
     event[pos++] = connection->incoming;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }   
 
 static void hid_emit_descriptor_available_event(hid_host_connection_t * connection){
@@ -192,7 +201,7 @@ static void hid_emit_descriptor_available_event(hid_host_connection_t * connecti
     pos += 2;
     event[pos++] = connection->hid_descriptor_status;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 static void hid_emit_sniff_params_event(hid_host_connection_t * connection){
@@ -209,7 +218,7 @@ static void hid_emit_sniff_params_event(hid_host_connection_t * connection){
     pos += 2;
     
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 static void hid_emit_event(hid_host_connection_t * connection, uint8_t subevent_type){
@@ -221,7 +230,7 @@ static void hid_emit_event(hid_host_connection_t * connection, uint8_t subevent_
     little_endian_store_16(event,pos,connection->hid_cid);
     pos += 2;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 static void hid_emit_event_with_status(hid_host_connection_t * connection, uint8_t subevent_type, hid_handshake_param_type_t status){
@@ -234,7 +243,7 @@ static void hid_emit_event_with_status(hid_host_connection_t * connection, uint8
     pos += 2;
     event[pos++] = status;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 static void hid_emit_set_protocol_response_event(hid_host_connection_t * connection, hid_handshake_param_type_t status){
@@ -248,7 +257,7 @@ static void hid_emit_set_protocol_response_event(hid_host_connection_t * connect
     event[pos++] = status;
     event[pos++] = connection->protocol_mode;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 static void hid_emit_incoming_connection_event(hid_host_connection_t * connection){
@@ -264,7 +273,7 @@ static void hid_emit_incoming_connection_event(hid_host_connection_t * connectio
     little_endian_store_16(event,pos,connection->con_handle);
     pos += 2;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }   
 
 // setup get report response event - potentially in-place of original l2cap packet
@@ -306,7 +315,7 @@ static void hid_emit_get_protocol_event(hid_host_connection_t * connection, hid_
     event[pos++] = status;
     event[pos++] = protocol_mode;
     event[1] = pos - 2;
-    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
+    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, &event[0], pos);
 }
 
 // HID Host
@@ -335,13 +344,13 @@ static hid_host_connection_t * hid_host_create_connection(bd_addr_t remote_addr)
     connection->con_handle = HCI_CON_HANDLE_INVALID;
 
     (void)memcpy(connection->remote_addr, remote_addr, 6);
-    btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
+    btstack_linked_list_add(&hid_host_connections, (btstack_linked_item_t *) connection);
     return connection;
 }
 
 static hid_host_connection_t * hid_host_get_connection_for_bd_addr(bd_addr_t addr){
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &hid_host_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * connection = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
         if (memcmp(addr, connection->remote_addr, 6) != 0) continue;
@@ -364,7 +373,7 @@ static void hid_host_finalize_connection(hid_host_connection_t * connection){
     if (control_cid != 0){
         l2cap_disconnect(control_cid, 0);
     }
-    btstack_linked_list_remove(&connections, (btstack_linked_item_t*) connection); 
+    btstack_linked_list_remove(&hid_host_connections, (btstack_linked_item_t*) connection);
     btstack_memory_hid_host_connection_free(connection);
 }
  
@@ -384,9 +393,9 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     bool finalize_connection;
 
     
-    hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(sdp_query_context_hid_host_control_cid);
+    hid_host_connection_t * connection = hid_host_get_connection_for_hid_cid(hid_host_sdp_context_control_cid);
     if (!connection) {
-        log_error("SDP query, connection with 0x%02x cid not found", sdp_query_context_hid_host_control_cid);
+        log_error("SDP query, connection with 0x%02x cid not found", hid_host_sdp_context_control_cid);
         return;
     }
 
@@ -395,15 +404,15 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
 
-            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= attribute_value_buffer_size) {
-                
-                attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+            if (sdp_event_query_attribute_byte_get_attribute_length(packet) <= hid_host_sdp_attribute_value_buffer_size) {
+
+                hid_host_sdp_attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
 
                 if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
                     switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                         
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {                                    
+                            for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
                                 if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
                                 des_element = des_iterator_get_element(&attribute_list_it);
                                 des_iterator_init(&prot_it, des_element);
@@ -423,7 +432,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                             }
                             break;
                         case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {                                    
+                            for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
                                 if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
                                 des_element = des_iterator_get_element(&attribute_list_it);
                                 for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
@@ -448,7 +457,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                             break;
                         
                         case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
-                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
+                            for (des_iterator_init(&attribute_list_it, hid_host_sdp_attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
                                 if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
                                 des_element = des_iterator_get_element(&attribute_list_it);
                                 for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
@@ -474,9 +483,9 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                             break;
 
                         case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MAX_LATENCY:
-                            if (de_get_element_type(attribute_value) == DE_UINT) {
+                            if (de_get_element_type(hid_host_sdp_attribute_value) == DE_UINT) {
                                 uint16_t host_max_latency;
-                                if (de_element_get_uint16(attribute_value, &host_max_latency) == 1){
+                                if (de_element_get_uint16(hid_host_sdp_attribute_value, &host_max_latency) == 1){
                                     connection->host_max_latency = host_max_latency;
                                 } else {
                                     connection->host_max_latency = 0xFFFF;
@@ -485,9 +494,9 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                             break;
 
                         case BLUETOOTH_ATTRIBUTE_HIDSSR_HOST_MIN_TIMEOUT:
-                            if (de_get_element_type(attribute_value) == DE_UINT) {
+                            if (de_get_element_type(hid_host_sdp_attribute_value) == DE_UINT) {
                                 uint16_t host_min_timeout;
-                                if (de_element_get_uint16(attribute_value, &host_min_timeout) == 1){
+                                if (de_element_get_uint16(hid_host_sdp_attribute_value, &host_min_timeout) == 1){
                                     connection->host_min_timeout = host_min_timeout;
                                 } else {
                                     connection->host_min_timeout = 0xFFFF;
@@ -500,7 +509,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                     }
                 }
             } else {
-                log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
+                log_error("SDP attribute value buffer size exceeded: available %d, required %d", hid_host_sdp_attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
             }
             break;
             
@@ -536,7 +545,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
             }
             
             if (finalize_connection){
-                sdp_query_context_hid_host_control_cid = 0;
+                hid_host_sdp_context_control_cid = 0;
                 hid_emit_connected_event(connection, status);
                 hid_host_finalize_connection(connection);
                 break;
@@ -555,7 +564,7 @@ static void hid_host_handle_sdp_client_query_result(uint8_t packet_type, uint16_
                     connection->state = HID_HOST_W4_CONTROL_CONNECTION_ESTABLISHED;
                     status = l2cap_create_channel(hid_host_packet_handler, connection->remote_addr, BLUETOOTH_PSM_HID_CONTROL, 0xffff, &connection->control_cid);
                     if (status != ERROR_CODE_SUCCESS){
-                        sdp_query_context_hid_host_control_cid = 0;
+                        hid_host_sdp_context_control_cid = 0;
                         hid_emit_connected_event(connection, status);
                         hid_host_finalize_connection(connection);
                     }
@@ -657,14 +666,14 @@ static void hid_host_handle_control_packet(hid_host_connection_t * connection, u
                 case HID_MESSAGE_TYPE_HANDSHAKE:{
                     uint8_t event[8];
                     hid_setup_get_report_event(connection, message_status, event, 0);
-                    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, event, sizeof(event));
+                    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, event, sizeof(event));
                     break;
                 }
                 case HID_MESSAGE_TYPE_DATA:
                     // reuse hci+l2cap header - max 8 byte (7 bytes + 1 bytes overwriting hid header)
                     in_place_event = packet - 7;
                     hid_setup_get_report_event(connection, HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL, in_place_event, size-1);
-                    hid_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
+                    hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
                     break;
                 default:
                     break;
@@ -727,7 +736,7 @@ static void hid_host_packet_handler(uint8_t packet_type, uint16_t channel, uint8
             if (channel == connection->interrupt_cid){
                 uint8_t * in_place_event = packet - 7;
                 hid_setup_report_event(connection, in_place_event, size-1);
-                hid_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
+                hid_host_callback(HCI_EVENT_PACKET, connection->hid_cid, in_place_event, size + 7);
                 break;
             }
 
@@ -1032,15 +1041,23 @@ void hid_host_init(uint8_t * hid_descriptor_storage, uint16_t hid_descriptor_sto
     l2cap_register_service(hid_host_packet_handler, PSM_HID_CONTROL, 0xffff, gap_get_security_level());
 }
 
-void hid_host_register_packet_handler(btstack_packet_handler_t callback){
-    hid_callback = callback;
+void hid_host_deinit(void){
+    hid_host_callback = NULL;
+    hid_host_descriptor_storage = NULL;
+    hid_host_sdp_context_control_cid = 0;
+    hid_host_connections = NULL;
+    hid_host_cid_counter = 0;
+    (void) memset(&hid_host_handle_sdp_client_query_request, 0, sizeof(hid_host_handle_sdp_client_query_request));
 }
 
+void hid_host_register_packet_handler(btstack_packet_handler_t callback){
+    hid_host_callback = callback;
+}
 
 static void hid_host_handle_start_sdp_client_query(void * context){
     UNUSED(context);
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &connections);
+    btstack_linked_list_iterator_init(&it, &hid_host_connections);
 
     while (btstack_linked_list_iterator_has_next(&it)){
         hid_host_connection_t * connection = (hid_host_connection_t *)btstack_linked_list_iterator_next(&it);
@@ -1055,7 +1072,7 @@ static void hid_host_handle_start_sdp_client_query(void * context){
         }
 
         hid_descriptor_storage_init(connection);
-        sdp_query_context_hid_host_control_cid = connection->hid_cid;
+        hid_host_sdp_context_control_cid = connection->hid_cid;
         sdp_client_query_uuid16(&hid_host_handle_sdp_client_query_result, (uint8_t *) connection->remote_addr, BLUETOOTH_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE_SERVICE);
         return;
     }

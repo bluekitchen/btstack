@@ -276,6 +276,11 @@ const uint8_t * hid_descriptor_storage_get_descriptor_data(uint16_t hid_cid);
  */
 uint16_t hid_descriptor_storage_get_descriptor_len(uint16_t hid_cid);
 
+/**
+ * @brief De-Init HID Device
+ */
+void hid_host_deinit(void);
+
 /* API_END */
 
 
