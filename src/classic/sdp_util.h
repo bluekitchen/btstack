@@ -61,7 +61,7 @@ typedef enum {
     SDP_ServiceAttributeResponse,
     SDP_ServiceSearchAttributeRequest,
     SDP_ServiceSearchAttributeResponse
-} SDP_PDU_ID_t;
+} sdp_pdu_id_t;
 
 
 /* API_START */

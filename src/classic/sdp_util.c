@@ -67,8 +67,8 @@
 const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
 #endif
 
-static uint8_t des_serviceSearchPatternUUID16[]  = {0x35, 0x03, 0x19, 0x00, 0x00};
-static uint8_t des_serviceSearchPatternUUID128[] = {
+static uint8_t des_service_search_pattern_uuid16[]  = {0x35, 0x03, 0x19, 0x00, 0x00};
+static uint8_t des_service_search_pattern_uuid128[] = {
     0x35, 0x11, 0x1c, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -725,12 +725,12 @@ UNUSED(record);
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid16(uint16_t uuid16){
-    big_endian_store_16(des_serviceSearchPatternUUID16, 3, uuid16);
-    return (uint8_t*)des_serviceSearchPatternUUID16;
+    big_endian_store_16(des_service_search_pattern_uuid16, 3, uuid16);
+    return (uint8_t*)des_service_search_pattern_uuid16;
 }
 
 uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128){
-    (void)memcpy(&des_serviceSearchPatternUUID128[3], uuid128, 16);
-    return (uint8_t*)des_serviceSearchPatternUUID128;
+    (void)memcpy(&des_service_search_pattern_uuid128[3], uuid128, 16);
+    return (uint8_t*)des_service_search_pattern_uuid128;
 }
 
