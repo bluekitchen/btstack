@@ -2188,10 +2188,6 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
 // MARK: RFCOMM BTstack API
 
 void rfcomm_init(void){
-    rfcomm_client_cid_generator = 0;
-    rfcomm_multiplexers = NULL;
-    rfcomm_services     = NULL;
-    rfcomm_channels     = NULL;
     rfcomm_security_level = gap_get_security_level();
 #ifdef RFCOMM_USE_ERTM
     rfcomm_ertm_id = 0;
@@ -2199,6 +2195,10 @@ void rfcomm_init(void){
 }
 
 void rfcomm_deinit(void){
+    rfcomm_client_cid_generator = 0;
+    rfcomm_multiplexers = NULL;
+    rfcomm_services     = NULL;
+    rfcomm_channels     = NULL;
 #ifdef RFCOMM_USE_ERTM
     rfcomm_ertm_request_callback  = NULL;
     rfcomm_ertm_released_callback = NULL;

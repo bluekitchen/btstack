@@ -69,18 +69,6 @@ const char * pbap_vcard_entry_type   = "x-bt/vcard";
 
 const char * pbap_vcard_listing_name = "pb";
 
-static uint32_t pbap_supported_features = \
-    PBAP_SUPPORTED_FEATURES_DOWNLOAD |
-    PBAP_SUPPORTED_FEATURES_BROWSING |
-    PBAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER |
-    PBAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTERS |
-    PBAP_SUPPORTED_FEATURES_VCARD_SELECTING |
-    PBAP_SUPPORTED_FEATURES_ENHANCED_MISSED_CALLS | 
-    PBAP_SUPPORTED_FEATURES_DEFAULT_CONTACT_IMAGE_FORMAT |
-    PBAP_SUPPORTED_FEATURES_X_BT_UCI_VCARD_PROPERTY |
-    PBAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY |
-    PBAP_SUPPORTED_FEATURES_CONTACT_REFERENCING;
-
 typedef enum {
     PBAP_INIT = 0,
     PBAP_W4_GOEP_CONNECTION,
@@ -157,8 +145,10 @@ typedef struct pbap_client {
     uint8_t flow_next_triggered;
 } pbap_client_t;
 
-static pbap_client_t _pbap_client;
-static pbap_client_t * pbap_client = &_pbap_client;
+static uint32_t pbap_client_supported_features;
+
+static pbap_client_t pbap_client_singleton;
+static pbap_client_t * pbap_client = &pbap_client_singleton;
 
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
@@ -296,7 +286,7 @@ static void pbap_handle_can_send_now(void){
             if (goep_client_get_pbap_supported_features(pbap_client->goep_cid) != PBAP_FEATURES_NOT_PRESENT){
                 application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
                 application_parameters[1] = 4;
-                big_endian_store_32(application_parameters, 2, pbap_supported_features);
+                big_endian_store_32(application_parameters, 2, pbap_client_supported_features);
                 goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], 6);
             }
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
@@ -716,7 +706,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                         }
                     }
                     pbap_client->state = PBAP_CONNECTED;
-                    pbap_client->vcard_selector_supported = pbap_supported_features & goep_client_get_pbap_supported_features(pbap_client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
+                    pbap_client->vcard_selector_supported = pbap_client_supported_features & goep_client_get_pbap_supported_features(pbap_client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
                     pbap_client_emit_connected_event(pbap_client, 0);
                     break;
                 case OBEX_RESP_UNAUTHORIZED:
@@ -915,13 +905,29 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
-void pbap_client_init(void){
-    memset(pbap_client, 0, sizeof(pbap_client_t));
+static void pbap_client_reset_state(void) {
+    pbap_client_supported_features =
+            PBAP_SUPPORTED_FEATURES_DOWNLOAD |
+            PBAP_SUPPORTED_FEATURES_BROWSING |
+            PBAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER |
+            PBAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTERS |
+            PBAP_SUPPORTED_FEATURES_VCARD_SELECTING |
+            PBAP_SUPPORTED_FEATURES_ENHANCED_MISSED_CALLS |
+            PBAP_SUPPORTED_FEATURES_DEFAULT_CONTACT_IMAGE_FORMAT |
+            PBAP_SUPPORTED_FEATURES_X_BT_UCI_VCARD_PROPERTY |
+            PBAP_SUPPORTED_FEATURES_X_BT_UID_VCARD_PROPERTY |
+            PBAP_SUPPORTED_FEATURES_CONTACT_REFERENCING;
     pbap_client->state = PBAP_INIT;
     pbap_client->cid = 1;
 }
 
+void pbap_client_init(void){
+    pbap_client_reset_state();
+}
+
 void pbap_client_deinit(void){
+    pbap_client_reset_state();
+    memset(pbap_client, 0, sizeof(pbap_client_t));
 }
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
