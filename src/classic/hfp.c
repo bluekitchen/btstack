@@ -76,9 +76,6 @@ typedef struct {
 
 // globals
 
-static hfp_sdp_query_context_t sdp_query_context;
-static btstack_context_callback_registration_t hfp_handle_sdp_client_query_request;
-
 static btstack_linked_list_t hfp_connections ;
 
 static btstack_packet_handler_t hfp_hf_callback;
@@ -87,14 +84,20 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
-static hfp_connection_t * sco_establishment_active;
-
 static uint16_t hfp_allowed_sco_packet_types;
+static hfp_connection_t * hfp_sco_establishment_active;
+
+static hfp_sdp_query_context_t                 hfp_sdp_query_context;
+static btstack_context_callback_registration_t hfp_sdp_query_request;
+
+
+
+
+
 
 // prototypes
 static hfp_link_settings_t hfp_next_link_setting_for_connection(hfp_link_settings_t current_setting, hfp_connection_t * hfp_connection, uint8_t eSCO_S4_supported);
 static void parse_sequence(hfp_connection_t * context);
-
 
 static const char * hfp_hf_features[] = {
         "EC and/or NR function",
@@ -701,9 +704,9 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     UNUSED(channel);        // ok: no channel
     UNUSED(size);           // ok: handling own sdp events
     
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(sdp_query_context.remote_address, sdp_query_context.local_role);
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(hfp_sdp_query_context.remote_address, hfp_sdp_query_context.local_role);
     if (hfp_connection == NULL) {
-        log_info("connection with %s and local role %d not found", sdp_query_context.remote_address, sdp_query_context.local_role);
+        log_info("connection with %s and local role %d not found", hfp_sdp_query_context.remote_address, hfp_sdp_query_context.local_role);
         return;
     }
     
@@ -742,7 +745,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
             // register the SDP Query request to check if there is another connection waiting for the query
             // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-            (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
+            (void) sdp_client_register_query_callback(&hfp_sdp_query_request);
             break;
         default:
             break;
@@ -752,7 +755,7 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 // returns 0 if unexpected error or no other link options remained, otherwise 1
 static int hfp_handle_failed_sco_connection(uint8_t status){
                    
-    if (!sco_establishment_active){
+    if (!hfp_sco_establishment_active){
         log_info("(e)SCO Connection failed but not started by us");
         return 0;
     }
@@ -768,16 +771,16 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     }
 
     // note: eSCO_S4 supported flag not available, but it's only relevant for highest CVSD link setting (and the current failed)
-    hfp_link_settings_t next_setting = hfp_next_link_setting_for_connection(sco_establishment_active->link_setting, sco_establishment_active, false);
+    hfp_link_settings_t next_setting = hfp_next_link_setting_for_connection(hfp_sco_establishment_active->link_setting, hfp_sco_establishment_active, false);
 
     // handle no valid setting found
     if (next_setting == HFP_LINK_SETTINGS_NONE) {
-        if (sco_establishment_active->negotiated_codec == HFP_CODEC_MSBC){
+        if (hfp_sco_establishment_active->negotiated_codec == HFP_CODEC_MSBC){
             log_info("T2/T1 failed, fallback to CVSD - D1");
-            sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
-            sco_establishment_active->sco_for_msbc_failed = 1;
-            sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
-            sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
+            hfp_sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
+            hfp_sco_establishment_active->sco_for_msbc_failed = 1;
+            hfp_sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+            hfp_sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
         } else {
             // no other options
             return 0;
@@ -785,9 +788,9 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
     }
 
     log_info("e)SCO Connection: try new link_setting %d", next_setting);
-    sco_establishment_active->establish_audio_connection = 1;
-    sco_establishment_active->link_setting = next_setting;
-    sco_establishment_active = NULL;
+    hfp_sco_establishment_active->establish_audio_connection = 1;
+    hfp_sco_establishment_active->link_setting = next_setting;
+    hfp_sco_establishment_active = NULL;
     return 1;
 }
 
@@ -824,7 +827,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     hfp_bcm_prepare_for_sco(hfp_connection);
 #endif
                     log_info("accept sco %u\n", hfp_connection->accept_sco);
-                    sco_establishment_active = hfp_connection;
+                    hfp_sco_establishment_active = hfp_connection;
                     break;
                 default:
                     break;                    
@@ -833,11 +836,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
-                if (sco_establishment_active == NULL) break;
+                if (hfp_sco_establishment_active == NULL) break;
                 status = hci_event_command_status_get_status(packet);
                 if (status == ERROR_CODE_SUCCESS) break;
                 
-                hfp_connection = sco_establishment_active;
+                hfp_connection = hfp_sco_establishment_active;
                 if (hfp_handle_failed_sco_connection(status)) break;
                 hfp_connection->establish_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -846,7 +849,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
-            if (sco_establishment_active == NULL) break;
+            if (hfp_sco_establishment_active == NULL) break;
             hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection) {
@@ -1720,8 +1723,8 @@ static void hfp_handle_start_sdp_client_query(void * context){
         if (connection->state != HFP_W2_SEND_SDP_QUERY) continue;
         
         connection->state = HFP_W4_SDP_QUERY_COMPLETE;
-        sdp_query_context.local_role = connection->local_role;
-        (void)memcpy(sdp_query_context.remote_address, connection->remote_addr, 6);
+        hfp_sdp_query_context.local_role = connection->local_role;
+        (void)memcpy(hfp_sdp_query_context.remote_address, connection->remote_addr, 6);
         sdp_client_query_rfcomm_channel_and_name_for_service_class_uuid(&handle_query_rfcomm_event, connection->remote_addr, connection->service_uuid);
         return;
     }
@@ -1743,9 +1746,9 @@ uint8_t hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t servi
     bd_addr_copy(connection->remote_addr, bd_addr);
     connection->service_uuid = service_uuid;
 
-    hfp_handle_sdp_client_query_request.callback = &hfp_handle_start_sdp_client_query;
+    hfp_sdp_query_request.callback = &hfp_handle_start_sdp_client_query;
     // ignore ERROR_CODE_COMMAND_DISALLOWED because in that case, we already have requested an SDP callback
-    (void) sdp_client_register_query_callback(&hfp_handle_sdp_client_query_request);
+    (void) sdp_client_register_query_callback(&hfp_sdp_query_request);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1817,7 +1820,7 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
     // all packet types, fixed bandwidth
     int setting = hfp_connection->link_setting;
     log_info("hfp_setup_synchronous_connection using setting nr %u", setting);
-    sco_establishment_active = hfp_connection;
+    hfp_sco_establishment_active = hfp_connection;
     uint16_t sco_voice_setting = hci_get_sco_voice_setting();
     if (hfp_connection->negotiated_codec == HFP_CODEC_MSBC){
 #ifdef ENABLE_BCM_PCM_WBS
@@ -1943,14 +1946,15 @@ void hfp_init(void){
 }
 
 void hfp_deinit(void){
+    hfp_allowed_sco_packet_types = 0;
     hfp_connections = NULL;
     hfp_hf_callback = NULL;
     hfp_ag_callback = NULL;
     hfp_hf_rfcomm_packet_handler = NULL;
     hfp_ag_rfcomm_packet_handler = NULL;
-    sco_establishment_active = NULL;
-    (void) memset(&sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
-    (void) memset(&hfp_handle_sdp_client_query_request, 0, sizeof(btstack_context_callback_registration_t));
+    hfp_sco_establishment_active = NULL;
+    (void) memset(&hfp_sdp_query_context, 0, sizeof(hfp_sdp_query_context_t));
+    (void) memset(&hfp_sdp_query_request, 0, sizeof(btstack_context_callback_registration_t));
 }
 
 void hfp_set_sco_packet_types(uint16_t packet_types){
