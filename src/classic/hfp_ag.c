@@ -1153,7 +1153,20 @@ static void hfp_ag_hf_stop_ringing(hfp_connection_t * hfp_connection){
     hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
 }
 
-static void hfp_ag_trigger_incoming_call(void){
+static void hfp_ag_trigger_incoming_call_during_active_one(void){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+        if (hfp_connection->call_state != HFP_CALL_ACTIVE) continue;
+
+        hfp_connection->call_state = HFP_CALL_W2_SEND_CALL_WAITING;
+        hfp_ag_run_for_context(hfp_connection);
+    }
+}
+
+static void hfp_ag_trigger_incoming_call_idle(void){
     int indicator_index = get_ag_indicator_index_for_name("callsetup");
     if (indicator_index < 0) return;
 
@@ -1162,14 +1175,9 @@ static void hfp_ag_trigger_incoming_call(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
-        if (hfp_connection->call_state == HFP_CALL_IDLE){
-            hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-            hfp_ag_hf_start_ringing_incoming(hfp_connection);
-        }
-        if (hfp_connection->call_state == HFP_CALL_ACTIVE){
-            hfp_connection->call_state = HFP_CALL_W2_SEND_CALL_WAITING;
-        }
+        if (hfp_connection->call_state != HFP_CALL_IDLE) continue;
+
+        hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
         hfp_ag_run_for_context(hfp_connection);
     }
 }
@@ -1439,7 +1447,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         case HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS:
                             hfp_gsm_handler(HFP_AG_INCOMING_CALL, 0, 0, NULL);
                             hfp_ag_set_callsetup_indicator();
-                            hfp_ag_trigger_incoming_call();
+                            hfp_ag_trigger_incoming_call_idle();
                             log_info("AG rings");
                             break;
                         default:
@@ -1451,7 +1459,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                         case HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS:
                             hfp_gsm_handler(HFP_AG_INCOMING_CALL, 0, 0, NULL);
                             hfp_ag_set_callsetup_indicator();
-                            hfp_ag_trigger_incoming_call();
+                            hfp_ag_trigger_incoming_call_during_active_one();
                             log_info("AG call waiting");
                             break;
                         default:
