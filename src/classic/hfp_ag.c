@@ -117,6 +117,9 @@ static int hfp_ag_response_and_hold_active;
 static hfp_phone_number_t * hfp_ag_subscriber_numbers;
 static int                  hfp_ag_subscriber_numbers_count;
 
+// call state
+static btstack_timer_source_t hfp_ag_ring_timeout;
+
 // code
 static int hfp_ag_get_ag_indicators_nr(hfp_connection_t * hfp_connection){
     if (hfp_connection->ag_indicators_nr != hfp_ag_indicators_nr){
@@ -857,6 +860,17 @@ static void hfp_ag_emit_hf_indicator_value(hfp_connection_t * hfp_connection, ui
     (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void hfp_ag_emit_general_simple_event(uint8_t event_subtype){
+    if (!hfp_ag_callback) return;
+
+    uint8_t event[5];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    little_endian_store_16(event, 3, HCI_CON_HANDLE_INVALID);
+    (*hfp_ag_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) {
         return 0;
@@ -1064,45 +1078,6 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     return 0;
 }
 
-static hfp_connection_t * hfp_ag_context_for_timer(btstack_timer_source_t * ts){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, hfp_get_connections());
-
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if ( & hfp_connection->hfp_timeout == ts) {
-            return hfp_connection;
-        }
-    }
-    return NULL;
-}
-
-static void hfp_timeout_handler(btstack_timer_source_t * timer){
-    hfp_connection_t * hfp_connection = hfp_ag_context_for_timer(timer);
-    if (!hfp_connection) return;
-
-    log_info("HFP start ring timeout, con handle 0x%02x", hfp_connection->acl_handle);
-    hfp_connection->ag_ring = 1;
-    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
-
-    btstack_run_loop_set_timer(& hfp_connection->hfp_timeout, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(& hfp_connection->hfp_timeout);
-
-    hfp_ag_run_for_context(hfp_connection);
-}
-
-static void hfp_timeout_start(hfp_connection_t * hfp_connection){
-    btstack_run_loop_remove_timer(&hfp_connection->hfp_timeout);
-    btstack_run_loop_set_timer_handler(&hfp_connection->hfp_timeout, hfp_timeout_handler);
-    btstack_run_loop_set_timer(&hfp_connection->hfp_timeout, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(&hfp_connection->hfp_timeout);
-}
-
-static void hfp_timeout_stop(hfp_connection_t * hfp_connection){
-    log_info("HFP stop ring timeout, con handle 0x%02x", hfp_connection->acl_handle);
-    btstack_run_loop_remove_timer(& hfp_connection->hfp_timeout);
-} 
-
 static void hfp_ag_set_callsetup_indicator(void){
     hfp_ag_indicator_t * indicator = get_ag_indicator_for_name("callsetup");
     if (!indicator){
@@ -1126,32 +1101,25 @@ static void hfp_ag_set_callheld_indicator(void){
 //
 
 static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection){
+    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
     if (use_in_band_tone()){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING;
         hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
     } else {
-        hfp_timeout_start(hfp_connection);
-        hfp_connection->ag_ring = 1;
-        hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
         hfp_connection->call_state = HFP_CALL_INCOMING_RINGING;
-        hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
     }
 }
 
 static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection){
-    hfp_timeout_start(hfp_connection);
-    hfp_connection->ag_ring = 1;
     hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
     hfp_connection->call_state = HFP_CALL_OUTGOING_RINGING;
-    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
 }
 
 static void hfp_ag_hf_stop_ringing(hfp_connection_t * hfp_connection){
     hfp_connection->ag_ring = 0;
     hfp_connection->ag_send_clip = 0;
-    hfp_timeout_stop(hfp_connection);
-    hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_STOP_RINGING);
 }
+
 
 static void hfp_ag_trigger_incoming_call_during_active_one(void){
     btstack_linked_list_iterator_t it;    
@@ -1166,9 +1134,63 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
+static void hfp_ag_ring_timeout_handler(btstack_timer_source_t * timer){
+    UNUSED(timer);
+    log_info("HFP start AG ring timeout");
+    
+    // trigger "RING"
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+    
+        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) 
+            && (hfp_connection->call_state != HFP_CALL_OUTGOING_RINGING)) continue;
+        hfp_connection->ag_ring = 1;
+        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+    }
+    
+    btstack_run_loop_set_timer(&hfp_ag_ring_timeout, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(&hfp_ag_ring_timeout);
+}
+
+static void hfp_ag_ring_timeout_start(void){
+    btstack_run_loop_remove_timer(&hfp_ag_ring_timeout);
+    btstack_run_loop_set_timer_handler(&hfp_ag_ring_timeout, hfp_ag_ring_timeout_handler);
+    hfp_ag_ring_timeout_handler(&hfp_ag_ring_timeout);
+}
+
+static void hfp_ag_ring_timeout_stop(void){
+    btstack_run_loop_remove_timer(&hfp_ag_ring_timeout);
+}
+
+static void hfp_ag_start_ringing(void){
+    hfp_ag_ring_timeout_start();
+    hfp_ag_emit_general_simple_event(HFP_SUBEVENT_START_RINGING);
+}
+
+static void hfp_ag_stop_ringing(void){
+    hfp_ag_ring_timeout_stop();
+    hfp_ag_emit_general_simple_event(HFP_SUBEVENT_STOP_RINGING);
+
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) &&
+            (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
+        hfp_ag_hf_stop_ringing(hfp_connection);
+    }    
+}
+
 static void hfp_ag_trigger_incoming_call_idle(void){
     int indicator_index = get_ag_indicator_index_for_name("callsetup");
     if (indicator_index < 0) return;
+
+    // local ringing
+    hfp_ag_start_ringing();
 
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
@@ -1178,6 +1200,9 @@ static void hfp_ag_trigger_incoming_call_idle(void){
         if (hfp_connection->call_state != HFP_CALL_IDLE) continue;
 
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
+
+        hfp_ag_hf_start_ringing_incoming(hfp_connection);
+
         hfp_ag_run_for_context(hfp_connection);
     }
 }
@@ -1251,6 +1276,8 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
 
+    hfp_ag_stop_ringing();
+
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1259,7 +1286,6 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
         if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) &&
             (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
 
-        hfp_ag_hf_stop_ringing(hfp_connection);
         if (hfp_connection == source){
 
             if (use_in_band_tone()){
@@ -1283,6 +1309,8 @@ static void hfp_ag_ag_accept_call(void){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
 
+    hfp_ag_stop_ringing();
+
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1290,7 +1318,6 @@ static void hfp_ag_ag_accept_call(void){
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         if (hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) continue;
 
-        hfp_ag_hf_stop_ringing(hfp_connection);
         hfp_connection->call_state = HFP_CALL_TRIGGER_AUDIO_CONNECTION;
 
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
@@ -1303,6 +1330,9 @@ static void hfp_ag_ag_accept_call(void){
 
 static void hfp_ag_trigger_reject_call(void){
     int callsetup_indicator_index = get_ag_indicator_index_for_name("callsetup");
+
+    hfp_ag_stop_ringing();
+
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1311,7 +1341,6 @@ static void hfp_ag_trigger_reject_call(void){
         if ((connection->call_state != HFP_CALL_INCOMING_RINGING) &&
             (connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
         
-        hfp_ag_hf_stop_ringing(connection);
         connection->call_state = HFP_CALL_IDLE;
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
         
@@ -1327,6 +1356,8 @@ static void hfp_ag_trigger_reject_call(void){
 static void hfp_ag_trigger_terminate_call(void){
     int call_indicator_index = get_ag_indicator_index_for_name("call");
 
+    // no ringing during call
+
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1334,7 +1365,6 @@ static void hfp_ag_trigger_terminate_call(void){
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         if (hfp_connection->call_state == HFP_CALL_IDLE) continue;
         
-        // no ringing during call
         hfp_connection->call_state = HFP_CALL_IDLE;
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
         
@@ -1355,18 +1385,6 @@ static void hfp_ag_set_call_indicator(void){
         return;
     };
     indicator->status = hfp_gsm_call_status();
-}
-
-static void hfp_ag_stop_ringing(void){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, hfp_get_connections());
-    while (btstack_linked_list_iterator_has_next(&it)){
-        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) &&
-            (hfp_connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
-        hfp_ag_hf_stop_ringing(hfp_connection);
-    }    
 }
 
 static hfp_connection_t * hfp_ag_connection_for_call_state(hfp_call_state_t call_state){
@@ -1395,12 +1413,9 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
     switch (hfp_connection->call_state){
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
             if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
+
             // we got event: audio hfp_connection established
-            hfp_timeout_start(hfp_connection);
-            hfp_connection->ag_ring = 1;
-            hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
             hfp_connection->call_state = HFP_CALL_INCOMING_RINGING;
-            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGING);
             break;        
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
             if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
@@ -1682,12 +1697,8 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 case HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS:
                     switch (hfp_gsm_callsetup_status()){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
-                            hfp_ag_stop_ringing();
-                            log_info("Incoming call interrupted");
-                            break;
                         case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE:
                             hfp_ag_stop_ringing();
-                            log_info("Outgoing call interrupted\n");
                             break;
                         case HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE:
                             log_info("Outgoing call interrupted\n");

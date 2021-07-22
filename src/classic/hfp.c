@@ -597,7 +597,6 @@ static hfp_connection_t * create_hfp_connection_context(void){
 }
 
 void hfp_finalize_connection_context(hfp_connection_t * hfp_connection){
-    btstack_run_loop_remove_timer(&hfp_connection->hfp_timeout);
     btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*) hfp_connection);
     btstack_memory_hfp_connection_free(hfp_connection);
 }
