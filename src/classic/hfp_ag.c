@@ -1302,10 +1302,17 @@ static void hfp_ag_trigger_reject_call(void){
         if (connection->local_role != HFP_ROLE_AG) continue;
         if ((connection->call_state != HFP_CALL_INCOMING_RINGING) &&
             (connection->call_state != HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING)) continue;
+        
         hfp_ag_hf_stop_ringing(connection);
-        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
         connection->call_state = HFP_CALL_IDLE;
+        connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
+        
+        if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+            connection->release_audio_connection = 1;
+        }
+        hfp_emit_simple_event(connection, HFP_SUBEVENT_CALL_TERMINATED);
         hfp_ag_run_for_context(connection);
+        rfcomm_request_can_send_now_event(connection->rfcomm_cid);
     }    
 }
 
@@ -1317,15 +1324,16 @@ static void hfp_ag_trigger_terminate_call(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-
-        hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
         if (hfp_connection->call_state == HFP_CALL_IDLE) continue;
         
+        // no ringing during call
         hfp_connection->call_state = HFP_CALL_IDLE;
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
+        
         if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
             hfp_connection->release_audio_connection = 1;
         }
+        
         hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
         hfp_ag_run_for_context(hfp_connection);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
