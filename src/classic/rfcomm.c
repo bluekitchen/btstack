@@ -1930,10 +1930,11 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     if (event->type == CH_EVT_RCVD_MSC_CMD){
         // notify client about new settings
         rfcomm_channel_event_msc_t *event_msc = (rfcomm_channel_event_msc_t*) event;
-        uint8_t modem_status_event[2+1];
+        uint8_t modem_status_event[5];
         modem_status_event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
-        modem_status_event[1] = 1;
-        modem_status_event[2] = event_msc->modem_status;
+        modem_status_event[1] = sizeof(event) - 2;
+        little_endian_store_16(modem_status_event, 2, channel->rfcomm_cid);
+        modem_status_event[4] = event_msc->modem_status;
         (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&modem_status_event, sizeof(modem_status_event));
         // no return, MSC_CMD will be handled by state machine below
     }
