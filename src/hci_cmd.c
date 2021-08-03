@@ -95,17 +95,21 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
     uint16_t word;
     uint32_t longword;
     uint8_t * ptr;
-    uint16_t var_len = INVALID_VAR_LEN;
 
+#ifdef ENABLE_BLE
+    // variable size data
+    uint16_t var_len = INVALID_VAR_LEN;
+    // array processing
     const char * array_format = NULL;
     void *  array_data[MAX_NR_ARRAY_FIELDS];
     uint8_t array_num_elements = INVALID_ARRAY_LEN;
     uint8_t array_num_fields;
     uint8_t array_element_index;
+    bool array_done;
+#endif
 
     bool done_format = false;
     while (!done_format) {
-        bool done_array;
         switch(*format) {
             case 0:
                 done_format = true;
@@ -216,15 +220,15 @@ uint16_t hci_cmd_create_from_template(uint8_t *hci_cmd_buffer, const hci_cmd_t *
                 format++;
                 array_format = format;
                 array_num_fields = 0;
-                done_array = false;
-                while (!done_array){
+                array_done = false;
+                while (!array_done){
                     switch (*format){
                         case 0:
-                            done_array = true;
+                            array_done = true;
                             done_format = true;
                             break;
                         case ']':
-                            done_array = true;
+                            array_done = true;
                             break;
                         case '1':
                         case '2':
