@@ -338,7 +338,7 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
 
 static uint8_t a2dp_sink_media_config_validator_callback(const avdtp_stream_endpoint_t * stream_endpoint, const uint8_t * event, uint16_t size){
     uint8_t error = 0;
-    if (a2dp_sink_media_config_validator == NULL) {
+    if (a2dp_sink_media_config_validator != NULL) {
         // update subevent id and call validator
         uint8_t avdtp_subevent_id = event[2];
         uint8_t a2dp_subevent_id = a2dp_subevent_id_for_avdtp_subevent_id(avdtp_subevent_id);
