@@ -1101,7 +1101,6 @@ static void hfp_ag_set_callheld_indicator(void){
 //
 
 static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection){
-    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
     if (use_in_band_tone()){
         hfp_connection->call_state = HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING;
         hfp_ag_establish_audio_connection(hfp_connection->acl_handle);
@@ -1111,7 +1110,6 @@ static void hfp_ag_hf_start_ringing_incoming(hfp_connection_t * hfp_connection){
 }
 
 static void hfp_ag_hf_start_ringing_outgoing(hfp_connection_t * hfp_connection){
-    hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
     hfp_connection->call_state = HFP_CALL_OUTGOING_RINGING;
 }
 
@@ -1134,25 +1132,30 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
+// trigger RING and CLIP messages on connections that are ringing
 static void hfp_ag_ring_timeout_handler(btstack_timer_source_t * timer){
-    UNUSED(timer);
-    log_info("HFP start AG ring timeout");
-    
-    // trigger "RING"
-    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-    
-        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING) 
+        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING)
             && (hfp_connection->call_state != HFP_CALL_OUTGOING_RINGING)) continue;
+
+        // Queue RING on this connection
         hfp_connection->ag_ring = 1;
+
+        // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
+        // "If the calling subscriber number information is available from the network, the AG shall issue the
+        // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
+        hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
+
+        // trigger next message
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
     }
     
-    btstack_run_loop_set_timer(&hfp_ag_ring_timeout, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(&hfp_ag_ring_timeout);
+    btstack_run_loop_set_timer(timer, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(timer);
 }
 
 static void hfp_ag_ring_timeout_start(void){
@@ -1189,9 +1192,7 @@ static void hfp_ag_trigger_incoming_call_idle(void){
     int indicator_index = get_ag_indicator_index_for_name("callsetup");
     if (indicator_index < 0) return;
 
-    // local ringing
-    hfp_ag_start_ringing();
-
+    // update callsetup state in connections
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1205,6 +1206,9 @@ static void hfp_ag_trigger_incoming_call_idle(void){
 
         hfp_ag_run_for_context(hfp_connection);
     }
+
+    // start local ringing - started after connection state has been updated
+    hfp_ag_start_ringing();
 }
 
 static void hfp_ag_trigger_outgoing_call(void){
