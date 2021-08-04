@@ -489,7 +489,7 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
  * @param  con_handle   
  * @param  value_handle
  * @param  value_length
- * @param  value is not copied, make sure memory is accessible until write is done
+ * @param  value is copied on success and does not need to be retained
  * @return status BTSTACK_MEMORY_ALLOC_FAILED, if no GATT client for con_handle is found 
  *                GATT_CLIENT_IN_WRONG_STATE , if GATT client is not ready
  *                BTSTACK_ACL_BUFFERS_FULL   , if L2CAP cannot send, there are no free ACL slots
