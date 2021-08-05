@@ -1153,7 +1153,9 @@ static l2cap_channel_t * l2cap_get_channel_for_local_cid_and_handle(uint16_t loc
     if (l2cap_channel->con_handle != con_handle) return NULL;
     return l2cap_channel;
 }
+#endif
 
+#ifdef ENABLE_CLASSIC
 void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return;
