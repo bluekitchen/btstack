@@ -22,6 +22,7 @@ SUBDIRS =  \
 	gatt_service \
 	hfp \
 	hid_parser \
+	l2cap-le \
 	le_device_db_tlv \
 	linked_list \
 	map_test \
@@ -58,6 +59,7 @@ SUBDIRS_BLE = \
 	gatt_server \
 	gatt_service \
 	hid_parser \
+	l2cap-le \
 	le_device_db_tlv \
 	linked_list \
 	ring_buffer \
