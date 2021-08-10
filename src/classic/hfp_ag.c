@@ -1139,19 +1139,24 @@ static void hfp_ag_ring_timeout_handler(btstack_timer_source_t * timer){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        if ((hfp_connection->call_state != HFP_CALL_INCOMING_RINGING)
-            && (hfp_connection->call_state != HFP_CALL_OUTGOING_RINGING)) continue;
+        switch (hfp_connection->call_state){
+            case HFP_CALL_INCOMING_RINGING:
+            case HFP_CALL_W4_AUDIO_CONNECTION_FOR_IN_BAND_RING:
+            case HFP_CALL_OUTGOING_RINGING:
+                // Queue RING on this connection
+                hfp_connection->ag_ring = 1;
 
-        // Queue RING on this connection
-        hfp_connection->ag_ring = 1;
+                // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
+                // "If the calling subscriber number information is available from the network, the AG shall issue the
+                // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
+                hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
 
-        // HFP v1.8, 4.23 Calling Line Identification (CLI) Notification
-        // "If the calling subscriber number information is available from the network, the AG shall issue the
-        // +CLIP unsolicited result code just after every RING indication when the HF is alerted in an incoming call."
-        hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
-
-        // trigger next message
-        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+                // trigger next message
+                rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+                break;
+            default:
+                break;
+        }
     }
     
     btstack_run_loop_set_timer(timer, 2000); // 2 seconds timeout
