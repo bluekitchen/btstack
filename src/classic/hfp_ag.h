@@ -40,8 +40,8 @@
  *
  */
 
-#ifndef btstack_hfp_ag_h
-#define btstack_hfp_ag_h
+#ifndef BTSTACK_HFP_AG_H
+#define BTSTACK_HFP_AG_H
 
 #include "hci.h"
 #include "classic/sdp_client_rfcomm.h"

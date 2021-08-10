@@ -50,6 +50,8 @@
 extern "C" {
 #endif
 
+// period AG will send RING messages
+#define HFP_RING_PERIOD_MS 2000
 
 /* HF Supported Features: 
 0: EC and/or NR function
