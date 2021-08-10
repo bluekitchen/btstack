@@ -81,8 +81,6 @@ void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
-static void hfp_ag_trigger_ring_and_clip();
-
 #define HFP_SUBEVENT_INVALID 0xFFFF
 
 // const
@@ -1134,7 +1132,7 @@ static void hfp_ag_trigger_incoming_call_during_active_one(void){
     }
 }
 
-static void hfp_ag_trigger_ring_and_clip() {
+static void hfp_ag_trigger_ring_and_clip(void) {
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
