@@ -1343,13 +1343,13 @@ static void hfp_hf_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
 #endif
 
     // process messages byte-wise
-    int pos;
+    uint8_t pos;
     for (pos = 0; pos < size; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
         // parse until end of line "\r" or "\n"
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
+        hfp_hf_handle_rfcomm_command(hfp_connection);   
     }
-    hfp_hf_handle_rfcomm_command(hfp_connection);
 }
 
 static void hfp_hf_run(void){
