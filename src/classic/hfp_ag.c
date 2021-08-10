@@ -1165,7 +1165,7 @@ static void hfp_ag_trigger_ring_and_clip() {
 static void hfp_ag_ring_timeout_handler(btstack_timer_source_t * timer){
     hfp_ag_trigger_ring_and_clip();
 
-    btstack_run_loop_set_timer(timer, RING_PERIOD_MS); // 2 seconds timeout
+    btstack_run_loop_set_timer(timer, HFP_RING_PERIOD_MS); // 2 seconds timeout
     btstack_run_loop_add_timer(timer);
 }
 
@@ -1177,7 +1177,7 @@ static void hfp_ag_start_ringing(void){
     // setup ring timer
     btstack_run_loop_remove_timer(&hfp_ag_ring_timeout);
     btstack_run_loop_set_timer_handler(&hfp_ag_ring_timeout, hfp_ag_ring_timeout_handler);
-    btstack_run_loop_set_timer(&hfp_ag_ring_timeout, RING_PERIOD_MS); // 2 seconds timeout
+    btstack_run_loop_set_timer(&hfp_ag_ring_timeout, HFP_RING_PERIOD_MS); // 2 seconds timeout
     btstack_run_loop_add_timer(&hfp_ag_ring_timeout);
 
     // emit start ringing
