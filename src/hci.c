@@ -415,8 +415,8 @@ static void hci_pairing_started(hci_connection_t * hci_connection, bool ssp){
     uint8_t event[12];
     event[0] = GAP_EVENT_PAIRING_STARTED;
     event[1] = 10;
-    reverse_bd_addr(hci_connection->address, &event[2]);
-    little_endian_store_16(event, 8, (uint16_t) hci_connection->con_handle);
+    little_endian_store_16(event, 2, (uint16_t) hci_connection->con_handle);
+    reverse_bd_addr(hci_connection->address, &event[8]);
     event[10] = (uint8_t) ssp;
     event[11] = (uint8_t) initiator;
     hci_emit_event(event, sizeof(event), 1);
@@ -431,8 +431,8 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     uint8_t event[12];
     event[0] = GAP_EVENT_PAIRING_COMPLETE;
     event[1] = 9;
-    reverse_bd_addr(hci_connection->address, &event[2]);
-    little_endian_store_16(event, 8, (uint16_t) hci_connection->con_handle);
+    little_endian_store_16(event, 2, (uint16_t) hci_connection->con_handle);
+    reverse_bd_addr(hci_connection->address, &event[10]);
     event[10] = status;
     hci_emit_event(event, sizeof(event), 1);
 }
