@@ -1002,6 +1002,11 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 
     hfp_emit_slc_connection_event(hfp_connection, 0, hfp_connection->acl_handle, hfp_connection->remote_addr);
 
+    uint8_t i;
+    for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
+        hfp_connection->ag_indicators[i].status_changed = 0;
+        hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+    }
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
     hfp_connection->send_speaker_gain = 1;
@@ -1010,7 +1015,6 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     hfp_connection->send_microphone_gain = 1;
     hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_hf_microphone_gain);
     // enable all indicators
-    int i;
     for (i=0; i < hfp_hf_indicators_nr; i++){
         hfp_connection->generic_status_indicators[i].uuid = hfp_hf_indicators[i];
         hfp_connection->generic_status_indicators[i].state = 1;
@@ -1306,6 +1310,10 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             hfp_connection->command = HFP_CMD_NONE;
+            // report status after SLC established
+            if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+                break;
+            }
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
                 hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             }
