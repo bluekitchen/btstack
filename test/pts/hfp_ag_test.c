@@ -345,7 +345,7 @@ static void stdin_process(char cmd){
         
         case '1':
             printf("Activate Enhanced Voice Recognition\n");
-            hfp_ag_activate_enhanced_voice_recognition(acl_handle);
+            hfp_ag_activate_voice_recognition(acl_handle);
             break;
         case '2':
             printf("aAVR Status ready for audio input\n");
@@ -362,7 +362,7 @@ static void stdin_process(char cmd){
         
         case '5':
             printf("Deactivate Enhanced Voice Recognition\n");
-            hfp_ag_deactivate_enhanced_voice_recognition(acl_handle);
+            hfp_ag_deactivate_voice_recognition(acl_handle);
             break;
         
         case '6':{

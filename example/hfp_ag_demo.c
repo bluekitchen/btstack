@@ -172,7 +172,6 @@ static void show_usage(void){
     printf("m - simulate incoming call from 7654321\n");
     // printf("M - simulate call from 7654321 dropped\n");
     printf("n - Disable Voice Recognition           | N - Enable Voice Recognition\n");
-    printf("z - Disable Enhanced Voice Recognition  | Z - Enable Enhanced Voice Recognition\n");
     printf("1 - EVR play sound                      | 2 - EVR report ready for audio input\n");
     printf("3 - EVR report processing input         | 4 - EVR send message\n");
     
@@ -329,17 +328,6 @@ static void stdin_process(char cmd){
             log_info("USER:\'%c\'", cmd);
             printf("Enable Voice Recognition\n");
             status = hfp_ag_activate_voice_recognition(acl_handle);
-            break;
-        
-        case 'z':
-            log_info("USER:\'%c\'", cmd);
-            printf("Disable Enhanced Voice Recognition\n");
-            status = hfp_ag_deactivate_enhanced_voice_recognition(acl_handle);
-            break;
-        case 'Z':
-            log_info("USER:\'%c\'", cmd);
-            printf("Enable Enhanced_Voice Recognition\n");
-            status = hfp_ag_activate_enhanced_voice_recognition(acl_handle);
             break;
 
         case '1':
