@@ -64,7 +64,6 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
             "D",     // 0x09 echo response: data
             "2",     // 0x0a information request: info type {1=Connectionless MTU, 2=Extended features supported}
             "22D",   // 0x0b information response: info type, Result, Data
-#ifdef ENABLE_BLE
             NULL,    // 0x0c non-supported AMP command
             NULL,    // 0x0d non-supported AMP command
             NULL,    // 0x0e non-supported AMP command
@@ -73,11 +72,13 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
             NULL,    // 0x11 non-supported AMP command
             "2222",  // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multiplier
             "2",     // 0x13 connection parameter update response: result
-            "22222", // 0X14 le credit-based connection request: le psm, source cid, mtu, mps, initial credits
+            "22222", // 0X14 le credit-based connection request: simplified psm, source cid, mtu, mps, initial credits
             "22222", // 0x15 le credit-based connection response: dest cid, mtu, mps, initial credits, result
             "22",    // 0x16 le flow control credit indication: source cid, credits
-#endif
-
+            "2222C", // 0x17 l2cap credit-based connection request: simplified psm, mtu, mps, initial credits, source cid[0]
+            "2222C", // 0x18 l2cap credit-based connection request: mtu, mps, initial credits, result, destinations cid[0]
+            "22C",   // 0x19 l2cap credit-based reconfigure request: mu, mps, destination cid[0]
+            "2",     // 0x1a l2cap credit-based reconfigure response: result
 #ifdef UNIT_TEST
             "M",     // invalid format for unit testing
 #endif           
@@ -114,7 +115,8 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
     // 12 - L2CAP signaling parameters
     uint16_t pos = 12;
     uint16_t word;
-    uint8_t * ptr;
+    uint8_t  * ptr_u8;
+    uint16_t * ptr_u16;
     while (*format) {
         switch(*format) {
             case '2': // 16 bit value
@@ -123,10 +125,18 @@ static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_ha
                 acl_buffer[pos++] = word & 0xffu;
                 acl_buffer[pos++] = word >> 8;
                 break;
+            case 'C': // list of cids != zero, last one is zero
+                ptr_u16  = va_arg(argptr, uint16_t *);   // LCOV_EXCL_BR_LINE
+                while (*ptr_u16 != 0){
+                    little_endian_store_16(acl_buffer, pos, *ptr_u16);
+                    ptr_u16++;
+                    pos += 2;
+                }
+                break;
             case 'D': // variable data. passed: len, ptr
                 word = va_arg(argptr, int);         // LCOV_EXCL_BR_LINE
-                ptr  = va_arg(argptr, uint8_t *);   // LCOV_EXCL_BR_LINE
-                (void)memcpy(&acl_buffer[pos], ptr, word);
+                ptr_u8  = va_arg(argptr, uint8_t *);   // LCOV_EXCL_BR_LINE
+                (void)memcpy(&acl_buffer[pos], ptr_u8, word);
                 pos += word;
                 break;
             default:
