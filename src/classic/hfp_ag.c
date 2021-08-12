@@ -771,19 +771,19 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
     return 0;
 }
 
-static bool hfp_ag_vra_flags_supported(hfp_connection_t * hfp_connection){
+static bool hfp_ag_vra_flag_supported(hfp_connection_t * hfp_connection){
     int ag = get_bit(hfp_ag_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION);
     int hf = get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_FUNCTION);
     return hf && ag;
 }
 
-static bool hfp_ag_enhanced_vra_flags_supported(hfp_connection_t * hfp_connection){
+static bool hfp_ag_enhanced_vra_flag_supported(hfp_connection_t * hfp_connection){
     int ag = get_bit(hfp_ag_supported_features, HFP_AGSF_ENHANCED_VOICE_RECOGNITION_STATUS);
     int hf = get_bit(hfp_connection->remote_supported_features, HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS);
     return hf && ag;
 }
 
-static bool hfp_ag_can_send_enahnced_voice_recognition_message(hfp_connection_t * hfp_connection){
+static bool hfp_ag_can_send_enhanced_vra_message_flag_supported(hfp_connection_t * hfp_connection){
     int ag = get_bit(hfp_ag_supported_features, HFP_AGSF_VOICE_RECOGNITION_TEXT);
     int hf = get_bit(hfp_connection->remote_supported_features, HFP_HFSF_VOICE_RECOGNITION_TEXT);
     return hf && ag;
@@ -2806,8 +2806,8 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flags_supported(hfp_connection);
-    bool legacy_vra_supported = hfp_ag_vra_flags_supported(hfp_connection);
+    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
+    bool legacy_vra_supported   = hfp_ag_vra_flag_supported(hfp_connection);
     if (!enhanced_vra_supported && !legacy_vra_supported){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
@@ -2824,7 +2824,6 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection->ag_audio_connection_opened_before_vra = hfp_ag_is_audio_connection_active(hfp_connection);
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
     hfp_ag_run_for_context(hfp_connection);
-
     return ERROR_CODE_SUCCESS;
 }
 
@@ -2834,8 +2833,9 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flags_supported(hfp_connection);
-    bool legacy_vra_supported = hfp_ag_vra_flags_supported(hfp_connection);
+    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
+    bool legacy_vra_supported = hfp_ag_vra_flag_supported(hfp_connection);
+    
     if (!enhanced_vra_supported && !legacy_vra_supported){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
@@ -2850,7 +2850,6 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
     hfp_ag_run_for_context(hfp_connection);
-
     return ERROR_CODE_SUCCESS;
 }
 
@@ -2860,19 +2859,21 @@ static uint8_t hfp_ag_enhanced_voice_recognition_send_state(hci_con_handle_t acl
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flags_supported(hfp_connection);
+    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
     if (!enhanced_vra_supported ){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
     uint8_t status = hfp_ag_voice_recognition_session_active(hfp_connection);
-    if (status == ERROR_CODE_SUCCESS){
-        hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
-        hfp_connection->ag_vra_state = state;
-        hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS;
-        hfp_ag_run_for_context(hfp_connection);
+    if (status != ERROR_CODE_SUCCESS){
+        return status;
     }
-    return status;
+    
+    hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
+    hfp_connection->ag_vra_state = state;
+    hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS;
+    hfp_ag_run_for_context(hfp_connection);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t hfp_ag_enhanced_voice_recognition_report_sending_audio(hci_con_handle_t acl_handle){
@@ -2892,12 +2893,12 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flags_supported(hfp_connection);
+    bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
     if (!enhanced_vra_supported ){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    bool enhanced_vra_msg_supported = hfp_ag_can_send_enahnced_voice_recognition_message(hfp_connection);
+    bool enhanced_vra_msg_supported = hfp_ag_can_send_enhanced_vra_message_flag_supported(hfp_connection);
     if (!enhanced_vra_msg_supported ){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
