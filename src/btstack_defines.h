@@ -1783,8 +1783,8 @@ typedef uint8_t sm_key_t[16];
  * @format 1H11
  * @param subevent_code
  * @param acl_handle
- * @param status
- * @param state
+ * @param status      // 0-success
+ * @param state       // 0-deactivated, 1-activated, 2-activated using enhanced
  */
 #define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                       0x1E
 
