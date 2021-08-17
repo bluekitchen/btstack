@@ -592,30 +592,30 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         
-                        case HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED:
-                            status = hfp_subevent_voice_recognition_enabled_get_status(event);
+                        case HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED:
+                            status = hfp_subevent_voice_recognition_activated_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition command failed\n");
+                                printf("Voice Recognition Activate command failed\n");
                                 break;
                             }
                             
-                            switch (hfp_subevent_voice_recognition_enabled_get_enhanced(event)){
+                            switch (hfp_subevent_voice_recognition_activated_get_enhanced(event)){
                                 case 1: 
-                                    printf("\nVoice recognition status ENABLED\n\n");
+                                    printf("\nVoice recognition ACTIVATED\n\n");
                                     break;
                                 default:
-                                    printf("\nEnhanced voice recognition status ENABLED\n\n");
+                                    printf("\nEnhanced voice recognition ACTIVATED\n\n");
                                     break;
                             }
                             break;
             
-                        case HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED:
-                            status = hfp_subevent_voice_recognition_disabled_get_status(event);
+                        case HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED:
+                            status = hfp_subevent_voice_recognition_deactivated_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
-                                printf("Voice Recognition Disable command failed\n");
+                                printf("Voice Recognition Deactivate command failed\n");
                                 break;
                             }
-                            printf("Voice Recognition DISABLED\n");
+                            printf("Voice Recognition DEACTIVATED\n");
                             break;
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
@@ -689,6 +689,7 @@ int btstack_main(int argc, const char * argv[]){
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
         (1<<HFP_HFSF_VOICE_RECOGNITION_FUNCTION)  |
         (1<<HFP_HFSF_ENHANCED_VOICE_RECOGNITION_STATUS) |
+        (1<<HFP_HFSF_VOICE_RECOGNITION_TEXT) |
         (1<<HFP_HFSF_EC_NR_FUNCTION) |
         (1<<HFP_HFSF_REMOTE_VOLUME_CONTROL);
     int wide_band_speech = 1;

@@ -359,7 +359,7 @@ void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8
     uint8_t event[7];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED;
     
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
     event[5] = status; // 0:success
@@ -373,7 +373,7 @@ void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint
     uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED;
     
     little_endian_store_16(event, 3, hfp_connection->acl_handle);
     event[5] = status; // 0:success
@@ -1703,6 +1703,7 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     break;
                 case 5:
                     hfp_connection->ag_vra_msg_length = hfp_connection->line_size;
+                    log_info("VRA message of length %d", hfp_connection->ag_vra_msg_length);
                     break;
                 default:
                     break;

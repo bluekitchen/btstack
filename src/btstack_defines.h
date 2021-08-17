@@ -1786,7 +1786,7 @@ typedef uint8_t sm_key_t[16];
  * @param status      // 0-success
  * @param enhanced    // 0-legacy, 1-enhanced
  */
-#define HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED                0x1E
+#define HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED                0x1E
 
 /**
  * @format 1H1
@@ -1794,7 +1794,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status      // 0-success
  */
-#define HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED               0x1F
+#define HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED               0x1F
 
 /**
  * @format 1H1
