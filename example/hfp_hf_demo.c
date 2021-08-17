@@ -149,7 +149,6 @@ static void show_usage(void){
     printf("k/K - deactivate/activate call waiting notification\n");
     printf("l/L - deactivate/activate calling line notification\n");
     printf("n/N - deactivate/activate voice recognition\n");
-    printf("z/Z - deactivate/activate enhanced voice recognition\n");
     printf("h   - start new audio enhanced voice recognition session\n");
     
     printf("0123456789#*-+ - send DTMF dial tones\n");
@@ -319,16 +318,6 @@ static void stdin_process(char c){
             log_info("USER:\'%c\'", cmd);
             printf("Activate voice recognition %s\n", bd_addr_to_str(device_addr));
             status = hfp_hf_activate_voice_recognition(acl_handle);
-            break;
-        case 'z':
-            log_info("USER:\'%c\'", cmd);
-            printf("Deactivate enhanced voice recognition\n");
-            status = hfp_hf_deactivate_enhanced_voice_recognition(acl_handle);
-            break;
-        case 'Z':
-            log_info("USER:\'%c\'", cmd);
-            printf("Activate enhanced voice recognition %s\n", bd_addr_to_str(device_addr));
-            status = hfp_hf_activate_enhanced_voice_recognition(acl_handle);
             break;
         case 'h':
             log_info("USER:\'%c\'", cmd);

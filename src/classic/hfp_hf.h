@@ -357,9 +357,8 @@ uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle)
 uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
 
 /**
- * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
- * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is set to the current voice 
- * recognition state: 1 for activated, 0 otherwise. Prerequisite is established SLC.
+ * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. Prerequisite is established SLC.
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
@@ -369,9 +368,8 @@ uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t ac
 uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
 
 /**
- * @brief Dectivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
- * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is set to the current voice 
- * recognition state: 1 for activated, 0 otherwise. Prerequisite is established SLC.
+ * @brief Dectivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event with status ERROR_CODE_SUCCESS 
+ * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. Prerequisite is established SLC.
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
@@ -379,17 +377,6 @@ uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
  *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_VOICE_RECOGNITION_FUNCTION is not supported by HF and AG, or already activated
  */
 uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
-
-/**
- * @brief Activate enhanced voice recognition (EVR) and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
- * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is to the current state of EVR: 1 if activated, otherwise 0.
- * Prerequisite is established SLC.
- *
- * @param acl_handle
- * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS is not supported by HF and AG, or wrong VRA status
- */
-uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 
 /**
@@ -403,16 +390,6 @@ uint8_t hfp_hf_activate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
  */
 uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_t acl_handle);
 
-/**
- * @brief Deactivate enhanced voice recognition (EVR) and emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event with status ERROR_CODE_SUCCESS 
- * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. The state field of this event is to the current state of EVR: 1 if activated, otherwise 0.
- * Prerequisite is established SLC.
- *
- * @param acl_handle
- * @return status ERROR_CODE_SUCCESS if successful, otherwise:
- *              - ERROR_CODE_COMMAND_DISALLOWED if feature HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS is not supported by HF and AG, or wrong VRA status
- */
-uint8_t hfp_hf_deactivate_enhanced_voice_recognition(hci_con_handle_t acl_handle);
 
 /*
  * @brief Set microphone gain. 
