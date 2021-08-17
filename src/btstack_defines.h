@@ -906,6 +906,65 @@ typedef uint8_t sm_key_t[16];
  */
 #define L2CAP_EVENT_TRIGGER_RUN                            0x7f
 
+/**
+ * @format 1BH212
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param psm
+ * @param num_channels
+ * @param local_cid first new cid
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_INCOMING               0x8A
+
+/**
+ * @format 11BH122222
+ * @param status
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param incoming
+ * @param psm
+ * @param local_cid
+ * @param remote_cid
+ * @param local_mtu
+ * @param remote_mtu
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_OPENED                      0x8b
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_CLOSED                      0x8c
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_CAN_SEND_NOW                0x8d
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_PACKET_SENT                 0x8e
+
+/*
+ * @format 222
+ * @param remote_cid
+ * @param mtu
+ * @param mps
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_RECONFIGURED                0x8f
+
+/*
+ * @format 22
+ * @param local_cid
+ * @param reconfigure_result
+ */
+#define L2CAP_EVENT_DATA_CHANNEL_RECONFIGURATION_COMPLETE    0x96
+
 /*
  * @format H22
  * @param con_handle
@@ -913,6 +972,7 @@ typedef uint8_t sm_key_t[16];
  * @param fixed_channels_supported
  */
 #define L2CAP_EVENT_INFORMATION_RESPONSE                   0x97
+
 
 // RFCOMM EVENTS
 
