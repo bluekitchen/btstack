@@ -1843,8 +1843,8 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param acl_handle
  * @param text_id
- * @param text_operation
  * @param text_type
+ * @param text_operation
  * @param text_length
  * @param text
  */

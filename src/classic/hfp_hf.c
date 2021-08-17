@@ -227,8 +227,8 @@ static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_c
     pos += 2;
     little_endian_store_16(event, pos, hfp_connection->ag_msg.text_id);
     pos += 2;
-    event[pos++] = hfp_connection->ag_msg.text_operation;
     event[pos++] = hfp_connection->ag_msg.text_type;
+    event[pos++] = hfp_connection->ag_msg.text_operation;
     
     // length, zero ending
     uint16_t value_length = hfp_connection->ag_vra_msg_length;
