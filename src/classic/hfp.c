@@ -353,27 +353,30 @@ void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, ui
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status){
-    hci_con_handle_t acl_handle = (hfp_connection != NULL) ? hfp_connection->acl_handle : HCI_CON_HANDLE_INVALID;
+void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status){
+    btstack_assert(hfp_connection != NULL);
+
     uint8_t event[7];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_STATUS;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED;
     
-    little_endian_store_16(event, 3, acl_handle);
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
     event[5] = status; // 0:success
+    event[6] = hfp_connection->enhanced_voice_recognition_enabled ? 1 : 0;
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
+}
+
+void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status){
+    btstack_assert(hfp_connection != NULL);
+
+    uint8_t event[6];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED;
     
-    switch (hfp_connection->vra_state){
-        case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
-            event[6] = 1;
-            break;
-        case HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            event[6] = 2;
-            break;
-        default:
-            event[6] = 0;
-            break;
-    }
+    little_endian_store_16(event, 3, hfp_connection->acl_handle);
+    event[5] = status; // 0:success
     hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
@@ -538,9 +541,9 @@ static void hfp_reset_voice_recognition(hfp_connection_t * hfp_connection){
     hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_OFF;
 
     if (current_vra_state != HFP_VRA_VOICE_RECOGNITION_OFF){
-        hfp_emit_voice_recognition_state_event(hfp_connection, HFP_VRA_VOICE_RECOGNITION_OFF);
+        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
     } else if (hfp_connection->vra_state_requested != HFP_VRA_VOICE_RECOGNITION_OFF){
-        hfp_emit_voice_recognition_state_event(hfp_connection, HFP_VRA_VOICE_RECOGNITION_OFF);
+        hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
     }
     
     hfp_connection->vra_state_requested = HFP_VRA_VOICE_RECOGNITION_OFF;

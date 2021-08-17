@@ -749,12 +749,19 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 /**
- * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event
+ * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event
  * @param hfp_connection
  * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
- * @param state  0 if deactivated, 1 if activated
  */
-void hfp_emit_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
+void hfp_emit_voice_recognition_enabled(hfp_connection_t * hfp_connection, uint8_t status);
+
+/**
+ * @brief Emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event
+ * @param hfp_connection
+ * @param status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED
+ */
+void hfp_emit_voice_recognition_disabled(hfp_connection_t * hfp_connection, uint8_t status);
+
 void hfp_emit_enhanced_voice_recognition_hf_ready_for_audio_event(hfp_connection_t * hfp_connection, uint8_t status);
 void hfp_emit_enhanced_voice_recognition_state_event(hfp_connection_t * hfp_connection, uint8_t status);
 

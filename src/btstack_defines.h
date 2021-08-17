@@ -1784,9 +1784,17 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param acl_handle
  * @param status      // 0-success
- * @param state       // 0-deactivated, 1-activated, 2-activated using enhanced
+ * @param enhanced    // 0-legacy, 1-enhanced
  */
-#define HFP_SUBEVENT_VOICE_RECOGNITION_STATUS                       0x1E
+#define HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED                0x1E
+
+/**
+ * @format 1H1
+ * @param subevent_code
+ * @param acl_handle
+ * @param status      // 0-success
+ */
+#define HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED               0x1F
 
 /**
  * @format 1H1
@@ -1794,7 +1802,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO  0x1F
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO  0x20
 
 
 /**
@@ -1803,7 +1811,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT 0x20
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_READY_TO_ACCEPT_AUDIO_INPUT 0x21
 
 /**
  * @format 1H1
@@ -1811,7 +1819,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND 0x21
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_STARTING_SOUND 0x22
 
 /**
  * @format 1H1
@@ -1819,7 +1827,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT 0x22
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_IS_PROCESSING_AUDIO_INPUT 0x23
 
 /**
  * @format 1H1
@@ -1827,7 +1835,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x23
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE_SENT     0x24
 
 
 /**
@@ -1840,7 +1848,7 @@ typedef uint8_t sm_key_t[16];
  * @param text_length
  * @param text
  */
-#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x24
+#define HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_AG_MESSAGE           0x25
 
 /**
  * @format 1H1
@@ -1848,7 +1856,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status
  */
-#define HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE   0x25
+#define HFP_SUBEVENT_ECHO_CANCELING_AND_NOISE_REDUCTION_DEACTIVATE   0x26
 
 /**
  * @format 1H21
@@ -1857,7 +1865,7 @@ typedef uint8_t sm_key_t[16];
  * @param uuid
  * @param value
  */
-#define HFP_SUBEVENT_HF_INDICATOR                                    0x26
+#define HFP_SUBEVENT_HF_INDICATOR                                    0x27
 
 
 // ANCS Client

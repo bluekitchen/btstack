@@ -588,7 +588,7 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             if (hfp_connection->activate_voice_recognition){
                 hfp_hf_activate_voice_recognition(hfp_connection->acl_handle);
             } else {
-                hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
+                hfp_emit_voice_recognition_disabled(hfp_connection, ERROR_CODE_SUCCESS);
             }
             break;
 
@@ -599,7 +599,7 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             if (hfp_connection->deactivate_voice_recognition){
                 hfp_hf_deactivate_voice_recognition(hfp_connection->acl_handle);
             } else {
-                hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
+                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
             }
             break;
 
@@ -1286,7 +1286,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                         break;
                     }
                     hfp_connection->vra_state_requested = hfp_connection->vra_state;
-                    hfp_emit_voice_recognition_state_event(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
+                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_UNSPECIFIED_ERROR);
                     hfp_reset_context_flags(hfp_connection);
                     return;
             }

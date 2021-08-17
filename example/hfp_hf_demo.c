@@ -603,18 +603,30 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         
-                        case HFP_SUBEVENT_VOICE_RECOGNITION_STATUS:
-                            status = hfp_subevent_voice_recognition_status_get_status(event);
+                        case HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED:
+                            status = hfp_subevent_voice_recognition_enabled_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("Voice Recognition command failed\n");
                                 break;
                             }
                             
-                            if (hfp_subevent_voice_recognition_status_get_state(event) > 0){
-                                printf("\nVoice recognition status ACTIVATED\n\n");
-                            } else {
-                                printf("\nVoice recognition status DEACTIVATED\n\n");
-                            }  
+                            switch (hfp_subevent_voice_recognition_enabled_get_enhanced(event)){
+                                case 1: 
+                                    printf("\nVoice recognition status ENABLED\n\n");
+                                    break;
+                                default:
+                                    printf("\nEnhanced voice recognition status ENABLED\n\n");
+                                    break;
+                            }
+                            break;
+            
+                        case HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED:
+                            status = hfp_subevent_voice_recognition_disabled_get_status(event);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("Voice Recognition Disable command failed\n");
+                                break;
+                            }
+                            printf("Voice Recognition DISABLED\n");
                             break;
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:

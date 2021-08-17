@@ -4718,31 +4718,50 @@ static inline uint8_t hfp_subevent_in_band_ring_tone_get_status(const uint8_t * 
 }
 
 /**
- * @brief Get field acl_handle from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @brief Get field acl_handle from event HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED
  * @param event packet
  * @return acl_handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hfp_subevent_voice_recognition_status_get_acl_handle(const uint8_t * event){
+static inline hci_con_handle_t hfp_subevent_voice_recognition_enabled_get_acl_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field status from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @brief Get field status from event HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_voice_recognition_status_get_status(const uint8_t * event){
+static inline uint8_t hfp_subevent_voice_recognition_enabled_get_status(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field state from event HFP_SUBEVENT_VOICE_RECOGNITION_STATUS
+ * @brief Get field enhanced from event HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED
  * @param event packet
- * @return state
+ * @return enhanced
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_voice_recognition_status_get_state(const uint8_t * event){
+static inline uint8_t hfp_subevent_voice_recognition_enabled_get_enhanced(const uint8_t * event){
     return event[6];
+}
+
+/**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_voice_recognition_disabled_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_voice_recognition_disabled_get_status(const uint8_t * event){
+    return event[5];
 }
 
 /**
