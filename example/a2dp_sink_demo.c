@@ -121,7 +121,7 @@ static int       request_frames;
 // WAV File
 #ifdef STORE_TO_WAV_FILE
 static uint32_t audio_frame_count = 0;
-static char * wav_filename = "av2dp_sink_demo.wav";
+static char * wav_filename = "a2dp_sink_demo.wav";
 #endif
 
 #ifdef STORE_TO_SBC_FILE    
