@@ -1313,8 +1313,17 @@ static bool hfp_parse_byte(hfp_connection_t * hfp_connection, uint8_t byte, int 
             if (!hfp_parser_is_separator(byte)) return true;
 
             // ignore empty tokens
-            if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) return true;
-
+            switch (hfp_connection->command){
+                case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
+                    // don't ignore empty string 
+                    break;
+                default:
+                    if (hfp_parser_is_buffer_empty(hfp_connection) && (hfp_connection->ignore_value == 0)) {
+                        return true;
+                    }
+                    break;
+            }
+            
             parse_sequence(hfp_connection);
 
             hfp_parser_reset_line_buffer(hfp_connection);
@@ -1700,7 +1709,6 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                 case 5:
                     hfp_connection->line_buffer[hfp_connection->line_size] = 0;
                     hfp_connection->ag_vra_msg_length = hfp_connection->line_size + 1;
-                    log_info("VRA message of length %d", hfp_connection->ag_vra_msg_length);
                     break;
                 default:
                     break;

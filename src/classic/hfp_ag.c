@@ -2911,7 +2911,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
 
     uint16_t message_len = strlen(msg.text);
 
-    if ((message_len == 0) || (message_len > HFP_MAX_VR_TEXT_SIZE)){
+    if (message_len > HFP_MAX_VR_TEXT_SIZE){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
     
