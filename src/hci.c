@@ -134,7 +134,7 @@
 #define GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE      4
 #define GAP_PAIRING_STATE_SEND_CONFIRMATION          5
 #define GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE 6
-
+#define GAP_PAIRING_STATE_WAIT_FOR_COMMAND_COMPLETE  7
 
 // prototypes
 #ifdef ENABLE_CLASSIC
@@ -2270,6 +2270,17 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
                 hci_handle_read_encryption_key_size_complete(conn, key_size);
             }
             break;
+        // assert pairing complete event is emitted.
+        // note: for SSP, Simple Pairing Complete Event is sufficient, but we want to be more robust
+        case HCI_OPCODE_HCI_PIN_CODE_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_NEGATIVE_REPLY:
+        case HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY:
+            // lookup connection by gap pairing addr
+            conn = hci_connection_for_bd_addr_and_type(hci_stack->gap_pairing_addr, BD_ADDR_TYPE_ACL);
+            if (conn == NULL) break;
+            hci_pairing_complete(conn, ERROR_CODE_AUTHENTICATION_FAILURE);
+            break;
+
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
         case HCI_OPCODE_HCI_READ_LOCAL_OOB_DATA:
         case HCI_OPCODE_HCI_READ_LOCAL_EXTENDED_OOB_DATA:{
@@ -4081,27 +4092,32 @@ static bool hci_run_general_gap_classic(void){
     // pairing
     if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE){
         uint8_t state = hci_stack->gap_pairing_state;
-        hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
         uint8_t pin_code[16];
         switch (state){
             case GAP_PAIRING_STATE_SEND_PIN:
+                hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
                 memset(pin_code, 0, 16);
                 memcpy(pin_code, hci_stack->gap_pairing_input.gap_pairing_pin, hci_stack->gap_pairing_pin_len);
                 hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_pin_len, pin_code);
                 break;
             case GAP_PAIRING_STATE_SEND_PIN_NEGATIVE:
+                hci_stack->gap_pairing_state = GAP_PAIRING_STATE_WAIT_FOR_COMMAND_COMPLETE;
                 hci_send_cmd(&hci_pin_code_request_negative_reply, hci_stack->gap_pairing_addr);
                 break;
             case GAP_PAIRING_STATE_SEND_PASSKEY:
+                hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
                 hci_send_cmd(&hci_user_passkey_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_input.gap_pairing_passkey);
                 break;
             case GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE:
+                hci_stack->gap_pairing_state = GAP_PAIRING_STATE_WAIT_FOR_COMMAND_COMPLETE;
                 hci_send_cmd(&hci_user_passkey_request_negative_reply, hci_stack->gap_pairing_addr);
                 break;
             case GAP_PAIRING_STATE_SEND_CONFIRMATION:
+                hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
                 hci_send_cmd(&hci_user_confirmation_request_reply, hci_stack->gap_pairing_addr);
                 break;
             case GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE:
+                hci_stack->gap_pairing_state = GAP_PAIRING_STATE_WAIT_FOR_COMMAND_COMPLETE;
                 hci_send_cmd(&hci_user_confirmation_request_negative_reply, hci_stack->gap_pairing_addr);
                 break;
             default:
