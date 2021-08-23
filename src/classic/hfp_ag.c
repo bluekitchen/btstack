@@ -2911,10 +2911,14 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
 
     uint16_t message_len = strlen(msg.text);
 
-    if ((message_len == 0) || ((message_len + 1) > HFP_MAX_VR_TEXT_SIZE)){
+    if ((message_len == 0) || (message_len > HFP_MAX_VR_TEXT_SIZE)){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
     
+    if ((HFP_VR_TEXT_HEADER_SIZE + message_len) > hfp_connection->rfcomm_mtu){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG;
     hfp_connection->ag_msg = msg;

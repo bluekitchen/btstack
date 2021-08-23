@@ -1003,34 +1003,29 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             break;
 
         case RFCOMM_EVENT_CHANNEL_OPENED:
-            // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-
             rfcomm_event_channel_opened_get_bd_addr(packet, event_addr); 
-            status = rfcomm_event_channel_opened_get_status(packet);          
             
             hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
-            if (!hfp_connection || (hfp_connection->state != HFP_W4_RFCOMM_CONNECTED)) return;
+            btstack_assert(hfp_connection != NULL);
 
-            if (status) {
+            if (hfp_connection->state != HFP_W4_RFCOMM_CONNECTED){
+                break;
+            }
+
+            status = rfcomm_event_channel_opened_get_status(packet);          
+            if (status != ERROR_CODE_SUCCESS) {
                 hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
                 hfp_finalize_connection_context(hfp_connection);
-            } else {
-                hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
-                hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                bd_addr_copy(hfp_connection->remote_addr, event_addr);
+                break;
+            } 
 
-                switch (hfp_connection->state){
-                    case HFP_W4_RFCOMM_CONNECTED:
-                        hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
-                        break;
-                    case HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN:
-                        hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-                        break;
-                    default:
-                        break;
-                }
-                rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
-            }
+            hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
+            hfp_connection->rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+            hfp_connection->rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+            bd_addr_copy(hfp_connection->remote_addr, event_addr);
+            hfp_connection->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
+            
+            rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:

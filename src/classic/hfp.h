@@ -546,6 +546,7 @@ typedef struct hfp_connection {
     hci_con_handle_t sco_handle;
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
+    uint16_t rfcomm_mtu;
     
     hfp_state_machine_t state_machine;
     hfp_call_state_t call_state;
