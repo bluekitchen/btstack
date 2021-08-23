@@ -545,6 +545,7 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
                     default:
                         // state messages from AG
                         hfp_emit_enhanced_voice_recognition_state_event(hfp_connection, ERROR_CODE_SUCCESS);
+                        hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
                         break;
                 }
                 break;
