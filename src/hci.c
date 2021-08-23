@@ -2300,6 +2300,14 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
             hci_emit_event(event, sizeof(event), 0);
             break;
         }
+
+        // note: only needed if user does not provide OOB data
+        case HCI_OPCODE_HCI_REMOTE_OOB_DATA_REQUEST_NEGATIVE_REPLY:
+            conn = hci_connection_for_handle(hci_stack->classic_oob_con_handle);
+            hci_stack->classic_oob_con_handle = HCI_CON_HANDLE_INVALID;
+            if (conn == NULL) break;
+            hci_pairing_complete(conn, ERROR_CODE_AUTHENTICATION_FAILURE);
+            break;
 #endif
 #endif
         default:
@@ -3334,6 +3342,7 @@ static void hci_state_reset(void){
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
     hci_stack->classic_read_local_oob_data = true;
+    hci_stack->classic_oob_con_handle = HCI_CON_HANDLE_INVALID;
 #endif
 
     // LE
@@ -4671,6 +4680,7 @@ static bool hci_run_general_pending_commands(void){
             } else if (c_192 != zero){
                 hci_send_cmd(&hci_remote_oob_data_request_reply, &connection->address, c_192, r_192);
             } else {
+                hci_stack->classic_oob_con_handle = connection->con_handle;
                 hci_send_cmd(&hci_remote_oob_data_request_negative_reply, &connection->address);
             }
             return true;

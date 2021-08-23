@@ -1051,6 +1051,7 @@ typedef struct {
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
 	bool                      classic_read_local_oob_data;
+	hci_con_handle_t          classic_oob_con_handle;
 #endif
 
 #ifdef HAVE_SCO_TRANSPORT
