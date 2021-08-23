@@ -534,7 +534,7 @@ static int hfp_ag_send_voice_recognition_cmd(hfp_connection_t * hfp_connection, 
 }
 
 static int hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection_t * hfp_connection){
-    char buffer[HFP_MAX_VR_TEXT_SIZE + 30];
+    char buffer[HFP_VR_TEXT_HEADER_SIZE + HFP_MAX_VR_TEXT_SIZE];
     snprintf(buffer, sizeof(buffer), "\r\n%s: 1,%d,%X,%d,%d,\"%s\"\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, 
         hfp_connection->ag_vra_state, 
         hfp_connection->ag_msg.text_id,

@@ -117,8 +117,11 @@ extern "C" {
 #define HFP_CALL_SERVICE_SIZE                    3
 #define HFP_MAX_NUM_CODECS                      10
 
-#define HFP_MAX_INDICATOR_DESC_SIZE  20
-#define HFP_MAX_VR_TEXT_SIZE        100
+#define HFP_MAX_INDICATOR_DESC_SIZE             20
+#define HFP_MAX_VR_TEXT_SIZE                   100
+#define HFP_VR_TEXT_HEADER_SIZE                 27      // bytes needed for sending +BVRA message including quotes but excluding string length: 
+                                                        // \r\n+BVRA: <vrect>,<vrecstate>,<textID>,<textType>,<textOperation>,"<string>"\r\n
+
 #define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
 
 #define HFP_HF_INDICATOR_UUID_ENHANCED_SAFETY   0x0001  // 0 - disabled, 1 - enabled
