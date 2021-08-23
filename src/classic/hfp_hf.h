@@ -357,7 +357,7 @@ uint8_t hfp_hf_deactivate_calling_line_notification(hci_con_handle_t acl_handle)
 uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t acl_handle);
 
 /**
- * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_ENABLED event with status ERROR_CODE_SUCCESS 
+ * @brief Activate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_ACTIVATED event with status ERROR_CODE_SUCCESS 
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. Prerequisite is established SLC.
  *
  * @param acl_handle
@@ -368,7 +368,7 @@ uint8_t hfp_hf_deactivate_echo_canceling_and_noise_reduction(hci_con_handle_t ac
 uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
 
 /**
- * @brief Dectivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_DISABLED event with status ERROR_CODE_SUCCESS 
+ * @brief Dectivate voice recognition and emit HFP_SUBEVENT_VOICE_RECOGNITION_DEACTIVATED event with status ERROR_CODE_SUCCESS 
  * if successful, otherwise ERROR_CODE_COMMAND_DISALLOWED. Prerequisite is established SLC.
  *
  * @param acl_handle

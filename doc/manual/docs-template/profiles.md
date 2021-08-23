@@ -344,7 +344,7 @@ It can be activated or deactivated on both sides by calling:
     uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle);
     uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle);
 
-On either activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_STATUS event will be emitted with status field set to ERROR_CODE_SUCCESS on success. The state field of this event indicates the current voice recognition state : 0 - if deactivated, 1 - if activated. 
+On activation change, the HFP_SUBEVENT_VOICE_RECOGNITION_(DE)ACTIVATED event will be emitted with status field set to ERROR_CODE_SUCCESS on success. 
 
 Voice recognition will stay active until either the deactivation command is called, or until the current Service Level Connection between the AG and the HF is dropped for any reason.
 
@@ -371,15 +371,7 @@ In addition, to allow textual representation of audio that is parsed by eAVR (no
 
 - AG: HFP_AGSF_VOICE_RECOGNITION_TEXT. 
 
-eAVR implements the same use cases as AVR (see previous section). It can be activated or deactivated on both sides by calling:
-
-    // AG
-    uint8_t hfp_ag_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
-    uint8_t hfp_ag_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
-
-    // HF
-    uint8_t hfp_hf_enhanced_voice_recognition_activate(hci_con_handle_t acl_handle);
-    uint8_t hfp_hf_enhanced_voice_recognition_deactivate(hci_con_handle_t acl_handle);
+eAVR implements the same use cases as AVR (see previous section) and it can be activated or deactivated using the same API as for AVR, see above.
 
 When eAVR and audio channel are established there are several additional commands that can be sent:
 
