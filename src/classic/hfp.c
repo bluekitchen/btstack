@@ -1183,7 +1183,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
 }
 
 static void hfp_parser_store_byte(hfp_connection_t * hfp_connection, uint8_t byte){
-    if ((hfp_connection->line_size + 1 ) >= HFP_MAX_INDICATOR_DESC_SIZE) return;
+    if ((hfp_connection->line_size + 1) >= HFP_MAX_VR_TEXT_SIZE) return;
     hfp_connection->line_buffer[hfp_connection->line_size++] = byte;
     hfp_connection->line_buffer[hfp_connection->line_size] = 0;
 }
@@ -1197,6 +1197,7 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_parser_reset_line_buffer(hfp_connection_t *hfp_connection) {
     hfp_connection->line_size = 0;
+    // hfp_connection->line_buffer[0] = 0; 
 }
 
 static void hfp_parser_store_if_token(hfp_connection_t * hfp_connection, uint8_t byte){
@@ -1702,7 +1703,8 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 5:
-                    hfp_connection->ag_vra_msg_length = hfp_connection->line_size;
+                    hfp_connection->line_buffer[hfp_connection->line_size] = 0;
+                    hfp_connection->ag_vra_msg_length = hfp_connection->line_size + 1;
                     log_info("VRA message of length %d", hfp_connection->ag_vra_msg_length);
                     break;
                 default:

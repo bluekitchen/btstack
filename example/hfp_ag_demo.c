@@ -109,7 +109,7 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 };
 
 static hfp_voice_recognition_message_t msg = {
-    0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich"
+    0xABCD, HFP_TEXT_TYPE_MESSAGE_FROM_AG, HFP_TEXT_OPERATION_REPLACE, "The temperature in Munich is 30 degrees."
 };
 
 #define INQUIRY_INTERVAL 5

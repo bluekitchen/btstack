@@ -534,7 +534,7 @@ static int hfp_ag_send_voice_recognition_cmd(hfp_connection_t * hfp_connection, 
 }
 
 static int hfp_ag_send_enhanced_voice_recognition_msg_cmd(hfp_connection_t * hfp_connection){
-    char buffer[100];
+    char buffer[HFP_MAX_VR_TEXT_SIZE + 30];
     snprintf(buffer, sizeof(buffer), "\r\n%s: 1,%d,%X,%d,%d,\"%s\"\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, 
         hfp_connection->ag_vra_state, 
         hfp_connection->ag_msg.text_id,
@@ -2909,6 +2909,12 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
+    uint16_t message_len = strlen(msg.text);
+
+    if ((message_len == 0) || ((message_len + 1) > HFP_MAX_VR_TEXT_SIZE)){
+        return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+    
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_MSG;
     hfp_connection->ag_msg = msg;

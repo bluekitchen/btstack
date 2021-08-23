@@ -218,7 +218,7 @@ static void hfp_emit_network_operator_event(const hfp_connection_t * hfp_connect
 
 static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_connection){
     btstack_assert(hfp_connection != NULL);
-    uint8_t event[HFP_MAX_VR_TEXT_SIZE];
+    uint8_t event[HFP_MAX_VR_TEXT_SIZE + 11];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
     event[pos++] = sizeof(event) - 2;
@@ -230,15 +230,15 @@ static void hfp_hf_emit_enhanced_voice_recognition_text(hfp_connection_t * hfp_c
     event[pos++] = hfp_connection->ag_msg.text_type;
     event[pos++] = hfp_connection->ag_msg.text_operation;
     
-    // length, zero ending
-    uint16_t value_length = hfp_connection->ag_vra_msg_length;
+    // length, zero ending is already in message
     uint8_t * value = &hfp_connection->line_buffer[0];
-    uint16_t size = btstack_min(value_length, sizeof(event) - pos - 2 - 1);
-    little_endian_store_16(event, pos, size+1);
+    uint16_t  value_length = hfp_connection->ag_vra_msg_length;
+
+    little_endian_store_16(event, pos, value_length);
     pos += 2; 
-    memcpy(&event[pos], value, size);
-    event[pos + size] = 0;
-    pos += size + 1; 
+    memcpy(&event[pos], value, value_length);
+    pos += value_length; 
+
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
