@@ -600,7 +600,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             
                             switch (hfp_subevent_voice_recognition_activated_get_enhanced(event)){
-                                case 1: 
+                                case 0: 
                                     printf("\nVoice recognition ACTIVATED\n\n");
                                     break;
                                 default:
