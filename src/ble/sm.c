@@ -3448,6 +3448,27 @@ static void sm_handle_random_result_er(void *arg){
     }
 }
 
+static void sm_connection_init(sm_connection_t * sm_conn, hci_con_handle_t con_handle, uint8_t role, uint8_t addr_type, bd_addr_t address){
+
+    // connection info
+    sm_conn->sm_handle = con_handle;
+    sm_conn->sm_role = role;
+    sm_conn->sm_peer_addr_type = addr_type;
+    memcpy(sm_conn->sm_peer_address, address, 6);
+
+    // security properties
+    sm_conn->sm_connection_encrypted = 0;
+    sm_conn->sm_connection_authenticated = 0;
+    sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
+    sm_conn->sm_le_db_index = -1;
+    sm_conn->sm_reencryption_active = false;
+
+    // prepare CSRK lookup (does not involve setup)
+    sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
+
+    sm_conn->sm_engine_state = SM_GENERAL_IDLE;
+}
+
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel);    // ok: there is no channel
@@ -3456,6 +3477,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
     sm_connection_t * sm_conn;
     hci_con_handle_t  con_handle;
     uint8_t           status;
+    bd_addr_t         addr;
+
     switch (packet_type) {
 
 		case HCI_EVENT_PACKET:
@@ -3497,44 +3520,28 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-
-                            log_info("sm: connected");
-
-                            if (packet[3]) return; // connection failed
+                            // ignore if connection failed
+                            if (packet[3]) return;
 
                             con_handle = little_endian_read_16(packet, 4);
                             sm_conn = sm_get_connection_for_handle(con_handle);
                             if (!sm_conn) break;
 
-                            sm_conn->sm_handle = con_handle;
-                            sm_conn->sm_role = packet[6];
-                            sm_conn->sm_peer_addr_type = packet[7];
-                            reverse_bd_addr(&packet[8], sm_conn->sm_peer_address);
-                            if (sm_conn->sm_role){
+                            hci_subevent_le_connection_complete_get_peer_address(packet, addr);
+                            sm_connection_init(sm_conn,
+                                               con_handle,
+                                               hci_subevent_le_connection_complete_get_role(packet),
+                                               hci_subevent_le_connection_complete_get_peer_address_type(packet),
+                                               addr);
+
+                            // track our addr used for this connection and set state
+                            if (hci_subevent_le_connection_complete_get_role(packet)){
                                 // responder - use own address from advertisements
                                 gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
+                                sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                             } else {
                                 // initiator - use own address from create connection
                                 gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
-                            }
-
-                            // reset security properties
-                            sm_conn->sm_connection_encrypted = 0;
-                            sm_conn->sm_connection_authenticated = 0;
-                            sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
-                            sm_conn->sm_le_db_index = -1;
-                            sm_conn->sm_reencryption_active = false;
-
-                            // prepare CSRK lookup (does not involve setup)
-                            sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
-
-                            // just connected -> everything else happens in sm_run()
-                            if (IS_RESPONDER(sm_conn->sm_role)){
-                                // peripheral
-                                sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
-                                break;
-                            } else {
-                                // master
                                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
                             }
                             break;
@@ -3719,7 +3726,6 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 				case HCI_EVENT_COMMAND_COMPLETE:
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
                         // set local addr for le device db
-                        bd_addr_t addr;
                         reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                         le_device_db_set_local_bd_addr(addr);
                     }
