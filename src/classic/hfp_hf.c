@@ -190,7 +190,7 @@ static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connec
 }
 
 
-static void hfp_emit_ag_indicator_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
+static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
 	if (hfp_hf_callback == NULL) return;
 	uint8_t event[12+HFP_MAX_INDICATOR_DESC_SIZE+1];
 	int pos = 0;
@@ -1019,7 +1019,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     uint8_t i;
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         hfp_connection->ag_indicators[i].status_changed = 0;
-        hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+        hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
     }
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
@@ -1218,7 +1218,7 @@ static void hfp_hf_handle_transfer_ag_indicator_status(hfp_connection_t * hfp_co
                 hfp_hf_call_status = new_hf_call_status; 
             }
             hfp_connection->ag_indicators[i].status_changed = 0;
-            hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+            hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             break;
         }
     }
@@ -1329,7 +1329,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                 break;
             }
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
-                hfp_emit_ag_indicator_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+                hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             }
             break;
     	case HFP_CMD_AG_SUGGESTED_CODEC:
