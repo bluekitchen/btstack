@@ -120,7 +120,7 @@ typedef enum {
     L2CAP_CHANNEL_TYPE_CLASSIC,         // Classic Basic or ERTM
     L2CAP_CHANNEL_TYPE_CONNECTIONLESS,  // Classic Connectionless
     L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, // LE
-    L2CAP_CHANNEL_TYPE_LE_FIXED,        // LE ATT + SM
+    L2CAP_CHANNEL_TYPE_FIXED,           // LE ATT + SM, Classic SM
 } l2cap_channel_type_t;
 
 

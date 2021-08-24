@@ -891,12 +891,12 @@ void l2cap_init(void){
 #ifdef ENABLE_BLE
     // Setup fixed ATT Channel
     l2cap_fixed_channel_att.local_cid    = L2CAP_CID_ATTRIBUTE_PROTOCOL;
-    l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_LE_FIXED;
+    l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_FIXED;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_att);
 
     // Setup fixed SM Channel
     l2cap_fixed_channel_sm.local_cid     = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
-    l2cap_fixed_channel_sm.channel_type  = L2CAP_CHANNEL_TYPE_LE_FIXED;
+    l2cap_fixed_channel_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_sm);
 #endif
     
@@ -2160,7 +2160,7 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
             return hci_can_send_acl_classic_packet_now() != 0;
 #endif
 #ifdef ENABLE_BLE
-        case L2CAP_CHANNEL_TYPE_LE_FIXED:
+        case L2CAP_CHANNEL_TYPE_FIXED:
             if (!channel->waiting_for_can_send_now) return false;
             return hci_can_send_acl_le_packet_now() != 0;
 #ifdef ENABLE_LE_DATA_CHANNELS
@@ -2195,7 +2195,7 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
             break;
 #endif
 #ifdef ENABLE_BLE
-        case L2CAP_CHANNEL_TYPE_LE_FIXED:
+        case L2CAP_CHANNEL_TYPE_FIXED:
             channel->waiting_for_can_send_now = 0;
             l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
             break;
