@@ -326,7 +326,7 @@ uint8_t hfp_ag_enhanced_voice_recognition_report_processing_input(hci_con_handle
  * @param activate
  * @return status ERROR_CODE_SUCCESS if successful, otherwise:
  *              - ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist, 
-                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the message size is either zero, or it exceeds the HFP_MAX_VR_TEXT_SIZE, or the command does not fit into a single packet frame,
+                - ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE if the message size exceeds the HFP_MAX_VR_TEXT_SIZE, or the command does not fit into a single packet frame,
  *              - ERROR_CODE_COMMAND_DISALLOWED if HF and AG do not support features: HFP_(HF/AG)SF_ENHANCED_VOICE_RECOGNITION_STATUS and HFP_(HF/AG)SF_VOICE_RECOGNITION_TEXT
  */
 uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_handle, hfp_voice_recognition_state_t state, hfp_voice_recognition_message_t msg);
