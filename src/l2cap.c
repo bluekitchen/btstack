@@ -1727,7 +1727,12 @@ static void l2cap_run_signaling_response(void) {
                     case L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED: {
                             uint8_t map[8];
                             memset(map, 0, 8);
-                            map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
+                            // L2CAP Signaling Channel (bit 1) + Connectionless reception (bit 2)
+                            map[0] = (1 << 1) | (1 << 2);
+#ifdef ENABLE_BLE
+                            // BR/EDR Security Manager (bit 7)
+                            map[0] |= (1 << 7);
+#endif
                             l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(map), &map);
                         }
                         break;
@@ -3678,6 +3683,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
             }
             break;
         }
+
         case L2CAP_CID_CONNECTIONLESS_CHANNEL:
             if (broadcast_flag == 0) break;
             l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_CONNECTIONLESS_CHANNEL);
@@ -3685,6 +3691,15 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
             if (!l2cap_fixed_channel->packet_handler) break;
             (*l2cap_fixed_channel->packet_handler)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             break;
+
+#ifdef ENABLE_BLE
+        case L2CAP_CID_BR_EDR_SECURITY_MANAGER:
+            l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+            if (!l2cap_fixed_channel) break;
+            if (!l2cap_fixed_channel->packet_handler) break;
+            (*l2cap_fixed_channel->packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            break;
+#endif
 
         default:
             if (broadcast_flag != 0) break;
