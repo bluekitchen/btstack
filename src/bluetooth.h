@@ -452,7 +452,7 @@ typedef enum {
 #define L2CAP_CID_ATTRIBUTE_PROTOCOL               0x0004
 #define L2CAP_CID_SIGNALING_LE                     0x0005
 #define L2CAP_CID_SECURITY_MANAGER_PROTOCOL        0x0006
-
+#define L2CAP_CID_BR_EDR_SECURITY_MANAGER          0x0007
 /**
  * SDP Protocol
  */
@@ -776,6 +776,9 @@ typedef enum {
 #define SM_REASON_INVALID_PARAMETERS           0x0a
 #define SM_REASON_DHKEY_CHECK_FAILED           0x0b
 #define SM_REASON_NUMERIC_COMPARISON_FAILED    0x0c
+#define SM_REASON_BR_EDR_PAIRING_IN_PROGRESS   0x0d
+#define SM_REASON_CROSS_TRANSPORT_KEY_DERIVATION_NOT_ALLOWED 0x0e
+#define SM_REASON_KEY_REJECTED                 0x0f
 
 // also, invalid parameters
 // and reserved
