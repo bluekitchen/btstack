@@ -1689,11 +1689,12 @@ static void l2cap_run_signaling_response(void) {
 
         uint8_t  sig_id        = l2cap_signaling_responses[0].sig_id;
         uint8_t  response_code = l2cap_signaling_responses[0].code;
-        uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
+        uint16_t result        = l2cap_signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT, REJECT_SM_PAIRING
+        uint8_t  buffer[2];                                          // REJECT_SM_PAIRING
 #ifdef ENABLE_CLASSIC
         uint16_t info_type     = l2cap_signaling_responses[0].data;  // INFORMATION_REQUEST
-        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST
 #endif
+        uint16_t source_cid    = l2cap_signaling_responses[0].cid;   // CONNECTION_REQUEST, REJECT_SM_PAIRING
 
         // remove first item before sending (to avoid sending response mutliple times)
         l2cap_signaling_responses_pending--;
@@ -1754,6 +1755,11 @@ static void l2cap_run_signaling_response(void) {
                 l2cap_send_le_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 0, NULL);
                 break;
 #endif
+            case SM_PAIRING_FAILED:
+                buffer[0] = SM_CODE_PAIRING_FAILED;
+                buffer[1] = result;
+                l2cap_send_connectionless(handle, source_cid, buffer, 2);
+                break;
             default:
                 // should not happen
                 break;
@@ -3695,9 +3701,12 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 #ifdef ENABLE_BLE
         case L2CAP_CID_BR_EDR_SECURITY_MANAGER:
             l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-            if (!l2cap_fixed_channel) break;
-            if (!l2cap_fixed_channel->packet_handler) break;
-            (*l2cap_fixed_channel->packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            if ((l2cap_fixed_channel == NULL) || (l2cap_fixed_channel->packet_handler == NULL)){
+                // Pairing Failed
+                l2cap_register_signaling_response(handle, (uint8_t) SM_PAIRING_FAILED, 0, L2CAP_CID_BR_EDR_SECURITY_MANAGER, SM_REASON_PAIRING_NOT_SUPPORTED);
+            } else {
+                (*l2cap_fixed_channel->packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
             break;
 #endif
 
@@ -3748,9 +3757,12 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
 
         case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
             l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-            if (!l2cap_fixed_channel) break;
-            if (!l2cap_fixed_channel->packet_handler) break;
-            (*l2cap_fixed_channel->packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            if ((l2cap_fixed_channel == NULL) || (l2cap_fixed_channel->packet_handler == NULL)){
+                // Pairing Failed
+                l2cap_register_signaling_response(handle, (uint8_t) SM_PAIRING_FAILED, 0, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, SM_REASON_PAIRING_NOT_SUPPORTED);
+            } else {
+                (*l2cap_fixed_channel->packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
             break;
 
         default:

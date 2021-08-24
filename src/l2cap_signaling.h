@@ -77,7 +77,9 @@ typedef enum {
 #ifdef UNIT_TEST
     COMMAND_WITH_INVALID_FORMAT,
 #endif     
-    COMMAND_REJECT_LE = 0x1F  // internal to BTstack
+    // internal to BTstack
+    SM_PAIRING_FAILED = 0x1E,
+    COMMAND_REJECT_LE = 0x1F
 } L2CAP_SIGNALING_COMMANDS;
 
 typedef enum {
