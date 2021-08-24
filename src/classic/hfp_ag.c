@@ -519,7 +519,8 @@ static int hfp_ag_send_set_response_and_hold(uint16_t cid, int state){
 
 static int hfp_ag_send_enhanced_voice_recognition_state_cmd(hfp_connection_t * hfp_connection){
     char buffer[30];
-    snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, hfp_connection->enhanced_voice_recognition_enabled, hfp_connection->ag_vra_state);
+    uint8_t evra_enabled = hfp_connection->enhanced_voice_recognition_enabled ? 1 : 0;
+    snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, evra_enabled, hfp_connection->ag_vra_state);
     return send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
@@ -984,6 +985,7 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
             
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
+            hfp_connection->enhanced_voice_recognition_enabled = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
             hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
             break;
 
@@ -2824,7 +2826,7 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection->ag_activate_voice_recognition_value = 1;
     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
-    // hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
+    hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
     hfp_connection->ag_audio_connection_opened_before_vra = hfp_ag_is_audio_connection_active(hfp_connection);
     hfp_connection->ag_vra_state = HFP_VOICE_RECOGNITION_STATE_AG_READY;
     hfp_ag_run_for_context(hfp_connection);
