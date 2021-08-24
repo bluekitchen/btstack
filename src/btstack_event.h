@@ -4173,6 +4173,52 @@ static inline uint8_t hfp_subevent_complete_get_status(const uint8_t * event){
 }
 
 /**
+ * @brief Get field acl_handle from event HFP_SUBEVENT_AG_INDICATOR_MAPPING
+ * @param event packet
+ * @return acl_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t hfp_subevent_ag_indicator_mapping_get_acl_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field indicator_index from event HFP_SUBEVENT_AG_INDICATOR_MAPPING
+ * @param event packet
+ * @return indicator_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_mapping_get_indicator_index(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field indicator_min_range from event HFP_SUBEVENT_AG_INDICATOR_MAPPING
+ * @param event packet
+ * @return indicator_min_range
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_mapping_get_indicator_min_range(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field indicator_max_range from event HFP_SUBEVENT_AG_INDICATOR_MAPPING
+ * @param event packet
+ * @return indicator_max_range
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_mapping_get_indicator_max_range(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field indicator_name from event HFP_SUBEVENT_AG_INDICATOR_MAPPING
+ * @param event packet
+ * @return indicator_name
+ * @note: btstack_type T
+ */
+static inline const char * hfp_subevent_ag_indicator_mapping_get_indicator_name(const uint8_t * event){
+    return (const char *) &event[8];
+}
+
+/**
  * @brief Get field acl_handle from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
  * @param event packet
  * @return acl_handle

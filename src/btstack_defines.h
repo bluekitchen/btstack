@@ -1546,14 +1546,14 @@ typedef uint8_t sm_key_t[16];
  * @param status 0 == OK
  * @param bd_addr
  */
-#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
+#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED    0x01
 
 /**
  * @format 1H
  * @param subevent_code
  * @param acl_handle
  */
-#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
+#define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED       0x02
 
 /**
  * @format 1H1HB1
@@ -1564,7 +1564,7 @@ typedef uint8_t sm_key_t[16];
  * @param bd_addr
  * @param negotiated_codec
  */
-#define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x03
+#define HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED            0x03
 
 /**
  * @format 1HH
@@ -1572,7 +1572,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param sco_handle
  */
-#define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED             0x04
+#define HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED               0x04
 
 /**
  * @format 1H1
@@ -1580,7 +1580,18 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param status 0 == OK
  */
-#define HFP_SUBEVENT_COMPLETE                              0x05
+#define HFP_SUBEVENT_COMPLETE                                0x05
+
+/**
+ * @format 1H111T
+ * @param subevent_code
+ * @param acl_handle
+ * @param indicator_index
+ * @param indicator_min_range
+ * @param indicator_max_range
+ * @param indicator_name
+ */
+#define HFP_SUBEVENT_AG_INDICATOR_MAPPING                    0x06
 
 /**
  * @format 1H1111111T
@@ -1595,7 +1606,7 @@ typedef uint8_t sm_key_t[16];
  * @param indicator_status_changed
  * @param indicator_name
  */
-#define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
+#define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED              0x07
 
 /**
  * @format 1H11T
@@ -1605,7 +1616,7 @@ typedef uint8_t sm_key_t[16];
  * @param network_operator_format
  * @param network_operator_name
  */
-#define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
+#define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED                 0x08
 
 /**
  * @format 1H1
@@ -1613,7 +1624,7 @@ typedef uint8_t sm_key_t[16];
  * @param acl_handle
  * @param error
  */
-#define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x08
+#define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR             0x09
 
 /**
  * @format 1H
