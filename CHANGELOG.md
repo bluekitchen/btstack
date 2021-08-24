@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - A2DP Source: fix reconfigure
 - PBAP Client: handle chunked vCard Listing
+- SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
 
 ### Changed
 - HFP: API functions return status code if appropriate 
