@@ -2190,6 +2190,10 @@ static bool sm_run_oob(void){
     return false;
 }
 
+static void sm_send_connectionless(sm_connection_t * sm_connection, const uint8_t * buffer, uint16_t size){
+    l2cap_send_connectionless(sm_connection->sm_handle, sm_connection->sm_cid, (uint8_t*) buffer, size);
+}
+
 // handle basic actions that don't requires the full context
 static bool sm_run_basic(void){
     btstack_linked_list_iterator_t it;
@@ -2205,7 +2209,7 @@ static bool sm_run_basic(void){
                 buffer[0] = SM_CODE_PAIRING_FAILED;
                 buffer[1] = sm_connection->sm_pairing_failed_reason;
                 sm_connection->sm_engine_state = sm_connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
-                l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(sm_connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_pairing_complete(sm_connection, ERROR_CODE_AUTHENTICATION_FAILURE, sm_connection->sm_pairing_failed_reason);
                 sm_done_for_handle(sm_connection->sm_handle);
                 break;
@@ -2322,7 +2326,7 @@ static void sm_run_send_keypress_notification(sm_connection_t * connection){
     uint8_t buffer[2];
     buffer[0] = SM_CODE_KEYPRESS_NOTIFICATION;
     buffer[1] = action;
-    l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+    sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
 
     // try
     l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
@@ -2335,7 +2339,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         uint8_t buffer[17];
         buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
         reverse_128(setup->sm_ltk, &buffer[1]);
-        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
         sm_timeout_reset(connection);
         return;
     }
@@ -2346,7 +2350,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
         little_endian_store_16(buffer, 1, setup->sm_local_ediv);
         reverse_64(setup->sm_local_rand, &buffer[3]);
-        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
         sm_timeout_reset(connection);
         return;
     }
@@ -2356,7 +2360,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         uint8_t buffer[17];
         buffer[0] = SM_CODE_IDENTITY_INFORMATION;
         reverse_128(sm_persistent_irk, &buffer[1]);
-        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
         sm_timeout_reset(connection);
         return;
     }
@@ -2383,7 +2387,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
                 break;
         }
         reverse_bd_addr(local_address, &buffer[2]);
-        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
         sm_timeout_reset(connection);
         return;
     }
@@ -2408,7 +2412,7 @@ static void sm_run_distribute_keys(sm_connection_t * connection){
         uint8_t buffer[17];
         buffer[0] = SM_CODE_SIGNING_INFORMATION;
         reverse_128(setup->sm_local_csrk, &buffer[1]);
-        l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
         sm_timeout_reset(connection);
         return;
     }
@@ -2635,7 +2639,7 @@ static void sm_run(void){
 
                 sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
+                sm_send_connectionless(connection, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 break;
 #endif
@@ -2704,7 +2708,7 @@ static void sm_run(void){
                         break;
                 }
 
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
 
                 // trigger user response and calc confirm after sending pdu
@@ -2725,7 +2729,7 @@ static void sm_run(void){
                 } else {
                     connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
                 }
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 break;
             }
@@ -2759,7 +2763,7 @@ static void sm_run(void){
                         connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
                     }
                 }
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 break;
             }
@@ -2774,7 +2778,7 @@ static void sm_run(void){
                     connection->sm_engine_state = SM_SC_W4_DHKEY_CHECK_COMMAND;
                 }
 
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 break;
             }
@@ -2786,7 +2790,7 @@ static void sm_run(void){
 			case SM_RESPONDER_SEND_SECURITY_REQUEST: {
 				const uint8_t buffer[2] = {SM_CODE_SECURITY_REQUEST, sm_auth_req};
 				connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
-				l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL,  (uint8_t *) buffer, sizeof(buffer));
+				sm_send_connectionless(connection,  (uint8_t *) buffer, sizeof(buffer));
 				sm_timeout_start(connection);
 				break;
 			}
@@ -2890,7 +2894,7 @@ static void sm_run(void){
                     connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 }
 
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
+                sm_send_connectionless(connection, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
                 // SC Numeric Comparison will trigger user response after public keys & nonces have been exchanged
                 if (!setup->sm_use_secure_connections || (setup->sm_stk_generation_method == JUST_WORKS)){
@@ -2908,7 +2912,7 @@ static void sm_run(void){
                 } else {
                     connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
                 }
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 break;
             }
@@ -2973,7 +2977,7 @@ static void sm_run(void){
                 } else {
                     connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_CONFIRM;
                 }
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_send_connectionless(connection, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
                 return;
             }
@@ -3533,6 +3537,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                                hci_subevent_le_connection_complete_get_role(packet),
                                                hci_subevent_le_connection_complete_get_peer_address_type(packet),
                                                addr);
+                            sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
 
                             // track our addr used for this connection and set state
                             if (hci_subevent_le_connection_complete_get_role(packet)){

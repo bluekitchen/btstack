@@ -411,6 +411,7 @@ typedef uint8_t sm_pairing_packet_t[7];
 // connection info available as long as connection exists
 typedef struct sm_connection {
     hci_con_handle_t         sm_handle;
+    uint16_t                 sm_cid;
     uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
     uint8_t                  sm_security_request_received;
     uint8_t                  sm_pairing_requested;
