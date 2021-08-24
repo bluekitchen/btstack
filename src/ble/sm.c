@@ -3520,7 +3520,27 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         gap_random_address_set_mode(gap_random_adress_type);
 					}
 					break;
+#ifdef ENABLE_CLASSIC
+			    case HCI_EVENT_CONNECTION_COMPLETE:
+			        // ignore if connection failed
+			        if (hci_event_connection_complete_get_status(packet)) return;
 
+			        con_handle = hci_event_connection_complete_get_connection_handle(packet);
+			        sm_conn = sm_get_connection_for_handle(con_handle);
+			        if (!sm_conn) break;
+
+                    hci_event_connection_complete_get_bd_addr(packet, addr);
+			        sm_connection_init(sm_conn,
+                                       con_handle,
+                                       (uint8_t) gap_get_role(con_handle),
+                                       hci_subevent_le_connection_complete_get_peer_address_type(packet),
+                                       addr);
+			        // classic connection corresponds to public le address
+			        sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_PUBLIC;
+                    gap_local_bd_addr(sm_conn->sm_own_address);
+                    sm_conn->sm_cid = L2CAP_CID_BR_EDR_SECURITY_MANAGER;
+			        break;
+#endif
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -4331,6 +4351,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         default:
             // Unexpected PDU
             log_info("Unexpected PDU %u in state %u", packet[0], sm_conn->sm_engine_state);
+            sm_pdu_received_in_wrong_state(sm_conn);
             break;
     }
 
