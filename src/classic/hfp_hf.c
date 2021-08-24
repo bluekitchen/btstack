@@ -189,6 +189,23 @@ static void hfp_hf_emit_enhanced_call_status(const hfp_connection_t * hfp_connec
     (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void hfp_emit_ag_indicator_mapping_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
+    if (hfp_hf_callback == NULL) return;
+    uint8_t event[8+HFP_MAX_INDICATOR_DESC_SIZE+1];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_AG_INDICATOR_MAPPING;
+    little_endian_store_16(event, pos, hfp_connection->acl_handle);
+    pos += 2;
+    event[pos++] = indicator->index;
+    event[pos++] = indicator->min_range;
+    event[pos++] = indicator->max_range;
+    strncpy((char*)&event[pos], indicator->name, HFP_MAX_INDICATOR_DESC_SIZE);
+    pos += HFP_MAX_INDICATOR_DESC_SIZE;
+    event[pos] = 0;
+    (*hfp_hf_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 
 static void hfp_emit_ag_indicator_status_event(const hfp_connection_t * hfp_connection, const hfp_ag_indicator_t * indicator){
 	if (hfp_hf_callback == NULL) return;
@@ -1018,8 +1035,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 
     uint8_t i;
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
-        hfp_connection->ag_indicators[i].status_changed = 0;
-        hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+        hfp_emit_ag_indicator_mapping_event(hfp_connection, &hfp_connection->ag_indicators[i]);
     }
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
@@ -1329,7 +1345,7 @@ static void hfp_hf_handle_rfcomm_command(hfp_connection_t * hfp_connection){
                 break;
             }
             for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
-                hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+                hfp_emit_ag_indicator_mapping_event(hfp_connection, &hfp_connection->ag_indicators[i]);
             }
             break;
     	case HFP_CMD_AG_SUGGESTED_CODEC:

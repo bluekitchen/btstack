@@ -539,8 +539,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 printf("Cmd \'%c\' failed with status 0x%02x\n", cmd, status);
                             }
                             break;
+
+                        case HFP_SUBEVENT_AG_INDICATOR_MAPPING:
+                            printf("AG Indicator Mapping | INDEX %d with range [%d, %d] >> NAME '%s'\n", 
+                                hfp_subevent_ag_indicator_mapping_get_indicator_index(event), 
+                                hfp_subevent_ag_indicator_mapping_get_indicator_min_range(event),
+                                hfp_subevent_ag_indicator_mapping_get_indicator_max_range(event),
+                                (const char*) hfp_subevent_ag_indicator_mapping_get_indicator_name(event));
+                            break;
+
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-                            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator (index: %d) to: %d of range [%d, %d], name '%s'\n", 
+                            printf("AG_INDICATOR_STATUS_CHANGED | INDEX %d, status %d, range [%d, %d], name '%s'\n", 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(event),
