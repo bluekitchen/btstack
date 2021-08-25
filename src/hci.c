@@ -2411,11 +2411,20 @@ static void event_handle_le_connection_complete(const uint8_t * packet){
 static bool hci_ssp_security_level_possible_for_io_cap(gap_security_level_t level, uint8_t io_cap_local, uint8_t io_cap_remote){
     if (io_cap_local == SSP_IO_CAPABILITY_UNKNOWN) return false;
     // LEVEL_4 is tested by l2cap
-    // LEVEL 3 requires MITM protection -> check io capabilities
+    // LEVEL 3 requires MITM protection -> check io capabilities if Authenticated is possible
+    // @see: Core Spec v5.3, Vol 3, Part C, Table 5.7
     if (level >= LEVEL_3){
-        if (io_cap_remote  >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT) return false;
-        if (io_cap_local   >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT) return false;
-        if ((io_cap_remote == SSP_IO_CAPABILITY_KEYBOARD_ONLY) && (io_cap_local ==  SSP_IO_CAPABILITY_KEYBOARD_ONLY)) return false;
+        // MITM not possible without keyboard or display
+        if (io_cap_remote >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT) return false;
+        if (io_cap_local  >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT) return false;
+
+        // MITM possible if one side has keyboard and the other has keyboard or display
+        if (io_cap_remote == SSP_IO_CAPABILITY_KEYBOARD_ONLY)      return true;
+        if (io_cap_local  == SSP_IO_CAPABILITY_KEYBOARD_ONLY)      return true;
+
+        // MITM not possible if one side has only display and other side has no keyboard
+        if (io_cap_remote == SSP_IO_CAPABILITY_DISPLAY_ONLY)       return false;
+        if (io_cap_local  == SSP_IO_CAPABILITY_DISPLAY_ONLY)       return false;
     }
     // LEVEL 2 requires SSP, which is a given
     return true;
