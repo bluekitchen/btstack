@@ -1720,6 +1720,15 @@ static inline uint8_t rfcomm_event_incoming_connection_get_server_channel(const 
 static inline uint16_t rfcomm_event_incoming_connection_get_rfcomm_cid(const uint8_t * event){
     return little_endian_read_16(event, 9);
 }
+/**
+ * @brief Get field con_handle from event RFCOMM_EVENT_INCOMING_CONNECTION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t rfcomm_event_incoming_connection_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
 
 /**
  * @brief Get field rfcomm_cid from event RFCOMM_EVENT_REMOTE_LINE_STATUS

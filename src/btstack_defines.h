@@ -928,10 +928,12 @@ typedef uint8_t sm_key_t[16];
 #define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81
 
 /**
- * @format B12
+ * @format B12H
  * @param bd_addr
  * @param server_channel
  * @param rfcomm_cid
+ * @param con_handle
+
  */
 #define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82
 

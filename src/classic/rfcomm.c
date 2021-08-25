@@ -244,12 +244,13 @@ static uint16_t rfcomm_next_ertm_id(void){
 static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     log_info("RFCOMM_EVENT_INCOMING_CONNECTION addr %s channel #%u cid 0x%02x",
              bd_addr_to_str(channel->multiplexer->remote_addr), channel->dlci>>1, channel->rfcomm_cid);
-    uint8_t event[11];
+    uint8_t event[13];
     event[0] = RFCOMM_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
     reverse_bd_addr(channel->multiplexer->remote_addr, &event[2]);
     event[8] = channel->dlci >> 1;
     little_endian_store_16(event, 9, channel->rfcomm_cid);
+    little_endian_store_16(event, 11, channel->multiplexer->con_handle);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
