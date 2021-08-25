@@ -2869,7 +2869,11 @@ static uint8_t hfp_ag_enhanced_voice_recognition_send_state(hci_con_handle_t acl
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    if (!hfp_ag_voice_recognition_session_active(hfp_connection)){
+    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (hfp_connection->vra_state != HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
@@ -2907,7 +2911,11 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    if (!hfp_ag_voice_recognition_session_active(hfp_connection)){
+    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (hfp_connection->vra_state != HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
