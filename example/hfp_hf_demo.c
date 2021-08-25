@@ -88,7 +88,7 @@ static uint8_t codecs[] = {HFP_CODEC_CVSD};
 static uint16_t indicators[1] = {0x01};
 static uint8_t  negotiated_codec = HFP_CODEC_CVSD;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-char cmd;
+static char cmd;
 
 static void dump_supported_codecs(void){
     unsigned int i;
@@ -149,7 +149,6 @@ static void show_usage(void){
     printf("k/K - deactivate/activate call waiting notification\n");
     printf("l/L - deactivate/activate calling line notification\n");
     printf("n/N - deactivate/activate voice recognition\n");
-    printf("h   - start new audio enhanced voice recognition session\n");
     
     printf("0123456789#*-+ - send DTMF dial tones\n");
     printf("x - request phone number for voice tag     | X - current call status (ECS)\n");
@@ -318,11 +317,6 @@ static void stdin_process(char c){
             log_info("USER:\'%c\'", cmd);
             printf("Activate voice recognition %s\n", bd_addr_to_str(device_addr));
             status = hfp_hf_activate_voice_recognition(acl_handle);
-            break;
-        case 'h':
-            log_info("USER:\'%c\'", cmd);
-            printf("Start new audio enhanced voice recognition session %s\n", bd_addr_to_str(device_addr));
-            status = hfp_hf_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
             break;
         case 'o':
             log_info("USER:\'%c\'", cmd);
@@ -498,24 +492,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             status = hfp_subevent_audio_connection_established_get_status(event);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("Audio connection establishment failed with status 0x%02x\n", status);
-                            } else {
-                                sco_handle = hfp_subevent_audio_connection_established_get_sco_handle(event);
-                                printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
-                                negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
-                                switch (negotiated_codec){
-                                    case 0x01:
-                                        printf("Using CVSD codec.\n");
-                                        break;
-                                    case 0x02:
-                                        printf("Using mSBC codec.\n");
-                                        break;
-                                    default:
-                                        printf("Using unknown codec 0x%02x.\n", negotiated_codec);
-                                        break;
-                                }
-                                sco_demo_set_codec(negotiated_codec);
-                                hci_request_sco_can_send_now_event();
+                                break;
+                            } 
+                            sco_handle = hfp_subevent_audio_connection_established_get_sco_handle(event);
+                            printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
+                            negotiated_codec = hfp_subevent_audio_connection_established_get_negotiated_codec(event);
+                            switch (negotiated_codec){
+                                case 0x01:
+                                    printf("Using CVSD codec.\n");
+                                    break;
+                                case 0x02:
+                                    printf("Using mSBC codec.\n");
+                                    break;
+                                default:
+                                    printf("Using unknown codec 0x%02x.\n", negotiated_codec);
+                                    break;
                             }
+                            sco_demo_set_codec(negotiated_codec);
+                            hci_request_sco_can_send_now_event();
                             break;
 
                         case HFP_SUBEVENT_CALL_ANSWERED:
@@ -613,7 +607,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                     printf("\nVoice recognition ACTIVATED\n\n");
                                     break;
                                 default:
-                                    printf("\nEnhanced voice recognition ACTIVATED\n\n");
+                                    printf("\nEnhanced voice recognition ACTIVATED.\n");
+                                    printf("Start new audio enhanced voice recognition session %s\n\n", bd_addr_to_str(device_addr));
+                                    status = hfp_hf_enhanced_voice_recognition_report_ready_for_audio(acl_handle);
                                     break;
                             }
                             break;
@@ -624,7 +620,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 printf("Voice Recognition Deactivate command failed\n");
                                 break;
                             }
-                            printf("Voice Recognition DEACTIVATED\n");
+                            printf("\nVoice Recognition DEACTIVATED\n\n");
                             break;
 
                         case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:

@@ -618,7 +618,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         printf("Voice Recognition Deactivate command failed\n");
                         break;
                     }
-                    printf("Voice Recognition DEACTIVATED\n");
+                    printf("\nVoice Recognition DEACTIVATED\n\n");
                     break;
 
                 case HFP_SUBEVENT_ENHANCED_VOICE_RECOGNITION_HF_READY_FOR_AUDIO:
