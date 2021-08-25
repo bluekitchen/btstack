@@ -2821,12 +2821,33 @@ static void event_handler(uint8_t *packet, uint16_t size){
 
             hci_pairing_started(conn, true);
 
-            // assess security
+            // assess security: LEVEL 4 requires SC
             if ((hci_stack->gap_secure_connections_only_mode || (conn->requested_security_level == LEVEL_4)) && !hci_remote_sc_enabled(conn)){
                 log_info("Level 4 required, but SC not supported -> abort");
                 hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
                 connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
                 break;
+            }
+
+            // assess security based on io capabilities
+            if (conn->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
+                // responder: fully validate io caps of both sides
+                if (!hci_ssp_security_level_possible_for_io_cap(conn->requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io)){
+                    log_info("IOCap insufficient for level %u -> abort", conn->requested_security_level);
+                    hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+                    connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                    break;
+                }
+            } else {
+                // initiator: remote io cap not yet, only check if we have ability for MITM protection if requested and OOB is not supported
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+                if ((conn->requested_security_level >= LEVEL_3) && (hci_stack->ssp_io_capability >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT)){
+                    log_info("Level 3+ required, but no input/output -> abort");
+                    hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+                    connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+                    break;
+                }
+#endif
             }
 
 #ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
