@@ -2807,6 +2807,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             hci_pairing_started(conn, true);
             conn->io_cap_response_auth_req = hci_event_io_capability_response_get_authentication_requirements(packet);
             conn->io_cap_response_io       = hci_event_io_capability_response_get_io_capability(packet);
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+            conn->io_cap_response_oob_data = hci_event_io_capability_response_get_oob_data_present(packet);
+#endif
             break;
 
         case HCI_EVENT_IO_CAPABILITY_REQUEST:

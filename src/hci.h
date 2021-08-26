@@ -536,6 +536,9 @@ typedef struct {
     // IO Capabilities Response
     uint8_t io_cap_response_auth_req;
     uint8_t io_cap_response_io;
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+    uint8_t io_cap_response_oob_data;
+#endif
 
     // connection mode, default ACL_CONNECTION_MODE_ACTIVE
     uint8_t connection_mode;
