@@ -2262,12 +2262,14 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 hfp_connection->ag_vra_requested_by_hf = true;
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
+                hfp_connection->command = HFP_CMD_NONE;
                 if (hfp_ag_response_and_hold_active){
                     hfp_connection->send_response_and_hold_status = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD + 1;
                 }
                 hfp_connection->ok_pending = 1;
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_COMMAND:
+                hfp_connection->command = HFP_CMD_NONE;
                 switch(hfp_connection->ag_response_and_hold_action){
                     case HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD:
                         hfp_ag_call_sm(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF, hfp_connection);
@@ -2319,12 +2321,13 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 hfp_connection->send_ag_indicators_segment = 0;
                 hfp_connection->send_ag_status_indicators = 1;
                 break;
-            case HFP_CMD_LIST_CURRENT_CALLS:   
+            case HFP_CMD_LIST_CURRENT_CALLS:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_connection->next_call_index = 0;
                 hfp_connection->send_status_of_current_calls = 1;
                 break;
             case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
+                hfp_connection->command = HFP_CMD_NONE;
                 if (hfp_ag_subscriber_numbers_count == 0){
                     hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                     break;
