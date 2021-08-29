@@ -579,13 +579,19 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             break;
 
         case HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE:
-            hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
-            break;
         case HFP_CODECS_AG_RESEND_COMMON_CODEC:
-            hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+            hfp_connection->ag_send_common_codec = true;
             break;
         default:
             break;
+    }
+
+    if (hfp_connection->ag_send_common_codec){
+        hfp_connection->ag_send_common_codec = false;
+        hfp_connection->codecs_state = HFP_CODECS_AG_SENT_COMMON_CODEC;
+        hfp_connection->suggested_codec = hfp_ag_suggest_codec(hfp_connection);
+        hfp_ag_send_suggest_codec_cmd(hfp_connection->rfcomm_cid, hfp_connection->suggested_codec);
+        return 1;
     }
 
     switch (hfp_connection->command){
@@ -612,12 +618,6 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         
-        case HFP_CMD_AG_SEND_COMMON_CODEC:
-            hfp_connection->codecs_state = HFP_CODECS_AG_SENT_COMMON_CODEC;
-            hfp_connection->suggested_codec = hfp_ag_suggest_codec(hfp_connection);
-            hfp_ag_send_suggest_codec_cmd(hfp_connection->rfcomm_cid, hfp_connection->suggested_codec);
-            return 1;
-
         case HFP_CMD_HF_CONFIRMED_CODEC:
             if (hfp_connection->codec_confirmed != hfp_connection->suggested_codec){
                 hfp_connection->codecs_state = HFP_CODECS_ERROR;
@@ -2236,7 +2236,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
             case HFP_CODECS_AG_RESEND_COMMON_CODEC:
             case HFP_CODECS_ERROR:
                 hfp_connection->trigger_codec_exchange = 0;
-                hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+                hfp_connection->ag_send_common_codec = true;
                 break;
             default:
                 break;

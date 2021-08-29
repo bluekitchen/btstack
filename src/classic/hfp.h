@@ -650,6 +650,7 @@ typedef struct hfp_connection {
     bool    ag_send_no_carrier;
     bool    ag_vra_send_command;
     bool    ag_send_in_band_ring_tone_setting;
+    bool    ag_send_common_codec;
 
     int send_status_of_current_calls;
     int next_call_index;

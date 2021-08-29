@@ -781,7 +781,7 @@ static int hfp_handle_failed_sco_connection(uint8_t status){
             log_info("T2/T1 failed, fallback to CVSD - D1");
             hfp_sco_establishment_active->negotiated_codec = HFP_CODEC_CVSD;
             hfp_sco_establishment_active->sco_for_msbc_failed = 1;
-            hfp_sco_establishment_active->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+            hfp_sco_establishment_active->ag_send_common_codec = true;
             hfp_sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D1;
         } else {
             // no other options
