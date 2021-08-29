@@ -1030,12 +1030,14 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
     int sent = codecs_exchange_state_machine(hfp_connection);
     if (sent) return 1;
-   
-    switch(hfp_connection->command){
 
-        case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
-            hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection->rfcomm_cid);
-            return 1;
+    if (hfp_connection->ag_send_in_band_ring_tone_setting){
+        hfp_connection->ag_send_in_band_ring_tone_setting = false;
+        hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection->rfcomm_cid);
+        return 1;
+    }
+
+    switch(hfp_connection->command){
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
             hfp_ag_send_report_network_operator_name_cmd(hfp_connection->rfcomm_cid, hfp_connection->network_operator);
             return 1;
@@ -2699,7 +2701,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        hfp_connection->command = HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
+        hfp_connection->ag_send_in_band_ring_tone_setting = true;
         hfp_ag_run_for_context(hfp_connection);
     }
 }
