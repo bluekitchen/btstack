@@ -979,7 +979,9 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         return hfp_ag_vra_send_command(hfp_connection);
     }
 
-    if (hfp_connection->command == HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION){
+    if (hfp_connection->ag_vra_requested_by_hf){
+        hfp_connection->ag_vra_requested_by_hf = false;
+
         // HF initiatied voice recognition, parser extracted activation value
         switch (hfp_connection->ag_activate_voice_recognition_value){
             case 0:
@@ -2256,7 +2258,8 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
         hfp_generic_status_indicator_t * indicator;
         switch(hfp_connection->command){
             case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
-                // dealt with in hfp_ag_voice_recognition_state_machine
+                hfp_connection->command = HFP_CMD_NONE;
+                hfp_connection->ag_vra_requested_by_hf = true;
                 break;
             case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
                 if (hfp_ag_response_and_hold_active){
