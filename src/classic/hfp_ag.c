@@ -2228,21 +2228,6 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         cmd_sent = call_setup_state_machine(hfp_connection);
     }
 
-    // trigger codec exchange (must be before hfp_ag_run_for_audio_connection)
-    if (hfp_connection->trigger_codec_exchange){
-        switch (hfp_connection->codecs_state){
-            case HFP_CODECS_IDLE:
-            case HFP_CODECS_RECEIVED_LIST:
-            case HFP_CODECS_AG_RESEND_COMMON_CODEC:
-            case HFP_CODECS_ERROR:
-                hfp_connection->trigger_codec_exchange = 0;
-                hfp_connection->ag_send_common_codec = true;
-                break;
-            default:
-                break;
-        }
-    }
-
     if (!cmd_sent){
         cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
     }
@@ -2650,7 +2635,7 @@ static uint8_t hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
     }
     
     if (!codec_was_in_use || better_codec_can_be_used){
-        hfp_connection->trigger_codec_exchange = 1;
+        hfp_connection->ag_send_common_codec = true;
         hfp_connection->codecs_state = HFP_CODECS_IDLE;
     }
     return ERROR_CODE_SUCCESS;
