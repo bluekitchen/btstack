@@ -1884,7 +1884,6 @@ uint8_t hfp_hf_activate_voice_recognition(hci_con_handle_t acl_handle){
     switch (hfp_connection->vra_state){
         case HFP_VRA_VOICE_RECOGNITION_OFF:
         case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
-            hfp_connection->command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
             hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
             hfp_connection->enhanced_voice_recognition_enabled = enhanced_vra_supported;
             break;
@@ -1916,7 +1915,6 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
     switch (hfp_connection->vra_state){
         case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            hfp_connection->command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
             hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
             break;
         default:
@@ -1951,7 +1949,6 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
         case HFP_VRA_VOICE_RECOGNITION_ACTIVATED:
         case HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
         case HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO:
-            hfp_connection->command = HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION;
             hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
             break;
 
