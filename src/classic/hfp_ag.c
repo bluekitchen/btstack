@@ -2032,14 +2032,6 @@ static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
         return 1;
     }
 
-    if (hfp_connection->command == HFP_CMD_UNKNOWN){
-        hfp_connection->ok_pending = 0;
-        hfp_connection->send_error = 0;
-        hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_send_error(hfp_connection->rfcomm_cid);
-        return 1;
-    }
-
     if (hfp_connection->send_error){
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
@@ -2446,6 +2438,10 @@ static void hfp_ag_handle_rfcomm_data(hfp_connection_t * hfp_connection, uint8_t
                 hfp_connection->ok_pending = 1;
                 log_info("HF microphone gain = %u", hfp_connection->microphone_gain);
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_MICROPHONE_VOLUME, hfp_connection->microphone_gain);
+                break;
+            case HFP_CMD_UNKNOWN:
+                hfp_connection->command = HFP_CMD_NONE;
+                hfp_connection->send_error = 1;
                 break;
             default:
                 break;
