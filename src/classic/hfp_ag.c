@@ -2983,7 +2983,6 @@ uint8_t hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
     }
 
     if (hfp_connection->microphone_gain != gain){
-        hfp_connection->command = HFP_CMD_SET_MICROPHONE_GAIN;
         hfp_connection->microphone_gain = gain;
         hfp_connection->send_microphone_gain = 1;
     } 
