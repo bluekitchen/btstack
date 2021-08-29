@@ -648,7 +648,8 @@ typedef struct hfp_connection {
     uint8_t ag_response_and_hold_action;
     uint8_t ag_dtmf_code;
     bool    ag_send_no_carrier;
-    
+    bool    ag_vra_send_command;
+
     int send_status_of_current_calls;
     int next_call_index;
 
@@ -694,7 +695,7 @@ typedef struct hfp_connection {
     bool deactivate_voice_recognition;
     bool activate_voice_recognition;
     bool enhanced_voice_recognition_enabled;
-    
+
     // ih HF, used by parser, in AG used for commands
     uint8_t ag_vra_status;
     hfp_voice_recognition_state_t ag_vra_state;
