@@ -980,8 +980,6 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
     }
 
     switch (hfp_connection->command){
-        case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
-            return hfp_ag_vra_send_command(hfp_connection);
 
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             // HF initiatied voice recognition, parser extracted activation value
