@@ -891,11 +891,12 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
                     hfp_connection->vra_state_requested = hfp_connection->vra_state;
                     return done;
 
-                default:
+                case HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED:
+                case HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF:
                     done = hfp_ag_send_voice_recognition_cmd(hfp_connection, hfp_connection->ag_activate_voice_recognition_value);
                     if (done == 0){
                         hfp_connection->vra_state_requested = hfp_connection->vra_state;
-                        
+
                         if (hfp_connection->ag_activate_voice_recognition_value == 1){
                             hfp_emit_voice_recognition_enabled(hfp_connection, done);
                         } else {
@@ -903,6 +904,10 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
                         }
                         return 0;
                     }
+                    break;
+                default:
+                    log_error("state %u", hfp_connection->vra_state_requested);
+                    btstack_assert(false);
                     break;
             }
             break;
