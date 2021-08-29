@@ -979,50 +979,43 @@ static int hfp_ag_voice_recognition_state_machine(hfp_connection_t * hfp_connect
         return hfp_ag_vra_send_command(hfp_connection);
     }
 
-    switch (hfp_connection->command){
+    if (hfp_connection->command == HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION){
+        // HF initiatied voice recognition, parser extracted activation value
+        switch (hfp_connection->ag_activate_voice_recognition_value){
+            case 0:
+                if (hfp_ag_voice_recognition_session_active(hfp_connection)){
+                    hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
+                    done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                }
+                break;
 
-        case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
-            // HF initiatied voice recognition, parser extracted activation value
-            switch (hfp_connection->ag_activate_voice_recognition_value){
-                case 0:
-                    if (hfp_ag_voice_recognition_session_active(hfp_connection)){
-                        hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_OFF;
-                        done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                    }
-                    break;
-                
                 case 1:
                     if (hfp_ag_can_activate_voice_recognition(hfp_connection)){
                         hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_VOICE_RECOGNITION_ACTIVATED;
                         done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                     }
                     break;
-                
-                case 2:
-                    if (hfp_ag_voice_recognition_session_active(hfp_connection)){
-                        hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
-                        done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-                    }
-                    break;
-                default:
-                    break;
-            }
-            if (done == 0){
-                hfp_connection->vra_state_requested = hfp_connection->vra_state;
-                done = hfp_ag_send_error(hfp_connection->rfcomm_cid);
-                return 1;
-            } 
-            break;
 
-        default:
-            return 0;
+                    case 2:
+                        if (hfp_ag_voice_recognition_session_active(hfp_connection)){
+                            hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO;
+                            done = hfp_ag_send_ok(hfp_connection->rfcomm_cid);
+                        }
+                        break;
+                        default:
+                            break;
+        }
+        if (done == 0){
+            hfp_connection->vra_state_requested = hfp_connection->vra_state;
+            done = hfp_ag_send_error(hfp_connection->rfcomm_cid);
+            return 1;
+        }
+
+        status = hfp_ag_vra_state_machine_two(hfp_connection);
+        return (status == ERROR_CODE_SUCCESS) ? 1 : 0;
     }
 
-    status = hfp_ag_vra_state_machine_two(hfp_connection);
-    if (status != ERROR_CODE_SUCCESS){
-        return 0;
-    }
-    return done;
+    return 0;
 }
 
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
