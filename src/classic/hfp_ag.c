@@ -2229,7 +2229,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     }
 
     // trigger codec exchange (must be before hfp_ag_run_for_audio_connection)
-    if (!cmd_sent && (hfp_connection->command == HFP_CMD_NONE) && hfp_connection->trigger_codec_exchange){
+    if (hfp_connection->trigger_codec_exchange){
         switch (hfp_connection->codecs_state){
             case HFP_CODECS_IDLE:
             case HFP_CODECS_RECEIVED_LIST:
