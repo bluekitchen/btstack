@@ -111,7 +111,7 @@ static int    hfp_ag_call_hold_services_nr;
 static char * hfp_ag_call_hold_services[6];
 
 static hfp_response_and_hold_state_t hfp_ag_response_and_hold_state;
-static int hfp_ag_response_and_hold_active;
+static bool hfp_ag_response_and_hold_active = false;
 
 // Subscriber information entries
 static hfp_phone_number_t * hfp_ag_subscriber_numbers;
@@ -1606,7 +1606,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                     switch (hfp_gsm_callsetup_status()){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
                             hfp_gsm_handler(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_AG, 0, 0, NULL);
-                            hfp_ag_response_and_hold_active = 1;
+                            hfp_ag_response_and_hold_active = true;
                             hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
                             hfp_ag_send_response_and_hold_state(hfp_ag_response_and_hold_state);
                             // as with regular call
@@ -1630,7 +1630,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                     switch (hfp_gsm_callsetup_status()){
                         case HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS:
                             hfp_gsm_handler(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_INCOMING_CALL_BY_HF, 0, 0, NULL);
-                            hfp_ag_response_and_hold_active = 1;
+                            hfp_ag_response_and_hold_active = true;
                             hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD;
                             hfp_ag_send_response_and_hold_state(hfp_ag_response_and_hold_state);
                             // as with regular call
@@ -1653,7 +1653,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             if (!hfp_ag_response_and_hold_active) break;
             if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
             hfp_gsm_handler(HFP_AG_RESPONSE_AND_HOLD_ACCEPT_HELD_CALL_BY_AG, 0, 0, NULL);
-            hfp_ag_response_and_hold_active = 0;
+            hfp_ag_response_and_hold_active = false;
             hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_ACCEPTED;
             hfp_ag_send_response_and_hold_state(hfp_ag_response_and_hold_state);
             log_info("Held Call accepted and active");
@@ -1664,7 +1664,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             if (!hfp_ag_response_and_hold_active) break;
             if (hfp_ag_response_and_hold_state != HFP_RESPONSE_AND_HOLD_INCOMING_ON_HOLD) break;
             hfp_gsm_handler(HFP_AG_RESPONSE_AND_HOLD_REJECT_HELD_CALL_BY_AG, 0, 0, NULL);
-            hfp_ag_response_and_hold_active = 0;
+            hfp_ag_response_and_hold_active = false;
             hfp_ag_response_and_hold_state = HFP_RESPONSE_AND_HOLD_HELD_INCOMING_REJECTED;
             hfp_ag_send_response_and_hold_state(hfp_ag_response_and_hold_state);
             // from terminate by ag
@@ -2526,7 +2526,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 
     hfp_init();
     hfp_ag_call_hold_services_nr = 0;
-    hfp_ag_response_and_hold_active = 0;
+    hfp_ag_response_and_hold_active = false;
     hfp_ag_indicators_nr = 0;
     hfp_ag_codecs_nr = 0;
     hfp_ag_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
