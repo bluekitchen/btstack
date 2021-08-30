@@ -6419,8 +6419,13 @@ uint8_t gap_ssp_remote_oob_data(const bd_addr_t addr, const uint8_t * c_192, con
     }
     connection->classic_oob_c_192 = c_192;
     connection->classic_oob_r_192 = r_192;
-    connection->classic_oob_c_256 = c_256;
-    connection->classic_oob_r_256 = r_256;
+
+    // ignore P-256 if not supported by us
+    if (hci_stack->secure_connections_active){
+        connection->classic_oob_c_256 = c_256;
+        connection->classic_oob_r_256 = r_256;
+    }
+
     return ERROR_CODE_SUCCESS;
 }
 /**
