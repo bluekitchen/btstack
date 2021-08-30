@@ -787,7 +787,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
             media_tracker.volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
-            printf("AVRCP Target: Volume set to %d%% (%d)\n", media_tracker.volume * 127/100, media_tracker.volume);
+            printf("AVRCP Target: Volume set to %d%% (%d)\n", media_tracker.volume * 100 / 127, media_tracker.volume);
             break;
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
             status = avrcp_target_supported_events(media_tracker.avrcp_cid, events_num, events, sizeof(events));
@@ -932,7 +932,7 @@ static void stdin_process(char cmd){
             } else {
                 media_tracker.volume += 10;
             }
-            printf(" - volume up (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 127/100,  media_tracker.volume);
+            printf(" - volume up (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 100 / 127,  media_tracker.volume);
             status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, media_tracker.volume);
             break;
         case 'V':
@@ -941,7 +941,7 @@ static void stdin_process(char cmd){
             } else {
                 media_tracker.volume -= 10;
             }
-            printf(" - volume down (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 127/100,  media_tracker.volume);
+            printf(" - volume down (via set absolute volume) %d%% (%d)\n",  media_tracker.volume * 100 / 127,  media_tracker.volume);
             status = avrcp_controller_set_absolute_volume(media_tracker.avrcp_cid, media_tracker.volume);
             break;
         
