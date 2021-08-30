@@ -632,6 +632,7 @@ typedef struct hfp_connection {
     uint8_t send_ag_indicators_segment;
     uint8_t send_response_and_hold_status;  // 0 - don't send. BRTH:0 == 1, ..
     
+    bool emit_vra_enabled_after_audio_established;
     // AG only
     uint8_t change_in_band_ring_tone_setting;
     uint8_t ag_ring;

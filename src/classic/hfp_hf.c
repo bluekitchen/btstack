@@ -630,7 +630,12 @@ static int hfp_hf_voice_recognition_state_machine(hfp_connection_t * hfp_connect
                 hfp_hf_deactivate_voice_recognition(hfp_connection->acl_handle);
             } else {
                 hfp_connection->enhanced_voice_recognition_enabled = hfp_hf_enhanced_vra_flag_supported(hfp_connection);
-                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+                if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+                    hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+                } else {
+                    // postpone VRA event to simplify application logic
+                    hfp_connection->emit_vra_enabled_after_audio_established = true;
+                }
             }
             break;
 
@@ -730,6 +735,12 @@ static void hfp_hf_run_for_context(hfp_connection_t * hfp_connection){
 
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
+
+    // emit postponed VRA event
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->emit_vra_enabled_after_audio_established){
+        hfp_connection->emit_vra_enabled_after_audio_established = false;
+        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+    }
 
 	// assert command could be sent
 	if (hci_can_send_command_packet_now() == 0) return;
@@ -1903,6 +1914,11 @@ uint8_t hfp_hf_enhanced_voice_recognition_report_ready_for_audio(hci_con_handle_
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    
+    if (hfp_connection->emit_vra_enabled_after_audio_established){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
@@ -1931,6 +1947,10 @@ uint8_t hfp_hf_deactivate_voice_recognition(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection) {
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    if (hfp_connection->emit_vra_enabled_after_audio_established){
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED || 

@@ -905,11 +905,16 @@ static uint8_t hfp_ag_vra_state_machine_two(hfp_connection_t * hfp_connection){
                     break;
                 }
             }
-
+ 
             hfp_connection->vra_state = HFP_VRA_VOICE_RECOGNITION_ACTIVATED;
             hfp_connection->vra_state_requested = hfp_connection->vra_state;
             hfp_connection->enhanced_voice_recognition_enabled = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
-            hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+
+            if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+                hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+            } else {
+                hfp_connection->emit_vra_enabled_after_audio_established = true;
+            }
             break;
 
         default:
@@ -2136,9 +2141,14 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
 	// during SDP query, RFCOMM CID is not set
 	if (hfp_connection->rfcomm_cid == 0) return;
 
+    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->emit_vra_enabled_after_audio_established){
+        hfp_connection->emit_vra_enabled_after_audio_established = false;
+        hfp_emit_voice_recognition_enabled(hfp_connection, ERROR_CODE_SUCCESS);
+    }
+    
     // assert command could be sent
     if (hci_can_send_command_packet_now() == 0) return;
-    
+
     if ((hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) && hfp_connection->release_audio_connection){
         hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
         hfp_connection->release_audio_connection = 0;
@@ -2825,6 +2835,10 @@ uint8_t hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    if (hfp_connection->emit_vra_enabled_after_audio_established){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
     bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
     bool legacy_vra_supported   = hfp_ag_vra_flag_supported(hfp_connection);
     if (!enhanced_vra_supported && !legacy_vra_supported){
@@ -2851,6 +2865,10 @@ uint8_t hfp_ag_deactivate_voice_recognition(hci_con_handle_t acl_handle){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
+    if (hfp_connection->emit_vra_enabled_after_audio_established){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    
     bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
     bool legacy_vra_supported = hfp_ag_vra_flag_supported(hfp_connection);
     
@@ -2875,19 +2893,24 @@ static uint8_t hfp_ag_enhanced_voice_recognition_send_state(hci_con_handle_t acl
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    
+    if (hfp_connection->emit_vra_enabled_after_audio_established){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }    
+    
+    if (hfp_connection->vra_state != HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
     if (!enhanced_vra_supported ){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
     }
 
-    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    if (hfp_connection->vra_state != HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
     
     hfp_connection->ag_vra_state = state;
     hfp_connection->vra_state_requested = HFP_VRA_W2_SEND_ENHANCED_VOICE_RECOGNITION_STATUS;
@@ -2912,6 +2935,18 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
     if (!hfp_connection){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    
+    if (hfp_connection->emit_vra_enabled_after_audio_established){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (hfp_connection->vra_state != HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
 
     bool enhanced_vra_supported = hfp_ag_enhanced_vra_flag_supported(hfp_connection);
     if (!enhanced_vra_supported ){
@@ -2921,14 +2956,6 @@ uint8_t hfp_ag_enhanced_voice_recognition_send_message(hci_con_handle_t acl_hand
     bool enhanced_vra_msg_supported = hfp_ag_can_send_enhanced_vra_message_flag_supported(hfp_connection);
     if (!enhanced_vra_msg_supported ){
         return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
-    }
-
-    if (hfp_connection->state != HFP_AUDIO_CONNECTION_ESTABLISHED){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
-
-    if (hfp_connection->vra_state != HFP_VRA_ENHANCED_VOICE_RECOGNITION_READY_FOR_AUDIO){
-        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
     uint16_t message_len = strlen(msg.text);
