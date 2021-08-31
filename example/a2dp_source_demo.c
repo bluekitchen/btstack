@@ -785,10 +785,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     avrcp_operation_id_t operation_id;
 
     switch (packet[2]){
-        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            media_tracker.volume = avrcp_subevent_notification_volume_changed_get_absolute_volume(packet);
-            printf("AVRCP Target: Volume set to %d%% (%d)\n", media_tracker.volume * 100 / 127, media_tracker.volume);
-            break;
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
             status = avrcp_target_supported_events(media_tracker.avrcp_cid, events_num, events, sizeof(events));
             break;
