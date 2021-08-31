@@ -1048,6 +1048,12 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
     for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
         hfp_emit_ag_indicator_mapping_event(hfp_connection, &hfp_connection->ag_indicators[i]);
     }
+
+    for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
+        hfp_connection->ag_indicators[i].status_changed = 0;
+        hfp_emit_ag_indicator_status_event(hfp_connection, &hfp_connection->ag_indicators[i]);
+    }
+    
     // restore volume settings
     hfp_connection->speaker_gain = hfp_hf_speaker_gain;
     hfp_connection->send_speaker_gain = 1;

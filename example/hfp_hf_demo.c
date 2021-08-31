@@ -535,7 +535,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
 
                         case HFP_SUBEVENT_AG_INDICATOR_MAPPING:
-                            printf("AG Indicator Mapping | INDEX %d with range [%d, %d] >> NAME '%s'\n", 
+                            printf("AG Indicator Mapping | INDEX %d: range [%d, %d], name '%s'\n", 
                                 hfp_subevent_ag_indicator_mapping_get_indicator_index(event), 
                                 hfp_subevent_ag_indicator_mapping_get_indicator_min_range(event),
                                 hfp_subevent_ag_indicator_mapping_get_indicator_max_range(event),
@@ -543,11 +543,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
 
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-                            printf("AG_INDICATOR_STATUS_CHANGED | INDEX %d, status %d, range [%d, %d], name '%s'\n", 
+                            printf("AG Indicator Status  | INDEX %d: status %d, '%s'\n", 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
                                 hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
-                                hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(event),
-                                hfp_subevent_ag_indicator_status_changed_get_indicator_max_range(event),
                                 (const char*) hfp_subevent_ag_indicator_status_changed_get_indicator_name(event));
                             break;
                         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
@@ -557,7 +555,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                                 (char *) hfp_subevent_network_operator_changed_get_network_operator_name(event));          
                             break;
                         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : 0x%02x\n",
+                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status: 0x%02x\n",
                                 hfp_subevent_extended_audio_gateway_error_get_error(event));
                             break;
                         case HFP_SUBEVENT_START_RINGING:
