@@ -1026,7 +1026,6 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
     UNUSED(size);   // ok: handling own l2cap events
 
     bd_addr_t event_addr;
-    uint16_t  psm;
     uint16_t l2cap_cid;
     hci_con_handle_t con_handle;
     rfcomm_multiplexer_t *multiplexer = NULL;
@@ -1038,10 +1037,9 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
         case L2CAP_EVENT_INCOMING_CONNECTION:
             l2cap_event_incoming_connection_get_address(packet, event_addr);
             con_handle = l2cap_event_incoming_connection_get_handle(packet);
-            psm        = l2cap_event_incoming_connection_get_psm(packet);
             l2cap_cid  = l2cap_event_incoming_connection_get_local_cid(packet);
 
-            if (psm != BLUETOOTH_PROTOCOL_RFCOMM) break;
+            btstack_assert(l2cap_event_incoming_connection_get_psm(packet) == BLUETOOTH_PROTOCOL_RFCOMM);
 
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             
@@ -1087,8 +1085,8 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
         // l2cap connection opened -> store l2cap_cid, remote_addr
         case L2CAP_EVENT_CHANNEL_OPENED: 
 
-            if (l2cap_event_channel_opened_get_psm(packet) != BLUETOOTH_PROTOCOL_RFCOMM) break;
-            
+            btstack_assert(l2cap_event_channel_opened_get_psm(packet) == BLUETOOTH_PROTOCOL_RFCOMM);
+
             status = l2cap_event_channel_opened_get_status(packet);
             log_info("channel opened, status %u", status);
             
@@ -1143,13 +1141,10 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
 
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
                 log_info("channel opened: outgoing connection");
-                // wrong remote addr
-                if (bd_addr_cmp(event_addr, multiplexer->remote_addr)) break;
                 multiplexer->l2cap_cid = l2cap_cid;
                 multiplexer->con_handle = con_handle;
                 // send SABM #0
                 rfcomm_multiplexer_set_state_and_request_can_send_now_event(multiplexer, RFCOMM_MULTIPLEXER_SEND_SABM_0);
-
             }
             return 1;
             
