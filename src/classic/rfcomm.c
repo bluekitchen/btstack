@@ -1099,7 +1099,10 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 log_error("channel opened but no multiplexer prepared");
                 return 1;
             }
-            
+
+            // set con handle for outgoing (already set for incoming)
+            multiplexer->con_handle = con_handle;
+
             // on l2cap open error discard everything
             if (status){
 
@@ -1134,7 +1137,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 return 1;
             }
             
-            // following could be: rfcom_multiplexer_state_machein(..., EVENT_L2CAP_OPENED)
+            // following could be: rfcomm_multiplexer_state_machine(..., EVENT_L2CAP_OPENED)
 
             // set max frame size based on l2cap MTU
             multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
@@ -1142,7 +1145,6 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
                 log_info("channel opened: outgoing connection");
                 multiplexer->l2cap_cid = l2cap_cid;
-                multiplexer->con_handle = con_handle;
                 // send SABM #0
                 rfcomm_multiplexer_set_state_and_request_can_send_now_event(multiplexer, RFCOMM_MULTIPLEXER_SEND_SABM_0);
             }
