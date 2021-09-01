@@ -1066,24 +1066,8 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
 }
 
 static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
-    int recv_flags;
-    if (IS_RESPONDER(sm_conn->sm_role)){
-        // slave / responder
-        recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres));
-    } else {
-        // master / initiator
-        recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
-    }
-
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-    // LTK (= encryption information & master identification) only used exchanged for LE Legacy Connection
-    if (setup->sm_use_secure_connections){
-        recv_flags &= ~(SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION | SM_KEYDIST_FLAG_MASTER_IDENTIFICATION);
-    }
-#endif
-
-    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);
-    return (setup->sm_key_distribution_received_set & recv_flags) == recv_flags;
+    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, bution_expected_set);
+    return (setup->sm_key_distribution_expected_set & setup->sm_key_distribution_received_set) == setup->sm_key_distribution_expected_set;
 }
 
 static void sm_done_for_handle(hci_con_handle_t con_handle){
