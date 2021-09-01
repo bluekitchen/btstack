@@ -1969,7 +1969,7 @@ static void h7_engine(sm_connection_t * sm_conn, const sm_key_t salt, const sm_k
 //   E6405 – Cross transport key derivation from a key of size less than 128 bits
 //   "Note: When the BR/EDR link key is being derived from the LTK, the derivation is done before the LTK gets masked."
 
-static void h6_calculate_ilk(sm_connection_t * sm_conn){
+static void h6_calculate_ilk_from_le_ltk(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_local_ltk, 0x746D7031);    // "tmp1"
 }
 
@@ -1977,7 +1977,7 @@ static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_t, 0x6c656272);    // "lebr"
 }
 
-static void h7_calculate_ilk(sm_connection_t * sm_conn){
+static void h7_calculate_ilk_from_le_ltk(sm_connection_t * sm_conn){
 	const uint8_t salt[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x74, 0x6D, 0x70, 0x31};  // "tmp1"
 	h7_engine(sm_conn, salt, setup->sm_local_ltk);
 }
@@ -2588,7 +2588,7 @@ static void sm_run(void){
             case SM_SC_W2_CALCULATE_ILK_USING_H6:
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
-                h6_calculate_ilk(connection);
+                h6_calculate_ilk_from_le_ltk(connection);
                 break;
             case SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY:
                 if (!sm_cmac_ready()) break;
@@ -2598,7 +2598,7 @@ static void sm_run(void){
 			case SM_SC_W2_CALCULATE_ILK_USING_H7:
 				if (!sm_cmac_ready()) break;
 				connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
-				h7_calculate_ilk(connection);
+                h7_calculate_ilk_from_le_ltk(connection);
 				break;
 #endif
 #endif
