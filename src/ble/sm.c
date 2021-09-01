@@ -308,6 +308,7 @@ typedef struct sm_setup_context {
     // defines which keys will be send after connection is encrypted - calculated during Phase 1, used Phase 3
     uint8_t   sm_key_distribution_send_set;
     uint8_t   sm_key_distribution_sent_set;
+    uint8_t   sm_key_distribution_expected_set;
     uint8_t   sm_key_distribution_received_set;
 
     // Phase 2 (Pairing over SMP)
@@ -911,9 +912,10 @@ static int sm_key_distribution_flags_for_set(uint8_t key_set){
     return flags;
 }
 
-static void sm_setup_key_distribution(uint8_t key_set){
+static void sm_setup_key_distribution(uint8_t keys_to_send, uint8_t keys_to_receive){
     setup->sm_key_distribution_received_set = 0;
-    setup->sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
+    setup->sm_key_distribution_expected_set = sm_key_distribution_flags_for_set(keys_to_receive);
+    setup->sm_key_distribution_send_set = sm_key_distribution_flags_for_set(keys_to_send);
     setup->sm_key_distribution_sent_set = 0;
 #ifdef ENABLE_LE_SIGNED_WRITE
     setup->sm_le_device_index = -1;
@@ -1074,7 +1076,7 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
     }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
+    // LTK (= encryption information & master identification) only used exchanged for LE Legacy Connection
     if (setup->sm_use_secure_connections){
         recv_flags &= ~(SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION | SM_KEYDIST_FLAG_MASTER_IDENTIFICATION);
     }
@@ -1214,15 +1216,18 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 static int sm_stk_generation_init(sm_connection_t * sm_conn){
 
     sm_pairing_packet_t * remote_packet;
-    int                   remote_key_request;
+    uint8_t               keys_to_send;
+    uint8_t               keys_to_receive;
     if (IS_RESPONDER(sm_conn->sm_role)){
         // slave / responder
-        remote_packet      = &setup->sm_m_preq;
-        remote_key_request = sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq);
+        remote_packet   = &setup->sm_m_preq;
+        keys_to_send    = sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq);
+        keys_to_receive = sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq);
     } else {
         // master / initiator
-        remote_packet      = &setup->sm_s_pres;
-        remote_key_request = sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres);
+        remote_packet   = &setup->sm_s_pres;
+        keys_to_send    = sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres);
+        keys_to_receive = sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres);
     }
 
     // check key size
@@ -1249,14 +1254,15 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
         return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
     }
 
-    // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
+    // LTK (= encryption information & master identification) only used exchanged for LE Legacy Connection
     if (setup->sm_use_secure_connections){
-        remote_key_request &= ~SM_KEYDIST_ENC_KEY;
+        keys_to_send &= ~SM_KEYDIST_ENC_KEY;
+        keys_to_receive  &= ~SM_KEYDIST_ENC_KEY;
     }
 #endif
 
     // identical to responder
-    sm_setup_key_distribution(remote_key_request);
+    sm_setup_key_distribution(keys_to_send, keys_to_receive);
 
     // JUST WORKS doens't provide authentication
     sm_conn->sm_connection_authenticated = (setup->sm_stk_generation_method == JUST_WORKS) ? 0 : 1;
@@ -2886,7 +2892,7 @@ static void sm_run(void){
                 sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
 
                 // update key distribution after ENC was dropped
-                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
+                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres), sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres));
 
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
