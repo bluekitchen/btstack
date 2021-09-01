@@ -1036,11 +1036,10 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             
         // accept incoming rfcomm connection if no multiplexer exists yet
         case L2CAP_EVENT_INCOMING_CONNECTION:
-            // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
-            reverse_bd_addr(&packet[2], event_addr);
-            con_handle = little_endian_read_16(packet,  8);
-            psm        = little_endian_read_16(packet, 10); 
-            l2cap_cid  = little_endian_read_16(packet, 12); 
+            l2cap_event_incoming_connection_get_address(packet, event_addr);
+            con_handle = l2cap_event_incoming_connection_get_handle(packet);
+            psm        = l2cap_event_incoming_connection_get_psm(packet);
+            l2cap_cid  = l2cap_event_incoming_connection_get_local_cid(packet);
 
             if (psm != BLUETOOTH_PROTOCOL_RFCOMM) break;
 
@@ -1088,15 +1087,15 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
         // l2cap connection opened -> store l2cap_cid, remote_addr
         case L2CAP_EVENT_CHANNEL_OPENED: 
 
-            if (little_endian_read_16(packet, 11) != BLUETOOTH_PROTOCOL_RFCOMM) break;
+            if (l2cap_event_channel_opened_get_psm(packet) != BLUETOOTH_PROTOCOL_RFCOMM) break;
             
-            status = packet[2];
+            status = l2cap_event_channel_opened_get_status(packet);
             log_info("channel opened, status %u", status);
             
             // get multiplexer for remote addr
-            con_handle = little_endian_read_16(packet, 9);
-            l2cap_cid = little_endian_read_16(packet, 13);
-            reverse_bd_addr(&packet[3], event_addr);
+            con_handle = l2cap_event_channel_opened_get_handle(packet);
+            l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+            l2cap_event_channel_opened_get_address(packet, event_addr);
             multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             if (!multiplexer) {
                 log_error("channel opened but no multiplexer prepared");
@@ -1163,8 +1162,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             return 1;
             
         case L2CAP_EVENT_CHANNEL_CLOSED:
-            // data: event (8), len(8), channel (16)
-            l2cap_cid = little_endian_read_16(packet, 2);
+            l2cap_cid = l2cap_event_channel_closed_get_local_cid(packet);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             log_info("channel closed cid 0x%0x, mult %p", l2cap_cid, multiplexer);
             if (!multiplexer) break;
