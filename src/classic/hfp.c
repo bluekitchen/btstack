@@ -1701,10 +1701,10 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     }
                     break;
                 case 3:
-                    hfp_connection->ag_msg.text_operation = (hfp_text_operation_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 4:
-                    hfp_connection->ag_msg.text_type = (hfp_text_type_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->ag_msg.text_operation = (hfp_text_operation_t) btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     break;
                 case 5:
                     hfp_connection->line_buffer[hfp_connection->line_size] = 0;
