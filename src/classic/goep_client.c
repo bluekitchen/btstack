@@ -301,7 +301,7 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
                     break;
 #ifdef ENABLE_GOEP_L2CAP
                 case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
-                    de_element_get_uint16(attribute_value, &context->l2cap_psm);
+                    de_element_get_uint16(goep_client_sdp_query_attribute_value, &context->l2cap_psm);
                     break;
 #endif
                 case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
