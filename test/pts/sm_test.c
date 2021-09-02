@@ -195,6 +195,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         // add bonded device with IRK 0x00112233..FF for gap-conn-prda-bv-2
                         uint8_t pts_irk[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
                         le_device_db_add(public_pts_address_type, public_pts_address, pts_irk);
+                        // delete link keys
+                        gap_delete_all_link_keys();
                         // ready
                         printf("SM Test ready\n");
                         show_usage();
@@ -373,11 +375,12 @@ static void show_usage(void){
     printf_row("1   - enable privacy using random non-resolvable private address");
     printf_row("2   - clear Peripheral Privacy Flag on PTS");
     printf_row("3   - set Peripheral Privacy Flag on PTS");
-    printf_row("9   - create HCI Classic connection to addr %s", bd_addr_to_str(public_pts_address));
+    printf_row("9   - create HCI Classic connection to PTS");
     printf_row("a   - enable Advertisements");
-    printf_row("b   - start bonding");
+    printf_row("b   - start bonding via LE");
+    printf_row("B   - start bonding via BR/EDR");
     printf_row("t   - terminate connection, stop connecting");
-    printf_row("P   - direct connect to PTS");
+    printf_row("p   - create HCI LE connection to PTS");
     printf_row("---");
     printf_row("---");
     printf_row("4   - IO_CAPABILITY_DISPLAY_ONLY");
@@ -482,6 +485,9 @@ static void ui_process_command(char buffer){
             break;
         case 'b':
             sm_request_pairing(handle);
+            break;
+        case 'B':
+            gap_request_security_level(handle, LEVEL_2);
             break;
         case 'c':
             gap_connectable = 0;
