@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: allow to register media codec validator for sink and source with:
   - `a2dp_sink_register_media_config_validator`
   - `a2dp_source_register_media_config_validator`
+- SM: Support Cross-Transport Key-Derivation (CTKD) of LE LTK from BR/EDR SC Link Key
 
 ### Fixed
 - A2DP Source: fix reconfigure

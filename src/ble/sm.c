@@ -1704,6 +1704,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_truncate_key(setup->sm_ltk, sm_conn->sm_actual_encryption_key_size);
             sm_conn->sm_connection_authenticated = setup->sm_link_key_type == AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
             sm_store_bonding_information(sm_conn);
+            sm_done_for_handle(sm_conn->sm_handle);
             break;
 #endif
         default:
@@ -2016,11 +2017,16 @@ static void h7_calculate_ilk_from_br_edr(sm_connection_t * sm_conn){
     h7_engine(sm_conn, salt, setup->sm_link_key);
 }
 
-static void ctkd_fetch_br_edr_link_key(sm_connection_t * sm_conn){
+static void sm_ctkd_fetch_br_edr_link_key(sm_connection_t * sm_conn){
     hci_connection_t * hci_connection = hci_connection_for_handle(sm_conn->sm_handle);
     btstack_assert(hci_connection != NULL);
     reverse_128(hci_connection->link_key, setup->sm_link_key);
     setup->sm_link_key_type =  hci_connection->link_key_type;
+}
+
+static void sm_ctkd_start_from_br_edr(sm_connection_t * connection){
+    bool use_h7 = (sm_pairing_packet_get_auth_req(setup->sm_m_preq) & sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_CT2) != 0;
+    connection->sm_engine_state = use_h7 ? SM_BR_EDR_W2_CALCULATE_ILK_USING_H7 : SM_BR_EDR_W2_CALCULATE_ILK_USING_H6;
 }
 
 #endif
@@ -2311,6 +2317,10 @@ static void sm_run_activate_connection(void){
 #ifdef ENABLE_LE_CENTRAL
             case SM_INITIATOR_PH4_HAS_LTK:
 			case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+#endif
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+            case SM_BR_EDR_RESPONDER_PAIRING_REQUEST_RECEIVED:
+            case SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST:
 #endif
 				// just lock context
 				break;
@@ -2625,39 +2635,6 @@ static void sm_run(void){
                 if (!sm_cmac_ready()) break;
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
-                break;
-#endif
-
-#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
-            case SM_SC_W2_CALCULATE_ILK_USING_H6:
-                if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
-                h6_calculate_ilk_from_le_ltk(connection);
-                break;
-            case SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY:
-                if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY;
-                h6_calculate_br_edr_link_key(connection);
-                break;
-			case SM_SC_W2_CALCULATE_ILK_USING_H7:
-				if (!sm_cmac_ready()) break;
-				connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
-                h7_calculate_ilk_from_le_ltk(connection);
-				break;
-            case SM_BR_EDR_W2_CALCULATE_ILK_USING_H6:
-                if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
-                h6_calculate_ilk_from_br_edr(connection);
-                break;
-            case SM_BR_EDR_W2_CALCULATE_LE_LTK:
-                if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_LE_LTK;
-                h6_calculate_le_ltk(connection);
-                break;
-            case SM_BR_EDR_W2_CALCULATE_ILK_USING_H7:
-                if (!sm_cmac_ready()) break;
-                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
-                h7_calculate_ilk_from_br_edr(connection);
                 break;
 #endif
 
@@ -3098,6 +3075,130 @@ static void sm_run(void){
                     sm_master_pairing_success(connection);
                 }
                 break;
+
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+            case SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST:
+                // fill in sm setup (lite version of sm_init_setup)
+                sm_reset_setup();
+                setup->sm_peer_addr_type = connection->sm_peer_addr_type;
+                setup->sm_m_addr_type = connection->sm_peer_addr_type;
+                setup->sm_s_addr_type = connection->sm_own_addr_type;
+                (void) memcpy(setup->sm_peer_address, connection->sm_peer_address, 6);
+                (void) memcpy(setup->sm_m_address, connection->sm_peer_address, 6);
+                (void) memcpy(setup->sm_s_address, connection->sm_own_address, 6);
+                setup->sm_use_secure_connections = true;
+                sm_ctkd_fetch_br_edr_link_key(connection);
+
+                // Enc Key and IRK if requested
+                key_distribution_flags = SM_KEYDIST_ID_KEY | SM_KEYDIST_ENC_KEY;
+#ifdef ENABLE_LE_SIGNED_WRITE
+                // Plus signing key if supported
+                key_distribution_flags |= SM_KEYDIST_ID_KEY;
+#endif
+                sm_pairing_packet_set_code(setup->sm_m_preq, SM_CODE_PAIRING_REQUEST);
+                sm_pairing_packet_set_io_capability(setup->sm_m_preq, 0);
+                sm_pairing_packet_set_oob_data_flag(setup->sm_m_preq, 0);
+                sm_pairing_packet_set_auth_req(setup->sm_m_preq, SM_AUTHREQ_CT2);
+                sm_pairing_packet_set_max_encryption_key_size(setup->sm_m_preq, sm_max_encryption_key_size);
+                sm_pairing_packet_set_initiator_key_distribution(setup->sm_m_preq, key_distribution_flags);
+                sm_pairing_packet_set_responder_key_distribution(setup->sm_m_preq, key_distribution_flags);
+
+                // set state and send pairing response
+                sm_timeout_start(connection);
+                connection->sm_engine_state = SM_BR_EDR_INITIATOR_W4_PAIRING_RESPONSE;
+                sm_send_connectionless(connection, (uint8_t *) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
+                break;
+
+            case SM_BR_EDR_RESPONDER_PAIRING_REQUEST_RECEIVED:
+                // fill in sm setup (lite version of sm_init_setup)
+                sm_reset_setup();
+                setup->sm_peer_addr_type = connection->sm_peer_addr_type;
+                setup->sm_m_addr_type = connection->sm_peer_addr_type;
+                setup->sm_s_addr_type = connection->sm_own_addr_type;
+                (void) memcpy(setup->sm_peer_address, connection->sm_peer_address, 6);
+                (void) memcpy(setup->sm_m_address, connection->sm_peer_address, 6);
+                (void) memcpy(setup->sm_s_address, connection->sm_own_address, 6);
+                setup->sm_use_secure_connections = true;
+                sm_ctkd_fetch_br_edr_link_key(connection);
+                (void) memcpy(&setup->sm_m_preq, &connection->sm_m_preq, sizeof(sm_pairing_packet_t));
+
+                // Enc Key and IRK if requested
+                key_distribution_flags = SM_KEYDIST_ID_KEY | SM_KEYDIST_ENC_KEY;
+#ifdef ENABLE_LE_SIGNED_WRITE
+                // Plus signing key if supported
+                key_distribution_flags |= SM_KEYDIST_ID_KEY;
+#endif
+                // drop flags not requested by initiator
+                key_distribution_flags &= sm_pairing_packet_get_initiator_key_distribution(connection->sm_m_preq);
+
+                // If Secure Connections pairing has been initiated over BR/EDR, the following fields of the SM Pairing Request PDU are reserved for future use:
+                // - the IO Capability field,
+                // - the OOB data flag field, and
+                // - all bits in the Auth Req field except the CT2 bit.
+                sm_pairing_packet_set_code(setup->sm_s_pres, SM_CODE_PAIRING_RESPONSE);
+                sm_pairing_packet_set_io_capability(setup->sm_s_pres, 0);
+                sm_pairing_packet_set_oob_data_flag(setup->sm_s_pres, 0);
+                sm_pairing_packet_set_auth_req(setup->sm_s_pres, SM_AUTHREQ_CT2);
+                sm_pairing_packet_set_max_encryption_key_size(setup->sm_s_pres, connection->sm_actual_encryption_key_size);
+                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, key_distribution_flags);
+                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, key_distribution_flags);
+
+                // configure key distribution, LTK is derived locally
+                key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
+                sm_setup_key_distribution(key_distribution_flags, key_distribution_flags);
+
+                // set state and send pairing response
+                sm_timeout_start(connection);
+                connection->sm_engine_state = SM_BR_EDR_DISTRIBUTE_KEYS;
+                sm_send_connectionless(connection, (uint8_t *) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
+                break;
+            case SM_BR_EDR_DISTRIBUTE_KEYS:
+                if (setup->sm_key_distribution_send_set != 0) {
+                    sm_run_distribute_keys(connection);
+                    return;
+                }
+                // keys are sent
+                if (IS_RESPONDER(connection->sm_role)) {
+                    // responder -> receive master keys if there are any
+                    if (!sm_key_distribution_all_received(connection)) {
+                        connection->sm_engine_state = SM_BR_EDR_RECEIVE_KEYS;
+                        break;
+                    }
+                }
+                // otherwise start CTKD right away (responder and no keys to receive / initiator)
+                sm_ctkd_start_from_br_edr(connection);
+                continue;
+            case SM_SC_W2_CALCULATE_ILK_USING_H6:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
+                h6_calculate_ilk_from_le_ltk(connection);
+                break;
+            case SM_SC_W2_CALCULATE_BR_EDR_LINK_KEY:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_BR_EDR_LINK_KEY;
+                h6_calculate_br_edr_link_key(connection);
+                break;
+            case SM_SC_W2_CALCULATE_ILK_USING_H7:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
+                h7_calculate_ilk_from_le_ltk(connection);
+                break;
+            case SM_BR_EDR_W2_CALCULATE_ILK_USING_H6:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
+                h6_calculate_ilk_from_br_edr(connection);
+                break;
+            case SM_BR_EDR_W2_CALCULATE_LE_LTK:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_LE_LTK;
+                h6_calculate_le_ltk(connection);
+                break;
+            case SM_BR_EDR_W2_CALCULATE_ILK_USING_H7:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
+                h7_calculate_ilk_from_br_edr(connection);
+                break;
+#endif
 
             default:
                 break;
@@ -3568,6 +3669,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         gap_random_address_set_mode(gap_random_adress_type);
 					}
 					break;
+					
 #ifdef ENABLE_CLASSIC
 			    case HCI_EVENT_CONNECTION_COMPLETE:
 			        // ignore if connection failed
@@ -3587,8 +3689,20 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			        sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_PUBLIC;
                     gap_local_bd_addr(sm_conn->sm_own_address);
                     sm_conn->sm_cid = L2CAP_CID_BR_EDR_SECURITY_MANAGER;
+                    sm_conn->sm_engine_state = SM_BR_EDR_W4_ENCRYPTION_COMPLETE;
 			        break;
 #endif
+
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+			    case HCI_EVENT_SIMPLE_PAIRING_COMPLETE:
+			        if (hci_event_simple_pairing_complete_get_status(packet) != ERROR_CODE_SUCCESS) break;
+                    hci_event_simple_pairing_complete_get_bd_addr(packet, addr);
+                    sm_conn = sm_get_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
+                    if (sm_conn == NULL) break;
+                    sm_conn->sm_pairing_requested = 1;
+			        break;
+#endif
+
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -3737,6 +3851,19 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 }
                             }
                             break;
+
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+                        case SM_BR_EDR_W4_ENCRYPTION_COMPLETE:
+                            if (sm_conn->sm_connection_encrypted != 2) break;
+                            // prepare for pairing request
+                            if (IS_RESPONDER(sm_conn->sm_role)){
+                                sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST;
+                            } else if (sm_conn->sm_pairing_requested){
+                                // only send LE pairing request after BR/EDR SSP
+                                sm_conn->sm_engine_state = SM_BR_EDR_INITIATOR_SEND_PAIRING_REQUEST;
+                            }
+                            break;
+#endif
                         default:
                             break;
                     }
@@ -3796,8 +3923,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_conn->sm_handle = 0;
                     break;
 
-				case HCI_EVENT_COMMAND_COMPLETE:
-                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
+                case HCI_EVENT_COMMAND_COMPLETE:
+                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
                         // set local addr for le device db
                         reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                         le_device_db_set_local_bd_addr(addr);
@@ -4396,6 +4523,95 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 }
             }
             break;
+
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+        case SM_BR_EDR_INITIATOR_W4_PAIRING_RESPONSE:
+            if (sm_pdu_code != SM_CODE_PAIRING_RESPONSE){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+            // store pairing response
+            (void)memcpy(&setup->sm_s_pres, packet, sizeof(sm_pairing_packet_t));
+
+            // validate encryption key size
+            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(setup->sm_s_pres));
+            // SC Only mandates 128 bit key size
+            if (sm_sc_only_mode && (sm_conn->sm_actual_encryption_key_size < 16)) {
+                sm_conn->sm_actual_encryption_key_size  = 0;
+            }
+            if (sm_conn->sm_actual_encryption_key_size == 0){
+                sm_pairing_error(sm_conn, SM_REASON_ENCRYPTION_KEY_SIZE);
+                break;
+            }
+
+            // prepare key exchange, LTK is derived locally
+            sm_setup_key_distribution(sm_pairing_packet_get_initiator_key_distribution(setup->sm_s_pres) & ~SM_KEYDIST_ENC_KEY,
+                                      sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres) & ~SM_KEYDIST_ENC_KEY);
+
+            // skip receive if there are none
+            if (sm_key_distribution_all_received(sm_conn)){
+                // distribute keys in run handles 'no keys to send'
+                sm_conn->sm_engine_state = SM_BR_EDR_DISTRIBUTE_KEYS;
+            } else {
+                sm_conn->sm_engine_state = SM_BR_EDR_RECEIVE_KEYS;
+            }
+            break;
+
+        case SM_BR_EDR_RESPONDER_W4_PAIRING_REQUEST:
+            if (sm_pdu_code != SM_CODE_PAIRING_REQUEST){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+            // store pairing request
+            (void)memcpy(&sm_conn->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
+            // validate encryption key size
+            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(sm_conn->sm_m_preq));
+            // SC Only mandates 128 bit key size
+            if (sm_sc_only_mode && (sm_conn->sm_actual_encryption_key_size < 16)) {
+                sm_conn->sm_actual_encryption_key_size  = 0;
+            }
+            if (sm_conn->sm_actual_encryption_key_size == 0){
+                sm_pairing_error(sm_conn, SM_REASON_ENCRYPTION_KEY_SIZE);
+                break;
+            }
+            // trigger response
+            sm_conn->sm_engine_state = SM_BR_EDR_RESPONDER_PAIRING_REQUEST_RECEIVED;
+            break;
+
+        case SM_BR_EDR_RECEIVE_KEYS:
+            switch(sm_pdu_code){
+                case SM_CODE_IDENTITY_INFORMATION:
+                    setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+                    reverse_128(&packet[1], setup->sm_peer_irk);
+                    break;
+                case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
+                    setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+                    setup->sm_peer_addr_type = packet[1];
+                    reverse_bd_addr(&packet[2], setup->sm_peer_address);
+                    break;
+                case SM_CODE_SIGNING_INFORMATION:
+                    setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+                    reverse_128(&packet[1], setup->sm_peer_csrk);
+                    break;
+                default:
+                    // Unexpected PDU
+                    log_info("Unexpected PDU %u in SM_PH3_RECEIVE_KEYS", packet[0]);
+                    break;
+            }
+
+            // all keys received
+            if (sm_key_distribution_all_received(sm_conn)){
+                if (IS_RESPONDER(sm_conn->sm_role)){
+                    // responder -> keys exchanged, derive LE LTK
+                    sm_ctkd_start_from_br_edr(sm_conn);
+                } else {
+                    // initiator -> send our keys if any
+                    sm_conn->sm_engine_state = SM_BR_EDR_DISTRIBUTE_KEYS;
+                }
+            }
+            break;
+#endif
+
         default:
             // Unexpected PDU
             log_info("Unexpected PDU %u in state %u", packet[0], sm_conn->sm_engine_state);
