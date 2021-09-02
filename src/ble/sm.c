@@ -387,6 +387,9 @@ static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * 
 static void sm_run(void);
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+static sm_connection_t * sm_get_connection_for_bd_addr_and_type(bd_addr_t address, bd_addr_type_t addr_type);
+#endif
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
 static void sm_handle_encryption_result_address_resolution(void *arg);
@@ -4507,6 +4510,14 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
     if (!hci_con) return NULL;
     return &hci_con->sm_connection;
 }
+
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+static sm_connection_t * sm_get_connection_for_bd_addr_and_type(bd_addr_t address, bd_addr_type_t addr_type){
+    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type(address, addr_type);
+    if (!hci_con) return NULL;
+    return &hci_con->sm_connection;
+}
+#endif
 
 // @deprecated: map onto sm_request_pairing
 void sm_send_security_request(hci_con_handle_t con_handle){
