@@ -3533,7 +3533,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 			        sm_connection_init(sm_conn,
                                        con_handle,
                                        (uint8_t) gap_get_role(con_handle),
-                                       hci_subevent_le_connection_complete_get_peer_address_type(packet),
+                                       BD_ADDR_TYPE_LE_PUBLIC,
                                        addr);
 			        // classic connection corresponds to public le address
 			        sm_conn->sm_own_addr_type = BD_ADDR_TYPE_LE_PUBLIC;
