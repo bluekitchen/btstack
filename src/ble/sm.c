@@ -1114,17 +1114,16 @@ static void sm_reset_setup(void){
     // fill in sm setup
     setup->sm_state_vars = 0;
     setup->sm_keypress_notification = 0;
+    setup->sm_have_oob_data = 0;
     sm_reset_tk();
 }
 
 static void sm_init_setup(sm_connection_t * sm_conn){
-
     // fill in sm setup
     setup->sm_peer_addr_type = sm_conn->sm_peer_addr_type;
     (void)memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
 
     // query client for Legacy Pairing OOB data
-    setup->sm_have_oob_data = 0;
     if (sm_get_oob_data != NULL) {
         setup->sm_have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, setup->sm_tk);
     }
@@ -1170,18 +1169,18 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         (void)memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
         (void)memcpy(setup->sm_m_address, sm_conn->sm_own_address, 6);
 
-        int key_distribution_flags = sm_key_distribution_flags_for_auth_req();
+        uint8_t key_distribution_flags = sm_key_distribution_flags_for_auth_req();
         sm_pairing_packet_set_initiator_key_distribution(setup->sm_m_preq, key_distribution_flags);
         sm_pairing_packet_set_responder_key_distribution(setup->sm_m_preq, key_distribution_flags);
     }
 
     uint8_t auth_req = sm_auth_req & ~SM_AUTHREQ_CT2;
-    uint8_t max_encryptinon_key_size = sm_max_encryption_key_size;
+    uint8_t max_encryption_key_size = sm_max_encryption_key_size;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     // enable SC for SC only mode
     if (sm_sc_only_mode){
         auth_req |= SM_AUTHREQ_SECURE_CONNECTION;
-        max_encryptinon_key_size = 16;
+        max_encryption_key_size = 16;
     }
 #endif
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
@@ -1194,7 +1193,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
     sm_pairing_packet_set_oob_data_flag(*local_packet, setup->sm_have_oob_data);
     sm_pairing_packet_set_auth_req(*local_packet, auth_req);
-    sm_pairing_packet_set_max_encryption_key_size(*local_packet, max_encryptinon_key_size);
+    sm_pairing_packet_set_max_encryption_key_size(*local_packet, max_encryption_key_size);
 }
 
 static int sm_stk_generation_init(sm_connection_t * sm_conn){
