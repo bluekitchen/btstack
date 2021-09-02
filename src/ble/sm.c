@@ -370,6 +370,10 @@ typedef struct sm_setup_context {
 #ifdef ENABLE_LE_SIGNED_WRITE
     int       sm_le_device_index;
 #endif
+#ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
+    link_key_t sm_link_key;
+    link_key_type_t sm_link_key_type;
+#endif
 } sm_setup_context_t;
 
 //
@@ -1689,6 +1693,18 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_pairing_complete(sm_conn, ERROR_CODE_SUCCESS, 0);
             sm_done_for_handle(sm_conn->sm_handle);
             break;
+        case SM_BR_EDR_W4_CALCULATE_ILK:
+            (void)memcpy(setup->sm_t, hash, 16);
+            sm_conn->sm_engine_state = SM_BR_EDR_W2_CALCULATE_LE_LTK;
+            break;
+        case SM_BR_EDR_W4_CALCULATE_LE_LTK:
+            log_info("Derived LE LTK from BR/EDR Link Key");
+            log_info_key("Link Key", hash);
+            (void)memcpy(setup->sm_ltk, hash, 16);
+            sm_truncate_key(setup->sm_ltk, sm_conn->sm_actual_encryption_key_size);
+            sm_conn->sm_connection_authenticated = setup->sm_link_key_type == AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
+            sm_store_bonding_information(sm_conn);
+            break;
 #endif
         default:
             log_error("sm_sc_cmac_done in state %u", sm_conn->sm_engine_state);
@@ -1978,14 +1994,35 @@ static void h6_calculate_ilk_from_le_ltk(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_local_ltk, 0x746D7031);    // "tmp1"
 }
 
+static void h6_calculate_ilk_from_br_edr(sm_connection_t * sm_conn){
+    h6_engine(sm_conn, setup->sm_link_key, 0x746D7032);    // "tmp2"
+}
+
 static void h6_calculate_br_edr_link_key(sm_connection_t * sm_conn){
     h6_engine(sm_conn, setup->sm_t, 0x6c656272);    // "lebr"
+}
+
+static void h6_calculate_le_ltk(sm_connection_t * sm_conn){
+    h6_engine(sm_conn, setup->sm_t, 0x62726C65);    // "brle"
 }
 
 static void h7_calculate_ilk_from_le_ltk(sm_connection_t * sm_conn){
 	const uint8_t salt[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x74, 0x6D, 0x70, 0x31};  // "tmp1"
 	h7_engine(sm_conn, salt, setup->sm_local_ltk);
 }
+
+static void h7_calculate_ilk_from_br_edr(sm_connection_t * sm_conn){
+    const uint8_t salt[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00, 0x74, 0x6D, 0x70, 0x32};  // "tmp2"
+    h7_engine(sm_conn, salt, setup->sm_link_key);
+}
+
+static void ctkd_fetch_br_edr_link_key(sm_connection_t * sm_conn){
+    hci_connection_t * hci_connection = hci_connection_for_handle(sm_conn->sm_handle);
+    btstack_assert(hci_connection != NULL);
+    reverse_128(hci_connection->link_key, setup->sm_link_key);
+    setup->sm_link_key_type =  hci_connection->link_key_type;
+}
+
 #endif
 
 #endif
@@ -2589,6 +2626,8 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_SC_W4_CALCULATE_G2;
                 g2_calculate(connection);
                 break;
+#endif
+
 #ifdef ENABLE_CROSS_TRANSPORT_KEY_DERIVATION
             case SM_SC_W2_CALCULATE_ILK_USING_H6:
                 if (!sm_cmac_ready()) break;
@@ -2605,7 +2644,21 @@ static void sm_run(void){
 				connection->sm_engine_state = SM_SC_W4_CALCULATE_ILK;
                 h7_calculate_ilk_from_le_ltk(connection);
 				break;
-#endif
+            case SM_BR_EDR_W2_CALCULATE_ILK_USING_H6:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
+                h6_calculate_ilk_from_br_edr(connection);
+                break;
+            case SM_BR_EDR_W2_CALCULATE_LE_LTK:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_LE_LTK;
+                h6_calculate_le_ltk(connection);
+                break;
+            case SM_BR_EDR_W2_CALCULATE_ILK_USING_H7:
+                if (!sm_cmac_ready()) break;
+                connection->sm_engine_state = SM_BR_EDR_W4_CALCULATE_ILK;
+                h7_calculate_ilk_from_br_edr(connection);
+                break;
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
