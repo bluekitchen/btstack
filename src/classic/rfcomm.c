@@ -308,11 +308,11 @@ static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t li
 
 static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
     // notify client about new settings
-    uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
+    uint8_t event[2+2+sizeof(rfcomm_rpn_data_t)];
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
     event[1] = sizeof(rfcomm_rpn_data_t);
-    (void)memcpy(&event[2], (uint8_t *)&channel->rpn_data,
-                 sizeof(rfcomm_rpn_data_t));
+    little_endian_store_16(event, 2, channel->rfcomm_cid);
+    (void)memcpy(&event[4], (uint8_t *)&channel->rpn_data, sizeof(rfcomm_rpn_data_t));
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
