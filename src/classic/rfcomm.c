@@ -360,14 +360,9 @@ static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, rfcomm_rpn_data_t *
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_XOFF_CHAR){
         dest->xoff = src->xoff;
     }
-    int i;
-    for (i=0; i < 6 ; i++){
-        uint8_t mask = 1 << i;
-        if (src->parameter_mask_1 & mask){
-            dest->flags = (dest->flags & ~mask) | (src->flags & mask); 
-        }
-    }
-    // always copy parameter mask, too. informative for client, needed for response
+    uint8_t mask = src->parameter_mask_1 & 0x3f;
+    dest->flow_control = (dest->flow_control & ~mask) | (src->flow_control & mask);
+   // always copy parameter mask, too. informative for client, needed for response
     dest->parameter_mask_0 = src->parameter_mask_0;
     dest->parameter_mask_1 = src->parameter_mask_1;
 }
