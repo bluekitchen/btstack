@@ -951,11 +951,17 @@ typedef uint8_t sm_key_t[16];
  */
 #define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87
 
- /**
-  * TODO: format for variable data 2?
-  * param rfcomm_cid
-  * param rpn_data
-  */
+/**
+ * note: port configuration not parsed by stack, getters provided by rfcomm.h
+ * param rfcomm_cid
+ * param baud_rate
+ * param data_bits
+ * param stop_bits
+ * param parity
+ * param flow_control
+ * param xon
+ * param xoff
+ */
 #define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
 
 /**

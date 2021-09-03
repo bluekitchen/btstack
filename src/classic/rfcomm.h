@@ -432,6 +432,85 @@ void      rfcomm_release_packet_buffer(void);
  */
 void rfcomm_enable_l2cap_ertm(void request_callback(rfcomm_ertm_request_t * request), void released_callback(uint16_t ertm_id));
 
+
+// Event getters for RFCOMM_EVENT_PORT_CONFIGURATION
+
+/**
+ * @brief Get field rfcomm_cid from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return rfcomm_cid
+ */
+static inline uint16_t rfcomm_event_port_configuration_get_rfcomm_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
+ * @brief Get field baud_rate from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return baud_rate
+ */
+
+static inline rpn_baud_t rfcomm_event_port_configuration_get_baud_rate(const uint8_t * event){
+    return (rpn_baud_t) event[4];
+}
+
+/**
+ * @brief Get field data_bits from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return data_bits
+ */
+
+static inline rpn_data_bits_t rfcomm_event_port_configuration_get_data_bits(const uint8_t * event){
+    return (rpn_data_bits_t) (event[5] & 3);
+}
+/**
+ * @brief Get field stop_bits from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return stop_bits
+ * @note: btstack_type 1
+ */
+static inline rpn_stop_bits_t rfcomm_event_port_configuration_get_stop_bits(const uint8_t * event){
+    return (rpn_stop_bits_t) ((event[5] >> 2) & 1);
+}
+
+/**
+ * @brief Get field parity from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return parity
+ * @note: btstack_type 1
+ */
+static inline rpn_parity_t rfcomm_event_port_configuration_get_parity(const uint8_t * event){
+    return (rpn_parity_t) ((event[5] >> 3) & 7);
+}
+
+/**
+ * @brief Get field flow_control from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return flow_control
+ */
+
+static inline uint8_t rfcomm_event_port_configuration_get_flow_control(const uint8_t * event){
+    return event[6] & 0x3f;
+}
+
+/**
+ * @brief Get field xon from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return xon
+ */
+static inline uint8_t rfcomm_event_port_configuration_get_xon(const uint8_t * event){
+    return event[7];
+}
+
+/**
+ * @brief Get field xoff from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return xoff
+ */
+static inline uint8_t rfcomm_event_port_configuration_get_xoff(const uint8_t * event){
+    return event[8];
+}
+
 /**
  * @brief De-Init RFCOMM
  */
