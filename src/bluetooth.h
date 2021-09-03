@@ -519,14 +519,12 @@ typedef enum rpn_parity {
     RPN_PARITY_SPACE = 7, 
 } rpn_parity_t;
 
-typedef enum rpn_flow_control {
-    RPN_FLOW_CONTROL_XONXOFF_ON_INPUT  = 1 << 0,
-    RPN_FLOW_CONTROL_XONXOFF_ON_OUTPUT = 1 << 1,
-    RPN_FLOW_CONTROL_RTR_ON_INPUT  = 1 << 2,
-    RPN_FLOW_CONTROL_RTR_ON_OUTPUT = 1 << 3,
-    RPN_FLOW_CONTROL_RTC_ON_INPUT  = 1 << 4,
-    RPN_FLOW_CONTROL_RTC_ON_OUTPUT = 1 << 5,
-} rpn_flow_control_t;
+#define RPN_FLOW_CONTROL_XONXOFF_ON_INPUT  0x01
+#define RPN_FLOW_CONTROL_XONXOFF_ON_OUTPUT 0x02
+#define RPN_FLOW_CONTROL_RTR_ON_INPUT      0x04
+#define RPN_FLOW_CONTROL_RTR_ON_OUTPUT     0x08
+#define RPN_FLOW_CONTROL_RTC_ON_INPUT      0x10
+#define RPN_FLOW_CONTROL_RTC_ON_OUTPUT     0x20
 
 #define RPN_PARAM_MASK_0_BAUD             0x01
 #define RPN_PARAM_MASK_0_DATA_BITS        0x02
