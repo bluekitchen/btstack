@@ -352,7 +352,7 @@ static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, rfcomm_rpn_data_t *
         dest->flags = (dest->flags & 0xf7) | (src->flags & 0x08);
     }
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_PARITY_TYPE){
-        dest->flags = (dest->flags & 0xfc) | (src->flags & 0x30);
+        dest->flags = (dest->flags & 0xcf) | (src->flags & 0x30);
     }
     if (src->parameter_mask_0 & RPN_PARAM_MASK_0_XON_CHAR){
         dest->xon = src->xon;
