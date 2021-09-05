@@ -237,8 +237,11 @@ typedef struct {
     uint16_t max_frame_size;
 	
     // local rpn data
-    rfcomm_rpn_data_t rpn_data;
+    rfcomm_rpn_data_t local_rpn_data;
     
+    // remote rpn data
+    rfcomm_rpn_data_t remote_rpn_data;
+
     // rls line status. RFCOMM_RLS_STATUS_INVALID if not set
     uint8_t rls_line_status;
 

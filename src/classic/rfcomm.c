@@ -306,14 +306,19 @@ static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t li
     (channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel, bool remote){
+static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel, bool remote) {
     // notify client about new settings
     uint8_t event[2+2+1+sizeof(rfcomm_rpn_data_t)];
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->rfcomm_cid);
-    event[4] = remote ? 1 : 0;
-    (void)memcpy(&event[5], (uint8_t *)&channel->rpn_data, sizeof(rfcomm_rpn_data_t));
+    if (remote){
+        event[4] = 1;
+        (void)memcpy(&event[5], (uint8_t *) &channel->remote_rpn_data, sizeof(rfcomm_rpn_data_t));
+    } else {
+        event[4] = 0;
+        (void)memcpy(&event[5], (uint8_t *) &channel->local_rpn_data, sizeof(rfcomm_rpn_data_t));
+    }
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
@@ -454,7 +459,8 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
                                rfcomm_service_t *service, uint8_t server_channel){
     
     // set defaults for port configuration (even for services)
-    rfcomm_rpn_data_set_defaults(&channel->rpn_data);
+    rfcomm_rpn_data_set_defaults(&channel->local_rpn_data);
+    rfcomm_rpn_data_set_defaults(&channel->remote_rpn_data);
 
     channel->state            = RFCOMM_CHANNEL_CLOSED;
     channel->state_var        = RFCOMM_CHANNEL_STATE_VAR_NONE;
@@ -1870,7 +1876,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     if (event->type == CH_EVT_RCVD_RPN_CMD){
         // control port parameters
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
-        rfcomm_rpn_data_update(&channel->rpn_data, &event_rpn->data);
+        rfcomm_rpn_data_update(&channel->local_rpn_data, &event_rpn->data);
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         // notify client about new settings
         rfcomm_emit_port_configuration(channel, false);
@@ -1880,8 +1886,8 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         // no values got accepted (no values have beens sent)
-        channel->rpn_data.parameter_mask_0 = 0x00;
-        channel->rpn_data.parameter_mask_1 = 0x00;
+        channel->local_rpn_data.parameter_mask_0 = 0x00;
+        channel->local_rpn_data.parameter_mask_1 = 0x00;
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         return;
     }
@@ -1899,7 +1905,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP){
             log_info("Sending Remote Port Negotiation RSP for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
-            rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &channel->rpn_data);
+            rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &channel->local_rpn_data);
             return;
         }
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP){
@@ -2381,15 +2387,18 @@ int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rp
     if (!channel){
         return 0;
     }
-    rfcomm_rpn_data_t rpn_data; 
-    rpn_data.baud_rate = baud_rate;
-    rpn_data.flags = data_bits | (stop_bits << 2) | (parity << 3);
-    rpn_data.flow_control = flow_control;
-    rpn_data.xon = 0;
-    rpn_data.xoff = 0;
-    rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
-    rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
-    return rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &rpn_data);
+    channel->remote_rpn_data.baud_rate = baud_rate;
+    channel->remote_rpn_data.flags = data_bits | (stop_bits << 2) | (parity << 3);
+    channel->remote_rpn_data.flow_control = flow_control;
+    channel->remote_rpn_data.xon = 0;
+    channel->remote_rpn_data.xoff = 0;
+    channel->remote_rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
+    channel->remote_rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
+
+    // TODO: set flag
+    // TODO: call port run
+
+    return rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &channel->remote_rpn_data);
 }
 
 // Query remote port 
