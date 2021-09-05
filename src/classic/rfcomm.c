@@ -1773,7 +1773,7 @@ static int rfcomm_channel_ready_for_incoming_dlc_setup(rfcomm_channel_t * channe
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_UA        ) != 0) return 0;
     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP    ) != 0) return 0;
     return 1;
-}            
+}
 
 inline static void rfcomm_channel_state_add(rfcomm_channel_t *channel, uint32_t flag){
     channel->state_var |= flag;
@@ -1821,6 +1821,7 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
     
     if (channel->state_var & (
         RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP   |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA |
         RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO |
         RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP  |
         RFCOMM_CHANNEL_STATE_VAR_SEND_UA       |
@@ -1840,8 +1841,6 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
 
 
 static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event, int * out_channel_valid){
-    
-    // log_info("rfcomm_channel_state_machine_with_channel: state %u, state_var %04x, event %u", channel->state, channel->state_var ,event->type);
 
     // channel != NULL -> channel valid
     *out_channel_valid = 1;
@@ -1902,6 +1901,12 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
 
     // TODO: integrate in common switch
     if (event->type == CH_EVT_READY_TO_SEND){
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA){
+            log_info("Sending Remote Port Configuration RSP for #%u", channel->dlci);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA);
+            rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &channel->remote_rpn_data);
+            return;
+        }
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP){
             log_info("Sending Remote Port Negotiation RSP for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
@@ -2382,11 +2387,13 @@ int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
 }
 
 // Configure remote port 
-int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, uint8_t flow_control){
+uint8_t rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, uint8_t flow_control){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+
+    // store remote config
     channel->remote_rpn_data.baud_rate = baud_rate;
     channel->remote_rpn_data.flags = data_bits | (stop_bits << 2) | (parity << 3);
     channel->remote_rpn_data.flow_control = flow_control;
@@ -2395,10 +2402,10 @@ int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rp
     channel->remote_rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
     channel->remote_rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
 
-    // TODO: set flag
-    // TODO: call port run
-
-    return rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &channel->remote_rpn_data);
+    // trigger send
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA);
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 // Query remote port 
