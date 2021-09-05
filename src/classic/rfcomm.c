@@ -306,13 +306,14 @@ static void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t li
     (channel->packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
+static void rfcomm_emit_port_configuration(rfcomm_channel_t *channel, bool remote){
     // notify client about new settings
-    uint8_t event[2+2+sizeof(rfcomm_rpn_data_t)];
+    uint8_t event[2+2+1+sizeof(rfcomm_rpn_data_t)];
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
-    event[1] = sizeof(rfcomm_rpn_data_t);
+    event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, channel->rfcomm_cid);
-    (void)memcpy(&event[4], (uint8_t *)&channel->rpn_data, sizeof(rfcomm_rpn_data_t));
+    event[4] = remote ? 1 : 0;
+    (void)memcpy(&event[5], (uint8_t *)&channel->rpn_data, sizeof(rfcomm_rpn_data_t));
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (channel->packet_handler)(HCI_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
 }
@@ -1395,7 +1396,7 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     
     rfChannel->state = RFCOMM_CHANNEL_OPEN;
     rfcomm_emit_channel_opened(rfChannel, 0);
-    rfcomm_emit_port_configuration(rfChannel);
+    rfcomm_emit_port_configuration(rfChannel, false);
 
     // remove (potential) timer
     rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
@@ -1872,7 +1873,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         rfcomm_rpn_data_update(&channel->rpn_data, &event_rpn->data);
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         // notify client about new settings
-        rfcomm_emit_port_configuration(channel);
+        rfcomm_emit_port_configuration(channel, false);
         return;
     }
 

@@ -954,6 +954,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * note: port configuration not parsed by stack, getters provided by rfcomm.h
  * param rfcomm_cid
+ * param remote - 0 for local port, 1 for remote port
  * param baud_rate
  * param data_bits
  * param stop_bits

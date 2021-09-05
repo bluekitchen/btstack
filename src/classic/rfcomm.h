@@ -445,13 +445,22 @@ static inline uint16_t rfcomm_event_port_configuration_get_rfcomm_cid(const uint
 }
 
 /**
+ * @brief Get field local from event RFCOMM_EVENT_PORT_CONFIGURATION
+ * @param event packet
+ * @return remote - false for local port, true for remote port
+ */
+static inline bool rfcomm_event_port_configuration_get_remote(const uint8_t * event){
+    return event[4] != 0;
+}
+
+/**
  * @brief Get field baud_rate from event RFCOMM_EVENT_PORT_CONFIGURATION
  * @param event packet
  * @return baud_rate
  */
 
 static inline rpn_baud_t rfcomm_event_port_configuration_get_baud_rate(const uint8_t * event){
-    return (rpn_baud_t) event[4];
+    return (rpn_baud_t) event[5];
 }
 
 /**
@@ -461,26 +470,24 @@ static inline rpn_baud_t rfcomm_event_port_configuration_get_baud_rate(const uin
  */
 
 static inline rpn_data_bits_t rfcomm_event_port_configuration_get_data_bits(const uint8_t * event){
-    return (rpn_data_bits_t) (event[5] & 3);
+    return (rpn_data_bits_t) (event[6] & 3);
 }
 /**
  * @brief Get field stop_bits from event RFCOMM_EVENT_PORT_CONFIGURATION
  * @param event packet
  * @return stop_bits
- * @note: btstack_type 1
  */
 static inline rpn_stop_bits_t rfcomm_event_port_configuration_get_stop_bits(const uint8_t * event){
-    return (rpn_stop_bits_t) ((event[5] >> 2) & 1);
+    return (rpn_stop_bits_t) ((event[6] >> 2) & 1);
 }
 
 /**
  * @brief Get field parity from event RFCOMM_EVENT_PORT_CONFIGURATION
  * @param event packet
  * @return parity
- * @note: btstack_type 1
  */
 static inline rpn_parity_t rfcomm_event_port_configuration_get_parity(const uint8_t * event){
-    return (rpn_parity_t) ((event[5] >> 3) & 7);
+    return (rpn_parity_t) ((event[6] >> 3) & 7);
 }
 
 /**
@@ -490,7 +497,7 @@ static inline rpn_parity_t rfcomm_event_port_configuration_get_parity(const uint
  */
 
 static inline uint8_t rfcomm_event_port_configuration_get_flow_control(const uint8_t * event){
-    return event[6] & 0x3f;
+    return event[7] & 0x3f;
 }
 
 /**
@@ -499,7 +506,7 @@ static inline uint8_t rfcomm_event_port_configuration_get_flow_control(const uin
  * @return xon
  */
 static inline uint8_t rfcomm_event_port_configuration_get_xon(const uint8_t * event){
-    return event[7];
+    return event[8];
 }
 
 /**
@@ -508,7 +515,7 @@ static inline uint8_t rfcomm_event_port_configuration_get_xon(const uint8_t * ev
  * @return xoff
  */
 static inline uint8_t rfcomm_event_port_configuration_get_xoff(const uint8_t * event){
-    return event[8];
+    return event[9];
 }
 
 /**
