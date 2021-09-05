@@ -1775,11 +1775,11 @@ static int rfcomm_channel_ready_for_incoming_dlc_setup(rfcomm_channel_t * channe
     return 1;
 }            
 
-inline static void rfcomm_channel_state_add(rfcomm_channel_t *channel, RFCOMM_CHANNEL_STATE_VAR event){
-    channel->state_var = (RFCOMM_CHANNEL_STATE_VAR) (channel->state_var | event);    
+inline static void rfcomm_channel_state_add(rfcomm_channel_t *channel, uint32_t flag){
+    channel->state_var |= flag;
 }
-inline static void rfcomm_channel_state_remove(rfcomm_channel_t *channel, RFCOMM_CHANNEL_STATE_VAR event){
-    channel->state_var = (RFCOMM_CHANNEL_STATE_VAR) (channel->state_var & ~event);    
+inline static void rfcomm_channel_state_remove(rfcomm_channel_t *channel, uint32_t flag){
+    channel->state_var &= ~flag;
 }
 
 static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
