@@ -309,9 +309,10 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t
 uint8_t rfcomm_create_channel_with_initial_credits(btstack_packet_handler_t packet_handler, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits, uint16_t * out_cid);
 
 /** 
- * @brief Disconnects RFCOMM channel with given identifier. 
+ * @brief Disconnects RFCOMM channel with given identifier.
+ * @return status
  */
-void rfcomm_disconnect(uint16_t rfcomm_cid);
+uint8_t rfcomm_disconnect(uint16_t rfcomm_cid);
 
 /** 
  * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler.
@@ -341,33 +342,37 @@ void rfcomm_unregister_service(uint8_t service_channel);
 
 /** 
  * @brief Accepts incoming RFCOMM connection.
+ * @return status
  */
-void rfcomm_accept_connection(uint16_t rfcomm_cid);
+uint8_t rfcomm_accept_connection(uint16_t rfcomm_cid);
 
 /** 
  * @brief Deny incoming RFCOMM connection.
+ * @return status
  */
-void rfcomm_decline_connection(uint16_t rfcomm_cid);
+uint8_t rfcomm_decline_connection(uint16_t rfcomm_cid);
 
 /** 
  * @brief Grant more incoming credits to the remote side for the given RFCOMM channel identifier.
+ * @return status
  */
-void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
+uint8_t rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
 /** 
  * @brief Checks if RFCOMM can send packet. 
  * @param rfcomm_cid
- * @result != 0 if can send now
+ * @result true if can send now
  */
-int rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
+bool rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
 
 /** 
  * @brief Request emission of RFCOMM_EVENT_CAN_SEND_NOW as soon as possible
  * @note RFCOMM_EVENT_CAN_SEND_NOW might be emitted during call to this function
  *       so packet handler should be ready to handle it
  * @param rfcomm_cid
+ * @prarm status
  */
-void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
+uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
 
 /** 
  * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
@@ -427,10 +432,27 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
  *     rfcomm_send_prepared(cid, len)
  * }
  */
-int       rfcomm_reserve_packet_buffer(void);
+int rfcomm_reserve_packet_buffer(void);
+
+/**
+ * @brief Get outgoing buffer
+ * @return pointer to outgoing rfcomm buffer
+ */
 uint8_t * rfcomm_get_outgoing_buffer(void);
-int       rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
-void      rfcomm_release_packet_buffer(void);
+
+/**
+ * @brief Send packet prepared in outgoing buffer
+ * @note This releases the outgoing rfcomm buffer
+ * @param rfcomm_cid
+ * @param len
+ * @return status
+ */
+int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
+
+/**
+ * @brief Release outgoing buffer in case rfcomm_send_prepared was not called
+*/
+void rfcomm_release_packet_buffer(void);
 
 /**
  * @brief Enable L2CAP ERTM mode for RFCOMM. request callback is used to provide ERTM buffer. released callback returns buffer
