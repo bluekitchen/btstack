@@ -476,7 +476,9 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->new_credits_incoming  = RFCOMM_CREDITS;
     channel->incoming_flow_control = 0;
 
-    channel->rls_line_status       = RFCOMM_RLS_STATUS_INVALID;
+    // nothing to send
+    channel->local_line_status  = RFCOMM_RLS_STATUS_INVALID;
+    channel->remote_line_status = RFCOMM_RLS_STATUS_INVALID;
 
     channel->service = service;
 	if (service) {
@@ -1831,7 +1833,12 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
         return 1;
     }
     
-    if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID) {
+    if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID) {
+        log_debug("ch-ready: rls_line_status");
+        return 1;
+    }
+
+    if (channel->remote_line_status != RFCOMM_RLS_STATUS_INVALID) {
         log_debug("ch-ready: rls_line_status");
         return 1;
     }
@@ -1893,9 +1900,9 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     
     if (event->type == CH_EVT_RCVD_RLS_CMD){ 
         rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
-        channel->rls_line_status = event_rls->line_status & 0x0f;
-        log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
-        rfcomm_emit_remote_line_status(channel, event_rls->line_status);
+        channel->remote_line_status = event_rls->line_status & 0x0f;
+        log_info("CH_EVT_RCVD_RLS_CMD remote line status 0x%0x", channel->remote_line_status);
+        rfcomm_emit_remote_line_status(channel, channel->remote_line_status);
         return;
     }
 
@@ -1920,10 +1927,17 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
             rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
             return;
         }
-        if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID){
-            log_info("Sending RLS RSP 0x%0x", channel->rls_line_status);
-            uint8_t line_status = channel->rls_line_status;
-            channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
+        if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID){
+            log_info("Sending RLS CMD 0x%0x", channel->local_line_status);
+            uint8_t line_status = channel->local_line_status;
+            channel->local_line_status = RFCOMM_RLS_STATUS_INVALID;
+            rfcomm_send_uih_rls_cmd(multiplexer, channel->dlci, line_status);
+            return;
+        }
+        if (channel->remote_line_status != RFCOMM_RLS_STATUS_INVALID){
+            log_info("Sending RLS RSP 0x%0x", channel->remote_line_status);
+            uint8_t line_status = channel->remote_line_status;
+            channel->remote_line_status = RFCOMM_RLS_STATUS_INVALID;
             rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, line_status);
             return;
         }
@@ -2368,13 +2382,14 @@ int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     return err;
 }
 
-// Sends Local Lnie Status, see LINE_STATUS_..
-int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status){
+// Sends Local Line Status, see LINE_STATUS_..
+uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel){
-        return 0;
-    }
-    return rfcomm_send_uih_rls_cmd(channel->multiplexer, channel->dlci, line_status);
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID) return ERROR_CODE_COMMAND_DISALLOWED;
+    channel->local_line_status = line_status;
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 // Sned local modem status. see MODEM_STAUS_..

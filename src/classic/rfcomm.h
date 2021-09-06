@@ -239,8 +239,13 @@ typedef struct {
     // remote rpn data
     rfcomm_rpn_data_t remote_rpn_data;
 
-    // rls line status. RFCOMM_RLS_STATUS_INVALID if not set
-    uint8_t rls_line_status;
+    // local line status. RFCOMM_RLS_STATUS_INVALID if not set
+    // buffers local status for RLS CMD
+    uint8_t local_line_status;
+
+    // remote line status. RFCOMM_RLS_STATUS_INVALID if not set
+    // send RLS RSP with status from the RLS CMD
+    uint8_t remote_line_status;
 
     // msc modem status.
     uint8_t msc_modem_status;
@@ -371,8 +376,9 @@ int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
  * @brief Sends Local Line Status, see LINE_STATUS_..
  * @param rfcomm_cid
  * @param line_status
+ * @return status
  */
-int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
+uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
 
 /** 
  * @brief Send local modem status. see MODEM_STAUS_..
