@@ -264,7 +264,7 @@ static int l2cap_next_ertm_seq_nr(int seq_nr){
     return (seq_nr + 1) & 0x3f;
 }
 
-static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
+static bool l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
     // get num free tx buffers
     int num_free_tx_buffers = channel->num_tx_buffers - channel->num_stored_tx_frames;
     // calculate num tx buffers for remote MTU
@@ -956,7 +956,7 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
     l2cap_notify_channel_can_send();
 }
 
-int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id){
+bool l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id){
     UNUSED(channel_id); // ok: only depends on Controller LE buffers
 
     return hci_can_send_acl_packet_now(con_handle);
@@ -1169,9 +1169,9 @@ void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_notify_channel_can_send();
 }
 
-int  l2cap_can_send_packet_now(uint16_t local_cid){
+bool l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) return 0;
+    if (!channel) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
         return l2cap_ertm_can_store_packet_now(channel);
@@ -1180,12 +1180,12 @@ int  l2cap_can_send_packet_now(uint16_t local_cid){
     return hci_can_send_acl_packet_now(channel->con_handle);
 }
 
-int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
+bool l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) return 0;
+    if (!channel) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        return 0;
+        return false;
     }
 #endif
     return hci_can_send_prepared_acl_packet_now(channel->con_handle);
@@ -4282,21 +4282,21 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
  * @brief Check if outgoing buffer is available and that there's space on the Bluetooth module
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
-int l2cap_le_can_send_now(uint16_t local_cid){
+bool l2cap_le_can_send_now(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("le can send now, no channel for cid 0x%02x", local_cid);
-        return 0;
+        return false;
     }
 
     // check state
-    if (channel->state != L2CAP_STATE_OPEN) return 0;
+    if (channel->state != L2CAP_STATE_OPEN) return false;
 
     // check queue
-    if (channel->send_sdu_buffer) return 0;    
+    if (channel->send_sdu_buffer) return false;
 
     // fine, go ahead
-    return 1;
+    return true;
 }
 
 /**
