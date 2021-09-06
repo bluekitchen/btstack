@@ -1831,6 +1831,7 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
         RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO |
         RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP  |
         RFCOMM_CHANNEL_STATE_VAR_SEND_UA       |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD  |
         RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP
                              )){
         log_debug("ch-ready: state %x, state var %x", channel->state, channel->state_var);
@@ -1922,6 +1923,13 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
             log_info("Sending Remote Port Negotiation RSP for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
             rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &channel->local_rpn_data);
+            return;
+        }
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD){
+            log_info("Sending MSC CMD for #%u", channel->dlci);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
+            rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD);
+            rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , channel->local_modem_status);
             return;
         }
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP){
@@ -2098,25 +2106,16 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     break;
                     
                 case CH_EVT_READY_TO_SEND:
-                    if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD){
-                        log_info("Sending MSC CMD for #%u", channel->dlci);
-                        rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
-                        rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD);
-                        rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                        break;
-                    }
                     if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS){
                         log_info("Providing credits for #%u", channel->dlci);
                         rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS);
-                        
                         if (channel->new_credits_incoming) {
                             uint8_t new_credits = channel->new_credits_incoming;
                             channel->new_credits_incoming = 0;
                             rfcomm_channel_send_credits(channel, new_credits);
                         }
                         break;
-
                     }
                     break;
                 default:
@@ -2399,12 +2398,14 @@ uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status){
 }
 
 // Sned local modem status. see MODEM_STAUS_..
-int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
+uint8_t rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    if (!channel){
-        return 0;
-    }
-    return rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci, modem_status);
+    if (!channel) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    channel->local_modem_status = modem_status;
+    // trigger send
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 // Configure remote port 
