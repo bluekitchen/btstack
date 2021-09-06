@@ -901,7 +901,7 @@ typedef struct {
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
-    uint8_t  sco_can_send_now;
+    bool     sco_can_send_now;
 
     /* local supported features */
     uint8_t local_supported_features[8];
@@ -1178,8 +1178,9 @@ void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 
 /** 
  * @brief Check if CMD packet can be sent to controller
+ * @return true if command can be sent
  */
-int hci_can_send_command_packet_now(void);
+bool hci_can_send_command_packet_now(void);
 
 /**
  * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
@@ -1204,22 +1205,20 @@ void hci_request_sco_can_send_now_event(void);
 
 /**
  * @brief Check HCI packet buffer and if SCO packet can be sent to controller
+ * @return true if sco packet can be sent
  */
-int hci_can_send_sco_packet_now(void);
+bool hci_can_send_sco_packet_now(void);
 
 /**
  * @brief Check if SCO packet can be sent to controller
+ * @return true if sco packet can be sent
  */
-int hci_can_send_prepared_sco_packet_now(void);
+bool hci_can_send_prepared_sco_packet_now(void);
 
 /**
  * @brief Send SCO packet prepared in HCI packet buffer
  */
 int hci_send_sco_packet_buffer(int size);
-
-
-// Outgoing packet buffer, also used for SCO packets
-// see hci_can_send_prepared_sco_packet_now amn hci_send_sco_packet_buffer
 
 /**
  * Reserves outgoing packet buffer.
@@ -1269,28 +1268,33 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 
 /**
  * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
+ * @return true if packet buffer is reserved
  */
 bool hci_is_packet_buffer_reserved(void);
 
 /**
  * Check hci packet buffer is free and a classic acl packet can be sent to controller
+ * @return true if ACL Classic packet can be sent now
  */
-int hci_can_send_acl_classic_packet_now(void);
+bool hci_can_send_acl_classic_packet_now(void);
 
 /**
  * Check hci packet buffer is free and an LE acl packet can be sent to controller
+ * @return true if ACL LE packet can be sent now
  */
-int hci_can_send_acl_le_packet_now(void);
+bool hci_can_send_acl_le_packet_now(void);
 
 /**
  * Check hci packet buffer is free and an acl packet for the given handle can be sent to controller
+ * @return true if ACL packet for con_handle can be sent now
  */
-int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
+bool hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
 
 /**
  * Check if acl packet for the given handle can be sent to controller
+ * @return true if ACL packet for con_handle can be sent now
  */
-int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
+bool hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 
 /**
  * Send acl packet prepared in hci packet buffer

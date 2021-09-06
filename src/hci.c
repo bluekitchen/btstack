@@ -631,45 +631,45 @@ static int hci_can_send_comand_packet_transport(void){
 }
 
 // new functions replacing hci_can_send_packet_now[_using_packet_buffer]
-int hci_can_send_command_packet_now(void){
-    if (hci_can_send_comand_packet_transport() == 0) return 0;
+bool hci_can_send_command_packet_now(void){
+    if (hci_can_send_comand_packet_transport() == 0) return false;
     return hci_stack->num_cmd_packets > 0u;
 }
 
 static int hci_transport_can_send_prepared_packet_now(uint8_t packet_type){
     // check for async hci transport implementations
-    if (!hci_stack->hci_transport->can_send_packet_now) return 1;
+    if (!hci_stack->hci_transport->can_send_packet_now) return true;
     return hci_stack->hci_transport->can_send_packet_now(packet_type);
 }
 
-static int hci_can_send_prepared_acl_packet_for_address_type(bd_addr_type_t address_type){
-    if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return 0;
+static bool hci_can_send_prepared_acl_packet_for_address_type(bd_addr_type_t address_type){
+    if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return false;
     return hci_number_free_acl_slots_for_connection_type(address_type) > 0;
 }
 
-int hci_can_send_acl_le_packet_now(void){
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
+bool hci_can_send_acl_le_packet_now(void){
+    if (hci_stack->hci_packet_buffer_reserved) return false;
     return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_LE_PUBLIC);
 }
 
-int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
-    if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return 0;
+bool hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
+    if (!hci_transport_can_send_prepared_packet_now(HCI_ACL_DATA_PACKET)) return false;
     return hci_number_free_acl_slots_for_handle(con_handle) > 0;
 }
 
-int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
+bool hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
+    if (hci_stack->hci_packet_buffer_reserved) return false;
     return hci_can_send_prepared_acl_packet_now(con_handle);
 }
 
 #ifdef ENABLE_CLASSIC
-int hci_can_send_acl_classic_packet_now(void){
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
+bool hci_can_send_acl_classic_packet_now(void){
+    if (hci_stack->hci_packet_buffer_reserved) return false;
     return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_ACL);
 }
 
-int hci_can_send_prepared_sco_packet_now(void){
-    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
+bool hci_can_send_prepared_sco_packet_now(void){
+    if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return false;
     if (hci_have_usb_transport()){
         return hci_stack->sco_can_send_now;
     } else {
@@ -677,8 +677,8 @@ int hci_can_send_prepared_sco_packet_now(void){
     }
 }
 
-int hci_can_send_sco_packet_now(void){
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
+bool hci_can_send_sco_packet_now(void){
+    if (hci_stack->hci_packet_buffer_reserved) return false;
     return hci_can_send_prepared_sco_packet_now();
 }
 
@@ -877,7 +877,7 @@ int hci_send_sco_packet_buffer(int size){
 
         if (hci_have_usb_transport()){
             // token used
-            hci_stack->sco_can_send_now = 0;
+            hci_stack->sco_can_send_now = false;
         } else {
             if (hci_stack->synchronous_flow_control_enabled){
                 connection->num_packets_sent++;
@@ -2669,7 +2669,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
             }
             // trigger can send now
             if (hci_have_usb_transport()){
-                hci_stack->sco_can_send_now = 1;
+                hci_stack->sco_can_send_now = true;
             }
 #endif
 #ifdef HAVE_SCO_TRANSPORT
@@ -3120,7 +3120,7 @@ static void event_handler(uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_SCO_CAN_SEND_NOW:
             // For SCO, we do the can_send_now_check here
-            hci_stack->sco_can_send_now = 1;
+            hci_stack->sco_can_send_now = true;
             hci_notify_if_sco_can_send_now();
             return;
 
