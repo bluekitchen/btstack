@@ -21,10 +21,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - A2DP Source: fix reconfigure
+- RFCOMM: fixed handling of remote port configuration command
 - PBAP Client: handle chunked vCard Listing
 - SM: Work around for unexpected Windows 10 disconnect for BR Secure Connections (SMP over BR timeout)
-
+ 
 ### Changed
+- HCI: provide status instead of undocumented int error code and bool for API functions
+- L2CAP: provide status instead of undocumented int error code and bool for API functions
+- RFCOMM: `RFCOMM_EVENT_PORT_CONFIGURATION` contains rfcomm_cid and remote flag, emitted for query config
+- RFCOMM: provide status instead of undocumented int error code and bool for API functions
+- RFCOMM: remote port configuration, line status, and modem status are sent by channel state machine
 - HFP: API functions return status code if appropriate 
 - HFP: removed one parameter from hfp_ag/hf_activate_voice_recognition function, instead introduced hfp_ag/hf_deactivate_voice_recognition 
 - HFP: merged legacy and enhanced Voice Recognition Activation (VRA) API. If available enhanced mode will be preferred.
