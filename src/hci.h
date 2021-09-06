@@ -1195,7 +1195,7 @@ uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...);
  *  @note  Using SCO packets of the exact length is required for USB transfer
  *  @return Length of SCO packets in bytes (not audio frames) incl. 3 byte header
  */
-int hci_get_sco_packet_length(void);
+uint16_t hci_get_sco_packet_length(void);
 
 /**
  * @brief Request emission of HCI_EVENT_SCO_CAN_SEND_NOW as soon as possible
@@ -1308,7 +1308,7 @@ uint8_t hci_send_acl_packet_buffer(int size);
  * Check if authentication is active. It delays automatic disconnect while no L2CAP connection
  * Called by l2cap.
  */
-int hci_authentication_active_for_handle(hci_con_handle_t handle);
+bool hci_authentication_active_for_handle(hci_con_handle_t handle);
 
 /**
  * Get maximal ACL Classic data packet length based on used buffer size. Called by L2CAP
@@ -1323,17 +1323,17 @@ uint16_t hci_usable_acl_packet_types(void);
 /**
  * Check if ACL packets marked as non flushable can be sent. Called by L2CAP
  */
-int hci_non_flushable_packet_boundary_flag_supported(void);
+bool hci_non_flushable_packet_boundary_flag_supported(void);
 
 /**
  * Check if extended SCO Link is supported
  */
-int hci_extended_sco_link_supported(void);
+bool hci_extended_sco_link_supported(void);
 
 /**
  * Check if SSP is supported on both sides. Called by L2CAP
  */
-int gap_ssp_supported_on_both_sides(hci_con_handle_t handle);
+bool gap_ssp_supported_on_both_sides(hci_con_handle_t handle);
 
 /**
  * Disconn because of security block. Called by L2CAP
@@ -1343,7 +1343,7 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle);
 /**
  * Query if remote side supports eSCO
  */
-int hci_remote_esco_supported(hci_con_handle_t con_handle);
+bool hci_remote_esco_supported(hci_con_handle_t con_handle);
 
 /**
  * Emit current HCI state. Called by daemon

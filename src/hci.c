@@ -141,7 +141,7 @@
 static void hci_update_scan_enable(void);
 static void hci_emit_discoverable_enabled(uint8_t enabled);
 static int  hci_local_ssp_activated(void);
-static int  hci_remote_ssp_supported(hci_con_handle_t con_handle);
+static bool hci_remote_ssp_supported(hci_con_handle_t con_handle);
 static bool hci_ssp_supported(hci_connection_t * connection);
 static void hci_notify_if_sco_can_send_now(void);
 static void hci_emit_connection_complete(bd_addr_t address, hci_con_handle_t con_handle, uint8_t status);
@@ -437,10 +437,10 @@ static void hci_pairing_complete(hci_connection_t * hci_connection, uint8_t stat
     hci_emit_event(event, sizeof(event), 1);
 }
 
-int  hci_authentication_active_for_handle(hci_con_handle_t handle){
+bool hci_authentication_active_for_handle(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
-    if (!conn) return 0;
-    return (int) hci_pairing_active(conn);
+    if (!conn) return false;
+    return hci_pairing_active(conn);
 }
 
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr){
@@ -1103,13 +1103,13 @@ uint16_t hci_max_acl_data_packet_length(void){
 }
 
 #ifdef ENABLE_CLASSIC
-int hci_extended_sco_link_supported(void){
+bool hci_extended_sco_link_supported(void){
     // No. 31, byte 3, bit 7
     return (hci_stack->local_supported_features[3] & (1 << 7)) != 0;
 }
 #endif
 
-int hci_non_flushable_packet_boundary_flag_supported(void){
+bool hci_non_flushable_packet_boundary_flag_supported(void){
     // No. 54, byte 6, bit 6
     return (hci_stack->local_supported_features[6u] & (1u << 6u)) != 0u;
 }
@@ -5562,9 +5562,9 @@ static void hci_emit_discoverable_enabled(uint8_t enabled){
 }
 
 // query if remote side supports eSCO
-int hci_remote_esco_supported(hci_con_handle_t con_handle){
+bool hci_remote_esco_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
-    if (!connection) return 0;
+    if (!connection) return false;
     return (connection->remote_supported_features[0] & 1) != 0;
 }
 
@@ -5574,13 +5574,13 @@ static bool hci_ssp_supported(hci_connection_t * connection){
 }
 
 // query if remote side supports SSP
-int hci_remote_ssp_supported(hci_con_handle_t con_handle){
+bool hci_remote_ssp_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
-    if (!connection) return 0;
+    if (!connection) return false;
     return hci_ssp_supported(connection) ? 1 : 0;
 }
 
-int gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
+bool gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
     return hci_local_ssp_activated() && hci_remote_ssp_supported(handle);
 }
 
@@ -6527,8 +6527,8 @@ static int hci_have_usb_transport(void){
  *  @note  Using SCO packets of the exact length is required for USB transfer
  *  @return Length of SCO packets in bytes (not audio frames)
  */
-int hci_get_sco_packet_length(void){
-    int sco_packet_length = 0;
+uint16_t hci_get_sco_packet_length(void){
+    uint16_t sco_packet_length = 0;
 
 #ifdef ENABLE_SCO_OVER_HCI
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
