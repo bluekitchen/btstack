@@ -2300,10 +2300,10 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
 }
 
 // pre: rfcomm_can_send_packet_now(rfcomm_cid) == true
-int rfcomm_reserve_packet_buffer(void){
+bool rfcomm_reserve_packet_buffer(void){
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     log_error("rfcomm_reserve_packet_buffer should not get called with ERTM");
-    return 0;
+    return false;
 #else
     return l2cap_reserve_packet_buffer();
 #endif

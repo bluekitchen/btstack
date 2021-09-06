@@ -423,7 +423,9 @@ uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 
 /** 
- * @brief Allow to create RFCOMM packet in outgoing buffer.
+ * @brief Reserve packet buffer to allow to create RFCOMM packet in place
+ * @return true on success
+ *
  * if (rfcomm_can_send_packet_now(cid)){
  *     rfcomm_reserve_packet_buffer();
  *     uint8_t * buffer = rfcomm_get_outgoing_buffer();
@@ -432,7 +434,7 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
  *     rfcomm_send_prepared(cid, len)
  * }
  */
-int rfcomm_reserve_packet_buffer(void);
+bool rfcomm_reserve_packet_buffer(void);
 
 /**
  * @brief Get outgoing buffer
