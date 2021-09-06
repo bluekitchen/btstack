@@ -106,13 +106,14 @@ typedef enum {
 #define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY    1 <<  6
 #define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG   1 <<  7
 #define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RESPONSE 1 <<  8
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_UA           1 <<  9
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD      1 << 10
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP      1 << 11
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS      1 << 12
-#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD      1 << 13
-#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP      1 << 14
-#define RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS      1 << 15
+#define RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE 1 <<  9
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_UA           1 << 10
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD      1 << 11
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP      1 << 12
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS      1 << 13
+#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD      1 << 14
+#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP      1 << 15
+#define RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS      1 << 16
 
 typedef struct rfcomm_rpn_data {
     uint8_t baud_rate;
@@ -224,7 +225,7 @@ typedef struct {
     RFCOMM_CHANNEL_STATE state;
     
     // state variables/flags
-    uint16_t state_var;
+    uint32_t state_var;
     
     // priority set by incoming side in PN
     uint8_t pn_priority;

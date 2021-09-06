@@ -127,6 +127,7 @@ typedef enum {
     CH_EVT_RCVD_RLS_RSP,
     CH_EVT_RCVD_RPN_CMD,
     CH_EVT_RCVD_RPN_REQ,
+    CH_EVT_RCVD_RPN_RSP,
     CH_EVT_RCVD_CREDITS,
     CH_EVT_MULTIPLEXER_READY,
     CH_EVT_READY_TO_SEND,
@@ -1685,7 +1686,11 @@ static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  u
                     break;
 
                 case BT_RFCOMM_RPN_RSP:
-                    log_info("Received RPN response");
+                    message_dlci = packet[payload_offset+2] >> 2;
+                    if (message_len != 8) break;
+                    event_rpn.super.type = CH_EVT_RCVD_RPN_RSP;
+                    event_rpn.data = *(rfcomm_rpn_data_t*) &packet[payload_offset+3];
+                    rfcomm_channel_state_machine_with_dlci(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rpn);
                     break;
 
                 case BT_RFCOMM_RLS_CMD: {
@@ -1920,7 +1925,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
             return;
         }
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG){
-            log_info("Sending Remote Port Configuration RSP for #%u", channel->dlci);
+            log_info("Sending Remote Port Configuration for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_CONFIG);
             rfcomm_send_uih_rpn_config(channel->multiplexer, channel->dlci, &channel->remote_rpn_data);
             return;
@@ -2139,6 +2144,12 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                 case CH_EVT_RCVD_MSC_CMD:
                     channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
+                    break;
+                case CH_EVT_RCVD_RPN_RSP:
+                    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE) == 0) break;
+                    rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE);
+                    memcpy(&channel->remote_rpn_data, &((rfcomm_channel_event_rpn_t*) event)->data, sizeof(rfcomm_rpn_data_t));
+                    rfcomm_emit_port_configuration(channel, true);
                     break;
                 case CH_EVT_READY_TO_SEND:
                     if (channel->new_credits_incoming) {
@@ -2443,7 +2454,7 @@ uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     // trigger send
-    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY);
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY | RFCOMM_CHANNEL_STATE_VAR_EMIT_RPN_RESPONSE);
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
     return ERROR_CODE_SUCCESS;
 }
