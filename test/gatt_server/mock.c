@@ -70,27 +70,27 @@ static void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
-int hci_can_send_acl_le_packet_now(void){
-	return 1;
+bool hci_can_send_acl_le_packet_now(void){
+	return true;
 }
 
-int hci_can_send_command_packet_now(void){
-	return 1;
+bool hci_can_send_command_packet_now(void){
+	return true;
 }
 
 HCI_STATE hci_get_state(void){
 	return HCI_STATE_WORKING;
 }
 
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
 	btstack_assert(false);
-	return 0;
+	return ERROR_CODE_SUCCESS;
 }
 
 void hci_halting_defer(void){
 }
 
-int  l2cap_can_send_connectionless_packet_now(void){
+bool l2cap_can_send_connectionless_packet_now(void){
 	return 1;	
 }
 
@@ -119,8 +119,8 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	registered_hci_event_handler = callback_handler->callback;
 }
 
-int l2cap_reserve_packet_buffer(void){
-	return 1;
+bool l2cap_reserve_packet_buffer(void){
+	return true;
 }
 
 void l2cap_release_packet_buffer(void){
@@ -132,7 +132,7 @@ void l2cap_can_send_fixed_channel_packet_now_set_status(uint8_t status){
 	l2cap_can_send_fixed_channel_packet_now_status = status;
 }
 
-int l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
+bool l2cap_can_send_fixed_channel_packet_now(uint16_t handle, uint16_t channel_id){
 	return l2cap_can_send_fixed_channel_packet_now_status;
 }
 
@@ -141,7 +141,7 @@ void l2cap_request_can_send_fix_channel_now_event(uint16_t handle, uint16_t chan
 	att_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*)event, sizeof(event));
 }
 
-int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
+uint8_t l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
 	att_connection_t att_connection;
 	att_init_connection(&att_connection);
 	uint8_t response[max_mtu];
@@ -149,7 +149,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	if (response_len){
 		att_packet_handler(ATT_DATA_PACKET, gatt_client_handle, &response[0], response_len);
 	}
-	return 0;
+	return ERROR_CODE_SUCCESS;
 }
 
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){

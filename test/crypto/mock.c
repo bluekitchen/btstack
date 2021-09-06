@@ -13,8 +13,8 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
 	btstack_linked_list_add(&event_packet_handlers, (btstack_linked_item_t *) callback_handler);
 }
 
-int hci_can_send_command_packet_now(void){
-	return 1;
+bool hci_can_send_command_packet_now(void){
+	return true;
 }
 
 HCI_STATE hci_get_state(void){
@@ -40,7 +40,7 @@ static void aes128_report_result(void){
 	mock_simulate_hci_event(&le_enc_result[0], sizeof(le_enc_result));
 }
 
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
     uint16_t len = hci_cmd_create_from_template(packet_buffer, cmd, argptr);
@@ -58,7 +58,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 	    aes128_calc_cyphertext(key, plaintext, aes128_cyphertext);
 	    aes128_report_result();
 	}
-	return 0;
+	return ERROR_CODE_SUCCESS;
 }
 
 void hci_halting_defer(void){

@@ -137,7 +137,7 @@ void hci_add_event_handler(btstack_packet_callback_registration_t * callback_han
     registered_hci_packet_handler = callback_handler->callback;
 }
 
-int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     // printf("mock: rfcomm send: ");
     // print_without_newlines(data, len);
@@ -161,30 +161,31 @@ int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     }
 	
     // print_without_newlines(rfcomm_payload,rfcomm_payload_len);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
-void rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
+uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid){
 
     // printf("mock: rfcomm_request_can_send_now_event\n");
 
     uint8_t event[] = { RFCOMM_EVENT_CAN_SEND_NOW, 2, 0, 0};
     little_endian_store_16(event, 2, rfcomm_cid);
     registered_rfcomm_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    return ERROR_CODE_SUCCESS;
 }
 
-int       rfcomm_reserve_packet_buffer(void){
+bool rfcomm_reserve_packet_buffer(void){
     // printf("mock: rfcomm_reserve_packet_buffer\n");
-    return 1;
+    return true;
 };
-void      rfcomm_release_packet_buffer(void){};
+void rfcomm_release_packet_buffer(void){};
 uint8_t * rfcomm_get_outgoing_buffer(void) {
     return rfcomm_reserved_buffer;
 }
 uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
     return sizeof(rfcomm_reserved_buffer);
 }
-int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
+uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     // printf("--- rfcomm_send_prepared with len %u ---\n", len);
     return rfcomm_send(rfcomm_cid, rfcomm_reserved_buffer, len);
 }
@@ -210,16 +211,16 @@ static void hci_event_sco_complete(void){
     (*registered_hci_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
+uint8_t hci_send_cmd(const hci_cmd_t *cmd, ...){
 	//printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
     if (cmd->opcode == 0x428){
         hci_event_sco_complete();
     }
-	return 0;
+	return ERROR_CODE_SUCCESS;
 }
 
-int hci_can_send_command_packet_now(void){
-    return 1;
+bool hci_can_send_command_packet_now(void){
+    return true;
 }
 
 static void sdp_query_complete_response(uint8_t status){
@@ -281,26 +282,27 @@ uint8_t rfcomm_create_channel(btstack_packet_handler_t handler, bd_addr_t addr, 
     if (out_cid){
         *out_cid = rfcomm_cid;
     }
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
-int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
+bool rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     // printf("mock: rfcomm_can_send_packet_now\n");
-	return 1;
+	return true;
 }
 
-void rfcomm_disconnect(uint16_t rfcomm_cid){
+uint8_t rfcomm_disconnect(uint16_t rfcomm_cid){
 	uint8_t event[4];
 	event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
     little_endian_store_16(event, 2, rfcomm_cid);
     (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t rfcomm_register_service(btstack_packet_handler_t handler, uint8_t channel, uint16_t max_frame_size){
 	// printf("rfcomm_register_service\n");
     registered_rfcomm_packet_handler = handler;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 
@@ -310,12 +312,14 @@ uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_pack
 }
 
 
-void rfcomm_accept_connection(uint16_t rfcomm_cid){
+uint8_t rfcomm_accept_connection(uint16_t rfcomm_cid){
 	// printf("rfcomm_accept_connection \n");
+    return ERROR_CODE_SUCCESS;
 }
 
-void rfcomm_decline_connection(uint16_t rfcomm_cid){
+uint8_t rfcomm_decline_connection(uint16_t rfcomm_cid){
     // printf("rfcomm_accept_connection \n");
+    return ERROR_CODE_SUCCESS;
 }
 
 void btstack_run_loop_add_timer(btstack_timer_source_t *timer){
@@ -350,8 +354,8 @@ uint16_t hci_get_sco_voice_setting(void){
     return 0x40;
 }
 
-int hci_remote_esco_supported(hci_con_handle_t handle){
-    return 0;
+bool hci_remote_esco_supported(hci_con_handle_t handle){
+    return false;
 }
 
 static void add_new_lines_to_hfp_command(uint8_t * data, int len){
@@ -395,6 +399,6 @@ void inject_hfp_command_to_ag(uint8_t * data, int len){
 }
 
 
-int hci_extended_sco_link_supported(void){
-    return 1;
+bool hci_extended_sco_link_supported(void){
+    return true;
 }
