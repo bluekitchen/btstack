@@ -377,8 +377,9 @@ uint8_t rfcomm_request_can_send_now_event(uint16_t rfcomm_cid);
 /** 
  * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
  * @param rfcomm_cid
+ * @return status
  */
-int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
+uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
 
 /** 
  * @brief Sends Local Line Status, see LINE_STATUS_..
@@ -449,7 +450,7 @@ uint8_t * rfcomm_get_outgoing_buffer(void);
  * @param len
  * @return status
  */
-int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
+uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
 
 /**
  * @brief Release outgoing buffer in case rfcomm_send_prepared was not called

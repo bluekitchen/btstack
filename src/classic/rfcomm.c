@@ -2327,15 +2327,15 @@ uint8_t * rfcomm_get_outgoing_buffer(void){
     return &rfcomm_out_buffer[4];
 }
 
-int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
+uint8_t rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    int err = rfcomm_assert_send_valid(channel, len);
-    if (err) return err;
+    uint8_t status = rfcomm_assert_send_valid(channel, len);
+    if (status != ERROR_CODE_SUCCESS) return status;
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
@@ -2356,28 +2356,27 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
         log_info("sending empty RFCOMM packet for cid %02x", rfcomm_cid);
     }
         
-    int result = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
-    
-    if (result != 0) {
+    status = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
+
+    if (status != 0) {
+        log_error("error %d", status);
         if (len) {
             channel->credits_outgoing++;
         }
-        log_error("error %d", result);
-        return result;
     }
     
-    return result;
+    return status;
 }
 
-int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+uint8_t rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    int err = rfcomm_assert_send_valid(channel, len);
-    if (err) return err;
+    uint8_t status = rfcomm_assert_send_valid(channel, len);
+    if (status != ERROR_CODE_SUCCESS) return status;
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
         log_error("rfcomm_send_internal: l2cap cannot send now");
         return BTSTACK_ACL_BUFFERS_FULL;
@@ -2390,16 +2389,16 @@ int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     uint8_t * rfcomm_payload = rfcomm_get_outgoing_buffer();
 
     (void)memcpy(rfcomm_payload, data, len);
-    err = rfcomm_send_prepared(rfcomm_cid, len);    
+    status = rfcomm_send_prepared(rfcomm_cid, len);
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
 #else
-    if (err){
+    if (status != ERROR_CODE_SUCCESS){
         rfcomm_release_packet_buffer();
     }
 #endif
 
-    return err;
+    return ERROR_CODE_SUCCESS;
 }
 
 // Sends Local Line Status, see LINE_STATUS_..
