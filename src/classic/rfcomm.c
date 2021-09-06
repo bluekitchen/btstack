@@ -1826,12 +1826,13 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
     }
     
     if (channel->state_var & (
-        RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP   |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP  |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_UA       |
-        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD  |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP    |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA  |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO  |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP   |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_UA        |
+        RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD   |
         RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP
                              )){
         log_debug("ch-ready: state %x, state var %x", channel->state, channel->state_var);
@@ -1913,6 +1914,12 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
 
     // TODO: integrate in common switch
     if (event->type == CH_EVT_READY_TO_SEND){
+        if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY){
+            log_info("Sending Remote Port Configuration Query for #%u", channel->dlci);
+            rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY);
+            rfcomm_send_uih_rpn_req(channel->multiplexer, channel->dlci);
+            return;
+        }
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA){
             log_info("Sending Remote Port Configuration RSP for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA);
@@ -2431,12 +2438,15 @@ uint8_t rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate
 }
 
 // Query remote port 
-int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
+uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    return rfcomm_send_uih_rpn_req(channel->multiplexer, channel->dlci);
+    // trigger send
+    rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY);
+    l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 

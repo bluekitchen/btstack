@@ -104,16 +104,17 @@ typedef enum {
 #define RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_CMD    1 << 4
 #define RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP    1 << 5
 #define RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP     1 << 6
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA   1 << 7
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO   1 << 8
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP    1 << 9
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_UA         1 << 10
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD    1 << 11
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP    1 << 12
-#define RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS    1 << 13
-#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD    1 << 14
-#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP    1 << 15
-#define RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS    1 << 16
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_QUERY  1 << 7
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_DATA   1 << 8
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO   1 << 9
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP    1 << 10
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_UA         1 << 11
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD    1 << 12
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP    1 << 13
+#define RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS    1 << 14
+#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD    1 << 15
+#define RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP    1 << 16
+#define RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS    1 << 17
 
 typedef struct rfcomm_rpn_data {
     uint8_t baud_rate;
@@ -399,20 +400,23 @@ uint8_t rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
  * @param stop_bits
  * @param parity
  * @param flow_control
+ * @return status
  */
 uint8_t rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, uint8_t flow_control);
 
 /** 
  * @brief Query remote port 
  * @param rfcomm_cid
+ * @return status
  */
-int rfcomm_query_port_configuration(uint16_t rfcomm_cid);
+uint8_t rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 
 /** 
  * @brief Query max frame size
  * @param rfcomm_cid
+ * @return max frame size
  */
-uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
+uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
 
 /** 
  * @brief Allow to create RFCOMM packet in outgoing buffer.
