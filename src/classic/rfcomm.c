@@ -480,6 +480,10 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->local_line_status  = RFCOMM_RLS_STATUS_INVALID;
     channel->remote_line_status = RFCOMM_RLS_STATUS_INVALID;
 
+    // modem status - ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+    channel->local_modem_status  = 0x8d;
+    channel->remote_modem_status = 0x8d;
+
     channel->service = service;
 	if (service) {
 		// incoming connection
