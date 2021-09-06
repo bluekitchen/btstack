@@ -247,8 +247,11 @@ typedef struct {
     // send RLS RSP with status from the RLS CMD
     uint8_t remote_line_status;
 
-    // msc modem status.
-    uint8_t msc_modem_status;
+    // local modem status.
+    uint8_t local_modem_status;
+
+    // remote modem status.
+    uint8_t remote_modem_status;
 
     //
     uint8_t   waiting_for_can_send_now;
@@ -384,8 +387,9 @@ uint8_t rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
  * @brief Send local modem status. see MODEM_STAUS_..
  * @param rfcomm_cid
  * @param modem_status
+ * @return status
  */
-int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
+uint8_t rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
 
 /** 
  * @brief Configure remote port 

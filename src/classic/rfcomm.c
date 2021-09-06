@@ -1924,7 +1924,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
             log_info("Sending MSC RSP for #%u", channel->dlci);
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
             rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP);
-            rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+            rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, channel->remote_modem_status);
             return;
         }
         if (channel->local_line_status != RFCOMM_RLS_STATUS_INVALID){
@@ -2085,6 +2085,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_DLC_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
+                    channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_CMD);
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
@@ -2127,6 +2128,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_OPEN:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
+                    channel->remote_modem_status = ((rfcomm_channel_event_msc_t*) event)->modem_status;
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
                 case CH_EVT_READY_TO_SEND:
