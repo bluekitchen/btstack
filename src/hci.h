@@ -1183,9 +1183,10 @@ void hci_register_sco_packet_handler(btstack_packet_handler_t handler);
 bool hci_can_send_command_packet_now(void);
 
 /**
- * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
+ * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied.
+ * @return status
  */
-int hci_send_cmd(const hci_cmd_t * cmd, ...);
+uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...);
 
 
 // Sending SCO Packets
@@ -1218,7 +1219,7 @@ bool hci_can_send_prepared_sco_packet_now(void);
 /**
  * @brief Send SCO packet prepared in HCI packet buffer
  */
-int hci_send_sco_packet_buffer(int size);
+uint8_t hci_send_sco_packet_buffer(int size);
 
 /**
  * Reserves outgoing packet buffer.
@@ -1248,8 +1249,9 @@ void hci_set_master_slave_policy(uint8_t policy);
 
 /**
  * va_list version of hci_send_cmd, call hci_send_cmd_packet
+ * @return status
  */
-int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr);
+uint8_t hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr);
 
 /**
  * Get connection iterator. Only used by l2cap.c and sm.c
@@ -1298,8 +1300,9 @@ bool hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 
 /**
  * Send acl packet prepared in hci packet buffer
+ * @return status
  */
-int hci_send_acl_packet_buffer(int size);
+uint8_t hci_send_acl_packet_buffer(int size);
 
 /**
  * Check if authentication is active. It delays automatic disconnect while no L2CAP connection
@@ -1349,9 +1352,9 @@ void hci_emit_state(void);
 
 /** 
  * Send complete CMD packet. Called by daemon and hci_send_cmd_va_arg
- * @returns 0 if command was successfully sent to HCI Transport layer
+ * @return status
  */
-int hci_send_cmd_packet(uint8_t *packet, int size);
+uint8_t hci_send_cmd_packet(uint8_t *packet, int size);
 
 /**
  * Disconnect all HCI connections. Called by daemon

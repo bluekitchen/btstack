@@ -712,7 +712,7 @@ static int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
-static int hci_send_acl_packet_fragments(hci_connection_t *connection){
+static uint8_t hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     // log_info("hci_send_acl_packet_fragments  %u/%u (con 0x%04x)", hci_stack->acl_fragmentation_pos, hci_stack->acl_fragmentation_total_size, connection->con_handle);
 
@@ -730,7 +730,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     log_debug("hci_send_acl_packet_fragments entered");
 
-    int err;
+    uint8_t status = ERROR_CODE_SUCCESS;
     // multiple packets could be send on a synchronous HCI transport
     while (true){
 
@@ -776,7 +776,11 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         const int size = current_acl_data_packet_length + 4;
         hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
         hci_stack->acl_fragmentation_tx_active = 1;
-        err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+        int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+        if (err != 0){
+            // no error from HCI Transport expected
+            status = ERROR_CODE_HARDWARE_FAILURE;
+        }
 
         log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", (int) more_fragments);
 
@@ -784,7 +788,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         if (!more_fragments) break;
 
         // can send more?
-        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return err;
+        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return status;
     }
 
     log_debug("hci_send_acl_packet_fragments loop over");
@@ -796,18 +800,12 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         hci_emit_transport_packet_sent();
     }
 
-    return err;
+    return status;
 }
 
 // pre: caller has reserved the packet buffer
-int hci_send_acl_packet_buffer(int size){
-
-    // log_info("hci_send_acl_packet_buffer size %u", size);
-
-    if (!hci_stack->hci_packet_buffer_reserved) {
-        log_error("hci_send_acl_packet_buffer called without reserving packet buffer");
-        return 0;
-    }
+uint8_t hci_send_acl_packet_buffer(int size){
+    btstack_assert(hci_stack->hci_packet_buffer_reserved);
 
     uint8_t * packet = hci_stack->hci_packet_buffer;
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
@@ -825,7 +823,7 @@ int hci_send_acl_packet_buffer(int size){
         log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
         hci_release_packet_buffer();
         hci_emit_transport_packet_sent();
-        return 0;
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
 #ifdef ENABLE_CLASSIC
@@ -843,14 +841,8 @@ int hci_send_acl_packet_buffer(int size){
 
 #ifdef ENABLE_CLASSIC
 // pre: caller has reserved the packet buffer
-int hci_send_sco_packet_buffer(int size){
-
-    // log_info("hci_send_acl_packet_buffer size %u", size);
-
-    if (!hci_stack->hci_packet_buffer_reserved) {
-        log_error("hci_send_acl_packet_buffer called without reserving packet buffer");
-        return 0;
-    }
+uint8_t hci_send_sco_packet_buffer(int size){
+    btstack_assert(hci_stack->hci_packet_buffer_reserved);
 
     uint8_t * packet = hci_stack->hci_packet_buffer;
 
@@ -872,7 +864,7 @@ int hci_send_sco_packet_buffer(int size){
             log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
             hci_release_packet_buffer();
             hci_emit_transport_packet_sent();
-            return 0;
+            return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
         }
 
         if (hci_have_usb_transport()){
@@ -902,7 +894,10 @@ int hci_send_sco_packet_buffer(int size){
         hci_emit_transport_packet_sent();
     }
 
-    return err;
+    if (err != 0){
+        return ERROR_CODE_HARDWARE_FAILURE;
+    }
+    return ERROR_CODE_SUCCESS;
 #endif
 }
 #endif
@@ -5085,7 +5080,7 @@ static void hci_run(void){
     }
 }
 
-int hci_send_cmd_packet(uint8_t *packet, int size){
+uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
     // house-keeping
     
 #ifdef ENABLE_CLASSIC
@@ -5110,7 +5105,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             // CVE-2020-26555: reject outgoing connection to device with same BD ADDR
             if (memcmp(hci_stack->local_bd_addr, addr, 6) == 0) {
                 hci_emit_connection_complete(addr, 0, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR);
-                return -1;
+                return ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
             }
 
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
@@ -5119,18 +5114,20 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 if (!conn) {
                     // notify client that alloc failed
                     hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
-                    return -1; // packet not sent to controller
+                    return BTSTACK_MEMORY_ALLOC_FAILED; // packet not sent to controller
                 }
                 conn->state = SEND_CREATE_CONNECTION;
                 conn->role  = HCI_ROLE_MASTER;
             }
             log_info("conn state %u", conn->state);
+            // TODO: L2CAP should not send create connection command, instead a (new) gap function should be used
             switch (conn->state) {
                 // if connection active exists
                 case OPEN:
                     // and OPEN, emit connection complete command
                     hci_emit_connection_complete(addr, conn->con_handle, ERROR_CODE_SUCCESS);
-                    return -1; // packet not sent to controller
+                    // packet not sent to controller
+                    return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
                 case RECEIVED_DISCONNECTION_COMPLETE:
                     // create connection triggered in disconnect complete event, let's do it now
                     break;
@@ -5139,7 +5136,8 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                     break;
                 default:
                     // otherwise, just ignore as it is already in the open process
-                    return -1; // packet not sent to controller
+                    // packet not sent to controller
+                    return ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS;
             }
             conn->state = SENT_CREATE_CONNECTION;
 
@@ -5210,7 +5208,11 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     hci_stack->num_cmd_packets--;
 
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    return hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+    int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+    if (err != 0){
+        return ERROR_CODE_HARDWARE_FAILURE;
+    }
+    return ERROR_CODE_SUCCESS;
 }
 
 // disconnect because of security block
@@ -5254,10 +5256,10 @@ void gap_secure_connections_enable(bool enable){
 #endif
 
 // va_list part of hci_send_cmd
-int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr){
+uint8_t hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr){
     if (!hci_can_send_command_packet_now()){ 
         log_error("hci_send_cmd called but cannot send packet now");
-        return 0;
+        return ERROR_CODE_COMMAND_DISALLOWED;
     }
 
     // for HCI INITIALIZATION
@@ -5267,26 +5269,26 @@ int hci_send_cmd_va_arg(const hci_cmd_t * cmd, va_list argptr){
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_stack->hci_packet_buffer;
     uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
-    int err = hci_send_cmd_packet(packet, size);
+    uint8_t status = hci_send_cmd_packet(packet, size);
 
     // release packet buffer on error or for synchronous transport implementations
-    if ((err < 0) || hci_transport_synchronous()){
+    if ((status != ERROR_CODE_SUCCESS) || hci_transport_synchronous()){
         hci_release_packet_buffer();
         hci_emit_transport_packet_sent();
     }
 
-    return err;
+    return status;
 }
 
 /**
  * pre: numcmds >= 0 - it's allowed to send a command to the controller
  */
-int hci_send_cmd(const hci_cmd_t * cmd, ...){
+uint8_t hci_send_cmd(const hci_cmd_t * cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    int res = hci_send_cmd_va_arg(cmd, argptr);
+    uint8_t status = hci_send_cmd_va_arg(cmd, argptr);
     va_end(argptr);
-    return res;
+    return status;
 }
 
 // Create various non-HCI events. 
