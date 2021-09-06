@@ -1223,9 +1223,9 @@ int hci_send_sco_packet_buffer(int size);
 
 /**
  * Reserves outgoing packet buffer.
- * @return 1 on success
+ * @return true on success
  */
-int hci_reserve_packet_buffer(void);
+bool hci_reserve_packet_buffer(void);
 
 /**
  * Get pointer for outgoing packet buffer
