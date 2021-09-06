@@ -689,7 +689,7 @@ void hci_request_sco_can_send_now_event(void){
 #endif
 
 // used for internal checks in l2cap.c
-int hci_is_packet_buffer_reserved(void){
+bool hci_is_packet_buffer_reserved(void){
     return hci_stack->hci_packet_buffer_reserved;
 }
 
@@ -699,12 +699,12 @@ int hci_reserve_packet_buffer(void){
         log_error("hci_reserve_packet_buffer called but buffer already reserved");
         return 0;
     }
-    hci_stack->hci_packet_buffer_reserved = 1;
+    hci_stack->hci_packet_buffer_reserved = true;
     return 1;    
 }
 
 void hci_release_packet_buffer(void){
-    hci_stack->hci_packet_buffer_reserved = 0;
+    hci_stack->hci_packet_buffer_reserved = false;
 }
 
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
@@ -3389,7 +3389,7 @@ static void hci_state_reset(void){
     // hci_stack->own_addr_type = 0;
 
     // buffer is free
-    hci_stack->hci_packet_buffer_reserved = 0;
+    hci_stack->hci_packet_buffer_reserved = false;
 
     // no pending cmds
     hci_stack->decline_reason = 0;
@@ -3804,7 +3804,7 @@ static int hci_power_control_wake(void){
 static void hci_power_transition_to_initializing(void){
     // set up state machine
     hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
-    hci_stack->hci_packet_buffer_reserved = 0;
+    hci_stack->hci_packet_buffer_reserved = false;
     hci_stack->state = HCI_STATE_INITIALIZING;
     hci_stack->substate = HCI_INIT_SEND_RESET;
 }

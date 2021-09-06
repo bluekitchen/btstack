@@ -886,7 +886,7 @@ typedef struct {
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
     uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_OUTGOING_PACKET_BUFFER_SIZE];
-    uint8_t   hci_packet_buffer_reserved;
+    bool      hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
     uint8_t   acl_fragmentation_tx_active;
@@ -1270,7 +1270,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_
 /**
  * Check if outgoing packet buffer is reserved. Used for internal checks in l2cap.c
  */
-int hci_is_packet_buffer_reserved(void);
+bool hci_is_packet_buffer_reserved(void);
 
 /**
  * Check hci packet buffer is free and a classic acl packet can be sent to controller
