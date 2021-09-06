@@ -419,8 +419,8 @@ typedef struct l2cap_signaling_response {
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
 bool l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id);
-int  l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
-int  l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
+uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len);
 
 // PTS Testing
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len);
@@ -507,7 +507,7 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 /** 
  * @brief Sends L2CAP data packet to the channel with given identifier.
  */
-int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
+uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
 
 /** 
  * @brief Registers L2CAP service with given PSM and MTU, and assigns a packet handler. 
@@ -575,7 +575,7 @@ uint8_t *l2cap_get_outgoing_buffer(void);
  * @brief Send L2CAP packet prepared in outgoing buffer to channel
  * @note Only for L2CAP Basic Mode Channels
  */
-int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
+uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len);
 
 /** 
  * @brief Release outgoing buffer (only needed if l2cap_send_prepared is not called)

@@ -415,7 +415,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
 
 }
 
-static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
+static uint8_t l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
     if (len > channel->remote_mtu){
         log_error("l2cap_ertm_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
@@ -460,7 +460,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
 
     // try to send
     l2cap_notify_channel_can_send();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint8_t * config_options){
@@ -988,7 +988,7 @@ static void l2cap_setup_header(uint8_t * acl_buffer, hci_con_handle_t con_handle
 }
 
 // assumption - only on LE connections
-int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len){
+uint8_t l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){
         log_error("l2cap_send_prepared_connectionless called without reserving packet first");
@@ -1009,7 +1009,7 @@ int l2cap_send_prepared_connectionless(hci_con_handle_t con_handle, uint16_t cid
 }
 
 // assumption - only on LE connections
-int l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len){
+uint8_t l2cap_send_connectionless(hci_con_handle_t con_handle, uint16_t cid, uint8_t *data, uint16_t len){
     
     if (!hci_can_send_acl_packet_now(con_handle)){
         log_info("l2cap_send cid 0x%02x, cannot send", cid);
@@ -1297,7 +1297,7 @@ static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_
 
 // assumption - only on Classic connections
 // cannot be used for L2CAP ERTM
-int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
+uint8_t l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){
         log_error("l2cap_send_prepared called without reserving packet first");
@@ -1307,7 +1307,7 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send_prepared no channel for cid 0x%02x", local_cid);
-        return -1;   // TODO: define error
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     if (!hci_can_send_prepared_acl_packet_now(channel->con_handle)){
@@ -1344,11 +1344,11 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
 }
 
 // assumption - only on Classic connections
-int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
+uint8_t l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
-        return -1;   // TODO: define error
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
