@@ -4628,6 +4628,24 @@ static bool hci_run_general_pending_commands(void){
             return true;
         }
 
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_0){
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
+            hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
+            return true;
+        }
+
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_1){
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_1;
+            hci_send_cmd(&hci_read_remote_extended_features_command, connection->con_handle, 1);
+            return true;
+        }
+
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_2){
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_2;
+            hci_send_cmd(&hci_read_remote_extended_features_command, connection->con_handle, 2);
+            return true;
+        }
+
         // Handling link key request requires remote supported features
         if (((connection->authentication_flags & AUTH_FLAG_HANDLE_LINK_KEY_REQUEST) != 0)){
             log_info("responding to link key request, have link key db: %u", hci_stack->link_key_db != NULL);
@@ -4761,24 +4779,6 @@ static bool hci_run_general_pending_commands(void){
         if (connection->authentication_flags & AUTH_FLAG_SEND_USER_PASSKEY_REPLY){
             connectionClearAuthenticationFlags(connection, AUTH_FLAG_SEND_USER_PASSKEY_REPLY);
             hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
-            return true;
-        }
-
-        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_0){
-            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_0;
-            hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
-            return true;
-        }
-
-        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_1){
-            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_1;
-            hci_send_cmd(&hci_read_remote_extended_features_command, connection->con_handle, 1);
-            return true;
-        }
-
-        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES_PAGE_2){
-            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES_PAGE_2;
-            hci_send_cmd(&hci_read_remote_extended_features_command, connection->con_handle, 2);
             return true;
         }
 
