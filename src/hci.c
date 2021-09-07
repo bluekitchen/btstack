@@ -2435,6 +2435,76 @@ static bool btstack_is_null(uint8_t * data, uint16_t size){
     return true;
 }
 
+static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
+    // assess security: LEVEL 4 requires SC
+    if ((hci_stack->gap_secure_connections_only_mode || (conn->requested_security_level == LEVEL_4)) && !hci_remote_sc_enabled(conn)){
+        log_info("Level 4 required, but SC not supported -> abort");
+        hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+        connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+        return;
+    }
+
+    // assess security based on io capabilities
+    if (conn->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
+        // get requested security level
+        gap_security_level_t requested_security_level = conn->requested_security_level;
+        if (hci_stack->gap_secure_connections_only_mode){
+            requested_security_level = LEVEL_4;
+        }
+
+        // responder: fully validate io caps of both sides as well as OOB data
+        bool security_possible = false;
+        security_possible = hci_ssp_security_level_possible_for_io_cap(requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io);
+
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        // We assume that both Controller can reach LEVEL 4, if one side has received P-192 and the other has received P-256,
+        // so we merge the OOB data availability
+        uint8_t have_oob_data = conn->io_cap_response_oob_data;
+        if (conn->classic_oob_c_192 != NULL){
+            have_oob_data |= 1;
+        }
+        if (conn->classic_oob_c_256 != NULL){
+            have_oob_data |= 2;
+        }
+        // for up to Level 3, either P-192 as well as P-256 will do
+        // if we don't support SC, then a) conn->classic_oob_c_256 will be NULL and b) remote should not report P-256 available
+        // if remote does not SC, we should not receive P-256 data either
+        if ((requested_security_level <= LEVEL_3) && (have_oob_data != 0)){
+            security_possible = true;
+        }
+        // for Level 4, P-256 is needed
+        if ((requested_security_level == LEVEL_4 && ((have_oob_data & 2) != 0))){
+            security_possible = true;
+        }
+#endif
+
+        if (security_possible == false){
+            log_info("IOCap/OOB insufficient for level %u -> abort", conn->requested_security_level);
+            hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+            connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            return;
+        }
+    } else {
+        // initiator: remote io cap not yet, only check if we have ability for MITM protection if requested and OOB is not supported
+#ifdef ENABLE_CLASSIC_PAIRING_OOB
+        if ((conn->requested_security_level >= LEVEL_3) && (hci_stack->ssp_io_capability >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT)){
+            log_info("Level 3+ required, but no input/output -> abort");
+            hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
+            connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+            return;
+        }
+#endif
+    }
+
+#ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
+    if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
+        connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
+    } else {
+        connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
+    }
+#endif
+}
+
 #endif
 
 static void event_handler(uint8_t *packet, uint16_t size){
@@ -2813,76 +2883,8 @@ static void event_handler(uint8_t *packet, uint16_t size){
             if (!conn) break;
 
             hci_connection_timestamp(conn);
-
             hci_pairing_started(conn, true);
-
-            // assess security: LEVEL 4 requires SC
-            if ((hci_stack->gap_secure_connections_only_mode || (conn->requested_security_level == LEVEL_4)) && !hci_remote_sc_enabled(conn)){
-                log_info("Level 4 required, but SC not supported -> abort");
-                hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-                connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
-                break;
-            }
-
-            // assess security based on io capabilities
-            if (conn->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
-                // get requested security level
-                gap_security_level_t requested_security_level = conn->requested_security_level;
-                if (hci_stack->gap_secure_connections_only_mode){
-                    requested_security_level = LEVEL_4;
-                }
-
-                // responder: fully validate io caps of both sides as well as OOB data
-                bool security_possible = false;
-                security_possible = hci_ssp_security_level_possible_for_io_cap(requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io);
-
-#ifdef ENABLE_CLASSIC_PAIRING_OOB
-                // We assume that both Controller can reach LEVEL 4, if one side has received P-192 and the other has received P-256,
-                // so we merge the OOB data availability
-                uint8_t have_oob_data = conn->io_cap_response_oob_data;
-                if (conn->classic_oob_c_192 != NULL){
-                    have_oob_data |= 1;
-                }
-                if (conn->classic_oob_c_256 != NULL){
-                    have_oob_data |= 2;
-                }
-                // for up to Level 3, either P-192 as well as P-256 will do
-                // if we don't support SC, then a) conn->classic_oob_c_256 will be NULL and b) remote should not report P-256 available
-                // if remote does not SC, we should not receive P-256 data either
-                if ((requested_security_level <= LEVEL_3) && (have_oob_data != 0)){
-                    security_possible = true;
-                }
-                // for Level 4, P-256 is needed
-                if ((requested_security_level == LEVEL_4 && ((have_oob_data & 2) != 0))){
-                    security_possible = true;
-                }
-#endif
-
-                if (security_possible == false){
-                    log_info("IOCap/OOB insufficient for level %u -> abort", conn->requested_security_level);
-                    hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-                    connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
-                    break;
-                }
-            } else {
-                // initiator: remote io cap not yet, only check if we have ability for MITM protection if requested and OOB is not supported
-#ifdef ENABLE_CLASSIC_PAIRING_OOB
-                if ((conn->requested_security_level >= LEVEL_3) && (hci_stack->ssp_io_capability >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT)){
-                    log_info("Level 3+ required, but no input/output -> abort");
-                    hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
-                    connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
-                    break;
-                }
-#endif
-            }
-
-#ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
-            if (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
-                connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY);
-            } else {
-                connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
-            }
-#endif
+            hci_ssp_assess_security_on_io_cap_request(conn);
             break;
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
