@@ -2882,9 +2882,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
 
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
             hci_connection_timestamp(conn);
             hci_pairing_started(conn, true);
-            hci_ssp_assess_security_on_io_cap_request(conn);
             break;
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -4673,6 +4673,13 @@ static bool hci_run_general_pending_commands(void){
             connectionClearAuthenticationFlags(connection, AUTH_FLAG_DENY_PIN_CODE_REQUEST);
             hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             return true;
+        }
+
+        // security assessment requires remote features
+        if (((connection->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST) != 0) && ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0)){
+            connectionClearAuthenticationFlags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
+            hci_ssp_assess_security_on_io_cap_request(connection);
+            // no return here as hci_ssp_assess_security_on_io_cap_request only sets AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY or AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY
         }
 
         if (connection->authentication_flags & AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY){
