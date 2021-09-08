@@ -1055,8 +1055,8 @@ static hfp_command_entry_t hfp_hf_commmand_table[] = {
     { "+CNUM:", HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION},
     { "+COPS:", HFP_CMD_QUERY_OPERATOR_SELECTION_NAME },
     { "+VGM:",  HFP_CMD_SET_MICROPHONE_GAIN },
-    { "+VGS:",  HFP_CMD_SET_SPEAKER_GAIN},
     { "+VGM=",  HFP_CMD_SET_MICROPHONE_GAIN },
+    { "+VGS:",  HFP_CMD_SET_SPEAKER_GAIN},
     { "+VGS=",  HFP_CMD_SET_SPEAKER_GAIN},
     { "ERROR",  HFP_CMD_ERROR},
     { "NOP",    HFP_CMD_NONE}, // dummy command used by unit tests
