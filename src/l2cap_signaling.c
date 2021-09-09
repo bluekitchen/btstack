@@ -112,9 +112,9 @@ uint16_t l2cap_create_signaling_packet(uint8_t * acl_buffer, hci_con_handle_t ha
                 acl_buffer[pos++] = word & 0xffu;
                 acl_buffer[pos++] = word >> 8;
                 break;
-            case 'C': // list of cids != zero, last one is zero
+            case 'C': // list of cids != zero, last one is 0xffff
                 ptr_u16  = va_arg(argptr, uint16_t *);   // LCOV_EXCL_BR_LINE
-                while (*ptr_u16 != 0){
+                while (*ptr_u16 != 0xffff){
                     little_endian_store_16(acl_buffer, pos, *ptr_u16);
                     ptr_u16++;
                     pos += 2;

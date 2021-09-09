@@ -48,7 +48,7 @@ TEST(L2CAP_LE_Signaling, l2cap_create_signaling_le_valid_cmd_2_format){
 }
 
 TEST(L2CAP_LE_Signaling, l2cap_create_signaling_le_valid_cmd_C_format){
-    uint16_t cids[2] = { 0x3333, 0 };
+    uint16_t cids[2] = { 0x3333, 0xffff };
     uint16_t size = l2cap_send_le_signaling_packet((hci_con_handle_t) 0x01, L2CAP_CREDIT_BASED_RECONFIGURE_REQUEST, 1, 0x1111, 0x2222, cids);
     CHECK_EQUAL(18, size);
 }
