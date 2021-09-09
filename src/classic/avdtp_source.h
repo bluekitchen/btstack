@@ -238,7 +238,7 @@ void avdtp_source_finalize_stream_endpoint(avdtp_stream_endpoint_t * stream_endp
 
 /**
  * @brief Send media packet
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param packet
  * @param size
@@ -248,7 +248,7 @@ uint8_t avdtp_source_stream_send_media_packet(uint16_t avdtp_cid, uint8_t local_
 
 /**
  * @brief Send media payload including RTP header
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param marker
  * @param payload
@@ -260,7 +260,7 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
 /**
  * @brief Send media payload including RTP header and the SBC media header
  * @deprecated Please use avdtp_source_stream_send_media_payload_rtp
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  * @param storage
  * @param num_bytes_to_copy
@@ -270,18 +270,16 @@ uint8_t avdtp_source_stream_send_media_payload_rtp(uint16_t avdtp_cid, uint8_t l
  */
 int avdtp_source_stream_send_media_payload(uint16_t avdtp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
-
-
 /**
  * @brief Request to send a media packet. Packet can be then sent on reception of AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  */
 void avdtp_source_stream_endpoint_request_can_send_now(uint16_t avddp_cid, uint8_t local_seid);
 
 /**
  * @brief Return maximal media payload size, does not include media header.
- * @param avdtp_cid         AVDTP channel identifyer.
+ * @param avdtp_cid         AVDTP channel identifier.
  * @param local_seid        ID of a local stream endpoint.
  */
 int avdtp_max_media_payload_size(uint16_t avdtp_cid, uint8_t local_seid);

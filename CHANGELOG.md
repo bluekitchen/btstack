@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A2DP: allow to register media codec validator for sink and source with:
   - `a2dp_sink_register_media_config_validator`
   - `a2dp_source_register_media_config_validator`
+- A2DP Sink: allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED when ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION is defined
 - SM: Support Cross-Transport Key-Derivation (CTKD) of LE LTK from BR/EDR SC Link Key
 
 ### Fixed

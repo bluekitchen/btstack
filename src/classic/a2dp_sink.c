@@ -207,6 +207,16 @@ uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16
     return avdtp_sink_connect(bd_addr, avdtp_cid);
 }
 
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+uint8_t a2dp_sink_start_stream_accept(uint16_t a2dp_cid, uint8_t local_seid){
+    return avdtp_start_stream_accept(a2dp_cid, local_seid);
+}
+
+uint8_t a2dp_sink_start_stream_reject(uint16_t a2dp_cid, uint8_t local_seid){
+    return avdtp_start_stream_reject(a2dp_cid, local_seid);
+}
+#endif
+
 void a2dp_sink_disconnect(uint16_t a2dp_cid){
     avdtp_disconnect(a2dp_cid);
 }
@@ -294,6 +304,11 @@ static void a2dp_sink_packet_handler_internal(uint8_t packet_type, uint16_t chan
                 case AVDTP_SI_CLOSE:
                     a2dp_emit_stream_event(a2dp_sink_packet_handler_user, a2dp_sink_cid, local_seid, A2DP_SUBEVENT_STREAM_STOPPED);
                     break;
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+                case AVDTP_SI_ACCEPT_START:
+                    a2dp_emit_stream_event(a2dp_sink_packet_handler_user, a2dp_sink_cid, local_seid, A2DP_SUBEVENT_START_STREAM_REQUESTED);
+                    break;
+#endif
                 default:
                     break;
             }

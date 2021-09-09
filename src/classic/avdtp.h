@@ -115,7 +115,10 @@ typedef enum {
     AVDTP_SI_ABORT, //10
     AVDTP_SI_SECURITY_CONTROL,
     AVDTP_SI_GET_ALL_CAPABILITIES, //12
-    AVDTP_SI_DELAYREPORT
+    AVDTP_SI_DELAYREPORT,
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+    AVDTP_SI_ACCEPT_START
+#endif
 } avdtp_signal_identifier_t;
 
 typedef enum {
@@ -381,7 +384,11 @@ typedef enum {
     AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE,
     AVDTP_ACCEPTOR_W2_ANSWER_GET_CONFIGURATION,
     AVDTP_ACCEPTOR_W2_ANSWER_OPEN_STREAM,
-    AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM,
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+    AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM,
+    AVDTP_ACCEPTOR_W2_REJECT_START_STREAM,
+#endif
+    AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM,
     AVDTP_ACCEPTOR_W2_ANSWER_CLOSE_STREAM,
     AVDTP_ACCEPTOR_W2_ANSWER_ABORT_STREAM,
     AVDTP_ACCEPTOR_W2_SUSPEND_STREAM_WITH_SEID,
@@ -670,6 +677,11 @@ uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
 uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 
 uint16_t avdtp_get_next_transaction_label(void);
+
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+uint8_t avdtp_start_stream_accept(uint16_t avdtp_cid, uint8_t local_seid);
+uint8_t avdtp_start_stream_reject(uint16_t avdtp_cid, uint8_t local_seid);
+#endif
 
 #if defined __cplusplus
 }

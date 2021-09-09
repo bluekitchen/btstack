@@ -385,8 +385,13 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t *connection, uint8_t 
                         connection->reject_signal_identifier = connection->acceptor_signaling_packet.signal_identifier;
                         break;
                     }
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+                    log_info("W2_ACCEPT_START_STREAM");
+                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM;
+#else 
                     log_info("W2_ANSWER_START_STREAM");
-                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM;
+                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM;
+#endif
                     break;
                 case AVDTP_SI_CLOSE:
                     switch (stream_endpoint->state){
@@ -626,7 +631,21 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t *connection) {
             avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_OPEN);
             emit_accept = true;
             break;
-        case AVDTP_ACCEPTOR_W2_ANSWER_START_STREAM:
+
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+        case AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM:
+            // keep state until user calls API to confirm or reject starting the stream
+            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM;
+            avdtp_signaling_emit_accept(connection->avdtp_cid, avdtp_local_seid(stream_endpoint), AVDTP_SI_ACCEPT_START, false);
+            break;
+        case AVDTP_ACCEPTOR_W2_REJECT_START_STREAM:
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+            connection->acceptor_signaling_packet.signal_identifier = AVDTP_SI_START;
+            emit_reject = true;
+            avdtp_acceptor_send_response_reject(cid, AVDTP_SI_START, trid);
+            break;
+#endif
+        case AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM:
             log_info("DONE ");
             log_info("    -> AVDTP_STREAM_ENDPOINT_STREAMING ");
             stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;

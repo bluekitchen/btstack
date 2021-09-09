@@ -1084,6 +1084,48 @@ uint8_t avdtp_disconnect(uint16_t avdtp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
+
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+static uint8_t avdtp_handle_explicit_start_stream_confirmation(uint16_t avdtp_cid, uint8_t local_seid, bool accept_stream_requested){
+    avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
+    if (!connection){
+        log_error("avdtp_media_connect: no connection for signaling cid 0x%02x found", avdtp_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
+        log_error("avdtp_media_connect: wrong connection state %d", connection->state);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    avdtp_stream_endpoint_t * stream_endpoint = avdtp_get_stream_endpoint_for_seid(local_seid);
+    if (!stream_endpoint) {
+        log_error("avdtp_media_connect: no stream_endpoint with seid %d found", local_seid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (stream_endpoint->acceptor_config_state != AVDTP_ACCEPTOR_W4_USER_CONFIRM_START_STREAM){
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+
+    if (accept_stream_requested){
+        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ACCEPT_START_STREAM;
+    } else {
+        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_START_STREAM;
+    }
+    avdtp_request_can_send_now_acceptor(connection);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avdtp_start_stream_accept(uint16_t avdtp_cid, uint8_t local_seid){
+    return avdtp_handle_explicit_start_stream_confirmation(avdtp_cid, local_seid, true);
+}
+
+uint8_t avdtp_start_stream_reject(uint16_t avdtp_cid, uint8_t local_seid){
+    return avdtp_handle_explicit_start_stream_confirmation(avdtp_cid, local_seid, false);
+}
+#endif
+
 uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){
     avdtp_connection_t * connection = avdtp_get_connection_for_avdtp_cid(avdtp_cid);
     if (!connection){

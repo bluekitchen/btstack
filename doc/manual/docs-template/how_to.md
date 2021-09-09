@@ -112,6 +112,8 @@ ENABLE_EXPLICIT_CONNECTABLE_MODE_CONTROL | Disable calls to control Connectable 
 ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY | Let application trigger sending IO Capabilities (Negative) Reply
 ENABLE_CLASSIC_OOB_PAIRING       | Enable support for classic Out-of-Band (OOB) pairing
 ENABLE_A2DP_SOURCE_EXPLICIT_CONFIG | Let application configure stream endpoint (skip auto-config of SBC endpoint)
+ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION | allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED
+
 
 Notes:
 

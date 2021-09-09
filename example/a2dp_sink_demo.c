@@ -873,6 +873,12 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
 #endif
             break;
         
+#ifdef ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION
+        case A2DP_SUBEVENT_START_STREAM_REQUESTED:
+            printf("A2DP  Sink      : Explicit Accept to start stream, local_seid 0x%02x\n", a2dp_subevent_start_stream_requested_get_local_seid(packet));
+            a2dp_sink_start_stream_accept(a2dp_cid, a2dp_local_seid);
+            break;
+#endif
         case A2DP_SUBEVENT_STREAM_STARTED:
             printf("A2DP  Sink      : Stream started\n");
             // audio stream is started when buffer reaches minimal level
