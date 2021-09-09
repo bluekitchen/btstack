@@ -855,7 +855,7 @@ static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel)
 #ifdef L2CAP_USES_CHANNELS
 static uint16_t l2cap_next_local_cid(void){
     do {
-        if (l2cap_local_source_cid == 0xffffu) {
+        if (l2cap_local_source_cid == 0xfffeu) {
             l2cap_local_source_cid = 0x40;
         } else {
             l2cap_local_source_cid++;
