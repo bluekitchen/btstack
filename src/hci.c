@@ -5674,7 +5674,6 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
     return 0;
 }
-#endif
 
 void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
@@ -5685,6 +5684,7 @@ void gap_set_local_name(const char * local_name){
     }
     hci_run();
 }
+#endif
 
 
 #ifdef ENABLE_BLE
