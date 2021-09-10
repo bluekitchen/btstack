@@ -693,14 +693,6 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_WRITE_PAGE_TIMEOUT,
     HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
-    HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING,
-    HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING,
-    HCI_INIT_WRITE_CLASS_OF_DEVICE,
-    HCI_INIT_W4_WRITE_CLASS_OF_DEVICE,
-    HCI_INIT_WRITE_LOCAL_NAME,
-    HCI_INIT_W4_WRITE_LOCAL_NAME,
-    HCI_INIT_WRITE_EIR_DATA,
-    HCI_INIT_W4_WRITE_EIR_DATA,
     HCI_INIT_WRITE_INQUIRY_MODE,
     HCI_INIT_W4_WRITE_INQUIRY_MODE,
     HCI_INIT_WRITE_SECURE_CONNECTIONS_HOST_ENABLE,
@@ -758,6 +750,11 @@ typedef enum hci_init_state{
     HCI_HALTING_CLOSE,
 
 } hci_substate_t;
+
+#define GAP_TASK_SET_LOCAL_NAME          1
+#define GAP_TASK_SET_EIR_DATA            2
+#define GAP_TASK_SET_CLASS_OF_DEVICE     4
+#define GAP_TASK_SET_DEFAULT_LINK_POLICY 8
 
 enum {
     // Tasks
@@ -846,6 +843,9 @@ typedef struct {
     inquiry_mode_t     inquiry_mode;
 
 #ifdef ENABLE_CLASSIC
+    /* GAP tasks, see GAP_TASK_* */
+    uint16_t           gap_tasks;
+
     /* write page scan activity, 0xffff is no change */
     uint16_t           new_page_scan_interval;
     uint16_t           new_page_scan_window;
