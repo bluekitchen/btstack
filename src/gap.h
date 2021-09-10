@@ -184,27 +184,24 @@ hci_role_t gap_get_role(hci_con_handle_t connection_handle);
  */
 uint8_t gap_request_role(const bd_addr_t addr, hci_role_t role);
 
-/** 
+/**
  * @brief Sets local name.
- * @note has to be done before stack starts up
  * @note Default name is 'BTstack 00:00:00:00:00:00'
  * @note '00:00:00:00:00:00' in local_name will be replaced with actual bd addr
- * @param name is not copied, make sure memory is accessible during stack startup
+ * @param name is not copied, make sure memory stays valid
  */
 void gap_set_local_name(const char * local_name);
 
 /**
  * @brief Set Extended Inquiry Response data
- * @note has to be done before stack starts up
  * @note If not set, local name will be used for EIR data (see gap_set_local_name)
  * @note '00:00:00:00:00:00' in local_name will be replaced with actual bd addr
- * @param eir_data size HCI_EXTENDED_INQUIRY_RESPONSE_DATA_LEN (240) bytes, is not copied make sure memory is accessible during stack startup
+ * @param eir_data size HCI_EXTENDED_INQUIRY_RESPONSE_DATA_LEN (240) bytes, is not copied make sure memory stays valid
  */
-void gap_set_extended_inquiry_response(const uint8_t * data); 
+void gap_set_extended_inquiry_response(const uint8_t * data);
 
 /**
- * @brief Set class of device that will be set during Bluetooth init.
- * @note has to be done before stack starts up
+ * @brief Set class of device
  */
 void gap_set_class_of_device(uint32_t class_of_device);
 
@@ -212,7 +209,6 @@ void gap_set_class_of_device(uint32_t class_of_device);
  * @brief Set default link policy settings for all classic ACL links
  * @param default_link_policy_settings - see LM_LINK_POLICY_* in bluetooth.h
  * @note common value: LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE to enable role switch and sniff mode
- * @note has to be done before stack starts up
  */
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
 

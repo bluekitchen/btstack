@@ -1228,6 +1228,68 @@ static void hci_update_advertisements_enabled_for_current_roles(void){
 #endif
 #endif
 
+#ifdef ENABLE_CLASSIC
+static void gap_run_set_local_name(void){
+    hci_reserve_packet_buffer();
+    uint8_t * packet = hci_stack->hci_packet_buffer;
+    // construct HCI Command and send
+    uint16_t opcode = hci_write_local_name.opcode;
+    hci_stack->last_cmd_opcode = opcode;
+    packet[0] = opcode & 0xff;
+    packet[1] = opcode >> 8;
+    packet[2] = DEVICE_NAME_LEN;
+    memset(&packet[3], 0, DEVICE_NAME_LEN);
+    uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
+    uint16_t bytes_to_copy = btstack_min(name_len, DEVICE_NAME_LEN);
+    // if shorter than DEVICE_NAME_LEN, it's implicitly NULL-terminated by memset call
+    (void)memcpy(&packet[3], hci_stack->local_name, bytes_to_copy);
+    // expand '00:00:00:00:00:00' in name with bd_addr
+    btstack_replace_bd_addr_placeholder(&packet[3], bytes_to_copy, hci_stack->local_bd_addr);
+    hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
+}
+
+static void gap_run_set_eir_data(void){
+    hci_reserve_packet_buffer();
+    uint8_t * packet = hci_stack->hci_packet_buffer;
+    // construct HCI Command in-place and send
+    uint16_t opcode = hci_write_extended_inquiry_response.opcode;
+    hci_stack->last_cmd_opcode = opcode;
+    uint16_t offset = 0;
+    packet[offset++] = opcode & 0xff;
+    packet[offset++] = opcode >> 8;
+    packet[offset++] = 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN;
+    packet[offset++] = 0;  // FEC not required
+    memset(&packet[offset], 0, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
+    if (hci_stack->eir_data){
+        // copy items and expand '00:00:00:00:00:00' in name with bd_addr
+        ad_context_t context;
+        for (ad_iterator_init(&context, EXTENDED_INQUIRY_RESPONSE_DATA_LEN, hci_stack->eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
+            uint8_t data_type   = ad_iterator_get_data_type(&context);
+            uint8_t size        = ad_iterator_get_data_len(&context);
+            const uint8_t *data = ad_iterator_get_data(&context);
+            // copy item
+            packet[offset++] = size + 1;
+            packet[offset++] = data_type;
+            memcpy(&packet[offset], data, size);
+            // update name item
+            if ((data_type == BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME) || (data_type == BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME)){
+                btstack_replace_bd_addr_placeholder(&packet[offset], size, hci_stack->local_bd_addr);
+            }
+            offset += size;
+        }
+    } else {
+        uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
+        uint16_t bytes_to_copy = btstack_min(name_len, EXTENDED_INQUIRY_RESPONSE_DATA_LEN - 2);
+        packet[offset++] = bytes_to_copy + 1;
+        packet[offset++] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
+        (void)memcpy(&packet[6], hci_stack->local_name, bytes_to_copy);
+        // expand '00:00:00:00:00:00' in name with bd_addr
+        btstack_replace_bd_addr_placeholder(&packet[offset], bytes_to_copy, hci_stack->local_bd_addr);
+    }
+    hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
+}
+#endif
+
 #if !defined(HAVE_PLATFORM_IPHONE_OS) && !defined (HAVE_HOST_CONTROLLER_API)
 
 static uint32_t hci_transport_uart_get_main_baud_rate(void){
@@ -1490,76 +1552,6 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
             hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             break;
-        case HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING:
-            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING;
-            hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
-            break;
-        case HCI_INIT_WRITE_CLASS_OF_DEVICE:
-            hci_stack->substate = HCI_INIT_W4_WRITE_CLASS_OF_DEVICE;
-            hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
-            break;
-        case HCI_INIT_WRITE_LOCAL_NAME: {
-            hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
-            hci_reserve_packet_buffer();
-            uint8_t * packet = hci_stack->hci_packet_buffer;
-            // construct HCI Command and send
-            uint16_t opcode = hci_write_local_name.opcode;
-            hci_stack->last_cmd_opcode = opcode;
-            packet[0] = opcode & 0xff;
-            packet[1] = opcode >> 8;
-            packet[2] = DEVICE_NAME_LEN;
-            memset(&packet[3], 0, DEVICE_NAME_LEN);
-            uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
-            uint16_t bytes_to_copy = btstack_min(name_len, DEVICE_NAME_LEN);
-            // if shorter than DEVICE_NAME_LEN, it's implicitly NULL-terminated by memset call
-            (void)memcpy(&packet[3], hci_stack->local_name, bytes_to_copy);
-            // expand '00:00:00:00:00:00' in name with bd_addr
-            btstack_replace_bd_addr_placeholder(&packet[3], bytes_to_copy, hci_stack->local_bd_addr);
-            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
-            break;
-        }
-        case HCI_INIT_WRITE_EIR_DATA: {
-            hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
-            hci_reserve_packet_buffer();
-            uint8_t * packet = hci_stack->hci_packet_buffer;
-            // construct HCI Command in-place and send
-            uint16_t opcode = hci_write_extended_inquiry_response.opcode;
-            hci_stack->last_cmd_opcode = opcode;
-            uint16_t offset = 0;
-            packet[offset++] = opcode & 0xff;
-            packet[offset++] = opcode >> 8;
-            packet[offset++] = 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN;
-            packet[offset++] = 0;  // FEC not required
-            memset(&packet[offset], 0, EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
-            if (hci_stack->eir_data){
-                // copy items and expand '00:00:00:00:00:00' in name with bd_addr
-                ad_context_t context;
-                for (ad_iterator_init(&context, EXTENDED_INQUIRY_RESPONSE_DATA_LEN, hci_stack->eir_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)) {
-                    uint8_t data_type   = ad_iterator_get_data_type(&context);
-                    uint8_t size        = ad_iterator_get_data_len(&context);
-                    const uint8_t *data = ad_iterator_get_data(&context);
-                    // copy item
-                    packet[offset++] = size + 1;
-                    packet[offset++] = data_type;
-                    memcpy(&packet[offset], data, size);
-                    // update name item
-                    if ((data_type == BLUETOOTH_DATA_TYPE_SHORTENED_LOCAL_NAME) || (data_type == BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME)){
-                        btstack_replace_bd_addr_placeholder(&packet[offset], size, hci_stack->local_bd_addr);
-                    }
-                    offset += size;
-                }
-            } else {
-                uint16_t name_len = (uint16_t) strlen(hci_stack->local_name);
-                uint16_t bytes_to_copy = btstack_min(name_len, EXTENDED_INQUIRY_RESPONSE_DATA_LEN - 2);
-                packet[offset++] = bytes_to_copy + 1;
-                packet[offset++] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
-                (void)memcpy(&packet[6], hci_stack->local_name, bytes_to_copy);
-                // expand '00:00:00:00:00:00' in name with bd_addr
-                btstack_replace_bd_addr_placeholder(&packet[offset], bytes_to_copy, hci_stack->local_bd_addr);
-            }
-            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + EXTENDED_INQUIRY_RESPONSE_DATA_LEN);
-            break;
-        }
         case HCI_INIT_WRITE_INQUIRY_MODE:
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
@@ -3399,6 +3391,11 @@ static void hci_state_reset(void){
     hci_stack->new_page_scan_window = 0xffff;
     hci_stack->new_page_scan_type = 0xff;
     hci_stack->inquiry_lap = GAP_IAC_GENERAL_INQUIRY;
+    hci_stack->gap_tasks =
+            GAP_TASK_SET_DEFAULT_LINK_POLICY |
+            GAP_TASK_SET_CLASS_OF_DEVICE |
+            GAP_TASK_SET_LOCAL_NAME |
+            GAP_TASK_SET_EIR_DATA;
 #endif
 
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
@@ -3659,10 +3656,14 @@ bool gap_get_secure_connections_only_mode(void){
 #ifdef ENABLE_CLASSIC
 void gap_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
+    hci_stack->gap_tasks |= GAP_TASK_SET_CLASS_OF_DEVICE;
+    hci_run();
 }
 
 void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings){
     hci_stack->default_link_policy_settings = default_link_policy_settings;
+    hci_stack->gap_tasks |= GAP_TASK_SET_DEFAULT_LINK_POLICY;
+    hci_run();
 }
 
 void gap_set_allow_role_switch(bool allow_role_switch){
@@ -4103,6 +4104,10 @@ static bool hci_run_acl_fragments(void){
 #ifdef ENABLE_CLASSIC
 static bool hci_run_general_gap_classic(void){
 
+    // assert stack is working and classic is active
+    if (hci_classic_supported() == false)      return false;
+    if (hci_stack->state != HCI_STATE_WORKING) return false;
+
     // decline incoming connections
     if (hci_stack->decline_reason){
         uint8_t reason = hci_stack->decline_reason;
@@ -4110,25 +4115,51 @@ static bool hci_run_general_gap_classic(void){
         hci_send_cmd(&hci_reject_connection_request, hci_stack->decline_addr, reason);
         return true;
     }
+
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_CLASS_OF_DEVICE) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_CLASS_OF_DEVICE;
+        hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
+        return true;
+    }
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_LOCAL_NAME) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_LOCAL_NAME;
+        gap_run_set_local_name();
+        return true;
+    }
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_EIR_DATA) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_EIR_DATA;
+        gap_run_set_eir_data();
+        return true;
+    }
+    if ((hci_stack->gap_tasks & GAP_TASK_SET_DEFAULT_LINK_POLICY) != 0) {
+        hci_stack->gap_tasks &= ~GAP_TASK_SET_DEFAULT_LINK_POLICY;
+        hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
+        return true;
+    }
     // write page scan activity
-    if ((hci_stack->state == HCI_STATE_WORKING) && (hci_stack->new_page_scan_interval != 0xffff) && hci_classic_supported()){
-        hci_send_cmd(&hci_write_page_scan_activity, hci_stack->new_page_scan_interval, hci_stack->new_page_scan_window);
+    if (hci_stack->new_page_scan_interval != 0xffff) {
+        uint16_t new_page_scan_interval = hci_stack->new_page_scan_interval;
+        uint16_t new_page_scan_window = hci_stack->new_page_scan_window;
         hci_stack->new_page_scan_interval = 0xffff;
         hci_stack->new_page_scan_window = 0xffff;
+        hci_send_cmd(&hci_write_page_scan_activity, new_page_scan_interval, new_page_scan_window);
         return true;
     }
     // write page scan type
-    if ((hci_stack->state == HCI_STATE_WORKING) && (hci_stack->new_page_scan_type != 0xff) && hci_classic_supported()){
-        hci_send_cmd(&hci_write_page_scan_type, hci_stack->new_page_scan_type);
+    if (hci_stack->new_page_scan_type != 0xff) {
+        uint8_t new_page_scan_type = hci_stack->new_page_scan_type;
         hci_stack->new_page_scan_type = 0xff;
+        hci_send_cmd(&hci_write_page_scan_type, new_page_scan_type);
         return true;
     }
     // send scan enable
-    if ((hci_stack->state == HCI_STATE_WORKING) && (hci_stack->new_scan_enable_value != 0xff) && hci_classic_supported()){
-        hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
+    if (hci_stack->new_scan_enable_value != 0xff) {
+        uint8_t new_scan_enable_value = hci_stack->new_scan_enable_value;
         hci_stack->new_scan_enable_value = 0xff;
+        hci_send_cmd(&hci_write_scan_enable, new_scan_enable_value);
         return true;
     }
+
     // start/stop inquiry
     if ((hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN) && (hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX)){
         uint8_t duration = hci_stack->inquiry_state;
@@ -4150,7 +4181,7 @@ static bool hci_run_general_gap_classic(void){
     }
 #ifdef ENABLE_CLASSIC_PAIRING_OOB
     // Local OOB data
-    if ((hci_stack->state == HCI_STATE_WORKING) && hci_stack->classic_read_local_oob_data){
+    if (hci_stack->classic_read_local_oob_data){
         hci_stack->classic_read_local_oob_data = false;
         if (hci_stack->local_supported_commands[1] & 0x10u){
             hci_send_cmd(&hci_read_local_extended_oob_data);
@@ -5750,6 +5781,12 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
 void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
+    hci_stack->gap_tasks |= GAP_TASK_SET_LOCAL_NAME;
+    // also update EIR if not set by user
+    if (hci_stack->eir_data == NULL){
+        hci_stack->gap_tasks |= GAP_TASK_SET_EIR_DATA;
+    }
+    hci_run();
 }
 
 
@@ -6302,6 +6339,8 @@ uint16_t gap_le_connection_interval(hci_con_handle_t con_handle){
  */
 void gap_set_extended_inquiry_response(const uint8_t * data){
     hci_stack->eir_data = data;
+    hci_stack->gap_tasks |= GAP_TASK_SET_EIR_DATA;
+    hci_run();
 }
 
 /**
