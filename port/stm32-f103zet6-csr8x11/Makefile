@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = stm32f4-discovery-cc256x
+TARGET = stm32f103zet6-csr8x11
 
 
 ######################################
@@ -47,7 +47,7 @@ ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c \
 ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
 ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c \
 ${BTSTACK_ROOT}/3rd-party/md5/md5.c \
-${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c \
+${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c \
 ${BTSTACK_ROOT}/example/sco_demo_util.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
@@ -154,7 +154,7 @@ ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c \
 ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c \
 ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
 ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
-bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
+#bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
 bsp/audio.c \
 bsp/cs43l22.c \
 bsp/stm32f4_discovery.c \
@@ -271,7 +271,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
-C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
+C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
 C_INCLUDES += -I Drivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -I bsp
 C_INCLUDES += -I pdm
@@ -382,7 +382,7 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
-include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
+include ${BTSTACK_ROOT}/chipset/csr/Makefile.inc
 
 $(BUILD_DIR)/%.h: %.gatt
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
