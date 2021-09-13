@@ -2279,6 +2279,7 @@ static void handle_command_complete_event(uint8_t * packet, uint16_t size){
         case HCI_OPCODE_HCI_PIN_CODE_REQUEST_NEGATIVE_REPLY:
         case HCI_OPCODE_HCI_USER_PASSKEY_REQUEST_NEGATIVE_REPLY:
         case HCI_OPCODE_HCI_USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY:
+            hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
             // lookup connection by gap pairing addr
             conn = hci_connection_for_bd_addr_and_type(hci_stack->gap_pairing_addr, BD_ADDR_TYPE_ACL);
             if (conn == NULL) break;
