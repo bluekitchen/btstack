@@ -2428,8 +2428,17 @@ static bool btstack_is_null(uint8_t * data, uint16_t size){
 }
 
 static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
+    // get requested security level
+    gap_security_level_t requested_security_level = conn->requested_security_level;
+    if (hci_stack->gap_secure_connections_only_mode){
+        requested_security_level = LEVEL_4;
+    }
+
     // assess security: LEVEL 4 requires SC
-    if ((hci_stack->gap_secure_connections_only_mode || (conn->requested_security_level == LEVEL_4)) && !hci_remote_sc_enabled(conn)){
+    // skip this preliminary test if remote features are not available yet to work around potential issue in ESP32 controller
+    if ((requested_security_level == LEVEL_4) &&
+        ((conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0) &&
+        !hci_remote_sc_enabled(conn)){
         log_info("Level 4 required, but SC not supported -> abort");
         hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
         connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
@@ -2438,12 +2447,6 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
 
     // assess security based on io capabilities
     if (conn->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_RESPONSE){
-        // get requested security level
-        gap_security_level_t requested_security_level = conn->requested_security_level;
-        if (hci_stack->gap_secure_connections_only_mode){
-            requested_security_level = LEVEL_4;
-        }
-
         // responder: fully validate io caps of both sides as well as OOB data
         bool security_possible = false;
         security_possible = hci_ssp_security_level_possible_for_io_cap(requested_security_level, hci_stack->ssp_io_capability, conn->io_cap_response_io);
@@ -2471,7 +2474,7 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
 #endif
 
         if (security_possible == false){
-            log_info("IOCap/OOB insufficient for level %u -> abort", conn->requested_security_level);
+            log_info("IOCap/OOB insufficient for level %u -> abort", requested_security_level);
             hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
             connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             return;
@@ -4707,7 +4710,7 @@ static bool hci_run_general_pending_commands(void){
         }
 
         // security assessment requires remote features
-        if (((connection->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST) != 0) && ((connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0)){
+        if ((connection->authentication_flags & AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST) != 0){
             connectionClearAuthenticationFlags(connection, AUTH_FLAG_RECV_IO_CAPABILITIES_REQUEST);
             hci_ssp_assess_security_on_io_cap_request(connection);
             // no return here as hci_ssp_assess_security_on_io_cap_request only sets AUTH_FLAG_SEND_IO_CAPABILITIES_REPLY or AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY
