@@ -194,19 +194,9 @@ static const char * default_classic_name = "BTstack 00:00:00:00:00:00";
 static uint8_t disable_l2cap_timeouts = 0;
 #endif
 
-/**
- * create connection for given address
- *
- * @return connection OR NULL, if no memory left
- */
-static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
-    log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
-    hci_connection_t * conn = btstack_memory_hci_connection_get();
-    if (!conn) return NULL;
-    bd_addr_copy(conn->address, addr);
-    conn->role = HCI_ROLE_INVALID;
-    conn->address_type = addr_type;
-    conn->con_handle = 0xffff;
+// reset connection state on create and on reconnect
+// don't overwrite addr, con handle, role
+static void hci_connection_init(hci_connection_t * conn){
     conn->authentication_flags = AUTH_FLAG_NONE;
     conn->bonding_flags = 0;
     conn->requested_security_level = LEVEL_0;
@@ -230,7 +220,27 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t
 #ifdef ENABLE_LE_LIMIT_ACL_FRAGMENT_BY_MAX_OCTETS
     conn->le_max_tx_octets = 27;
 #endif
+}
+
+/**
+ * create connection for given address
+ *
+ * @return connection OR NULL, if no memory left
+ */
+static hci_connection_t * create_connection_for_bd_addr_and_type(const bd_addr_t addr, bd_addr_type_t addr_type){
+    log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
+
+    hci_connection_t * conn = btstack_memory_hci_connection_get();
+    if (!conn) return NULL;
+    hci_connection_init(conn);
+
+    bd_addr_copy(conn->address, addr);
+    conn->address_type = addr_type;
+    conn->con_handle = HCI_CON_HANDLE_INVALID;
+    conn->role = HCI_ROLE_INVALID;
+
     btstack_linked_list_add(&hci_stack->connections, (btstack_linked_item_t *) conn);
+
     return conn;
 }
 
@@ -5172,6 +5182,10 @@ uint8_t hci_send_cmd_packet(uint8_t *packet, int size){
                 conn->state = SEND_CREATE_CONNECTION;
                 conn->role  = HCI_ROLE_MASTER;
             }
+
+            conn->con_handle = HCI_CON_HANDLE_INVALID;
+            conn->role = HCI_ROLE_INVALID;
+
             log_info("conn state %u", conn->state);
             // TODO: L2CAP should not send create connection command, instead a (new) gap function should be used
             switch (conn->state) {
