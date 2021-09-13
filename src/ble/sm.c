@@ -1072,7 +1072,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
     }
 }
 
-static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
+static bool sm_key_distribution_all_received(void) {
     log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, bution_expected_set);
     return (setup->sm_key_distribution_expected_set & setup->sm_key_distribution_received_set) == setup->sm_key_distribution_expected_set;
 }
@@ -3063,7 +3063,7 @@ static void sm_run(void){
                 // keys are sent
                 if (IS_RESPONDER(connection->sm_role)){
                     // slave -> receive master keys if any
-                    if (sm_key_distribution_all_received(connection)){
+                    if (sm_key_distribution_all_received()){
                         sm_key_distribution_handle_all_received(connection);
                         sm_key_distribution_complete_responder(connection);
                         // start CTKD right away
@@ -3160,7 +3160,7 @@ static void sm_run(void){
                 // keys are sent
                 if (IS_RESPONDER(connection->sm_role)) {
                     // responder -> receive master keys if there are any
-                    if (!sm_key_distribution_all_received(connection)) {
+                    if (!sm_key_distribution_all_received()){
                         connection->sm_engine_state = SM_BR_EDR_RECEIVE_KEYS;
                         break;
                     }
@@ -3359,7 +3359,7 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
     } else {
         // no keys to send, just continue
         if (IS_RESPONDER(connection->sm_role)){
-            if (sm_key_distribution_all_received(connection)){
+            if (sm_key_distribution_all_received()){
                 sm_key_distribution_handle_all_received(connection);
                 sm_key_distribution_complete_responder(connection);
             } else {
@@ -3842,7 +3842,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 }
                             } else {
                                 // master
-                                if (sm_key_distribution_all_received(sm_conn)){
+                                if (sm_key_distribution_all_received()){
                                     // skip receiving keys as there are none
                                     sm_key_distribution_handle_all_received(sm_conn);
                                     btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
@@ -4508,7 +4508,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     break;
             }
             // done with key distribution?
-            if (sm_key_distribution_all_received(sm_conn)){
+            if (sm_key_distribution_all_received()){
 
                 sm_key_distribution_handle_all_received(sm_conn);
 
@@ -4549,7 +4549,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                                       sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres) & ~SM_KEYDIST_ENC_KEY);
 
             // skip receive if there are none
-            if (sm_key_distribution_all_received(sm_conn)){
+            if (sm_key_distribution_all_received()){
                 // distribute keys in run handles 'no keys to send'
                 sm_conn->sm_engine_state = SM_BR_EDR_DISTRIBUTE_KEYS;
             } else {
@@ -4600,7 +4600,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // all keys received
-            if (sm_key_distribution_all_received(sm_conn)){
+            if (sm_key_distribution_all_received()){
                 if (IS_RESPONDER(sm_conn->sm_role)){
                     // responder -> keys exchanged, derive LE LTK
                     sm_ctkd_start_from_br_edr(sm_conn);
