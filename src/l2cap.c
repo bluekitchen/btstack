@@ -1378,12 +1378,12 @@ int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t
     return l2cap_send_signaling_packet(con_handle, ECHO_REQUEST,  l2cap_next_sig_id(), len, data);
 }
 
-static inline void channelStateVarSetFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
-    channel->state_var = (L2CAP_CHANNEL_STATE_VAR) (channel->state_var | flag);
+static inline void channelStateVarSetFlag(l2cap_channel_t *channel, uint16_t flag){
+    channel->state_var = channel->state_var | flag;
 }
 
-static inline void channelStateVarClearFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
-    channel->state_var = (L2CAP_CHANNEL_STATE_VAR) (channel->state_var & ~flag);
+static inline void channelStateVarClearFlag(l2cap_channel_t *channel, uint16_t flag){
+    channel->state_var = channel->state_var & ~flag;
 }
 #endif
 
@@ -2648,10 +2648,10 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 
     // assert security requirements
     if (channel->required_security_level <= gap_security_level(handle)){
-        channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_INCOMING);
+        channel->state_var  = L2CAP_CHANNEL_STATE_VAR_INCOMING;
         l2cap_handle_security_level_incoming_sufficient(channel);
     } else {
-        channel->state_var  = (L2CAP_CHANNEL_STATE_VAR) (L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING);
+        channel->state_var  = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING;
         gap_request_security_level(handle, channel->required_security_level);
     }
 }
