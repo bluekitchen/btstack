@@ -1005,6 +1005,13 @@ static void acl_handler(uint8_t *packet, uint16_t size){
     hci_run();
 }
 
+static void hci_connection_stop_timer(hci_connection_t * conn){
+    btstack_run_loop_remove_timer(&conn->timeout);
+#ifdef ENABLE_CLASSIC
+    btstack_run_loop_remove_timer(&conn->timeout_sco);
+#endif
+}
+
 static void hci_shutdown_connection(hci_connection_t *conn){
     log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
@@ -1017,8 +1024,8 @@ static void hci_shutdown_connection(hci_connection_t *conn){
 #endif
 #endif
 
-    btstack_run_loop_remove_timer(&conn->timeout);
-    
+    hci_connection_stop_timer(conn);
+
     btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
     btstack_memory_hci_connection_free( conn );
     
@@ -3053,8 +3060,9 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // pairing failed if it was ongoing
             hci_pairing_complete(conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
 #endif
-            // mark connection for shutdown
+            // mark connection for shutdown, stop timers
             conn->state = RECEIVED_DISCONNECTION_COMPLETE;
+            hci_connection_stop_timer(conn);
 
             // emit dedicatd bonding event
             if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
