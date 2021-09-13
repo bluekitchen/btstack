@@ -144,6 +144,7 @@ static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uin
 static uint8_t  l2cap_next_sig_id(void);
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
 #ifdef ENABLE_CLASSIC
+static void l2cap_handle_security_level_incoming_sufficient(l2cap_channel_t * channel);
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm);
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel);
