@@ -3070,14 +3070,16 @@ static void event_handler(uint8_t *packet, uint16_t size){
             // pairing failed if it was ongoing
             hci_pairing_complete(conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION);
 #endif
-            // mark connection for shutdown, stop timers
-            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
-            hci_connection_stop_timer(conn);
 
             // emit dedicatd bonding event
             if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
                 hci_emit_dedicated_bonding_result(conn->address, conn->bonding_status);
             }
+
+            // mark connection for shutdown, stop timers, reset state
+            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
+            hci_connection_stop_timer(conn);
+            hci_connection_init(conn);
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
