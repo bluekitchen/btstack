@@ -2481,13 +2481,15 @@ static void hci_ssp_assess_security_on_io_cap_request(hci_connection_t * conn){
         }
     } else {
         // initiator: remote io cap not yet, only check if we have ability for MITM protection if requested and OOB is not supported
-#ifdef ENABLE_CLASSIC_PAIRING_OOB
+#ifndef ENABLE_CLASSIC_PAIRING_OOB
+#ifndef ENABLE_EXPLICIT_IO_CAPABILITIES_REPLY
         if ((conn->requested_security_level >= LEVEL_3) && (hci_stack->ssp_io_capability >= SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT)){
             log_info("Level 3+ required, but no input/output -> abort");
             hci_pairing_complete(conn, ERROR_CODE_INSUFFICIENT_SECURITY);
             connectionSetAuthenticationFlags(conn, AUTH_FLAG_SEND_IO_CAPABILITIES_NEGATIVE_REPLY);
             return;
         }
+#endif
 #endif
     }
 
