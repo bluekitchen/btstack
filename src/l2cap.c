@@ -1961,24 +1961,40 @@ static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
+    // double check if all feature pages are complete
+
+    bool security_required = channel->required_security_level > LEVEL_0;
 
     // abort if Secure Connections Only Mode with legacy connection
-    if (gap_get_secure_connections_only_mode() && gap_secure_connection(channel->con_handle) == false){
+    if (security_required && gap_get_secure_connections_only_mode() && gap_secure_connection(channel->con_handle) == 0){
         l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY);
         btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t  *) channel);
         l2cap_free_channel_entry(channel);
         return;
     }
 
-    // we have been waiting for remote supported features
-    if (channel->required_security_level > LEVEL_0){
-        // request security level
-        channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
-        gap_request_security_level(channel->con_handle, channel->required_security_level);
-        return;
+    if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) != 0){
+        // incoming: assert security requirements
+        channel->state = L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
+        if (channel->required_security_level <= gap_security_level(channel->con_handle)){
+            l2cap_handle_security_level_incoming_sufficient(channel);
+        } else {
+            // send connection pending if not already done
+            if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SENT_CONN_RESP_PEND) == 0){
+                channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
+            }
+            gap_request_security_level(channel->con_handle, channel->required_security_level);
+        }
+    } else {
+        // outgoing: we have been waiting for remote supported features
+        if (security_required){
+            // request security level
+            channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
+            gap_request_security_level(channel->con_handle, channel->required_security_level);
+        } else {
+            l2cap_ready_to_connect(channel);
+        }
     }
-
-    l2cap_ready_to_connect(channel);
 }
 #endif
 
@@ -2341,6 +2357,7 @@ static void l2cap_check_classic_timeout(hci_con_handle_t handle){
     }
     hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection
 }
+
 static void l2cap_handle_features_complete(hci_con_handle_t handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(handle);
     if (hci_connection == NULL) {
@@ -2643,18 +2660,17 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state =      L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
+    channel->state =     L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
+    channel->state_var = L2CAP_CHANNEL_STATE_VAR_INCOMING;
 
     // add to connections list
     btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
 
-    // assert security requirements
-    if (channel->required_security_level <= gap_security_level(handle)){
-        channel->state_var  = L2CAP_CHANNEL_STATE_VAR_INCOMING;
-        l2cap_handle_security_level_incoming_sufficient(channel);
+    // send conn resp pending if remote supported features have not been received yet
+    if ((hci_connection->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) != 0){
+        l2cap_handle_remote_supported_features_received(channel);
     } else {
-        channel->state_var  = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND | L2CAP_CHANNEL_STATE_VAR_INCOMING;
-        gap_request_security_level(handle, channel->required_security_level);
+        channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
     }
 }
 
