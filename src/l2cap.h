@@ -110,8 +110,8 @@ typedef enum {
 #define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  1 << 9   // in CONF RSP, send UNKNOWN OPTIONS
 #define L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED 1 << 10  // in CONF RSP, send Unacceptable Parameters (ERTM)
 #define L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   1 << 11  // set when ERTM was requested but we want only Basic mode (ERM)
-#define L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN   1 << 12  // send CMD_REJ with reason unknown
-#define L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    1 << 13  // send Connection Respond with pending
+#define L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    1 << 12  // send Connection Respond with pending
+#define L2CAP_CHANNEL_STATE_VAR_SENT_CONN_RESP_PEND    1 << 13  // send CMD_REJ with reason unknown
 #define L2CAP_CHANNEL_STATE_VAR_INCOMING               1 << 15  // channel is incoming
 
 

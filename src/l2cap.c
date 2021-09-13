@@ -1487,6 +1487,7 @@ static bool l2cap_run_for_classic_channel(l2cap_channel_t * channel){
             if (!hci_can_send_acl_packet_now(channel->con_handle)) return false;
             if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
                 channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
+                channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONN_RESP_PEND);
                 l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 1, 0);
             }
             break;
