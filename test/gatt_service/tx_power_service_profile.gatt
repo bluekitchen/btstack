@@ -1,0 +1,2 @@
+// add TX Power Service
+#import <tx_power_service.gatt>

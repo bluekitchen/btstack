@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `a2dp_source_register_media_config_validator`
 - A2DP Sink: allow accept or reject of stream start on A2DP_SUBEVENT_START_STREAM_REQUESTED when ENABLE_AVDTP_ACCEPTOR_EXPLICIT_START_STREAM_CONFIRMATION is defined
 - SM: Support Cross-Transport Key-Derivation (CTKD) of LE LTK from BR/EDR SC Link Key
+- GATT Service: support TX Power Service Server 
 
 ### Fixed
 - A2DP Source: fix reconfigure

@@ -16,5 +16,6 @@ SRC_BLE_GATT_SERVICE_FILES = \
     nordic_spp_service_server.c \
     scan_parameters_service_client.c \
     scan_parameters_service_server.c \
+    tx_power_service_server.c \
     ublox_spp_service_server.c \
 
