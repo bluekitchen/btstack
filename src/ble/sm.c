@@ -3510,14 +3510,18 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_role = packet[6];
                             sm_conn->sm_peer_addr_type = packet[7];
                             reverse_bd_addr(&packet[8], sm_conn->sm_peer_address);
-                            if (sm_conn->sm_role){
+#ifdef ENABLE_LE_PERIPHERAL
+                            if (sm_conn->sm_role != 0){
                                 // responder - use own address from advertisements
                                 gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
-                            } else {
+                            }
+#endif
+#ifdef ENABLE_LE_CENTRAL
+                            if (sm_conn->sm_role == 0){
                                 // initiator - use own address from create connection
                                 gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
                             }
-
+#endif
                             // reset security properties
                             sm_conn->sm_connection_encrypted = 0;
                             sm_conn->sm_connection_authenticated = 0;
