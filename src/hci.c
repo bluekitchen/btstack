@@ -4591,7 +4591,7 @@ static bool hci_run_general_gap_le(void){
     if (hci_stack->le_advertisements_enabled_for_current_roles && !hci_stack->le_advertisements_active){
         // check if advertisements should be enabled given
         hci_stack->le_advertisements_active = true;
-        hci_get_own_address_for_addr_type(hci_stack->le_connection_own_addr_type, hci_stack->le_advertisements_own_address);
+        hci_get_own_address_for_addr_type(hci_stack->le_advertisements_own_addr_type, hci_stack->le_advertisements_own_address);
         hci_send_cmd(&hci_le_set_advertise_enable, 1);
         return true;
     }

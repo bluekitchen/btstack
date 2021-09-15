@@ -3722,15 +3722,20 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_cid = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
 
                             // track our addr used for this connection and set state
-                            if (hci_subevent_le_connection_complete_get_role(packet)){
+#ifdef ENABLE_LE_CENTRAL
+                            if (hci_subevent_le_connection_complete_get_role(packet) != 0){
                                 // responder - use own address from advertisements
                                 gap_le_get_own_advertisements_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
                                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
-                            } else {
+                            }
+#endif
+#ifdef ENABLE_LE_CENTRAL
+                            if (hci_subevent_le_connection_complete_get_role(packet) == 0){
                                 // initiator - use own address from create connection
                                 gap_le_get_own_connection_address(&sm_conn->sm_own_addr_type, sm_conn->sm_own_address);
                                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
                             }
+#endif
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
