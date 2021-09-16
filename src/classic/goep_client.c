@@ -397,7 +397,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     (void)memcpy(context->bd_addr, addr, 6);
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
@@ -410,7 +410,7 @@ uint8_t goep_client_disconnect(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     rfcomm_disconnect(context->bearer_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 void goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id){

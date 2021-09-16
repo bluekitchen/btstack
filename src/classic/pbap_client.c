@@ -931,7 +931,9 @@ void pbap_client_deinit(void){
 }
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
-    if (pbap_client->state != PBAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (pbap_client->state != PBAP_INIT){
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    } 
 
     pbap_client->state = PBAP_W4_GOEP_CONNECTION;
     pbap_client->client_handler = handler;
@@ -941,103 +943,121 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
     uint8_t err = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &pbap_client->goep_cid);
     *out_cid = pbap_client->cid;
     if (err) return err;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_disconnect(uint16_t pbap_cid){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_SEND_DISCONNECT_REQUEST;
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_GET_PHONEBOOK_SIZE;
     pbap_client->phonebook_path = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
     pbap_client->phonebook_path = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_SET_PATH_ROOT;
     pbap_client->current_folder = path;
     pbap_client->set_path_offset = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_W4_USER_AUTHENTICATION) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_W4_USER_AUTHENTICATION){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_SEND_AUTHENTICATED_CONNECT;
     pbap_client->authentication_password = password;
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_GET_CARD_LIST;
     pbap_client->phonebook_path = path;
     pbap_client->phone_number = NULL;
     pbap_client->request_number = 0;
     pbap_client_vcard_listing_init_parser(pbap_client);
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_pull_vcard_entry(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_GET_CARD_ENTRY;
     // pbap_client->phonebook_path = NULL;
     // pbap_client->phone_number = NULL;
     pbap_client->vcard_name = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->state = PBAP_W2_GET_CARD_LIST;
     pbap_client->phonebook_path = pbap_vcard_listing_name;
     pbap_client->phone_number   = phone_number;
     pbap_client->request_number = 0;
     pbap_client_vcard_listing_init_parser(pbap_client);
     goep_client_request_can_send_now(pbap_client->goep_cid);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     log_info("abort current operation, state 0x%02x", pbap_client->state);
     pbap_client->abort_operation = 1;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_next_packet(uint16_t pbap_cid){
     // log_info("pbap_next_packet, state %x", pbap_client->state);
     UNUSED(pbap_cid);
-    if (!pbap_client->flow_control_enabled) return 0;
+    if (!pbap_client->flow_control_enabled){
+        return ERROR_CODE_SUCCESS;
+    }
     switch (pbap_client->state){
         case PBAP_W2_PULL_PHONEBOOK:
             goep_client_request_can_send_now(pbap_client->goep_cid);
@@ -1048,24 +1068,26 @@ uint8_t pbap_next_packet(uint16_t pbap_cid){
         default:
             break;
     }
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
     UNUSED(pbap_cid);
-    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->flow_control_enabled = enable;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
     UNUSED(pbap_cid);
     pbap_client->vcard_selector = vcard_selector;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator){
     UNUSED(pbap_cid);
     pbap_client->vcard_selector_operator = vcard_selector_operator;
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
