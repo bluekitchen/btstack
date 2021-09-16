@@ -158,7 +158,7 @@ uint8_t hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Establish audio connection.
- * The status of Audio connection establishment is reported via is reported via HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
+ * The status of Audio connection establishment is reported via HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE.
  *
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
@@ -167,7 +167,7 @@ uint8_t hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle);
 
 /**
  * @brief Release audio connection.
- * The status of releasing the Audio connection is reported via is reported via HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
+ * The status of releasing the Audio connection is reported via HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE.
  * 
  * @param acl_handle
  * @return status ERROR_CODE_SUCCESS if successful, otherwise ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER if connection does not exist
