@@ -707,7 +707,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                     }
                     pbap_client->state = PBAP_CONNECTED;
                     pbap_client->vcard_selector_supported = pbap_client_supported_features & goep_client_get_pbap_supported_features(pbap_client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
-                    pbap_client_emit_connected_event(pbap_client, 0);
+                    pbap_client_emit_connected_event(pbap_client, ERROR_CODE_SUCCESS);
                     break;
                 case OBEX_RESP_UNAUTHORIZED:
                     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
@@ -739,7 +739,7 @@ static void pbap_packet_handler_goep(uint8_t *packet, uint16_t size){
                 } else {
                     pbap_client->current_folder = NULL;
                     pbap_client->state = PBAP_CONNECTED;
-                    pbap_client_emit_operation_complete_event(pbap_client, 0);
+                    pbap_client_emit_operation_complete_event(pbap_client, ERROR_CODE_SUCCESS);
                 }
             } else if (packet[0] == OBEX_RESP_NOT_FOUND){
                 pbap_client->state = PBAP_CONNECTED;
