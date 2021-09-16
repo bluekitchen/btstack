@@ -9226,12 +9226,12 @@ static inline uint8_t pbap_subevent_phonebook_size_get_status(const uint8_t * ev
     return event[5];
 }
 /**
- * @brief Get field phoneboook_size from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @brief Get field phonebook_size from event PBAP_SUBEVENT_PHONEBOOK_SIZE
  * @param event packet
- * @return phoneboook_size
+ * @return phonebook_size
  * @note: btstack_type 2
  */
-static inline uint16_t pbap_subevent_phonebook_size_get_phoneboook_size(const uint8_t * event){
+static inline uint16_t pbap_subevent_phonebook_size_get_phonebook_size(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 

@@ -3034,7 +3034,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param goep_cid
  * @param status
- * @param phoneboook_size
+ * @param phonebook_size
  */
 #define PBAP_SUBEVENT_PHONEBOOK_SIZE                                       0x04
 

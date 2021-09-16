@@ -285,7 +285,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             if (status){
                                 printf("[!] Get Phonebook size error: 0x%x\n", status);
                             } else {
-                                printf("[+] Phonebook size: %u\n", pbap_subevent_phonebook_size_get_phoneboook_size(packet));
+                                printf("[+] Phonebook size: %u\n", pbap_subevent_phonebook_size_get_phonebook_size(packet));
                             }
                             break;
                         case PBAP_SUBEVENT_CARD_RESULT:
