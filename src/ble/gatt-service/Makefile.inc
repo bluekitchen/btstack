@@ -2,8 +2,9 @@
 
 SRC_BLE_GATT_SERVICE_FILES = \
     ancs_client.c \
-    battery_service_server.c \
     battery_service_client.c \
+    battery_service_server.c \
+    bond_management_service_server.c \
     cycling_power_service_server.c \
     cycling_speed_and_cadence_service_server.c \
     device_information_service_client.c \

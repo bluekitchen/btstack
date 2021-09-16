@@ -55,7 +55,7 @@ extern "C" {
  * 
  * To use with your application, add `#import <tx_power_service.gatt>` to your .gatt file. 
  * After adding it to your .gatt file, you call *tx_power_service_server_init(value)* with the
- * device’s current transmit power level value. The valid range for the power level is 0-100.
+ * device’s current transmit power level value. 
  *
  * If the power level value changes, you can call *tx_power_service_server_set_level(tx_power_level)*. 
  * The service does not support sending Notifications.
