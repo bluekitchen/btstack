@@ -1047,6 +1047,9 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 
 uint8_t pbap_abort(uint16_t pbap_cid){
     UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     log_info("abort current operation, state 0x%02x", pbap_client->state);
     pbap_client->abort_operation = 1;
     return ERROR_CODE_SUCCESS;
@@ -1082,12 +1085,18 @@ uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
 
 uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
     UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->vcard_selector = vcard_selector;
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator){
     UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED){
+        return BTSTACK_BUSY;
+    }
     pbap_client->vcard_selector_operator = vcard_selector_operator;
     return ERROR_CODE_SUCCESS;
 }
