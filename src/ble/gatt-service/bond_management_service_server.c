@@ -40,6 +40,7 @@
 #include "bluetooth.h"
 #include "btstack_defines.h"
 #include "hci.h"
+#include "gap.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
 
@@ -49,21 +50,6 @@
 #include "ble/le_device_db.h"
 
 #include "ble/gatt-service/bond_management_service_server.h"
-
-#define BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED 0x80
-#define BOND_MANAGEMENT_OPERATION_FAILED 0x81
-
-typedef enum {
-    BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_CLASSIC_AND_LE = 0x01,
-    BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_CLASSIC,
-    BOND_MANAGEMENT_CMD_DELETE_ACTIVE_BOND_LE,
-    BOND_MANAGEMENT_CMD_DELETE_ALL_BONDS_CLASSIC_AND_LE,
-    BOND_MANAGEMENT_CMD_DELETE_ALL_BONDS_CLASSIC,
-    BOND_MANAGEMENT_CMD_DELETE_ALL_BONDS_LE,
-    BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_CLASSIC_AND_LE,
-    BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_CLASSIC,
-    BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_LE
-} bond_management_cmd_t;
 
 // characteristic:  Control Point
 static uint16_t bm_control_point_value_handle;
@@ -118,11 +104,11 @@ static void bond_management_delete_bonding_information_le(hci_connection_t * con
         
         if ((entry_address_type == (int) device_address_type) && (memcmp(entry_address, connection->address, 6) == 0)){
             if (delete_own_bonding){   
-                gap_delete_bonding(entry_address_type, entry_address);
+                gap_delete_bonding((bd_addr_type_t)entry_address_type, entry_address);
             }
         } else {
             if (delete_all_bonding_but_active){
-                gap_delete_bonding(entry_address_type, entry_address);
+                gap_delete_bonding((bd_addr_type_t)entry_address_type, entry_address);
             }
         }
     }
@@ -175,25 +161,28 @@ static int bond_management_service_write_callback(hci_con_handle_t con_handle, u
         if (cmd > BOND_MANAGEMENT_CMD_DELETE_ALL_BUT_ACTIVE_BOND_LE) {
             return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
         }
-    
         uint16_t authorisation_code_size = buffer_size - 1;
         if (authorisation_code_size > 511){
             return BOND_MANAGEMENT_OPERATION_FAILED;
         }
         
-        uint8_t auth_provided = authorisation_code_size > 0 ? 1 : 0;
+        uint8_t  auth_provided = authorisation_code_size > 0 ? 1 : 0;
         uint32_t requested_feature_mask = 1UL << (2*(cmd-1) + auth_provided);
+
         if ((bm_supported_features & requested_feature_mask) == 0){
             // abort, feature not allowed
             return BOND_MANAGEMENT_CONTROL_POINT_OPCODE_NOT_SUPPORTED;
         } 
 
         if (auth_provided == 1){
+            if (!bm_authorization_string){
+                return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+            }
             if (strlen(bm_authorization_string) != authorisation_code_size){
-                return BOND_MANAGEMENT_OPERATION_FAILED;
+                return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
             }
             if (memcmp(bm_authorization_string, (const char *)&buffer[1], authorisation_code_size) != 0){
-                return BOND_MANAGEMENT_OPERATION_FAILED;
+                return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
             }
         }
 

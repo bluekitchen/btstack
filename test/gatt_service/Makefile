@@ -52,6 +52,7 @@ COMMON_OBJ_ASAN     = $(addprefix build-asan/,    $(COMMON:.c=.o))
 all: build-coverage/battery_service_test build-asan/battery_service_test 						\
 	 build-coverage/device_information_service_test build-asan/device_information_service_test 	\
 	 build-coverage/tx_power_service_test build-asan/tx_power_service_test 	\
+	 build-coverage/bond_management_service_test build-asan/bond_management_service_test 	\
 
 build-%:
 	mkdir -p $@
@@ -63,6 +64,9 @@ build-%/device_information_service_profile.h: device_information_service.gatt| b
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-%/tx_power_service_profile.h: tx_power_service.gatt| build-%
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+build-%/bond_management_service_profile.h: bond_management_service.gatt| build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
@@ -89,16 +93,24 @@ build-coverage/tx_power_service_test: build-coverage/tx_power_service_profile.h 
 build-asan/tx_power_service_test: build-asan/tx_power_service_profile.h ${COMMON_OBJ_ASAN} build-asan/tx_power_service_test.o  | build-asan
 	${CC} $(filter-out build-asan/tx_power_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
+build-coverage/bond_management_service_test: build-coverage/bond_management_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/bond_management_service_server.o build-coverage/bond_management_service_test.o  | build-coverage
+	${CC} $(filter-out build-coverage/bond_management_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/bond_management_service_test: build-asan/bond_management_service_profile.h ${COMMON_OBJ_ASAN} build-asan/bond_management_service_server.o  build-asan/bond_management_service_test.o  | build-asan
+	${CC} $(filter-out build-asan/bond_management_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+
 test: all
 	build-asan/battery_service_test
 	build-asan/device_information_service_test
 	build-asan/tx_power_service_test
+	build-asan/bond_management_service_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda
 	build-coverage/battery_service_test
 	build-coverage/device_information_service_test
 	build-asan/tx_power_service_test
+	build-asan/bond_management_service_test
 
 clean:
 	rm -rf build-coverage build-asan
