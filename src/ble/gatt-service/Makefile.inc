@@ -14,6 +14,7 @@ SRC_BLE_GATT_SERVICE_FILES = \
     hids_device.c \
     mesh_provisioning_service_server.c \
     mesh_proxy_service_server.c \
+    microphone_control_service_server.c \
     nordic_spp_service_server.c \
     scan_parameters_service_client.c \
     scan_parameters_service_server.c \

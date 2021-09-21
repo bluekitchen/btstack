@@ -29,12 +29,13 @@ COMMON = \
 	cycling_power_service_server.c \
 	cycling_speed_and_cadence_service_server.c \
 	device_information_service_server.c \
-	tx_power_service_server.c \
 	hci_dump.c                  \
 	heart_rate_service_server.c \
 	hids_device.c \
+	microphone_control_service_server.c \
 	mock_att_server.c           \
 	nordic_spp_service_server.c \
+	tx_power_service_server.c \
 	ublox_spp_service_server.c \
 
 
@@ -53,6 +54,7 @@ all: build-coverage/battery_service_test build-asan/battery_service_test 						\
 	 build-coverage/device_information_service_test build-asan/device_information_service_test 	\
 	 build-coverage/tx_power_service_test build-asan/tx_power_service_test 	\
 	 build-coverage/bond_management_service_test build-asan/bond_management_service_test 	\
+	 build-coverage/microphone_control_service_test build-asan/microphone_control_service_test 	\
 
 build-%:
 	mkdir -p $@
@@ -67,6 +69,9 @@ build-%/tx_power_service_profile.h: tx_power_service.gatt| build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-%/bond_management_service_profile.h: bond_management_service.gatt| build-%
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+
+build-%/microphone_control_service_profile.h: microphone_control_service.gatt| build-%
 	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 build-coverage/%.o: %.c | build-coverage
@@ -99,11 +104,18 @@ build-coverage/bond_management_service_test: build-coverage/bond_management_serv
 build-asan/bond_management_service_test: build-asan/bond_management_service_profile.h ${COMMON_OBJ_ASAN} build-asan/bond_management_service_server.o  build-asan/bond_management_service_test.o  | build-asan
 	${CC} $(filter-out build-asan/bond_management_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
 
+build-coverage/microphone_control_service_test: build-coverage/microphone_control_service_profile.h ${COMMON_OBJ_COVERAGE} build-coverage/microphone_control_service_server.o build-coverage/microphone_control_service_test.o  | build-coverage
+	${CC} $(filter-out build-coverage/microphone_control_service_profile.h,$^) ${LDFLAGS_COVERAGE} -o $@
+
+build-asan/microphone_control_service_test: build-asan/microphone_control_service_profile.h ${COMMON_OBJ_ASAN} build-asan/microphone_control_service_server.o  build-asan/microphone_control_service_test.o  | build-asan
+	${CC} $(filter-out build-asan/microphone_control_service_profile.h,$^) ${LDFLAGS_ASAN} -o $@
+
 test: all
 	build-asan/battery_service_test
 	build-asan/device_information_service_test
 	build-asan/tx_power_service_test
 	build-asan/bond_management_service_test
+	build-asan/microphone_control_service_test
 		
 coverage: all
 	rm -f build-coverage/*.gcda
@@ -111,6 +123,7 @@ coverage: all
 	build-coverage/device_information_service_test
 	build-asan/tx_power_service_test
 	build-asan/bond_management_service_test
+	build-asan/microphone_control_service_test
 
 clean:
 	rm -rf build-coverage build-asan

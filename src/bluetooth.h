@@ -616,6 +616,7 @@ typedef enum {
 #define ATT_ERROR_INSUFFICIENT_ENCRYPTION          0x0f
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
+#define ATT_ERROR_VALUE_NOT_ALLOWED                0x13
 
 // MARK: ATT Error Codes defined by BTstack
 #define ATT_ERROR_HCI_DISCONNECT_RECEIVED          0x1f
