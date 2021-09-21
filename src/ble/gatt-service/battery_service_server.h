@@ -52,7 +52,7 @@ extern "C" {
 /**
  * @text The Battery Service allows to query your device's battery level in a standardized way.
  * 
- * To use with your application, add `#import <batery_service.gatt>` to your .gatt file. 
+ * To use with your application, add `#import <battery_service.gatt>` to your .gatt file. 
  * After adding it to your .gatt file, you call *battery_service_server_init(value)* with the
  * current value of your battery. The valid range for the battery level is 0-100.
  *
