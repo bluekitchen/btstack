@@ -401,7 +401,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         if (h2_sync_pos < 0){
             // no sync found, discard all but last 2 bytes
             bytes_processed = decoder_state->bytes_in_frame_buffer - 2;
-            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
+            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, 2);
             decoder_state->bytes_in_frame_buffer -= bytes_processed;    // == 2
             // don't try PLC without at least a single good frame
             if (decoder_state->first_good_frame_found){
@@ -414,8 +414,8 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
 
         // drop data before it
         bytes_processed = h2_sync_pos - 2;
-        if (bytes_processed > 2){
-            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
+        if (bytes_processed > 0){
+            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer-bytes_processed);
             decoder_state->bytes_in_frame_buffer -= bytes_processed;
             // don't try PLC without at least a single good frame
             if (decoder_state->first_good_frame_found){
@@ -448,7 +448,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
 #endif
             // retry after dropoing 3 byte sync
             bytes_processed = 3;
-            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
+            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer-bytes_processed);
             decoder_state->bytes_in_frame_buffer -= bytes_processed;
             decoder_state->msbc_bad_bytes        += bytes_processed;
             // log_info("Trace bad frame");
@@ -519,7 +519,8 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         decoder_state->msbc_bad_bytes += bytes_processed;
 
         // drop processed bytes from frame buffer
-        memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
+        memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer-bytes_processed);
+        decoder_state->bytes_in_frame_buffer -= bytes_processed;
     }
 }
 
