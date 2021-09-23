@@ -66,7 +66,7 @@ set(SOURCES_POSIX
 set(SOURCES_CHIPSET
     ${BTSTACK_ROOT}/chipset/bcm/btstack_chipset_bcm.c
     ${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c
-    bluetooth_init_cc2564C_1.4.c
+    bluetooth_init_cc2564C_1.5.c
     ${BTSTACK_ROOT}/chipset/csr/btstack_chipset_csr.c
 )
 

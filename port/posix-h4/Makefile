@@ -2,7 +2,6 @@
 BTSTACK_ROOT ?= ../..
 
 CORE += \
-	bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
 	btstack_chipset_bcm.c \
 	btstack_chipset_cc256x.c \
 	btstack_chipset_csr.c \
@@ -24,8 +23,10 @@ CORE += \
 	btstack_signal.c \
 	wav_util.c 					\
 	0000000_META_hci_patches_v7.c \
+	bluetooth_init_cc2564C_1.5.c \
+	# bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
 	# bluetooth_init_cc2564_2.14.c \
-	# bluetooth_init_cc2564C_1.4.c \
+
 # TI-WL183x requires TIInit_11.8.32.c
 
 # examples

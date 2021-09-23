@@ -9,7 +9,7 @@ COMMON  += \
 			btstack_uart_block_windows.c \
 			le_device_db_tlv.c           \
 			btstack_link_key_db_tlv.c    \
-			bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
+			bluetooth_init_cc2564C_1.5.c \
 			btstack_chipset_cc256x.c \
 			btstack_chipset_csr.c \
 			btstack_chipset_em9301.c \
